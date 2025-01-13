@@ -1,19 +1,15 @@
-/* fonts.css */
-:root {
-  --font-heading: "Mona Sans Condensed ExtraBold", "system-ui", "sans-serif";
-  --font-body: "Geist Mono Regular", "sans-serif";
-}
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading);
-  text-transform: uppercase;
-}
+import type { Config } from "tailwindcss";
 
-body {
-  font-family: var(--font-body);
-}
-
-/*Example of other styles*/
-p {
-  line-height: 1.6;
-}
+export default {
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  theme: {
+    extend: {
+      fontFamily: {
+        heading: ["var(--font-heading)", "system-ui", "sans-serif"],
+        body: ["var(--font-body)", "sans-serif"],
+      },
+    },
+  },
+  plugins: [],
+} satisfies Config;
