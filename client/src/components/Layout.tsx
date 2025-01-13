@@ -11,19 +11,22 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-[#14151A] flex flex-col">
-      {/* Fixed Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-[#2A2B31] bg-[#14151A]/80 backdrop-blur-xl">
-        <nav className="container mx-auto px-4">
+      {/* Enhanced Fixed Navigation */}
+      <header className="fixed top-0 left-0 right-0 z-50">
+        <div className="absolute inset-0 bg-[#14151A]/80 backdrop-blur-xl border-b border-[#2A2B31]/50" />
+        <nav className="container mx-auto px-4 relative">
           <div className="h-16 flex items-center justify-between">
             <div className="flex items-center gap-8">
-              {/* Logo */}
-              <div className="transition-transform duration-200 ease-in-out hover:scale-105">
+              {/* Enhanced Logo with glow effect */}
+              <div className="relative group">
+                <div className="absolute inset-0 rounded-full bg-[#D7FF00]/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <Link href="/">
-                  <a className="block">
+                  <a className="block relative">
+                    <div className="absolute inset-0 bg-[#D7FF00]/10 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <img 
                       src="/logo-neon.png"
                       alt="GOATED"
-                      className="h-8 w-auto cursor-pointer transition-opacity duration-300 hover:opacity-80"
+                      className="h-8 w-auto relative z-10 transition-transform duration-300 hover:scale-105"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.onerror = null;
@@ -34,7 +37,7 @@ export function Layout({ children }: LayoutProps) {
                 </Link>
               </div>
 
-              {/* Navigation Links */}
+              {/* Enhanced Navigation Links */}
               <div className="hidden md:flex items-center gap-6">
                 <NavLink href="/" label="HOME" />
                 <NavLink href="/wager-races" label="WAGER RACES" />
@@ -44,11 +47,13 @@ export function Layout({ children }: LayoutProps) {
               </div>
             </div>
 
+            {/* Enhanced Play Now Button */}
             <Button 
               onClick={() => window.open('https://www.goated.com/r/KICKBACK', '_blank')}
-              className="font-heading bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-colors"
+              className="relative group overflow-hidden font-heading bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-all duration-300"
             >
-              PLAY NOW →
+              <span className="relative z-10">PLAY NOW →</span>
+              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
             </Button>
           </div>
         </nav>
@@ -60,8 +65,9 @@ export function Layout({ children }: LayoutProps) {
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#D7FF00]">
-        <div className="container mx-auto px-4 py-16">
+      <footer className="bg-[#D7FF00] relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent pointer-events-none" />
+        <div className="container mx-auto px-4 py-16 relative">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div>
               <h4 className="font-heading text-[#14151A] text-2xl font-bold mb-4">Ready to get Goated?</h4>
@@ -82,7 +88,7 @@ export function Layout({ children }: LayoutProps) {
                 <input
                   type="email"
                   placeholder="Enter your email"
-                  className="flex-1 px-4 py-2 rounded-lg border border-[#14151A]/20 focus:outline-none focus:border-[#14151A]"
+                  className="flex-1 px-4 py-2 rounded-lg border border-[#14151A]/20 focus:outline-none focus:border-[#14151A] transition-colors duration-300"
                 />
                 <Button className="bg-[#14151A] text-white hover:bg-[#14151A]/90">
                   Subscribe
@@ -96,17 +102,19 @@ export function Layout({ children }: LayoutProps) {
   );
 }
 
-// NavLink component
 function NavLink({ href, label }: { href: string; label: string }) {
   const [location] = useLocation();
   const isActive = location === href;
 
   return (
     <Link href={href}>
-      <a className={`font-heading cursor-pointer ${
-        isActive ? "text-[#D7FF00]" : "text-white hover:text-[#D7FF00]"
-      } transition-colors`}>
+      <a className={`relative font-heading cursor-pointer group ${
+        isActive ? "text-[#D7FF00]" : "text-white"
+      } transition-colors duration-300`}>
         {label}
+        <span className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-[#D7FF00] transition-all duration-300 ${
+          isActive ? "w-full" : "group-hover:w-full"
+        }`} />
       </a>
     </Link>
   );

@@ -8,13 +8,12 @@
   }
 
   body {
-
-@layer components {
-  .header-text {
-    @apply font-heading font-extrabold uppercase tracking-tight font-stretch-condensed;
+    @apply font-sans antialiased bg-background text-foreground;
   }
 }
 
-    @apply font-sans antialiased bg-background text-foreground;
+@layer components {
+  .header-text {
+    @apply font-heading font-extrabold uppercase tracking-tight;
   }
 }
