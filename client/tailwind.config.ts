@@ -1,7 +1,7 @@
 /* fonts.css */
 :root {
   --font-heading: "Mona Sans Condensed ExtraBold", "system-ui", "sans-serif";
-  --font-body: "Geist Mono", "monospace";
+  --font-body: "Geist Mono Regular", "monospace";
 }
 
 h1, h2, h3, h4, h5, h6 {
