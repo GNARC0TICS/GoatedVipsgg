@@ -24,7 +24,7 @@ export function Layout({ children }: LayoutProps) {
                   <a className="block relative">
                     <div className="absolute inset-0 bg-[#D7FF00]/10 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <img 
-                      src="/neon-logo.png"
+                      src="/logo-neon.png"
                       alt="GOATED"
                       className="h-8 w-auto relative z-10 transition-transform duration-300 hover:scale-105"
                       onError={(e) => {
@@ -49,7 +49,7 @@ export function Layout({ children }: LayoutProps) {
 
             {/* Enhanced Play Now Button */}
             <Button 
-              onClick={() => window.open('https://www.goated.com/r/KICKBACK', '_blank')}
+              onClick={() => window.open('https://www.goated.com/r/SPIN', '_blank')}
               className="relative group overflow-hidden font-heading bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-all duration-300"
             >
               <span className="relative z-10">PLAY NOW →</span>
@@ -75,7 +75,7 @@ export function Layout({ children }: LayoutProps) {
                 Sign up now and enjoy additional rewards from our side. Start your journey to becoming a casino legend!
               </p>
               <Button 
-                onClick={() => window.open('https://www.goated.com/r/KICKBACK', '_blank')}
+                onClick={() => window.open('https://www.goated.com/r/EARLYACCESS', '_blank')}
                 className="bg-[#14151A] text-white hover:bg-[#14151A]/90 transition-colors"
               >
                 Sign Up Now

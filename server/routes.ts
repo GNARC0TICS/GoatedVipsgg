@@ -1,10 +1,9 @@
-
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer } from "ws";
 import { log } from "./vite";
 import { db } from "@db";
-import { users, notificationPreferences } from "@db/schema";
+import { users, notificationPreferences, wagerRaces } from "@db/schema";
 import { eq } from "drizzle-orm";
 
 const API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsImlhdCI6MTcyNjc3Mjc5Nn0.PDZzGUz-3e6l3vh-vOOqXpbho4mhapZ8jHxfXDJBxEg";
@@ -188,9 +187,64 @@ const handleUpdateNotificationPreferences = async (req: any, res: any) => {
   }
 };
 
+// Admin middleware to check if user is admin
+const adminMiddleware = async (req: any, res: any, next: any) => {
+  if (!req.user?.id) {
+    return res.status(401).send("Unauthorized");
+  }
+
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, req.user.id))
+    .limit(1);
+
+  if (!user?.isAdmin) {
+    return res.status(403).send("Forbidden");
+  }
+
+  next();
+};
+
+// Admin routes for wager race management
+const setupAdminRoutes = (app: Express) => {
+  app.get("/api/admin/wager-races", adminMiddleware, async (req, res) => {
+    try {
+      const races = await db
+        .select()
+        .from(wagerRaces)
+        .orderBy(wagerRaces.startDate);
+
+      res.json(races);
+    } catch (error) {
+      console.error("Error fetching wager races:", error);
+      res.status(500).json({ error: "Failed to fetch wager races" });
+    }
+  });
+
+  app.post("/api/admin/wager-races", adminMiddleware, async (req: any, res) => {
+    try {
+      const [race] = await db
+        .insert(wagerRaces)
+        .values({
+          ...req.body,
+          createdBy: req.user.id,
+          status: "upcoming",
+        })
+        .returning();
+
+      res.json(race);
+    } catch (error) {
+      console.error("Error creating wager race:", error);
+      res.status(500).json({ error: "Failed to create wager race" });
+    }
+  });
+};
+
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
   setupWebSocketServers(httpServer);
   setupApiRoutes(app);
+  setupAdminRoutes(app);
   return httpServer;
 }

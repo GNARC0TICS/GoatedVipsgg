@@ -8,6 +8,7 @@ import Home from "@/pages/Home";
 import VipTransfer from "@/pages/VipTransfer";
 import WagerRaces from "@/pages/WagerRaces";
 import NotificationPreferences from "@/pages/notification-preferences";
+import WagerRaceManagement from "@/pages/admin/WagerRaceManagement";
 import { Layout } from "@/components/Layout";
 import { PageTransition } from "@/components/PageTransition";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -37,6 +38,11 @@ function Router() {
           <Route path="/notification-preferences">
             <PageTransition>
               <NotificationPreferences />
+            </PageTransition>
+          </Route>
+          <Route path="/admin/wager-races">
+            <PageTransition>
+              <WagerRaceManagement />
             </PageTransition>
           </Route>
           <Route>

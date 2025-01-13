@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trophy, Timer, CircleDot } from "lucide-react";
+import { Trophy, CircleDot } from "lucide-react";
+import { CountdownTimer } from "@/components/CountdownTimer";
 
 type RaceType = 'weekly' | 'monthly' | 'weekend';
 type RaceStatus = 'live' | 'completed' | 'upcoming';
@@ -71,7 +72,7 @@ export default function WagerRaces() {
   return (
     <div className="min-h-screen bg-[#14151A] text-white">
       <div className="container mx-auto px-4 py-16">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-4xl font-heading font-bold text-[#D7FF00] mb-2">WAGER RACES</h1>
             <div className="flex items-center gap-2">
@@ -80,25 +81,25 @@ export default function WagerRaces() {
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant={raceType === 'weekly' ? 'default' : 'outline'}
               onClick={() => setRaceType('weekly')}
-              className="font-heading"
+              className="font-heading flex-1 md:flex-none"
             >
               WEEKLY
             </Button>
             <Button
               variant={raceType === 'monthly' ? 'default' : 'outline'}
               onClick={() => setRaceType('monthly')}
-              className="font-heading"
+              className="font-heading flex-1 md:flex-none"
             >
               MONTHLY
             </Button>
             <Button
               variant={raceType === 'weekend' ? 'default' : 'outline'}
               onClick={() => setRaceType('weekend')}
-              className="font-heading"
+              className="font-heading flex-1 md:flex-none"
             >
               WEEKEND
             </Button>
@@ -108,18 +109,15 @@ export default function WagerRaces() {
         {raceData ? (
           <div className="space-y-8">
             {/* Race Info */}
-            <div className="bg-[#1A1B21]/50 backdrop-blur-sm p-6 rounded-xl border border-[#2A2B31]">
-              <div className="grid grid-cols-3 gap-6">
+            <div className="bg-[#1A1B21]/50 backdrop-blur-sm p-4 md:p-6 rounded-xl border border-[#2A2B31]">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <h3 className="text-[#8A8B91] font-heading text-sm mb-2">PRIZE POOL</h3>
                   <p className="text-2xl font-bold">${raceData.prizePool.toLocaleString()}</p>
                 </div>
                 <div>
                   <h3 className="text-[#8A8B91] font-heading text-sm mb-2">TIME REMAINING</h3>
-                  <div className="flex items-center gap-2">
-                    <Timer className="h-5 w-5 text-[#D7FF00]" />
-                    <span className="text-2xl font-bold">6d 23h 59m</span>
-                  </div>
+                  <CountdownTimer endDate={raceData.endDate} />
                 </div>
                 <div>
                   <h3 className="text-[#8A8B91] font-heading text-sm mb-2">PARTICIPANTS</h3>
@@ -129,7 +127,7 @@ export default function WagerRaces() {
             </div>
 
             {/* Leaderboard */}
-            <div className="bg-[#1A1B21]/50 backdrop-blur-sm rounded-xl border border-[#2A2B31] overflow-hidden">
+            <div className="bg-[#1A1B21]/50 backdrop-blur-sm rounded-xl border border-[#2A2B31] overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -172,7 +170,7 @@ export default function WagerRaces() {
             </div>
 
             {/* Prize Distribution Info */}
-            <div className="bg-[#1A1B21]/50 backdrop-blur-sm p-6 rounded-xl border border-[#2A2B31]">
+            <div className="bg-[#1A1B21]/50 backdrop-blur-sm p-4 md:p-6 rounded-xl border border-[#2A2B31]">
               <h3 className="font-heading text-xl mb-4">Prize Distribution</h3>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div>
