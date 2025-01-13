@@ -23,6 +23,7 @@ export function LeaderboardTable() {
           <TableHead className="w-20">Rank</TableHead>
           <TableHead>Username</TableHead>
           <TableHead className="text-right">Total Wager</TableHead>
+          <TableHead className="text-right">Commission</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -38,7 +39,13 @@ export function LeaderboardTable() {
               <TableCell className="font-medium">{entry.rank}</TableCell>
               <TableCell>{entry.username}</TableCell>
               <TableCell className="text-right">
-                {entry.totalWager.toLocaleString(undefined, {
+                ${entry.totalWager.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </TableCell>
+              <TableCell className="text-right">
+                ${entry.commission.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
