@@ -70,9 +70,11 @@ export default function Home() {
               <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
                 <h3 className="text-2xl font-heading uppercase mb-4 text-white">VIP Transfer</h3>
                 <p className="text-[#8A8B91] mb-6">Transfer your VIP status from other platforms and get cash bonuses.</p>
-                <Button variant="link" className="font-heading text-[#D7FF00] p-0 flex items-center gap-2 hover:text-[#D7FF00]/80">
-                  Find out more <ArrowRight className="h-4 w-4" />
-                </Button>
+                <Link href="/vip-transfer">
+                  <a className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
+                    Find out more <ArrowRight className="h-4 w-4" />
+                  </a>
+                </Link>
               </div>
             </div>
 
