@@ -24,7 +24,7 @@ export function Layout({ children }: LayoutProps) {
                   <a className="block relative">
                     <div className="absolute inset-0 bg-[#D7FF00]/10 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <img 
-                      src="/logo-neon.png"
+                      src="/neon-logo.png"
                       alt="GOATED"
                       className="h-8 w-auto relative z-10 transition-transform duration-300 hover:scale-105"
                       onError={(e) => {
@@ -37,7 +37,7 @@ export function Layout({ children }: LayoutProps) {
                 </Link>
               </div>
 
-              {/* Enhanced Navigation Links */}
+              {/* Navigation Links */}
               <div className="hidden md:flex items-center gap-6">
                 <NavLink href="/" label="HOME" />
                 <NavLink href="/wager-races" label="WAGER RACES" />
