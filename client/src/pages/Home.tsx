@@ -10,13 +10,20 @@ export default function Home() {
       {/* Header */}
       <header className="border-b border-[#2A2B31] fixed top-0 w-full z-50 bg-[#14151A]/80 backdrop-blur-md">
         <div className="container mx-auto py-4 px-4 flex items-center justify-between">
-          <motion.img 
-            src="/images/logo-neon.png"
-            alt="Goated"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="h-8 md:h-10 object-contain"
-          />
+          <Link href="/">
+            <motion.img 
+              src="/images/logo-neon.png"
+              alt="Goated"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="h-8 md:h-10 object-contain cursor-pointer"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.onerror = null; // Prevent infinite loop
+                target.src = '/images/fallback-logo.png'; // Fallback image
+              }}
+            />
+          </Link>
           <div className="flex items-center gap-4">
             <Link href="/auth">
               <Button className="font-heading uppercase tracking-wider text-sm bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90">
