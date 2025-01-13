@@ -41,21 +41,9 @@ app.use((req, res, next) => {
 // Global error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Global error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-// Graceful shutdown handler
-let httpServer: any;
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Performing graceful shutdown...');
-  if (httpServer) {
-    httpServer.close(() => {
-      console.log('HTTP server closed');
-      process.exit(0);
-    });
-  } else {
-    process.exit(0);
-  }
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || "Internal server error";
+  res.status(status).json({ error: message });
 });
 
 (async () => {
@@ -64,20 +52,22 @@ process.on('SIGTERM', () => {
     await db.execute(sql`SELECT 1 as test`);
     log("Database connection successful");
 
-    // Setup authentication before other routes
+    // Setup authentication before registering routes
     setupAuth(app);
-    httpServer = registerRoutes(app);
+
+    // Create HTTP server and register routes
+    const server = registerRoutes(app);
 
     // Setup Vite or static serving
     if (app.get("env") === "development") {
-      await setupVite(app, httpServer);
+      await setupVite(app, server);
     } else {
       serveStatic(app);
     }
 
     // Start server
     const port = parseInt(process.env.PORT || "5000", 10);
-    httpServer.listen(port, "0.0.0.0", () => {
+    server.listen(port, "0.0.0.0", () => {
       log(`Server running on port ${port}`);
     });
 

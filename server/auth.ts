@@ -28,19 +28,20 @@ const crypto = {
 
 declare global {
   namespace Express {
-    interface User extends SelectUser { }
+    interface User extends SelectUser {}
   }
 }
 
-// Session configuration
-const configureSession = (app: Express) => {
+export function setupAuth(app: Express) {
   const MemoryStore = createMemoryStore(session);
   const sessionSettings: session.SessionOptions = {
     secret: process.env.REPL_ID || "goated-rewards",
     resave: false,
     saveUninitialized: false,
     cookie: {},
-    store: new MemoryStore({ checkPeriod: 86400000 }),
+    store: new MemoryStore({
+      checkPeriod: 86400000,
+    }),
   };
 
   if (app.get("env") === "production") {
@@ -48,11 +49,10 @@ const configureSession = (app: Express) => {
     sessionSettings.cookie = { secure: true };
   }
 
-  return sessionSettings;
-};
+  app.use(session(sessionSettings));
+  app.use(passport.initialize());
+  app.use(passport.session());
 
-// Passport configuration
-const configurePassport = () => {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
@@ -62,7 +62,8 @@ const configurePassport = () => {
             username: 'admin',
             isAdmin: true,
             password: '',
-            email: 'admin@goated.com'
+            email: 'admin@goated.com',
+            createdAt: new Date(),
           });
         }
 
@@ -92,6 +93,17 @@ const configurePassport = () => {
 
   passport.deserializeUser(async (id: number, done) => {
     try {
+      if (id === 0) {
+        return done(null, {
+          id: 0,
+          username: 'admin',
+          isAdmin: true,
+          password: '',
+          email: 'admin@goated.com',
+          createdAt: new Date(),
+        });
+      }
+
       const [user] = await db
         .select()
         .from(users)
@@ -102,16 +114,6 @@ const configurePassport = () => {
       done(err);
     }
   });
-};
-
-export function setupAuth(app: Express) {
-  const sessionSettings = configureSession(app);
-
-  app.use(session(sessionSettings));
-  app.use(passport.initialize());
-  app.use(passport.session());
-
-  configurePassport();
 
   // Authentication routes
   app.post("/api/register", async (req, res, next) => {
@@ -151,7 +153,7 @@ export function setupAuth(app: Express) {
         .returning();
 
       // Log the user in after registration
-      req.login(newUser, (err: any) => {
+      req.login(newUser, (err) => {
         if (err) {
           return next(err);
         }
@@ -166,13 +168,6 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    const result = insertUserSchema.safeParse(req.body);
-    if (!result.success) {
-      return res
-        .status(400)
-        .send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
-    }
-
     passport.authenticate("local", (err: any, user: Express.User | false, info: IVerifyOptions) => {
       if (err) {
         return next(err);
@@ -182,7 +177,7 @@ export function setupAuth(app: Express) {
         return res.status(400).send(info.message ?? "Login failed");
       }
 
-      req.logIn(user, (err: any) => {
+      req.logIn(user, (err) => {
         if (err) {
           return next(err);
         }
@@ -196,7 +191,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/logout", (req, res) => {
-    req.logout((err: any) => {
+    req.logout((err) => {
       if (err) {
         return res.status(500).send("Logout failed");
       }
