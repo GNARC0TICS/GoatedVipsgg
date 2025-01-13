@@ -116,6 +116,7 @@ export function Layout({ children }: LayoutProps) {
             <p>Gamble responsibly. 18+ only. BeGambleAware.org</p>
           </div>
         </div>
+      </div>
       </footer>
     </div>
   );
