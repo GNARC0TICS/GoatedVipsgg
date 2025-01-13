@@ -11,11 +11,11 @@ export default function Dashboard() {
       <header className="border-b">
         <div className="container mx-auto py-4 flex items-center justify-between">
           <motion.img 
-            src="/goated-text-logo.png" 
+            src="/images/logo-neon.png"
             alt="Goated"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="h-6 md:h-8"
+            className="h-8 md:h-10 object-contain"
           />
           <div className="flex items-center gap-4">
             <span className="font-sans">Welcome, {user?.username}</span>
