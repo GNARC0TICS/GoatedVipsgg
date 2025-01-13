@@ -20,15 +20,15 @@ export default function VipTransfer() {
         animate={{ opacity: 1, y: 0 }}
         className="container mx-auto px-4 py-16"
       >
-        <h1 className="font-heading text-5xl font-extrabold mb-6 text-[#D7FF00]">
-          Goated.com VIP Transfer Promotion:
+        <h1 className="header-text text-5xl mb-6 text-[#D7FF00]">
+          GOATED.COM VIP TRANSFER PROMOTION:
         </h1>
-        <h2 className="font-heading text-4xl font-bold mb-8">
-          Unlock Higher VIP Levels with Ease!
+        <h2 className="header-text text-4xl mb-8">
+          UNLOCK HIGHER VIP LEVELS WITH EASE!
         </h2>
 
         <div className="prose prose-invert max-w-none mb-12">
-          <p className="text-lg leading-relaxed">
+          <p className="text-lg leading-relaxed font-sans">
             Are you a high roller on a competing crypto casino platform? If you're on a higher VIP level
             elsewhere, Goated.com offers an exciting opportunity for you to transfer your VIP status and
             enjoy great rewards! The "VIP Transfer" promotion is designed to help loyal players maximize
@@ -36,12 +36,12 @@ export default function VipTransfer() {
           </p>
         </div>
 
-        <h3 className="font-heading text-3xl font-bold mb-6 text-[#D7FF00]">
-          How Does the VIP Transfer Work?
+        <h3 className="header-text text-3xl mb-6 text-[#D7FF00]">
+          HOW DOES THE VIP TRANSFER WORK?
         </h3>
 
         <div className="prose prose-invert max-w-none mb-12">
-          <p className="text-lg leading-relaxed">
+          <p className="text-lg leading-relaxed font-sans">
             If you're eligible for the VIP Transfer promotion, you'll need to meet certain wagering
             requirements at Goated.com within the first 30 days to qualify. The amount you wager on
             competing platforms determines the Goated VIP level you could unlock and the potential
@@ -54,10 +54,10 @@ export default function VipTransfer() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="font-heading text-[#D7FF00]">Amount Wagered on Competing Casino</TableHead>
-                <TableHead className="font-heading text-[#D7FF00]">Wagering Requirement for Goated</TableHead>
-                <TableHead className="font-heading text-[#D7FF00]">Approx. Cash Bonus</TableHead>
-                <TableHead className="font-heading text-[#D7FF00]">Goated VIP Level Unlocked</TableHead>
+                <TableHead className="header-text text-[#D7FF00]">AMOUNT WAGERED ON COMPETING CASINO</TableHead>
+                <TableHead className="header-text text-[#D7FF00]">WAGERING REQUIREMENT FOR GOATED</TableHead>
+                <TableHead className="header-text text-[#D7FF00]">APPROX. CASH BONUS</TableHead>
+                <TableHead className="header-text text-[#D7FF00]">GOATED VIP LEVEL UNLOCKED</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
