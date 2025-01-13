@@ -16,6 +16,14 @@ export function LeaderboardTable() {
     );
   }
 
+  if (!data || !Array.isArray(data)) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        No data available
+      </div>
+    );
+  }
+
   return (
     <Table>
       <TableHeader>
@@ -23,12 +31,11 @@ export function LeaderboardTable() {
           <TableHead className="w-20">Rank</TableHead>
           <TableHead>Username</TableHead>
           <TableHead className="text-right">Total Wager</TableHead>
-          <TableHead className="text-right">Commission</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         <AnimatePresence>
-          {data?.map((entry) => (
+          {data.map((entry) => (
             <motion.tr
               key={entry.username}
               initial={{ opacity: 0, y: 20 }}
@@ -40,12 +47,6 @@ export function LeaderboardTable() {
               <TableCell>{entry.username}</TableCell>
               <TableCell className="text-right">
                 ${entry.totalWager.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </TableCell>
-              <TableCell className="text-right">
-                ${entry.commission.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}

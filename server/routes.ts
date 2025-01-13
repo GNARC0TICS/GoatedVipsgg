@@ -26,6 +26,7 @@ export function registerRoutes(app: Express): Server {
 
     const interval = setInterval(async () => {
       try {
+        log("Fetching affiliate data from API...");
         const response = await fetch(API_ENDPOINT, {
           headers: {
             'Authorization': `Bearer ${API_TOKEN}`
@@ -37,6 +38,7 @@ export function registerRoutes(app: Express): Server {
         }
 
         const data = await response.json();
+        log(`Successfully fetched data for ${data.data?.length || 0} affiliates`);
         ws.send(JSON.stringify(data));
       } catch (error) {
         log(`Error fetching affiliate data: ${error}`);
@@ -50,8 +52,9 @@ export function registerRoutes(app: Express): Server {
   });
 
   // API Routes
-  app.get("/api/affiliate/stats", async (req, res) => {
+  app.get("/api/affiliate/stats", async (_req, res) => {
     try {
+      log("Fetching initial affiliate data from API...");
       const response = await fetch(API_ENDPOINT, {
         headers: {
           'Authorization': `Bearer ${API_TOKEN}`
@@ -63,6 +66,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       const data = await response.json();
+      log(`Successfully fetched initial data for ${data.data?.length || 0} affiliates`);
       res.json(data);
     } catch (error) {
       log(`Error in /api/affiliate/stats: ${error}`);
