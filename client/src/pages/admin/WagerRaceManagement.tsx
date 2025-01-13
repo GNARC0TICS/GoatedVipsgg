@@ -1,32 +1,19 @@
+
 import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
-import { CountdownTimer } from "@/components/CountdownTimer";
+import { TrashIcon, PencilIcon } from "lucide-react";
 
-const createWagerRaceSchema = z.object({
+const wagerRaceSchema = z.object({
   title: z.string().min(1, "Title is required"),
   type: z.enum(["weekly", "monthly", "weekend"]),
   prizePool: z.string().transform(Number),
@@ -36,14 +23,15 @@ const createWagerRaceSchema = z.object({
   prizeDistribution: z.record(z.string(), z.number()),
 });
 
-type CreateWagerRaceSchema = z.infer<typeof createWagerRaceSchema>;
+type WagerRace = z.infer<typeof wagerRaceSchema>;
 
 export default function WagerRaceManagement() {
   const { toast } = useToast();
-  const [selectedRace, setSelectedRace] = useState<number | null>(null);
+  const [editingRace, setEditingRace] = useState<WagerRace | null>(null);
+  const queryClient = useQueryClient();
 
-  const form = useForm<CreateWagerRaceSchema>({
-    resolver: zodResolver(createWagerRaceSchema),
+  const form = useForm<WagerRace>({
+    resolver: zodResolver(wagerRaceSchema),
     defaultValues: {
       title: "",
       type: "weekly",
@@ -66,52 +54,53 @@ export default function WagerRaceManagement() {
     },
   });
 
-  const { data: races, isLoading } = useQuery({
+  const { data: races = [], isLoading } = useQuery({
     queryKey: ["/api/admin/wager-races"],
   });
 
   const createRace = useMutation({
-    mutationFn: async (data: CreateWagerRaceSchema) => {
+    mutationFn: async (data: WagerRace) => {
       const response = await fetch("/api/admin/wager-races", {
-        method: "POST",
+        method: editingRace ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
         credentials: "include",
       });
 
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-
+      if (!response.ok) throw new Error(await response.text());
       return response.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/wager-races"] });
       toast({
-        title: "Success",
-        description: "Wager race created successfully",
+        title: `${editingRace ? "Updated" : "Created"} Successfully`,
+        description: `Race has been ${editingRace ? "updated" : "created"}.`,
       });
       form.reset();
+      setEditingRace(null);
     },
-    onError: (error) => {
+  });
+
+  const deleteRace = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/admin/wager-races/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error(await response.text());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/wager-races"] });
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create wager race",
-        variant: "destructive",
+        title: "Deleted Successfully",
+        description: "Race has been deleted.",
       });
     },
   });
 
-  const onSubmit = (data: CreateWagerRaceSchema) => {
+  const onSubmit = (data: WagerRace) => {
     createRace.mutate(data);
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D7FF00]" />
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -119,29 +108,29 @@ export default function WagerRaceManagement() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#1A1B21]/50 backdrop-blur-sm p-8 rounded-xl border border-[#2A2B31]"
+          className="bg-[#1A1B21]/50 backdrop-blur-sm p-4 md:p-8 rounded-xl border border-[#2A2B31]"
         >
-          <h1 className="text-3xl font-heading font-bold text-[#D7FF00] mb-6">
-            Wager Race Management
+          <h1 className="text-2xl md:text-3xl font-heading font-bold text-[#D7FF00] mb-6">
+            {editingRace ? "Edit Race" : "Create New Race"}
           </h1>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Weekly Race #1" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Weekly Race #1" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <div className="grid md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="type"
@@ -167,7 +156,9 @@ export default function WagerRaceManagement() {
                     </FormItem>
                   )}
                 />
+              </div>
 
+              <div className="grid md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="prizePool"
@@ -185,9 +176,27 @@ export default function WagerRaceManagement() {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="minWager"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Minimum Wager</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="100"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="startDate"
@@ -217,31 +226,25 @@ export default function WagerRaceManagement() {
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="minWager"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Minimum Wager</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="100"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+              <div className="flex justify-end gap-2">
+                {editingRace && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setEditingRace(null);
+                      form.reset();
+                    }}
+                  >
+                    Cancel
+                  </Button>
                 )}
-              />
-
-              <div className="flex justify-end">
                 <Button
                   type="submit"
                   className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
                   disabled={createRace.isPending}
                 >
-                  {createRace.isPending ? "Creating..." : "Create Race"}
+                  {createRace.isPending ? "Saving..." : editingRace ? "Update Race" : "Create Race"}
                 </Button>
               </div>
             </form>
@@ -255,31 +258,44 @@ export default function WagerRaceManagement() {
             transition={{ delay: 0.2 }}
             className="space-y-4"
           >
-            <h2 className="text-2xl font-heading font-bold text-white">Active Races</h2>
+            <h2 className="text-xl md:text-2xl font-heading font-bold text-white">Active Races</h2>
             <div className="grid gap-4 md:grid-cols-2">
               {races.map((race: any) => (
                 <Card key={race.id} className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
                   <CardHeader>
-                    <CardTitle className="flex justify-between items-center">
-                      <span>{race.title}</span>
-                      <span className="text-sm font-normal bg-[#D7FF00]/10 text-[#D7FF00] px-2 py-1 rounded">
-                        {race.type}
-                      </span>
-                    </CardTitle>
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg md:text-xl">{race.title}</CardTitle>
+                      <div className="flex gap-2">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setEditingRace(race)}
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => deleteRace.mutate(race.id)}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Time Remaining</span>
-                        <CountdownTimer endDate={race.endDate} />
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Type</span>
+                        <span className="font-medium">{race.type}</span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Prize Pool</span>
-                        <span>${race.prizePool.toLocaleString()}</span>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Prize Pool</span>
+                        <span className="font-medium">${race.prizePool.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Min Wager</span>
-                        <span>${race.minWager.toLocaleString()}</span>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Min Wager</span>
+                        <span className="font-medium">${race.minWager.toLocaleString()}</span>
                       </div>
                     </div>
                   </CardContent>
