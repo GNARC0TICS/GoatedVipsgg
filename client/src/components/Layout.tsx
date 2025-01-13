@@ -107,7 +107,13 @@ export function Layout({ children }: LayoutProps) {
                   Subscribe
                 </Button>
               </form>
-            </div>
+          </div>
+        </div>
+        <div className="bg-[#14151A] text-[#8A8B91] text-sm py-6">
+          <div className="container mx-auto px-4 text-center">
+            <p className="mb-2">© 2024 Goatedrewards.com. All rights reserved.</p>
+            <p className="mb-2">Disclaimer: This website is not operated by Goated.com, and it's not an official site of the Goated.com team.</p>
+            <p>Gamble responsibly. 18+ only. BeGambleAware.org</p>
           </div>
         </div>
       </footer>
