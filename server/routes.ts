@@ -1,10 +1,11 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer } from "ws";
+import { WebSocketServer, type WebSocket } from "ws";
 import { log } from "./vite";
 import { db } from "@db";
 import { users, notificationPreferences, wagerRaces } from "@db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import type { IncomingMessage } from "http";
 
 const API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsImlhdCI6MTcyNjc3Mjc5Nn0.PDZzGUz-3e6l3vh-vOOqXpbho4mhapZ8jHxfXDJBxEg";
 const API_ENDPOINT = "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard";
@@ -13,23 +14,29 @@ const API_ENDPOINT = "https://europe-west2-g3casino.cloudfunctions.net/user/affi
 const setupWebSocketServers = (httpServer: Server) => {
   const affiliateWss = createWebSocketServer(httpServer, "/ws/affiliate-stats");
   const wagerRacesWss = createWebSocketServer(httpServer, "/ws/wager-races");
-  
+
   setupAffiliateWebSocket(affiliateWss);
   setupWagerRacesWebSocket(wagerRacesWss);
-  
+
   log("WebSocket servers initialized");
 };
+
+interface VerifyClientInfo {
+  origin: string;
+  secure: boolean;
+  req: IncomingMessage;
+}
 
 const createWebSocketServer = (server: Server, path: string) => {
   return new WebSocketServer({ 
     server,
     path,
-    verifyClient: (info) => !info.req.headers['sec-websocket-protocol']?.includes('vite-hmr')
+    verifyClient: (info: VerifyClientInfo) => !info.req.headers['sec-websocket-protocol']?.includes('vite-hmr')
   });
 };
 
 const setupAffiliateWebSocket = (wss: WebSocketServer) => {
-  wss.on("connection", (ws) => {
+  wss.on("connection", (ws: WebSocket) => {
     log("New affiliate WebSocket connection established");
 
     const interval = setInterval(async () => {
@@ -55,13 +62,29 @@ const setupAffiliateWebSocket = (wss: WebSocketServer) => {
 };
 
 const setupWagerRacesWebSocket = (wss: WebSocketServer) => {
-  wss.on("connection", (ws) => {
+  wss.on("connection", async (ws: WebSocket) => {
     log("New wager races WebSocket connection established");
 
-    const interval = setInterval(() => {
-      const mockData = generateMockWagerRaceData();
-      ws.send(JSON.stringify(mockData));
-    }, 5000);
+    const sendRaceData = async () => {
+      try {
+        const activeRaces = await db
+          .select()
+          .from(wagerRaces)
+          .where(
+            and(
+              eq(wagerRaces.status, "live"),
+              eq(wagerRaces.type, "weekly")
+            )
+          );
+
+        ws.send(JSON.stringify(activeRaces));
+      } catch (error) {
+        log(`Error fetching wager race data: ${error}`);
+      }
+    };
+
+    const interval = setInterval(sendRaceData, 5000);
+    sendRaceData(); // Send initial data
 
     ws.on("close", () => {
       clearInterval(interval);
@@ -70,24 +93,6 @@ const setupWagerRacesWebSocket = (wss: WebSocketServer) => {
   });
 };
 
-const generateMockWagerRaceData = () => ({
-  id: "weekly-race-1",
-  type: "weekly",
-  status: "live",
-  prizePool: 100000,
-  startDate: "2025-01-13T00:00:00Z",
-  endDate: "2025-01-20T00:00:00Z",
-  participants: Array.from({ length: 10 }, (_, i) => ({
-    rank: i + 1,
-    username: `Player${i + 1}`,
-    wager: Math.floor(Math.random() * 1000000) + 500000,
-    prizeShare: i === 0 ? 0.25 : 
-                i === 1 ? 0.15 :
-                i === 2 ? 0.10 :
-                i <= 6 ? 0.075 : 0.05
-  })).sort((a, b) => b.wager - a.wager)
-});
-
 // API Routes
 const setupApiRoutes = (app: Express) => {
   app.get("/api/affiliate/stats", handleAffiliateStats);
@@ -95,7 +100,7 @@ const setupApiRoutes = (app: Express) => {
   app.post("/api/notification-preferences", handleUpdateNotificationPreferences);
 };
 
-const handleAffiliateStats = async (req: any, res: any) => {
+const handleAffiliateStats = async (req: Request, res: Response) => {
   try {
     log("Fetching initial affiliate data from API...");
     const response = await fetch(API_ENDPOINT, {
@@ -117,7 +122,7 @@ const handleAffiliateStats = async (req: any, res: any) => {
   }
 };
 
-const handleGetNotificationPreferences = async (req: any, res: any) => {
+const handleGetNotificationPreferences = async (req: Request, res: Response) => {
   if (!req.user?.id) return res.status(401).json({ error: "Unauthorized" });
 
   try {
@@ -149,7 +154,7 @@ const handleGetNotificationPreferences = async (req: any, res: any) => {
   }
 };
 
-const handleUpdateNotificationPreferences = async (req: any, res: any) => {
+const handleUpdateNotificationPreferences = async (req: Request, res: Response) => {
   if (!req.user?.id) return res.status(401).json({ error: "Unauthorized" });
 
   try {
@@ -188,7 +193,7 @@ const handleUpdateNotificationPreferences = async (req: any, res: any) => {
 };
 
 // Admin middleware to check if user is admin
-const adminMiddleware = async (req: any, res: any, next: any) => {
+const adminMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   if (!req.user?.id) {
     return res.status(401).send("Unauthorized");
   }
@@ -208,7 +213,8 @@ const adminMiddleware = async (req: any, res: any, next: any) => {
 
 // Admin routes for wager race management
 const setupAdminRoutes = (app: Express) => {
-  app.get("/api/admin/wager-races", adminMiddleware, async (req, res) => {
+  // Get all wager races
+  app.get("/api/admin/wager-races", adminMiddleware, async (req: Request, res: Response) => {
     try {
       const races = await db
         .select()
@@ -222,13 +228,14 @@ const setupAdminRoutes = (app: Express) => {
     }
   });
 
-  app.post("/api/admin/wager-races", adminMiddleware, async (req: any, res) => {
+  // Create a new wager race
+  app.post("/api/admin/wager-races", adminMiddleware, async (req: Request, res: Response) => {
     try {
       const [race] = await db
         .insert(wagerRaces)
         .values({
           ...req.body,
-          createdBy: req.user.id,
+          createdBy: req.user!.id,
           status: "upcoming",
         })
         .returning();
@@ -237,6 +244,48 @@ const setupAdminRoutes = (app: Express) => {
     } catch (error) {
       console.error("Error creating wager race:", error);
       res.status(500).json({ error: "Failed to create wager race" });
+    }
+  });
+
+  // Update a wager race
+  app.put("/api/admin/wager-races/:id", adminMiddleware, async (req: Request, res: Response) => {
+    try {
+      const [race] = await db
+        .update(wagerRaces)
+        .set({
+          ...req.body,
+          updatedAt: new Date(),
+        })
+        .where(eq(wagerRaces.id, parseInt(req.params.id)))
+        .returning();
+
+      if (!race) {
+        return res.status(404).json({ error: "Race not found" });
+      }
+
+      res.json(race);
+    } catch (error) {
+      console.error("Error updating wager race:", error);
+      res.status(500).json({ error: "Failed to update wager race" });
+    }
+  });
+
+  // Delete a wager race
+  app.delete("/api/admin/wager-races/:id", adminMiddleware, async (req: Request, res: Response) => {
+    try {
+      const [race] = await db
+        .delete(wagerRaces)
+        .where(eq(wagerRaces.id, parseInt(req.params.id)))
+        .returning();
+
+      if (!race) {
+        return res.status(404).json({ error: "Race not found" });
+      }
+
+      res.json({ message: "Race deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting wager race:", error);
+      res.status(500).json({ error: "Failed to delete wager race" });
     }
   });
 };
