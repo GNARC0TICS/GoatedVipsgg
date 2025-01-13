@@ -2,47 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-@import "@fontsource/geist-mono/400.css";
-@import "@fontsource/mona-sans/800.css";
-
 @layer base {
   * {
     @apply border-border;
   }
 
   body {
-    @apply antialiased bg-background text-foreground;
-    font-family: "Geist Mono", monospace;
+    @apply font-mono antialiased bg-background text-foreground;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading font-extrabold uppercase tracking-tight;
-    font-family: "Mona Sans", sans-serif;
-  }
-
-  p, span, div {
-    font-family: "Geist Mono", monospace;
   }
 }
 
 @layer components {
   .header-text {
     @apply font-heading font-extrabold uppercase tracking-tight;
-    font-family: "Mona Sans", sans-serif;
-  }
-
-  .body-text {
-    @apply text-base leading-relaxed;
-    font-family: "Geist Mono", monospace;
-  }
-
-  .footer-heading {
-    @apply font-heading font-bold uppercase tracking-tight;
-    font-family: "Mona Sans", sans-serif;
-  }
-
-  .footer-text {
-    @apply text-sm leading-relaxed;
-    font-family: "Geist Mono", monospace;
   }
 }

@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { AuthModal } from "@/components/AuthModal";
 import { useQuery } from "@tanstack/react-query";
 import type { SelectUser } from "@db/schema";
-import { Settings, Users, ChartBar } from "lucide-react";
 
 interface LayoutProps {
   children: ReactNode;
@@ -17,8 +16,6 @@ export function Layout({ children }: LayoutProps) {
     queryKey: ["/api/user"],
   });
 
-  const isAdmin = user?.isAdmin;
-
   return (
     <div className="min-h-screen bg-[#14151A] flex flex-col">
       {/* Enhanced Fixed Navigation */}
@@ -27,7 +24,7 @@ export function Layout({ children }: LayoutProps) {
         <nav className="container mx-auto px-4 relative">
           <div className="h-16 flex items-center justify-between">
             <div className="flex items-center gap-8">
-              {/* Logo with glow effect */}
+              {/* Enhanced Logo with glow effect */}
               <div className="relative group">
                 <div className="absolute inset-0 rounded-full bg-[#D7FF00]/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <Link href="/">
@@ -53,25 +50,9 @@ export function Layout({ children }: LayoutProps) {
                 <NavLink href="/wager-races" label="WAGER RACES" />
                 <NavLink href="/vip-program" label="VIP PROGRAM" />
                 <NavLink href="/promotions" label="PROMOTIONS" />
-                {/* Enhanced Admin Section with Clear Visual Separation */}
-                {isAdmin && (
-                  <div className="flex items-center gap-4 ml-4 pl-4 border-l border-[#2A2B31]">
-                    <NavLink 
-                      href="/admin/wager-races" 
-                      label="RACE ADMIN"
-                      icon={<ChartBar className="w-4 h-4" />}
-                    />
-                    <NavLink 
-                      href="/admin/users" 
-                      label="USERS"
-                      icon={<Users className="w-4 h-4" />}
-                    />
-                    <NavLink 
-                      href="/admin/settings" 
-                      label="SETTINGS"
-                      icon={<Settings className="w-4 h-4" />}
-                    />
-                  </div>
+                <NavLink href="/notification-preferences" label="NOTIFICATIONS" />
+                {user?.isAdmin && (
+                  <NavLink href="/admin/wager-races" label="ADMIN" />
                 )}
               </div>
             </div>
@@ -92,62 +73,41 @@ export function Layout({ children }: LayoutProps) {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow pt-16 font-mono body-text">
+      <main className="flex-grow pt-16">
         {children}
       </main>
 
-      {/* Enhanced Footer with Proper Typography */}
-      <footer className="bg-[#1A1B21] relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/5 to-transparent pointer-events-none" />
+      {/* Footer */}
+      <footer className="bg-[#D7FF00] relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent pointer-events-none" />
         <div className="container mx-auto px-4 py-16 relative">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div>
-              <h4 className="header-text text-[#D7FF00] text-2xl mb-4">Ready to get Goated?</h4>
-              <p className="body-text text-white/80 mb-6">
-                Join the ultimate gaming experience. Start your journey to becoming a casino legend with exclusive rewards and bonuses.
+              <h4 className="font-heading text-[#14151A] text-2xl font-bold mb-4">Ready to get Goated?</h4>
+              <p className="text-[#14151A] mb-6">
+                Sign up now and enjoy additional rewards from our side. Start your journey to becoming a casino legend!
               </p>
               <Button 
                 onClick={() => window.open('https://www.goated.com/r/EARLYACCESS', '_blank')}
-                className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 font-heading"
+                className="bg-[#14151A] text-white hover:bg-[#14151A]/90 transition-colors"
               >
                 Sign Up Now
               </Button>
             </div>
             <div>
-              <h4 className="header-text text-[#D7FF00] text-xl mb-4">Quick Links</h4>
-              <div className="grid gap-2">
-                <Link href="/wager-races">
-                  <a className="body-text text-white/60 hover:text-white transition-colors">Wager Races</a>
-                </Link>
-                <Link href="/vip-program">
-                  <a className="body-text text-white/60 hover:text-white transition-colors">VIP Program</a>
-                </Link>
-                <Link href="/promotions">
-                  <a className="body-text text-white/60 hover:text-white transition-colors">Promotions</a>
-                </Link>
-              </div>
-            </div>
-            <div>
-              <h4 className="header-text text-[#D7FF00] text-xl mb-4">Newsletter</h4>
-              <p className="body-text text-white/80 mb-4">
-                Subscribe for exclusive offers and updates
-              </p>
+              <h4 className="font-heading text-[#14151A] text-2xl font-bold mb-4">Stay Updated</h4>
+              <p className="text-[#14151A] mb-6">Subscribe to our newsletter for exclusive offers and updates!</p>
               <form onSubmit={(e) => e.preventDefault()} className="flex gap-2">
                 <input
                   type="email"
                   placeholder="Enter your email"
-                  className="flex-1 px-4 py-2 rounded-lg bg-[#14151A] border border-[#2A2B31] text-white placeholder:text-white/40 focus:outline-none focus:border-[#D7FF00] transition-colors duration-300 body-text"
+                  className="flex-1 px-4 py-2 rounded-lg border border-[#14151A]/20 focus:outline-none focus:border-[#14151A] transition-colors duration-300"
                 />
-                <Button className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 font-heading">
+                <Button className="bg-[#14151A] text-white hover:bg-[#14151A]/90">
                   Subscribe
                 </Button>
               </form>
             </div>
-          </div>
-          <div className="mt-12 pt-8 border-t border-[#2A2B31]">
-            <p className="body-text text-center text-white/40">
-              © {new Date().getFullYear()} GOATED. All rights reserved.
-            </p>
           </div>
         </div>
       </footer>
@@ -155,16 +115,15 @@ export function Layout({ children }: LayoutProps) {
   );
 }
 
-function NavLink({ href, label, icon }: { href: string; label: string; icon?: ReactNode }) {
+function NavLink({ href, label }: { href: string; label: string }) {
   const [location] = useLocation();
   const isActive = location === href;
 
   return (
     <Link href={href}>
-      <a className={`relative header-text cursor-pointer group flex items-center gap-2 ${
+      <a className={`relative font-heading cursor-pointer group ${
         isActive ? "text-[#D7FF00]" : "text-white"
       } transition-colors duration-300`}>
-        {icon}
         {label}
         <span className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-[#D7FF00] transition-all duration-300 ${
           isActive ? "w-full" : "group-hover:w-full"

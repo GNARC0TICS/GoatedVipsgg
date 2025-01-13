@@ -56,15 +56,13 @@ const configurePassport = () => {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
-        // Admin user check
         if (username === 'admin' && password === '1997') {
           return done(null, {
             id: 0,
             username: 'admin',
-            password: '',
-            email: 'admin@goated.com',
             isAdmin: true,
-            createdAt: new Date(),
+            password: '',
+            email: 'admin@goated.com'
           });
         }
 
@@ -94,18 +92,6 @@ const configurePassport = () => {
 
   passport.deserializeUser(async (id: number, done) => {
     try {
-      if (id === 0) {
-        // Return hardcoded admin user
-        return done(null, {
-          id: 0,
-          username: 'admin',
-          password: '',
-          email: 'admin@goated.com',
-          isAdmin: true,
-          createdAt: new Date(),
-        });
-      }
-
       const [user] = await db
         .select()
         .from(users)
@@ -180,6 +166,13 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
+    const result = insertUserSchema.safeParse(req.body);
+    if (!result.success) {
+      return res
+        .status(400)
+        .send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
+    }
+
     passport.authenticate("local", (err: any, user: Express.User | false, info: IVerifyOptions) => {
       if (err) {
         return next(err);
