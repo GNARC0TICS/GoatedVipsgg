@@ -1,6 +1,7 @@
 /* fonts.css */
 :root {
-  --font-heading: "Mona Sans Condensed ExtraBold", "system-ui", "sans-serif"; 
+  --font-heading: "Mona Sans Condensed ExtraBold", "system-ui", "sans-serif";
+  --font-body: "Geist Mono", "monospace";
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -8,4 +9,11 @@ h1, h2, h3, h4, h5, h6 {
   text-transform: uppercase;
 }
 
-/* ... rest of fonts.css ... */
+body {
+  font-family: var(--font-body);
+}
+
+/*Example of other styles*/
+p {
+  line-height: 1.6;
+}
