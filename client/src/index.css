@@ -11,7 +11,7 @@
 
 @layer components {
   .header-text {
-    @apply font-heading font-extrabold uppercase tracking-tight;
+    @apply font-heading font-extrabold uppercase tracking-tight font-stretch-condensed;
   }
 }
 
