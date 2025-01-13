@@ -1,24 +1,51 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { AnimatePresence } from "framer-motion";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import VipTransfer from "@/pages/VipTransfer";
 import WagerRaces from "@/pages/WagerRaces";
 import NotificationPreferences from "@/pages/notification-preferences";
 import { Layout } from "@/components/Layout";
+import { PageTransition } from "@/components/PageTransition";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 function Router() {
+  const [location] = useLocation();
+
   return (
     <Layout>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/vip-transfer" component={VipTransfer} />
-        <Route path="/wager-races" component={WagerRaces} />
-        <Route path="/notification-preferences" component={NotificationPreferences} />
-        <Route component={NotFound} />
-      </Switch>
+      <AnimatePresence mode="wait">
+        <Switch location={location}>
+          <Route path="/">
+            <PageTransition>
+              <Home />
+            </PageTransition>
+          </Route>
+          <Route path="/vip-transfer">
+            <PageTransition>
+              <VipTransfer />
+            </PageTransition>
+          </Route>
+          <Route path="/wager-races">
+            <PageTransition>
+              <WagerRaces />
+            </PageTransition>
+          </Route>
+          <Route path="/notification-preferences">
+            <PageTransition>
+              <NotificationPreferences />
+            </PageTransition>
+          </Route>
+          <Route>
+            <PageTransition>
+              <NotFound />
+            </PageTransition>
+          </Route>
+        </Switch>
+      </AnimatePresence>
     </Layout>
   );
 }
