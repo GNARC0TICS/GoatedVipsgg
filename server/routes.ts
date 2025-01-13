@@ -2,6 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer } from "ws";
 import { log } from "./vite";
+import { db } from "@db";
+import { notificationPreferences } from "@db/schema";
+import { eq } from "drizzle-orm";
 
 const API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsImlhdCI6MTcyNjc3Mjc5Nn0.PDZzGUz-3e6l3vh-vOOqXpbho4mhapZ8jHxfXDJBxEg";
 const API_ENDPOINT = "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard";
@@ -113,6 +116,72 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ 
         success: false,
         error: "Failed to fetch affiliate stats",
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // New API Routes for Notification Preferences
+  app.get("/api/notification-preferences", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).send("Not authenticated");
+    }
+
+    try {
+      const [preferences] = await db
+        .select()
+        .from(notificationPreferences)
+        .where(eq(notificationPreferences.userId, req.user.id))
+        .limit(1);
+
+      if (!preferences) {
+        // Create default preferences if none exist
+        const [newPreferences] = await db
+          .insert(notificationPreferences)
+          .values({
+            userId: req.user.id,
+            wagerRaceUpdates: true,
+            vipStatusChanges: true,
+            promotionalOffers: true,
+            monthlyStatements: true,
+          })
+          .returning();
+
+        return res.json(newPreferences);
+      }
+
+      res.json(preferences);
+    } catch (error) {
+      log(`Error in /api/notification-preferences GET: ${error}`);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch notification preferences",
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  app.post("/api/notification-preferences", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).send("Not authenticated");
+    }
+
+    try {
+      const [updatedPreferences] = await db
+        .update(notificationPreferences)
+        .set({
+          ...req.body,
+          updatedAt: new Date(),
+        })
+        .where(eq(notificationPreferences.userId, req.user.id))
+        .returning();
+
+      res.json(updatedPreferences);
+    } catch (error) {
+      log(`Error in /api/notification-preferences POST: ${error}`);
+      res.status(500).json({
+        success: false,
+        error: "Failed to update notification preferences",
         details: error instanceof Error ? error.message : String(error)
       });
     }
