@@ -8,7 +8,6 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
-  const isActive = (path: string) => location === path;
 
   return (
     <div className="min-h-screen bg-[#14151A] flex flex-col">
@@ -17,45 +16,31 @@ export function Layout({ children }: LayoutProps) {
         <nav className="container mx-auto px-4">
           <div className="h-16 flex items-center justify-between">
             <div className="flex items-center gap-8">
-              <Link href="/">
-                <img 
-                  src="/logo-neon.png"
-                  alt="GOATED"
-                  className="h-8 w-auto cursor-pointer"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.onerror = null;
-                    target.src = "/fallback-logo.png";
-                  }}
-                />
-              </Link>
-
-              <div className="hidden md:flex items-center gap-6">
+              {/* Logo */}
+              <div className="transition-transform duration-200 ease-in-out hover:scale-105">
                 <Link href="/">
-                  <span className={`font-heading cursor-pointer ${isActive("/") ? "text-[#D7FF00]" : "text-white hover:text-[#D7FF00]"} transition-colors`}>
-                    HOME
-                  </span>
+                  <a className="block">
+                    <img 
+                      src="/logo-neon.png"
+                      alt="GOATED"
+                      className="h-8 w-auto cursor-pointer transition-opacity duration-300 hover:opacity-80"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        target.src = "https://placehold.co/120x32/14151A/D7FF00?text=GOATED";
+                      }}
+                    />
+                  </a>
                 </Link>
-                <Link href="/wager-races">
-                  <span className={`font-heading cursor-pointer ${isActive("/wager-races") ? "text-[#D7FF00]" : "text-white hover:text-[#D7FF00]"} transition-colors`}>
-                    WAGER RACES
-                  </span>
-                </Link>
-                <Link href="/vip-program">
-                  <span className={`font-heading cursor-pointer ${isActive("/vip-program") ? "text-[#D7FF00]" : "text-white hover:text-[#D7FF00]"} transition-colors`}>
-                    VIP PROGRAM
-                  </span>
-                </Link>
-                <Link href="/promotions">
-                  <span className={`font-heading cursor-pointer ${isActive("/promotions") ? "text-[#D7FF00]" : "text-white hover:text-[#D7FF00]"} transition-colors`}>
-                    PROMOTIONS
-                  </span>
-                </Link>
-                <Link href="/notification-preferences">
-                  <span className={`font-heading cursor-pointer ${isActive("/notification-preferences") ? "text-[#D7FF00]" : "text-white hover:text-[#D7FF00]"} transition-colors`}>
-                    NOTIFICATIONS
-                  </span>
-                </Link>
+              </div>
+
+              {/* Navigation Links */}
+              <div className="hidden md:flex items-center gap-6">
+                <NavLink href="/" label="HOME" />
+                <NavLink href="/wager-races" label="WAGER RACES" />
+                <NavLink href="/vip-program" label="VIP PROGRAM" />
+                <NavLink href="/promotions" label="PROMOTIONS" />
+                <NavLink href="/notification-preferences" label="NOTIFICATIONS" />
               </div>
             </div>
 
@@ -108,5 +93,21 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </footer>
     </div>
+  );
+}
+
+// NavLink component
+function NavLink({ href, label }: { href: string; label: string }) {
+  const [location] = useLocation();
+  const isActive = location === href;
+
+  return (
+    <Link href={href}>
+      <a className={`font-heading cursor-pointer ${
+        isActive ? "text-[#D7FF00]" : "text-white hover:text-[#D7FF00]"
+      } transition-colors`}>
+        {label}
+      </a>
+    </Link>
   );
 }
