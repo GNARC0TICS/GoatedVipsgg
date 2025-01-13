@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ChevronLeft, ChevronRight, User } from "lucide-react";
 
 type TimePeriod = 'weekly' | 'monthly' | 'all_time';
 
@@ -23,6 +25,9 @@ type APIResponse = {
 
 export function LeaderboardTable() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('all_time');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedUser, setSelectedUser] = useState<APIResponse['data'][0] | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: response, isLoading } = useQuery<APIResponse>({
     queryKey: ['/api/affiliate/stats'],
@@ -46,16 +51,25 @@ export function LeaderboardTable() {
     );
   }
 
+  const USERS_PER_PAGE = 50;
   const transformedData = response.data
-    .map((entry, index) => ({
-      username: entry.name,
+    .map((entry) => ({
+      ...entry,
       totalWager: timePeriod === 'weekly' ? entry.wagered.this_week :
                  timePeriod === 'monthly' ? entry.wagered.this_month :
                  entry.wagered.all_time,
-      rank: index + 1,
     }))
     .sort((a, b) => b.totalWager - a.totalWager)
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
+
+  const totalPages = Math.ceil(transformedData.length / USERS_PER_PAGE);
+  const startIndex = (currentPage - 1) * USERS_PER_PAGE;
+  const paginatedData = transformedData.slice(startIndex, startIndex + USERS_PER_PAGE);
+
+  const handleUserClick = (user: APIResponse['data'][0]) => {
+    setSelectedUser(user);
+    setIsDialogOpen(true);
+  };
 
   return (
     <div className="space-y-4">
@@ -93,16 +107,20 @@ export function LeaderboardTable() {
         </TableHeader>
         <TableBody>
           <AnimatePresence>
-            {transformedData.map((entry) => (
+            {paginatedData.map((entry) => (
               <motion.tr
-                key={entry.username}
+                key={entry.uid}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="bg-[#1A1B21]/50 backdrop-blur-sm"
+                className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] cursor-pointer transition-colors"
+                onClick={() => handleUserClick(entry)}
               >
                 <TableCell className="font-heading text-white">{entry.rank}</TableCell>
-                <TableCell className="font-sans text-white">{entry.username}</TableCell>
+                <TableCell className="font-sans text-white flex items-center gap-2">
+                  <User className="h-4 w-4 text-[#D7FF00]" />
+                  {entry.name}
+                </TableCell>
                 <TableCell className="text-right font-sans text-white">
                   ${entry.totalWager.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
@@ -114,6 +132,68 @@ export function LeaderboardTable() {
           </AnimatePresence>
         </TableBody>
       </Table>
+
+      {/* Pagination Controls */}
+      <div className="flex justify-between items-center pt-4">
+        <div className="text-sm text-[#8A8B91]">
+          Showing {startIndex + 1}-{Math.min(startIndex + USERS_PER_PAGE, transformedData.length)} of {transformedData.length}
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* User Profile Dialog */}
+      {selectedUser && (
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-[425px] bg-[#1A1B21] text-white">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <User className="h-5 w-5 text-[#D7FF00]" />
+                {selectedUser.name}'s Profile
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h4 className="font-heading text-sm text-[#8A8B91]">TODAY'S WAGER</h4>
+                  <p className="text-2xl font-bold">${selectedUser.wagered.today.toLocaleString()}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="font-heading text-sm text-[#8A8B91]">THIS WEEK'S WAGER</h4>
+                  <p className="text-2xl font-bold">${selectedUser.wagered.this_week.toLocaleString()}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="font-heading text-sm text-[#8A8B91]">THIS MONTH'S WAGER</h4>
+                  <p className="text-2xl font-bold">${selectedUser.wagered.this_month.toLocaleString()}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="font-heading text-sm text-[#8A8B91]">ALL TIME WAGER</h4>
+                  <p className="text-2xl font-bold">${selectedUser.wagered.all_time.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
