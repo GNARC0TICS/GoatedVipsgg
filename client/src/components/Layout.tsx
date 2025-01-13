@@ -92,7 +92,7 @@ export function Layout({ children }: LayoutProps) {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow pt-16 font-mono">
+      <main className="flex-grow pt-16 font-mono body-text">
         {children}
       </main>
 
@@ -102,8 +102,8 @@ export function Layout({ children }: LayoutProps) {
         <div className="container mx-auto px-4 py-16 relative">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <div>
-              <h4 className="footer-heading text-[#D7FF00] text-2xl mb-4">Ready to get Goated?</h4>
-              <p className="footer-text text-white/80 mb-6">
+              <h4 className="header-text text-[#D7FF00] text-2xl mb-4">Ready to get Goated?</h4>
+              <p className="body-text text-white/80 mb-6">
                 Join the ultimate gaming experience. Start your journey to becoming a casino legend with exclusive rewards and bonuses.
               </p>
               <Button 
@@ -114,29 +114,29 @@ export function Layout({ children }: LayoutProps) {
               </Button>
             </div>
             <div>
-              <h4 className="footer-heading text-[#D7FF00] text-xl mb-4">Quick Links</h4>
+              <h4 className="header-text text-[#D7FF00] text-xl mb-4">Quick Links</h4>
               <div className="grid gap-2">
                 <Link href="/wager-races">
-                  <a className="footer-text text-white/60 hover:text-white transition-colors">Wager Races</a>
+                  <a className="body-text text-white/60 hover:text-white transition-colors">Wager Races</a>
                 </Link>
                 <Link href="/vip-program">
-                  <a className="footer-text text-white/60 hover:text-white transition-colors">VIP Program</a>
+                  <a className="body-text text-white/60 hover:text-white transition-colors">VIP Program</a>
                 </Link>
                 <Link href="/promotions">
-                  <a className="footer-text text-white/60 hover:text-white transition-colors">Promotions</a>
+                  <a className="body-text text-white/60 hover:text-white transition-colors">Promotions</a>
                 </Link>
               </div>
             </div>
             <div>
-              <h4 className="footer-heading text-[#D7FF00] text-xl mb-4">Newsletter</h4>
-              <p className="footer-text text-white/80 mb-4">
+              <h4 className="header-text text-[#D7FF00] text-xl mb-4">Newsletter</h4>
+              <p className="body-text text-white/80 mb-4">
                 Subscribe for exclusive offers and updates
               </p>
               <form onSubmit={(e) => e.preventDefault()} className="flex gap-2">
                 <input
                   type="email"
                   placeholder="Enter your email"
-                  className="flex-1 px-4 py-2 rounded-lg bg-[#14151A] border border-[#2A2B31] text-white placeholder:text-white/40 focus:outline-none focus:border-[#D7FF00] transition-colors duration-300"
+                  className="flex-1 px-4 py-2 rounded-lg bg-[#14151A] border border-[#2A2B31] text-white placeholder:text-white/40 focus:outline-none focus:border-[#D7FF00] transition-colors duration-300 body-text"
                 />
                 <Button className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 font-heading">
                   Subscribe
@@ -145,7 +145,7 @@ export function Layout({ children }: LayoutProps) {
             </div>
           </div>
           <div className="mt-12 pt-8 border-t border-[#2A2B31]">
-            <p className="footer-text text-center text-white/40">
+            <p className="body-text text-center text-white/40">
               © {new Date().getFullYear()} GOATED. All rights reserved.
             </p>
           </div>
@@ -161,7 +161,7 @@ function NavLink({ href, label, icon }: { href: string; label: string; icon?: Re
 
   return (
     <Link href={href}>
-      <a className={`relative font-heading cursor-pointer group flex items-center gap-2 ${
+      <a className={`relative header-text cursor-pointer group flex items-center gap-2 ${
         isActive ? "text-[#D7FF00]" : "text-white"
       } transition-colors duration-300`}>
         {icon}
