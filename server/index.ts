@@ -42,8 +42,13 @@ app.use((req, res, next) => {
 (async () => {
   try {
     // Test database connection with a simple query
-    await db.execute(sql`SELECT 1 as test`);
-    log("Database connection successful");
+    try {
+      await db.execute(sql`SELECT 1 as test`);
+      log("Database connection successful");
+    } catch (error) {
+      log(`Database connection failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
 
     // Setup authentication before registering other routes
     setupAuth(app);
