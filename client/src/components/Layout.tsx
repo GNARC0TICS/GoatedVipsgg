@@ -13,14 +13,21 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-[#14151A] flex flex-col">
       {/* Fixed Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-[#2A2B31] bg-[#14151A]/95 backdrop-blur-md">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-[#2A2B31] bg-[#14151A]/80 backdrop-blur-xl">
         <nav className="container mx-auto px-4">
           <div className="h-16 flex items-center justify-between">
             <div className="flex items-center gap-8">
               <Link href="/">
-                <span className="text-[#D7FF00] font-heading text-2xl font-bold cursor-pointer">
-                  GOATED
-                </span>
+                <img 
+                  src="/images/Goated Logo - Yellow.png"
+                  alt="GOATED"
+                  className="h-8 w-auto cursor-pointer"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.onerror = null;
+                    target.src = "/images/fallback-logo.png";
+                  }}
+                />
               </Link>
 
               <div className="hidden md:flex items-center gap-6">
