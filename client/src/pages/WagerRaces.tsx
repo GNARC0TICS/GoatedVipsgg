@@ -28,16 +28,23 @@ export default function WagerRaces() {
   const [raceData, setRaceData] = useState<WagerRace | null>(null);
 
   useEffect(() => {
-    const websocket = new WebSocket(`ws://${window.location.host}/ws/wager-races`);
-    
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws/wager-races`);
+
     websocket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setRaceData(data);
+      try {
+        const data = JSON.parse(event.data);
+        setRaceData(data);
+      } catch (error) {
+        console.error('Error parsing websocket data:', error);
+      }
     };
 
     websocket.onclose = () => {
+      console.log('WebSocket connection closed. Attempting to reconnect...');
       setTimeout(() => {
-        setWs(new WebSocket(`ws://${window.location.host}/ws/wager-races`));
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        setWs(new WebSocket(`${protocol}//${window.location.host}/ws/wager-races`));
       }, 1000);
     };
 
@@ -72,7 +79,7 @@ export default function WagerRaces() {
               <span className="text-[#8A8B91]">Live Updates</span>
             </div>
           </div>
-          
+
           <div className="flex gap-2">
             <Button
               variant={raceType === 'weekly' ? 'default' : 'outline'}
@@ -98,7 +105,7 @@ export default function WagerRaces() {
           </div>
         </div>
 
-        {raceData && (
+        {raceData ? (
           <div className="space-y-8">
             {/* Race Info */}
             <div className="bg-[#1A1B21]/50 backdrop-blur-sm p-6 rounded-xl border border-[#2A2B31]">
@@ -134,7 +141,7 @@ export default function WagerRaces() {
                 </TableHeader>
                 <TableBody>
                   <AnimatePresence>
-                    {raceData.participants.slice(0, 10).map((participant) => (
+                    {raceData.participants.map((participant) => (
                       <motion.tr
                         key={participant.username}
                         initial={{ opacity: 0, y: 20 }}
@@ -189,6 +196,13 @@ export default function WagerRaces() {
                   <p className="text-lg font-bold">5% each</p>
                 </div>
               </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <CircleDot className="h-8 w-8 text-red-500 animate-pulse mx-auto mb-4" />
+              <p className="text-[#8A8B91]">Connecting to live wager races...</p>
             </div>
           </div>
         )}
