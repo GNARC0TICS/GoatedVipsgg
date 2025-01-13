@@ -15,7 +15,7 @@ export default function Home() {
           className="h-8"
         />
         <Link href="/auth">
-          <Button variant="outline">Sign In</Button>
+          <Button variant="outline">SIGN IN</Button>
         </Link>
       </header>
 
@@ -25,8 +25,8 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl font-bold mb-4">Wager Leaderboard</h1>
-          <p className="text-muted-foreground">Track the top players in real-time</p>
+          <h1 className="text-4xl font-heading font-extrabold uppercase mb-4">Wager Leaderboard</h1>
+          <p className="text-muted-foreground font-sans">Track the top players in real-time</p>
         </motion.div>
 
         <motion.div

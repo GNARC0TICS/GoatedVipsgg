@@ -18,9 +18,9 @@ export default function Dashboard() {
             className="h-8"
           />
           <div className="flex items-center gap-4">
-            <span>Welcome, {user?.username}</span>
+            <span className="font-sans">Welcome, {user?.username}</span>
             <Button variant="outline" onClick={() => logout()}>
-              Sign Out
+              SIGN OUT
             </Button>
           </div>
         </div>
@@ -32,8 +32,8 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-12"
         >
-          <h1 className="text-3xl font-bold mb-4">Affiliate Dashboard</h1>
-          <p className="text-muted-foreground">Track your referral performance</p>
+          <h1 className="text-3xl font-heading font-extrabold uppercase mb-4">Affiliate Dashboard</h1>
+          <p className="text-muted-foreground font-sans">Track your referral performance</p>
         </motion.div>
 
         <motion.div

@@ -5,21 +5,14 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").unique().notNull(),
   password: text("password").notNull(),
-  isAffiliate: boolean("is_affiliate").default(false).notNull(),
-});
-
-export const wagers = pgTable("wagers", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  amount: decimal("amount", { precision: 18, scale: 8 }).notNull(),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  email: text("email").unique().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const affiliateStats = pgTable("affiliate_stats", {
   id: serial("id").primaryKey(),
-  affiliateId: integer("affiliate_id").references(() => users.id),
-  referredUsers: integer("referred_users").notNull(),
-  totalWagers: decimal("total_wagers", { precision: 18, scale: 8 }).notNull(),
+  userId: integer("user_id").references(() => users.id),
+  totalWager: decimal("total_wager", { precision: 18, scale: 8 }).notNull(),
   commission: decimal("commission", { precision: 18, scale: 8 }).notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });

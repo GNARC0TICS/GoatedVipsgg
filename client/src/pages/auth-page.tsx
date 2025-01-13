@@ -51,8 +51,8 @@ export default function AuthPage() {
       >
         <Card>
           <CardHeader>
-            <CardTitle>{isLogin ? "Sign In" : "Create Account"}</CardTitle>
-            <CardDescription>
+            <CardTitle className="font-heading uppercase">{isLogin ? "Sign In" : "Create Account"}</CardTitle>
+            <CardDescription className="font-sans">
               {isLogin
                 ? "Enter your credentials to access your account"
                 : "Create a new account to get started"}
@@ -66,11 +66,11 @@ export default function AuthPage() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Username</FormLabel>
+                      <FormLabel className="font-sans">Username</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="font-sans" />
                     </FormItem>
                   )}
                 />
@@ -79,22 +79,22 @@ export default function AuthPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel className="font-sans">Password</FormLabel>
                       <FormControl>
                         <Input type="password" {...field} />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="font-sans" />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full uppercase font-heading">
                   {isLogin ? "Sign In" : "Create Account"}
                 </Button>
               </form>
             </Form>
             <Button
               variant="link"
-              className="mt-4 w-full"
+              className="mt-4 w-full font-sans"
               onClick={() => setIsLogin(!isLogin)}
             >
               {isLogin ? "Need an account? Sign up" : "Already have an account? Sign in"}

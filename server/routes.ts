@@ -3,44 +3,45 @@ import { createServer, type Server } from "http";
 import { WebSocketServer } from "ws";
 import { setupAuth } from "./auth.js";
 import { db } from "@db";
-import { wagers, affiliateStats } from "@db/schema";
-import { desc, sql, eq } from "drizzle-orm";
+import { affiliateStats } from "@db/schema";
+import { desc, eq } from "drizzle-orm";
 import { log } from "./vite";
+
+const API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsImlhdCI6MTcyNjc3Mjc5Nn0.PDZzGUz-3e6l3vh-vOOqXpbho4mhapZ8jHxfXDJBxEg";
+const API_ENDPOINT = "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard";
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
-
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ 
     server: httpServer,
-    path: "/ws/leaderboard"
+    path: "/ws/affiliate-stats"
   });
 
   log("WebSocket server initialized");
 
-  // Handle WebSocket connections
+  // Handle WebSocket connections for real-time updates
   wss.on("connection", (ws) => {
     log("New WebSocket connection established");
 
     const interval = setInterval(async () => {
       try {
-        const leaderboard = await db.select({
-          username: wagers.userId,
-          totalWager: sql<number>`sum(${wagers.amount})`,
-        })
-        .from(wagers)
-        .groupBy(wagers.userId)
-        .orderBy(desc(sql`sum(${wagers.amount})`))
-        .limit(10);
+        const response = await fetch(API_ENDPOINT, {
+          headers: {
+            'Authorization': `Bearer ${API_TOKEN}`
+          }
+        });
 
-        ws.send(JSON.stringify(leaderboard.map((entry, index) => ({
-          ...entry,
-          rank: index + 1,
-        }))));
+        if (!response.ok) {
+          throw new Error(`API responded with status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        ws.send(JSON.stringify(data));
       } catch (error) {
-        log(`Error fetching leaderboard: ${error}`);
+        log(`Error fetching affiliate data: ${error}`);
       }
-    }, 1000);
+    }, 5000); // Update every 5 seconds
 
     ws.on("close", () => {
       clearInterval(interval);
@@ -49,40 +50,20 @@ export function registerRoutes(app: Express): Server {
   });
 
   // API Routes
-  app.get("/api/leaderboard", async (_req, res) => {
-    try {
-      const leaderboard = await db.select({
-        username: wagers.userId,
-        totalWager: sql<number>`sum(${wagers.amount})`,
-      })
-      .from(wagers)
-      .groupBy(wagers.userId)
-      .orderBy(desc(sql`sum(${wagers.amount})`))
-      .limit(10);
-
-      res.json(leaderboard.map((entry, index) => ({
-        ...entry,
-        rank: index + 1,
-      })));
-    } catch (error) {
-      log(`Error in /api/leaderboard: ${error}`);
-      res.status(500).json({ error: "Failed to fetch leaderboard" });
-    }
-  });
-
   app.get("/api/affiliate/stats", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-
     try {
-      const stats = await db.select()
-        .from(affiliateStats)
-        .where(eq(affiliateStats.affiliateId, req.user!.id))
-        .orderBy(desc(affiliateStats.timestamp))
-        .limit(30);
+      const response = await fetch(API_ENDPOINT, {
+        headers: {
+          'Authorization': `Bearer ${API_TOKEN}`
+        }
+      });
 
-      res.json(stats);
+      if (!response.ok) {
+        throw new Error(`API responded with status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      res.json(data);
     } catch (error) {
       log(`Error in /api/affiliate/stats: ${error}`);
       res.status(500).json({ error: "Failed to fetch affiliate stats" });
