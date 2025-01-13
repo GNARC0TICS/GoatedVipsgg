@@ -6,6 +6,7 @@ import { db } from "@db";
 import { users, notificationPreferences, wagerRaces } from "@db/schema";
 import { eq, and } from "drizzle-orm";
 import type { IncomingMessage } from "http";
+import { setupAuth } from "./auth";
 
 const API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsImlhdCI6MTcyNjc3Mjc5Nn0.PDZzGUz-3e6l3vh-vOOqXpbho4mhapZ8jHxfXDJBxEg";
 const API_ENDPOINT = "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard";
@@ -292,8 +293,16 @@ const setupAdminRoutes = (app: Express) => {
 
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
-  setupWebSocketServers(httpServer);
+
+  // Setup authentication first
+  setupAuth(app);
+
+  // Then setup all other routes
   setupApiRoutes(app);
   setupAdminRoutes(app);
+
+  // Finally setup WebSocket servers
+  setupWebSocketServers(httpServer);
+
   return httpServer;
 }

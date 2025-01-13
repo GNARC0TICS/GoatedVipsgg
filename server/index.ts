@@ -1,7 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { setupAuth } from "./auth";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
 
@@ -64,8 +63,7 @@ process.on('SIGTERM', () => {
     await db.execute(sql`SELECT 1 as test`);
     log("Database connection successful");
 
-    // Setup authentication before other routes
-    setupAuth(app);
+    // Register all routes including auth
     httpServer = registerRoutes(app);
 
     // Setup Vite or static serving
