@@ -10,9 +10,9 @@
   body {
     @apply font-mono antialiased bg-background text-foreground;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading font-extrabold font-stretch-condensed uppercase;
+    @apply font-heading font-extrabold uppercase tracking-tight;
   }
 }
 
