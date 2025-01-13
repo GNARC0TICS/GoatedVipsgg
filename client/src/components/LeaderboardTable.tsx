@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, User } from "lucide-react";
 import { useState } from "react";
 
-type TimePeriod = 'weekly' | 'monthly' | 'all_time';
+type TimePeriod = 'today' | 'weekly' | 'monthly' | 'all_time';
 
 type APIResponse = {
   success: boolean;
@@ -54,7 +54,8 @@ export function LeaderboardTable() {
   const transformedData = response.data
     .map((entry) => ({
       ...entry,
-      totalWager: timePeriod === 'weekly' ? entry.wagered.this_week :
+      totalWager: timePeriod === 'today' ? entry.wagered.today :
+                 timePeriod === 'weekly' ? entry.wagered.this_week :
                  timePeriod === 'monthly' ? entry.wagered.this_month :
                  entry.wagered.all_time,
     }))
@@ -69,23 +70,30 @@ export function LeaderboardTable() {
     <div className="space-y-4">
       <div className="flex gap-2 justify-center">
         <Button
+          variant={timePeriod === 'today' ? 'default' : 'outline'}
+          onClick={() => setTimePeriod('today')}
+          className="font-heading tracking-tight"
+        >
+          TODAY
+        </Button>
+        <Button
           variant={timePeriod === 'weekly' ? 'default' : 'outline'}
           onClick={() => setTimePeriod('weekly')}
-          className="font-heading"
+          className="font-heading tracking-tight"
         >
           WEEKLY
         </Button>
         <Button
           variant={timePeriod === 'monthly' ? 'default' : 'outline'}
           onClick={() => setTimePeriod('monthly')}
-          className="font-heading"
+          className="font-heading tracking-tight"
         >
           MONTHLY
         </Button>
         <Button
           variant={timePeriod === 'all_time' ? 'default' : 'outline'}
           onClick={() => setTimePeriod('all_time')}
-          className="font-heading"
+          className="font-heading tracking-tight"
         >
           ALL TIME
         </Button>
