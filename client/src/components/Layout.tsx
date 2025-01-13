@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -9,30 +9,61 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [email, setEmail] = useState("");
+  const [location] = useLocation();
+
+  const isActive = (path: string) => location === path;
 
   return (
     <div className="min-h-screen bg-[#14151A] flex flex-col">
-      {/* Navigation */}
-      <nav className="bg-[#1A1B21] border-b border-[#2A2B31]">
+      {/* Fixed Navigation */}
+      <nav className="fixed top-0 w-full z-50 bg-[#1A1B21] border-b border-[#2A2B31]">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/">
-            <a className="text-[#D7FF00] font-heading text-2xl font-bold">GOATED</a>
-          </Link>
-          <div className="flex gap-4">
-            <Link href="/vip-transfer">
-              <a className="text-white hover:text-[#D7FF00] transition-colors">VIP Transfer</a>
+          <div className="flex items-center gap-8">
+            <Link href="/">
+              <a className="text-[#D7FF00] font-heading text-2xl font-bold">GOATED</a>
             </Link>
+            <div className="hidden md:flex items-center gap-6">
+              <Link href="/">
+                <a className={`font-heading ${isActive("/") ? "text-[#D7FF00]" : "text-white hover:text-[#D7FF00]"} transition-colors`}>
+                  HOME
+                </a>
+              </Link>
+              <Link href="/wager-races">
+                <a className={`font-heading ${isActive("/wager-races") ? "text-[#D7FF00]" : "text-white hover:text-[#D7FF00]"} transition-colors`}>
+                  WAGER RACES
+                </a>
+              </Link>
+              <Link href="/vip-program">
+                <a className={`font-heading ${isActive("/vip-program") ? "text-[#D7FF00]" : "text-white hover:text-[#D7FF00]"} transition-colors`}>
+                  VIP PROGRAM
+                </a>
+              </Link>
+              <Link href="/promotions">
+                <a className={`font-heading ${isActive("/promotions") ? "text-[#D7FF00]" : "text-white hover:text-[#D7FF00]"} transition-colors`}>
+                  PROMOTIONS
+                </a>
+              </Link>
+            </div>
           </div>
+          <Link href="https://www.goated.com/r/KICKBACK">
+            <a 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-heading uppercase tracking-wider text-sm bg-[#D7FF00] text-black px-4 py-2 rounded-lg hover:bg-[#D7FF00]/90 transition-colors"
+            >
+              Play now →
+            </a>
+          </Link>
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="flex-grow">
+      {/* Main Content with top padding for fixed header */}
+      <main className="flex-grow pt-16">
         {children}
       </main>
 
       {/* Footer */}
-      <div className="bg-[#D7FF00] mt-20">
+      <div className="bg-[#D7FF00]">
         <div className="container mx-auto px-4 py-16">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div>
