@@ -21,32 +21,12 @@ type APIResponse = {
   }>;
 };
 
-type LeaderboardEntry = {
-  username: string;
-  totalWager: number;
-  rank: number;
-};
-
 export function LeaderboardTable() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('all_time');
 
-  const { data, isLoading } = useQuery<APIResponse>({
+  const { data: response, isLoading } = useQuery<APIResponse>({
     queryKey: ['/api/affiliate/stats'],
-    select: (response) => {
-      if (!response.success || !Array.isArray(response.data)) {
-        throw new Error('Invalid data format');
-      }
-      return response;
-    },
   });
-
-  const transformedData: LeaderboardEntry[] = data?.data.map((entry, index) => ({
-    username: entry.name,
-    totalWager: timePeriod === 'weekly' ? entry.wagered.this_week :
-                timePeriod === 'monthly' ? entry.wagered.this_month :
-                entry.wagered.all_time,
-    rank: index + 1
-  })) ?? [];
 
   if (isLoading) {
     return (
@@ -57,6 +37,25 @@ export function LeaderboardTable() {
       </div>
     );
   }
+
+  if (!response?.success || !Array.isArray(response?.data)) {
+    return (
+      <div className="text-center py-8 text-[#8A8B91]">
+        No data available
+      </div>
+    );
+  }
+
+  const transformedData = response.data
+    .map((entry, index) => ({
+      username: entry.name,
+      totalWager: timePeriod === 'weekly' ? entry.wagered.this_week :
+                 timePeriod === 'monthly' ? entry.wagered.this_month :
+                 entry.wagered.all_time,
+      rank: index + 1,
+    }))
+    .sort((a, b) => b.totalWager - a.totalWager)
+    .map((entry, index) => ({ ...entry, rank: index + 1 }));
 
   return (
     <div className="space-y-4">
@@ -87,9 +86,9 @@ export function LeaderboardTable() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-20 font-heading text-primary">RANK</TableHead>
-            <TableHead className="font-heading text-primary">USERNAME</TableHead>
-            <TableHead className="text-right font-heading text-primary">TOTAL WAGER</TableHead>
+            <TableHead className="w-20 font-heading text-[#D7FF00]">RANK</TableHead>
+            <TableHead className="font-heading text-[#D7FF00]">USERNAME</TableHead>
+            <TableHead className="text-right font-heading text-[#D7FF00]">TOTAL WAGER</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -100,11 +99,11 @@ export function LeaderboardTable() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="bg-background/50 backdrop-blur-sm"
+                className="bg-[#1A1B21]/50 backdrop-blur-sm"
               >
-                <TableCell className="font-heading">{entry.rank}</TableCell>
-                <TableCell className="font-sans">{entry.username}</TableCell>
-                <TableCell className="text-right font-sans">
+                <TableCell className="font-heading text-white">{entry.rank}</TableCell>
+                <TableCell className="font-sans text-white">{entry.username}</TableCell>
+                <TableCell className="text-right font-sans text-white">
                   ${entry.totalWager.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
