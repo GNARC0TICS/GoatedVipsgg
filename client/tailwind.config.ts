@@ -7,7 +7,7 @@ export default {
     extend: {
       fontFamily: {
         heading: ["var(--font-heading)", "system-ui", "sans-serif"],
-        body: ["var(--font-body)", "sans-serif"],
+        body: ["Geist Mono", "sans-serif"],
       },
     },
   },
