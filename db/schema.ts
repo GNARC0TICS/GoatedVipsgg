@@ -1,5 +1,6 @@
-import { pgTable, text, serial, integer, timestamp, decimal, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -11,13 +12,21 @@ export const users = pgTable("users", {
 
 export const notificationPreferences = pgTable("notification_preferences", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: integer("user_id").notNull().references(() => users.id),
   wagerRaceUpdates: boolean("wager_race_updates").default(true).notNull(),
   vipStatusChanges: boolean("vip_status_changes").default(true).notNull(),
   promotionalOffers: boolean("promotional_offers").default(true).notNull(),
   monthlyStatements: boolean("monthly_statements").default(true).notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// Define relations
+export const userRelations = relations(users, ({ one }) => ({
+  preferences: one(notificationPreferences, {
+    fields: [users.id],
+    references: [notificationPreferences.userId],
+  }),
+}));
 
 export const affiliateStats = pgTable("affiliate_stats", {
   id: serial("id").primaryKey(),

@@ -19,13 +19,13 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex items-center gap-8">
               <Link href="/">
                 <img 
-                  src="/images/Goated Logo - Yellow.png"
+                  src="/logo-neon.png"
                   alt="GOATED"
                   className="h-8 w-auto cursor-pointer"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.onerror = null;
-                    target.src = "/images/fallback-logo.png";
+                    target.src = "/fallback-logo.png";
                   }}
                 />
               </Link>
@@ -49,6 +49,11 @@ export function Layout({ children }: LayoutProps) {
                 <Link href="/promotions">
                   <span className={`font-heading cursor-pointer ${isActive("/promotions") ? "text-[#D7FF00]" : "text-white hover:text-[#D7FF00]"} transition-colors`}>
                     PROMOTIONS
+                  </span>
+                </Link>
+                <Link href="/notification-preferences">
+                  <span className={`font-heading cursor-pointer ${isActive("/notification-preferences") ? "text-[#D7FF00]" : "text-white hover:text-[#D7FF00]"} transition-colors`}>
+                    NOTIFICATIONS
                   </span>
                 </Link>
               </div>

@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer } from "ws";
 import { log } from "./vite";
 import { db } from "@db";
-import { notificationPreferences } from "@db/schema";
+import { users, notificationPreferences } from "@db/schema";
 import { eq } from "drizzle-orm";
 
 const API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsImlhdCI6MTcyNjc3Mjc5Nn0.PDZzGUz-3e6l3vh-vOOqXpbho4mhapZ8jHxfXDJBxEg";
@@ -121,10 +121,10 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // New API Routes for Notification Preferences
+  // Notification Preferences API Routes
   app.get("/api/notification-preferences", async (req, res) => {
-    if (!req.user) {
-      return res.status(401).send("Not authenticated");
+    if (!req.user?.id) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     try {
@@ -152,21 +152,35 @@ export function registerRoutes(app: Express): Server {
 
       res.json(preferences);
     } catch (error) {
-      log(`Error in /api/notification-preferences GET: ${error}`);
-      res.status(500).json({
-        success: false,
-        error: "Failed to fetch notification preferences",
-        details: error instanceof Error ? error.message : String(error)
-      });
+      console.error("Error fetching notification preferences:", error);
+      res.status(500).json({ error: "Failed to fetch notification preferences" });
     }
   });
 
   app.post("/api/notification-preferences", async (req, res) => {
-    if (!req.user) {
-      return res.status(401).send("Not authenticated");
+    if (!req.user?.id) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     try {
+      const [preferences] = await db
+        .select()
+        .from(notificationPreferences)
+        .where(eq(notificationPreferences.userId, req.user.id))
+        .limit(1);
+
+      if (!preferences) {
+        const [newPreferences] = await db
+          .insert(notificationPreferences)
+          .values({
+            userId: req.user.id,
+            ...req.body,
+          })
+          .returning();
+
+        return res.json(newPreferences);
+      }
+
       const [updatedPreferences] = await db
         .update(notificationPreferences)
         .set({
@@ -178,12 +192,8 @@ export function registerRoutes(app: Express): Server {
 
       res.json(updatedPreferences);
     } catch (error) {
-      log(`Error in /api/notification-preferences POST: ${error}`);
-      res.status(500).json({
-        success: false,
-        error: "Failed to update notification preferences",
-        details: error instanceof Error ? error.message : String(error)
-      });
+      console.error("Error updating notification preferences:", error);
+      res.status(500).json({ error: "Failed to update notification preferences" });
     }
   });
 
