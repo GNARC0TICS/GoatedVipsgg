@@ -11,7 +11,7 @@ export default function Home() {
       <header className="border-b border-[#2A2B31] fixed top-0 w-full z-50 bg-[#14151A]/80 backdrop-blur-md">
         <div className="container mx-auto py-4 px-4 flex items-center justify-between">
           <motion.img 
-            src="/logo.svg" 
+            src="/goated-logo.png" 
             alt="Goated"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}

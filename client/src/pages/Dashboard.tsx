@@ -11,7 +11,7 @@ export default function Dashboard() {
       <header className="border-b">
         <div className="container mx-auto py-4 flex items-center justify-between">
           <motion.img 
-            src="/logo.svg" 
+            src="/goated-logo.png" 
             alt="Goated"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
