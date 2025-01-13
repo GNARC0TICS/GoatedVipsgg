@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import VipTransfer from "@/pages/VipTransfer";
+import WagerRaces from "@/pages/WagerRaces";
 import { Layout } from "@/components/Layout";
 
 function Router() {
@@ -13,6 +14,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/vip-transfer" component={VipTransfer} />
+        <Route path="/wager-races" component={WagerRaces} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

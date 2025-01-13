@@ -8,24 +8,33 @@ const API_ENDPOINT = "https://europe-west2-g3casino.cloudfunctions.net/user/affi
 
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
-  const wss = new WebSocketServer({ 
+
+  // Affiliate Stats WebSocket
+  const affiliateWss = new WebSocketServer({ 
     server: httpServer,
     path: "/ws/affiliate-stats",
-    // Important: Ignore Vite HMR WebSocket requests
     verifyClient: (info) => {
       return !info.req.headers['sec-websocket-protocol']?.includes('vite-hmr');
     }
   });
 
-  log("WebSocket server initialized");
+  // Wager Races WebSocket
+  const wagerRacesWss = new WebSocketServer({
+    server: httpServer,
+    path: "/ws/wager-races",
+    verifyClient: (info) => {
+      return !info.req.headers['sec-websocket-protocol']?.includes('vite-hmr');
+    }
+  });
 
-  // Handle WebSocket connections for real-time updates
-  wss.on("connection", (ws) => {
-    log("New WebSocket connection established");
+  log("WebSocket servers initialized");
+
+  // Handle Affiliate WebSocket connections
+  affiliateWss.on("connection", (ws) => {
+    log("New affiliate WebSocket connection established");
 
     const interval = setInterval(async () => {
       try {
-        log("Fetching affiliate data from API...");
         const response = await fetch(API_ENDPOINT, {
           headers: {
             'Authorization': `Bearer ${API_TOKEN}`
@@ -37,7 +46,6 @@ export function registerRoutes(app: Express): Server {
         }
 
         const data = await response.json();
-        log(`Successfully fetched data for ${data.data?.length || 0} affiliates`);
         ws.send(JSON.stringify(data));
       } catch (error) {
         log(`Error fetching affiliate data: ${error}`);
@@ -46,7 +54,40 @@ export function registerRoutes(app: Express): Server {
 
     ws.on("close", () => {
       clearInterval(interval);
-      log("WebSocket connection closed");
+      log("Affiliate WebSocket connection closed");
+    });
+  });
+
+  // Handle Wager Races WebSocket connections
+  wagerRacesWss.on("connection", (ws) => {
+    log("New wager races WebSocket connection established");
+
+    // Simulate wager race updates
+    const interval = setInterval(() => {
+      const mockData = {
+        id: "weekly-race-1",
+        type: "weekly",
+        status: "live",
+        prizePool: 100000,
+        startDate: "2025-01-13T00:00:00Z",
+        endDate: "2025-01-20T00:00:00Z",
+        participants: Array.from({ length: 10 }, (_, i) => ({
+          rank: i + 1,
+          username: `Player${i + 1}`,
+          wager: Math.floor(Math.random() * 1000000) + 500000,
+          prizeShare: i === 0 ? 0.25 : 
+                     i === 1 ? 0.15 :
+                     i === 2 ? 0.10 :
+                     i <= 6 ? 0.075 : 0.05
+        })).sort((a, b) => b.wager - a.wager)
+      };
+
+      ws.send(JSON.stringify(mockData));
+    }, 5000);
+
+    ws.on("close", () => {
+      clearInterval(interval);
+      log("Wager races WebSocket connection closed");
     });
   });
 

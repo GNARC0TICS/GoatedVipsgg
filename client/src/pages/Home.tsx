@@ -2,7 +2,7 @@ import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Trophy, CircleDot } from "lucide-react";
 
 export default function Home() {
   return (
@@ -11,7 +11,7 @@ export default function Home() {
       <header className="border-b border-[#2A2B31] fixed top-0 w-full z-50 bg-[#14151A]/80 backdrop-blur-md">
         <div className="container mx-auto py-4 px-4 flex items-center justify-between">
           <Link href="/">
-            <motion.img 
+            <motion.img
               src="/images/logo-neon.png"
               alt="Goated"
               initial={{ opacity: 0, y: -20 }}
@@ -20,7 +20,7 @@ export default function Home() {
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.onerror = null; // Prevent infinite loop
-                target.src = '/images/fallback-logo.png'; // Fallback image
+                target.src = "/images/fallback-logo.png"; // Fallback image
               }}
             />
           </Link>
@@ -82,11 +82,19 @@ export default function Home() {
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
-                <h3 className="text-2xl font-heading uppercase mb-4 text-white">Wager Races</h3>
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="text-2xl font-heading uppercase text-white">Wager Races</h3>
+                  <div className="flex items-center gap-1">
+                    <CircleDot className="h-3 w-3 text-red-500 animate-pulse" />
+                    <span className="text-xs text-[#8A8B91]">LIVE</span>
+                  </div>
+                </div>
                 <p className="text-[#8A8B91] mb-6">Compete in exclusive wager races for massive prize pools and rewards.</p>
-                <Button variant="link" className="font-heading text-[#D7FF00] p-0 flex items-center gap-2 hover:text-[#D7FF00]/80">
-                  How it works <ArrowRight className="h-4 w-4" />
-                </Button>
+                <Link href="/wager-races">
+                  <a className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
+                    How it works <ArrowRight className="h-4 w-4" />
+                  </a>
+                </Link>
               </div>
             </div>
 
