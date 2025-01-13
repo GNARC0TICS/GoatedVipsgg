@@ -1,7 +1,4 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Info } from "lucide-react";
 
@@ -15,8 +12,6 @@ const vipLevels = [
 ];
 
 export default function VipTransfer() {
-  const [email, setEmail] = useState("");
-
   return (
     <div className="min-h-screen bg-[#14151A] text-white">
       {/* Hero Section */}
@@ -31,7 +26,7 @@ export default function VipTransfer() {
         <h2 className="font-heading text-4xl font-bold mb-8">
           Unlock Higher VIP Levels with Ease!
         </h2>
-        
+
         <div className="prose prose-invert max-w-none mb-12">
           <p className="text-lg leading-relaxed">
             Are you a high roller on a competing crypto casino platform? If you're on a higher VIP level
@@ -44,7 +39,7 @@ export default function VipTransfer() {
         <h3 className="font-heading text-3xl font-bold mb-6 text-[#D7FF00]">
           How Does the VIP Transfer Work?
         </h3>
-        
+
         <div className="prose prose-invert max-w-none mb-12">
           <p className="text-lg leading-relaxed">
             If you're eligible for the VIP Transfer promotion, you'll need to meet certain wagering
@@ -110,44 +105,6 @@ export default function VipTransfer() {
           </ul>
         </div>
       </motion.div>
-
-      {/* Footer */}
-      <div className="bg-[#D7FF00] mt-20">
-        <div className="container mx-auto px-4 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div>
-              <h4 className="font-heading text-[#14151A] text-2xl font-bold mb-4">Ready to get Goated?</h4>
-              <p className="text-[#14151A] mb-6">
-                Sign up now and enjoy additional rewards from our side. Start your journey to becoming a casino legend!
-              </p>
-              <a 
-                href="https://www.Goated.com/r/SPIN" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-block bg-[#14151A] text-white px-6 py-3 rounded-lg font-heading font-bold hover:bg-opacity-90 transition-colors"
-              >
-                Sign Up Now
-              </a>
-            </div>
-            <div>
-              <h4 className="font-heading text-[#14151A] text-2xl font-bold mb-4">Stay Updated</h4>
-              <p className="text-[#14151A] mb-4">Subscribe to our newsletter for exclusive offers and updates!</p>
-              <div className="flex gap-2">
-                <Input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="bg-white text-[#14151A]"
-                />
-                <Button className="bg-[#14151A] text-white hover:bg-opacity-90">
-                  Subscribe
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
