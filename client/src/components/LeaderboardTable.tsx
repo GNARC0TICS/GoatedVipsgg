@@ -1,11 +1,11 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, User } from "lucide-react";
+import { useState } from "react";
 
 type TimePeriod = 'weekly' | 'monthly' | 'all_time';
 
@@ -27,7 +27,6 @@ export function LeaderboardTable() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('all_time');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<APIResponse['data'][0] | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: response, isLoading } = useQuery<APIResponse>({
     queryKey: ['/api/affiliate/stats'],
@@ -65,11 +64,6 @@ export function LeaderboardTable() {
   const totalPages = Math.ceil(transformedData.length / USERS_PER_PAGE);
   const startIndex = (currentPage - 1) * USERS_PER_PAGE;
   const paginatedData = transformedData.slice(startIndex, startIndex + USERS_PER_PAGE);
-
-  const handleUserClick = (user: APIResponse['data'][0]) => {
-    setSelectedUser(user);
-    setIsDialogOpen(true);
-  };
 
   return (
     <div className="space-y-4">
@@ -114,7 +108,7 @@ export function LeaderboardTable() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] cursor-pointer transition-colors"
-                onClick={() => handleUserClick(entry)}
+                onClick={() => setSelectedUser(entry)}
               >
                 <TableCell className="font-heading text-white">{entry.rank}</TableCell>
                 <TableCell className="font-sans text-white flex items-center gap-2">
@@ -160,7 +154,7 @@ export function LeaderboardTable() {
 
       {/* User Profile Dialog */}
       {selectedUser && (
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
           <DialogContent className="sm:max-w-[425px] bg-[#1A1B21] text-white">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-xl">

@@ -1,21 +1,20 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer } from "ws";
-import { setupAuth } from "./auth.js";
-import { db } from "@db";
-import { affiliateStats } from "@db/schema";
-import { desc, eq } from "drizzle-orm";
 import { log } from "./vite";
 
 const API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsImlhdCI6MTcyNjc3Mjc5Nn0.PDZzGUz-3e6l3vh-vOOqXpbho4mhapZ8jHxfXDJBxEg";
 const API_ENDPOINT = "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard";
 
 export function registerRoutes(app: Express): Server {
-  setupAuth(app);
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ 
     server: httpServer,
-    path: "/ws/affiliate-stats"
+    path: "/ws/affiliate-stats",
+    // Important: Ignore Vite HMR WebSocket requests
+    verifyClient: (info) => {
+      return !info.req.headers['sec-websocket-protocol']?.includes('vite-hmr');
+    }
   });
 
   log("WebSocket server initialized");
@@ -43,7 +42,7 @@ export function registerRoutes(app: Express): Server {
       } catch (error) {
         log(`Error fetching affiliate data: ${error}`);
       }
-    }, 5000); // Update every 5 seconds
+    }, 5000);
 
     ws.on("close", () => {
       clearInterval(interval);
@@ -52,7 +51,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // API Routes
-  app.get("/api/affiliate/stats", async (_req, res) => {
+  app.get("/api/affiliate/stats", async (req, res) => {
     try {
       log("Fetching initial affiliate data from API...");
       const response = await fetch(API_ENDPOINT, {
@@ -70,7 +69,11 @@ export function registerRoutes(app: Express): Server {
       res.json(data);
     } catch (error) {
       log(`Error in /api/affiliate/stats: ${error}`);
-      res.status(500).json({ error: "Failed to fetch affiliate stats" });
+      res.status(500).json({ 
+        success: false,
+        error: "Failed to fetch affiliate stats",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
