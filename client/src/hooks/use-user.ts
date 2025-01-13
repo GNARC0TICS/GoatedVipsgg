@@ -60,7 +60,7 @@ export function useUser() {
   const queryClient = useQueryClient();
 
   const { data: user, error, isLoading } = useQuery<SelectUser | null, Error>({
-    queryKey: ['user'],
+    queryKey: ['/api/user'],
     queryFn: fetchUser,
     staleTime: Infinity,
     retry: false

@@ -1,6 +1,9 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { AuthModal } from "@/components/AuthModal";
+import { useQuery } from "@tanstack/react-query";
+import type { SelectUser } from "@db/schema";
 
 interface LayoutProps {
   children: ReactNode;
@@ -8,6 +11,10 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
+
+  const { data: user } = useQuery<SelectUser>({
+    queryKey: ["/api/user"],
+  });
 
   return (
     <div className="min-h-screen bg-[#14151A] flex flex-col">
@@ -44,17 +51,23 @@ export function Layout({ children }: LayoutProps) {
                 <NavLink href="/vip-program" label="VIP PROGRAM" />
                 <NavLink href="/promotions" label="PROMOTIONS" />
                 <NavLink href="/notification-preferences" label="NOTIFICATIONS" />
+                {user?.isAdmin && (
+                  <NavLink href="/admin/wager-races" label="ADMIN" />
+                )}
               </div>
             </div>
 
-            {/* Enhanced Play Now Button */}
-            <Button 
-              onClick={() => window.open('https://www.goated.com/r/SPIN', '_blank')}
-              className="relative group overflow-hidden font-heading bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-all duration-300"
-            >
-              <span className="relative z-10">PLAY NOW →</span>
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-            </Button>
+            <div className="flex items-center gap-4">
+              <AuthModal />
+              {/* Enhanced Play Now Button */}
+              <Button 
+                onClick={() => window.open('https://www.goated.com/r/SPIN', '_blank')}
+                className="relative group overflow-hidden font-heading bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-all duration-300"
+              >
+                <span className="relative z-10">PLAY NOW →</span>
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              </Button>
+            </div>
           </div>
         </nav>
       </header>
