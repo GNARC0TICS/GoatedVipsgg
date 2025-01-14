@@ -70,16 +70,6 @@ export function LeaderboardTable() {
   }
 
   const USERS_PER_PAGE = 50;
-  const transformedData = response.data
-    .map((entry) => ({
-      ...entry,
-      totalWager: timePeriod === 'today' ? entry.wagered.today :
-                 timePeriod === 'weekly' ? entry.wagered.this_week :
-                 timePeriod === 'monthly' ? entry.wagered.this_month :
-                 entry.wagered.all_time,
-    }))
-    .sort((a, b) => b.totalWager - a.totalWager)
-    .map((entry, index) => ({ ...entry, rank: index + 1 }));
 
   const totalPages = Math.ceil(transformedData.length / USERS_PER_PAGE);
   const startIndex = (currentPage - 1) * USERS_PER_PAGE;
