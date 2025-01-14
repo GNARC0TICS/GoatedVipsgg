@@ -14,13 +14,13 @@ export const users = pgTable("users", {
 export const wagerRaces = pgTable("wager_races", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
-  type: text("type").notNull(), // 'weekly' | 'monthly' | 'weekend'
-  status: text("status").notNull(), // 'upcoming' | 'live' | 'completed'
+  type: text("type", { enum: ['weekly', 'monthly', 'weekend'] }).notNull(),
+  status: text("status", { enum: ['upcoming', 'live', 'completed'] }).notNull(),
   prizePool: decimal("prize_pool", { precision: 18, scale: 2 }).notNull(),
+  minWager: decimal("min_wager", { precision: 18, scale: 2 }).notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
-  minWager: decimal("min_wager", { precision: 18, scale: 2 }).notNull(),
-  prizeDistribution: jsonb("prize_distribution").notNull(), // { "1": 25, "2": 15, ... }
+  prizeDistribution: jsonb("prize_distribution").notNull(),
   createdBy: integer("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -28,14 +28,15 @@ export const wagerRaces = pgTable("wager_races", {
 
 export const wagerRaceParticipants = pgTable("wager_race_participants", {
   id: serial("id").primaryKey(),
-  raceId: integer("race_id").references(() => wagerRaces.id),
-  userId: integer("user_id").references(() => users.id),
+  raceId: integer("race_id").references(() => wagerRaces.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
   totalWager: decimal("total_wager", { precision: 18, scale: 2 }).notNull(),
   rank: integer("rank"),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Relations
 export const userRelations = relations(users, ({ many }) => ({
   createdRaces: many(wagerRaces),
   raceParticipations: many(wagerRaceParticipants),
