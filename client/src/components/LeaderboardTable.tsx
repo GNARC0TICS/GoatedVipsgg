@@ -70,11 +70,14 @@ export function LeaderboardTable() {
     );
   }
 
-  const USERS_PER_PAGE = 50;
+  const USERS_PER_PAGE = 10;
 
-  const totalPages = Math.ceil(transformedData.length / USERS_PER_PAGE);
+  const filteredData = transformedData.filter(entry => 
+    entry.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const totalPages = Math.ceil(filteredData.length / USERS_PER_PAGE);
   const startIndex = (currentPage - 1) * USERS_PER_PAGE;
-  const paginatedData = transformedData.slice(startIndex, startIndex + USERS_PER_PAGE);
+  const paginatedData = filteredData.slice(startIndex, startIndex + USERS_PER_PAGE);
 
   return (
     <div className="space-y-4">
@@ -167,7 +170,7 @@ export function LeaderboardTable() {
         {/* Pagination Controls */}
         <div className="flex justify-between items-center pt-4">
           <div className="text-sm text-[#8A8B91]">
-            Showing {startIndex + 1}-{Math.min(startIndex + USERS_PER_PAGE, transformedData.length)} of {transformedData.length}
+            Showing {startIndex + 1}-{Math.min(startIndex + USERS_PER_PAGE, filteredData.length)} of {filteredData.length}
           </div>
           <div className="flex gap-2">
             <Button
