@@ -51,7 +51,7 @@ export default function Home() {
               <h3 className="text-2xl font-heading uppercase mb-4 text-white">VIP Transfer</h3>
               <p className="text-[#8A8B91] mb-6 font-body">Transfer your VIP status from other platforms and get cash bonuses.</p>
               <Link href="/vip-transfer">
-                <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
+                <span className="font-body text-[#8A8B91] inline-flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
                   Find out more <ArrowRight className="h-4 w-4" />
                 </span>
               </Link>
@@ -71,7 +71,7 @@ export default function Home() {
               </div>
               <p className="text-[#8A8B91] mb-6 font-body">Compete in exclusive wager races for massive prize pools and rewards.</p>
               <Link href="/wager-races">
-                <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
+                <span className="font-body text-[#8A8B91] inline-flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
                   How it works <ArrowRight className="h-4 w-4" />
                 </span>
               </Link>
@@ -85,7 +85,7 @@ export default function Home() {
               <h3 className="text-2xl font-heading uppercase mb-4 text-white">VIP Rewards</h3>
               <p className="text-[#8A8B91] mb-6 font-body">Exclusive benefits like instant rakeback, level up bonuses, and monthly rewards.</p>
               <Link href="/vip-program">
-                <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
+                <span className="font-body text-[#8A8B91] inline-flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
                   Explore VIP Program <ArrowRight className="h-4 w-4" />
                 </span>
               </Link>
@@ -110,7 +110,7 @@ export default function Home() {
                 All in-house games use a provably fair algorithm to ensure complete transparency and fairness.
                 Each game outcome can be independently verified.
               </p>
-              <Button variant="link" className="font-heading text-[#D7FF00] p-0 flex items-center gap-2 hover:text-[#D7FF00]/80">
+              <Button variant="link" className="font-body text-[#8A8B91] p-0 flex items-center gap-2 hover:text-white">
                 Learn More <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
@@ -131,7 +131,7 @@ export default function Home() {
                 Upcoming token launch with exclusive benefits for holders. Get airdrops based on your wagered amount
                 and unlock special perks.
               </p>
-              <Button variant="link" className="font-heading text-[#D7FF00] p-0 flex items-center gap-2 hover:text-[#D7FF00]/80">
+              <Button variant="link" className="font-body text-[#8A8B91] p-0 flex items-center gap-2 hover:text-white">
                 Learn About Airdrops <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
