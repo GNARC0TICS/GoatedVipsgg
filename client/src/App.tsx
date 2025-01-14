@@ -42,7 +42,7 @@ function Router() {
       <AnimatePresence mode="wait">
         <ErrorBoundary FallbackComponent={ErrorFallback}>
           <Switch location={location}>
-            <Route path="/">
+            <Route path="/" key="home">
               <PageTransition>
                 <Home />
               </PageTransition>
