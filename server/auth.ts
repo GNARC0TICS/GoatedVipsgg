@@ -56,19 +56,6 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
-        // Special case: Check for admin credentials
-        if (username === 'admin' && password === '1997') {
-          return done(null, {
-            id: 0,
-            username: 'admin',
-            password: '',
-            email: 'admin@goated.com',
-            isAdmin: true,
-            createdAt: new Date(),
-          });
-        }
-
-        // Regular user authentication
         const [user] = await db
           .select()
           .from(users)
@@ -95,19 +82,6 @@ export function setupAuth(app: Express) {
 
   passport.deserializeUser(async (id: number, done) => {
     try {
-      // Handle admin user
-      if (id === 0) {
-        return done(null, {
-          id: 0,
-          username: 'admin',
-          password: '',
-          email: 'admin@goated.com',
-          isAdmin: true,
-          createdAt: new Date(),
-        });
-      }
-
-      // Regular user deserialization
       const [user] = await db
         .select()
         .from(users)
@@ -123,7 +97,9 @@ export function setupAuth(app: Express) {
     try {
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
-        return res.status(400).send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
+        return res
+          .status(400)
+          .send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
       }
 
       const { username, password, email } = result.data;
@@ -182,6 +158,7 @@ export function setupAuth(app: Express) {
         if (err) {
           return next(err);
         }
+
         return res.json({
           message: "Login successful",
           user: { id: user.id, username: user.username, isAdmin: user.isAdmin },
