@@ -27,6 +27,11 @@ type APIResponse = {
 export function LeaderboardTable() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('all_time');
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const filteredData = transformedData.filter(entry => 
+    entry.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<APIResponse['data'][0] | null>(null);
 
@@ -131,7 +136,18 @@ export function LeaderboardTable() {
                   <TableCell className="font-heading text-white">{entry.rank}</TableCell>
                   <TableCell className="font-sans text-white flex items-center gap-2">
                     <User className="h-4 w-4 text-[#D7FF00]" />
-                    {entry.name}
+                    <Tooltip>
+                      <TooltipTrigger>
+                        {entry.name}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <div className="space-y-1">
+                          <p>Today: ${entry.wagered.today.toLocaleString()}</p>
+                          <p>Weekly: ${entry.wagered.this_week.toLocaleString()}</p>
+                          <p>Monthly: ${entry.wagered.this_month.toLocaleString()}</p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
                   </TableCell>
                   <TableCell className="text-right font-sans text-white">
                     ${entry.totalWager.toLocaleString(undefined, {
