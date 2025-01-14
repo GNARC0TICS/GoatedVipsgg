@@ -71,10 +71,6 @@ export function LeaderboardTable() {
   }
 
   const USERS_PER_PAGE = 10;
-
-  const filteredData = transformedData.filter(entry => 
-    entry.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
   const totalPages = Math.ceil(filteredData.length / USERS_PER_PAGE);
   const startIndex = (currentPage - 1) * USERS_PER_PAGE;
   const paginatedData = filteredData.slice(startIndex, startIndex + USERS_PER_PAGE);
