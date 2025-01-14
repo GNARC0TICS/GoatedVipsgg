@@ -84,7 +84,14 @@ export function Layout({ children }: LayoutProps) {
         <div className="container mx-auto px-4 py-16 relative">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div>
-              <h4 className="font-heading text-[#14151A] text-2xl font-bold mb-4">Ready to get Goated?</h4>
+              <div className="flex items-center gap-3 mb-4">
+                <h4 className="font-heading text-[#14151A] text-2xl font-bold">Ready to get Goated?</h4>
+                <img 
+                  src="/images/Goated Logo - Black.png" 
+                  alt="Goated" 
+                  className="h-8 w-auto"
+                />
+              </div>
               <p className="text-[#14151A] mb-6">
                 Sign up now and enjoy additional rewards from our side. Start your journey to becoming a casino legend!
               </p>
