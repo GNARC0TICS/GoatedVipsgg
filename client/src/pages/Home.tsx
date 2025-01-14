@@ -9,6 +9,17 @@ export default function Home() {
     <div className="min-h-screen bg-[#14151A]">
       <main className="container relative mx-auto px-4 py-12">
         <div className="text-center mb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <img 
+              src="/images/Goated logo with text.png"
+              alt="Goated"
+              className="mx-auto h-24 w-auto"
+            />
+          </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
