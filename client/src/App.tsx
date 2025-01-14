@@ -14,7 +14,6 @@ import { Layout } from "@/components/Layout";
 import { PageTransition } from "@/components/PageTransition";
 import { useQuery } from "@tanstack/react-query";
 import type { SelectUser } from "@db/schema";
-import { redirect } from "wouter/use-location";
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { data: user, isLoading } = useQuery<SelectUser>({
@@ -26,7 +25,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user?.isAdmin) {
-    redirect("/");
+    window.location.href = "/";
     return null;
   }
 

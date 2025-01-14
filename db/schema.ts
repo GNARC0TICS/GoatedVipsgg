@@ -36,29 +36,7 @@ export const wagerRaceParticipants = pgTable("wager_race_participants", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const notificationPreferences = pgTable("notification_preferences", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  wagerRaceUpdates: boolean("wager_race_updates").default(true).notNull(),
-  vipStatusChanges: boolean("vip_status_changes").default(true).notNull(),
-  promotionalOffers: boolean("promotional_offers").default(true).notNull(),
-  monthlyStatements: boolean("monthly_statements").default(true).notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const affiliateStats = pgTable("affiliate_stats", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  totalWager: decimal("total_wager", { precision: 18, scale: 8 }).notNull(),
-  commission: decimal("commission", { precision: 18, scale: 8 }).notNull(),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
-});
-
-export const userRelations = relations(users, ({ one, many }) => ({
-  preferences: one(notificationPreferences, {
-    fields: [users.id],
-    references: [notificationPreferences.userId],
-  }),
+export const userRelations = relations(users, ({ many }) => ({
   createdRaces: many(wagerRaces),
   raceParticipations: many(wagerRaceParticipants),
 }));

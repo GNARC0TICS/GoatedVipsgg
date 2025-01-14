@@ -10,14 +10,6 @@ import { eq } from "drizzle-orm";
 const API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsImlhdCI6MTcyNjc3Mjc5Nn0.PDZzGUz-3e6l3vh-vOOqXpbho4mhapZ8jHxfXDJBxEg";
 const API_ENDPOINT = "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard";
 
-function createWebSocketServer(server: Server, path: string) {
-  return new WebSocketServer({
-    server,
-    path,
-    verifyClient: (info: any) => !info.req.headers['sec-websocket-protocol']?.includes('vite-hmr')
-  });
-}
-
 // Middleware to check if user is admin
 const isAdmin = (req: Request, res: Response, next: NextFunction) => {
   if (!req.isAuthenticated() || !req.user?.isAdmin) {
@@ -25,6 +17,14 @@ const isAdmin = (req: Request, res: Response, next: NextFunction) => {
   }
   next();
 };
+
+function createWebSocketServer(server: Server, path: string) {
+  return new WebSocketServer({
+    server,
+    path,
+    verifyClient: (info: any) => !info.req.headers['sec-websocket-protocol']?.includes('vite-hmr')
+  });
+}
 
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
