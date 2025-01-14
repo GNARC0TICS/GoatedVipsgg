@@ -26,6 +26,7 @@ type APIResponse = {
 export function LeaderboardTable() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('all_time');
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<APIResponse['data'][0] | null>(null);
 
   const { data: response, isLoading } = useQuery<APIResponse>({
@@ -68,7 +69,15 @@ export function LeaderboardTable() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 justify-center">
+      <div className="space-y-4">
+        <input
+          type="text"
+          placeholder="Search users..."
+          className="w-full p-2 rounded-lg bg-[#1A1B21] border border-[#2A2B31] text-white"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        <div className="flex gap-2 justify-center">
         <Button
           variant={timePeriod === 'today' ? 'default' : 'outline'}
           onClick={() => setTimePeriod('today')}
