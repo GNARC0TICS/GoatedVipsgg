@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+}
+
+.parallax-container {
+  transform: translateY(var(--parallax-y));
+  transition: transform 0.1s ease-out;
+}
+
 @layer base {
   * {
     @apply border-border;

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { AuthModal } from "@/components/AuthModal";
 import { useQuery } from "@tanstack/react-query";
 import type { SelectUser } from "@db/schema";
+import { ScrollToTop } from "./ScrollToTop"; // Added import
 
 interface LayoutProps {
   children: ReactNode;
@@ -76,7 +77,7 @@ export function Layout({ children }: LayoutProps) {
       <main className="flex-grow pt-16">
         {children}
       </main>
-
+      <ScrollToTop /> {/* Added ScrollToTop component */}
       {/* Footer */}
       <footer className="bg-[#D7FF00] relative">
         <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent pointer-events-none" />
@@ -107,6 +108,7 @@ export function Layout({ children }: LayoutProps) {
                   Subscribe
                 </Button>
               </form>
+            </div>
           </div>
         </div>
         <div className="bg-[#14151A] text-[#8A8B91] text-sm py-6">
@@ -116,7 +118,6 @@ export function Layout({ children }: LayoutProps) {
             <p>Gamble responsibly. 18+ only. BeGambleAware.org</p>
           </div>
         </div>
-      </div>
       </footer>
     </div>
   );
