@@ -30,13 +30,26 @@ export function LeaderboardTable() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<APIResponse['data'][0] | null>(null);
 
-  const filteredData = transformedData.filter(entry => 
-    entry.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const { data: response, isLoading } = useQuery<APIResponse>({
     queryKey: ['/api/affiliate/stats'],
   });
+
+  const transformedData = response?.data
+    ? response.data
+        .map((entry) => ({
+          ...entry,
+          totalWager: timePeriod === 'today' ? entry.wagered.today :
+                     timePeriod === 'weekly' ? entry.wagered.this_week :
+                     timePeriod === 'monthly' ? entry.wagered.this_month :
+                     entry.wagered.all_time,
+        }))
+        .sort((a, b) => b.totalWager - a.totalWager)
+        .map((entry, index) => ({ ...entry, rank: index + 1 }))
+    : [];
+
+  const filteredData = transformedData.filter(entry => 
+    entry.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (isLoading) {
     return (
