@@ -6,7 +6,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        heading: ["var(--font-heading)", "system-ui", "sans-serif"],
+        heading: ["Mona Sans", "system-ui", "sans-serif"],
         body: ["Geist Mono", "sans-serif"],
       },
     },
