@@ -28,12 +28,11 @@ export function LeaderboardTable() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('all_time');
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  
+  const [selectedUser, setSelectedUser] = useState<APIResponse['data'][0] | null>(null);
+
   const filteredData = transformedData.filter(entry => 
     entry.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedUser, setSelectedUser] = useState<APIResponse['data'][0] | null>(null);
 
   const { data: response, isLoading } = useQuery<APIResponse>({
     queryKey: ['/api/affiliate/stats'],
