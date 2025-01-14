@@ -12,25 +12,25 @@ import NotificationPreferences from "@/pages/notification-preferences";
 import WagerRaceManagement from "@/pages/admin/WagerRaceManagement";
 import { Layout } from "@/components/Layout";
 import { PageTransition } from "@/components/PageTransition";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useQuery } from "@tanstack/react-query";
+import type { SelectUser } from "@db/schema";
+import { redirect } from "wouter/use-location";
 
-function ErrorFallback({ error }: { error: Error }) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="max-w-md w-full mx-4 p-6 text-center">
-        <h2 className="text-2xl font-bold text-destructive mb-4">Something went wrong</h2>
-        <pre className="text-sm bg-muted p-4 rounded-lg overflow-auto">
-          {error.message}
-        </pre>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg"
-        >
-          Reload page
-        </button>
-      </div>
-    </div>
-  );
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { data: user, isLoading } = useQuery<SelectUser>({
+    queryKey: ["/api/user"],
+  });
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user?.isAdmin) {
+    redirect("/");
+    return null;
+  }
+
+  return <>{children}</>;
 }
 
 function Router() {
@@ -63,7 +63,9 @@ function Router() {
             </Route>
             <Route path="/admin/wager-races">
               <PageTransition>
-                <WagerRaceManagement />
+                <AdminRoute>
+                  <WagerRaceManagement />
+                </AdminRoute>
               </PageTransition>
             </Route>
             <Route>
@@ -75,6 +77,25 @@ function Router() {
         </ErrorBoundary>
       </AnimatePresence>
     </Layout>
+  );
+}
+
+function ErrorFallback({ error }: { error: Error }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="max-w-md w-full mx-4 p-6 text-center">
+        <h2 className="text-2xl font-bold text-destructive mb-4">Something went wrong</h2>
+        <pre className="text-sm bg-muted p-4 rounded-lg overflow-auto">
+          {error.message}
+        </pre>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg"
+        >
+          Reload page
+        </button>
+      </div>
+    </div>
   );
 }
 

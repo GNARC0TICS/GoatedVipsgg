@@ -71,10 +71,9 @@ export const wagerRaceRelations = relations(wagerRaces, ({ one, many }) => ({
   participants: many(wagerRaceParticipants),
 }));
 
+// Schema validation and types
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
-export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences);
-export const selectNotificationPreferencesSchema = createSelectSchema(notificationPreferences);
 export const insertWagerRaceSchema = createInsertSchema(wagerRaces);
 export const selectWagerRaceSchema = createSelectSchema(wagerRaces);
 export const insertWagerRaceParticipantSchema = createInsertSchema(wagerRaceParticipants);
@@ -82,8 +81,6 @@ export const selectWagerRaceParticipantSchema = createSelectSchema(wagerRacePart
 
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
-export type InsertNotificationPreferences = typeof notificationPreferences.$inferInsert;
-export type SelectNotificationPreferences = typeof notificationPreferences.$inferSelect;
 export type InsertWagerRace = typeof wagerRaces.$inferInsert;
 export type SelectWagerRace = typeof wagerRaces.$inferSelect;
 export type InsertWagerRaceParticipant = typeof wagerRaceParticipants.$inferInsert;
