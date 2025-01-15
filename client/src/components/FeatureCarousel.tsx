@@ -49,6 +49,14 @@ export function FeatureCarousel() {
         ease: [0.16, 1, 0.3, 1],
       },
     },
+    hover: {
+      scale: 1.05,
+      textShadow: "0 0 8px rgba(215, 255, 0, 0.6)",
+      transition: {
+        duration: 0.2,
+        ease: "easeInOut",
+      },
+    },
   };
 
   return (
@@ -57,6 +65,16 @@ export function FeatureCarousel() {
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
+      {/* Background glow effect */}
+      <motion.div
+        className="absolute inset-0 bg-gradient-radial from-[#D7FF00]/5 via-transparent to-transparent opacity-0"
+        animate={{
+          opacity: isPaused ? 0.6 : 0,
+          scale: isPaused ? 1.1 : 1,
+        }}
+        transition={{ duration: 0.3 }}
+      />
+
       <AnimatePresence mode="wait">
         <motion.h1
           key={currentIndex}
@@ -64,7 +82,8 @@ export function FeatureCarousel() {
           initial="enter"
           animate="center"
           exit="exit"
-          className="absolute text-4xl md:text-6xl lg:text-7xl font-heading font-extrabold uppercase bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent cursor-default"
+          whileHover="hover"
+          className="absolute text-4xl md:text-6xl lg:text-7xl font-heading font-extrabold uppercase bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent cursor-default select-none"
         >
           {features[currentIndex]}
         </motion.h1>
