@@ -4,91 +4,109 @@ import { WebSocketServer, type WebSocket } from "ws";
 import { log } from "./vite";
 import { setupAuth } from "./auth";
 
-const API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsImlhdCI6MTcyNjc3Mjc5Nn0.PDZzGUz-3e6l3vh-vOOqXpbho4mhapZ8jHxfXDJBxEg";
-const API_ENDPOINT = "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard";
+// New API configuration
+const API_CONFIG = {
+  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsImlhdCI6MTcyNjc3Mjc5Nn0.PDZzGUz-3e6l3vh-vOOqXpbho4mhapZ8jHxfXDJBxEg",
+  baseUrl: "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate"
+};
 
-function createWebSocketServer(server: Server, path: string) {
-  return new WebSocketServer({
-    server,
-    path,
-    verifyClient: (info: any) => !info.req.headers['sec-websocket-protocol']?.includes('vite-hmr')
-  });
+async function fetchLeaderboardData() {
+  try {
+    log(`Fetching leaderboard data from ${API_CONFIG.baseUrl}/referral-leaderboard`);
+    const response = await fetch(`${API_CONFIG.baseUrl}/referral-leaderboard`, {
+      headers: {
+        'Authorization': `Bearer ${API_CONFIG.token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      log(`API Error: ${response.status} - ${response.statusText}`);
+      throw new Error(`API responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    log('Successfully fetched leaderboard data');
+    return data;
+  } catch (error) {
+    log(`Error fetching leaderboard data: ${error}`);
+    // Return mock data structure matching the expected format
+    return {
+      all_time: {
+        data: [
+          { username: "Player1", totalWager: 15000, commission: 750 },
+          { username: "Player2", totalWager: 12000, commission: 600 },
+          { username: "Player3", totalWager: 9000, commission: 450 },
+        ]
+      },
+      monthly: {
+        data: [
+          { username: "Player2", totalWager: 8000, commission: 400 },
+          { username: "Player1", totalWager: 7000, commission: 350 },
+          { username: "Player3", totalWager: 5000, commission: 250 },
+        ]
+      },
+      weekly: {
+        data: [
+          { username: "Player3", totalWager: 3000, commission: 150 },
+          { username: "Player1", totalWager: 2500, commission: 125 },
+          { username: "Player2", totalWager: 2000, commission: 100 },
+        ]
+      }
+    };
+  }
 }
+
+// Bonus codes data
+const BONUS_CODES = [
+  {
+    code: "WELCOME2024",
+    description: "New player welcome bonus",
+    expiryDate: "2024-02-15",
+    value: "100% up to $100"
+  },
+  {
+    code: "GOATEDVIP",
+    description: "VIP exclusive reload bonus",
+    expiryDate: "2024-01-31",
+    value: "50% up to $500"
+  },
+  {
+    code: "WEEKEND50",
+    description: "Weekend special bonus",
+    expiryDate: "2024-01-20",
+    value: "50% up to $200"
+  }
+];
 
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
 
-  // Setup authentication first
+  // Setup authentication
   setupAuth(app);
 
   // WebSocket setup for affiliate stats
-  const wss = createWebSocketServer(httpServer, "/ws/affiliate-stats");
+  const wss = new WebSocketServer({
+    server: httpServer,
+    path: "/ws/affiliate-stats",
+    verifyClient: (info: any) => !info.req.headers['sec-websocket-protocol']?.includes('vite-hmr')
+  });
 
   wss.on("connection", (ws: WebSocket) => {
     log("New WebSocket connection established");
 
     const sendLeaderboardData = async () => {
       try {
-        const response = await fetch(API_ENDPOINT, {
-          headers: { 'Authorization': `Bearer ${API_TOKEN}` }
-        });
-
-        if (!response.ok) {
-          // Send mock data for development
-          ws.send(JSON.stringify({
-            all_time: {
-              data: [
-                { username: "Player1", totalWager: 15000, commission: 750 },
-                { username: "Player2", totalWager: 12000, commission: 600 },
-                { username: "Player3", totalWager: 9000, commission: 450 },
-              ]
-            },
-            monthly: {
-              data: [
-                { username: "Player2", totalWager: 8000, commission: 400 },
-                { username: "Player1", totalWager: 7000, commission: 350 },
-                { username: "Player3", totalWager: 5000, commission: 250 },
-              ]
-            },
-            weekly: {
-              data: [
-                { username: "Player3", totalWager: 3000, commission: 150 },
-                { username: "Player1", totalWager: 2500, commission: 125 },
-                { username: "Player2", totalWager: 2000, commission: 100 },
-              ]
-            }
-          }));
-          return;
+        const data = await fetchLeaderboardData();
+        if (ws.readyState === ws.OPEN) {
+          ws.send(JSON.stringify(data));
+          log('Successfully sent leaderboard data through WebSocket');
         }
-
-        const data = await response.json();
-        ws.send(JSON.stringify(data));
       } catch (error) {
-        // Send mock data on error
-        ws.send(JSON.stringify({
-          all_time: {
-            data: [
-              { username: "Player1", totalWager: 15000, commission: 750 },
-              { username: "Player2", totalWager: 12000, commission: 600 },
-              { username: "Player3", totalWager: 9000, commission: 450 },
-            ]
-          },
-          monthly: {
-            data: [
-              { username: "Player2", totalWager: 8000, commission: 400 },
-              { username: "Player1", totalWager: 7000, commission: 350 },
-              { username: "Player3", totalWager: 5000, commission: 250 },
-            ]
-          },
-          weekly: {
-            data: [
-              { username: "Player3", totalWager: 3000, commission: 150 },
-              { username: "Player1", totalWager: 2500, commission: 125 },
-              { username: "Player2", totalWager: 2000, commission: 100 },
-            ]
-          }
-        }));
-        log(`Error fetching affiliate data: ${error}`);
+        log(`WebSocket error: ${error}`);
+        if (ws.readyState === ws.OPEN) {
+          ws.send(JSON.stringify({ error: "Failed to fetch leaderboard data" }));
+        }
       }
     };
 
@@ -98,74 +116,34 @@ export function registerRoutes(app: Express): Server {
     // Set up interval for updates
     const interval = setInterval(sendLeaderboardData, 5000);
 
+    ws.on("error", (error) => {
+      log(`WebSocket error occurred: ${error}`);
+    });
+
     ws.on("close", () => {
       clearInterval(interval);
       log("WebSocket connection closed");
     });
   });
 
-  // Basic API routes
+  // HTTP endpoint for initial data load
   app.get("/api/affiliate/stats", async (_req, res) => {
     try {
-      const response = await fetch(API_ENDPOINT, {
-        headers: { 'Authorization': `Bearer ${API_TOKEN}` }
-      });
-
-      if (!response.ok) {
-        // Return mock data for development
-        return res.json({
-          all_time: {
-            data: [
-              { username: "Player1", totalWager: 15000, commission: 750 },
-              { username: "Player2", totalWager: 12000, commission: 600 },
-              { username: "Player3", totalWager: 9000, commission: 450 },
-            ]
-          },
-          monthly: {
-            data: [
-              { username: "Player2", totalWager: 8000, commission: 400 },
-              { username: "Player1", totalWager: 7000, commission: 350 },
-              { username: "Player3", totalWager: 5000, commission: 250 },
-            ]
-          },
-          weekly: {
-            data: [
-              { username: "Player3", totalWager: 3000, commission: 150 },
-              { username: "Player1", totalWager: 2500, commission: 125 },
-              { username: "Player2", totalWager: 2000, commission: 100 },
-            ]
-          }
-        });
-      }
-
-      const data = await response.json();
+      const data = await fetchLeaderboardData();
       res.json(data);
     } catch (error) {
-      // Return mock data on error
-      res.json({
-        all_time: {
-          data: [
-            { username: "Player1", totalWager: 15000, commission: 750 },
-            { username: "Player2", totalWager: 12000, commission: 600 },
-            { username: "Player3", totalWager: 9000, commission: 450 },
-          ]
-        },
-        monthly: {
-          data: [
-            { username: "Player2", totalWager: 8000, commission: 400 },
-            { username: "Player1", totalWager: 7000, commission: 350 },
-            { username: "Player3", totalWager: 5000, commission: 250 },
-          ]
-        },
-        weekly: {
-          data: [
-            { username: "Player3", totalWager: 3000, commission: 150 },
-            { username: "Player1", totalWager: 2500, commission: 125 },
-            { username: "Player2", totalWager: 2000, commission: 100 },
-          ]
-        }
-      });
-      log(`Error fetching affiliate stats: ${error}`);
+      log(`Error in /api/affiliate/stats: ${error}`);
+      res.status(500).json({ error: "Failed to fetch affiliate stats" });
+    }
+  });
+
+  // Bonus codes endpoint
+  app.get("/api/bonus-codes", (_req, res) => {
+    try {
+      res.json({ bonusCodes: BONUS_CODES });
+    } catch (error) {
+      log(`Error in /api/bonus-codes: ${error}`);
+      res.status(500).json({ error: "Failed to fetch bonus codes" });
     }
   });
 

@@ -10,7 +10,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Request logging middleware
+// Request logging middleware with enhanced error tracking
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -39,22 +39,20 @@ app.use((req, res, next) => {
   next();
 });
 
-// Global error handler
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('Global error:', err);
-  const status = err.status || err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
-  res.status(status).json({ error: message });
+// Error handling middleware with detailed logging
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error("Server error:", err);
+  res.status(500).json({ error: err.message || "Internal Server Error" });
 });
 
-// Application startup
-(async () => {
+// Application startup with enhanced error handling
+async function startServer() {
   try {
     // Test database connection
     await db.execute(sql`SELECT 1`);
     log("Database connection successful");
 
-    // Create server and register routes (which also sets up auth)
+    // Create server and register routes
     const server = registerRoutes(app);
 
     // Setup Vite in development
@@ -64,24 +62,24 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       serveStatic(app);
     }
 
-    // Start server with port retry logic
-    const startServer = (port: number, maxRetries = 3, retryCount = 0) => {
-      server.listen(port, "0.0.0.0", () => {
-        log(`Server running on port ${port}`);
-      }).on('error', (err: any) => {
-        if (err.code === 'EADDRINUSE' && retryCount < maxRetries) {
-          log(`Port ${port} is in use, trying ${port + 1}...`);
-          startServer(port + 1, maxRetries, retryCount + 1);
-        } else {
-          console.error("Failed to start server:", err);
-          process.exit(1);
-        }
-      });
-    };
+    // Start server with enhanced error handling
+    const port = parseInt(process.env.PORT || "5000");
+    server.listen(port, "0.0.0.0", () => {
+      log(`Server running on port ${port}`);
+    }).on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EADDRINUSE") {
+        log(`Port ${port} is in use, trying ${port + 1}...`);
+        server.listen(port + 1, "0.0.0.0");
+      } else {
+        console.error("Failed to start server:", err);
+        process.exit(1);
+      }
+    });
 
-    startServer(5000);
   } catch (error) {
-    console.error("Failed to start server:", error);
+    console.error("Failed to start application:", error);
     process.exit(1);
   }
-})();
+}
+
+startServer();
