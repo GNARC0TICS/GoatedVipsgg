@@ -3,70 +3,59 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, type WebSocket } from "ws";
 import { log } from "./vite";
 import { setupAuth } from "./auth";
-import { db } from "@db";
-import { affiliateStats, users } from "@db/schema";
-import { desc, sql } from "drizzle-orm";
 
-// Function to fetch affiliate data from database
-async function fetchAffiliateStats(period: 'weekly' | 'monthly' | 'all_time') {
-  const now = new Date();
-  let timeFilter;
+const API_CONFIG = {
+  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsInNlc3Npb24iOiJtODJmSTlMQ1ZjZmEiLCJpYXQiOjE3MzY5MDQ2MTIsImV4cCI6MTczNjkyNjIxMn0.5qL9O_4qRk6APmiisigzAvlMxTAfwd_Zx_aLQZGCbhs",
+  baseUrl: "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate"
+};
 
-  switch (period) {
-    case 'weekly':
-      timeFilter = sql`timestamp >= date_trunc('week', ${now}::timestamp)`;
-      break;
-    case 'monthly':
-      timeFilter = sql`timestamp >= date_trunc('month', ${now}::timestamp)`;
-      break;
-    case 'all_time':
-    default:
-      timeFilter = sql`true`;
-      break;
-  }
-
+async function fetchLeaderboardData() {
   try {
-    const stats = await db
-      .select({
-        username: users.username,
-        totalWager: sql<number>`sum(${affiliateStats.totalWager})`,
-        commission: sql<number>`sum(${affiliateStats.commission})`
-      })
-      .from(affiliateStats)
-      .innerJoin(users, sql`${users.id} = ${affiliateStats.userId}`)
-      .where(timeFilter)
-      .groupBy(users.username)
-      .orderBy(desc(sql`sum(${affiliateStats.totalWager})`))
-      .limit(10);
+    log(`Fetching leaderboard data from ${API_CONFIG.baseUrl}/referral-leaderboard`);
+    const response = await fetch(`${API_CONFIG.baseUrl}/referral-leaderboard`, {
+      headers: {
+        'Authorization': `Bearer ${API_CONFIG.token}`,
+        'Content-Type': 'application/json'
+      }
+    });
 
-    return stats.map(stat => ({
-      ...stat,
-      totalWager: Number(stat.totalWager) || 0,
-      commission: Number(stat.commission) || 0
-    }));
-  } catch (error) {
-    log(`Error fetching affiliate stats: ${error}`);
-    throw error;
-  }
-}
+    if (!response.ok) {
+      log(`API Error: ${response.status} - ${response.statusText}`);
+      throw new Error(`API responded with status ${response.status}`);
+    }
 
-// Function to generate the full leaderboard data
-async function generateLeaderboardData() {
-  try {
-    const [weeklyData, monthlyData, allTimeData] = await Promise.all([
-      fetchAffiliateStats('weekly'),
-      fetchAffiliateStats('monthly'),
-      fetchAffiliateStats('all_time')
-    ]);
+    const data = await response.json();
+    log('Successfully fetched leaderboard data');
 
-    return {
-      weekly: { data: weeklyData },
-      monthly: { data: monthlyData },
-      all_time: { data: allTimeData }
+    // Transform the API response into the expected format
+    const transformedData = {
+      success: true,
+      data: {
+        all_time: { 
+          data: Array.isArray(data) ? data : [data] 
+        },
+        monthly: { 
+          data: Array.isArray(data) ? data : [data] 
+        },
+        weekly: { 
+          data: Array.isArray(data) ? data : [data] 
+        }
+      }
     };
+
+    return transformedData;
   } catch (error) {
-    log(`Error generating leaderboard data: ${error}`);
-    throw error;
+    log(`Error fetching leaderboard data: ${error}`);
+    // Return empty data structure with the correct format
+    return {
+      success: false,
+      error: "Failed to fetch leaderboard data",
+      data: {
+        all_time: { data: [] },
+        monthly: { data: [] },
+        weekly: { data: [] }
+      }
+    };
   }
 }
 
@@ -76,30 +65,36 @@ export function registerRoutes(app: Express): Server {
   // Setup authentication
   setupAuth(app);
 
-  // Setup WebSocket server for real-time leaderboard updates
-  const wss = new WebSocketServer({
+  // WebSocket setup
+  const wss = new WebSocketServer({ 
     server: httpServer,
     path: "/ws/affiliate-stats",
-    verifyClient: (info: any) => {
-      // Ignore Vite HMR WebSocket connections
-      return !info.req.headers['sec-websocket-protocol']?.includes('vite-hmr');
-    }
+    verifyClient: (info: any) => !info.req.headers['sec-websocket-protocol']?.includes('vite-hmr')
   });
 
   wss.on("connection", (ws: WebSocket) => {
-    log("New WebSocket connection established for leaderboard");
+    log("New WebSocket connection established");
     let interval: NodeJS.Timeout;
 
     const sendLeaderboardData = async () => {
       try {
+        const data = await fetchLeaderboardData();
         if (ws.readyState === ws.OPEN) {
-          const data = await generateLeaderboardData();
           ws.send(JSON.stringify(data));
+          log('Successfully sent leaderboard data through WebSocket');
         }
       } catch (error) {
-        log(`Error sending leaderboard data: ${error}`);
+        log(`WebSocket error: ${error}`);
         if (ws.readyState === ws.OPEN) {
-          ws.send(JSON.stringify({ error: "Failed to fetch leaderboard data" }));
+          ws.send(JSON.stringify({
+            success: false,
+            error: "Failed to fetch leaderboard data",
+            data: {
+              all_time: { data: [] },
+              monthly: { data: [] },
+              weekly: { data: [] }
+            }
+          }));
         }
       }
     };
@@ -123,11 +118,19 @@ export function registerRoutes(app: Express): Server {
   // HTTP endpoint for initial data load
   app.get("/api/affiliate/stats", async (_req, res) => {
     try {
-      const data = await generateLeaderboardData();
+      const data = await fetchLeaderboardData();
       res.json(data);
     } catch (error) {
       log(`Error in /api/affiliate/stats: ${error}`);
-      res.status(500).json({ error: "Failed to fetch affiliate stats" });
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch affiliate stats",
+        data: {
+          all_time: { data: [] },
+          monthly: { data: [] },
+          weekly: { data: [] }
+        }
+      });
     }
   });
 
