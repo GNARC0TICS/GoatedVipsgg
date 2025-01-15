@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,7 +19,11 @@ type LeaderboardEntry = {
 
 type LeaderboardData = {
   success: boolean;
-  data: LeaderboardEntry[];
+  data: {
+    all_time: { data: LeaderboardEntry[] };
+    monthly: { data: LeaderboardEntry[] };
+    weekly: { data: LeaderboardEntry[] };
+  };
 };
 
 export function LeaderboardTable() {
@@ -43,7 +48,7 @@ export function LeaderboardTable() {
         try {
           const response = JSON.parse(event.data);
           if (response.success && response.data) {
-            setLeaderboardData(response.data);
+            setLeaderboardData(response);
             setIsLoading(false);
           }
         } catch (error) {
@@ -61,12 +66,11 @@ export function LeaderboardTable() {
       };
     };
 
-    // Initial HTTP fetch
     fetch('/api/affiliate/stats')
       .then(response => response.json())
       .then(response => {
         if (response.success && response.data) {
-          setLeaderboardData(response.data);
+          setLeaderboardData(response);
           setIsLoading(false);
         }
       })
@@ -75,10 +79,8 @@ export function LeaderboardTable() {
         setIsLoading(false);
       });
 
-    // Initialize WebSocket connection
     connectWebSocket();
 
-    // Cleanup function
     return () => {
       if (ws) {
         ws.close();
