@@ -53,7 +53,7 @@ export function FeatureCarousel() {
 
   return (
     <div 
-      className="relative h-20 flex items-center justify-center overflow-hidden"
+      className="relative h-32 flex items-center justify-center overflow-hidden mt-8 mb-4"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -64,12 +64,12 @@ export function FeatureCarousel() {
           initial="enter"
           animate="center"
           exit="exit"
-          className="absolute text-5xl md:text-7xl font-heading font-extrabold uppercase mb-6 bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent cursor-default"
+          className="absolute text-4xl md:text-6xl lg:text-7xl font-heading font-extrabold uppercase bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent cursor-default"
         >
           {features[currentIndex]}
         </motion.h1>
       </AnimatePresence>
-      
+
       {/* Interactive Progress Indicators */}
       <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex gap-2">
         {features.map((_, index) => (
