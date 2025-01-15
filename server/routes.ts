@@ -3,21 +3,72 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, type WebSocket } from "ws";
 import { log } from "./vite";
 import { setupAuth } from "./auth";
+import { db } from "@db";
+import { affiliateStats, users } from "@db/schema";
+import { desc, sql } from "drizzle-orm";
 
-// API configuration
-const API_CONFIG = {
-  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsInNlc3Npb24iOiJtODJmSTlMQ1ZjZmEiLCJpYXQiOjE3MzY5MDQ2MTIsImV4cCI6MTczNjkyNjIxMn0.5qL9O_4qRk6APmiisigzAvlMxTAfwd_Zx_aLQZGCbhs",
-  baseUrl: "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate"
-};
+// Function to fetch affiliate data from database
+async function fetchAffiliateStats(period: 'weekly' | 'monthly' | 'all_time') {
+  const now = new Date();
+  let timeFilter;
 
-const fetchLeaderboardData = async () => {
-  const response = await fetch(`${API_CONFIG.baseUrl}/referral-leaderboard`, {
-    headers: {
-      'Authorization': API_CONFIG.token
-    }
-  });
-  return await response.json();
-};
+  switch (period) {
+    case 'weekly':
+      timeFilter = sql`timestamp >= date_trunc('week', ${now}::timestamp)`;
+      break;
+    case 'monthly':
+      timeFilter = sql`timestamp >= date_trunc('month', ${now}::timestamp)`;
+      break;
+    case 'all_time':
+    default:
+      timeFilter = sql`true`;
+      break;
+  }
+
+  try {
+    const stats = await db
+      .select({
+        username: users.username,
+        totalWager: sql<number>`sum(${affiliateStats.totalWager})`,
+        commission: sql<number>`sum(${affiliateStats.commission})`
+      })
+      .from(affiliateStats)
+      .innerJoin(users, sql`${users.id} = ${affiliateStats.userId}`)
+      .where(timeFilter)
+      .groupBy(users.username)
+      .orderBy(desc(sql`sum(${affiliateStats.totalWager})`))
+      .limit(10);
+
+    return stats.map(stat => ({
+      ...stat,
+      totalWager: Number(stat.totalWager) || 0,
+      commission: Number(stat.commission) || 0
+    }));
+  } catch (error) {
+    log(`Error fetching affiliate stats: ${error}`);
+    throw error;
+  }
+}
+
+// Function to generate the full leaderboard data
+async function generateLeaderboardData() {
+  try {
+    const [weeklyData, monthlyData, allTimeData] = await Promise.all([
+      fetchAffiliateStats('weekly'),
+      fetchAffiliateStats('monthly'),
+      fetchAffiliateStats('all_time')
+    ]);
+
+    return {
+      weekly: { data: weeklyData },
+      monthly: { data: monthlyData },
+      all_time: { data: allTimeData }
+    };
+  } catch (error) {
+    log(`Error generating leaderboard data: ${error}`);
+    throw error;
+  }
+}
 
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
@@ -37,11 +88,19 @@ export function registerRoutes(app: Express): Server {
 
   wss.on("connection", (ws: WebSocket) => {
     log("New WebSocket connection established for leaderboard");
+    let interval: NodeJS.Timeout;
 
     const sendLeaderboardData = async () => {
-      if (ws.readyState === ws.OPEN) {
-        const data = await fetchLeaderboardData();
-        ws.send(JSON.stringify(data));
+      try {
+        if (ws.readyState === ws.OPEN) {
+          const data = await generateLeaderboardData();
+          ws.send(JSON.stringify(data));
+        }
+      } catch (error) {
+        log(`Error sending leaderboard data: ${error}`);
+        if (ws.readyState === ws.OPEN) {
+          ws.send(JSON.stringify({ error: "Failed to fetch leaderboard data" }));
+        }
       }
     };
 
@@ -49,7 +108,7 @@ export function registerRoutes(app: Express): Server {
     sendLeaderboardData();
 
     // Set up interval for updates (every 5 seconds)
-    const interval = setInterval(sendLeaderboardData, 5000);
+    interval = setInterval(sendLeaderboardData, 5000);
 
     ws.on("error", (error) => {
       log(`WebSocket error occurred: ${error}`);
@@ -62,9 +121,9 @@ export function registerRoutes(app: Express): Server {
   });
 
   // HTTP endpoint for initial data load
-  app.get("/api/affiliate/stats", (_req, res) => {
+  app.get("/api/affiliate/stats", async (_req, res) => {
     try {
-      const data = generateMockLeaderboardData();
+      const data = await generateLeaderboardData();
       res.json(data);
     } catch (error) {
       log(`Error in /api/affiliate/stats: ${error}`);
