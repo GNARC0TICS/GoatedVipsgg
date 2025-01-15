@@ -33,11 +33,17 @@ export function registerRoutes(app: Express): Server {
           headers: { 'Authorization': `Bearer ${API_TOKEN}` }
         });
 
-        if (!response.ok) throw new Error(`API responded with status: ${response.status}`);
+        if (!response.ok) {
+          // Send empty data instead of throwing error
+          ws.send(JSON.stringify({ data: [] }));
+          return;
+        }
 
         const data = await response.json();
         ws.send(JSON.stringify(data));
       } catch (error) {
+        // Send empty data on error
+        ws.send(JSON.stringify({ data: [] }));
         log(`Error fetching affiliate data: ${error}`);
       }
     }, 5000);
@@ -55,15 +61,17 @@ export function registerRoutes(app: Express): Server {
         headers: { 'Authorization': `Bearer ${API_TOKEN}` }
       });
 
-      if (!response.ok) throw new Error(`API responded with status: ${response.status}`);
+      if (!response.ok) {
+        // Return empty data instead of error
+        return res.json({ data: [] });
+      }
 
       const data = await response.json();
       res.json(data);
     } catch (error) {
-      res.status(500).json({
-        error: "Failed to fetch affiliate stats",
-        details: error instanceof Error ? error.message : String(error)
-      });
+      // Return empty data on error
+      res.json({ data: [] });
+      log(`Error fetching affiliate stats: ${error}`);
     }
   });
 

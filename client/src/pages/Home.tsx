@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowRight, Trophy, CircleDot, Shield, Coins } from "lucide-react";
+import { FeatureCarousel } from "@/components/FeatureCarousel";
 
 export default function Home() {
   return (
@@ -20,18 +21,15 @@ export default function Home() {
               className="mx-auto h-48 md:h-64 w-auto object-contain"
             />
           </motion.div>
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-7xl font-heading font-extrabold uppercase mb-6 bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent"
-          >
-            Exclusive Rewards
-          </motion.h1>
+
+          {/* Replace static text with FeatureCarousel */}
+          <FeatureCarousel />
+
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-xl text-[#8A8B91] max-w-2xl mx-auto"
+            className="text-xl text-[#8A8B91] max-w-2xl mx-auto mt-8"
           >
             Join Goated.com for unparalleled gaming, exclusive bonuses, and a top-tier VIP program.
           </motion.p>
