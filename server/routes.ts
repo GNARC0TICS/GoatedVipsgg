@@ -4,30 +4,20 @@ import { WebSocketServer, type WebSocket } from "ws";
 import { log } from "./vite";
 import { setupAuth } from "./auth";
 
-// Mock data structure
-const generateMockLeaderboardData = () => ({
-  all_time: {
-    data: [
-      { username: "Player1", totalWager: 150000, commission: 7500 },
-      { username: "Player2", totalWager: 120000, commission: 6000 },
-      { username: "Player3", totalWager: 90000, commission: 4500 },
-    ]
-  },
-  monthly: {
-    data: [
-      { username: "Player2", totalWager: 80000, commission: 4000 },
-      { username: "Player1", totalWager: 70000, commission: 3500 },
-      { username: "Player3", totalWager: 50000, commission: 2500 },
-    ]
-  },
-  weekly: {
-    data: [
-      { username: "Player3", totalWager: 30000, commission: 1500 },
-      { username: "Player1", totalWager: 25000, commission: 1250 },
-      { username: "Player2", totalWager: 20000, commission: 1000 },
-    ]
-  }
-});
+// API configuration
+const API_CONFIG = {
+  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsInNlc3Npb24iOiJtODJmSTlMQ1ZjZmEiLCJpYXQiOjE3MzY5MDQ2MTIsImV4cCI6MTczNjkyNjIxMn0.5qL9O_4qRk6APmiisigzAvlMxTAfwd_Zx_aLQZGCbhs",
+  baseUrl: "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate"
+};
+
+const fetchLeaderboardData = async () => {
+  const response = await fetch(`${API_CONFIG.baseUrl}/referral-leaderboard`, {
+    headers: {
+      'Authorization': API_CONFIG.token
+    }
+  });
+  return await response.json();
+};
 
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
@@ -48,9 +38,9 @@ export function registerRoutes(app: Express): Server {
   wss.on("connection", (ws: WebSocket) => {
     log("New WebSocket connection established for leaderboard");
 
-    const sendLeaderboardData = () => {
+    const sendLeaderboardData = async () => {
       if (ws.readyState === ws.OPEN) {
-        const data = generateMockLeaderboardData();
+        const data = await fetchLeaderboardData();
         ws.send(JSON.stringify(data));
       }
     };
