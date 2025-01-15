@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -7,7 +6,7 @@ export default {
     extend: {
       fontFamily: {
         heading: ["Mona Sans", "system-ui", "sans-serif"],
-        body: ["Geist Mono", "sans-serif"],
+        sans: ["system-ui", "sans-serif"],
       },
     },
   },

@@ -6,7 +6,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Geist", "system-ui", "sans-serif"],
+        sans: ["system-ui", "sans-serif"],
         heading: ["Mona Sans", "system-ui", "sans-serif"],
       },
       borderRadius: {

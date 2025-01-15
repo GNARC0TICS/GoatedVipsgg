@@ -9,17 +9,17 @@
 }
 
 /* Import Geist Mono */
-@font-face {
+/* @font-face {
   font-family: 'Geist Mono';
   src: url('/fonts/GeistMono-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
-}
+} */
 
 :root {
   --font-heading: "Mona Sans", "system-ui", "sans-serif";
-  --font-body: "Geist Mono", "sans-serif";
+  /* --font-body: "Geist Mono", "sans-serif"; */
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -28,7 +28,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 body {
-  font-family: var(--font-body);
+  font-family: system-ui, sans-serif;
 }
 
 p {
