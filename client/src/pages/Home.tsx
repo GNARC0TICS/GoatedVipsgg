@@ -2,7 +2,7 @@ import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, Trophy, CircleDot, Shield, Coins } from "lucide-react";
+import { ArrowRight, Trophy, CircleDot, Shield, Coins, Gift } from "lucide-react";
 import { FeatureCarousel } from "@/components/FeatureCarousel";
 
 export default function Home() {
@@ -22,7 +22,6 @@ export default function Home() {
             />
           </motion.div>
 
-          {/* Replace static text with FeatureCarousel */}
           <FeatureCarousel />
 
           <motion.p
@@ -35,14 +34,12 @@ export default function Home() {
           </motion.p>
         </div>
 
-        {/* Features Grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="grid md:grid-cols-3 gap-6 mb-6"
         >
-          {/* VIP Transfer */}
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
@@ -56,7 +53,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Wager Races */}
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
@@ -76,7 +72,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* VIP Rewards */}
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
@@ -91,14 +86,12 @@ export default function Home() {
           </div>
         </motion.div>
 
-        {/* Additional Features Grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="grid md:grid-cols-2 gap-6 mb-20"
+          className="grid md:grid-cols-3 gap-6 mb-20"
         >
-          {/* Provably Fair */}
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
@@ -114,7 +107,22 @@ export default function Home() {
             </div>
           </div>
 
-          {/* $GOAT Token */}
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
+              <Gift className="h-8 w-8 text-[#D7FF00] mb-4" />
+              <h3 className="text-2xl font-heading uppercase mb-4 text-white">Bonus Codes</h3>
+              <p className="text-[#8A8B91] mb-6 font-body">
+                Exclusive bonus codes updated regularly. Claim special rewards and boost your gaming experience.
+              </p>
+              <Link href="/bonus-codes">
+                <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
+                  View Codes <ArrowRight className="h-4 w-4" />
+                </span>
+              </Link>
+            </div>
+          </div>
+
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
@@ -136,7 +144,6 @@ export default function Home() {
           </div>
         </motion.div>
 
-        {/* Leaderboard Section */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

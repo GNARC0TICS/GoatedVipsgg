@@ -64,11 +64,22 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       serveStatic(app);
     }
 
-    // Start server
-    const PORT = 5000;
-    server.listen(PORT, "0.0.0.0", () => {
-      log(`Server running on port ${PORT}`);
-    });
+    // Start server with port retry logic
+    const startServer = (port: number, maxRetries = 3, retryCount = 0) => {
+      server.listen(port, "0.0.0.0", () => {
+        log(`Server running on port ${port}`);
+      }).on('error', (err: any) => {
+        if (err.code === 'EADDRINUSE' && retryCount < maxRetries) {
+          log(`Port ${port} is in use, trying ${port + 1}...`);
+          startServer(port + 1, maxRetries, retryCount + 1);
+        } else {
+          console.error("Failed to start server:", err);
+          process.exit(1);
+        }
+      });
+    };
+
+    startServer(5000);
   } catch (error) {
     console.error("Failed to start server:", error);
     process.exit(1);
