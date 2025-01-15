@@ -103,11 +103,11 @@ export function LeaderboardTable() {
     );
   }
 
-  if (!leaderboardData) {
+  if (!leaderboardData?.data?.[timePeriod]?.data) {
     return <div>No leaderboard data available</div>;
   }
 
-  const currentData = leaderboardData.data;
+  const currentData = leaderboardData.data[timePeriod].data;
 
   return (
     <div className="space-y-4">
