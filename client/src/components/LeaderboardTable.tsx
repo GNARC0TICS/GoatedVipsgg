@@ -17,9 +17,8 @@ type LeaderboardEntry = {
 };
 
 type LeaderboardData = {
-  all_time: { data: LeaderboardEntry[] };
-  monthly: { data: LeaderboardEntry[] };
-  weekly: { data: LeaderboardEntry[] };
+  success: boolean;
+  data: LeaderboardEntry[];
 };
 
 export function LeaderboardTable() {
@@ -108,7 +107,7 @@ export function LeaderboardTable() {
     return <div>No leaderboard data available</div>;
   }
 
-  const currentData = leaderboardData[timePeriod].data;
+  const currentData = leaderboardData.data;
 
   return (
     <div className="space-y-4">
