@@ -5,9 +5,13 @@ import { log } from "./vite";
 import { setupAuth } from "./auth";
 
 const API_CONFIG = {
-  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsInNlc3Npb24iOiJtODJmSTlMQ1ZjZmEiLCJpYXQiOjE3MzY5MDQ2MTIsImV4cCI6MTczNjkyNjIxMn0.5qL9O_4qRk6APmiisigzAvlMxTAfwd_Zx_aLQZGCbhs",
+  token: process.env.API_TOKEN || '',
   baseUrl: "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate"
 };
+
+if (!API_CONFIG.token) {
+  log('Warning: API_TOKEN environment variable is not set');
+}
 
 async function fetchLeaderboardData() {
   try {
