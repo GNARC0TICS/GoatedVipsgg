@@ -105,11 +105,11 @@ export function LeaderboardTable() {
     );
   }
 
-  if (!leaderboardData?.data?.[timePeriod]?.data) {
+  if (!leaderboardData?.data?.[timePeriod]) {
     return <div>No leaderboard data available</div>;
   }
 
-  const currentData = leaderboardData.data[timePeriod].data;
+  const currentData = leaderboardData.data[timePeriod];
 
   return (
     <div className="space-y-4">
