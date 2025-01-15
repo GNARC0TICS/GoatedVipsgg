@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import VipTransfer from "@/pages/VipTransfer";
 import WagerRaces from "@/pages/WagerRaces";
+import BonusCodes from "@/pages/BonusCodes"; // New import
 import NotificationPreferences from "@/pages/notification-preferences";
 import WagerRaceManagement from "@/pages/admin/WagerRaceManagement";
 import { Layout } from "@/components/Layout";
@@ -55,6 +56,11 @@ function Router() {
             <Route path="/wager-races">
               <PageTransition>
                 <WagerRaces />
+              </PageTransition>
+            </Route>
+            <Route path="/bonus-codes"> {/* New Route */}
+              <PageTransition>
+                <BonusCodes />
               </PageTransition>
             </Route>
             <Route path="/notification-preferences">
