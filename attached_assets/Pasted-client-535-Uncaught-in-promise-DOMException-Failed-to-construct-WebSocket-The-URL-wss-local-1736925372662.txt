@@ -1,0 +1,31 @@
+client:535 Uncaught (in promise) DOMException: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/' is invalid.
+    at setupWebSocket (https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@vite/client:535:19)
+    at fallback (https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@vite/client:508:16)
+    at WebSocket.<anonymous> (https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@vite/client:551:7)
+chunk-RPCDYKBN.js?v=043ea849:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+chunk-RPCDYKBN.js?v=043ea849:521 Warning: validateDOMNesting(...): <a> cannot appear as a descendant of <a>.
+    at a
+    at a
+    at https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=043ea849:337:18
+    at div
+    at div
+    at div
+    at nav
+    at header
+    at div
+    at Layout (https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/src/components/Layout.tsx:23:26)
+    at Router (https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/src/App.tsx?v=SZm_AhRjeiuIbpY_AxbM:75:22)
+    at Provider (https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-7JZPIGFL.js?v=043ea849:38:15)
+    at TooltipProvider (https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=043ea849:898:5)
+    at QueryClientProvider (https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=043ea849:2805:3)
+    at ErrorBoundary (https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-error-boundary.js?v=043ea849:18:5)
+    at App
+printWarning @ chunk-RPCDYKBN.js?v=043ea849:521
+Show 1 more frame
+Show less
+/api/user:1 
+        
+        
+       Failed to load resource: the server responded with a status of 401 (Unauthorized)
+407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/:1 Failed to decode downloaded font: https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/fonts/MonaSans-ExtraBoldCondensed.woff2
+407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/:1 OTS parsing error: invalid sfntVersion: 1008813135
