@@ -136,26 +136,6 @@ export default function Home() {
           </div>
         </motion.div>
 
-        {/* Winners Ticker */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="mb-12"
-        >
-          <WinnersTicker />
-        </motion.div>
-
-        {/* Newsletter Section */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.35 }}
-          className="mb-12"
-        >
-          <Newsletter />
-        </motion.div>
-
         {/* Leaderboard Section */}
         <motion.div
           initial={{ opacity: 0 }}
