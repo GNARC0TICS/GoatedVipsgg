@@ -1,9 +1,10 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Trophy } from "lucide-react";
+import { User, Trophy, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+//import { useVirtualizer } from '@tanstack/react-virtual'; //Not used in this implementation
 
 type LeaderboardEntry = {
   uid: string;
@@ -18,6 +19,10 @@ type LeaderboardEntry = {
 
 type LeaderboardData = {
   success: boolean;
+  metadata?: {
+    totalUsers: number;
+    lastUpdated: string;
+  };
   data: {
     all_time: { data: LeaderboardEntry[] };
     monthly: { data: LeaderboardEntry[] };
@@ -25,11 +30,14 @@ type LeaderboardData = {
   };
 };
 
+const ITEMS_PER_PAGE = 50;
+
 export function LeaderboardTable() {
   const [timePeriod, setTimePeriod] = useState<'all_time' | 'monthly' | 'weekly'>('all_time');
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
 
   useEffect(() => {
     let isSubscribed = true;
@@ -134,41 +142,45 @@ export function LeaderboardTable() {
     return <div className="text-center text-muted-foreground">No leaderboard data available</div>;
   }
 
-  const currentData = leaderboardData.data[timePeriod].data
-    .map((entry) => ({
-      uid: entry.uid,
-      name: entry.name,
-      wagered: entry.wagered[timePeriod === 'weekly' ? 'this_week' : 
-                           timePeriod === 'monthly' ? 'this_month' : 
-                           'all_time'] || 0
-    }))
-    .sort((a, b) => (b.wagered || 0) - (a.wagered || 0))
-    .slice(0, 100); // Limit to top 100 for performance
+  const currentData = leaderboardData.data[timePeriod].data;
+  const totalUsers = leaderboardData.metadata?.totalUsers || currentData.length;
+  const totalPages = Math.ceil(currentData.length / ITEMS_PER_PAGE);
+  const displayData = currentData.slice(
+    currentPage * ITEMS_PER_PAGE,
+    (currentPage + 1) * ITEMS_PER_PAGE
+  );
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 justify-center">
-        <Button
-          variant={timePeriod === 'all_time' ? 'default' : 'outline'}
-          onClick={() => setTimePeriod('all_time')}
-          className="font-heading tracking-tight"
-        >
-          ALL TIME
-        </Button>
-        <Button
-          variant={timePeriod === 'monthly' ? 'default' : 'outline'}
-          onClick={() => setTimePeriod('monthly')}
-          className="font-heading tracking-tight"
-        >
-          MONTHLY
-        </Button>
-        <Button
-          variant={timePeriod === 'weekly' ? 'default' : 'outline'}
-          onClick={() => setTimePeriod('weekly')}
-          className="font-heading tracking-tight"
-        >
-          WEEKLY
-        </Button>
+      <div className="flex flex-col gap-4">
+        <div className="flex gap-2 justify-center">
+          <Button
+            variant={timePeriod === 'all_time' ? 'default' : 'outline'}
+            onClick={() => setTimePeriod('all_time')}
+            className="font-heading tracking-tight"
+          >
+            ALL TIME
+          </Button>
+          <Button
+            variant={timePeriod === 'monthly' ? 'default' : 'outline'}
+            onClick={() => setTimePeriod('monthly')}
+            className="font-heading tracking-tight"
+          >
+            MONTHLY
+          </Button>
+          <Button
+            variant={timePeriod === 'weekly' ? 'default' : 'outline'}
+            onClick={() => setTimePeriod('weekly')}
+            className="font-heading tracking-tight"
+          >
+            WEEKLY
+          </Button>
+        </div>
+
+        <div className="text-center text-sm text-muted-foreground">
+          Total Users: {totalUsers.toLocaleString()} | 
+          Last Updated: {new Date(leaderboardData.metadata?.lastUpdated || Date.now()).toLocaleTimeString()}
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -182,19 +194,21 @@ export function LeaderboardTable() {
           </TableHeader>
           <TableBody>
             <AnimatePresence mode="wait">
-              {currentData.map((entry, index) => (
+              {displayData.map((entry, index) => (
                 <motion.tr
                   key={entry.uid}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  transition={{ delay: index * 0.05 }} // Reduced delay for better performance
+                  transition={{ delay: index * 0.05 }}
                   className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] cursor-pointer transition-colors"
                 >
                   <TableCell className="font-heading text-white py-3 md:py-4 text-sm md:text-base">
                     <div className="flex items-center gap-1">
-                      {index < 3 && <Trophy className="h-4 w-4 text-[#D7FF00]" />}
-                      {index + 1}
+                      {index + 1 + currentPage * ITEMS_PER_PAGE <= 3 && (
+                        <Trophy className="h-4 w-4 text-[#D7FF00]" />
+                      )}
+                      {index + 1 + currentPage * ITEMS_PER_PAGE}
                     </div>
                   </TableCell>
                   <TableCell className="font-sans text-white py-3 md:py-4 text-sm md:text-base">
@@ -204,7 +218,9 @@ export function LeaderboardTable() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-sans text-white py-3 md:py-4 text-sm md:text-base">
-                    ${entry.wagered.toLocaleString()}
+                    ${entry.wagered[timePeriod === 'weekly' ? 'this_week' : 
+                              timePeriod === 'monthly' ? 'this_month' : 
+                              'all_time'].toLocaleString()}
                   </TableCell>
                 </motion.tr>
               ))}
@@ -212,6 +228,30 @@ export function LeaderboardTable() {
           </TableBody>
         </Table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+            disabled={currentPage === 0}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="px-4 py-2 text-sm">
+            Page {currentPage + 1} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+            disabled={currentPage === totalPages - 1}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
