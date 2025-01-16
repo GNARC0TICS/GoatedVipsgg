@@ -36,13 +36,40 @@ async function fetchLeaderboardData() {
       success: true,
       data: {
         all_time: { 
-          data: Array.isArray(data) ? data : [data] 
+          data: Array.isArray(data) ? data.map(entry => ({
+            uid: entry.uid || entry.id,
+            name: entry.username || entry.name,
+            wagered: {
+              all_time: entry.totalWager || 0,
+              this_month: entry.monthlyWager || 0,
+              this_week: entry.weeklyWager || 0,
+              today: entry.dailyWager || 0
+            }
+          })) : []
         },
         monthly: { 
-          data: Array.isArray(data) ? data : [data] 
+          data: Array.isArray(data) ? data.map(entry => ({
+            uid: entry.uid || entry.id,
+            name: entry.username || entry.name,
+            wagered: {
+              all_time: entry.totalWager || 0,
+              this_month: entry.monthlyWager || 0,
+              this_week: entry.weeklyWager || 0,
+              today: entry.dailyWager || 0
+            }
+          })) : []
         },
         weekly: { 
-          data: Array.isArray(data) ? data : [data] 
+          data: Array.isArray(data) ? data.map(entry => ({
+            uid: entry.uid || entry.id,
+            name: entry.username || entry.name,
+            wagered: {
+              all_time: entry.totalWager || 0,
+              this_month: entry.monthlyWager || 0,
+              this_week: entry.weeklyWager || 0,
+              today: entry.dailyWager || 0
+            }
+          })) : []
         }
       }
     };

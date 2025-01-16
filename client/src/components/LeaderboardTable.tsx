@@ -105,8 +105,8 @@ export function LeaderboardTable() {
     );
   }
 
-  if (!leaderboardData?.data?.[timePeriod]) {
-    return <div>No leaderboard data available</div>;
+  if (!leaderboardData?.data?.[timePeriod]?.data) {
+    return <div className="text-center text-white">No leaderboard data available</div>;
   }
 
   const currentData = leaderboardData.data[timePeriod]?.data || [];
