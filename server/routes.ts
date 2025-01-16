@@ -106,6 +106,11 @@ async function fetchLeaderboardData(force = false) {
   }
 }
 
+// Extended WebSocket type with isAlive property
+interface ExtendedWebSocket extends WebSocket {
+  isAlive: boolean;
+}
+
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
 
@@ -120,37 +125,39 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Track active connections
-  const clients = new Set<WebSocket>();
+  const clients = new Set<ExtendedWebSocket>();
   let updateInterval: NodeJS.Timeout;
 
   wss.on("connection", async (ws: WebSocket, req: any) => {
+    const extWs = ws as ExtendedWebSocket;
+
     try {
       await rateLimiter.consume(req.socket.remoteAddress);
     } catch {
-      ws.close(1008, "Too many connections");
+      extWs.close(1008, "Too many connections");
       return;
     }
 
     log("New WebSocket connection established");
-    clients.add(ws);
+    clients.add(extWs);
 
     // Send initial data
     const initialData = await fetchLeaderboardData();
-    if (ws.readyState === ws.OPEN) {
-      ws.send(JSON.stringify(initialData));
+    if (extWs.readyState === WebSocket.OPEN) {
+      extWs.send(JSON.stringify(initialData));
     }
 
     // Setup ping-pong to detect stale connections
-    ws.isAlive = true;
-    ws.on('pong', () => { ws.isAlive = true; });
+    extWs.isAlive = true;
+    extWs.on('pong', () => { extWs.isAlive = true; });
 
-    ws.on("error", (error) => {
+    extWs.on("error", (error) => {
       log(`WebSocket error: ${error}`);
-      clients.delete(ws);
+      clients.delete(extWs);
     });
 
-    ws.on("close", () => {
-      clients.delete(ws);
+    extWs.on("close", () => {
+      clients.delete(extWs);
       log("WebSocket connection closed");
     });
 
@@ -160,19 +167,25 @@ export function registerRoutes(app: Express): Server {
         const data = await fetchLeaderboardData();
 
         // Ping all clients and remove dead connections
-        wss.clients.forEach((client: any) => {
-          if (client.isAlive === false) {
+        for (const client of clients) {
+          if (!client.isAlive) {
             clients.delete(client);
-            return client.terminate();
+            client.terminate();
+            continue;
           }
 
           client.isAlive = false;
           client.ping();
 
           if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(data));
+            try {
+              client.send(JSON.stringify(data));
+            } catch (error) {
+              log(`Error sending data to client: ${error}`);
+              clients.delete(client);
+            }
           }
-        });
+        }
 
         // Clear interval if no clients are connected
         if (clients.size === 0) {
@@ -185,7 +198,7 @@ export function registerRoutes(app: Express): Server {
   // HTTP endpoint for initial data load
   app.get("/api/affiliate/stats", async (req, res) => {
     try {
-      await rateLimiter.consume(req.ip);
+      await rateLimiter.consume(req.ip || "unknown");
       const data = await fetchLeaderboardData();
       res.json(data);
     } catch (error) {
