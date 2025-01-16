@@ -4,17 +4,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { User, Trophy, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-//import { useVirtualizer } from '@tanstack/react-virtual'; //Not used in this implementation
+
+type WageredData = {
+  today: number;
+  this_week: number;
+  this_month: number;
+  all_time: number;
+};
 
 type LeaderboardEntry = {
   uid: string;
   name: string;
-  wagered: {
-    today: number;
-    this_week: number;
-    this_month: number;
-    all_time: number;
-  };
+  wagered: WageredData;
 };
 
 type LeaderboardData = {

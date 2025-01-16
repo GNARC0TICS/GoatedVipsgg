@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer, WebSocket } from "ws";
+import { WebSocketServer, type WebSocket } from "ws";
 import { log } from "./vite";
 import { setupAuth } from "./auth";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
@@ -10,10 +10,10 @@ const API_CONFIG = {
   baseUrl: process.env.API_BASE_URL || "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate"
 };
 
-// Rate limiter setup with adjusted limits for larger dataset
+// Rate limiter setup
 const rateLimiter = new RateLimiterMemory({
-  points: 60, // Increased points
-  duration: 1, // Per second
+  points: 60,
+  duration: 1,
 });
 
 if (!API_CONFIG.token) {
@@ -28,7 +28,7 @@ type LeaderboardCache = {
 };
 
 let leaderboardCache: LeaderboardCache | null = null;
-const CACHE_DURATION = 10000; // 10 seconds, adjusted for large dataset
+const CACHE_DURATION = 10000; // 10 seconds
 
 async function fetchLeaderboardData(force = false): Promise<any> {
   try {
@@ -51,61 +51,26 @@ async function fetchLeaderboardData(force = false): Promise<any> {
 
     const rawData = await response.json();
 
-    // Mock data for testing when API is not available
-    const mockData = Array.from({ length: 1730 }, (_, i) => ({
-      uid: `user${i + 1}`,
-      username: `Player${i + 1}`,
-      totalWager: Math.floor(Math.random() * 1000000),
-      monthlyWager: Math.floor(Math.random() * 100000),
-      weeklyWager: Math.floor(Math.random() * 10000),
-      dailyWager: Math.floor(Math.random() * 1000)
-    }));
+    if (!rawData.success || !Array.isArray(rawData.data)) {
+      throw new Error('Invalid API response format');
+    }
 
-    const dataToProcess = Array.isArray(rawData) && rawData.length > 0 ? rawData : mockData;
-
-    // Transform and organize the data efficiently
+    // Transform and organize the data based on the actual API response structure
     const transformedData = {
       success: true,
       metadata: {
-        totalUsers: dataToProcess.length,
+        totalUsers: rawData.data.length,
         lastUpdated: new Date().toISOString(),
       },
       data: {
         all_time: {
-          data: dataToProcess.map(entry => ({
-            uid: entry.uid || entry.id,
-            name: entry.username || entry.name,
-            wagered: {
-              all_time: Number(entry.totalWager || 0),
-              this_month: Number(entry.monthlyWager || 0),
-              this_week: Number(entry.weeklyWager || 0),
-              today: Number(entry.dailyWager || 0)
-            }
-          })).sort((a, b) => b.wagered.all_time - a.wagered.all_time)
+          data: [...rawData.data].sort((a, b) => b.wagered.all_time - a.wagered.all_time)
         },
         monthly: {
-          data: dataToProcess.map(entry => ({
-            uid: entry.uid || entry.id,
-            name: entry.username || entry.name,
-            wagered: {
-              all_time: Number(entry.totalWager || 0),
-              this_month: Number(entry.monthlyWager || 0),
-              this_week: Number(entry.weeklyWager || 0),
-              today: Number(entry.dailyWager || 0)
-            }
-          })).sort((a, b) => b.wagered.this_month - a.wagered.this_month)
+          data: [...rawData.data].sort((a, b) => b.wagered.this_month - a.wagered.this_month)
         },
         weekly: {
-          data: dataToProcess.map(entry => ({
-            uid: entry.uid || entry.id,
-            name: entry.username || entry.name,
-            wagered: {
-              all_time: Number(entry.totalWager || 0),
-              this_month: Number(entry.monthlyWager || 0),
-              this_week: Number(entry.weeklyWager || 0),
-              today: Number(entry.dailyWager || 0)
-            }
-          })).sort((a, b) => b.wagered.this_week - a.wagered.this_week)
+          data: [...rawData.data].sort((a, b) => b.wagered.this_week - a.wagered.this_week)
         }
       }
     };
@@ -113,36 +78,21 @@ async function fetchLeaderboardData(force = false): Promise<any> {
     leaderboardCache = {
       data: transformedData,
       timestamp: now,
-      totalUsers: dataToProcess.length
+      totalUsers: rawData.data.length
     };
 
-    log(`Successfully fetched and processed ${dataToProcess.length} users' leaderboard data`);
+    log(`Successfully fetched and processed ${rawData.data.length} users' leaderboard data`);
     return transformedData;
   } catch (error) {
     log(`Error fetching leaderboard data: ${error}`);
     if (!leaderboardCache?.data) {
-      // Return mock data if API fails and no cache exists
-      const mockData = Array.from({ length: 1730 }, (_, i) => ({
-        uid: `user${i + 1}`,
-        name: `Player${i + 1}`,
-        wagered: {
-          all_time: Math.floor(Math.random() * 1000000),
-          this_month: Math.floor(Math.random() * 100000),
-          this_week: Math.floor(Math.random() * 10000),
-          today: Math.floor(Math.random() * 1000)
-        }
-      }));
-
       return {
-        success: true,
-        metadata: {
-          totalUsers: mockData.length,
-          lastUpdated: new Date().toISOString(),
-        },
+        success: false,
+        error: "Failed to fetch leaderboard data",
         data: {
-          all_time: { data: mockData.sort((a, b) => b.wagered.all_time - a.wagered.all_time) },
-          monthly: { data: mockData.sort((a, b) => b.wagered.this_month - a.wagered.this_month) },
-          weekly: { data: mockData.sort((a, b) => b.wagered.this_week - a.wagered.this_week) }
+          all_time: { data: [] },
+          monthly: { data: [] },
+          weekly: { data: [] }
         }
       };
     }
@@ -161,7 +111,7 @@ export function registerRoutes(app: Express): Server {
   // Setup authentication
   setupAuth(app);
 
-  // WebSocket setup with ping/pong mechanism for connection tracking
+  // WebSocket setup with ping/pong mechanism
   const wss = new WebSocketServer({ 
     server: httpServer,
     path: "/ws/affiliate-stats",
@@ -173,7 +123,7 @@ export function registerRoutes(app: Express): Server {
 
   // Heartbeat interval
   const interval = setInterval(() => {
-    wss.clients.forEach((ws: WebSocket) => {
+    wss.clients.forEach((ws) => {
       const extWs = ws as ExtendedWebSocket;
       if (extWs.isAlive === false) {
         clients.delete(extWs);
@@ -212,18 +162,15 @@ export function registerRoutes(app: Express): Server {
       log(`Error sending initial data: ${error}`);
     }
 
-    // Handle pong messages
     extWs.on('pong', () => {
       extWs.isAlive = true;
     });
 
-    // Handle errors
     extWs.on("error", (error) => {
       log(`WebSocket error: ${error}`);
       clients.delete(extWs);
     });
 
-    // Handle connection close
     extWs.on("close", () => {
       clients.delete(extWs);
       log("WebSocket connection closed");
@@ -251,7 +198,7 @@ export function registerRoutes(app: Express): Server {
     }
   }, 5000);
 
-  // HTTP endpoint for initial data load with pagination
+  // HTTP endpoint for initial data load
   app.get("/api/affiliate/stats", async (req, res) => {
     try {
       await rateLimiter.consume(req.ip || "unknown");
@@ -271,12 +218,7 @@ export function registerRoutes(app: Express): Server {
         log(`Error in /api/affiliate/stats: ${error}`);
         res.status(500).json({
           success: false,
-          error: "Failed to fetch affiliate stats",
-          data: {
-            all_time: { data: [] },
-            monthly: { data: [] },
-            weekly: { data: [] }
-          }
+          error: "Failed to fetch affiliate stats"
         });
       }
     }
