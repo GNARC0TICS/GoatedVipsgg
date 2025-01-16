@@ -143,38 +143,47 @@ export function LeaderboardTable() {
         </Button>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-20 font-heading text-[#D7FF00]">RANK</TableHead>
-            <TableHead className="font-heading text-[#D7FF00]">USERNAME</TableHead>
-            <TableHead className="text-right font-heading text-[#D7FF00]">TOTAL WAGER</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <AnimatePresence mode="wait">
-            {currentData.map((entry, index) => (
-              <motion.tr
-                key={entry.uid}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] cursor-pointer transition-colors"
-              >
-                <TableCell className="font-heading text-white">{index + 1}</TableCell>
-                <TableCell className="font-sans text-white flex items-center gap-2">
-                  <User className="h-4 w-4 text-[#D7FF00]" />
-                  {entry.name}
-                </TableCell>
-                <TableCell className="text-right font-sans text-white">
-                  ${entry.wagered.toLocaleString()}
-                </TableCell>
-              </motion.tr>
-            ))}
-          </AnimatePresence>
-        </TableBody>
-      </Table>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-16 md:w-20 font-heading text-[#D7FF00] text-sm md:text-base">RANK</TableHead>
+              <TableHead className="font-heading text-[#D7FF00] text-sm md:text-base">USERNAME</TableHead>
+              <TableHead className="text-right font-heading text-[#D7FF00] text-sm md:text-base">WAGER</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <AnimatePresence mode="wait">
+              {currentData.map((entry, index) => (
+                <motion.tr
+                  key={entry.uid}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] cursor-pointer transition-colors"
+                >
+                  <TableCell className="font-heading text-white py-3 md:py-4 text-sm md:text-base">
+                    <div className="flex items-center gap-1">
+                      {index < 3 && <Trophy className="h-4 w-4 text-[#D7FF00]" />}
+                      {index + 1}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-sans text-white py-3 md:py-4 text-sm md:text-base">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-[#D7FF00] hidden md:block" />
+                      <span className="truncate max-w-[120px] md:max-w-none">{entry.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right font-sans text-white py-3 md:py-4 text-sm md:text-base">
+                    ${entry.wagered.toLocaleString()}
+                  </TableCell>
+                </motion.tr>
+              ))}
+            </AnimatePresence>
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
