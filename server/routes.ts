@@ -1,6 +1,5 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer, type WebSocket } from "ws";
 import { log } from "./vite";
 import { setupAuth } from "./auth";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
@@ -55,7 +54,7 @@ async function fetchLeaderboardData(force = false): Promise<any> {
       throw new Error('Invalid API response format');
     }
 
-    // Transform and organize the data based on the actual API response structure
+    // Transform and organize the data
     const transformedData = {
       success: true,
       metadata: {
@@ -100,105 +99,13 @@ async function fetchLeaderboardData(force = false): Promise<any> {
   }
 }
 
-// Extended WebSocket type with isAlive property
-interface ExtendedWebSocket extends WebSocket {
-  isAlive: boolean;
-}
-
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
 
   // Setup authentication
   setupAuth(app);
 
-  // WebSocket setup with ping/pong mechanism
-  const wss = new WebSocketServer({ 
-    server: httpServer,
-    path: "/ws/affiliate-stats",
-    verifyClient: (info: any) => !info.req.headers['sec-websocket-protocol']?.includes('vite-hmr')
-  });
-
-  // Track active connections
-  const clients = new Set<ExtendedWebSocket>();
-
-  // Heartbeat interval
-  const interval = setInterval(() => {
-    wss.clients.forEach((ws) => {
-      const extWs = ws as ExtendedWebSocket;
-      if (extWs.isAlive === false) {
-        clients.delete(extWs);
-        return extWs.terminate();
-      }
-      extWs.isAlive = false;
-      extWs.ping();
-    });
-  }, 30000);
-
-  wss.on('close', () => {
-    clearInterval(interval);
-  });
-
-  wss.on("connection", async (ws: WebSocket, req: any) => {
-    try {
-      await rateLimiter.consume(req.socket.remoteAddress || "unknown");
-    } catch {
-      ws.close(1008, "Too many connections");
-      return;
-    }
-
-    const extWs = ws as ExtendedWebSocket;
-    extWs.isAlive = true;
-    clients.add(extWs);
-
-    log("New WebSocket connection established");
-
-    // Send initial data
-    try {
-      const data = await fetchLeaderboardData();
-      if (extWs.readyState === WebSocket.OPEN) {
-        extWs.send(JSON.stringify(data));
-      }
-    } catch (error) {
-      log(`Error sending initial data: ${error}`);
-    }
-
-    extWs.on('pong', () => {
-      extWs.isAlive = true;
-    });
-
-    extWs.on("error", (error) => {
-      log(`WebSocket error: ${error}`);
-      clients.delete(extWs);
-    });
-
-    extWs.on("close", () => {
-      clients.delete(extWs);
-      log("WebSocket connection closed");
-    });
-  });
-
-  // Update all connected clients every 5 seconds
-  setInterval(async () => {
-    if (clients.size > 0) {
-      try {
-        const data = await fetchLeaderboardData();
-        clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            try {
-              client.send(JSON.stringify(data));
-            } catch (error) {
-              log(`Error sending data to client: ${error}`);
-              clients.delete(client);
-            }
-          }
-        });
-      } catch (error) {
-        log(`Error fetching update data: ${error}`);
-      }
-    }
-  }, 5000);
-
-  // HTTP endpoint for initial data load
+  // HTTP endpoint for leaderboard data
   app.get("/api/affiliate/stats", async (req, res) => {
     try {
       await rateLimiter.consume(req.ip || "unknown");
