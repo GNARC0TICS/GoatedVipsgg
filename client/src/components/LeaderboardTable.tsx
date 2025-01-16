@@ -109,7 +109,13 @@ export function LeaderboardTable() {
     return <div className="text-center text-white">No leaderboard data available</div>;
   }
 
-  const currentData = leaderboardData.data[timePeriod]?.data || [];
+  const currentData = leaderboardData?.data?.[timePeriod]?.data?.map(entry => ({
+    uid: entry.uid,
+    name: entry.name,
+    wagered: entry.wagered[timePeriod === 'weekly' ? 'this_week' : 
+                          timePeriod === 'monthly' ? 'this_month' : 
+                          'all_time']
+  })) || [];
 
   return (
     <div className="space-y-4">

@@ -40,10 +40,9 @@ async function fetchLeaderboardData() {
             uid: entry.uid || entry.id,
             name: entry.username || entry.name,
             wagered: {
-              all_time: entry.totalWager || 0,
-              this_month: entry.monthlyWager || 0,
-              this_week: entry.weeklyWager || 0,
-              today: entry.dailyWager || 0
+              all_time: Number(entry.totalWager || 0),
+              this_month: Number(entry.monthlyWager || 0),
+              this_week: Number(entry.weeklyWager || 0)
             }
           })) : []
         },
@@ -52,10 +51,9 @@ async function fetchLeaderboardData() {
             uid: entry.uid || entry.id,
             name: entry.username || entry.name,
             wagered: {
-              all_time: entry.totalWager || 0,
-              this_month: entry.monthlyWager || 0,
-              this_week: entry.weeklyWager || 0,
-              today: entry.dailyWager || 0
+              all_time: Number(entry.totalWager || 0),
+              this_month: Number(entry.monthlyWager || 0),
+              this_week: Number(entry.weeklyWager || 0)
             }
           })) : []
         },
@@ -64,10 +62,9 @@ async function fetchLeaderboardData() {
             uid: entry.uid || entry.id,
             name: entry.username || entry.name,
             wagered: {
-              all_time: entry.totalWager || 0,
-              this_month: entry.monthlyWager || 0,
-              this_week: entry.weeklyWager || 0,
-              today: entry.dailyWager || 0
+              all_time: Number(entry.totalWager || 0),
+              this_month: Number(entry.monthlyWager || 0),
+              this_week: Number(entry.weeklyWager || 0)
             }
           })) : []
         }
