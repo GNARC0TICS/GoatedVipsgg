@@ -3,18 +3,35 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, type WebSocket } from "ws";
 import { log } from "./vite";
 import { setupAuth } from "./auth";
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 const API_CONFIG = {
   token: process.env.API_TOKEN || '',
   baseUrl: "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate"
 };
 
+// Rate limiter setup
+const rateLimiter = new RateLimiterMemory({
+  points: 30, // Number of points
+  duration: 1, // Per second
+});
+
 if (!API_CONFIG.token) {
   log('Warning: API_TOKEN environment variable is not set');
 }
 
-async function fetchLeaderboardData() {
+// Cache for leaderboard data
+let cachedLeaderboardData: any = null;
+let lastFetchTime = 0;
+const CACHE_DURATION = 5000; // 5 seconds
+
+async function fetchLeaderboardData(force = false) {
   try {
+    const now = Date.now();
+    if (!force && cachedLeaderboardData && (now - lastFetchTime < CACHE_DURATION)) {
+      return cachedLeaderboardData;
+    }
+
     log(`Fetching leaderboard data from ${API_CONFIG.baseUrl}/referral-leaderboard`);
     const response = await fetch(`${API_CONFIG.baseUrl}/referral-leaderboard`, {
       headers: {
@@ -24,14 +41,11 @@ async function fetchLeaderboardData() {
     });
 
     if (!response.ok) {
-      log(`API Error: ${response.status} - ${response.statusText}`);
       throw new Error(`API responded with status ${response.status}`);
     }
 
     const data = await response.json();
-    log('Successfully fetched leaderboard data');
 
-    // Transform the API response into the expected format
     const transformedData = {
       success: true,
       data: {
@@ -71,19 +85,24 @@ async function fetchLeaderboardData() {
       }
     };
 
+    cachedLeaderboardData = transformedData;
+    lastFetchTime = now;
+    log('Successfully fetched leaderboard data');
     return transformedData;
   } catch (error) {
     log(`Error fetching leaderboard data: ${error}`);
-    // Return empty data structure with the correct format
-    return {
-      success: false,
-      error: "Failed to fetch leaderboard data",
-      data: {
-        all_time: { data: [] },
-        monthly: { data: [] },
-        weekly: { data: [] }
-      }
-    };
+    if (!cachedLeaderboardData) {
+      return {
+        success: false,
+        error: "Failed to fetch leaderboard data",
+        data: {
+          all_time: { data: [] },
+          monthly: { data: [] },
+          weekly: { data: [] }
+        }
+      };
+    }
+    return cachedLeaderboardData;
   }
 }
 
@@ -93,72 +112,97 @@ export function registerRoutes(app: Express): Server {
   // Setup authentication
   setupAuth(app);
 
-  // WebSocket setup
+  // WebSocket setup with connection tracking
   const wss = new WebSocketServer({ 
     server: httpServer,
     path: "/ws/affiliate-stats",
     verifyClient: (info: any) => !info.req.headers['sec-websocket-protocol']?.includes('vite-hmr')
   });
 
-  wss.on("connection", (ws: WebSocket) => {
-    log("New WebSocket connection established");
-    let interval: NodeJS.Timeout;
+  // Track active connections
+  const clients = new Set<WebSocket>();
+  let updateInterval: NodeJS.Timeout;
 
-    const sendLeaderboardData = async () => {
-      try {
-        const data = await fetchLeaderboardData();
-        if (ws.readyState === ws.OPEN) {
-          ws.send(JSON.stringify(data));
-          log('Successfully sent leaderboard data through WebSocket');
-        }
-      } catch (error) {
-        log(`WebSocket error: ${error}`);
-        if (ws.readyState === ws.OPEN) {
-          ws.send(JSON.stringify({
-            success: false,
-            error: "Failed to fetch leaderboard data",
-            data: {
-              all_time: { data: [] },
-              monthly: { data: [] },
-              weekly: { data: [] }
-            }
-          }));
-        }
-      }
-    };
+  wss.on("connection", async (ws: WebSocket, req: any) => {
+    try {
+      await rateLimiter.consume(req.socket.remoteAddress);
+    } catch {
+      ws.close(1008, "Too many connections");
+      return;
+    }
+
+    log("New WebSocket connection established");
+    clients.add(ws);
 
     // Send initial data
-    sendLeaderboardData();
+    const initialData = await fetchLeaderboardData();
+    if (ws.readyState === ws.OPEN) {
+      ws.send(JSON.stringify(initialData));
+    }
 
-    // Set up interval for updates (every 5 seconds)
-    interval = setInterval(sendLeaderboardData, 5000);
+    // Setup ping-pong to detect stale connections
+    ws.isAlive = true;
+    ws.on('pong', () => { ws.isAlive = true; });
 
     ws.on("error", (error) => {
-      log(`WebSocket error occurred: ${error}`);
+      log(`WebSocket error: ${error}`);
+      clients.delete(ws);
     });
 
     ws.on("close", () => {
-      clearInterval(interval);
+      clients.delete(ws);
       log("WebSocket connection closed");
     });
+
+    // Start update interval if this is the first client
+    if (clients.size === 1) {
+      updateInterval = setInterval(async () => {
+        const data = await fetchLeaderboardData();
+
+        // Ping all clients and remove dead connections
+        wss.clients.forEach((client: any) => {
+          if (client.isAlive === false) {
+            clients.delete(client);
+            return client.terminate();
+          }
+
+          client.isAlive = false;
+          client.ping();
+
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(data));
+          }
+        });
+
+        // Clear interval if no clients are connected
+        if (clients.size === 0) {
+          clearInterval(updateInterval);
+        }
+      }, 5000);
+    }
   });
 
   // HTTP endpoint for initial data load
-  app.get("/api/affiliate/stats", async (_req, res) => {
+  app.get("/api/affiliate/stats", async (req, res) => {
     try {
+      await rateLimiter.consume(req.ip);
       const data = await fetchLeaderboardData();
       res.json(data);
     } catch (error) {
-      log(`Error in /api/affiliate/stats: ${error}`);
-      res.status(500).json({
-        success: false,
-        error: "Failed to fetch affiliate stats",
-        data: {
-          all_time: { data: [] },
-          monthly: { data: [] },
-          weekly: { data: [] }
-        }
-      });
+      if (error.consumedPoints) {
+        res.status(429).json({ error: "Too many requests" });
+      } else {
+        log(`Error in /api/affiliate/stats: ${error}`);
+        res.status(500).json({
+          success: false,
+          error: "Failed to fetch affiliate stats",
+          data: {
+            all_time: { data: [] },
+            monthly: { data: [] },
+            weekly: { data: [] }
+          }
+        });
+      }
     }
   });
 

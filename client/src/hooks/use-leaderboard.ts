@@ -1,96 +1,131 @@
-
-import { useQuery } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
 
 type APIResponse = {
   success: boolean;
-  data: Array<{
-    uid: string;
-    name: string;
-    wagered: {
-      today: number;
-      this_week: number;
-      this_month: number;
-      all_time: number;
-    };
-  }>;
+  data: {
+    all_time: { data: LeaderboardEntry[] };
+    monthly: { data: LeaderboardEntry[] };
+    weekly: { data: LeaderboardEntry[] };
+  };
 };
 
 type LeaderboardEntry = {
-  username: string;
-  totalWager: number;
-  rank: number;
+  uid: string;
+  name: string;
+  wagered: {
+    today: number;
+    this_week: number;
+    this_month: number;
+    all_time: number;
+  };
 };
 
 export type TimePeriod = 'weekly' | 'monthly' | 'all_time';
 
 export function useLeaderboard(timePeriod: TimePeriod = 'all_time') {
-  const [ws, setWs] = useState<WebSocket | null>(null);
-  const [realTimeData, setRealTimeData] = useState<LeaderboardEntry[]>([]);
+  const queryClient = useQueryClient();
+  const [wsError, setWsError] = useState<string | null>(null);
 
-  const transformData = (data: APIResponse['data']) => {
+  const transformData = useCallback((data: APIResponse['data'][TimePeriod]['data']) => {
     return data
-      .map((entry, index) => ({
-        username: entry.name,
-        totalWager: timePeriod === 'weekly' ? entry.wagered.this_week :
-                   timePeriod === 'monthly' ? entry.wagered.this_month :
-                   entry.wagered.all_time,
-        rank: index + 1
+      .map((entry) => ({
+        uid: entry.uid,
+        name: entry.name,
+        wagered: entry.wagered ? 
+          entry.wagered[timePeriod === 'weekly' ? 'this_week' : 
+                       timePeriod === 'monthly' ? 'this_month' : 
+                       'all_time'] || 0 : 0
       }))
-      .sort((a, b) => b.totalWager - a.totalWager)
-      .map((entry, index) => ({ ...entry, rank: index + 1 }));
-  };
+      .sort((a, b) => (b.wagered || 0) - (a.wagered || 0))
+      .slice(0, 100); // Limit to top 100 for better performance
+  }, [timePeriod]);
 
-  const { data: initialData, isLoading, error } = useQuery<LeaderboardEntry[]>({
+  const { data: initialData, isLoading, error: queryError } = useQuery({
     queryKey: ['/api/affiliate/stats', timePeriod],
     queryFn: async () => {
-      const response = await fetch('/api/affiliate/stats', {
-        credentials: 'include'
-      });
+      const response = await fetch('/api/affiliate/stats');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const json: APIResponse = await response.json();
-      console.log('Initial API response:', json);
 
-      if (!json.success || !Array.isArray(json.data)) {
+      if (!json.success || !json.data?.[timePeriod]?.data) {
         throw new Error('Invalid data format');
       }
 
-      return transformData(json.data);
+      return transformData(json.data[timePeriod].data);
     },
     staleTime: 30000,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * (attemptIndex + 1), 5000)
   });
 
   useEffect(() => {
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws/affiliate-stats`);
+    let isSubscribed = true;
+    let ws: WebSocket | null = null;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 5;
 
-    socket.onmessage = (event) => {
-      try {
-        const json: APIResponse = JSON.parse(event.data);
-
-        if (json.success && Array.isArray(json.data)) {
-          const transformed = transformData(json.data);
-          setRealTimeData(transformed);
-        }
-      } catch (e) {
-        console.error('Failed to parse websocket data:', e);
+    const connectWebSocket = () => {
+      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        setWsError("Unable to establish real-time connection");
+        return;
       }
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws/affiliate-stats`;
+
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        reconnectAttempts = 0;
+        setWsError(null);
+      };
+
+      ws.onmessage = (event) => {
+        if (!isSubscribed) return;
+
+        try {
+          const json: APIResponse = JSON.parse(event.data);
+          if (json.success && json.data?.[timePeriod]?.data) {
+            const transformedData = transformData(json.data[timePeriod].data);
+            queryClient.setQueryData(['/api/affiliate/stats', timePeriod], transformedData);
+          }
+        } catch (error) {
+          console.error('WebSocket data parsing error:', error);
+          setWsError("Error processing real-time data");
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setWsError("Connection error occurred");
+      };
+
+      ws.onclose = () => {
+        if (!isSubscribed) return;
+
+        console.log('WebSocket closed, attempting to reconnect...');
+        reconnectAttempts++;
+        setTimeout(connectWebSocket, Math.min(1000 * reconnectAttempts, 5000));
+      };
     };
 
-    socket.onclose = () => {
-      console.log('WebSocket connection closed');
-      setTimeout(() => setWs(null), 1000);
-    };
-
-    setWs(socket);
+    connectWebSocket();
 
     return () => {
-      socket.close();
+      isSubscribed = false;
+      if (ws?.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
     };
-  }, [timePeriod]);
+  }, [timePeriod, transformData, queryClient]);
 
   return {
-    data: realTimeData.length > 0 ? realTimeData : initialData,
+    data: initialData,
     isLoading,
-    error,
+    error: queryError || wsError
   };
 }
