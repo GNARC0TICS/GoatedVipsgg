@@ -112,10 +112,10 @@ export function LeaderboardTable() {
   const currentData = leaderboardData?.data?.[timePeriod]?.data?.map(entry => ({
     uid: entry.uid,
     name: entry.name,
-    wagered: entry.wagered[timePeriod === 'weekly' ? 'this_week' : 
-                          timePeriod === 'monthly' ? 'this_month' : 
-                          'all_time']
-  })) || [];
+    wagered: entry.wagered ? entry.wagered[timePeriod === 'weekly' ? 'this_week' : 
+                            timePeriod === 'monthly' ? 'this_month' : 
+                            'all_time'] : 0
+  })).filter(Boolean) || [];
 
   return (
     <div className="space-y-4">
@@ -168,7 +168,7 @@ export function LeaderboardTable() {
                   {entry.name}
                 </TableCell>
                 <TableCell className="text-right font-sans text-white">
-                  ${entry.wagered[timePeriod === 'weekly' ? 'this_week' : timePeriod === 'monthly' ? 'this_month' : 'all_time'].toLocaleString()}
+                  ${entry.wagered.toLocaleString()}
                 </TableCell>
               </motion.tr>
             ))}
