@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer, type WebSocket } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
 import { log } from "./vite";
 import { setupAuth } from "./auth";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
@@ -143,7 +143,7 @@ export function registerRoutes(app: Express): Server {
 
     // Send initial data
     const initialData = await fetchLeaderboardData();
-    if (extWs.readyState === WebSocket.OPEN) {
+    if (extWs.readyState === 1) { // WebSocket.OPEN is 1
       extWs.send(JSON.stringify(initialData));
     }
 
@@ -177,7 +177,7 @@ export function registerRoutes(app: Express): Server {
           client.isAlive = false;
           client.ping();
 
-          if (client.readyState === WebSocket.OPEN) {
+          if (client.readyState === 1) { // WebSocket.OPEN is 1
             try {
               client.send(JSON.stringify(data));
             } catch (error) {
@@ -201,7 +201,7 @@ export function registerRoutes(app: Express): Server {
       await rateLimiter.consume(req.ip || "unknown");
       const data = await fetchLeaderboardData();
       res.json(data);
-    } catch (error) {
+    } catch (error: any) {
       if (error.consumedPoints) {
         res.status(429).json({ error: "Too many requests" });
       } else {
