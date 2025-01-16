@@ -48,11 +48,22 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 // Application startup with enhanced error handling
 async function startServer() {
   try {
-    // Test database connection
+    // Initialize critical services in sequence
+    log("Starting server initialization...");
+    
+    // 1. Database check
     await db.execute(sql`SELECT 1`);
     log("Database connection successful");
 
-    // Create server and register routes
+    // 2. API connectivity check
+    const apiCheck = await fetch(`${process.env.API_BASE_URL || 'https://europe-west2-g3casino.cloudfunctions.net/user/affiliate'}/health`).catch(() => null);
+    if (!apiCheck?.ok) {
+      log("Warning: API health check failed - continuing startup");
+    } else {
+      log("API connection successful");
+    }
+
+    // 3. Create server and register routes
     const server = registerRoutes(app);
 
     // Setup Vite in development

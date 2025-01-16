@@ -86,12 +86,25 @@ function Router() {
 }
 
 function App() {
+  // Initialize query client with retry logic
+  React.useEffect(() => {
+    queryClient.setDefaultOptions({
+      queries: {
+        retry: 2,
+        staleTime: 10000,
+        refetchOnWindowFocus: false
+      }
+    });
+  }, []);
+
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <Router />
-          <Toaster />
+          <React.Suspense fallback={<LoadingSpinner />}>
+            <Router />
+            <Toaster />
+          </React.Suspense>
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
