@@ -22,7 +22,9 @@ export default function Home() {
             />
           </motion.div>
 
-          <FeatureCarousel />
+          <div className="max-w-4xl mx-auto">
+            <FeatureCarousel />
+          </div>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
