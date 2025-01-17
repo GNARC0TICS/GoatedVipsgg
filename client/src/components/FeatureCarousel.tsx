@@ -16,6 +16,14 @@ export function FeatureCarousel() {
   const containerRef = useRef<HTMLDivElement>(null);
   const controls = useAnimationControls();
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % features.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleDragEnd = (event: any, info: any) => {
     const offset = info.offset.x;
     const velocity = info.velocity.x;
@@ -46,10 +54,16 @@ export function FeatureCarousel() {
             key={index}
             className="px-8"
             animate={{
-              scale: index === currentIndex ? 1 : 0.9,
-              opacity: index === currentIndex ? 1 : 0.5
+              scale: index === currentIndex ? 1.2 : 0.8,
+              opacity: index === currentIndex ? 1 : 0.3,
+              x: `${(index - currentIndex) * 100}%`
             }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 300, 
+              damping: 30,
+              duration: 0.5
+            }}
           >
             <motion.h1
               className="text-3xl md:text-5xl lg:text-6xl font-heading font-extrabold uppercase bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent cursor-default select-none"
