@@ -107,19 +107,34 @@ export default function WagerRaces() {
           </div>
 
           {/* Podium Section */}
-          <div className="flex flex-col items-center mb-12">
-            <div className="flex justify-center items-end gap-8 mb-8">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center py-16 px-4 mb-12 relative"
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/5 to-transparent pointer-events-none" />
+            <div className="flex justify-center items-end gap-6 md:gap-8 relative">
               {/* 2nd Place */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative bg-[#1A1B21]/80 backdrop-blur-sm p-4 rounded-lg border border-[#C0C0C0] w-[160px] h-[140px]"
+                whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-6 rounded-2xl border-2 border-[#C0C0C0] w-[160px] h-[160px] transform -translate-y-4"
               >
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-[#C0C0C0] font-heading">2ND PLACE</div>
-                {getTrophyIcon(2)}
-                <div className="text-center mt-2">
-                  <p className="text-sm font-bold truncate">{top10Players[1]?.name || '-'}</p>
-                  <p className="text-xs text-[#D7FF00]">${getPrizeAmount(2).toLocaleString()}</p>
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+                  <span className="bg-[#C0C0C0] text-black font-heading px-4 py-1 rounded-full text-sm">2ND PLACE</span>
+                </div>
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 filter drop-shadow-lg">
+                  {getTrophyIcon(2)}
+                </div>
+                <div className="text-center mt-8">
+                  <p className="text-base font-bold truncate text-white/90">{top10Players[1]?.name || '-'}</p>
+                  <p className="text-sm font-heading text-[#D7FF00] mt-2">
+                    ${getPrizeAmount(2).toLocaleString()}
+                  </p>
+                  <p className="text-xs text-white/60 mt-1">
+                    ${getWagerAmount(top10Players[1] || { wagered: { this_month: 0 } }).toLocaleString()} wagered
+                  </p>
                 </div>
               </motion.div>
 
@@ -127,13 +142,23 @@ export default function WagerRaces() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative bg-[#1A1B21]/80 backdrop-blur-sm p-6 rounded-lg border border-[#FFD700] w-[200px] h-[160px] -mt-8"
+                whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-6 rounded-2xl border-2 border-[#FFD700] w-[200px] h-[180px] z-10 glow-gold"
               >
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-[#FFD700] font-heading">1ST PLACE</div>
-                {getTrophyIcon(1)}
-                <div className="text-center mt-4">
-                  <p className="text-xl font-bold truncate">{top10Players[0]?.name || '-'}</p>
-                  <p className="text-sm text-[#D7FF00]">${getPrizeAmount(1).toLocaleString()}</p>
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+                  <span className="bg-[#FFD700] text-black font-heading px-4 py-1 rounded-full text-sm">1ST PLACE</span>
+                </div>
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 filter drop-shadow-lg scale-110">
+                  {getTrophyIcon(1)}
+                </div>
+                <div className="text-center mt-10">
+                  <p className="text-xl font-bold truncate text-white">{top10Players[0]?.name || '-'}</p>
+                  <p className="text-lg font-heading text-[#D7FF00] mt-2">
+                    ${getPrizeAmount(1).toLocaleString()}
+                  </p>
+                  <p className="text-sm text-white/60 mt-1">
+                    ${getWagerAmount(top10Players[0] || { wagered: { this_month: 0 } }).toLocaleString()} wagered
+                  </p>
                 </div>
               </motion.div>
 
@@ -141,13 +166,23 @@ export default function WagerRaces() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative bg-[#1A1B21]/80 backdrop-blur-sm p-4 rounded-lg border border-[#CD7F32] w-[160px] h-[120px]"
+                whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-6 rounded-2xl border-2 border-[#CD7F32] w-[160px] h-[140px] transform -translate-y-8"
               >
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-[#CD7F32] font-heading">3RD PLACE</div>
-                {getTrophyIcon(3)}
-                <div className="text-center mt-2">
-                  <p className="text-sm font-bold truncate">{top10Players[2]?.name || '-'}</p>
-                  <p className="text-xs text-[#D7FF00]">${getPrizeAmount(3).toLocaleString()}</p>
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+                  <span className="bg-[#CD7F32] text-black font-heading px-4 py-1 rounded-full text-sm">3RD PLACE</span>
+                </div>
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 filter drop-shadow-lg">
+                  {getTrophyIcon(3)}
+                </div>
+                <div className="text-center mt-8">
+                  <p className="text-base font-bold truncate text-white/90">{top10Players[2]?.name || '-'}</p>
+                  <p className="text-sm font-heading text-[#D7FF00] mt-2">
+                    ${getPrizeAmount(3).toLocaleString()}
+                  </p>
+                  <p className="text-xs text-white/60 mt-1">
+                    ${getWagerAmount(top10Players[2] || { wagered: { this_month: 0 } }).toLocaleString()} wagered
+                  </p>
                 </div>
               </motion.div>
             </div>

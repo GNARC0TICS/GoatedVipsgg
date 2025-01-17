@@ -1,3 +1,17 @@
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(215, 255, 0, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(215, 255, 0, 0.2);
+  }
+}
+
+.glow-gold {
+  animation: glow 3s ease-in-out infinite;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
