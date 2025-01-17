@@ -139,17 +139,103 @@ export default function WagerRaces() {
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            {top10Players.slice(0, 3).map((player, index) => (
+          <div className="relative flex justify-center items-end gap-4 h-[300px] mb-12">
+            {/* Silver - 2nd Place */}
+            {top10Players[1] && (
               <motion.div
-                key={player.uid}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className={`relative bg-[#1A1B21]/50 backdrop-blur-sm p-6 rounded-xl border border-[#2A2B31] hover:border-[#D7FF00]/50 transition-colors ${
-                  index === 0 ? 'md:scale-105 z-10' : ''
-                }`}
+                transition={{ delay: 0.1 }}
+                className="relative z-10 w-full max-w-[280px] h-[200px] bg-[#1A1B21]/50 backdrop-blur-sm p-6 rounded-xl border border-[#C0C0C0] hover:border-[#D7FF00]/50 transition-all hover:scale-105"
               >
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+                  <Medal className="h-12 w-12 text-[#C0C0C0]" />
+                </div>
+                <div className="flex flex-col items-center gap-3">
+                  <span className="text-xl font-bold text-[#C0C0C0]">{top10Players[1].name}</span>
+                  <div className="text-center">
+                    <p className="text-[#8A8B91] mb-1">Total Wager</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <p className="text-xl">${getWagerAmount(top10Players[1])?.toLocaleString()}</p>
+                      {isActivelyWagering(top10Players[1]) && (
+                        <TrendingUp className="h-4 w-4 text-green-400 animate-pulse" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-center mt-2">
+                    <p className="text-[#8A8B91] mb-1">Prize</p>
+                    <p className="text-xl text-[#D7FF00]">${getPrizeAmount(2).toLocaleString()}</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Gold - 1st Place */}
+            {top10Players[0] && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative z-20 w-full max-w-[280px] h-[240px] bg-[#1A1B21]/50 backdrop-blur-sm p-6 rounded-xl border border-[#FFD700] hover:border-[#D7FF00]/50 transition-all hover:scale-105"
+              >
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2">
+                  <Crown className="h-16 w-16 text-[#FFD700] animate-pulse" />
+                </div>
+                <div className="flex flex-col items-center gap-3">
+                  <span className="text-2xl font-bold text-[#FFD700]">{top10Players[0].name}</span>
+                  <div className="text-center">
+                    <p className="text-[#8A8B91] mb-1">Total Wager</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <p className="text-2xl">${getWagerAmount(top10Players[0])?.toLocaleString()}</p>
+                      {isActivelyWagering(top10Players[0]) && (
+                        <TrendingUp className="h-5 w-5 text-green-400 animate-pulse" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-center mt-2">
+                    <p className="text-[#8A8B91] mb-1">Prize</p>
+                    <p className="text-2xl text-[#D7FF00]">${getPrizeAmount(1).toLocaleString()}</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Bronze - 3rd Place */}
+            {top10Players[2] && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="relative z-10 w-full max-w-[280px] h-[180px] bg-[#1A1B21]/50 backdrop-blur-sm p-6 rounded-xl border border-[#CD7F32] hover:border-[#D7FF00]/50 transition-all hover:scale-105"
+              >
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+                  <Award className="h-12 w-12 text-[#CD7F32]" />
+                </div>
+                <div className="flex flex-col items-center gap-3">
+                  <span className="text-xl font-bold text-[#CD7F32]">{top10Players[2].name}</span>
+                  <div className="text-center">
+                    <p className="text-[#8A8B91] mb-1">Total Wager</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <p className="text-xl">${getWagerAmount(top10Players[2])?.toLocaleString()}</p>
+                      {isActivelyWagering(top10Players[2]) && (
+                        <TrendingUp className="h-4 w-4 text-green-400 animate-pulse" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-center mt-2">
+                    <p className="text-[#8A8B91] mb-1">Prize</p>
+                    <p className="text-xl text-[#D7FF00]">${getPrizeAmount(3).toLocaleString()}</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Decorative podium background */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[800px] h-[60px] bg-[#2A2B31]/50 rounded-xl flex">
+              <div className="w-1/3 h-[40px] bg-[#C0C0C0]/10 rounded-tl-xl" />
+              <div className="w-1/3 h-[60px] bg-[#FFD700]/10" />
+              <div className="w-1/3 h-[30px] bg-[#CD7F32]/10 rounded-tr-xl" />
+            </div>
+          </div>
                 <div className="absolute top-0 right-0 -mt-4 -mr-4">
                   {getTrophyIcon(index + 1)}
                 </div>
@@ -183,8 +269,11 @@ export default function WagerRaces() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#1A1B21]/50 backdrop-blur-sm rounded-xl border border-[#2A2B31] overflow-hidden"
+            className="bg-[#1A1B21]/50 backdrop-blur-sm rounded-xl border border-[#2A2B31] overflow-hidden shadow-lg shadow-[#D7FF00]/5"
           >
+            <div className="bg-[#2A2B31] px-6 py-4">
+              <h3 className="text-xl font-heading font-bold text-[#D7FF00]">Leaderboard Rankings</h3>
+            </div>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
