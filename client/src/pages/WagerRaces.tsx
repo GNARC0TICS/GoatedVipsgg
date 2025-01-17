@@ -144,10 +144,9 @@ export default function WagerRaces() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-col items-center py-16 px-4 mb-12 relative"
+            className="flex flex-col items-center py-16 px-4 mb-12"
           >
-            <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/5 to-transparent pointer-events-none" />
-            <div className="flex justify-center items-end gap-6 md:gap-8 relative">
+            <div className="flex justify-center items-end gap-6 md:gap-8">
               {/* 2nd Place */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -182,10 +181,8 @@ export default function WagerRaces() {
                 <div className="absolute -top-12 left-1/2 -translate-x-1/2">
                   <span className="bg-[#FFD700] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">1ST PLACE</span>
                 </div>
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 filter drop-shadow-lg scale-110 mb-8">
-                  {getTrophyIcon(1)}
-                </div>
-                <div className="text-center mt-16">
+                {getTrophyIcon(1)}
+                <div className="text-center mt-4">
                   <p className="text-xl font-bold truncate text-white">{top10Players[0]?.name || '-'}</p>
                   <p className="text-lg font-heading text-[#D7FF00] mt-2">
                     ${getPrizeAmount(1).toLocaleString()}
@@ -220,16 +217,14 @@ export default function WagerRaces() {
                 </div>
               </motion.div>
             </div>
-
-            
           </motion.div>
 
           {/* Rankings Table */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#1A1B21]/50 backdrop-blur-sm rounded-xl border border-[#2A2B31] overflow-hidden"
-          >
+            className="bg-[#1A1B21]/50 backdrop-blur-sm rounded-xl border border-[#2A2B31] overflow-hidden mt-4"
+          > {/* Added mt-4 to move the table up */}
             <div className="bg-[#2A2B31] px-6 py-4">
               <h3 className="text-xl font-heading font-bold text-[#D7FF00]">Leaderboard Rankings</h3>
             </div>
