@@ -46,11 +46,11 @@ export const FeatureCarousel = () => {
   };
 
   return (
-    <div ref={containerRef} className="relative h-24 overflow-hidden bg-[#1A1B21]/50 backdrop-blur-sm rounded-lg border border-[#2A2B31] mb-8">
+    <div ref={containerRef} className="relative h-24 overflow-hidden mb-8 group">
       <div className="flex justify-center items-center h-full relative">
         <button 
           onClick={prevSlide}
-          className="absolute left-4 text-[#D7FF00] hover:text-[#D7FF00]/80 transition-colors"
+          className="absolute left-4 text-[#D7FF00] opacity-0 group-hover:opacity-100 hover:text-[#D7FF00]/80 transition-all"
         >
           <ArrowLeftCircle className="w-6 h-6" />
         </button>
@@ -58,9 +58,9 @@ export const FeatureCarousel = () => {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
             transition={{ duration: 0.3 }}
             className="text-center px-16"
           >
@@ -75,7 +75,7 @@ export const FeatureCarousel = () => {
 
         <button 
           onClick={nextSlide}
-          className="absolute right-4 text-[#D7FF00] hover:text-[#D7FF00]/80 transition-colors"
+          className="absolute right-4 text-[#D7FF00] opacity-0 group-hover:opacity-100 hover:text-[#D7FF00]/80 transition-all"
         >
           <ArrowRightCircle className="w-6 h-6" />
         </button>
