@@ -22,44 +22,6 @@ export default function Home() {
             />
           </motion.div>
 
-          {/* Announcements Carousel */}
-          <div className="relative mb-4">
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-[#1A1B21]/80 backdrop-blur-sm border border-[#2A2B31] rounded-lg p-4 shadow-lg"
-            >
-              <Carousel
-                opts={{
-                  align: "start",
-                  loop: true,
-                }}
-                className="w-full"
-              >
-                <CarouselContent>
-                  <CarouselItem>
-                    <div className="text-center">
-                      <p className="text-[#D7FF00] font-bold">New Wager Race Live!</p>
-                      <p className="text-sm text-[#8A8B91]">$50,000 prize pool - Join now</p>
-                    </div>
-                  </CarouselItem>
-                  <CarouselItem>
-                    <div className="text-center">
-                      <p className="text-[#D7FF00] font-bold">VIP Transfer Available</p>
-                      <p className="text-sm text-[#8A8B91]">Transfer your VIP status today</p>
-                    </div>
-                  </CarouselItem>
-                  <CarouselItem>
-                    <div className="text-center">
-                      <p className="text-[#D7FF00] font-bold">New Bonus Codes</p>
-                      <p className="text-sm text-[#8A8B91]">Check out our latest bonus codes</p>
-                    </div>
-                  </CarouselItem>
-                </CarouselContent>
-              </Carousel>
-            </motion.div>
-          </div>
-          
           <FeatureCarousel />
 
           <motion.p
