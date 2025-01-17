@@ -108,7 +108,37 @@ export default function WagerRaces() {
           </div>
         </div>
 
-        <div className="space-y-6 md:space-y-8">
+        <div className="relative space-y-6 md:space-y-8">
+          {/* Top right podium quick view */}
+          <div className="absolute top-0 right-0 w-full max-w-[420px]">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex gap-2 justify-end"
+            >
+              {top10Players.slice(0, 3).map((player, index) => (
+                <motion.div
+                  key={player.uid}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`relative bg-[#1A1B21]/80 backdrop-blur-sm p-3 rounded-lg border ${
+                    index === 0 ? 'border-[#FFD700]' : 
+                    index === 1 ? 'border-[#C0C0C0]' : 
+                    'border-[#CD7F32]'
+                  } w-[130px]`}
+                >
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    {getTrophyIcon(index + 1)}
+                  </div>
+                  <div className="mt-3 text-center">
+                    <p className="text-sm font-bold truncate">{player.name}</p>
+                    <p className="text-xs text-[#D7FF00]">${getPrizeAmount(index + 1).toLocaleString()}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -130,10 +160,10 @@ export default function WagerRaces() {
                 </div>
               </div>
               <div className="col-span-2 md:col-span-1">
-                <h3 className="text-[#8A8B91] font-heading text-sm mb-2">TOP PARTICIPANTS</h3>
+                <h3 className="text-[#8A8B91] font-heading text-sm mb-2">POSITIONS PAID</h3>
                 <div className="flex items-baseline gap-2">
                   <Medal className="h-5 w-5 text-[#D7FF00]" />
-                  <p className="text-xl md:text-2xl font-bold">{top10Players.length}</p>
+                  <p className="text-xl md:text-2xl font-bold">10</p>
                 </div>
               </div>
             </div>
