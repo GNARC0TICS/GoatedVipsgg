@@ -4,7 +4,8 @@ import { log } from "./vite";
 import { setupAuth } from "./auth";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 
-const API_CONFIG = {
+// API configuration with validation
+export const API_CONFIG = {
   token: process.env.API_TOKEN || '',
   baseUrl: process.env.API_BASE_URL || "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate"
 };
@@ -15,28 +16,29 @@ const rateLimiter = new RateLimiterMemory({
   duration: 1,
 });
 
-if (!API_CONFIG.token) {
-  log('Warning: API_TOKEN environment variable is not set');
+// Type definitions for API response
+interface WageredData {
+  today: number;
+  this_week: number;
+  this_month: number;
+  all_time: number;
 }
 
-// Cache for leaderboard data with metadata
-type LeaderboardCache = {
-  data: any;
-  timestamp: number;
-  totalUsers: number;
-};
+interface LeaderboardEntry {
+  uid: string;
+  name: string;
+  wagered: WageredData;
+}
 
-let leaderboardCache: LeaderboardCache | null = null;
-const CACHE_DURATION = 10000; // 10 seconds
+interface LeaderboardResponse {
+  success: boolean;
+  data: LeaderboardEntry[];
+}
 
-async function fetchLeaderboardData(force = false): Promise<any> {
+async function fetchLeaderboardData(): Promise<any> {
   try {
-    const now = Date.now();
-    if (!force && leaderboardCache && (now - leaderboardCache.timestamp < CACHE_DURATION)) {
-      return leaderboardCache.data;
-    }
+    log(`Making API request to: ${API_CONFIG.baseUrl}/referral-leaderboard`);
 
-    log(`Fetching leaderboard data from ${API_CONFIG.baseUrl}/referral-leaderboard`);
     const response = await fetch(`${API_CONFIG.baseUrl}/referral-leaderboard`, {
       headers: {
         'Authorization': `Bearer ${API_CONFIG.token}`,
@@ -45,14 +47,51 @@ async function fetchLeaderboardData(force = false): Promise<any> {
     });
 
     if (!response.ok) {
-      throw new Error(`API responded with status ${response.status}`);
+      const errorText = await response.text();
+      log(`API Error (${response.status}): ${errorText}`);
+      throw new Error(`API responded with status ${response.status}: ${errorText}`);
     }
 
     const rawData = await response.json();
 
+    // Detailed logging of API response structure
+    log('API Response Structure:', {
+      success: rawData.success,
+      dataType: typeof rawData.data,
+      isArray: Array.isArray(rawData.data),
+      entryCount: rawData.data?.length || 0
+    });
+
+    // Validate API response structure
     if (!rawData.success || !Array.isArray(rawData.data)) {
+      log('Invalid API response format:', rawData);
       throw new Error('Invalid API response format');
     }
+
+    // Validate data entries
+    const invalidEntries = rawData.data.filter(entry => 
+      !entry.uid || 
+      !entry.name || 
+      !entry.wagered ||
+      typeof entry.wagered.today !== 'number' ||
+      typeof entry.wagered.this_week !== 'number' ||
+      typeof entry.wagered.this_month !== 'number' ||
+      typeof entry.wagered.all_time !== 'number'
+    );
+
+    if (invalidEntries.length > 0) {
+      log('Found invalid entries:', invalidEntries);
+      throw new Error(`Found ${invalidEntries.length} invalid entries in the data`);
+    }
+
+    // Log data statistics
+    const stats = {
+      totalEntries: rawData.data.length,
+      uniqueUsers: new Set(rawData.data.map(entry => entry.uid)).size,
+      activeThisWeek: rawData.data.filter(entry => entry.wagered.this_week > 0).length,
+      totalWagered: rawData.data.reduce((sum, entry) => sum + entry.wagered.all_time, 0)
+    };
+    log('Data Statistics:', stats);
 
     // Transform and organize the data
     const transformedData = {
@@ -60,6 +99,7 @@ async function fetchLeaderboardData(force = false): Promise<any> {
       metadata: {
         totalUsers: rawData.data.length,
         lastUpdated: new Date().toISOString(),
+        stats
       },
       data: {
         all_time: {
@@ -74,28 +114,17 @@ async function fetchLeaderboardData(force = false): Promise<any> {
       }
     };
 
-    leaderboardCache = {
-      data: transformedData,
-      timestamp: now,
-      totalUsers: rawData.data.length
-    };
+    // Log sample of transformed data
+    log('Sample Transformed Data:', {
+      totalEntries: transformedData.metadata.totalUsers,
+      topAllTimeWager: transformedData.data.all_time.data[0]?.wagered.all_time,
+      topWeeklyWager: transformedData.data.weekly.data[0]?.wagered.this_week
+    });
 
-    log(`Successfully fetched and processed ${rawData.data.length} users' leaderboard data`);
     return transformedData;
   } catch (error) {
-    log(`Error fetching leaderboard data: ${error}`);
-    if (!leaderboardCache?.data) {
-      return {
-        success: false,
-        error: "Failed to fetch leaderboard data",
-        data: {
-          all_time: { data: [] },
-          monthly: { data: [] },
-          weekly: { data: [] }
-        }
-      };
-    }
-    return leaderboardCache.data;
+    log(`Error in fetchLeaderboardData: ${error}`);
+    throw error;
   }
 }
 
@@ -110,14 +139,7 @@ export function registerRoutes(app: Express): Server {
     try {
       await rateLimiter.consume(req.ip || "unknown");
       const data = await fetchLeaderboardData();
-      res.json({
-        ...data,
-        metadata: {
-          ...data.metadata,
-          totalUsers: leaderboardCache?.totalUsers || 0,
-          timestamp: leaderboardCache?.timestamp || Date.now()
-        }
-      });
+      res.json(data);
     } catch (error: any) {
       if (error.consumedPoints) {
         res.status(429).json({ error: "Too many requests" });
@@ -125,39 +147,10 @@ export function registerRoutes(app: Express): Server {
         log(`Error in /api/affiliate/stats: ${error}`);
         res.status(500).json({
           success: false,
-          error: "Failed to fetch affiliate stats"
+          error: "Failed to fetch affiliate stats",
+          message: error.message
         });
       }
-    }
-  });
-
-  // Bonus codes endpoint
-  app.get("/api/bonus-codes", (_req, res) => {
-    try {
-      const BONUS_CODES = [
-        {
-          code: "WELCOME2024",
-          description: "New player welcome bonus",
-          expiryDate: "2024-02-15",
-          value: "100% up to $100"
-        },
-        {
-          code: "GOATEDVIP",
-          description: "VIP exclusive reload bonus",
-          expiryDate: "2024-01-31",
-          value: "50% up to $500"
-        },
-        {
-          code: "WEEKEND50",
-          description: "Weekend special bonus",
-          expiryDate: "2024-01-20",
-          value: "50% up to $200"
-        }
-      ];
-      res.json({ bonusCodes: BONUS_CODES });
-    } catch (error) {
-      log(`Error in /api/bonus-codes: ${error}`);
-      res.status(500).json({ error: "Failed to fetch bonus codes" });
     }
   });
 
