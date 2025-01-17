@@ -265,7 +265,6 @@ export default function WagerRaces() {
               </motion.div>
             ))}
           </div>
-          </div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
