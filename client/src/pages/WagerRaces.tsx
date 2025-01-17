@@ -106,37 +106,6 @@ export default function WagerRaces() {
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4"
-          >
-            <Card className="bg-[#1A1B21]/50 backdrop-blur-sm p-4 border-[#2A2B31] hover:border-[#D7FF00]/50 transition-colors">
-              <h3 className="text-[#8A8B91] font-heading text-sm mb-2">PRIZE POOL</h3>
-              <div className="flex items-baseline gap-2">
-                <Trophy className="h-5 w-5 text-[#D7FF00]" />
-                <p className="text-xl md:text-2xl font-bold">${prizePool.toLocaleString()}</p>
-              </div>
-            </Card>
-
-            <Card className="bg-[#1A1B21]/50 backdrop-blur-sm p-4 border-[#2A2B31] hover:border-[#D7FF00]/50 transition-colors">
-              <h3 className="text-[#8A8B91] font-heading text-sm mb-2">POSITIONS PAID</h3>
-              <div className="flex items-baseline gap-2">
-                <Medal className="h-5 w-5 text-[#D7FF00]" />
-                <p className="text-xl md:text-2xl font-bold">10</p>
-              </div>
-            </Card>
-
-            <Card className="bg-[#1A1B21]/50 backdrop-blur-sm p-4 border-[#2A2B31] hover:border-[#D7FF00]/50 transition-colors">
-              <h3 className="text-[#8A8B91] font-heading text-sm mb-2">CURRENT LEADER</h3>
-              <div className="flex items-baseline gap-2">
-                <Crown className="h-5 w-5 text-[#D7FF00]" />
-                <p className="text-xl md:text-2xl font-bold truncate">{currentLeader?.name || 'No Leader'}</p>
-              </div>
-            </Card>
-          </motion.div>
-
           {/* Podium Section */}
           <div className="flex flex-col items-center mb-12">
             <div className="flex justify-center items-end gap-8 mb-8">
