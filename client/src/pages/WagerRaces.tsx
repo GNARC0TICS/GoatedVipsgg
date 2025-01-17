@@ -92,9 +92,16 @@ export default function WagerRaces() {
               >
                 MONTHLY WAGER RACE
               </motion.h1>
-              <div className="flex items-center gap-2">
-                <CircleDot className="h-4 w-4 text-red-500 animate-pulse" />
-                <span className="text-[#8A8B91]">Live Competition</span>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <CircleDot className="h-4 w-4 text-red-500 animate-pulse" />
+                  <span className="text-[#8A8B91]">Live Competition</span>
+                </div>
+                <div className="flex items-center gap-2 text-[#8A8B91]">
+                  <Timer className="h-4 w-4 text-[#D7FF00]" />
+                  <span>Ends in: </span>
+                  <CountdownTimer endDate={new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString()} />
+                </div>
               </div>
             </div>
           </div>
