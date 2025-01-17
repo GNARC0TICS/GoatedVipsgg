@@ -217,8 +217,7 @@ export default function WagerRaces() {
                 </div>
               </div>
             </motion.div>
-
-          </div>
+          </motion.div>
 
           {/* Rankings Table */}
           <motion.div
