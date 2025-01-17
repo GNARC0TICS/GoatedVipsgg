@@ -22,16 +22,21 @@ export default function Home() {
             />
           </motion.div>
 
-          <FeatureCarousel />
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-xl text-[#8A8B91] max-w-2xl mx-auto mt-8"
-          >
-            Join Goated.com for unparalleled gaming, exclusive bonuses, and a top-tier VIP program.
-          </motion.p>
+          <div className="flex flex-col items-center gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-center"
+            >
+              <p className="text-xl md:text-2xl font-heading text-[#D7FF00]">
+                GAMING REIMAGINED
+              </p>
+              <p className="text-lg text-[#8A8B91] max-w-2xl mx-auto mt-2">
+                Join Goated.com for unparalleled gaming, exclusive bonuses, and a top-tier VIP program
+              </p>
+            </motion.div>
+          </div>
         </div>
 
         <motion.div
