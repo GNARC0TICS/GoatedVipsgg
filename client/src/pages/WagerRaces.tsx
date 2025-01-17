@@ -106,7 +106,7 @@ export default function WagerRaces() {
               <span className="text-[#8A8B91]">Live Competition</span>
             </div>
           </div>
-          
+
           {/* Quick view podium */}
           <div className="flex gap-2 justify-end">
             {top10Players.slice(0, 3).map((player, index) => (
@@ -275,7 +275,6 @@ export default function WagerRaces() {
               </motion.div>
             ))}
           </div>
-          </AnimatePresence>
         </div>
 
           <motion.div
