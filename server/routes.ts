@@ -59,7 +59,8 @@ async function fetchLeaderboardData(): Promise<any> {
       success: rawData.success,
       dataType: typeof rawData.data,
       isArray: Array.isArray(rawData.data),
-      entryCount: rawData.data?.length || 0
+      entryCount: rawData.data?.length || 0,
+      responseKeys: Object.keys(rawData)
     });
 
     // Validate API response structure
@@ -102,6 +103,9 @@ async function fetchLeaderboardData(): Promise<any> {
         stats
       },
       data: {
+        today: {
+          data: [...rawData.data].sort((a, b) => b.wagered.today - a.wagered.today)
+        },
         all_time: {
           data: [...rawData.data].sort((a, b) => b.wagered.all_time - a.wagered.all_time)
         },

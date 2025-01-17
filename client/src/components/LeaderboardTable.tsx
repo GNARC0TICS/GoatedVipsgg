@@ -1,7 +1,8 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Trophy, ChevronLeft, ChevronRight } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 
@@ -25,20 +26,22 @@ type LeaderboardData = {
     lastUpdated: string;
   };
   data: {
+    today: { data: LeaderboardEntry[] };
     all_time: { data: LeaderboardEntry[] };
     monthly: { data: LeaderboardEntry[] };
     weekly: { data: LeaderboardEntry[] };
   };
 };
 
-const ITEMS_PER_PAGE = 50;
+const ITEMS_PER_PAGE = 10; // Changed to 10 users per page
 
 export function LeaderboardTable() {
-  const [timePeriod, setTimePeriod] = useState<'all_time' | 'monthly' | 'weekly'>('all_time');
+  const [timePeriod, setTimePeriod] = useState<'today' | 'all_time' | 'monthly' | 'weekly'>('today');
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [selectedUser, setSelectedUser] = useState<LeaderboardEntry | null>(null);
 
   useEffect(() => {
     let isSubscribed = true;
@@ -118,13 +121,26 @@ export function LeaderboardTable() {
     };
   }, []);
 
+  const renderTimePeriodIcon = (period: typeof timePeriod) => {
+    switch (period) {
+      case 'today':
+        return <Clock className="h-4 w-4" />;
+      case 'weekly':
+        return <Calendar className="h-4 w-4" />;
+      case 'monthly':
+        return <CalendarDays className="h-4 w-4" />;
+      case 'all_time':
+        return <Trophy className="h-4 w-4" />;
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
         <div className="flex gap-2 justify-center">
-          <Skeleton className="h-10 w-24" />
-          <Skeleton className="h-10 w-24" />
-          <Skeleton className="h-10 w-24" />
+          {['today', 'all_time', 'monthly', 'weekly'].map((period) => (
+            <Skeleton key={period} className="h-10 w-24" />
+          ))}
         </div>
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -144,7 +160,6 @@ export function LeaderboardTable() {
   }
 
   const currentData = leaderboardData.data[timePeriod].data;
-  const totalUsers = leaderboardData.metadata?.totalUsers || currentData.length;
   const totalPages = Math.ceil(currentData.length / ITEMS_PER_PAGE);
   const displayData = currentData.slice(
     currentPage * ITEMS_PER_PAGE,
@@ -152,45 +167,40 @@ export function LeaderboardTable() {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        <div className="flex gap-2 justify-center">
-          <Button
-            variant={timePeriod === 'all_time' ? 'default' : 'outline'}
-            onClick={() => setTimePeriod('all_time')}
-            className="font-heading tracking-tight"
-          >
-            ALL TIME
-          </Button>
-          <Button
-            variant={timePeriod === 'monthly' ? 'default' : 'outline'}
-            onClick={() => setTimePeriod('monthly')}
-            className="font-heading tracking-tight"
-          >
-            MONTHLY
-          </Button>
-          <Button
-            variant={timePeriod === 'weekly' ? 'default' : 'outline'}
-            onClick={() => setTimePeriod('weekly')}
-            className="font-heading tracking-tight"
-          >
-            WEEKLY
-          </Button>
+        <div className="flex gap-2 justify-center flex-wrap">
+          {[
+            { id: 'today', label: 'TODAY' },
+            { id: 'all_time', label: 'ALL TIME' },
+            { id: 'monthly', label: 'MONTHLY' },
+            { id: 'weekly', label: 'WEEKLY' }
+          ].map(({ id, label }) => (
+            <Button
+              key={id}
+              variant={timePeriod === id ? 'default' : 'outline'}
+              onClick={() => setTimePeriod(id as typeof timePeriod)}
+              className="font-heading tracking-tight flex items-center gap-2"
+            >
+              {renderTimePeriodIcon(id as typeof timePeriod)}
+              {label}
+            </Button>
+          ))}
         </div>
 
         <div className="text-center text-sm text-muted-foreground">
-          Total Users: {totalUsers.toLocaleString()} | 
+          Total Users: {leaderboardData.metadata?.totalUsers.toLocaleString()} | 
           Last Updated: {new Date(leaderboardData.metadata?.lastUpdated || Date.now()).toLocaleTimeString()}
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-16 md:w-20 font-heading text-[#D7FF00] text-sm md:text-base">RANK</TableHead>
-              <TableHead className="font-heading text-[#D7FF00] text-sm md:text-base">USERNAME</TableHead>
-              <TableHead className="text-right font-heading text-[#D7FF00] text-sm md:text-base">WAGER</TableHead>
+              <TableHead className="w-16 md:w-20 font-heading text-primary text-sm md:text-base">RANK</TableHead>
+              <TableHead className="font-heading text-primary text-sm md:text-base">USERNAME</TableHead>
+              <TableHead className="text-right font-heading text-primary text-sm md:text-base">WAGER</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -202,25 +212,29 @@ export function LeaderboardTable() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] cursor-pointer transition-colors"
+                  className="group hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => setSelectedUser(entry)}
                 >
-                  <TableCell className="font-heading text-white py-3 md:py-4 text-sm md:text-base">
+                  <TableCell className="font-heading text-foreground py-4 md:py-4 text-sm md:text-base">
                     <div className="flex items-center gap-1">
                       {index + 1 + currentPage * ITEMS_PER_PAGE <= 3 && (
-                        <Trophy className="h-4 w-4 text-[#D7FF00]" />
+                        <Trophy className="h-4 w-4 text-primary" />
                       )}
                       {index + 1 + currentPage * ITEMS_PER_PAGE}
                     </div>
                   </TableCell>
-                  <TableCell className="font-sans text-white py-3 md:py-4 text-sm md:text-base">
+                  <TableCell className="font-sans text-foreground py-4 md:py-4 text-sm md:text-base">
                     <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-[#D7FF00] hidden md:block" />
-                      <span className="truncate max-w-[120px] md:max-w-none">{entry.name}</span>
+                      <User className="h-4 w-4 text-primary hidden md:block" />
+                      <span className="truncate max-w-[120px] md:max-w-none group-hover:text-primary transition-colors">
+                        {entry.name}
+                      </span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right font-sans text-white py-3 md:py-4 text-sm md:text-base">
+                  <TableCell className="text-right font-sans text-foreground py-4 md:py-4 text-sm md:text-base">
                     ${entry.wagered[timePeriod === 'weekly' ? 'this_week' : 
                               timePeriod === 'monthly' ? 'this_month' : 
+                              timePeriod === 'today' ? 'today' :
                               'all_time'].toLocaleString()}
                   </TableCell>
                 </motion.tr>
@@ -228,31 +242,67 @@ export function LeaderboardTable() {
             </AnimatePresence>
           </TableBody>
         </Table>
+
+        <div className="flex items-center justify-between px-4 py-4 border-t">
+          <div className="text-sm text-muted-foreground">
+            Showing {currentPage * ITEMS_PER_PAGE + 1} to {Math.min((currentPage + 1) * ITEMS_PER_PAGE, currentData.length)} of {currentData.length}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+              disabled={currentPage === 0}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={currentPage === totalPages - 1}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
-            disabled={currentPage === 0}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="px-4 py-2 text-sm">
-            Page {currentPage + 1} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
-            disabled={currentPage === totalPages - 1}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
+      <Dialog open={!!selectedUser} onOpenChange={() => setSelectedUser(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-primary" />
+              {selectedUser?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm text-muted-foreground">Wager Statistics</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium">Today</div>
+                    <div className="text-2xl">${selectedUser.wagered.today.toLocaleString()}</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium">This Week</div>
+                    <div className="text-2xl">${selectedUser.wagered.this_week.toLocaleString()}</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium">This Month</div>
+                    <div className="text-2xl">${selectedUser.wagered.this_month.toLocaleString()}</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium">All Time</div>
+                    <div className="text-2xl">${selectedUser.wagered.all_time.toLocaleString()}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
