@@ -110,26 +110,25 @@ export default function WagerRaces() {
           {/* Quick view podium */}
           <div className="flex gap-2 justify-end w-full max-w-[420px]">
             {top10Players.slice(0, 3).map((player, index) => (
-                <motion.div
-                  key={player.uid}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`relative bg-[#1A1B21]/80 backdrop-blur-sm p-3 rounded-lg border ${
-                    index === 0 ? 'border-[#FFD700]' : 
-                    index === 1 ? 'border-[#C0C0C0]' : 
-                    'border-[#CD7F32]'
-                  } w-[130px]`}
-                >
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    {getTrophyIcon(index + 1)}
-                  </div>
-                  <div className="mt-3 text-center">
-                    <p className="text-sm font-bold truncate">{player.name}</p>
-                    <p className="text-xs text-[#D7FF00]">${getPrizeAmount(index + 1).toLocaleString()}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
+              <motion.div
+                key={player.uid}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`relative bg-[#1A1B21]/80 backdrop-blur-sm p-3 rounded-lg border ${
+                  index === 0 ? 'border-[#FFD700]' : 
+                  index === 1 ? 'border-[#C0C0C0]' : 
+                  'border-[#CD7F32]'
+                } w-[130px]`}
+              >
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  {getTrophyIcon(index + 1)}
+                </div>
+                <div className="mt-3 text-center">
+                  <p className="text-sm font-bold truncate">{player.name}</p>
+                  <p className="text-xs text-[#D7FF00]">${getPrizeAmount(index + 1).toLocaleString()}</p>
+                </div>
+              </motion.div>
+            ))}
           </div>
 
           <motion.div 
