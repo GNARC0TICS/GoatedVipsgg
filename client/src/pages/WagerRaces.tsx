@@ -84,27 +84,60 @@ export default function WagerRaces() {
       <div className="container mx-auto px-4 py-8 md:py-16">
         <div className="flex flex-col gap-8">
           {/* Header Section */}
-          <div className="flex justify-between items-center">
-            <div>
-              <motion.h1
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-3xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2"
-              >
-                MONTHLY WAGER RACE
-              </motion.h1>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <CircleDot className="h-4 w-4 text-red-500 animate-pulse" />
-                  <span className="text-[#8A8B91]">Live Competition</span>
-                </div>
-                <div className="flex items-center gap-2 text-[#8A8B91]">
-                  <Timer className="h-4 w-4 text-[#D7FF00]" />
-                  <span>Ends in: </span>
-                  <CountdownTimer endDate={new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString()} />
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <motion.h1
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-3xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2"
+                >
+                  MONTHLY WAGER RACE
+                </motion.h1>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <CircleDot className="h-4 w-4 text-red-500 animate-pulse" />
+                    <span className="text-[#8A8B91]">Live Competition</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[#8A8B91]">
+                    <Timer className="h-4 w-4 text-[#D7FF00]" />
+                    <span>Ends in: </span>
+                    <CountdownTimer endDate={new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString()} />
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Info Boxes */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full bg-[#1A1B21]/50 backdrop-blur-sm rounded-lg border border-[#2A2B31] p-4"
+            >
+              <div className="grid grid-cols-3 gap-8">
+                <div className="text-center">
+                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">PRIZE POOL</h3>
+                  <div className="flex items-center justify-center gap-2">
+                    <Trophy className="h-5 w-5 text-[#D7FF00]" />
+                    <p className="text-xl font-bold">${prizePool.toLocaleString()}</p>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">POSITIONS PAID</h3>
+                  <div className="flex items-center justify-center gap-2">
+                    <Medal className="h-5 w-5 text-[#D7FF00]" />
+                    <p className="text-xl font-bold">10</p>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">CURRENT LEADER</h3>
+                  <div className="flex items-center justify-center gap-2">
+                    <Crown className="h-5 w-5 text-[#D7FF00]" />
+                    <p className="text-xl font-bold truncate">{currentLeader?.name || 'No Leader'}</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </div>
 
           {/* Podium Section */}
@@ -149,10 +182,10 @@ export default function WagerRaces() {
                 <div className="absolute -top-12 left-1/2 -translate-x-1/2">
                   <span className="bg-[#FFD700] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">1ST PLACE</span>
                 </div>
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 filter drop-shadow-lg scale-110">
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 filter drop-shadow-lg scale-110 mb-8">
                   {getTrophyIcon(1)}
                 </div>
-                <div className="text-center mt-10">
+                <div className="text-center mt-16">
                   <p className="text-xl font-bold truncate text-white">{top10Players[0]?.name || '-'}</p>
                   <p className="text-lg font-heading text-[#D7FF00] mt-2">
                     ${getPrizeAmount(1).toLocaleString()}
@@ -188,36 +221,7 @@ export default function WagerRaces() {
               </motion.div>
             </div>
 
-            {/* Info Boxes as Table */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="w-full max-w-4xl bg-[#1A1B21]/50 backdrop-blur-sm rounded-lg border border-[#2A2B31] p-4"
-            >
-              <div className="grid grid-cols-3 gap-8">
-                <div className="text-center">
-                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">PRIZE POOL</h3>
-                  <div className="flex items-center justify-center gap-2">
-                    <Trophy className="h-5 w-5 text-[#D7FF00]" />
-                    <p className="text-xl font-bold">${prizePool.toLocaleString()}</p>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">POSITIONS PAID</h3>
-                  <div className="flex items-center justify-center gap-2">
-                    <Medal className="h-5 w-5 text-[#D7FF00]" />
-                    <p className="text-xl font-bold">10</p>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">CURRENT LEADER</h3>
-                  <div className="flex items-center justify-center gap-2">
-                    <Crown className="h-5 w-5 text-[#D7FF00]" />
-                    <p className="text-xl font-bold truncate">{currentLeader?.name || 'No Leader'}</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+            
           </motion.div>
 
           {/* Rankings Table */}
