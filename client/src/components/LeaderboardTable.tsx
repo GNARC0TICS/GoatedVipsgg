@@ -233,7 +233,9 @@ export function LeaderboardTable() {
               key={id}
               variant={timePeriod === id ? 'default' : 'outline'}
               onClick={() => setTimePeriod(id as typeof timePeriod)}
-              className="font-heading tracking-tight flex items-center gap-2"
+              className={`font-heading tracking-tight flex items-center gap-2 ${
+                  timePeriod === id ? 'bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90' : 'border-[#2A2B31] hover:border-[#D7FF00]/50'
+                }`}
             >
               {renderTimePeriodIcon(id as typeof timePeriod)}
               {label}
