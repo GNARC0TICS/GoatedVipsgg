@@ -2,11 +2,12 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trophy, CircleDot, Crown, Medal, Award, Star, Timer, TrendingUp, User } from "lucide-react";
+import { Trophy, CircleDot, Crown, Medal, Award, Star, Timer, TrendingUp } from "lucide-react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { useLeaderboard } from "@/hooks/use-leaderboard";
 import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Link } from "wouter";
 
 type WageredData = {
   today: number;
@@ -70,7 +71,7 @@ export default function WagerRaces() {
   if (isLoading || !leaderboardData) {
     return (
       <div className="min-h-screen bg-[#14151A] flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
       </div>
     );
   }
@@ -85,7 +86,7 @@ export default function WagerRaces() {
           {/* Header Section */}
           <div className="flex justify-between items-center">
             <div>
-              <motion.h1 
+              <motion.h1
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="text-3xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2"
@@ -107,7 +108,7 @@ export default function WagerRaces() {
           </div>
 
           {/* Podium Section */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="flex flex-col items-center py-16 px-4 mb-12 relative"
@@ -188,7 +189,7 @@ export default function WagerRaces() {
             </div>
 
             {/* Info Boxes as Table */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="w-full max-w-4xl bg-[#1A1B21]/50 backdrop-blur-sm rounded-lg border border-[#2A2B31] p-4"
@@ -246,7 +247,11 @@ export default function WagerRaces() {
                         {index + 1}
                       </div>
                     </TableCell>
-                    <TableCell className="font-sans">{player.name}</TableCell>
+                    <TableCell className="font-sans text-white">
+                      <Link href={`/user/${player.uid}`} className="hover:text-[#D7FF00] transition-colors">
+                        {player.name}
+                      </Link>
+                    </TableCell>
                     <TableCell className="text-right font-sans">
                       ${getWagerAmount(player)?.toLocaleString()}
                     </TableCell>

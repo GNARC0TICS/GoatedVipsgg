@@ -19,6 +19,7 @@ import { PageTransition } from "@/components/PageTransition";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useUser } from "@/hooks/use-user";
 import Help from "./pages/Help";
+import UserProfile from "@/pages/UserProfile";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -94,6 +95,13 @@ function Router() {
                   <WagerRaceManagement />
                 </AdminRoute>
               </PageTransition>
+            </Route>
+            <Route path="/user/:id">
+              {(params) => (
+                <PageTransition>
+                  <UserProfile userId={params.id} />
+                </PageTransition>
+              )}
             </Route>
             <Route path="/help">
               <PageTransition>
