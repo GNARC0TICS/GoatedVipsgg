@@ -110,21 +110,13 @@ export default function WagerRaces() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="grid grid-cols-1 md:grid-cols-4 gap-4"
+            className="grid grid-cols-1 md:grid-cols-3 gap-4"
           >
             <Card className="bg-[#1A1B21]/50 backdrop-blur-sm p-4 border-[#2A2B31] hover:border-[#D7FF00]/50 transition-colors">
               <h3 className="text-[#8A8B91] font-heading text-sm mb-2">PRIZE POOL</h3>
               <div className="flex items-baseline gap-2">
                 <Trophy className="h-5 w-5 text-[#D7FF00]" />
                 <p className="text-xl md:text-2xl font-bold">${prizePool.toLocaleString()}</p>
-              </div>
-            </Card>
-
-            <Card className="bg-[#1A1B21]/50 backdrop-blur-sm p-4 border-[#2A2B31] hover:border-[#D7FF00]/50 transition-colors">
-              <h3 className="text-[#8A8B91] font-heading text-sm mb-2">TIME REMAINING</h3>
-              <div className="flex items-baseline gap-2">
-                <Timer className="h-5 w-5 text-[#D7FF00]" />
-                <CountdownTimer endDate={new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString()} />
               </div>
             </Card>
 
