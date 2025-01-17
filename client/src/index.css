@@ -42,4 +42,17 @@ html {
   .header-text {
     @apply font-heading font-extrabold uppercase tracking-tight;
   }
+
+  @keyframes scroll {
+    from {
+      transform: translateX(100vw);
+    }
+    to {
+      transform: translateX(-100vw);
+    }
+  }
+
+  .animate-scroll {
+    animation: scroll 15s linear infinite;
+  }
 }

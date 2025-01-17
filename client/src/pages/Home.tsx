@@ -18,7 +18,7 @@ export default function Home() {
             <img 
               src="/images/Goated logo with text.png"
               alt="Goated"
-              className="mx-auto h-48 md:h-64 w-auto object-contain"
+              className="mx-auto h-56 md:h-72 w-auto object-contain"
             />
           </motion.div>
 

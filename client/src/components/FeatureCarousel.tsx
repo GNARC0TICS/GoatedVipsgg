@@ -83,7 +83,7 @@ export function FeatureCarousel() {
           animate="center"
           exit="exit"
           whileHover="hover"
-          className="absolute text-4xl md:text-6xl lg:text-7xl font-heading font-extrabold uppercase bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent cursor-default select-none"
+          className="absolute text-3xl md:text-5xl lg:text-6xl font-heading font-extrabold uppercase bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent cursor-default select-none animate-scroll"
         >
           {features[currentIndex]}
         </motion.h1>
