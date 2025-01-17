@@ -10,14 +10,19 @@ async function testLeaderboardAPI() {
       }
     });
     
-    console.log('Response status:', response.status);
-    console.log('Response headers:', response.headers);
+    console.log('\nResponse Status:', response.status);
+    console.log('Response Headers:', response.headers);
     
-    const data = await response.json();
-    console.log('\nAPI Response Data:');
-    console.log(JSON.stringify(data, null, 2));
+    const rawText = await response.text();
+    console.log('\nRaw Response Text:', rawText);
     
-    return data;
+    try {
+      const data = JSON.parse(rawText);
+      console.log('\nParsed JSON Data:', JSON.stringify(data, null, 2));
+    } catch (e) {
+      console.log('Failed to parse response as JSON:', e);
+    }
+    
   } catch (error) {
     console.error('Error testing API:', error);
   }
