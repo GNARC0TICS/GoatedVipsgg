@@ -120,10 +120,10 @@ export default function WagerRaces() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-6 rounded-2xl border-2 border-[#C0C0C0] w-[160px] h-[160px] transform -translate-y-4"
+                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-6 rounded-2xl border-2 border-[#C0C0C0] w-[180px] h-[180px] transform -translate-y-4"
               >
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2">
-                  <span className="bg-[#C0C0C0] text-black font-heading px-4 py-1 rounded-full text-sm">2ND PLACE</span>
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2">
+                  <span className="bg-[#C0C0C0] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">2ND PLACE</span>
                 </div>
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 filter drop-shadow-lg">
                   {getTrophyIcon(2)}
@@ -144,10 +144,10 @@ export default function WagerRaces() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-6 rounded-2xl border-2 border-[#FFD700] w-[200px] h-[180px] z-10 glow-gold"
+                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-6 rounded-2xl border-2 border-[#FFD700] w-[220px] h-[200px] z-10 glow-gold"
               >
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2">
-                  <span className="bg-[#FFD700] text-black font-heading px-4 py-1 rounded-full text-sm">1ST PLACE</span>
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2">
+                  <span className="bg-[#FFD700] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">1ST PLACE</span>
                 </div>
                 <div className="absolute -top-6 left-1/2 -translate-x-1/2 filter drop-shadow-lg scale-110">
                   {getTrophyIcon(1)}
@@ -168,10 +168,10 @@ export default function WagerRaces() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-6 rounded-2xl border-2 border-[#CD7F32] w-[160px] h-[140px] transform -translate-y-8"
+                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-6 rounded-2xl border-2 border-[#CD7F32] w-[180px] h-[160px] transform -translate-y-8"
               >
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2">
-                  <span className="bg-[#CD7F32] text-black font-heading px-4 py-1 rounded-full text-sm">3RD PLACE</span>
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2">
+                  <span className="bg-[#CD7F32] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">3RD PLACE</span>
                 </div>
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 filter drop-shadow-lg">
                   {getTrophyIcon(3)}
