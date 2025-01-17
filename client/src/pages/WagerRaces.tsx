@@ -6,12 +6,25 @@ import { Trophy, CircleDot } from "lucide-react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { useLeaderboard } from "@/hooks/use-leaderboard";
 
+type WageredData = {
+  today: number;
+  this_week: number;
+  this_month: number;
+  all_time: number;
+};
+
+type LeaderboardEntry = {
+  uid: string;
+  name: string;
+  wagered: WageredData;
+};
+
 export default function WagerRaces() {
-  const [raceType] = useState("monthly");
+  const [raceType] = useState<'weekly' | 'monthly' | 'weekend'>('monthly');
   const { data: leaderboardData, isLoading } = useLeaderboard('monthly');
 
-  const prizePool = 100;
-  const prizeDistribution = {
+  const prizePool = 100000; // Example prize pool
+  const prizeDistribution: Record<number, number> = {
     1: 0.50, // 50% for first place
     2: 0.30, // 30% for second place
     3: 0.20  // 20% for third place
@@ -30,7 +43,23 @@ export default function WagerRaces() {
     }
   };
 
-  const top10Players = leaderboardData?.slice(0, 10) || [];
+  // Get wager amount based on race type
+  const getWagerAmount = (player: LeaderboardEntry) => {
+    switch (raceType) {
+      case 'weekly':
+        return player.wagered.this_week;
+      case 'monthly':
+        return player.wagered.this_month;
+      default:
+        return player.wagered.this_week; // Default to weekly for weekend races
+    }
+  };
+
+  const getPrizeAmount = (rank: number) => {
+    return prizePool * (prizeDistribution[rank] || 0);
+  };
+
+  const top10Players = (leaderboardData || []).slice(0, 10);
 
   return (
     <div className="min-h-screen bg-[#14151A] text-white">
@@ -67,17 +96,17 @@ export default function WagerRaces() {
           {/* Top 3 Winners */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {top10Players.slice(0, 3).map((player, index) => (
-              <div key={index} className="bg-[#1A1B21]/50 backdrop-blur-sm p-6 rounded-xl border border-[#2A2B31]">
+              <div key={player.uid} className="bg-[#1A1B21]/50 backdrop-blur-sm p-6 rounded-xl border border-[#2A2B31]">
                 <div className="flex items-center gap-3 mb-4">
                   {getTrophyIcon(index + 1)}
-                  <span className="text-xl font-bold">{player.username}</span>
+                  <span className="text-xl font-bold">{player.name}</span>
                 </div>
                 <div className="space-y-2">
                   <p className="text-[#8A8B91]">Total Wager</p>
-                  <p className="text-xl">${player.totalWager.toLocaleString()}</p>
+                  <p className="text-xl">${getWagerAmount(player).toLocaleString()}</p>
                   <p className="text-[#8A8B91]">Prize</p>
                   <p className="text-xl text-[#D7FF00]">
-                    ${(prizePool * (prizeDistribution[index + 1] || 0)).toLocaleString()}
+                    ${getPrizeAmount(index + 1).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -99,7 +128,7 @@ export default function WagerRaces() {
                 <AnimatePresence>
                   {top10Players.map((player, index) => (
                     <motion.tr
-                      key={player.username}
+                      key={player.uid}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
@@ -112,13 +141,13 @@ export default function WagerRaces() {
                         </div>
                       </TableCell>
                       <TableCell className="font-sans text-white">
-                        {player.username}
+                        {player.name}
                       </TableCell>
                       <TableCell className="text-right font-sans text-white">
-                        ${player.totalWager.toLocaleString()}
+                        ${getWagerAmount(player).toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right font-sans text-[#D7FF00]">
-                        ${(prizePool * (prizeDistribution[index + 1] || 0)).toLocaleString()}
+                        ${getPrizeAmount(index + 1).toLocaleString()}
                       </TableCell>
                     </motion.tr>
                   ))}
