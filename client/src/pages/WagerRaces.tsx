@@ -236,7 +236,18 @@ export default function WagerRaces() {
               <div className="w-1/3 h-[30px] bg-[#CD7F32]/10 rounded-tr-xl" />
             </div>
           </div>
-                <div className="absolute top-0 right-0 -mt-4 -mr-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+            <AnimatePresence>
+            {top10Players.slice(3).map((player, index) => (
+              <motion.div
+                key={player.uid}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="bg-[#1A1B21]/50 backdrop-blur-sm p-6 rounded-xl border border-[#2A2B31] hover:border-[#D7FF00]/50 transition-all hover:scale-105"
+              >
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2">
                   {getTrophyIcon(index + 1)}
                 </div>
                 <div className="flex items-center gap-3 mb-4">
@@ -264,6 +275,7 @@ export default function WagerRaces() {
                 </div>
               </motion.div>
             ))}
+            </AnimatePresence>
           </div>
 
           <motion.div
