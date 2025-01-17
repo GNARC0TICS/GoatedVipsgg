@@ -214,30 +214,31 @@ export default function WagerRaces() {
                       </span>
                     </div>
                     <div className="flex items-center gap-3 mb-4">
-                  <span className="text-xl font-bold">{player.name}</span>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-[#8A8B91] mb-1">Total Wager</p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xl">${getWagerAmount(player)?.toLocaleString()}</p>
-                      {isActivelyWagering(player) && (
-                        <TrendingUp className="h-4 w-4 text-green-400 animate-pulse" />
-                      )}
+                      <span className="text-xl font-bold">{player.name}</span>
                     </div>
-                    <p className="text-sm text-[#8A8B91] mt-1">
-                      {calculatePoolPercentage(player)}% of pool
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[#8A8B91] mb-1">Prize</p>
-                    <p className="text-xl text-[#D7FF00]">
-                      ${getPrizeAmount(index + 1).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-[#8A8B91] mb-1">Total Wager</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xl">${getWagerAmount(player)?.toLocaleString()}</p>
+                          {isActivelyWagering(player) && (
+                            <TrendingUp className="h-4 w-4 text-green-400 animate-pulse" />
+                          )}
+                        </div>
+                        <p className="text-sm text-[#8A8B91] mt-1">
+                          {calculatePoolPercentage(player)}% of pool
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[#8A8B91] mb-1">Prize</p>
+                        <p className="text-xl text-[#D7FF00]">
+                          ${getPrizeAmount(index + 1).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+            </AnimatePresence>
           </div>
 
           {/* Display runners-up (4-10) in compact layout */}
