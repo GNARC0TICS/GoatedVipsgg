@@ -108,39 +108,8 @@ export default function WagerRaces() {
           </div>
 
           {/* Quick view podium */}
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-2 justify-end w-full max-w-[420px]">
             {top10Players.slice(0, 3).map((player, index) => (
-              <motion.div
-                key={player.uid}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`relative bg-[#1A1B21]/80 backdrop-blur-sm p-3 rounded-lg border ${
-                  index === 0 ? 'border-[#FFD700]' : 
-                  index === 1 ? 'border-[#C0C0C0]' : 
-                  'border-[#CD7F32]'
-                } w-[130px]`}
-              >
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  {getTrophyIcon(index + 1)}
-                </div>
-                <div className="mt-3 text-center">
-                  <p className="text-sm font-bold truncate">{player.name}</p>
-                  <p className="text-xs text-[#D7FF00]">${getPrizeAmount(index + 1).toLocaleString()}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        <div className="relative space-y-6 md:space-y-8">
-          {/* Top right podium quick view */}
-          <div className="absolute top-0 right-0 w-full max-w-[420px]">
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex gap-2 justify-end"
-            >
-              {top10Players.slice(0, 3).map((player, index) => (
                 <motion.div
                   key={player.uid}
                   initial={{ opacity: 0, y: 20 }}
@@ -193,88 +162,7 @@ export default function WagerRaces() {
             </div>
           </motion.div>
 
-          <div className="mt-8">
-            <AnimatePresence>
-              {/* Move straight to leaderboard rankings */}
-                {top10Players.slice(0, 3).map((player, index) => (
-                  <motion.div
-                    key={player.uid}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="bg-[#1A1B21]/50 backdrop-blur-sm p-6 rounded-xl border border-[#2A2B31] hover:border-[#D7FF00]/50 transition-all hover:scale-105"
-                  >
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2">
-                      {getTrophyIcon(index + 1)}
-                    </div>
-                    <div className="text-center mb-4">
-                      <span className="text-xl font-bold">
-                        {index === 0 ? "1st Place" : index === 1 ? "2nd Place" : "3rd Place"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="text-xl font-bold">{player.name}</span>
-                    </div>
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-[#8A8B91] mb-1">Total Wager</p>
-                        <div className="flex items-center gap-2">
-                          <p className="text-xl">${getWagerAmount(player)?.toLocaleString()}</p>
-                          {isActivelyWagering(player) && (
-                            <TrendingUp className="h-4 w-4 text-green-400 animate-pulse" />
-                          )}
-                        </div>
-                        <p className="text-sm text-[#8A8B91] mt-1">
-                          {calculatePoolPercentage(player)}% of pool
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[#8A8B91] mb-1">Prize</p>
-                        <p className="text-xl text-[#D7FF00]">
-                          ${getPrizeAmount(index + 1).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-            </AnimatePresence>
-          </div>
-
-          {/* Display runners-up (4-10) in compact layout */}
-          <div className="space-y-2">
-            {top10Players.slice(3).map((player, index) => (
-              <motion.div
-                key={player.uid}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ delay: (index + 3) * 0.05 }}
-                className="bg-[#1A1B21]/30 backdrop-blur-sm p-4 rounded-lg border border-[#2A2B31] hover:border-[#D7FF00]/50 transition-all"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Star className="h-5 w-5 text-zinc-600" />
-                      <span className="text-zinc-400">#{index + 4}</span>
-                    </div>
-                    <span className="font-medium">{player.name}</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-[#D7FF00]">${getPrizeAmount(index + 4).toLocaleString()}</p>
-                      <p className="text-sm text-zinc-500">
-                        ${getWagerAmount(player)?.toLocaleString()} wagered
-                      </p>
-                    </div>
-                    {isActivelyWagering(player) && (
-                      <TrendingUp className="h-4 w-4 text-green-400 animate-pulse" />
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          {/* Rankings Table */}
 
           {/* Rankings Table */}
           <motion.div
