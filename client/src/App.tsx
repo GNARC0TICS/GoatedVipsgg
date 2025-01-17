@@ -1,5 +1,5 @@
 import React from "react";
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, useLocation, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,12 +10,28 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import VipTransfer from "@/pages/VipTransfer";
 import WagerRaces from "@/pages/WagerRaces";
-import BonusCodes from "@/pages/BonusCodes"; // New import
+import BonusCodes from "@/pages/BonusCodes";
 import NotificationPreferences from "@/pages/notification-preferences";
 import WagerRaceManagement from "@/pages/admin/WagerRaceManagement";
 import { Layout } from "@/components/Layout";
 import { PageTransition } from "@/components/PageTransition";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useUser } from "@/hooks/use-user";
+
+// Admin route wrapper component
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useUser();
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!user?.isAdmin) {
+    return <Redirect to="/" />;
+  }
+
+  return <>{children}</>;
+}
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -38,6 +54,11 @@ function ErrorFallback({ error }: { error: Error }) {
 
 function Router() {
   const [location] = useLocation();
+  const { user, isLoading } = useUser();
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <Layout>
@@ -59,7 +80,7 @@ function Router() {
                 <WagerRaces />
               </PageTransition>
             </Route>
-            <Route path="/bonus-codes"> {/* New Route */}
+            <Route path="/bonus-codes">
               <PageTransition>
                 <BonusCodes />
               </PageTransition>
@@ -69,9 +90,12 @@ function Router() {
                 <NotificationPreferences />
               </PageTransition>
             </Route>
+            {/* Protected Admin Routes */}
             <Route path="/admin/wager-races">
               <PageTransition>
-                <WagerRaceManagement />
+                <AdminRoute>
+                  <WagerRaceManagement />
+                </AdminRoute>
               </PageTransition>
             </Route>
             <Route>

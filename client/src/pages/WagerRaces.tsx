@@ -23,11 +23,18 @@ export default function WagerRaces() {
   const [raceType] = useState<'weekly' | 'monthly' | 'weekend'>('monthly');
   const { data: leaderboardData, isLoading } = useLeaderboard('monthly');
 
-  const prizePool = 100000; // Example prize pool
+  const prizePool = 200; // Total prize pool of $200
   const prizeDistribution: Record<number, number> = {
-    1: 0.50, // 50% for first place
-    2: 0.30, // 30% for second place
-    3: 0.20  // 20% for third place
+    1: 0.50, // $100 (50% of total)
+    2: 0.15, // $30 (15% of total)
+    3: 0.10, // $20 (10% of total)
+    4: 0.0357, // ~$7.14 each (remaining $50 split among places 4-10)
+    5: 0.0357,
+    6: 0.0357,
+    7: 0.0357,
+    8: 0.0357,
+    9: 0.0357,
+    10: 0.0358 // Slightly higher to round up to $50 total for places 4-10
   };
 
   const getTrophyIcon = (rank: number) => {
@@ -56,10 +63,14 @@ export default function WagerRaces() {
   };
 
   const getPrizeAmount = (rank: number) => {
-    return prizePool * (prizeDistribution[rank] || 0);
+    return Math.round(prizePool * (prizeDistribution[rank] || 0) * 100) / 100;
   };
 
   const top10Players = (leaderboardData || []).slice(0, 10);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-[#14151A] text-white">
@@ -103,7 +114,7 @@ export default function WagerRaces() {
                 </div>
                 <div className="space-y-2">
                   <p className="text-[#8A8B91]">Total Wager</p>
-                  <p className="text-xl">${getWagerAmount(player).toLocaleString()}</p>
+                  <p className="text-xl">${getWagerAmount(player)?.toLocaleString()}</p>
                   <p className="text-[#8A8B91]">Prize</p>
                   <p className="text-xl text-[#D7FF00]">
                     ${getPrizeAmount(index + 1).toLocaleString()}
@@ -144,7 +155,7 @@ export default function WagerRaces() {
                         {player.name}
                       </TableCell>
                       <TableCell className="text-right font-sans text-white">
-                        ${getWagerAmount(player).toLocaleString()}
+                        ${getWagerAmount(player)?.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right font-sans text-[#D7FF00]">
                         ${getPrizeAmount(index + 1).toLocaleString()}
