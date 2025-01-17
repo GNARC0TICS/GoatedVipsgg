@@ -67,10 +67,21 @@ export default function WagerRaces() {
     return Math.round(prizePool * (prizeDistribution[rank] || 0) * 100) / 100;
   };
 
+  const calculatePoolPercentage = (player: LeaderboardEntry) => {
+    const totalWagered = leaderboardData?.reduce((sum, p) => sum + (getWagerAmount(p) || 0), 0) || 1;
+    const percentage = ((getWagerAmount(player) || 0) / totalWagered) * 100;
+    return percentage.toFixed(2);
+  };
+
+  const isActivelyWagering = (player: LeaderboardEntry) => {
+    // Mock implementation - in real app, this would compare with previous values
+    return player.wagered.today > 0;
+  };
+
   if (isLoading || !leaderboardData) {
     return (
       <div className="min-h-screen bg-[#14151A] flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
       </div>
     );
   }
@@ -83,15 +94,15 @@ export default function WagerRaces() {
       <div className="container mx-auto px-4 py-8 md:py-16">
         <div className="flex flex-col gap-8">
           {/* Header Section */}
-          <div className="flex justify-between items-center">
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4"
+          >
             <div>
-              <motion.h1 
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-3xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2"
-              >
+              <h1 className="text-3xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2">
                 MONTHLY WAGER RACE
-              </motion.h1>
+              </h1>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <CircleDot className="h-4 w-4 text-red-500 animate-pulse" />
@@ -104,119 +115,84 @@ export default function WagerRaces() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#1A1B21]/50 backdrop-blur-sm p-4 md:p-6 rounded-xl border border-[#2A2B31] hover:border-[#D7FF00]/50 transition-colors"
+          >
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+              <div>
+                <h3 className="text-[#8A8B91] font-heading text-sm mb-2">PRIZE POOL</h3>
+                <div className="flex items-baseline gap-2">
+                  <Trophy className="h-5 w-5 text-[#D7FF00]" />
+                  <p className="text-xl md:text-2xl font-bold">${prizePool.toLocaleString()}</p>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-[#8A8B91] font-heading text-sm mb-2">TIME REMAINING</h3>
+                <div className="flex items-baseline gap-2">
+                  <Timer className="h-5 w-5 text-[#D7FF00]" />
+                  <CountdownTimer endDate={new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString()} />
+                </div>
+              </div>
+              <div className="col-span-2 md:col-span-1">
+                <h3 className="text-[#8A8B91] font-heading text-sm mb-2">TOP PARTICIPANTS</h3>
+                <div className="flex items-baseline gap-2">
+                  <Medal className="h-5 w-5 text-[#D7FF00]" />
+                  <p className="text-xl md:text-2xl font-bold">{top10Players.length}</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
 
           {/* Podium Section */}
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-col items-center py-16 px-4 mb-12 relative"
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6"
           >
-            <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/5 to-transparent pointer-events-none" />
-            <div className="flex justify-center items-end gap-6 md:gap-8 relative">
-              {/* 2nd Place */}
+            {top10Players.slice(0, 3).map((player, index) => (
               <motion.div
+                key={player.uid}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-6 rounded-2xl border-2 border-[#C0C0C0] w-[160px] h-[160px] transform -translate-y-4"
+                whileHover={{ scale: 1.02 }}
+                className={`bg-[#1A1B21]/50 backdrop-blur-sm p-6 rounded-xl border-2 ${
+                  index === 0
+                    ? 'border-[#FFD700] glow-gold'
+                    : index === 1
+                    ? 'border-[#C0C0C0]'
+                    : 'border-[#CD7F32]'
+                }`}
               >
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2">
-                  <span className="bg-[#C0C0C0] text-black font-heading px-4 py-1 rounded-full text-sm">2ND PLACE</span>
+                <div className="flex justify-between items-start mb-4">
+                  {getTrophyIcon(index + 1)}
+                  <span className="text-sm font-heading text-[#8A8B91]">#{index + 1}</span>
                 </div>
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 filter drop-shadow-lg">
-                  {getTrophyIcon(2)}
-                </div>
-                <div className="text-center mt-8">
-                  <p className="text-base font-bold truncate text-white/90">{top10Players[1]?.name || '-'}</p>
-                  <p className="text-sm font-heading text-[#D7FF00] mt-2">
-                    ${getPrizeAmount(2).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-white/60 mt-1">
-                    ${getWagerAmount(top10Players[1] || { wagered: { this_month: 0 } }).toLocaleString()} wagered
-                  </p>
-                </div>
-              </motion.div>
-
-              {/* 1st Place */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-6 rounded-2xl border-2 border-[#FFD700] w-[200px] h-[180px] z-10 glow-gold"
-              >
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2">
-                  <span className="bg-[#FFD700] text-black font-heading px-4 py-1 rounded-full text-sm">1ST PLACE</span>
-                </div>
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 filter drop-shadow-lg scale-110">
-                  {getTrophyIcon(1)}
-                </div>
-                <div className="text-center mt-10">
-                  <p className="text-xl font-bold truncate text-white">{top10Players[0]?.name || '-'}</p>
-                  <p className="text-lg font-heading text-[#D7FF00] mt-2">
-                    ${getPrizeAmount(1).toLocaleString()}
-                  </p>
-                  <p className="text-sm text-white/60 mt-1">
-                    ${getWagerAmount(top10Players[0] || { wagered: { this_month: 0 } }).toLocaleString()} wagered
-                  </p>
-                </div>
-              </motion.div>
-
-              {/* 3rd Place */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-6 rounded-2xl border-2 border-[#CD7F32] w-[160px] h-[140px] transform -translate-y-8"
-              >
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2">
-                  <span className="bg-[#CD7F32] text-black font-heading px-4 py-1 rounded-full text-sm">3RD PLACE</span>
-                </div>
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 filter drop-shadow-lg">
-                  {getTrophyIcon(3)}
-                </div>
-                <div className="text-center mt-8">
-                  <p className="text-base font-bold truncate text-white/90">{top10Players[2]?.name || '-'}</p>
-                  <p className="text-sm font-heading text-[#D7FF00] mt-2">
-                    ${getPrizeAmount(3).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-white/60 mt-1">
-                    ${getWagerAmount(top10Players[2] || { wagered: { this_month: 0 } }).toLocaleString()} wagered
-                  </p>
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Info Boxes as Table */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="w-full max-w-4xl bg-[#1A1B21]/50 backdrop-blur-sm rounded-lg border border-[#2A2B31] p-4"
-            >
-              <div className="grid grid-cols-3 gap-8">
-                <div className="text-center">
-                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">PRIZE POOL</h3>
-                  <div className="flex items-center justify-center gap-2">
-                    <Trophy className="h-5 w-5 text-[#D7FF00]" />
-                    <p className="text-xl font-bold">${prizePool.toLocaleString()}</p>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[#8A8B91] mb-1">Total Wager</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xl">${getWagerAmount(player)?.toLocaleString()}</p>
+                      {isActivelyWagering(player) && (
+                        <TrendingUp className="h-4 w-4 text-green-400 animate-pulse" />
+                      )}
+                    </div>
+                    <p className="text-sm text-[#8A8B91] mt-1">
+                      {calculatePoolPercentage(player)}% of pool
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[#8A8B91] mb-1">Prize</p>
+                    <p className="text-xl font-heading text-[#D7FF00]">
+                      ${getPrizeAmount(index + 1).toLocaleString()}
+                    </p>
                   </div>
                 </div>
-                <div className="text-center">
-                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">POSITIONS PAID</h3>
-                  <div className="flex items-center justify-center gap-2">
-                    <Medal className="h-5 w-5 text-[#D7FF00]" />
-                    <p className="text-xl font-bold">10</p>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">CURRENT LEADER</h3>
-                  <div className="flex items-center justify-center gap-2">
-                    <Crown className="h-5 w-5 text-[#D7FF00]" />
-                    <p className="text-xl font-bold truncate">{currentLeader?.name || 'No Leader'}</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            ))}
           </motion.div>
 
           {/* Rankings Table */}
@@ -225,38 +201,86 @@ export default function WagerRaces() {
             animate={{ opacity: 1, y: 0 }}
             className="bg-[#1A1B21]/50 backdrop-blur-sm rounded-xl border border-[#2A2B31] overflow-hidden"
           >
-            <div className="bg-[#2A2B31] px-6 py-4">
-              <h3 className="text-xl font-heading font-bold text-[#D7FF00]">Leaderboard Rankings</h3>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-20 font-heading text-[#D7FF00]">RANK</TableHead>
-                  <TableHead className="font-heading text-[#D7FF00]">USERNAME</TableHead>
-                  <TableHead className="text-right font-heading text-[#D7FF00]">TOTAL WAGER</TableHead>
-                  <TableHead className="text-right font-heading text-[#D7FF00]">PRIZE</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {top10Players.map((player, index) => (
-                  <TableRow key={player.uid} className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]">
-                    <TableCell className="font-heading">
-                      <div className="flex items-center gap-2">
-                        {getTrophyIcon(index + 1)}
-                        {index + 1}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-sans">{player.name}</TableCell>
-                    <TableCell className="text-right font-sans">
-                      ${getWagerAmount(player)?.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right font-sans text-[#D7FF00]">
-                      ${getPrizeAmount(index + 1).toLocaleString()}
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-20 font-heading text-[#D7FF00]">RANK</TableHead>
+                    <TableHead className="font-heading text-[#D7FF00]">USERNAME</TableHead>
+                    <TableHead className="text-right font-heading text-[#D7FF00]">TOTAL WAGER</TableHead>
+                    <TableHead className="text-right font-heading text-[#D7FF00]">POOL %</TableHead>
+                    <TableHead className="text-right font-heading text-[#D7FF00]">PRIZE</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  <AnimatePresence>
+                    {top10Players.map((player, index) => (
+                      <motion.tr
+                        key={player.uid}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className={`bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] ${
+                          index < 3 ? 'bg-[#1A1B21]/70' : ''
+                        }`}
+                      >
+                        <TableCell className="font-heading text-white">
+                          <div className="flex items-center gap-2">
+                            {getTrophyIcon(index + 1)}
+                            {index + 1}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-sans text-white">
+                          {player.name}
+                        </TableCell>
+                        <TableCell className="text-right font-sans text-white">
+                          <div className="flex items-center justify-end gap-2">
+                            ${getWagerAmount(player)?.toLocaleString()}
+                            {isActivelyWagering(player) && (
+                              <TrendingUp className="h-4 w-4 text-green-400 animate-pulse" />
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-sans text-white">
+                          {calculatePoolPercentage(player)}%
+                        </TableCell>
+                        <TableCell className="text-right font-sans text-[#D7FF00]">
+                          ${getPrizeAmount(index + 1).toLocaleString()}
+                        </TableCell>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </TableBody>
+              </Table>
+            </div>
+          </motion.div>
+
+          {/* Disclaimer Section */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-8 p-6 bg-[#1A1B21]/50 backdrop-blur-sm rounded-xl border border-[#2A2B31]"
+          >
+            <h3 className="text-xl font-heading font-bold text-[#D7FF00] mb-4">How It Works</h3>
+            <div className="space-y-4 text-[#8A8B91]">
+              <p>
+                The Wager Race is a monthly competition where affiliates compete for a share of the ${prizePool} prize pool.
+                Rankings are determined by the total amount wagered through your affiliate links during the competition period.
+              </p>
+              <p>
+                The top 10 affiliates will receive prizes according to their final ranking, with the following distribution:
+              </p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>1st Place: 50% (${getPrizeAmount(1)})</li>
+                <li>2nd Place: 15% (${getPrizeAmount(2)})</li>
+                <li>3rd Place: 10% (${getPrizeAmount(3)})</li>
+                <li>4th-10th Place: Split remaining 25%</li>
+              </ul>
+              <p className="font-semibold text-white">
+                Prize payments will be processed and distributed within 24 hours of the competition's end.
+              </p>
+            </div>
           </motion.div>
         </div>
       </div>
