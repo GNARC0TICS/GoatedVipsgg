@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef } from "react";
+import { motion, useAnimationControls } from "framer-motion";
 
 const features = [
   "EXCLUSIVE REWARDS",
-  "WAGER RACES",
+  "WAGER RACES", 
   "TIPS & TRICKS",
   "COMMUNITY CHALLENGES",
   "INSTANT PAYOUTS",
@@ -13,83 +13,54 @@ const features = [
 
 export function FeatureCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const controls = useAnimationControls();
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!isPaused) {
-        setCurrentIndex((prev) => (prev + 1) % features.length);
-      }
-    }, 3000);
+  const handleDragEnd = (event: any, info: any) => {
+    const offset = info.offset.x;
+    const velocity = info.velocity.x;
 
-    return () => clearInterval(interval);
-  }, [isPaused]);
-
-  const variants = {
-    enter: {
-      opacity: 0,
-      y: 20,
-      scale: 0.95,
-    },
-    center: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: {
-        duration: 0.5,
-        ease: [0.16, 1, 0.3, 1],
-      },
-    },
-    exit: {
-      opacity: 0,
-      y: -20,
-      scale: 0.95,
-      transition: {
-        duration: 0.3,
-        ease: [0.16, 1, 0.3, 1],
-      },
-    },
-    hover: {
-      scale: 1.05,
-      textShadow: "0 0 8px rgba(215, 255, 0, 0.6)",
-      transition: {
-        duration: 0.2,
-        ease: "easeInOut",
-      },
-    },
+    if (Math.abs(velocity) > 500) {
+      const direction = velocity < 0 ? 1 : -1;
+      const newIndex = (currentIndex + direction + features.length) % features.length;
+      setCurrentIndex(newIndex);
+    } else if (Math.abs(offset) > 50) {
+      const direction = offset < 0 ? 1 : -1;
+      const newIndex = (currentIndex + direction + features.length) % features.length;
+      setCurrentIndex(newIndex);
+    }
   };
 
   return (
-    <div 
-      className="relative h-32 flex items-center justify-center overflow-hidden mt-8 mb-4"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
-      {/* Background glow effect */}
+    <div className="relative h-32 flex items-center justify-center overflow-hidden mt-8 mb-4">
       <motion.div
-        className="absolute inset-0 bg-gradient-radial from-[#D7FF00]/5 via-transparent to-transparent opacity-0"
-        animate={{
-          opacity: isPaused ? 0.6 : 0,
-          scale: isPaused ? 1.1 : 1,
-        }}
-        transition={{ duration: 0.3 }}
-      />
+        ref={containerRef}
+        className="flex items-center cursor-grab active:cursor-grabbing"
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.2}
+        onDragEnd={handleDragEnd}
+      >
+        {features.map((text, index) => (
+          <motion.div
+            key={index}
+            className="px-8"
+            animate={{
+              scale: index === currentIndex ? 1 : 0.9,
+              opacity: index === currentIndex ? 1 : 0.5
+            }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          >
+            <motion.h1
+              className="text-3xl md:text-5xl lg:text-6xl font-heading font-extrabold uppercase bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent cursor-default select-none"
+              animate={controls}
+            >
+              {text}
+            </motion.h1>
+          </motion.div>
+        ))}
+      </motion.div>
 
-      <AnimatePresence mode="wait">
-        <motion.h1
-          key={currentIndex}
-          variants={variants}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          whileHover="hover"
-          className="absolute text-3xl md:text-5xl lg:text-6xl font-heading font-extrabold uppercase bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent cursor-default select-none animate-scroll"
-        >
-          {features[currentIndex]}
-        </motion.h1>
-      </AnimatePresence>
-
-      {/* Interactive Progress Indicators */}
       <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex gap-2">
         {features.map((_, index) => (
           <motion.button
