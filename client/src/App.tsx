@@ -1,37 +1,23 @@
-import React from "react";
-import { Switch, Route, useLocation, Redirect } from "wouter";
+import React, { Suspense } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "react-error-boundary";
+import { Redirect } from "@/lib/navigation";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import VipTransfer from "@/pages/VipTransfer";
 import WagerRaces from "@/pages/WagerRaces";
-import BonusCodes from "@/pages/BonusCodes";
+import BonusCodes from "@/pages/bonus-codes";
 import NotificationPreferences from "@/pages/notification-preferences";
 import WagerRaceManagement from "@/pages/admin/WagerRaceManagement";
 import { Layout } from "@/components/Layout";
 import { PageTransition } from "@/components/PageTransition";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useUser } from "@/hooks/use-user";
-
-// Admin route wrapper component
-function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useUser();
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  if (!user?.isAdmin) {
-    return <Redirect to="/" />;
-  }
-
-  return <>{children}</>;
-}
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -52,13 +38,23 @@ function ErrorFallback({ error }: { error: Error }) {
   );
 }
 
-function Router() {
-  const [location] = useLocation();
+// Admin route wrapper component
+function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useUser();
 
   if (isLoading) {
     return <LoadingSpinner />;
   }
+
+  if (!user?.isAdmin) {
+    return <Redirect to="/" />;
+  }
+
+  return <>{children}</>;
+}
+
+function Router() {
+  const [location] = useLocation();
 
   return (
     <Layout>
@@ -111,28 +107,17 @@ function Router() {
 }
 
 function App() {
-  // Initialize query client with retry logic
-  React.useEffect(() => {
-    queryClient.setDefaultOptions({
-      queries: {
-        retry: 2,
-        staleTime: 10000,
-        refetchOnWindowFocus: false
-      }
-    });
-  }, []);
-
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <React.Suspense fallback={<LoadingSpinner />}>
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <Suspense fallback={<LoadingSpinner />}>
+          <TooltipProvider>
             <Router />
             <Toaster />
-          </React.Suspense>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+          </TooltipProvider>
+        </Suspense>
+      </ErrorBoundary>
+    </QueryClientProvider>
   );
 }
 

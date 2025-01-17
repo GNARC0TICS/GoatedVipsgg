@@ -5,19 +5,35 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  TrashIcon, 
-  PencilIcon, 
+import {
+  TrashIcon,
+  PencilIcon,
   PlusCircle,
   Copy,
   Clock,
-  X
+  Trophy,
+  DollarSign,
+  Users,
+  X,
+  AlertCircle
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface WagerRaceBase {
   title: string;
@@ -53,6 +69,7 @@ export default function WagerRaceManagement() {
   const { toast } = useToast();
   const [editingRace, setEditingRace] = useState<WagerRaceDB | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const form = useForm<WagerRace>({
@@ -60,21 +77,21 @@ export default function WagerRaceManagement() {
     defaultValues: {
       title: "",
       type: "weekly",
-      prizePool: 0,
-      minWager: 0,
+      prizePool: 200,
+      minWager: 100,
       startDate: new Date().toISOString().split('T')[0],
       endDate: "",
       prizeDistribution: {
-        "1": 25,
+        "1": 50,
         "2": 15,
         "3": 10,
-        "4": 7.5,
-        "5": 7.5,
-        "6": 7.5,
-        "7": 7.5,
-        "8": 5,
-        "9": 5,
-        "10": 5,
+        "4": 5,
+        "5": 5,
+        "6": 3.75,
+        "7": 3.75,
+        "8": 2.5,
+        "9": 2.5,
+        "10": 2.5,
       },
     },
   });
@@ -128,59 +145,86 @@ export default function WagerRaceManagement() {
     createRace.mutate(data);
   };
 
-  // Quick Actions Component
-  const QuickActions = ({ race }: { race: WagerRaceDB }) => (
-    <div className="flex flex-wrap gap-2">
-      <Button
-        size="sm"
-        variant="ghost"
-        className="flex items-center gap-1"
-        onClick={() => {
-          form.reset({
-            ...race,
-            prizePool: race.prizePool,
-            minWager: race.minWager,
-          });
-          setEditingRace(race);
-          setShowForm(true);
-        }}
-      >
-        <PencilIcon className="h-4 w-4" />
-        <span className="hidden sm:inline">Edit</span>
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        className="flex items-center gap-1"
-        onClick={() => {
-          const newRace = {
-            ...race,
-            title: `${race.title} (Copy)`,
-            startDate: new Date().toISOString(),
-          };
-          form.reset(newRace);
-          setShowForm(true);
-        }}
-      >
-        <Copy className="h-4 w-4" />
-        <span className="hidden sm:inline">Duplicate</span>
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        className="flex items-center gap-1 text-destructive"
-        onClick={() => deleteRace.mutate(race.id)}
-      >
-        <TrashIcon className="h-4 w-4" />
-        <span className="hidden sm:inline">Delete</span>
-      </Button>
-    </div>
-  );
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const calculateTimeLeft = (startDate: string, endDate: string) => {
+    const now = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (now < start) {
+      return `Starts in ${Math.ceil((start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))} days`;
+    } else if (now > end) {
+      return 'Completed';
+    } else {
+      return `${Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))} days left`;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'upcoming':
+        return 'text-blue-400';
+      case 'live':
+        return 'text-green-400';
+      case 'completed':
+        return 'text-gray-400';
+      default:
+        return 'text-white';
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header with Quick Create Button */}
+        {/* Header with Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Trophy className="h-5 w-5 text-[#D7FF00]" />
+                <span className="text-sm text-muted-foreground">Active Races</span>
+              </div>
+              <p className="text-2xl font-bold">
+                {races.filter(r => r.status === 'live').length}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="h-5 w-5 text-[#D7FF00]" />
+                <span className="text-sm text-muted-foreground">Total Prize Pool</span>
+              </div>
+              <p className="text-2xl font-bold">
+                ${races.reduce((acc, race) => acc + Number(race.prizePool), 0).toLocaleString()}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="h-5 w-5 text-[#D7FF00]" />
+                <span className="text-sm text-muted-foreground">Total Participants</span>
+              </div>
+              <p className="text-2xl font-bold">
+                428
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Header with Create Button */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl md:text-3xl font-heading font-bold text-[#D7FF00]">
             Wager Race Management
@@ -222,14 +266,15 @@ export default function WagerRaceManagement() {
                 </div>
 
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    {/* Basic Information */}
                     <div className="grid md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
                         name="title"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Title</FormLabel>
+                            <FormLabel>Race Title</FormLabel>
                             <FormControl>
                               <Input placeholder="Weekly Race #1" {...field} />
                             </FormControl>
@@ -243,7 +288,7 @@ export default function WagerRaceManagement() {
                         name="type"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Type</FormLabel>
+                            <FormLabel>Race Type</FormLabel>
                             <Select
                               onValueChange={field.onChange}
                               defaultValue={field.value}
@@ -265,17 +310,18 @@ export default function WagerRaceManagement() {
                       />
                     </div>
 
+                    {/* Prize Configuration */}
                     <div className="grid md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
                         name="prizePool"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Prize Pool</FormLabel>
+                            <FormLabel>Total Prize Pool ($)</FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
-                                placeholder="10000"
+                                placeholder="200"
                                 {...field}
                                 onChange={(e) => field.onChange(Number(e.target.value))}
                               />
@@ -290,7 +336,7 @@ export default function WagerRaceManagement() {
                         name="minWager"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Minimum Wager</FormLabel>
+                            <FormLabel>Minimum Wager ($)</FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -305,6 +351,7 @@ export default function WagerRaceManagement() {
                       />
                     </div>
 
+                    {/* Date Configuration */}
                     <div className="grid md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
@@ -333,6 +380,40 @@ export default function WagerRaceManagement() {
                           </FormItem>
                         )}
                       />
+                    </div>
+
+                    {/* Prize Distribution Sliders */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold mb-4">Prize Distribution</h3>
+                      {[1, 2, 3].map((position) => (
+                        <FormField
+                          key={position}
+                          control={form.control}
+                          name={`prizeDistribution.${position}`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Position #{position} (%)</FormLabel>
+                              <FormControl>
+                                <div className="flex items-center gap-4">
+                                  <Slider
+                                    min={0}
+                                    max={100}
+                                    step={1}
+                                    value={[field.value]}
+                                    onValueChange={(value) => field.onChange(value[0])}
+                                    className="flex-1"
+                                  />
+                                  <span className="w-12 text-right">{field.value}%</span>
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+                      <div className="text-sm text-muted-foreground">
+                        Remaining percentage will be distributed among positions 4-10.
+                      </div>
                     </div>
 
                     <div className="flex justify-end gap-2">
@@ -373,30 +454,23 @@ export default function WagerRaceManagement() {
             <h2 className="text-xl md:text-2xl font-heading font-bold text-white">Active Races</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               {races.map((race) => (
-                <Card key={race.id} className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
+                <Card key={race.id} className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31] hover:border-[#D7FF00]/50 transition-colors">
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start gap-2">
                       <div className="space-y-1">
                         <CardTitle className="text-lg md:text-xl line-clamp-1">{race.title}</CardTitle>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Clock className="h-4 w-4" />
-                          <span>{new Date(race.startDate).toLocaleDateString()}</span>
+                          <span>{calculateTimeLeft(race.startDate, race.endDate)}</span>
                         </div>
                       </div>
                       <Button
                         size="icon"
                         variant="ghost"
                         className="shrink-0"
-                        onClick={() => {
-                          const isExpanded = race.id === editingRace?.id;
-                          setEditingRace(isExpanded ? null : race);
-                        }}
+                        onClick={() => setEditingRace(race)}
                       >
-                        {race.id === editingRace?.id ? (
-                          <X className="h-4 w-4" />
-                        ) : (
-                          <PencilIcon className="h-4 w-4" />
-                        )}
+                        <PencilIcon className="h-4 w-4" />
                       </Button>
                     </div>
                   </CardHeader>
@@ -410,8 +484,39 @@ export default function WagerRaceManagement() {
                         <span className="text-muted-foreground">Min Wager</span>
                         <span className="font-medium">${race.minWager.toLocaleString()}</span>
                       </div>
-                      <div className="pt-2">
-                        <QuickActions race={race} />
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Status</span>
+                        <span className={`font-medium ${getStatusColor(race.status)}`}>
+                          {race.status.charAt(0).toUpperCase() + race.status.slice(1)}
+                        </span>
+                      </div>
+                      <div className="pt-2 flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="flex items-center gap-1"
+                          onClick={() => {
+                            const newRace = {
+                              ...race,
+                              title: `${race.title} (Copy)`,
+                              startDate: new Date().toISOString(),
+                            };
+                            form.reset(newRace);
+                            setShowForm(true);
+                          }}
+                        >
+                          <Copy className="h-4 w-4" />
+                          <span className="hidden sm:inline">Duplicate</span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="flex items-center gap-1 text-destructive"
+                          onClick={() => setDeleteConfirm(race.id)}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                          <span className="hidden sm:inline">Delete</span>
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -421,8 +526,35 @@ export default function WagerRaceManagement() {
           </motion.div>
         )}
 
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteConfirm !== null} onOpenChange={setDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the race and remove all associated data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground"
+                onClick={() => {
+                  if (deleteConfirm) {
+                    deleteRace.mutate(deleteConfirm);
+                    setDeleteConfirm(null);
+                  }
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+
         {/* Mobile FAB */}
-        <motion.div 
+        <motion.div
           className="fixed bottom-4 right-4 sm:hidden"
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
