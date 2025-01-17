@@ -1,19 +1,25 @@
 
 import { useState, useRef, useEffect } from "react";
-import { motion, useAnimationControls, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeftCircle, ArrowRightCircle } from "lucide-react";
+import { Link, useLocation } from "wouter";
 
 const announcements = [
-  "PROVABLY FAIR GAMING",
-  "INSTANT WITHDRAWALS",
-  "24/7 LIVE SUPPORT",
-  "WEEKLY BONUSES & REWARDS",
-  "EXCLUSIVE VIP PROGRAM"
+  { text: "PROVABLY FAIR GAMING", link: "/vip-program" },
+  { text: "INSTANT WITHDRAWALS", link: "/vip-program" },
+  { text: "24/7 LIVE SUPPORT", link: "/help" },
+  { text: "WEEKLY BONUSES & REWARDS", link: "/bonus-codes" },
+  { text: "EXCLUSIVE VIP PROGRAM", link: "/vip-program" },
+  { text: "JOIN THE GOATS", link: "/auth" },
+  { text: "EXCLUSIVE UPDATES", link: "/notification-preferences" },
+  { text: "LEADERBOARD RANKINGS", link: "#leaderboard" },
+  { text: "HELP & SUPPORT", link: "/help" }
 ];
 
 export const FeatureCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [, setLocation] = useLocation();
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % announcements.length);
@@ -27,6 +33,17 @@ export const FeatureCarousel = () => {
     const interval = setInterval(nextSlide, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleClick = (link: string) => {
+    if (link.startsWith('#')) {
+      const element = document.querySelector(link);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      setLocation(link);
+    }
+  };
 
   return (
     <div ref={containerRef} className="relative h-24 overflow-hidden bg-[#1A1B21]/50 backdrop-blur-sm rounded-lg border border-[#2A2B31] mb-8">
@@ -47,9 +64,12 @@ export const FeatureCarousel = () => {
             transition={{ duration: 0.3 }}
             className="text-center px-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-extrabold bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent">
-              {announcements[currentIndex]}
-            </h2>
+            <button
+              onClick={() => handleClick(announcements[currentIndex].link)}
+              className="text-3xl md:text-4xl font-heading font-extrabold bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent hover:from-[#D7FF00]/80 hover:to-[#D7FF00]/40 transition-all cursor-pointer"
+            >
+              {announcements[currentIndex].text}
+            </button>
           </motion.div>
         </AnimatePresence>
 

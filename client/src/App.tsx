@@ -18,6 +18,7 @@ import { Layout } from "@/components/Layout";
 import { PageTransition } from "@/components/PageTransition";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useUser } from "@/hooks/use-user";
+import Help from "./pages/Help";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -92,6 +93,11 @@ function Router() {
                 <AdminRoute>
                   <WagerRaceManagement />
                 </AdminRoute>
+              </PageTransition>
+            </Route>
+            <Route path="/help">
+              <PageTransition>
+                <Help />
               </PageTransition>
             </Route>
             <Route>
