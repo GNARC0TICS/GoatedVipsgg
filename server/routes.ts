@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocket, WebSocketServer } from 'ws';
 import { log } from "./vite";
 import { setupAuth } from "./auth";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
@@ -69,38 +70,12 @@ async function fetchLeaderboardData(): Promise<any> {
       throw new Error('Invalid API response format');
     }
 
-    // Validate data entries
-    const invalidEntries = rawData.data.filter(entry => 
-      !entry.uid || 
-      !entry.name || 
-      !entry.wagered ||
-      typeof entry.wagered.today !== 'number' ||
-      typeof entry.wagered.this_week !== 'number' ||
-      typeof entry.wagered.this_month !== 'number' ||
-      typeof entry.wagered.all_time !== 'number'
-    );
-
-    if (invalidEntries.length > 0) {
-      log('Found invalid entries:', invalidEntries);
-      throw new Error(`Found ${invalidEntries.length} invalid entries in the data`);
-    }
-
-    // Log data statistics
-    const stats = {
-      totalEntries: rawData.data.length,
-      uniqueUsers: new Set(rawData.data.map(entry => entry.uid)).size,
-      activeThisWeek: rawData.data.filter(entry => entry.wagered.this_week > 0).length,
-      totalWagered: rawData.data.reduce((sum, entry) => sum + entry.wagered.all_time, 0)
-    };
-    log('Data Statistics:', stats);
-
     // Transform and organize the data
     const transformedData = {
       success: true,
       metadata: {
         totalUsers: rawData.data.length,
         lastUpdated: new Date().toISOString(),
-        stats
       },
       data: {
         today: {
@@ -118,13 +93,6 @@ async function fetchLeaderboardData(): Promise<any> {
       }
     };
 
-    // Log sample of transformed data
-    log('Sample Transformed Data:', {
-      totalEntries: transformedData.metadata.totalUsers,
-      topAllTimeWager: transformedData.data.all_time.data[0]?.wagered.all_time,
-      topWeeklyWager: transformedData.data.weekly.data[0]?.wagered.this_week
-    });
-
     return transformedData;
   } catch (error) {
     log(`Error in fetchLeaderboardData: ${error}`);
@@ -135,8 +103,53 @@ async function fetchLeaderboardData(): Promise<any> {
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
 
-  // Setup authentication
-  setupAuth(app);
+  // Setup WebSocket server
+  const wss = new WebSocketServer({ noServer: true });
+
+  // Handle WebSocket upgrade
+  httpServer.on('upgrade', (request, socket, head) => {
+    if (request.url === '/ws/affiliate-stats') {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
+    }
+  });
+
+  // WebSocket connection handling
+  wss.on('connection', async (ws: WebSocket) => {
+    log('WebSocket client connected');
+    let interval: NodeJS.Timeout;
+
+    try {
+      // Send initial data
+      const data = await fetchLeaderboardData();
+      ws.send(JSON.stringify(data));
+
+      // Setup periodic updates
+      interval = setInterval(async () => {
+        try {
+          const data = await fetchLeaderboardData();
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(data));
+          }
+        } catch (error) {
+          log(`Error sending WebSocket update: ${error}`);
+        }
+      }, 10000); // Update every 10 seconds
+
+      // Handle WebSocket closure
+      ws.on('close', () => {
+        log('WebSocket client disconnected');
+        clearInterval(interval);
+      });
+
+    } catch (error) {
+      log(`Error in WebSocket connection: ${error}`);
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    }
+  });
 
   // HTTP endpoint for leaderboard data
   app.get("/api/affiliate/stats", async (req, res) => {

@@ -2,9 +2,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays } from "lucide-react";
+import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 type WageredData = {
   today: number;
@@ -33,7 +34,9 @@ type LeaderboardData = {
   };
 };
 
-const ITEMS_PER_PAGE = 10; // Changed to 10 users per page
+const ITEMS_PER_PAGE = 10;
+const POLLING_INTERVAL = 10000; // 10 seconds
+const MAX_WEBSOCKET_RECONNECT_ATTEMPTS = 3;
 
 export function LeaderboardTable() {
   const [timePeriod, setTimePeriod] = useState<'today' | 'all_time' | 'monthly' | 'weekly'>('today');
@@ -42,16 +45,58 @@ export function LeaderboardTable() {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedUser, setSelectedUser] = useState<LeaderboardEntry | null>(null);
+  const [usePolling, setUsePolling] = useState(false);
+  const { toast } = useToast();
+
+  const fetchData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/affiliate/stats');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      if (data.success && data.data) {
+        setLeaderboardData(data);
+        setError(null);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError("Failed to fetch leaderboard data");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch leaderboard data. Please try again later.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
     let isSubscribed = true;
     let ws: WebSocket | null = null;
     let reconnectAttempts = 0;
-    const MAX_RECONNECT_ATTEMPTS = 5;
+    let pollInterval: NodeJS.Timeout | null = null;
+
+    const setupPolling = () => {
+      if (!usePolling) return;
+
+      // Initial fetch
+      fetchData();
+
+      // Setup polling interval
+      pollInterval = setInterval(fetchData, POLLING_INTERVAL);
+    };
 
     const connectWebSocket = () => {
-      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-        setError("Unable to establish real-time connection. Please refresh the page.");
+      if (usePolling || reconnectAttempts >= MAX_WEBSOCKET_RECONNECT_ATTEMPTS) {
+        if (!usePolling) {
+          setUsePolling(true);
+          toast({
+            title: "Switching to polling",
+            description: "Real-time updates unavailable. Switching to regular updates.",
+          });
+        }
         return;
       }
 
@@ -63,12 +108,19 @@ export function LeaderboardTable() {
       ws.onopen = () => {
         console.log('WebSocket connected');
         reconnectAttempts = 0;
+        if (usePolling) {
+          setUsePolling(false);
+          toast({
+            title: "Connected",
+            description: "Real-time updates restored.",
+          });
+        }
       };
 
       ws.onmessage = (event) => {
-        try {
-          if (!isSubscribed) return;
+        if (!isSubscribed) return;
 
+        try {
           const response = JSON.parse(event.data);
           if (response.success && response.data) {
             setLeaderboardData(response);
@@ -81,45 +133,38 @@ export function LeaderboardTable() {
         }
       };
 
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setError("Connection error occurred");
+      ws.onerror = () => {
+        console.error('WebSocket error occurred');
+        reconnectAttempts++;
+        if (reconnectAttempts >= MAX_WEBSOCKET_RECONNECT_ATTEMPTS) {
+          setUsePolling(true);
+        }
       };
 
       ws.onclose = () => {
         console.log('WebSocket closed, attempting to reconnect...');
-        reconnectAttempts++;
         setTimeout(connectWebSocket, Math.min(1000 * reconnectAttempts, 5000));
       };
     };
 
-    // Initial data fetch
-    fetch('/api/affiliate/stats')
-      .then(response => response.json())
-      .then(response => {
-        if (!isSubscribed) return;
+    // Start with WebSocket connection
+    if (!usePolling) {
+      connectWebSocket();
+    } else {
+      setupPolling();
+    }
 
-        if (response.success && response.data) {
-          setLeaderboardData(response);
-          setIsLoading(false);
-          setError(null);
-        }
-      })
-      .catch(error => {
-        console.error('Error fetching initial data:', error);
-        setError("Failed to load initial data");
-        setIsLoading(false);
-      });
-
-    connectWebSocket();
-
+    // Cleanup function
     return () => {
       isSubscribed = false;
       if (ws) {
         ws.close();
       }
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
     };
-  }, []);
+  }, [usePolling, fetchData, toast]);
 
   const renderTimePeriodIcon = (period: typeof timePeriod) => {
     switch (period) {
@@ -152,7 +197,15 @@ export function LeaderboardTable() {
   }
 
   if (error) {
-    return <div className="text-center text-destructive">{error}</div>;
+    return (
+      <div className="text-center space-y-4">
+        <AlertCircle className="h-8 w-8 text-destructive mx-auto" />
+        <div className="text-destructive font-medium">{error}</div>
+        <Button onClick={() => fetchData()} variant="outline">
+          Retry
+        </Button>
+      </div>
+    );
   }
 
   if (!leaderboardData?.data?.[timePeriod]?.data) {
