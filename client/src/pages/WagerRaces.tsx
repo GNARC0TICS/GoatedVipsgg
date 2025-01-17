@@ -151,15 +151,20 @@ export default function WagerRaces() {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6"
+            className="flex justify-center items-end h-[400px] gap-4 mb-12"
           >
-            {top10Players.slice(0, 3).map((player, index) => (
+            {top10Players.slice(0, 3).map((player, index) => {
+              const heights = ['h-[300px]', 'h-[250px]', 'h-[200px]'];
+              const order = [1, 0, 2]; // Reorder to put 1st place in middle
+              const displayIndex = order[index];
+              return (
               <motion.div
                 key={player.uid}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ scale: 1.02 }}
-                className={`bg-[#1A1B21]/50 backdrop-blur-sm p-6 rounded-xl border-2 ${
+                style={{ order: displayIndex }}
+                className={`relative ${heights[index]} w-full max-w-[280px] bg-[#1A1B21]/50 backdrop-blur-sm p-6 rounded-xl border-2 flex flex-col justify-end ${
                   index === 0
                     ? 'border-[#FFD700] glow-gold'
                     : index === 1
@@ -167,6 +172,9 @@ export default function WagerRaces() {
                     : 'border-[#CD7F32]'
                 }`}
               >
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-8 text-4xl">
+                  {index === 0 ? '👑' : index === 1 ? '🥈' : '🥉'}
+                </div>
                 <div className="flex justify-between items-start mb-4">
                   {getTrophyIcon(index + 1)}
                   <span className="text-sm font-heading text-[#8A8B91]">#{index + 1}</span>
