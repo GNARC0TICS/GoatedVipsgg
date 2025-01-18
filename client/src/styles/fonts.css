@@ -32,6 +32,7 @@ h1, h2, h3, h4, h5, h6,
 
 body {
   font-family: var(--font-body);
+  text-transform: none;
 }
 
 p, span, a, div:not(.font-heading) {
@@ -39,4 +40,9 @@ p, span, a, div:not(.font-heading) {
   line-height: 1.6;
   text-transform: none;
   font-weight: 400;
+}
+
+.font-body {
+  font-family: var(--font-body);
+  text-transform: none;
 }
