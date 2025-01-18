@@ -23,8 +23,7 @@
 }
 
 h1, h2, h3, h4, h5, h6, 
-.font-heading,
-[class*='text-'] {
+.font-heading {
   font-family: var(--font-heading);
   text-transform: uppercase;
   font-weight: 800;
@@ -38,4 +37,6 @@ body {
 p, span, a, div:not(.font-heading) {
   font-family: var(--font-body);
   line-height: 1.6;
+  text-transform: none;
+  font-weight: 400;
 }
