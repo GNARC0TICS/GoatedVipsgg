@@ -77,7 +77,17 @@ export function Layout({ children }: LayoutProps) {
                 <NavLink href="/wager-races" label="WAGER RACES" />
                 <NavLink href="/vip-program" label="VIP PROGRAM" />
                 <NavLink href="/promotions" label="PROMOTIONS" />
-                <NavLink href="/notification-preferences" label="NOTIFICATIONS" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <a href="https://t.me/goatedgroup" target="_blank" rel="noopener noreferrer" className="font-heading text-[#8A8B91] hover:text-[#D7FF00] transition-colors">
+                      TELEGRAM
+                      <span className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-[#D7FF00] transition-all duration-300 group-hover:w-full`} />
+                    </a>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Join our Telegram group</p>
+                  </TooltipContent>
+                </Tooltip>
                 {user?.isAdmin && (
                   <NavLink href="/admin/wager-races" label="ADMIN" />
                 )}
@@ -86,6 +96,17 @@ export function Layout({ children }: LayoutProps) {
 
             <div className="flex items-center gap-4">
               <AuthModal />
+              {/* Notification Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={() => window.open('/notification-preferences', '_self')} className="text-[#8A8B91] hover:text-white">
+                    <Bell className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Notifications & Preferences</p>
+                </TooltipContent>
+              </Tooltip>
               {/* Enhanced Play Now Button */}
               <Button
                 onClick={() => window.open('https://www.goated.com/r/SPIN', '_blank')}
@@ -94,9 +115,6 @@ export function Layout({ children }: LayoutProps) {
                 <span className="relative z-10">PLAY NOW →</span>
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
               </Button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <a href="https://t.me/goatedgroup" target="_blank" rel="noopener noreferrer" className="text-[#8A8B91] hover:text-white transition-colors">
                     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18.835-.963 4.154-1.362 5.511-.168.573-.336.786-.551.835-.467.087-.82-.308-1.27-.605-.706-.474-1.104-.77-1.791-1.235-.791-.528-.279-.818.173-1.29.117-.124 2.144-1.965 2.184-2.132.005-.021.009-.099-.038-.141-.047-.041-.117-.029-.168-.017-.071.018-1.205.766-3.402 2.245-.322.222-.613.33-.874.323-.287-.009-.839-.162-1.249-.295-.505-.169-.908-.258-.873-.544.018-.148.283-.301.795-.46 3.113-1.356 5.188-2.25 6.226-2.686 2.962-1.246 3.577-1.463 3.978-1.47.088-.002.287.02.415.126.106.087.135.202.149.297a1.236 1.236 0 01-.008.339z"/>
                     </svg>

@@ -1,4 +1,4 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -50,7 +50,7 @@ export function LeaderboardTable() {
 
   const fetchData = useCallback(async () => {
     try {
-      const response = await fetch('/api/affiliate/stats');
+      const response = await fetch(`/api/affiliate/stats?page=${currentPage}&limit=${ITEMS_PER_PAGE}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -70,7 +70,7 @@ export function LeaderboardTable() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [currentPage, toast]);
 
   useEffect(() => {
     let isSubscribed = true;
@@ -247,6 +247,7 @@ export function LeaderboardTable() {
           Total Users: {leaderboardData.metadata?.totalUsers.toLocaleString()} | 
           Last Updated: {new Date(leaderboardData.metadata?.lastUpdated || Date.now()).toLocaleTimeString()}
         </div>
+        <Button onClick={() => fetchData()}>Refresh</Button> {/* Added refresh button */}
       </div>
 
       <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
