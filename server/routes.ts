@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocket, WebSocketServer } from 'ws';
+import expressWs from 'express-ws';
+import { WebSocketHandler } from "./websocket";
 import { log } from "./vite";
 import { setupAuth } from "./auth";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
@@ -21,160 +22,14 @@ const rateLimiter = new RateLimiterMemory({
   duration: 1,
 });
 
-// Type definitions for API response
-interface WageredData {
-  today: number;
-  this_week: number;
-  this_month: number;
-  all_time: number;
-}
-
-interface LeaderboardEntry {
-  uid: string;
-  name: string;
-  wagered: WageredData;
-}
-
-interface LeaderboardResponse {
-  success: boolean;
-  data: LeaderboardEntry[];
-}
-
-async function fetchLeaderboardData(page: number = 0, limit: number = 10): Promise<any> {
-  try {
-    // Debug token
-    log('API Token Status:', {
-      exists: !!API_CONFIG.token,
-      length: API_CONFIG.token?.length || 0,
-      firstChars: API_CONFIG.token ? `${API_CONFIG.token.substring(0, 4)}...` : 'none'
-    });
-
-    const url = new URL(`${API_CONFIG.baseUrl}/referral-leaderboard`);
-    url.searchParams.append('page', page.toString());
-    url.searchParams.append('limit', limit.toString());
-    
-    log(`Making API request to: ${url.toString()}`);
-    
-    const headers = {
-      'Authorization': `Bearer ${API_CONFIG.token}`,
-      'Content-Type': 'application/json'
-    };
-    
-    log('Request Headers:', headers);
-
-    const response = await fetch(url.toString(), { headers });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      log(`API Error (${response.status}): ${errorText}`);
-      throw new Error(`API responded with status ${response.status}: ${errorText}`);
-    }
-
-    const rawData = await response.json();
-
-    // Detailed logging of API response
-    log('Full API Response:', JSON.stringify(rawData, null, 2));
-    log('API Response Structure:', {
-      success: rawData.success,
-      dataType: typeof rawData.data,
-      isArray: Array.isArray(rawData.data),
-      entryCount: rawData.data?.length || 0,
-      responseKeys: Object.keys(rawData)
-    });
-
-    // Enhanced validation with detailed error messages
-    if (!rawData.success) {
-      throw new Error(`API response indicates failure: ${JSON.stringify(rawData)}`);
-    }
-    
-    if (!rawData.data) {
-      throw new Error('API response missing data field');
-    }
-    
-    if (!Array.isArray(rawData.data)) {
-      throw new Error(`API data is not an array. Received: ${typeof rawData.data}`);
-    }
-
-    // Transform and organize the data
-    const transformedData = {
-      success: true,
-      metadata: {
-        totalUsers: rawData.data.length,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: {
-          data: [...rawData.data].sort((a, b) => b.wagered.today - a.wagered.today)
-        },
-        all_time: {
-          data: [...rawData.data].sort((a, b) => b.wagered.all_time - a.wagered.all_time)
-        },
-        monthly: {
-          data: [...rawData.data].sort((a, b) => b.wagered.this_month - a.wagered.this_month)
-        },
-        weekly: {
-          data: [...rawData.data].sort((a, b) => b.wagered.this_week - a.wagered.this_week)
-        }
-      }
-    };
-
-    return transformedData;
-  } catch (error) {
-    log(`Error in fetchLeaderboardData: ${error}`);
-    throw error;
-  }
-}
-
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
 
-  // Setup WebSocket server
-  const wss = new WebSocketServer({ noServer: true });
+  // Setup WebSocket support for Express
+  const wsInstance = expressWs(app, httpServer);
 
-  // Handle WebSocket upgrade
-  httpServer.on('upgrade', (request, socket, head) => {
-    if (request.url === '/ws/affiliate-stats') {
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit('connection', ws, request);
-      });
-    }
-  });
-
-  // WebSocket connection handling
-  wss.on('connection', async (ws: WebSocket) => {
-    log('WebSocket client connected');
-    let interval: NodeJS.Timeout;
-
-    try {
-      // Send initial data
-      const data = await fetchLeaderboardData();
-      ws.send(JSON.stringify(data));
-
-      // Setup periodic updates
-      interval = setInterval(async () => {
-        try {
-          const data = await fetchLeaderboardData();
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(data));
-          }
-        } catch (error) {
-          log(`Error sending WebSocket update: ${error}`);
-        }
-      }, 10000); // Update every 10 seconds
-
-      // Handle WebSocket closure
-      ws.on('close', () => {
-        log('WebSocket client disconnected');
-        clearInterval(interval);
-      });
-
-    } catch (error) {
-      log(`Error in WebSocket connection: ${error}`);
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.close();
-      }
-    }
-  });
+  // Initialize WebSocket handler
+  const wsHandler = new WebSocketHandler(httpServer);
 
   // Admin initialization endpoint
   app.post("/api/admin/initialize", async (req, res) => {
@@ -240,26 +95,9 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // HTTP endpoint for leaderboard data
-  app.get("/api/affiliate/stats", async (req, res) => {
-    try {
-      await rateLimiter.consume(req.ip || "unknown");
-      const page = parseInt(req.query.page as string) || 0;
-      const limit = parseInt(req.query.limit as string) || 10;
-      const data = await fetchLeaderboardData(page, limit);
-      res.json(data);
-    } catch (error: any) {
-      if (error.consumedPoints) {
-        res.status(429).json({ error: "Too many requests" });
-      } else {
-        log(`Error in /api/affiliate/stats: ${error}`);
-        res.status(500).json({
-          success: false,
-          error: "Failed to fetch affiliate stats",
-          message: error.message
-        });
-      }
-    }
+  // Support channel websocket connection
+  app.ws('/api/support', (ws, req) => {
+    wsHandler.handleSupportConnection(ws, req);
   });
 
   return httpServer;
