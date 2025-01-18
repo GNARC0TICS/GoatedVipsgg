@@ -52,8 +52,17 @@ async function startServer() {
     log("Starting server initialization...");
     
     // 1. Database check
-    await db.execute(sql`SELECT 1`);
-    log("Database connection successful");
+    try {
+      await db.execute(sql`SELECT 1`);
+      log("Database connection successful");
+    } catch (error: any) {
+      if (error.message?.includes('endpoint is disabled')) {
+        log("Database endpoint is disabled. Please enable the database in the Replit Database tab.");
+        // Continue server startup even if database is not available
+      } else {
+        throw error;
+      }
+    }
 
     // 2. API connectivity check
     const apiCheck = await fetch(`${process.env.API_BASE_URL || 'https://europe-west2-g3casino.cloudfunctions.net/user/affiliate'}/health`).catch(() => null);
