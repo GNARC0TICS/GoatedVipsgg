@@ -124,8 +124,6 @@ export function Layout({ children }: LayoutProps) {
                   <p>Join our Telegram group</p>
                 </TooltipContent>
               </Tooltip>
-                </TooltipContent>
-              </Tooltip>
             </div>
           </div>
         </nav>
