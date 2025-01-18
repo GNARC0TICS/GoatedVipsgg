@@ -63,7 +63,7 @@ export function Layout({ children }: LayoutProps) {
               {/* Enhanced Play Now Button */}
               <Button
                 onClick={() => window.open('https://www.goated.com/r/SPIN', '_blank')}
-                className="relative group overflow-hidden font-heading bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-all duration-300 block-hover"
+                className="relative group overflow-hidden font-heading text-white fill-animation hover:text-black transition-all duration-300"
               >
                 <span className="relative z-10">PLAY NOW →</span>
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
@@ -89,7 +89,7 @@ export function Layout({ children }: LayoutProps) {
                 <img
                   src="/images/Goated Logo - Black.png"
                   alt="Goated"
-                  className="h-8 w-auto wiggle"
+                  className="h-8 w-auto entrance-zoom wiggle-animation"
                 />
               </div>
               <p className="text-[#14151A] mb-6">
