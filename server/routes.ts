@@ -40,7 +40,7 @@ interface LeaderboardResponse {
   data: LeaderboardEntry[];
 }
 
-async function fetchLeaderboardData(): Promise<any> {
+async function fetchLeaderboardData(page: number = 0, limit: number = 10): Promise<any> {
   try {
     // Debug token
     log('API Token Status:', {
@@ -49,7 +49,11 @@ async function fetchLeaderboardData(): Promise<any> {
       firstChars: API_CONFIG.token ? `${API_CONFIG.token.substring(0, 4)}...` : 'none'
     });
 
-    log(`Making API request to: ${API_CONFIG.baseUrl}/referral-leaderboard`);
+    const url = new URL(`${API_CONFIG.baseUrl}/referral-leaderboard`);
+    url.searchParams.append('page', page.toString());
+    url.searchParams.append('limit', limit.toString());
+    
+    log(`Making API request to: ${url.toString()}`);
     
     const headers = {
       'Authorization': `Bearer ${API_CONFIG.token}`,
@@ -58,7 +62,7 @@ async function fetchLeaderboardData(): Promise<any> {
     
     log('Request Headers:', headers);
 
-    const response = await fetch(`${API_CONFIG.baseUrl}/referral-leaderboard`, { headers });
+    const response = await fetch(url.toString(), { headers });
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -240,7 +244,9 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/affiliate/stats", async (req, res) => {
     try {
       await rateLimiter.consume(req.ip || "unknown");
-      const data = await fetchLeaderboardData();
+      const page = parseInt(req.query.page as string) || 0;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const data = await fetchLeaderboardData(page, limit);
       res.json(data);
     } catch (error: any) {
       if (error.consumedPoints) {
