@@ -42,14 +42,23 @@ interface LeaderboardResponse {
 
 async function fetchLeaderboardData(): Promise<any> {
   try {
-    log(`Making API request to: ${API_CONFIG.baseUrl}/referral-leaderboard`);
-
-    const response = await fetch(`${API_CONFIG.baseUrl}/referral-leaderboard`, {
-      headers: {
-        'Authorization': `Bearer ${API_CONFIG.token}`,
-        'Content-Type': 'application/json'
-      }
+    // Debug token
+    log('API Token Status:', {
+      exists: !!API_CONFIG.token,
+      length: API_CONFIG.token?.length || 0,
+      firstChars: API_CONFIG.token ? `${API_CONFIG.token.substring(0, 4)}...` : 'none'
     });
+
+    log(`Making API request to: ${API_CONFIG.baseUrl}/referral-leaderboard`);
+    
+    const headers = {
+      'Authorization': `Bearer ${API_CONFIG.token}`,
+      'Content-Type': 'application/json'
+    };
+    
+    log('Request Headers:', headers);
+
+    const response = await fetch(`${API_CONFIG.baseUrl}/referral-leaderboard`, { headers });
 
     if (!response.ok) {
       const errorText = await response.text();
