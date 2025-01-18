@@ -102,12 +102,13 @@ export function Layout({ children }: LayoutProps) {
               <div className="flex items-center gap-4">
                 <AuthModal />
                 <Button
-                onClick={() => window.open('https://www.goated.com/r/SPIN', '_blank')}
-                className="relative group overflow-hidden font-heading text-white fill-animation hover:text-black transition-all duration-300"
-              >
-                <span className="relative z-10">PLAY NOW →</span>
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-              </Button>
+                  onClick={() => window.open('https://www.goated.com/r/SPIN', '_blank')}
+                  className="relative group overflow-hidden font-heading text-white fill-animation hover:text-black transition-all duration-300"
+                >
+                  <span className="relative z-10">PLAY NOW →</span>
+                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                </Button>
+              </div>
             </div>
           </div>
         </nav>
@@ -173,7 +174,7 @@ export function Layout({ children }: LayoutProps) {
 function NavLink({ href, label, external, tooltip }: { href: string; label: string; external?: boolean; tooltip?: string }) {
   const [location] = useLocation();
   const isActive = !external && location === href;
-  
+
   const linkContent = (
     <span className={`relative font-heading cursor-pointer group ${
       isActive ? "text-[#D7FF00]" : "text-white"
