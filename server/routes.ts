@@ -59,7 +59,8 @@ async function fetchLeaderboardData(): Promise<any> {
 
     const rawData = await response.json();
 
-    // Detailed logging of API response structure
+    // Detailed logging of API response
+    log('Full API Response:', JSON.stringify(rawData, null, 2));
     log('API Response Structure:', {
       success: rawData.success,
       dataType: typeof rawData.data,
@@ -68,10 +69,17 @@ async function fetchLeaderboardData(): Promise<any> {
       responseKeys: Object.keys(rawData)
     });
 
-    // Validate API response structure
-    if (!rawData.success || !Array.isArray(rawData.data)) {
-      log('Invalid API response format:', rawData);
-      throw new Error('Invalid API response format');
+    // Enhanced validation with detailed error messages
+    if (!rawData.success) {
+      throw new Error(`API response indicates failure: ${JSON.stringify(rawData)}`);
+    }
+    
+    if (!rawData.data) {
+      throw new Error('API response missing data field');
+    }
+    
+    if (!Array.isArray(rawData.data)) {
+      throw new Error(`API data is not an array. Received: ${typeof rawData.data}`);
     }
 
     // Transform and organize the data
