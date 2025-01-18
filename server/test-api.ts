@@ -4,8 +4,16 @@ import { API_CONFIG } from "./routes";
 async function analyzeLeaderboardAPI() {
   try {
     console.log('\n=== Starting API Analysis ===\n');
+    
+    // Check API token
+    console.log('API Token Status:', {
+      exists: !!API_CONFIG.token,
+      length: API_CONFIG.token?.length || 0,
+      firstChars: API_CONFIG.token ? `${API_CONFIG.token.substring(0, 4)}...` : 'none'
+    });
 
     // Test API health
+    console.log('Making health check request to:', `${API_CONFIG.baseUrl}/health`);
     const healthCheck = await fetch(`${API_CONFIG.baseUrl}/health`, {
       headers: {
         'Authorization': `Bearer ${API_CONFIG.token}`,
