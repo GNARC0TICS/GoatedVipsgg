@@ -81,8 +81,8 @@ export function AuthModal() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="font-heading">
-          LOGIN / REGISTER
+        <Button variant="outline" className="font-body">
+          Login / Register
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] bg-[#1A1B21] text-white border-[#2A2B31]">
