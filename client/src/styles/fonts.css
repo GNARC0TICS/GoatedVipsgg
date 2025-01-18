@@ -46,3 +46,11 @@ p, span, a, div:not(.font-heading) {
   font-family: var(--font-body);
   text-transform: none;
 }
+
+.play-now-button {
+  font-family: "Mona Sans";
+  font-weight: 800;
+  font-stretch: condensed;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
