@@ -22,9 +22,13 @@
   /* --font-body: "Geist Mono", "sans-serif"; */
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1, h2, h3, h4, h5, h6, 
+.font-heading,
+[class*='text-'] {
   font-family: var(--font-heading);
   text-transform: uppercase;
+  font-weight: 800;
+  font-stretch: condensed;
 }
 
 body {
