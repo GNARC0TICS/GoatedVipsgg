@@ -146,8 +146,8 @@ export function registerRoutes(app: Express): Server {
     let interval: NodeJS.Timeout;
 
     try {
-      // Send initial data
-      const data = await fetchLeaderboardData();
+      // Send initial data (only top 10)
+      const data = await fetchLeaderboardData(0, 10);
       ws.send(JSON.stringify(data));
 
       // Setup periodic updates

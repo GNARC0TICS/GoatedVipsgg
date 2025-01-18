@@ -47,6 +47,8 @@ export function LeaderboardTable() {
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedUser, setSelectedUser] = useState<LeaderboardEntry | null>(null);
   const [usePolling, setUsePolling] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadedData, setLoadedData] = useState<LeaderboardEntry[]>([]);
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
@@ -215,10 +217,21 @@ export function LeaderboardTable() {
 
   const currentData = leaderboardData.data[timePeriod].data;
   const totalPages = Math.ceil(currentData.length / ITEMS_PER_PAGE);
-  const displayData = currentData.slice(
-    currentPage * ITEMS_PER_PAGE,
-    (currentPage + 1) * ITEMS_PER_PAGE
-  );
+  const displayData = loadedData.length > 0 ? loadedData : currentData.slice(0, ITEMS_PER_PAGE);
+  
+  const loadMoreData = async () => {
+    if (isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const response = await fetch(`/api/affiliate/stats?page=${currentPage + 1}&limit=${ITEMS_PER_PAGE}`);
+      const newData = await response.json();
+      setLoadedData(prev => [...prev, ...newData.data[timePeriod].data]);
+    } catch (error) {
+      console.error('Error loading more data:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
