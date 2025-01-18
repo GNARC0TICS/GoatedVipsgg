@@ -103,7 +103,7 @@ export function Layout({ children }: LayoutProps) {
                 <AuthModal />
                 <Button
                   onClick={() => window.open('https://www.goated.com/r/SPIN', '_blank')}
-                  className="relative group overflow-hidden font-heading text-white fill-animation hover:text-black transition-all duration-300 uppercase font-extrabold"
+                  className="relative group overflow-hidden font-heading text-white fill-animation hover:text-black transition-all duration-300 uppercase font-bold"
                 >
                   <span className="relative z-10">PLAY NOW →</span>
                   <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
