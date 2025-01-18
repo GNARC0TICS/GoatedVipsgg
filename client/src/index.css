@@ -70,7 +70,9 @@ html {
   }
 
   .wiggle-animation {
-    animation: wiggle 0.6s cubic-bezier(0.36, 0, 0.66, -0.56) both;
+    animation: wiggle 0.6s cubic-bezier(0.36, 0, 0.66, -0.56) infinite;
+    animation-delay: 60s;
+    animation-iteration-count: infinite;
     transform-origin: center;
   }
 
