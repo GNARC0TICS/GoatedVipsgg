@@ -1,6 +1,5 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import expressWs from 'express-ws';
 import { WebSocket, WebSocketServer } from 'ws';
 import { log } from "./vite";
 import { setupAuth } from "./auth";
@@ -53,14 +52,14 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10): Promi
     const url = new URL(`${API_CONFIG.baseUrl}/referral-leaderboard`);
     url.searchParams.append('page', page.toString());
     url.searchParams.append('limit', limit.toString());
-
+    
     log(`Making API request to: ${url.toString()}`);
-
+    
     const headers = {
       'Authorization': `Bearer ${API_CONFIG.token}`,
       'Content-Type': 'application/json'
     };
-
+    
     log('Request Headers:', headers);
 
     const response = await fetch(url.toString(), { headers });
@@ -83,14 +82,15 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10): Promi
       responseKeys: Object.keys(rawData)
     });
 
+    // Enhanced validation with detailed error messages
     if (!rawData.success) {
       throw new Error(`API response indicates failure: ${JSON.stringify(rawData)}`);
     }
-
+    
     if (!rawData.data) {
       throw new Error('API response missing data field');
     }
-
+    
     if (!Array.isArray(rawData.data)) {
       throw new Error(`API data is not an array. Received: ${typeof rawData.data}`);
     }
@@ -128,13 +128,7 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10): Promi
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
 
-  // Setup WebSocket support for Express
-  const wsInstance = expressWs(app, httpServer);
-
-  // Initialize WebSocket handler
-  const wsHandler = new WebSocketHandler(httpServer);
-
-  // Setup WebSocket server for leaderboard
+  // Setup WebSocket server
   const wss = new WebSocketServer({ noServer: true });
 
   // Handle WebSocket upgrade
@@ -146,7 +140,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // WebSocket connection handling for leaderboard
+  // WebSocket connection handling
   wss.on('connection', async (ws: WebSocket) => {
     log('WebSocket client connected');
     let interval: NodeJS.Timeout;
@@ -244,11 +238,6 @@ export function registerRoutes(app: Express): Server {
       log(`Error creating wager race: ${error}`);
       res.status(500).json({ error: "Failed to create wager race" });
     }
-  });
-
-  // Support channel websocket connection
-  app.ws('/api/support', (ws, req) => {
-    wsHandler.handleSupportConnection(ws, req);
   });
 
   // HTTP endpoint for leaderboard data
