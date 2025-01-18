@@ -71,29 +71,19 @@ export function Layout({ children }: LayoutProps) {
                 <NavLink href="/wager-races" label="WAGER RACES" />
                 <NavLink href="/vip-program" label="VIP PROGRAM" />
                 <NavLink href="/promotions" label="PROMOTIONS" />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <a 
-                      href="https://t.me/goatedgroup" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="font-heading text-[#8A8B91] hover:text-[#D7FF00] transition-colors"
-                    >
-                      TELEGRAM
-                    </a>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Join our Telegram group</p>
-                  </TooltipContent>
-                </Tooltip>
+                <NavLink 
+                  href="https://t.me/goatedgroup" 
+                  label="TELEGRAM" 
+                  external={true}
+                  tooltip="Join our Telegram group"
+                />
                 {user?.isAdmin && (
                   <NavLink href="/admin/wager-races" label="ADMIN" />
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <AuthModal />
+            <div className="flex items-center gap-6">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
@@ -109,7 +99,9 @@ export function Layout({ children }: LayoutProps) {
                   <p>Notifications & Preferences</p>
                 </TooltipContent>
               </Tooltip>
-              <Button
+              <div className="flex items-center gap-4">
+                <AuthModal />
+                <Button
                 onClick={() => window.open('https://www.goated.com/r/SPIN', '_blank')}
                 className="relative group overflow-hidden font-heading text-white fill-animation hover:text-black transition-all duration-300"
               >
@@ -178,20 +170,37 @@ export function Layout({ children }: LayoutProps) {
   );
 }
 
-function NavLink({ href, label }: { href: string; label: string }) {
+function NavLink({ href, label, external, tooltip }: { href: string; label: string; external?: boolean; tooltip?: string }) {
   const [location] = useLocation();
-  const isActive = location === href;
-
-  return (
-    <Link href={href}>
-      <span className={`relative font-heading cursor-pointer group ${
-        isActive ? "text-[#D7FF00]" : "text-white"
-      } transition-colors duration-300`}>
-        {label}
-        <span className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-[#D7FF00] transition-all duration-300 ${
-          isActive ? "w-full" : "group-hover:w-full"
-        }`} />
-      </span>
-    </Link>
+  const isActive = !external && location === href;
+  
+  const linkContent = (
+    <span className={`relative font-heading cursor-pointer group ${
+      isActive ? "text-[#D7FF00]" : "text-white"
+    } transition-colors duration-300`}>
+      {label}
+      <span className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-[#D7FF00] transition-all duration-300 ${
+        isActive ? "w-full" : "group-hover:w-full"
+      }`} />
+    </span>
   );
+
+  if (external) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <a href={href} target="_blank" rel="noopener noreferrer">
+            {linkContent}
+          </a>
+        </TooltipTrigger>
+        {tooltip && (
+          <TooltipContent>
+            <p>{tooltip}</p>
+          </TooltipContent>
+        )}
+      </Tooltip>
+    );
+  }
+
+  return <Link href={href}>{linkContent}</Link>;
 }
