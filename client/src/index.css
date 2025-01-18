@@ -52,9 +52,35 @@ html {
   p, span, a { @apply text-sm md:text-base; }
 }
 
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+
+@keyframes blockHover {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
 @layer components {
   .header-text {
     @apply font-heading font-extrabold uppercase tracking-tight;
+  }
+
+  .wiggle-animation {
+    animation: wiggle 1s ease-in-out;
+  }
+
+  .block-hover {
+    transition: all 0.3s ease;
+  }
+
+  .block-hover:hover {
+    animation: blockHover 0.3s ease-in-out;
+    box-shadow: 0 0 15px rgba(215, 255, 0, 0.3);
+    transform: translateY(-2px);
   }
 
   @keyframes scroll {

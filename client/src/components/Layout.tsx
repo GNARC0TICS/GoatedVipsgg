@@ -25,16 +25,16 @@ export function Layout({ children }: LayoutProps) {
         <nav className="container mx-auto px-4 relative">
           <div className="h-16 flex items-center justify-between">
             <div className="flex items-center gap-8">
-              {/* Enhanced Logo with glow effect */}
-              <div className="relative group">
+              {/* Enhanced Logo with glow and wiggle effect */}
+              <div className="relative group" id="logo-container">
                 <div className="absolute inset-0 rounded-full bg-[#D7FF00]/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <Link href="/">
                   <a className="block relative">
                     <div className="absolute inset-0 bg-[#D7FF00]/10 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <img 
+                    <img
                       src="/images/logo-neon.png"
                       alt="GOATED"
-                      className="h-8 w-auto relative z-10 transition-transform duration-300 hover:scale-105"
+                      className="h-8 w-auto relative z-10 transition-transform duration-300 hover:scale-105 wiggle"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.onerror = null;
@@ -61,9 +61,9 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex items-center gap-4">
               <AuthModal />
               {/* Enhanced Play Now Button */}
-              <Button 
+              <Button
                 onClick={() => window.open('https://www.goated.com/r/SPIN', '_blank')}
-                className="relative group overflow-hidden font-heading bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-all duration-300"
+                className="relative group overflow-hidden font-heading bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-all duration-300 block-hover"
               >
                 <span className="relative z-10">PLAY NOW →</span>
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
@@ -86,16 +86,16 @@ export function Layout({ children }: LayoutProps) {
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <h4 className="font-heading text-[#14151A] text-2xl font-bold">Ready to get Goated?</h4>
-                <img 
-                  src="/images/Goated Logo - Black.png" 
-                  alt="Goated" 
-                  className="h-8 w-auto"
+                <img
+                  src="/images/Goated Logo - Black.png"
+                  alt="Goated"
+                  className="h-8 w-auto wiggle"
                 />
               </div>
               <p className="text-[#14151A] mb-6">
                 Sign up now and enjoy additional rewards from our side. Start your journey to becoming a casino legend!
               </p>
-              <Button 
+              <Button
                 onClick={() => window.open('https://www.goated.com/r/EARLYACCESS', '_blank')}
                 className="bg-[#14151A] text-white hover:bg-[#14151A]/90 transition-colors"
               >
