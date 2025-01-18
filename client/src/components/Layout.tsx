@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { AuthModal } from "@/components/AuthModal";
 import { useQuery } from "@tanstack/react-query";
 import type { SelectUser } from "@db/schema";
-import { ScrollToTop } from "./ScrollToTop"; // Added import
-import { useEffect, useRef, useState } from "react"; // Added imports
-import { Tooltip, TooltipTrigger, TooltipContent } from '@radix-ui/react-tooltip' // Added tooltip imports - assume these are available
-
+import { ScrollToTop } from "./ScrollToTop";
+import { useEffect, useRef, useState } from "react";
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Bell } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -45,33 +45,27 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-[#14151A] flex flex-col">
-      {/* Enhanced Fixed Navigation */}
       <header className="fixed top-0 left-0 right-0 z-50">
         <div className="absolute inset-0 bg-[#14151A]/80 backdrop-blur-xl border-b border-[#2A2B31]/50" />
         <nav className="container mx-auto px-4 relative">
           <div className="h-16 flex items-center justify-between">
             <div className="flex items-center gap-8">
-              {/* Enhanced Logo with glow and wiggle effect */}
               <div className="relative group" id="logo-container">
                 <div className="absolute inset-0 rounded-full bg-[#D7FF00]/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <Link href="/">
-                  <a className="block relative">
-                    <div className="absolute inset-0 bg-[#D7FF00]/10 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <img
-                      src="/images/logo-neon.png"
-                      alt="GOATED"
-                      className="h-8 w-auto relative z-10 transition-transform duration-300 hover:scale-105 wiggle"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.onerror = null;
-                        target.src = "https://placehold.co/120x32/14151A/D7FF00?text=GOATED";
-                      }}
-                    />
-                  </a>
+                  <img
+                    src="/images/logo-neon.png"
+                    alt="GOATED"
+                    className="h-8 w-auto relative z-10 transition-transform duration-300 hover:scale-105 wiggle"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = "https://placehold.co/120x32/14151A/D7FF00?text=GOATED";
+                    }}
+                  />
                 </Link>
               </div>
 
-              {/* Navigation Links */}
               <div className="hidden md:flex items-center gap-6">
                 <NavLink href="/" label="HOME" />
                 <NavLink href="/wager-races" label="WAGER RACES" />
@@ -79,9 +73,13 @@ export function Layout({ children }: LayoutProps) {
                 <NavLink href="/promotions" label="PROMOTIONS" />
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <a href="https://t.me/goatedgroup" target="_blank" rel="noopener noreferrer" className="font-heading text-[#8A8B91] hover:text-[#D7FF00] transition-colors">
+                    <a 
+                      href="https://t.me/goatedgroup" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="font-heading text-[#8A8B91] hover:text-[#D7FF00] transition-colors"
+                    >
                       TELEGRAM
-                      <span className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-[#D7FF00] transition-all duration-300 group-hover:w-full`} />
                     </a>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -96,10 +94,14 @@ export function Layout({ children }: LayoutProps) {
 
             <div className="flex items-center gap-4">
               <AuthModal />
-              {/* Notification Button */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => window.open('/notification-preferences', '_self')} className="text-[#8A8B91] hover:text-white">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => window.open('/notification-preferences', '_self')} 
+                    className="text-[#8A8B91] hover:text-white"
+                  >
                     <Bell className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
@@ -107,7 +109,6 @@ export function Layout({ children }: LayoutProps) {
                   <p>Notifications & Preferences</p>
                 </TooltipContent>
               </Tooltip>
-              {/* Enhanced Play Now Button */}
               <Button
                 onClick={() => window.open('https://www.goated.com/r/SPIN', '_blank')}
                 className="relative group overflow-hidden font-heading text-white fill-animation hover:text-black transition-all duration-300"
@@ -115,27 +116,18 @@ export function Layout({ children }: LayoutProps) {
                 <span className="relative z-10">PLAY NOW →</span>
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
               </Button>
-                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18.835-.963 4.154-1.362 5.511-.168.573-.336.786-.551.835-.467.087-.82-.308-1.27-.605-.706-.474-1.104-.77-1.791-1.235-.791-.528-.279-.818.173-1.29.117-.124 2.144-1.965 2.184-2.132.005-.021.009-.099-.038-.141-.047-.041-.117-.029-.168-.017-.071.018-1.205.766-3.402 2.245-.322.222-.613.33-.874.323-.287-.009-.839-.162-1.249-.295-.505-.169-.908-.258-.873-.544.018-.148.283-.301.795-.46 3.113-1.356 5.188-2.25 6.226-2.686 2.962-1.246 3.577-1.463 3.978-1.47.088-.002.287.02.415.126.106.087.135.202.149.297a1.236 1.236 0 01-.008.339z"/>
-                    </svg>
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Join our Telegram group</p>
-                </TooltipContent>
-              </Tooltip>
             </div>
           </div>
         </nav>
       </header>
 
-      {/* Main Content */}
       <main className="flex-grow pt-16">
         {children}
       </main>
-      <ScrollToTop /> {/* Added ScrollToTop component */}
-      {/* Footer */}
-      <footer ref={footerRef} className={`${isFooterVisible ? 'entrance-zoom' : 'opacity-0'} bg-[#D7FF00] relative`}> {/*Updated Footer class */}
+
+      <ScrollToTop />
+
+      <footer ref={footerRef} className={`${isFooterVisible ? 'entrance-zoom' : 'opacity-0'} bg-[#D7FF00] relative`}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent pointer-events-none" />
         <div className="container mx-auto px-4 py-16 relative">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -192,14 +184,14 @@ function NavLink({ href, label }: { href: string; label: string }) {
 
   return (
     <Link href={href}>
-      <a className={`relative font-heading cursor-pointer group ${
+      <span className={`relative font-heading cursor-pointer group ${
         isActive ? "text-[#D7FF00]" : "text-white"
       } transition-colors duration-300`}>
         {label}
         <span className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-[#D7FF00] transition-all duration-300 ${
           isActive ? "w-full" : "group-hover:w-full"
         }`} />
-      </a>
+      </span>
     </Link>
   );
 }
