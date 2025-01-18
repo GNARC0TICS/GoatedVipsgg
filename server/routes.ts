@@ -153,14 +153,15 @@ export function registerRoutes(app: Express): Server {
       // Setup periodic updates
       interval = setInterval(async () => {
         try {
-          const data = await fetchLeaderboardData();
+          // Only fetch top 10 for regular updates
+          const data = await fetchLeaderboardData(0, 10);
           if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify(data));
           }
         } catch (error) {
           log(`Error sending WebSocket update: ${error}`);
         }
-      }, 10000); // Update every 10 seconds
+      }, 30000); // Update every 30 seconds
 
       // Handle WebSocket closure
       ws.on('close', () => {

@@ -35,7 +35,8 @@ type LeaderboardData = {
 };
 
 const ITEMS_PER_PAGE = 10;
-const POLLING_INTERVAL = 10000; // 10 seconds
+const POLLING_INTERVAL = 30000; // 30 seconds
+const INITIAL_FETCH_LIMIT = 10;
 const MAX_WEBSOCKET_RECONNECT_ATTEMPTS = 3;
 
 export function LeaderboardTable() {
