@@ -5,10 +5,6 @@ import { log } from "./vite";
 import { setupAuth } from "./auth";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 import { requireAdmin, requireAuth } from './middleware/auth';
-import { z } from 'zod';
-import { db } from '@db';
-import { wagerRaces, users, affiliateStats } from '@db/schema';
-import { eq, desc } from 'drizzle-orm';
 
 // Rate limiter setup
 const rateLimiter = new RateLimiterMemory({
@@ -16,48 +12,14 @@ const rateLimiter = new RateLimiterMemory({
   duration: 1,
 });
 
+// API endpoint configuration
+const API_BASE_URL = 'https://europe-west2-g3casino.cloudfunctions.net';
+
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
 
   // Setup authentication routes and middleware
   setupAuth(app);
-
-  // Protected routes
-  app.get("/api/profile", requireAuth, async (req, res) => {
-    try {
-      const [user] = await db
-        .select({
-          id: users.id,
-          username: users.username,
-          email: users.email,
-          isAdmin: users.isAdmin,
-          createdAt: users.createdAt,
-          lastLogin: users.lastLogin
-        })
-        .from(users)
-        .where(eq(users.id, req.user!.id))
-        .limit(1);
-
-      res.json(user);
-    } catch (error) {
-      log(`Error fetching profile: ${error}`);
-      res.status(500).json({ error: "Failed to fetch profile" });
-    }
-  });
-
-
-  // Protected admin routes for wager race management
-  app.get("/api/admin/wager-races", requireAdmin, async (req, res) => {
-    try {
-      const races = await db.query.wagerRaces.findMany({
-        orderBy: (races, { desc }) => [desc(races.createdAt)]
-      });
-      res.json(races);
-    } catch (error) {
-      log(`Error fetching wager races: ${error}`);
-      res.status(500).json({ error: "Failed to fetch wager races" });
-    }
-  });
 
   // HTTP endpoint for leaderboard data
   app.get("/api/affiliate/stats", async (req, res) => {
@@ -81,11 +43,16 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Setup WebSocket server with proper error handling
+  // Setup WebSocket server
   const wss = new WebSocketServer({ noServer: true });
 
-  // Handle WebSocket upgrade with error handling
+  // Handle WebSocket upgrade
   httpServer.on('upgrade', (request, socket, head) => {
+    // Ignore vite HMR requests
+    if (request.headers['sec-websocket-protocol'] === 'vite-hmr') {
+      return;
+    }
+
     if (request.url === '/ws/affiliate-stats') {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit('connection', ws, request);
@@ -95,13 +62,14 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // WebSocket connection handling with improved error handling
+  // WebSocket connection handling
   wss.on('connection', async (ws: WebSocket) => {
     log('WebSocket client connected');
-    let isAlive = true;
-
-    // Initialize interval variables
     let updateInterval: NodeJS.Timeout | null = null;
+    let isAlive = true;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 5;
+
     const pingInterval = setInterval(() => {
       if (!isAlive) {
         ws.terminate();
@@ -120,31 +88,35 @@ export function registerRoutes(app: Express): Server {
       clearInterval(pingInterval);
     };
 
+    const sendUpdate = async () => {
+      try {
+        if (!isAlive) {
+          cleanup();
+          return;
+        }
+        const data = await fetchLeaderboardData();
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(data));
+          reconnectAttempts = 0; // Reset reconnect attempts on successful update
+        }
+      } catch (error) {
+        log(`Error sending WebSocket update: ${error}`);
+        reconnectAttempts++;
+        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          log('Max reconnection attempts reached, closing connection');
+          cleanup();
+          ws.close();
+        }
+      }
+    };
+
     try {
       // Send initial data
-      const data = await fetchLeaderboardData();
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(data));
-      }
+      await sendUpdate();
 
       // Setup periodic updates
-      updateInterval = setInterval(async () => {
-        try {
-          if (!isAlive) {
-            cleanup();
-            return;
-          }
-          const data = await fetchLeaderboardData();
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(data));
-          }
-        } catch (error) {
-          log(`Error sending WebSocket update: ${error}`);
-          // Don't throw here, just log the error and continue
-        }
-      }, 30000); // Update every 30 seconds
+      updateInterval = setInterval(sendUpdate, 30000);
 
-      // Handle WebSocket closure
       ws.on('close', () => {
         log('WebSocket client disconnected');
         cleanup();
@@ -170,35 +142,37 @@ export function registerRoutes(app: Express): Server {
 
 async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
   try {
-    const stats = await db
-      .select({
-        userId: affiliateStats.userId,
-        totalWager: affiliateStats.totalWager,
-        commission: affiliateStats.commission,
-        timestamp: affiliateStats.timestamp,
-        username: users.username
-      })
-      .from(affiliateStats)
-      .leftJoin(users, eq(affiliateStats.userId, users.id))
-      .orderBy(desc(affiliateStats.totalWager))
-      .offset(page * limit)
-      .limit(limit);
+    const response = await fetch(`${API_BASE_URL}/user/affiliate/leaderboard?page=${page}&limit=${limit}`);
 
+    if (!response.ok) {
+      log(`API error: ${response.status} - ${response.statusText}`);
+      // Return empty data instead of throwing error
+      return {
+        success: true,
+        data: []
+      };
+    }
+
+    const data = await response.json();
     return {
       success: true,
-      data: stats.map(stat => ({
-        uid: stat.userId?.toString() ?? 'unknown',
-        name: stat.username ?? 'Unknown User',
+      data: data.users.map((user: any) => ({
+        uid: user.id.toString(),
+        name: user.username,
         wagered: {
-          today: parseFloat(stat.totalWager?.toString() ?? '0'),
-          this_week: parseFloat(stat.totalWager?.toString() ?? '0'),
-          this_month: parseFloat(stat.totalWager?.toString() ?? '0'),
-          all_time: parseFloat(stat.totalWager?.toString() ?? '0')
+          today: parseFloat(user.wagered?.today || '0'),
+          this_week: parseFloat(user.wagered?.this_week || '0'),
+          this_month: parseFloat(user.wagered?.this_month || '0'),
+          all_time: parseFloat(user.wagered?.all_time || '0')
         }
       }))
     };
   } catch (error) {
     log(`Error in fetchLeaderboardData: ${error}`);
-    throw error;
+    // Return empty data instead of throwing error
+    return {
+      success: true,
+      data: []
+    };
   }
 }
