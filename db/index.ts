@@ -1,9 +1,7 @@
-import { drizzle } from "drizzle-orm/neon-serverless";
-import { Pool } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from '@neondatabase/serverless';
 import * as schema from "@db/schema";
 import { log } from "../server/vite";
-import { sql } from 'drizzle-orm';
-import ws from 'ws';
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -11,19 +9,18 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Initialize the database with Drizzle and pool
-export const db = drizzle(new Pool({ 
-  connectionString: process.env.DATABASE_URL,
-  webSocketConstructor: ws // Add WebSocket support for Neon
-}), { schema });
+// Create SQL connection
+const sql = neon(process.env.DATABASE_URL!);
+
+// Initialize drizzle with neon-http
+export const db = drizzle(sql, { schema });
 
 // Verify connection on startup
-db.execute(sql`SELECT 1`).then(() => {
+sql`SELECT 1`.then(() => {
   log('Database connection established successfully');
 }).catch((error) => {
   log(`Database connection error: ${error.message}`);
   // Don't throw here - let the application continue but log the error
 });
 
-// Export the database instance
 export default db;
