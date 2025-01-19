@@ -51,7 +51,8 @@ export function AuthModal() {
       });
 
       if (!response.ok) {
-        throw new Error(await response.text());
+        const error = await response.text();
+        throw new Error(error);
       }
 
       return response.json();
@@ -105,7 +106,7 @@ export function AuthModal() {
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} className="bg-[#2A2B31]" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -119,7 +120,7 @@ export function AuthModal() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" {...field} />
+                      <Input type="email" {...field} className="bg-[#2A2B31]" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -133,7 +134,7 @@ export function AuthModal() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} />
+                    <Input type="password" {...field} className="bg-[#2A2B31]" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

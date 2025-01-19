@@ -4,10 +4,11 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { log } from "./vite";
 import { setupAuth } from "./auth";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
-import { requireAdmin } from './middleware/auth';
+import { requireAdmin, requireAuth } from './middleware/auth';
 import { z } from 'zod';
 import { db } from '@db';
-import { wagerRaces } from '@db/schema';
+import { wagerRaces, users } from '@db/schema';
+import { eq } from 'drizzle-orm';
 
 // Rate limiter setup
 const rateLimiter = new RateLimiterMemory({
@@ -21,51 +22,48 @@ export function registerRoutes(app: Express): Server {
   // Setup authentication routes and middleware
   setupAuth(app);
 
-  // Setup WebSocket server
-  const wss = new WebSocketServer({ noServer: true });
+  // Protected routes
+  app.get("/api/profile", requireAuth, async (req, res) => {
+    try {
+      const [user] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          isAdmin: users.isAdmin,
+          createdAt: users.createdAt,
+          lastLogin: users.lastLogin
+        })
+        .from(users)
+        .where(eq(users.id, req.user!.id))
+        .limit(1);
 
-  // Handle WebSocket upgrade
-  httpServer.on('upgrade', (request, socket, head) => {
-    if (request.url === '/ws/affiliate-stats') {
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit('connection', ws, request);
-      });
+      res.json(user);
+    } catch (error) {
+      log(`Error fetching profile: ${error}`);
+      res.status(500).json({ error: "Failed to fetch profile" });
     }
   });
 
-  // WebSocket connection handling
-  wss.on('connection', async (ws: WebSocket) => {
-    log('WebSocket client connected');
-    let interval: NodeJS.Timeout;
-
+  // Admin routes
+  app.get("/api/admin/users", requireAdmin, async (req, res) => {
     try {
-      // Send initial data
-      const data = await fetchLeaderboardData(0, 10);
-      ws.send(JSON.stringify(data));
+      const usersList = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          isAdmin: users.isAdmin,
+          createdAt: users.createdAt,
+          lastLogin: users.lastLogin
+        })
+        .from(users)
+        .orderBy(users.createdAt);
 
-      // Setup periodic updates
-      interval = setInterval(async () => {
-        try {
-          const data = await fetchLeaderboardData(0, 10);
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(data));
-          }
-        } catch (error) {
-          log(`Error sending WebSocket update: ${error}`);
-        }
-      }, 30000); // Update every 30 seconds
-
-      // Handle WebSocket closure
-      ws.on('close', () => {
-        log('WebSocket client disconnected');
-        clearInterval(interval);
-      });
-
+      res.json(usersList);
     } catch (error) {
-      log(`Error in WebSocket connection: ${error}`);
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.close();
-      }
+      log(`Error fetching users: ${error}`);
+      res.status(500).json({ error: "Failed to fetch users" });
     }
   });
 
@@ -120,114 +118,87 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Setup WebSocket server
+  const wss = new WebSocketServer({ noServer: true });
+
+  // Handle WebSocket upgrade
+  httpServer.on('upgrade', (request, socket, head) => {
+    if (request.url === '/ws/affiliate-stats') {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
+    }
+  });
+
+  // WebSocket connection handling
+  wss.on('connection', async (ws: WebSocket) => {
+    log('WebSocket client connected');
+    let interval: NodeJS.Timeout;
+
+    try {
+      // Send initial data
+      const data = await fetchLeaderboardData();
+      ws.send(JSON.stringify(data));
+
+      // Setup periodic updates
+      interval = setInterval(async () => {
+        try {
+          const data = await fetchLeaderboardData();
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(data));
+          }
+        } catch (error) {
+          log(`Error sending WebSocket update: ${error}`);
+        }
+      }, 30000); // Update every 30 seconds
+
+      // Handle WebSocket closure
+      ws.on('close', () => {
+        log('WebSocket client disconnected');
+        clearInterval(interval);
+      });
+
+    } catch (error) {
+      log(`Error in WebSocket connection: ${error}`);
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    }
+  });
+
   return httpServer;
 }
 
-async function fetchLeaderboardData(page: number = 0, limit: number = 10): Promise<any> {
+async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
   try {
-    // Debug token
-    log('API Token Status:', {
-      exists: !!API_CONFIG.token,
-      length: API_CONFIG.token?.length || 0,
-      firstChars: API_CONFIG.token ? `${API_CONFIG.token.substring(0, 4)}...` : 'none'
-    });
-
-    const url = new URL(`${API_CONFIG.baseUrl}/referral-leaderboard`);
-    url.searchParams.append('page', page.toString());
-    url.searchParams.append('limit', limit.toString());
-    
-    log(`Making API request to: ${url.toString()}`);
-    
-    const headers = {
-      'Authorization': `Bearer ${API_CONFIG.token}`,
-      'Content-Type': 'application/json'
-    };
-    
-    log('Request Headers:', headers);
-
-    const response = await fetch(url.toString(), { headers });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      log(`API Error (${response.status}): ${errorText}`);
-      throw new Error(`API responded with status ${response.status}: ${errorText}`);
-    }
-
-    const rawData = await response.json();
-
-    // Detailed logging of API response
-    log('Full API Response:', JSON.stringify(rawData, null, 2));
-    log('API Response Structure:', {
-      success: rawData.success,
-      dataType: typeof rawData.data,
-      isArray: Array.isArray(rawData.data),
-      entryCount: rawData.data?.length || 0,
-      responseKeys: Object.keys(rawData)
-    });
-
-    // Enhanced validation with detailed error messages
-    if (!rawData.success) {
-      throw new Error(`API response indicates failure: ${JSON.stringify(rawData)}`);
-    }
-    
-    if (!rawData.data) {
-      throw new Error('API response missing data field');
-    }
-    
-    if (!Array.isArray(rawData.data)) {
-      throw new Error(`API data is not an array. Received: ${typeof rawData.data}`);
-    }
-
-    // Transform and organize the data
-    const transformedData = {
-      success: true,
-      metadata: {
-        totalUsers: rawData.data.length,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: {
-          data: [...rawData.data].sort((a, b) => b.wagered.today - a.wagered.today)
-        },
-        all_time: {
-          data: [...rawData.data].sort((a, b) => b.wagered.all_time - a.wagered.all_time)
-        },
-        monthly: {
-          data: [...rawData.data].sort((a, b) => b.wagered.this_month - a.wagered.this_month)
-        },
-        weekly: {
-          data: [...rawData.data].sort((a, b) => b.wagered.this_week - a.wagered.this_week)
+    const response = await db.query.affiliateStats.findMany({
+      orderBy: (affiliateStats, { desc }) => [desc(affiliateStats.totalWager)],
+      offset: page * limit,
+      limit,
+      with: {
+        user: {
+          columns: {
+            username: true
+          }
         }
       }
-    };
+    });
 
-    return transformedData;
+    return {
+      success: true,
+      data: response.map(stat => ({
+        uid: stat.userId.toString(),
+        name: stat.user.username,
+        wagered: {
+          today: parseFloat(stat.totalWager.toString()),
+          this_week: parseFloat(stat.totalWager.toString()),
+          this_month: parseFloat(stat.totalWager.toString()),
+          all_time: parseFloat(stat.totalWager.toString())
+        }
+      }))
+    };
   } catch (error) {
     log(`Error in fetchLeaderboardData: ${error}`);
     throw error;
   }
-}
-
-// API configuration with validation
-export const API_CONFIG = {
-  token: process.env.API_TOKEN || '',
-  baseUrl: process.env.API_BASE_URL || "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate"
-};
-
-interface WageredData {
-  today: number;
-  this_week: number;
-  this_month: number;
-  all_time: number;
-}
-
-interface LeaderboardEntry {
-  uid: string;
-  name: string;
-  wagered: WageredData;
-}
-
-interface LeaderboardResponse {
-  success: boolean;
-  data: LeaderboardEntry[];
 }
