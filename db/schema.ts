@@ -124,6 +124,13 @@ export const supportTicketRelations = relations(supportTickets, ({ one, many }) 
   messages: many(ticketMessages),
 }));
 
+export const affiliateStatsRelations = relations(affiliateStats, ({ one }) => ({
+  user: one(users, {
+    fields: [affiliateStats.userId],
+    references: [users.id],
+  }),
+}));
+
 // Schema validation
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
