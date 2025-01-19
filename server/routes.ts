@@ -12,9 +12,6 @@ const rateLimiter = new RateLimiterMemory({
   duration: 1,
 });
 
-// API endpoint configuration
-const API_BASE_URL = 'https://europe-west2-g3casino.cloudfunctions.net';
-
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
 
@@ -67,8 +64,6 @@ export function registerRoutes(app: Express): Server {
     log('WebSocket client connected');
     let updateInterval: NodeJS.Timeout | null = null;
     let isAlive = true;
-    let reconnectAttempts = 0;
-    const MAX_RECONNECT_ATTEMPTS = 5;
 
     const pingInterval = setInterval(() => {
       if (!isAlive) {
@@ -97,16 +92,9 @@ export function registerRoutes(app: Express): Server {
         const data = await fetchLeaderboardData();
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify(data));
-          reconnectAttempts = 0; // Reset reconnect attempts on successful update
         }
       } catch (error) {
         log(`Error sending WebSocket update: ${error}`);
-        reconnectAttempts++;
-        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-          log('Max reconnection attempts reached, closing connection');
-          cleanup();
-          ws.close();
-        }
       }
     };
 
@@ -142,11 +130,10 @@ export function registerRoutes(app: Express): Server {
 
 async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
   try {
-    const response = await fetch(`${API_BASE_URL}/user/affiliate/leaderboard?page=${page}&limit=${limit}`);
+    const response = await fetch(`https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/leaderboard?page=${page}&limit=${limit}`);
 
     if (!response.ok) {
       log(`API error: ${response.status} - ${response.statusText}`);
-      // Return empty data instead of throwing error
       return {
         success: true,
         data: []
@@ -154,6 +141,7 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
     }
 
     const data = await response.json();
+    log(`API Response: ${JSON.stringify(data)}`); // Debug log
     return {
       success: true,
       data: data.users.map((user: any) => ({
