@@ -50,7 +50,7 @@ async function startServer() {
   try {
     // Initialize critical services in sequence
     log("Starting server initialization...");
-    
+
     // 1. Database check
     try {
       await db.execute(sql`SELECT 1`);
@@ -58,7 +58,6 @@ async function startServer() {
     } catch (error: any) {
       if (error.message?.includes('endpoint is disabled')) {
         log("Database endpoint is disabled. Please enable the database in the Replit Database tab.");
-        // Continue server startup even if database is not available
       } else {
         throw error;
       }
@@ -83,18 +82,30 @@ async function startServer() {
     }
 
     // Start server with enhanced error handling
-    const port = parseInt(process.env.PORT || "5000");
-    server.listen(port, "0.0.0.0", () => {
-      log(`Server running on port ${port}`);
-    }).on("error", (err: NodeJS.ErrnoException) => {
-      if (err.code === "EADDRINUSE") {
-        log(`Port ${port} is in use, trying ${port + 1}...`);
-        server.listen(port + 1, "0.0.0.0");
-      } else {
-        console.error("Failed to start server:", err);
-        process.exit(1);
-      }
-    });
+    const BASE_PORT = 5000;
+    let currentPort = BASE_PORT;
+    const MAX_RETRIES = 5;
+
+    function tryListen(port: number, retryCount = 0) {
+      server.listen(port, "0.0.0.0")
+        .on("error", (err: NodeJS.ErrnoException) => {
+          if (err.code === "EADDRINUSE" && retryCount < MAX_RETRIES) {
+            log(`Port ${port} is in use, trying ${port + 1}...`);
+            tryListen(port + 1, retryCount + 1);
+          } else if (retryCount >= MAX_RETRIES) {
+            console.error(`Failed to find an available port after ${MAX_RETRIES} attempts`);
+            process.exit(1);
+          } else {
+            console.error("Failed to start server:", err);
+            process.exit(1);
+          }
+        })
+        .on("listening", () => {
+          log(`Server running on port ${port}`);
+        });
+    }
+
+    tryListen(currentPort);
 
   } catch (error) {
     console.error("Failed to start application:", error);
