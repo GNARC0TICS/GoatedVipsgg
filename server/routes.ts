@@ -5,6 +5,10 @@ import { log } from "./vite";
 import { setupAuth } from "./auth";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 import { requireAdmin, requireAuth } from './middleware/auth';
+import { z } from 'zod';
+import { db } from '@db';
+import { wagerRaces, users } from '@db/schema';
+import { eq } from 'drizzle-orm';
 
 // Rate limiter setup
 const rateLimiter = new RateLimiterMemory({
@@ -17,6 +21,80 @@ export function registerRoutes(app: Express): Server {
 
   // Setup authentication routes and middleware
   setupAuth(app);
+
+  // Protected routes
+  app.get("/api/profile", requireAuth, async (req, res) => {
+    try {
+      const [user] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          isAdmin: users.isAdmin,
+          createdAt: users.createdAt,
+          lastLogin: users.lastLogin
+        })
+        .from(users)
+        .where(eq(users.id, req.user!.id))
+        .limit(1);
+
+      res.json(user);
+    } catch (error) {
+      log(`Error fetching profile: ${error}`);
+      res.status(500).json({ error: "Failed to fetch profile" });
+    }
+  });
+
+  // Admin routes
+  app.get("/api/admin/users", requireAdmin, async (req, res) => {
+    try {
+      const usersList = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          isAdmin: users.isAdmin,
+          createdAt: users.createdAt,
+          lastLogin: users.lastLogin
+        })
+        .from(users)
+        .orderBy(users.createdAt);
+
+      res.json(usersList);
+    } catch (error) {
+      log(`Error fetching users: ${error}`);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  // Protected admin routes for wager race management
+  app.get("/api/admin/wager-races", requireAdmin, async (req, res) => {
+    try {
+      const races = await db.query.wagerRaces.findMany({
+        orderBy: (races, { desc }) => [desc(races.createdAt)]
+      });
+      res.json(races);
+    } catch (error) {
+      log(`Error fetching wager races: ${error}`);
+      res.status(500).json({ error: "Failed to fetch wager races" });
+    }
+  });
+
+  app.post("/api/admin/wager-races", requireAdmin, async (req, res) => {
+    try {
+      const race = await db
+        .insert(wagerRaces)
+        .values({
+          ...req.body,
+          createdBy: req.user!.id
+        })
+        .returning();
+      res.json(race[0]);
+    } catch (error) {
+      log(`Error creating wager race: ${error}`);
+      res.status(500).json({ error: "Failed to create wager race" });
+    }
+  });
 
   // HTTP endpoint for leaderboard data
   app.get("/api/affiliate/stats", async (req, res) => {
@@ -45,80 +123,43 @@ export function registerRoutes(app: Express): Server {
 
   // Handle WebSocket upgrade
   httpServer.on('upgrade', (request, socket, head) => {
-    // Ignore vite HMR requests
-    if (request.headers['sec-websocket-protocol'] === 'vite-hmr') {
-      return;
-    }
-
     if (request.url === '/ws/affiliate-stats') {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit('connection', ws, request);
       });
-    } else {
-      socket.destroy();
     }
   });
 
   // WebSocket connection handling
   wss.on('connection', async (ws: WebSocket) => {
     log('WebSocket client connected');
-    let updateInterval: NodeJS.Timeout | null = null;
-    let isAlive = true;
-
-    const pingInterval = setInterval(() => {
-      if (!isAlive) {
-        ws.terminate();
-        return;
-      }
-      isAlive = false;
-      ws.ping();
-    }, 30000);
-
-    ws.on('pong', () => {
-      isAlive = true;
-    });
-
-    const cleanup = () => {
-      if (updateInterval) clearInterval(updateInterval);
-      clearInterval(pingInterval);
-    };
-
-    const sendUpdate = async () => {
-      try {
-        if (!isAlive) {
-          cleanup();
-          return;
-        }
-        const data = await fetchLeaderboardData();
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify(data));
-        }
-      } catch (error) {
-        log(`Error sending WebSocket update: ${error}`);
-      }
-    };
+    let interval: NodeJS.Timeout;
 
     try {
       // Send initial data
-      await sendUpdate();
+      const data = await fetchLeaderboardData();
+      ws.send(JSON.stringify(data));
 
       // Setup periodic updates
-      updateInterval = setInterval(sendUpdate, 30000);
+      interval = setInterval(async () => {
+        try {
+          const data = await fetchLeaderboardData();
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(data));
+          }
+        } catch (error) {
+          log(`Error sending WebSocket update: ${error}`);
+        }
+      }, 30000); // Update every 30 seconds
 
+      // Handle WebSocket closure
       ws.on('close', () => {
         log('WebSocket client disconnected');
-        cleanup();
-      });
-
-      ws.on('error', (error) => {
-        log(`WebSocket error: ${error}`);
-        cleanup();
-        ws.terminate();
+        clearInterval(interval);
       });
 
     } catch (error) {
       log(`Error in WebSocket connection: ${error}`);
-      cleanup();
       if (ws.readyState === WebSocket.OPEN) {
         ws.close();
       }
@@ -130,37 +171,34 @@ export function registerRoutes(app: Express): Server {
 
 async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
   try {
-    const response = await fetch(`https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/leaderboard?page=${page}&limit=${limit}`);
+    const response = await db.query.affiliateStats.findMany({
+      orderBy: (affiliateStats, { desc }) => [desc(affiliateStats.totalWager)],
+      offset: page * limit,
+      limit,
+      with: {
+        user: {
+          columns: {
+            username: true
+          }
+        }
+      }
+    });
 
-    if (!response.ok) {
-      log(`API error: ${response.status} - ${response.statusText}`);
-      return {
-        success: true,
-        data: []
-      };
-    }
-
-    const data = await response.json();
-    log(`API Response: ${JSON.stringify(data)}`); // Debug log
     return {
       success: true,
-      data: data.users.map((user: any) => ({
-        uid: user.id.toString(),
-        name: user.username,
+      data: response.map(stat => ({
+        uid: stat.userId.toString(),
+        name: stat.user.username,
         wagered: {
-          today: parseFloat(user.wagered?.today || '0'),
-          this_week: parseFloat(user.wagered?.this_week || '0'),
-          this_month: parseFloat(user.wagered?.this_month || '0'),
-          all_time: parseFloat(user.wagered?.all_time || '0')
+          today: parseFloat(stat.totalWager.toString()),
+          this_week: parseFloat(stat.totalWager.toString()),
+          this_month: parseFloat(stat.totalWager.toString()),
+          all_time: parseFloat(stat.totalWager.toString())
         }
       }))
     };
   } catch (error) {
     log(`Error in fetchLeaderboardData: ${error}`);
-    // Return empty data instead of throwing error
-    return {
-      success: true,
-      data: []
-    };
+    throw error;
   }
 }
