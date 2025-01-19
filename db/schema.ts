@@ -5,10 +5,14 @@ import { relations } from "drizzle-orm";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").unique().notNull(),
-  password: text("password").notNull(),
+  password: text("password"),  // Optional for OAuth users
   email: text("email").unique().notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // OAuth fields
+  googleId: text("google_id").unique(),
+  avatar: text("avatar_url"),
+  lastLogin: timestamp("last_login"),
 });
 
 export const wagerRaces = pgTable("wager_races", {
@@ -24,6 +28,8 @@ export const wagerRaces = pgTable("wager_races", {
   createdBy: integer("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  rules: text("rules"),
+  description: text("description"),
 });
 
 export const wagerRaceParticipants = pgTable("wager_race_participants", {
@@ -34,6 +40,7 @@ export const wagerRaceParticipants = pgTable("wager_race_participants", {
   rank: integer("rank"),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  wagerHistory: jsonb("wager_history"), // Track wager progress over time
 });
 
 export const notificationPreferences = pgTable("notification_preferences", {
@@ -43,6 +50,8 @@ export const notificationPreferences = pgTable("notification_preferences", {
   vipStatusChanges: boolean("vip_status_changes").default(true).notNull(),
   promotionalOffers: boolean("promotional_offers").default(true).notNull(),
   monthlyStatements: boolean("monthly_statements").default(true).notNull(),
+  emailNotifications: boolean("email_notifications").default(true).notNull(),
+  pushNotifications: boolean("push_notifications").default(true).notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
@@ -54,6 +63,39 @@ export const affiliateStats = pgTable("affiliate_stats", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
+// New tables for additional features
+
+export const supportTickets = pgTable("support_tickets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  subject: text("subject").notNull(),
+  description: text("description").notNull(),
+  status: text("status").notNull().default('open'), // 'open' | 'in_progress' | 'closed'
+  priority: text("priority").notNull().default('medium'), // 'low' | 'medium' | 'high'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  assignedTo: integer("assigned_to").references(() => users.id),
+});
+
+export const ticketMessages = pgTable("ticket_messages", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").references(() => supportTickets.id),
+  userId: integer("user_id").references(() => users.id),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isStaffReply: boolean("is_staff_reply").default(false).notNull(),
+});
+
+export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
+  id: serial("id").primaryKey(),
+  email: text("email").unique().notNull(),
+  isSubscribed: boolean("is_subscribed").default(true).notNull(),
+  subscribedAt: timestamp("subscribed_at").defaultNow().notNull(),
+  unsubscribedAt: timestamp("unsubscribed_at"),
+  source: text("source"), // Track where the subscription came from
+});
+
+// Relations
 export const userRelations = relations(users, ({ one, many }) => ({
   preferences: one(notificationPreferences, {
     fields: [users.id],
@@ -61,6 +103,8 @@ export const userRelations = relations(users, ({ one, many }) => ({
   }),
   createdRaces: many(wagerRaces),
   raceParticipations: many(wagerRaceParticipants),
+  supportTickets: many(supportTickets),
+  assignedTickets: many(supportTickets, { relationName: "assignedTickets" }),
 }));
 
 export const wagerRaceRelations = relations(wagerRaces, ({ one, many }) => ({
@@ -71,6 +115,19 @@ export const wagerRaceRelations = relations(wagerRaces, ({ one, many }) => ({
   participants: many(wagerRaceParticipants),
 }));
 
+export const supportTicketRelations = relations(supportTickets, ({ one, many }) => ({
+  user: one(users, {
+    fields: [supportTickets.userId],
+    references: [users.id],
+  }),
+  assignedStaff: one(users, {
+    fields: [supportTickets.assignedTo],
+    references: [users.id],
+  }),
+  messages: many(ticketMessages),
+}));
+
+// Schema validation
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences);
@@ -79,7 +136,12 @@ export const insertWagerRaceSchema = createInsertSchema(wagerRaces);
 export const selectWagerRaceSchema = createSelectSchema(wagerRaces);
 export const insertWagerRaceParticipantSchema = createInsertSchema(wagerRaceParticipants);
 export const selectWagerRaceParticipantSchema = createSelectSchema(wagerRaceParticipants);
+export const insertSupportTicketSchema = createInsertSchema(supportTickets);
+export const selectSupportTicketSchema = createSelectSchema(supportTickets);
+export const insertNewsletterSubscriptionSchema = createInsertSchema(newsletterSubscriptions);
+export const selectNewsletterSubscriptionSchema = createSelectSchema(newsletterSubscriptions);
 
+// Types
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
 export type InsertNotificationPreferences = typeof notificationPreferences.$inferInsert;
@@ -88,3 +150,7 @@ export type InsertWagerRace = typeof wagerRaces.$inferInsert;
 export type SelectWagerRace = typeof wagerRaces.$inferSelect;
 export type InsertWagerRaceParticipant = typeof wagerRaceParticipants.$inferInsert;
 export type SelectWagerRaceParticipant = typeof wagerRaceParticipants.$inferSelect;
+export type InsertSupportTicket = typeof supportTickets.$inferInsert;
+export type SelectSupportTicket = typeof supportTickets.$inferSelect;
+export type InsertNewsletterSubscription = typeof newsletterSubscriptions.$inferInsert;
+export type SelectNewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
