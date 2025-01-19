@@ -4,16 +4,10 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { log } from "./vite";
 import { setupAuth } from "./auth";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
-import { requireAdmin, initializeAdmin } from './middleware/admin';
+import { requireAdmin } from './middleware/auth';
 import { z } from 'zod';
 import { db } from '@db';
 import { wagerRaces } from '@db/schema';
-
-// API configuration with validation
-export const API_CONFIG = {
-  token: process.env.API_TOKEN || '',
-  baseUrl: process.env.API_BASE_URL || "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate"
-};
 
 // Rate limiter setup
 const rateLimiter = new RateLimiterMemory({
@@ -21,23 +15,112 @@ const rateLimiter = new RateLimiterMemory({
   duration: 1,
 });
 
-// Type definitions for API response
-interface WageredData {
-  today: number;
-  this_week: number;
-  this_month: number;
-  all_time: number;
-}
+export function registerRoutes(app: Express): Server {
+  const httpServer = createServer(app);
 
-interface LeaderboardEntry {
-  uid: string;
-  name: string;
-  wagered: WageredData;
-}
+  // Setup authentication routes and middleware
+  setupAuth(app);
 
-interface LeaderboardResponse {
-  success: boolean;
-  data: LeaderboardEntry[];
+  // Setup WebSocket server
+  const wss = new WebSocketServer({ noServer: true });
+
+  // Handle WebSocket upgrade
+  httpServer.on('upgrade', (request, socket, head) => {
+    if (request.url === '/ws/affiliate-stats') {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
+    }
+  });
+
+  // WebSocket connection handling
+  wss.on('connection', async (ws: WebSocket) => {
+    log('WebSocket client connected');
+    let interval: NodeJS.Timeout;
+
+    try {
+      // Send initial data
+      const data = await fetchLeaderboardData(0, 10);
+      ws.send(JSON.stringify(data));
+
+      // Setup periodic updates
+      interval = setInterval(async () => {
+        try {
+          const data = await fetchLeaderboardData(0, 10);
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(data));
+          }
+        } catch (error) {
+          log(`Error sending WebSocket update: ${error}`);
+        }
+      }, 30000); // Update every 30 seconds
+
+      // Handle WebSocket closure
+      ws.on('close', () => {
+        log('WebSocket client disconnected');
+        clearInterval(interval);
+      });
+
+    } catch (error) {
+      log(`Error in WebSocket connection: ${error}`);
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    }
+  });
+
+  // Protected admin routes for wager race management
+  app.get("/api/admin/wager-races", requireAdmin, async (req, res) => {
+    try {
+      const races = await db.query.wagerRaces.findMany({
+        orderBy: (races, { desc }) => [desc(races.createdAt)]
+      });
+      res.json(races);
+    } catch (error) {
+      log(`Error fetching wager races: ${error}`);
+      res.status(500).json({ error: "Failed to fetch wager races" });
+    }
+  });
+
+  app.post("/api/admin/wager-races", requireAdmin, async (req, res) => {
+    try {
+      const race = await db
+        .insert(wagerRaces)
+        .values({
+          ...req.body,
+          createdBy: req.user!.id
+        })
+        .returning();
+      res.json(race[0]);
+    } catch (error) {
+      log(`Error creating wager race: ${error}`);
+      res.status(500).json({ error: "Failed to create wager race" });
+    }
+  });
+
+  // HTTP endpoint for leaderboard data
+  app.get("/api/affiliate/stats", async (req, res) => {
+    try {
+      await rateLimiter.consume(req.ip || "unknown");
+      const page = parseInt(req.query.page as string) || 0;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const data = await fetchLeaderboardData(page, limit);
+      res.json(data);
+    } catch (error: any) {
+      if (error.consumedPoints) {
+        res.status(429).json({ error: "Too many requests" });
+      } else {
+        log(`Error in /api/affiliate/stats: ${error}`);
+        res.status(500).json({
+          success: false,
+          error: "Failed to fetch affiliate stats",
+          message: error.message
+        });
+      }
+    }
+  });
+
+  return httpServer;
 }
 
 async function fetchLeaderboardData(page: number = 0, limit: number = 10): Promise<any> {
@@ -125,143 +208,26 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10): Promi
   }
 }
 
-export function registerRoutes(app: Express): Server {
-  const httpServer = createServer(app);
+// API configuration with validation
+export const API_CONFIG = {
+  token: process.env.API_TOKEN || '',
+  baseUrl: process.env.API_BASE_URL || "https://europe-west2-g3casino.cloudfunctions.net/user/affiliate"
+};
 
-  // Setup WebSocket server
-  const wss = new WebSocketServer({ noServer: true });
+interface WageredData {
+  today: number;
+  this_week: number;
+  this_month: number;
+  all_time: number;
+}
 
-  // Handle WebSocket upgrade
-  httpServer.on('upgrade', (request, socket, head) => {
-    if (request.url === '/ws/affiliate-stats') {
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit('connection', ws, request);
-      });
-    }
-  });
+interface LeaderboardEntry {
+  uid: string;
+  name: string;
+  wagered: WageredData;
+}
 
-  // WebSocket connection handling
-  wss.on('connection', async (ws: WebSocket) => {
-    log('WebSocket client connected');
-    let interval: NodeJS.Timeout;
-
-    try {
-      // Send initial data (only top 10)
-      const data = await fetchLeaderboardData(0, 10);
-      ws.send(JSON.stringify(data));
-
-      // Setup periodic updates
-      interval = setInterval(async () => {
-        try {
-          // Only fetch top 10 for regular updates
-          const data = await fetchLeaderboardData(0, 10);
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(data));
-          }
-        } catch (error) {
-          log(`Error sending WebSocket update: ${error}`);
-        }
-      }, 30000); // Update every 30 seconds
-
-      // Handle WebSocket closure
-      ws.on('close', () => {
-        log('WebSocket client disconnected');
-        clearInterval(interval);
-      });
-
-    } catch (error) {
-      log(`Error in WebSocket connection: ${error}`);
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.close();
-      }
-    }
-  });
-
-  // Admin initialization endpoint
-  app.post("/api/admin/initialize", async (req, res) => {
-    try {
-      const schema = z.object({
-        username: z.string().min(1),
-        password: z.string().min(8),
-        adminKey: z.string()
-      });
-
-      const result = schema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({
-          error: "Invalid input",
-          details: result.error.issues
-        });
-      }
-
-      const { username, password, adminKey } = result.data;
-      const admin = await initializeAdmin(username, password, adminKey);
-
-      res.json({
-        message: "Admin user created successfully",
-        admin: {
-          id: admin.id,
-          username: admin.username
-        }
-      });
-    } catch (error: any) {
-      log(`Error in admin initialization: ${error.message}`);
-      res.status(500).json({
-        error: error.message || "Failed to initialize admin user"
-      });
-    }
-  });
-
-  // Protected admin routes for wager race management
-  app.get("/api/admin/wager-races", requireAdmin, async (req, res) => {
-    try {
-      const races = await db.query.wagerRaces.findMany({
-        orderBy: (races, { desc }) => [desc(races.createdAt)]
-      });
-      res.json(races);
-    } catch (error) {
-      log(`Error fetching wager races: ${error}`);
-      res.status(500).json({ error: "Failed to fetch wager races" });
-    }
-  });
-
-  app.post("/api/admin/wager-races", requireAdmin, async (req, res) => {
-    try {
-      const race = await db
-        .insert(wagerRaces)
-        .values({
-          ...req.body,
-          createdBy: req.user!.id
-        })
-        .returning();
-      res.json(race[0]);
-    } catch (error) {
-      log(`Error creating wager race: ${error}`);
-      res.status(500).json({ error: "Failed to create wager race" });
-    }
-  });
-
-  // HTTP endpoint for leaderboard data
-  app.get("/api/affiliate/stats", async (req, res) => {
-    try {
-      await rateLimiter.consume(req.ip || "unknown");
-      const page = parseInt(req.query.page as string) || 0;
-      const limit = parseInt(req.query.limit as string) || 10;
-      const data = await fetchLeaderboardData(page, limit);
-      res.json(data);
-    } catch (error: any) {
-      if (error.consumedPoints) {
-        res.status(429).json({ error: "Too many requests" });
-      } else {
-        log(`Error in /api/affiliate/stats: ${error}`);
-        res.status(500).json({
-          success: false,
-          error: "Failed to fetch affiliate stats",
-          message: error.message
-        });
-      }
-    }
-  });
-
-  return httpServer;
+interface LeaderboardResponse {
+  success: boolean;
+  data: LeaderboardEntry[];
 }

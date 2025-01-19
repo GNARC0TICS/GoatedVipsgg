@@ -1,12 +1,12 @@
 import React, { Suspense } from "react";
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/lib/auth";
 import { AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "react-error-boundary";
-import { Redirect } from "@/lib/navigation";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import VipTransfer from "@/pages/VipTransfer";
@@ -20,6 +20,8 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useUser } from "@/hooks/use-user";
 import Help from "./pages/Help";
 import UserProfile from "@/pages/UserProfile";
+import { Redirect } from "@/lib/navigation";
+
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -56,67 +58,34 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
-  const [location] = useLocation();
-
   return (
-    <Layout>
-      <AnimatePresence mode="wait">
-        <ErrorBoundary FallbackComponent={ErrorFallback}>
-          <Switch location={location}>
-            <Route path="/" key="home">
-              <PageTransition>
-                <Home />
-              </PageTransition>
-            </Route>
-            <Route path="/vip-transfer">
-              <PageTransition>
-                <VipTransfer />
-              </PageTransition>
-            </Route>
-            <Route path="/wager-races">
-              <PageTransition>
-                <WagerRaces />
-              </PageTransition>
-            </Route>
-            <Route path="/bonus-codes">
-              <PageTransition>
-                <BonusCodes />
-              </PageTransition>
-            </Route>
-            <Route path="/notification-preferences">
-              <PageTransition>
-                <NotificationPreferences />
-              </PageTransition>
-            </Route>
-            {/* Protected Admin Routes */}
-            <Route path="/admin/wager-races">
-              <PageTransition>
+      <Layout>
+        <AnimatePresence mode="wait">
+          <ErrorBoundary FallbackComponent={ErrorFallback}>
+            <Switch>
+              <Route path="/" component={Home} />
+              <Route path="/vip-transfer" component={VipTransfer} />
+              <Route path="/wager-races" component={WagerRaces} />
+              <Route path="/bonus-codes" component={BonusCodes} />
+              <Route path="/notification-preferences" component={NotificationPreferences} />
+              <Route path="/admin/wager-races">
                 <AdminRoute>
                   <WagerRaceManagement />
                 </AdminRoute>
-              </PageTransition>
-            </Route>
-            <Route path="/user/:id">
-              {(params) => (
-                <PageTransition>
-                  <UserProfile userId={params.id} />
-                </PageTransition>
-              )}
-            </Route>
-            <Route path="/help">
-              <PageTransition>
-                <Help />
-              </PageTransition>
-            </Route>
-            <Route>
-              <PageTransition>
-                <NotFound />
-              </PageTransition>
-            </Route>
-          </Switch>
-        </ErrorBoundary>
-      </AnimatePresence>
-    </Layout>
+              </Route>
+              <Route path="/user/:id">
+                {(params) => (
+                  <PageTransition>
+                    <UserProfile userId={params.id} />
+                  </PageTransition>
+                )}
+              </Route>
+              <Route path="/help" component={Help} />
+              <Route component={NotFound} />
+            </Switch>
+          </ErrorBoundary>
+        </AnimatePresence>
+      </Layout>
   );
 }
 
@@ -124,12 +93,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary FallbackComponent={ErrorFallback}>
-        <Suspense fallback={<LoadingSpinner />}>
-          <TooltipProvider>
-            <Router />
-            <Toaster />
-          </TooltipProvider>
-        </Suspense>
+        <AuthProvider>
+          <Suspense fallback={<LoadingSpinner />}>
+            <TooltipProvider>
+              <Router />
+              <Toaster />
+            </TooltipProvider>
+          </Suspense>
+        </AuthProvider>
       </ErrorBoundary>
     </QueryClientProvider>
   );

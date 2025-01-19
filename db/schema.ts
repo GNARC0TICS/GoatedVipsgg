@@ -5,13 +5,10 @@ import { relations } from "drizzle-orm";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").unique().notNull(),
-  password: text("password"),  // Optional for OAuth users
+  password: text("password").notNull(),
   email: text("email").unique().notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  // OAuth fields
-  googleId: text("google_id").unique(),
-  avatar: text("avatar_url"),
   lastLogin: timestamp("last_login"),
 });
 
