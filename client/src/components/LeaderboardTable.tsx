@@ -1,14 +1,9 @@
 import { Table, TableHeader, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays, AlertCircle, Search } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useLeaderboard } from "@/hooks/useLeaderboard"; // Assuming this hook is defined elsewhere
-
+import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays, Search } from "lucide-react";
+import { useState, useMemo } from "react";
+import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 
 type WageredData = {
   today: number;
@@ -23,17 +18,10 @@ type LeaderboardEntry = {
   wagered: WageredData;
 };
 
-type LeaderboardMetadata = {
-  totalUsers: number;
-  lastUpdated: string;
-};
-
-
 const ITEMS_PER_PAGE = 10;
 
-
 export function LeaderboardTable() {
-  const [timePeriod, setTimePeriod] = useState<'today' | 'all_time' | 'monthly' | 'weekly'>('today');
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('today');
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const { data: leaderboardEntries, isLoading, error, metadata } = useLeaderboard(timePeriod, currentPage);
@@ -60,7 +48,7 @@ export function LeaderboardTable() {
     }
   };
 
-  const renderTimePeriodIcon = (period: typeof timePeriod) => {
+  const renderTimePeriodIcon = (period: TimePeriod) => {
     switch (period) {
       case 'today':
         return <Clock className="h-4 w-4" />;
@@ -73,11 +61,9 @@ export function LeaderboardTable() {
     }
   };
 
-
   const totalPages = useMemo(() => {
     return Math.ceil((filteredData?.length || 0) / ITEMS_PER_PAGE);
   }, [filteredData]);
-
 
   return (
     <div className="space-y-6">
@@ -92,12 +78,12 @@ export function LeaderboardTable() {
             <Button
               key={id}
               variant={timePeriod === id ? 'default' : 'outline'}
-              onClick={() => setTimePeriod(id as typeof timePeriod)}
+              onClick={() => setTimePeriod(id as TimePeriod)}
               className={`font-heading tracking-tight flex items-center gap-2 ${
                 timePeriod === id ? 'bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90' : 'border-[#2A2B31] hover:border-[#D7FF00]/50'
               }`}
             >
-              {renderTimePeriodIcon(id as typeof timePeriod)}
+              {renderTimePeriodIcon(id as TimePeriod)}
               {label}
             </Button>
           ))}
@@ -178,8 +164,8 @@ export function LeaderboardTable() {
             )}
           </TableBody>
         </Table>
-        <div className="flex items-center justify-between px-4 py-4 border-t">
-          <div className="text-sm text-muted-foreground">
+        <div className="flex items-center justify-between px-4 py-4 border-t border-[#2A2B31]">
+          <div className="text-sm text-[#8A8B91]">
             Showing {currentPage * ITEMS_PER_PAGE + 1} to {Math.min((currentPage + 1) * ITEMS_PER_PAGE, filteredData.length)} of {filteredData.length}
           </div>
           <div className="flex gap-2">
@@ -188,6 +174,7 @@ export function LeaderboardTable() {
               size="sm"
               onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
               disabled={currentPage === 0}
+              className="border-[#2A2B31] hover:border-[#D7FF00]/50"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -196,6 +183,7 @@ export function LeaderboardTable() {
               size="sm"
               onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
               disabled={currentPage === totalPages - 1}
+              className="border-[#2A2B31] hover:border-[#D7FF00]/50"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
