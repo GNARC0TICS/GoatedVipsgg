@@ -178,13 +178,20 @@ export function LeaderboardTable() {
                   <TableCell className="font-sans">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-[#D7FF00] hidden md:block" />
-                      <span className="truncate max-w-[120px] md:max-w-none">
+                      <span className={`truncate max-w-[120px] md:max-w-none ${index < 3 ? 'font-bold' : ''}`}>
                         {entry.name}
                       </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-sans">
-                    ${getWagerAmount(entry).toLocaleString()}
+                    <div className="flex items-center justify-end gap-2">
+                      ${getWagerAmount(entry).toLocaleString()}
+                      {entry.isWagering && (
+                        <div className="text-green-500 animate-pulse">
+                          <ChevronUp className="h-4 w-4" />
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
