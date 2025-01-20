@@ -44,19 +44,27 @@ export function useLeaderboard(timePeriod: TimePeriod = 'today', page: number = 
       if (!data?.data) {
         throw new Error('Invalid data format received from API');
       }
+
+      // Map the time period to the correct data array
+      const periodKey = timePeriod === 'weekly' ? 'weekly' :
+                       timePeriod === 'monthly' ? 'monthly' :
+                       timePeriod === 'today' ? 'today' : 'all_time';
+
+      const periodData = data.data[periodKey].data;
+
       return {
         ...data,
         data: {
           ...data.data,
-          [timePeriod]: {
-            data: data.data[timePeriod].data.map((entry) => ({
+          [periodKey]: {
+            data: periodData.map((entry) => ({
               uid: entry.uid,
               name: entry.name,
               wagered: {
-                today: entry.wagered.today || 0,
-                this_week: entry.wagered.this_week || 0,
-                this_month: entry.wagered.this_month || 0,
-                all_time: entry.wagered.all_time || 0
+                today: entry.wagered?.today || 0,
+                this_week: entry.wagered?.this_week || 0,
+                this_month: entry.wagered?.this_month || 0,
+                all_time: entry.wagered?.all_time || 0
               }
             }))
           }
@@ -65,8 +73,13 @@ export function useLeaderboard(timePeriod: TimePeriod = 'today', page: number = 
     }
   });
 
+  // Get the correct data array based on the time period
+  const periodKey = timePeriod === 'weekly' ? 'weekly' :
+                   timePeriod === 'monthly' ? 'monthly' :
+                   timePeriod === 'today' ? 'today' : 'all_time';
+
   return {
-    data: data?.data[timePeriod].data || [],
+    data: data?.data[periodKey].data || [],
     metadata: data?.metadata,
     isLoading,
     error: error as Error | null,

@@ -3,7 +3,10 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
+import { exec } from "child_process";
+import { promisify } from "util";
 
+const execAsync = promisify(exec);
 const app = express();
 
 // Basic middleware
@@ -48,7 +51,6 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 // Application startup with enhanced error handling
 async function startServer() {
   try {
-    // Initialize critical services in sequence
     log("Starting server initialization...");
 
     // 1. Database check
@@ -63,12 +65,19 @@ async function startServer() {
       }
     }
 
-    // 2. API connectivity check
-    const apiCheck = await fetch(`${process.env.API_BASE_URL || 'https://europe-west2-g3casino.cloudfunctions.net/user/affiliate'}/health`).catch(() => null);
-    if (!apiCheck?.ok) {
-      log("Warning: API health check failed - continuing startup");
-    } else {
-      log("API connection successful");
+    // 2. Kill existing process on port 5000 if any
+    const port = 5000;
+    try {
+      const { stdout } = await execAsync(`lsof -t -i:${port}`);
+      if (stdout) {
+        const pid = parseInt(stdout.trim());
+        if (pid !== process.pid) {
+          await execAsync(`kill -9 ${pid}`);
+          log(`Killed existing process on port ${port}`);
+        }
+      }
+    } catch (error) {
+      // No process running on port, we can proceed
     }
 
     // 3. Create server and register routes
@@ -81,19 +90,11 @@ async function startServer() {
       serveStatic(app);
     }
 
-    // Start server with retries
-    const port = 5000;
-
+    // Start server
     server.listen(port, "0.0.0.0")
       .on("error", (err: NodeJS.ErrnoException) => {
-        if (err.code === "EADDRINUSE") {
-          console.error(`Port ${port} is already in use. Attempting server restart...`);
-          // Force kill any existing process and try again after a delay
-          process.exit(1); // Replit will automatically restart the process
-        } else {
-          console.error("Failed to start server:", err);
-          process.exit(1);
-        }
+        console.error(`Failed to start server: ${err.message}`);
+        process.exit(1);
       })
       .on("listening", () => {
         log(`Server running on port ${port}`);

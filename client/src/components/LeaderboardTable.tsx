@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays, Search } from "lucide-react";
 import { useState, useMemo } from "react";
-import { useLeaderboard, type TimePeriod } from "../hooks/use-leaderboard";
+import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 
 type WageredData = {
   today: number;
@@ -35,16 +35,17 @@ export function LeaderboardTable() {
   }, [leaderboardEntries, searchQuery]);
 
   const getWagerAmount = (entry: LeaderboardEntry) => {
+    if (!entry?.wagered) return 0;
+
     switch (timePeriod) {
       case 'weekly':
-        return entry.wagered.this_week;
+        return entry.wagered.this_week || 0;
       case 'monthly':
-        return entry.wagered.this_month;
+        return entry.wagered.this_month || 0;
       case 'today':
-        return entry.wagered.today;
+        return entry.wagered.today || 0;
       case 'all_time':
-      default:
-        return entry.wagered.all_time;
+        return entry.wagered.all_time || 0;
     }
   };
 
