@@ -18,6 +18,10 @@ export function Layout({ children }: LayoutProps) {
   const footerRef = useRef<HTMLElement>(null);
   const [isFooterVisible, setIsFooterVisible] = useState(false);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
+
   const { data: user } = useQuery<SelectUser>({
     queryKey: ["/api/user"],
   });
