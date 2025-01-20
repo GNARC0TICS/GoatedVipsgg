@@ -1,7 +1,7 @@
 import { Table, TableHeader, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays, Search, Crown, Medal, Award } from "lucide-react";
+import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays, Search, Crown, Medal, Award, ChevronUp } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { CircleDot } from 'lucide-react'; // Added import for CircleDot
@@ -177,7 +177,7 @@ export function LeaderboardTable() {
                   <TableCell className="text-right font-sans">
                     <div className="flex items-center justify-end gap-2">
                       ${getWagerAmount(entry).toLocaleString()}
-                      {entry.isWagering && (
+                      {getWagerAmount(entry) > 0 && (
                         <div className="text-green-500 animate-pulse">
                           <ChevronUp className="h-4 w-4" />
                         </div>
