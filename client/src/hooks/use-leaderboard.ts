@@ -78,8 +78,18 @@ export function useLeaderboard(timePeriod: TimePeriod = 'today', page: number = 
                    timePeriod === 'monthly' ? 'monthly' :
                    timePeriod === 'today' ? 'today' : 'all_time';
 
+  const sortedData = data?.data[periodKey].data.sort((a, b) => {
+    const aValue = a.wagered[periodKey === 'weekly' ? 'this_week' : 
+                          periodKey === 'monthly' ? 'this_month' : 
+                          periodKey === 'today' ? 'today' : 'all_time'] || 0;
+    const bValue = b.wagered[periodKey === 'weekly' ? 'this_week' : 
+                          periodKey === 'monthly' ? 'this_month' : 
+                          periodKey === 'today' ? 'today' : 'all_time'] || 0;
+    return bValue - aValue;
+  }) || [];
+
   return {
-    data: data?.data[periodKey].data || [],
+    data: sortedData,
     metadata: data?.metadata,
     isLoading,
     error: error as Error | null,

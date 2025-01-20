@@ -24,7 +24,14 @@ export function LeaderboardTable() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('today');
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: leaderboardEntries, isLoading, error, metadata } = useLeaderboard(timePeriod, currentPage);
+  const { data: leaderboardEntries, isLoading, error, metadata, refetch } = useLeaderboard(timePeriod, currentPage);
+
+  // Reset page when changing time period
+  const handleTimePeriodChange = (newPeriod: TimePeriod) => {
+    setTimePeriod(newPeriod);
+    setCurrentPage(0);
+    refetch();
+  };
 
   // Filter data based on search query
   const filteredData = useMemo(() => {
@@ -79,7 +86,7 @@ export function LeaderboardTable() {
             <Button
               key={id}
               variant={timePeriod === id ? 'default' : 'outline'}
-              onClick={() => setTimePeriod(id as TimePeriod)}
+              onClick={() => handleTimePeriodChange(id as TimePeriod)}
               className={`font-heading tracking-tight flex items-center gap-2 ${
                 timePeriod === id ? 'bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90' : 'border-[#2A2B31] hover:border-[#D7FF00]/50'
               }`}
