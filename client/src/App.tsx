@@ -23,6 +23,7 @@ import { useUser } from "@/hooks/use-user";
 import Help from "./pages/Help";
 import UserProfile from "@/pages/UserProfile";
 import { Redirect } from "@/lib/navigation";
+import Telegram from "@/pages/Telegram";
 
 
 function ErrorFallback({ error }: { error: Error }) {
