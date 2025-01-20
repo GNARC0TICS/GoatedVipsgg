@@ -8,7 +8,7 @@ import { RateLimiterMemory } from 'rate-limiter-flexible';
 import { requireAdmin, requireAuth } from './middleware/auth';
 import { z } from 'zod';
 import { db } from '@db';
-import { wagerRaces, users } from '@db/schema';
+import { wagerRaces, users, affiliateStats } from '@db/schema';
 import { eq } from 'drizzle-orm';
 
 // Rate limiter setup
