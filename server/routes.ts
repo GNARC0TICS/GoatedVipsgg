@@ -186,20 +186,23 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
 
     const apiData = await response.json();
     
-    // Update database with new data
-    for (const entry of apiData.data) {
-      await db.insert(affiliateStats).values({
-        userId: parseInt(entry.uid),
-        totalWager: entry.wagered.all_time.toString(),
-        commission: "0", // Set appropriate commission value
-        timestamp: new Date()
-      }).onConflictDoUpdate({
-        target: [affiliateStats.userId],
-        set: {
+    // Ensure data exists and is in the correct format
+    if (apiData && apiData.data && Array.isArray(apiData.data.today?.data)) {
+      // Update database with new data
+      for (const entry of apiData.data.today.data) {
+        await db.insert(affiliateStats).values({
+          userId: parseInt(entry.uid),
           totalWager: entry.wagered.all_time.toString(),
+          commission: "0", // Set appropriate commission value
           timestamp: new Date()
-        }
-      });
+        }).onConflictDoUpdate({
+          target: [affiliateStats.userId],
+          set: {
+            totalWager: entry.wagered.all_time.toString(),
+            timestamp: new Date()
+          }
+        });
+      }
     }
 
     // Fetch updated data from database
