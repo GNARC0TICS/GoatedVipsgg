@@ -32,10 +32,11 @@ async function resetDatabase() {
 
     // Create new entries
     for (const entry of users_data) {
-      // Insert user
+      // Insert user with API uid as id
       const [user] = await db
         .insert(users)
         .values({
+          id: parseInt(entry.uid, 36) % 2147483647, // Convert uid to int32
           username: entry.name,
           email: `${entry.name.toLowerCase()}@placeholder.com`,
           password: 'placeholder',
@@ -44,10 +45,11 @@ async function resetDatabase() {
         })
         .returning();
 
-      // Insert affiliate stats
+      // Insert affiliate stats with API uid and name
       await db
         .insert(affiliateStats)
         .values({
+          id: parseInt(entry.uid, 36) % 2147483647, // Convert uid to int32
           userId: user.id,
           totalWager: entry.wagered.all_time || 0,
           commission: 0,
