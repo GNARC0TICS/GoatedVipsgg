@@ -171,7 +171,38 @@ export function registerRoutes(app: Express): Server {
 
 async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
   try {
-    const response = await db.query.affiliateStats.findMany({
+    // Fetch data from external API
+    const response = await fetch(`${API_CONFIG.baseUrl}/referral-leaderboard`, {
+      headers: {
+        'Authorization': `Bearer ${API_CONFIG.token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const apiData = await response.json();
+    
+    // Update database with new data
+    for (const entry of apiData.data) {
+      await db.insert(affiliateStats).values({
+        userId: parseInt(entry.uid),
+        totalWager: entry.wagered.all_time.toString(),
+        commission: "0", // Set appropriate commission value
+        timestamp: new Date()
+      }).onConflictDoUpdate({
+        target: [affiliateStats.userId],
+        set: {
+          totalWager: entry.wagered.all_time.toString(),
+          timestamp: new Date()
+        }
+      });
+    }
+
+    // Fetch updated data from database
+    const dbResponse = await db.query.affiliateStats.findMany({
       orderBy: (affiliateStats, { desc }) => [desc(affiliateStats.totalWager)],
       offset: page * limit,
       limit,
@@ -180,7 +211,7 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
       }
     });
 
-    const formattedData = response.map(stat => ({
+    const formattedData = dbResponse.map(stat => ({
       uid: stat.userId.toString(),
       name: stat.user?.username || 'Unknown User',
       wagered: {
@@ -194,7 +225,7 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
     return {
       success: true,
       metadata: {
-        totalUsers: response.length,
+        totalUsers: dbResponse.length,
         lastUpdated: new Date().toISOString()
       },
       data: {
