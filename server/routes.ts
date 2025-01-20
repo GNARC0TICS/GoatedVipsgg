@@ -195,58 +195,6 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
     // Handle different response structures
     const responseData = apiData.data || apiData.results || apiData;
     if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
-      return {
-        success: false,
-        metadata: {
-          totalUsers: 0,
-          lastUpdated: new Date().toISOString()
-        },
-        data: []
-      };
-    }
-
-    // Sync data with database
-    const dataArray = Array.isArray(responseData) ? responseData : [responseData];
-    
-    for (const entry of dataArray) {
-      try {
-        // Create or update user
-        const [user] = await db
-          .insert(users)
-          .values({
-            username: entry.name,
-            email: `${entry.name.toLowerCase()}@placeholder.com`,
-            password: 'placeholder',
-            isAdmin: false
-          })
-          .onConflictDoUpdate({
-            target: users.username,
-            set: { lastLogin: new Date() }
-          })
-          .returning();
-
-        // Update affiliate stats
-        await db
-          .insert(affiliateStats)
-          .values({
-            userId: user.id,
-            totalWager: entry.wagered.all_time || 0,
-            commission: 0,
-            timestamp: new Date()
-          })
-          .onConflictDoUpdate({
-            target: [affiliateStats.userId],
-            set: { 
-              totalWager: entry.wagered.all_time || 0,
-              timestamp: new Date()
-            }
-          });
-      } catch (error) {
-        log(`Error syncing data for user ${entry.name}: ${error}`);
-      }
-    }
-
-    if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
       log('No data received from API');
       return {
         success: false,
