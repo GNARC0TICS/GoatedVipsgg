@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays, Search } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
+import { CircleDot } from 'lucide-react'; // Added import for CircleDot
 
 type WageredData = {
   today: number;
@@ -75,6 +76,16 @@ export function LeaderboardTable() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-heading text-white mb-2">Live Leaderboard</h2>
+          <p className="text-[#8A8B91] text-sm">Track top players and their wagering activity in real-time</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <CircleDot className="h-3 w-3 text-red-500 animate-pulse" />
+          <span className="text-[#8A8B91] text-sm">Live Updates</span>
+        </div>
+      </div>
       <div className="flex flex-col gap-4">
         <div className="flex gap-2 justify-center flex-wrap">
           {[
