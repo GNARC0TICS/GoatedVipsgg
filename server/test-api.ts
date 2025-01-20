@@ -1,5 +1,5 @@
 import { log } from "./vite";
-import { API_CONFIG } from "./routes";
+import { API_CONFIG } from "./config/api";
 
 async function analyzeLeaderboardAPI() {
   try {
