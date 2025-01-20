@@ -81,31 +81,23 @@ async function startServer() {
       serveStatic(app);
     }
 
-    // Start server with enhanced error handling
-    const BASE_PORT = 5000;
-    let currentPort = BASE_PORT;
-    const MAX_RETRIES = 5;
+    // Start server with retries
+    const port = 5000;
 
-    function tryListen(port: number, retryCount = 0) {
-      server.listen(port, "0.0.0.0")
-        .on("error", (err: NodeJS.ErrnoException) => {
-          if (err.code === "EADDRINUSE" && retryCount < MAX_RETRIES) {
-            log(`Port ${port} is in use, trying ${port + 1}...`);
-            tryListen(port + 1, retryCount + 1);
-          } else if (retryCount >= MAX_RETRIES) {
-            console.error(`Failed to find an available port after ${MAX_RETRIES} attempts`);
-            process.exit(1);
-          } else {
-            console.error("Failed to start server:", err);
-            process.exit(1);
-          }
-        })
-        .on("listening", () => {
-          log(`Server running on port ${port}`);
-        });
-    }
-
-    tryListen(currentPort);
+    server.listen(port, "0.0.0.0")
+      .on("error", (err: NodeJS.ErrnoException) => {
+        if (err.code === "EADDRINUSE") {
+          console.error(`Port ${port} is already in use. Attempting server restart...`);
+          // Force kill any existing process and try again after a delay
+          process.exit(1); // Replit will automatically restart the process
+        } else {
+          console.error("Failed to start server:", err);
+          process.exit(1);
+        }
+      })
+      .on("listening", () => {
+        log(`Server running on port ${port}`);
+      });
 
   } catch (error) {
     console.error("Failed to start application:", error);

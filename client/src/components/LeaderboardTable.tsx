@@ -1,8 +1,9 @@
 import { Table, TableHeader, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays, AlertCircle } from "lucide-react";
+import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays, AlertCircle, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +50,7 @@ export function LeaderboardTable() {
   const [usePolling, setUsePolling] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadedData, setLoadedData] = useState<LeaderboardEntry[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
@@ -84,10 +86,8 @@ export function LeaderboardTable() {
     const setupPolling = () => {
       if (!usePolling) return;
 
-      // Initial fetch
       fetchData();
 
-      // Setup polling interval
       pollInterval = setInterval(fetchData, POLLING_INTERVAL);
     };
 
@@ -150,14 +150,12 @@ export function LeaderboardTable() {
       };
     };
 
-    // Start with WebSocket connection
     if (!usePolling) {
       connectWebSocket();
     } else {
       setupPolling();
     }
 
-    // Cleanup function
     return () => {
       isSubscribed = false;
       if (ws) {
@@ -181,6 +179,13 @@ export function LeaderboardTable() {
         return <Trophy className="h-4 w-4" />;
     }
   };
+
+  const filterData = useCallback((data: LeaderboardEntry[]) => {
+    if (!searchQuery) return data;
+    return data.filter(entry =>
+      entry.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery]);
 
   if (isLoading) {
     return (
@@ -216,9 +221,10 @@ export function LeaderboardTable() {
   }
 
   const currentData = leaderboardData.data[timePeriod].data;
-  const totalPages = Math.ceil(currentData.length / ITEMS_PER_PAGE);
-  const displayData = loadedData.length > 0 ? loadedData : currentData.slice(0, ITEMS_PER_PAGE);
-  
+  const filteredData = filterData(currentData);
+  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+  const displayData = filterData(loadedData.length > 0 ? loadedData : currentData.slice(0, ITEMS_PER_PAGE));
+
   const loadMoreData = async () => {
     if (isLoadingMore) return;
     setIsLoadingMore(true);
@@ -257,11 +263,21 @@ export function LeaderboardTable() {
           ))}
         </div>
 
-        <div className="text-center text-sm text-muted-foreground">
-          Total Users: {leaderboardData.metadata?.totalUsers.toLocaleString()} | 
-          Last Updated: {new Date(leaderboardData.metadata?.lastUpdated || Date.now()).toLocaleTimeString()}
+        <div className="flex items-center gap-2 max-w-md mx-auto w-full">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search by username..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-background border-muted-foreground/20"
+          />
         </div>
-        <Button onClick={() => fetchData()}>Refresh</Button> {/* Added refresh button */}
+
+        <div className="text-center text-sm text-muted-foreground">
+          Total Users: {leaderboardData?.metadata?.totalUsers.toLocaleString()} |
+          Last Updated: {new Date(leaderboardData?.metadata?.lastUpdated || Date.now()).toLocaleTimeString()}
+        </div>
       </div>
 
       <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
@@ -302,10 +318,10 @@ export function LeaderboardTable() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-sans text-foreground py-4 md:py-4 text-sm md:text-base">
-                    ${entry.wagered[timePeriod === 'weekly' ? 'this_week' : 
-                              timePeriod === 'monthly' ? 'this_month' : 
-                              timePeriod === 'today' ? 'today' :
-                              'all_time'].toLocaleString()}
+                    ${entry.wagered[timePeriod === 'weekly' ? 'this_week' :
+                        timePeriod === 'monthly' ? 'this_month' :
+                        timePeriod === 'today' ? 'today' :
+                        'all_time'].toLocaleString()}
                   </TableCell>
                 </motion.tr>
               ))}
@@ -315,7 +331,7 @@ export function LeaderboardTable() {
 
         <div className="flex items-center justify-between px-4 py-4 border-t">
           <div className="text-sm text-muted-foreground">
-            Showing {currentPage * ITEMS_PER_PAGE + 1} to {Math.min((currentPage + 1) * ITEMS_PER_PAGE, currentData.length)} of {currentData.length}
+            Showing {currentPage * ITEMS_PER_PAGE + 1} to {Math.min((currentPage + 1) * ITEMS_PER_PAGE, filteredData.length)} of {filteredData.length}
           </div>
           <div className="flex gap-2">
             <Button
