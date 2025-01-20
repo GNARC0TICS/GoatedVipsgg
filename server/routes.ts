@@ -176,26 +176,33 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
       offset: page * limit,
       limit,
       with: {
-        user: {
-          columns: {
-            username: true
-          }
-        }
+        user: true
       }
     });
 
+    const formattedData = response.map(stat => ({
+      uid: stat.userId.toString(),
+      name: stat.user?.username || 'Unknown User',
+      wagered: {
+        today: parseFloat(stat.totalWager.toString()),
+        this_week: parseFloat(stat.totalWager.toString()),
+        this_month: parseFloat(stat.totalWager.toString()),
+        all_time: parseFloat(stat.totalWager.toString())
+      }
+    }));
+
     return {
       success: true,
-      data: response.map(stat => ({
-        uid: stat.userId.toString(),
-        name: stat.user.username,
-        wagered: {
-          today: parseFloat(stat.totalWager.toString()),
-          this_week: parseFloat(stat.totalWager.toString()),
-          this_month: parseFloat(stat.totalWager.toString()),
-          all_time: parseFloat(stat.totalWager.toString())
-        }
-      }))
+      metadata: {
+        totalUsers: response.length,
+        lastUpdated: new Date().toISOString()
+      },
+      data: {
+        today: { data: formattedData },
+        all_time: { data: formattedData },
+        monthly: { data: formattedData },
+        weekly: { data: formattedData }
+      }
     };
   } catch (error) {
     log(`Error in fetchLeaderboardData: ${error}`);
