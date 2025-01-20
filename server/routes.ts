@@ -226,6 +226,14 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
       }
     }));
 
+    // Sort data for each time period
+    const sortedData = {
+      today: transformedData.sort((a, b) => (b.wagered.today || 0) - (a.wagered.today || 0)),
+      weekly: transformedData.sort((a, b) => (b.wagered.this_week || 0) - (a.wagered.this_week || 0)),
+      monthly: transformedData.sort((a, b) => (b.wagered.this_month || 0) - (a.wagered.this_month || 0)),
+      all_time: transformedData.sort((a, b) => (b.wagered.all_time || 0) - (a.wagered.all_time || 0))
+    };
+
     return {
       success: true,
       metadata: {
@@ -233,10 +241,10 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
         lastUpdated: new Date().toISOString()
       },
       data: {
-        today: { data: transformedData },
-        all_time: { data: transformedData },
-        monthly: { data: transformedData },
-        weekly: { data: transformedData }
+        today: { data: sortedData.today },
+        weekly: { data: sortedData.weekly },
+        monthly: { data: sortedData.monthly },
+        all_time: { data: sortedData.all_time }
       }
     };
   } catch (error) {

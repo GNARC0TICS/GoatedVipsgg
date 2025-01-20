@@ -78,14 +78,17 @@ export function useLeaderboard(timePeriod: TimePeriod = 'today', page: number = 
                    timePeriod === 'monthly' ? 'monthly' :
                    timePeriod === 'today' ? 'today' : 'all_time';
 
-  const sortedData = data?.data[periodKey].data.sort((a, b) => {
-    const aValue = a.wagered[periodKey === 'weekly' ? 'this_week' : 
-                          periodKey === 'monthly' ? 'this_month' : 
-                          periodKey === 'today' ? 'today' : 'all_time'] || 0;
-    const bValue = b.wagered[periodKey === 'weekly' ? 'this_week' : 
-                          periodKey === 'monthly' ? 'this_month' : 
-                          periodKey === 'today' ? 'today' : 'all_time'] || 0;
-    return bValue - aValue;
+  const sortedData = data?.data[periodKey]?.data?.sort((a, b) => {
+    const getWagerValue = (entry: LeaderboardEntry) => {
+      if (!entry?.wagered) return 0;
+      switch (periodKey) {
+        case 'weekly': return entry.wagered.this_week;
+        case 'monthly': return entry.wagered.this_month;
+        case 'today': return entry.wagered.today;
+        default: return entry.wagered.all_time;
+      }
+    };
+    return (getWagerValue(b) || 0) - (getWagerValue(a) || 0);
   }) || [];
 
   return {
