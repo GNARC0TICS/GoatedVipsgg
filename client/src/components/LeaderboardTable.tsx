@@ -177,12 +177,9 @@ export function LeaderboardTable() {
                   <TableCell className="text-right font-sans">
                     <div className="flex items-center justify-end gap-2">
                       ${getWagerAmount(entry).toLocaleString()}
-                      {entry.wagered.today > 100 && (
-                        <div className="text-green-500 flex items-center gap-1">
-                          <div className="animate-pulse">
-                            <TrendingUp className="h-4 w-4" />
-                          </div>
-                          <span className="text-xs">Live</span>
+                      {entry.isWagering && (
+                        <div className="text-green-500">
+                          <TrendingUp className="h-4 w-4 animate-pulse" />
                         </div>
                       )}
                     </div>

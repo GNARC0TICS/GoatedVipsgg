@@ -78,7 +78,24 @@ export function useLeaderboard(timePeriod: TimePeriod = 'today', page: number = 
                    timePeriod === 'monthly' ? 'monthly' :
                    timePeriod === 'today' ? 'today' : 'all_time';
 
-  const sortedData = data?.data[periodKey]?.data?.sort((a, b) => {
+  const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
+  
+  // Compare current and previous wager amounts
+  const sortedData = data?.data[periodKey]?.data?.map(entry => {
+    const prevEntry = previousData.find(p => p.uid === entry.uid);
+    const currentWager = entry.wagered[timePeriod === 'weekly' ? 'this_week' : 
+                                    timePeriod === 'monthly' ? 'this_month' : 
+                                    timePeriod === 'today' ? 'today' : 'all_time'] || 0;
+    const previousWager = prevEntry ? 
+                         prevEntry.wagered[timePeriod === 'weekly' ? 'this_week' : 
+                                         timePeriod === 'monthly' ? 'this_month' : 
+                                         timePeriod === 'today' ? 'today' : 'all_time'] || 0 : 0;
+    
+    return {
+      ...entry,
+      isWagering: currentWager > previousWager
+    };
+  }).sort((a, b) => {
     const getWagerValue = (entry: LeaderboardEntry) => {
       if (!entry?.wagered) return 0;
       switch (periodKey) {
@@ -90,6 +107,13 @@ export function useLeaderboard(timePeriod: TimePeriod = 'today', page: number = 
     };
     return (getWagerValue(b) || 0) - (getWagerValue(a) || 0);
   }) || [];
+
+  // Update previous data after successful fetch
+  useEffect(() => {
+    if (data?.data[periodKey]?.data) {
+      setPreviousData(data.data[periodKey].data);
+    }
+  }, [data]);
 
   return {
     data: sortedData,
