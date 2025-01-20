@@ -175,10 +175,15 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
     // Fetch data from external API
     const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`, {
       headers: {
-        'Authorization': `Bearer ${API_CONFIG.token}`,
+        'Authorization': `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
         'Content-Type': 'application/json'
       }
     });
+
+    if (response.status === 401) {
+      log('API Authentication failed - check API token');
+      throw new Error('API Authentication failed');
+    }
 
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status}`);
