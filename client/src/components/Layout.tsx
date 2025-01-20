@@ -76,9 +76,8 @@ export function Layout({ children }: LayoutProps) {
                 <NavLink href="/vip-program" label="VIP PROGRAM" />
                 <NavLink href="/promotions" label="PROMOTIONS" />
                 <NavLink 
-                  href="https://t.me/goatedgroup" 
+                  href="/telegram" 
                   label="TELEGRAM" 
-                  external={true}
                   tooltip="Join our Telegram group"
                 />
                 {user?.isAdmin && (
@@ -175,9 +174,9 @@ export function Layout({ children }: LayoutProps) {
   );
 }
 
-function NavLink({ href, label, external, tooltip }: { href: string; label: string; external?: boolean; tooltip?: string }) {
+function NavLink({ href, label, tooltip }: { href: string; label: string; tooltip?: string }) {
   const [location] = useLocation();
-  const isActive = !external && location === href;
+  const isActive = location === href;
 
   const linkContent = (
     <span className={`relative font-heading cursor-pointer group ${
@@ -190,22 +189,19 @@ function NavLink({ href, label, external, tooltip }: { href: string; label: stri
     </span>
   );
 
-  if (external) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <a href={href} target="_blank" rel="noopener noreferrer">
-            {linkContent}
-          </a>
-        </TooltipTrigger>
-        {tooltip && (
-          <TooltipContent>
-            <p>{tooltip}</p>
-          </TooltipContent>
-        )}
-      </Tooltip>
-    );
-  }
 
-  return <Link href={href}>{linkContent}</Link>;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Link href={href}>
+          {linkContent}
+        </Link>
+      </TooltipTrigger>
+      {tooltip && (
+        <TooltipContent>
+          <p>{tooltip}</p>
+        </TooltipContent>
+      )}
+    </Tooltip>
+  );
 }
