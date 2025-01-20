@@ -1,5 +1,9 @@
 
 export const API_CONFIG = {
-  baseUrl: process.env.API_BASE_URL || 'https://europe-west2-g3casino.cloudfunctions.net/user',
-  token: process.env.API_TOKEN || ''
+  baseUrl: 'https://api.goated.gg',  // Replace with your actual API base URL
+  token: process.env.API_TOKEN || '',
+  endpoints: {
+    leaderboard: '/affiliate/referral-leaderboard',
+    health: '/health'
+  }
 };
