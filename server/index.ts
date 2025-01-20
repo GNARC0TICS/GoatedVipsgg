@@ -16,6 +16,11 @@ async function setupMiddleware() {
   app.use(express.urlencoded({ extended: false }));
   app.use(requestLogger);
   app.use(errorHandler);
+
+  app.get('/api/health', (_req, res) => {
+    res.json({ status: 'healthy' });
+  });
+
 }
 
 function requestLogger(req: express.Request, res: express.Response, next: express.NextFunction) {
