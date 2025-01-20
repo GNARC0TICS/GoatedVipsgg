@@ -10,6 +10,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import VipTransfer from "@/pages/VipTransfer";
+import ProvablyFair from "@/pages/ProvablyFair";
 import WagerRaces from "@/pages/WagerRaces";
 import BonusCodes from "@/pages/bonus-codes";
 import NotificationPreferences from "@/pages/notification-preferences";
