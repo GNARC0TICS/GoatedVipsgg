@@ -63,12 +63,12 @@ async function checkDatabase() {
 
 async function cleanupPort() {
   try {
-    // Kill any existing node processes
-    await execAsync('pkill -f "node"');
-    // Wait for ports to be released
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Find and kill process using port 5000
+    await execAsync(`fuser -k ${PORT}/tcp`);
+    // Wait for port to be released
+    await new Promise(resolve => setTimeout(resolve, 2000));
   } catch (error) {
-    // No processes to kill, we can proceed
+    // No process to kill, we can proceed
   }
 }
 
