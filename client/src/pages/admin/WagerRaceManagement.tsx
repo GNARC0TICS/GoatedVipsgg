@@ -13,6 +13,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  PlayIcon,
+  PauseIcon,
   TrashIcon,
   PencilIcon,
   PlusCircle,
@@ -24,59 +26,33 @@ import {
   X,
   AlertCircle
 } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
-interface WagerRaceBase {
-  title: string;
-  type: "weekly" | "monthly" | "weekend";
-  prizePool: number;
-  minWager: number;
-  startDate: string;
-  endDate: string;
-  prizeDistribution: Record<string, number>;
-}
-
-interface WagerRaceDB extends WagerRaceBase {
-  id: number;
-  status: "upcoming" | "live" | "completed";
-  createdBy: number;
-  createdAt: string;
-  updatedAt: string;
-}
 
 const wagerRaceSchema = z.object({
   title: z.string().min(1, "Title is required"),
   type: z.enum(["weekly", "monthly", "weekend"]),
+  status: z.enum(["upcoming", "live", "completed"]),
   prizePool: z.number().min(1, "Prize pool must be greater than 0"),
   minWager: z.number().min(1, "Minimum wager must be greater than 0"),
   startDate: z.string(),
   endDate: z.string(),
   prizeDistribution: z.record(z.string(), z.number()),
+  rules: z.string().optional(),
+  description: z.string().optional(),
 });
-
-type WagerRace = z.infer<typeof wagerRaceSchema>;
 
 export default function WagerRaceManagement() {
   const { toast } = useToast();
-  const [editingRace, setEditingRace] = useState<WagerRaceDB | null>(null);
+  const [editingRace, setEditingRace] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const queryClient = useQueryClient();
 
-  const form = useForm<WagerRace>({
+  const form = useForm({
     resolver: zodResolver(wagerRaceSchema),
     defaultValues: {
       title: "",
       type: "weekly",
+      status: "upcoming",
       prizePool: 200,
       minWager: 100,
       startDate: new Date().toISOString().split('T')[0],
@@ -93,15 +69,18 @@ export default function WagerRaceManagement() {
         "9": 2.5,
         "10": 2.5,
       },
+      rules: "",
+      description: "",
     },
   });
 
-  const { data: races = [], isLoading } = useQuery<WagerRaceDB[]>({
+  const { data: races = [], isLoading } = useQuery({
     queryKey: ["/api/admin/wager-races"],
+    refetchInterval: 5000, // Poll every 5 seconds
   });
 
   const createRace = useMutation({
-    mutationFn: async (data: WagerRace) => {
+    mutationFn: async (data) => {
       const response = await fetch("/api/admin/wager-races", {
         method: editingRace ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -124,8 +103,28 @@ export default function WagerRaceManagement() {
     },
   });
 
+  const updateRaceStatus = useMutation({
+    mutationFn: async ({ id, status }) => {
+      const response = await fetch(`/api/admin/wager-races/${id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error(await response.text());
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/wager-races"] });
+      toast({
+        title: "Status Updated",
+        description: "Race status has been updated successfully.",
+      });
+    },
+  });
+
   const deleteRace = useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id) => {
       const response = await fetch(`/api/admin/wager-races/${id}`, {
         method: "DELETE",
         credentials: "include",
@@ -141,11 +140,16 @@ export default function WagerRaceManagement() {
     },
   });
 
-  const onSubmit = (data: WagerRace) => {
+  const handleStatusToggle = (race) => {
+    const newStatus = race.status === "live" ? "completed" : "live";
+    updateRaceStatus.mutate({ id: race.id, status: newStatus });
+  };
+
+  const onSubmit = (data) => {
     createRace.mutate(data);
   };
 
-  const formatDate = (date: string) => {
+  const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -155,7 +159,7 @@ export default function WagerRaceManagement() {
     });
   };
 
-  const calculateTimeLeft = (startDate: string, endDate: string) => {
+  const calculateTimeLeft = (startDate, endDate) => {
     const now = new Date();
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -169,7 +173,7 @@ export default function WagerRaceManagement() {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status) => {
     switch (status) {
       case 'upcoming':
         return 'text-blue-400';
@@ -218,7 +222,7 @@ export default function WagerRaceManagement() {
                 <span className="text-sm text-muted-foreground">Total Participants</span>
               </div>
               <p className="text-2xl font-bold">
-                428
+                {races.filter(r => r.status === 'live').length * 10}+
               </p>
             </CardContent>
           </Card>
@@ -309,7 +313,31 @@ export default function WagerRaceManagement() {
                         )}
                       />
                     </div>
-
+                    <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Race Status</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select race status" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="upcoming">Upcoming</SelectItem>
+                                <SelectItem value="live">Live</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     {/* Prize Configuration */}
                     <div className="grid md:grid-cols-2 gap-4">
                       <FormField
@@ -415,6 +443,33 @@ export default function WagerRaceManagement() {
                         Remaining percentage will be distributed among positions 4-10.
                       </div>
                     </div>
+                    <FormField
+                      control={form.control}
+                      name="rules"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Rules</FormLabel>
+                          <FormControl>
+                            <textarea {...field} className="w-full h-32 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <textarea {...field} className="w-full h-32 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
 
                     <div className="flex justify-end gap-2">
                       <Button
@@ -451,73 +506,68 @@ export default function WagerRaceManagement() {
             transition={{ delay: 0.2 }}
             className="grid gap-4"
           >
-            <h2 className="text-xl md:text-2xl font-heading font-bold text-white">Active Races</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               {races.map((race) => (
                 <Card key={race.id} className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31] hover:border-[#D7FF00]/50 transition-colors">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg md:text-xl line-clamp-1">{race.title}</CardTitle>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          <span>{calculateTimeLeft(race.startDate, race.endDate)}</span>
-                        </div>
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-lg font-bold mb-1">{race.title}</h3>
+                        <p className="text-sm text-gray-400">{race.type}</p>
                       </div>
                       <Button
-                        size="icon"
                         variant="ghost"
-                        className="shrink-0"
-                        onClick={() => setEditingRace(race)}
+                        size="icon"
+                        onClick={() => handleStatusToggle(race)}
+                        className={race.status === 'live' ? 'text-green-500' : 'text-gray-500'}
                       >
-                        <PencilIcon className="h-4 w-4" />
+                        {race.status === 'live' ? <PauseIcon /> : <PlayIcon />}
                       </Button>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Prize Pool</span>
-                        <span className="font-medium">${race.prizePool.toLocaleString()}</span>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Prize Pool</span>
+                        <span>${race.prizePool}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Min Wager</span>
-                        <span className="font-medium">${race.minWager.toLocaleString()}</span>
+                      <div className="flex justify-between text-sm">
+                        <span>Min Wager</span>
+                        <span>${race.minWager}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Status</span>
-                        <span className={`font-medium ${getStatusColor(race.status)}`}>
+                      <div className="flex justify-between text-sm">
+                        <span>Status</span>
+                        <span className={`
+                          ${race.status === 'live' ? 'text-green-500' : ''}
+                          ${race.status === 'upcoming' ? 'text-blue-500' : ''}
+                          ${race.status === 'completed' ? 'text-gray-500' : ''}
+                        `}>
                           {race.status.charAt(0).toUpperCase() + race.status.slice(1)}
                         </span>
                       </div>
-                      <div className="pt-2 flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="flex items-center gap-1"
-                          onClick={() => {
-                            const newRace = {
-                              ...race,
-                              title: `${race.title} (Copy)`,
-                              startDate: new Date().toISOString(),
-                            };
-                            form.reset(newRace);
-                            setShowForm(true);
-                          }}
-                        >
-                          <Copy className="h-4 w-4" />
-                          <span className="hidden sm:inline">Duplicate</span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="flex items-center gap-1 text-destructive"
-                          onClick={() => setDeleteConfirm(race.id)}
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                          <span className="hidden sm:inline">Delete</span>
-                        </Button>
-                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 mt-4">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          form.reset(race);
+                          setEditingRace(race);
+                          setShowForm(true);
+                        }}
+                      >
+                        <PencilIcon className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-500"
+                        onClick={() => setDeleteConfirm(race.id)}
+                      >
+                        <TrashIcon className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

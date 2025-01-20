@@ -127,12 +127,45 @@ async function handleCreateWagerRace(req: any, res: any) {
         createdBy: req.user!.id
       })
       .returning();
+    
+    // Broadcast update to all connected clients
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type: 'RACE_UPDATE', data: race[0] }));
+      }
+    });
+    
     res.json(race[0]);
   } catch (error) {
     log(`Error creating wager race: ${error}`);
     res.status(500).json({ error: "Failed to create wager race" });
   }
 }
+
+app.put("/api/admin/wager-races/:id/status", requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const race = await db
+      .update(wagerRaces)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(wagerRaces.id, parseInt(id)))
+      .returning();
+    
+    // Broadcast update to all connected clients
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type: 'RACE_STATUS_UPDATE', data: race[0] }));
+      }
+    });
+    
+    res.json(race[0]);
+  } catch (error) {
+    log(`Error updating race status: ${error}`);
+    res.status(500).json({ error: "Failed to update race status" });
+  }
+});
 
 async function handleAffiliateStats(req: any, res: any) {
   try {
