@@ -185,44 +185,20 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
     }
 
     const apiData = await response.json();
-    
-    // Ensure data exists and is in the correct format
-    if (apiData && apiData.data && Array.isArray(apiData.data.today?.data)) {
-      // Update database with new data
-      for (const entry of apiData.data.today.data) {
-        await db.insert(affiliateStats).values({
-          userId: parseInt(entry.uid),
-          totalWager: entry.wagered.all_time.toString(),
-          commission: "0", // Set appropriate commission value
-          timestamp: new Date()
-        }).onConflictDoUpdate({
-          target: [affiliateStats.userId],
-          set: {
-            totalWager: entry.wagered.all_time.toString(),
-            timestamp: new Date()
-          }
-        });
-      }
-    }
 
-    // Fetch updated data from database
-    const dbResponse = await db.query.affiliateStats.findMany({
-      orderBy: (affiliateStats, { desc }) => [desc(affiliateStats.totalWager)],
-      offset: page * limit,
-      limit,
-      with: {
-        user: true
-      }
-    });
-
-    // Return the API data directly
+    // Return the API data with the expected structure
     return {
       success: true,
       metadata: {
-        totalUsers: apiData.data.today.data.length,
+        totalUsers: apiData.data?.length || 0,
         lastUpdated: new Date().toISOString()
       },
-      data: apiData.data
+      data: {
+        today: { data: apiData.data || [] },
+        all_time: { data: apiData.data || [] },
+        monthly: { data: apiData.data || [] },
+        weekly: { data: apiData.data || [] }
+      }
     };
   } catch (error) {
     log(`Error in fetchLeaderboardData: ${error}`);
