@@ -120,15 +120,6 @@ export function LeaderboardTable() {
             />
           </div>
         </div>
-
-        <div className="text-center text-sm text-[#8A8B91]">
-          {metadata && (
-            <>
-              Total Players: {metadata.totalUsers.toLocaleString()} |
-              Last Updated: {new Date(metadata.lastUpdated).toLocaleTimeString()}
-            </>
-          )}
-        </div>
       </div>
 
       <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm">
@@ -200,7 +191,12 @@ export function LeaderboardTable() {
         </Table>
         <div className="flex items-center justify-between px-4 py-4 border-t border-[#2A2B31]">
           <div className="text-sm text-[#8A8B91]">
-            Showing {currentPage * ITEMS_PER_PAGE + 1} to {Math.min((currentPage + 1) * ITEMS_PER_PAGE, filteredData.length)} of {filteredData.length}
+            <div>Showing {currentPage * ITEMS_PER_PAGE + 1} to {Math.min((currentPage + 1) * ITEMS_PER_PAGE, filteredData.length)} of {filteredData.length}</div>
+            {metadata && (
+              <div className="mt-1">
+                Total Players: {metadata.totalUsers.toLocaleString()} | Last Updated: {new Date(metadata.lastUpdated).toLocaleTimeString()}
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <Button
