@@ -264,19 +264,25 @@ export function LeaderboardTable() {
         </div>
 
         <div className="flex items-center gap-2 max-w-md mx-auto w-full">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search by username..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-background border-muted-foreground/20"
-          />
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8B91]" />
+            <Input
+              type="text"
+              placeholder="Search players..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-[#1A1B21]/50 border-[#2A2B31] text-white placeholder:text-[#8A8B91] hover:border-[#D7FF00]/50 focus:border-[#D7FF00] focus:ring-[#D7FF00]"
+            />
+          </div>
         </div>
 
-        <div className="text-center text-sm text-muted-foreground">
-          Total Users: {leaderboardData?.metadata?.totalUsers.toLocaleString()} |
-          Last Updated: {new Date(leaderboardData?.metadata?.lastUpdated || Date.now()).toLocaleTimeString()}
+        <div className="text-center text-sm text-[#8A8B91]">
+          {leaderboardData?.metadata?.totalUsers ? (
+            <>
+              Total Players: {leaderboardData.metadata.totalUsers.toLocaleString()} |
+              Last Updated: {new Date(leaderboardData.metadata.lastUpdated || Date.now()).toLocaleTimeString()}
+            </>
+          ) : null}
         </div>
       </div>
 
