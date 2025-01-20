@@ -63,16 +63,12 @@ async function checkDatabase() {
 
 async function cleanupPort() {
   try {
-    const { stdout } = await execAsync(`lsof -t -i:${PORT}`);
-    if (stdout) {
-      const pid = parseInt(stdout.trim());
-      if (pid !== process.pid) {
-        await execAsync(`kill -9 ${pid}`);
-        log(`Killed existing process on port ${PORT}`);
-      }
-    }
+    // Kill any existing node processes
+    await execAsync('pkill -f "node"');
+    // Wait for ports to be released
+    await new Promise(resolve => setTimeout(resolve, 1000));
   } catch (error) {
-    // No process running on port, we can proceed
+    // No processes to kill, we can proceed
   }
 }
 
