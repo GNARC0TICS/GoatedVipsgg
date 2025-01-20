@@ -182,7 +182,7 @@ export function LeaderboardTable() {
               size="sm"
               onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
               disabled={currentPage === 0}
-              className="border-[#2A2B31] hover:border-[#D7FF00]/50"
+              className="border-[#2A2B31] hover:border-[#D7FF00]/50 transition-all duration-300 hover:shadow-md hover:shadow-[#D7FF00]/20 active:scale-95"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -191,7 +191,7 @@ export function LeaderboardTable() {
               size="sm"
               onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
               disabled={currentPage === totalPages - 1}
-              className="border-[#2A2B31] hover:border-[#D7FF00]/50"
+              className="border-[#2A2B31] hover:border-[#D7FF00]/50 transition-all duration-300 hover:shadow-md hover:shadow-[#D7FF00]/20 active:scale-95"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
