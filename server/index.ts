@@ -93,7 +93,7 @@ async function startServer() {
         process.exit(1);
       })
       .on("listening", () => {
-        log(`Server running on port ${PORT}`);
+        log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
       });
 
   } catch (error) {
