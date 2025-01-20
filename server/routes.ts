@@ -187,17 +187,29 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
     const apiData = await response.json();
 
     // Return the API data with the expected structure
+    // Transform the API data into the expected structure
+    const transformedData = apiData.data.map(entry => ({
+      uid: entry.uid || '',
+      name: entry.name || '',
+      wagered: {
+        today: entry.wagered?.today || 0,
+        this_week: entry.wagered?.this_week || 0,
+        this_month: entry.wagered?.this_month || 0,
+        all_time: entry.wagered?.all_time || 0
+      }
+    }));
+
     return {
       success: true,
       metadata: {
-        totalUsers: apiData.data?.length || 0,
+        totalUsers: transformedData.length,
         lastUpdated: new Date().toISOString()
       },
       data: {
-        today: { data: apiData.data || [] },
-        all_time: { data: apiData.data || [] },
-        monthly: { data: apiData.data || [] },
-        weekly: { data: apiData.data || [] }
+        today: { data: transformedData },
+        all_time: { data: transformedData },
+        monthly: { data: transformedData },
+        weekly: { data: transformedData }
       }
     };
   } catch (error) {
