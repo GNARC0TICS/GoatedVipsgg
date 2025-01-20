@@ -103,9 +103,11 @@ export default function Home() {
                 All in-house games use a provably fair algorithm to ensure complete transparency and fairness.
                 Each game outcome can be independently verified.
               </p>
-              <Button variant="link" className="font-heading text-[#D7FF00] p-0 flex items-center gap-2 hover:text-[#D7FF00]/80">
-                Learn More <ArrowRight className="h-4 w-4" />
-              </Button>
+              <Link href="/provably-fair">
+                <Button variant="link" className="font-heading text-[#D7FF00] p-0 flex items-center gap-2 hover:text-[#D7FF00]/80">
+                  Learn More <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
             </div>
           </div>
 

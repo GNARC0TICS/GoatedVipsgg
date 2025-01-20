@@ -87,6 +87,7 @@ function Router() {
                 )}
               </Route>
               <Route path="/help" component={Help} />
+              <Route path="/provably-fair" component={ProvablyFair} />
               <Route component={NotFound} />
             </Switch>
           </ErrorBoundary>
