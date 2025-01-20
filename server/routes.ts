@@ -190,49 +190,6 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
     }
 
     const apiData = await response.json();
-    const responseData = apiData.data || apiData.results || apiData;
-    const dataArray = Array.isArray(responseData) ? responseData : [responseData];
-
-    // Sync data with database
-    for (const entry of dataArray) {
-      // Find or create user
-      const [user] = await db
-        .insert(users)
-        .values({
-          username: entry.name,
-          email: `${entry.name.toLowerCase()}@placeholder.com`,
-          password: 'placeholder',
-          isAdmin: false
-        })
-        .onConflictDoUpdate({
-          target: users.username,
-          set: { lastLogin: new Date() }
-        })
-        .returning();
-
-      // Update affiliate stats
-      await db
-        .insert(affiliateStats)
-        .values({
-          userId: user.id,
-          totalWager: entry.wagered.all_time || 0,
-          commission: 0, // Set commission calculation logic as needed
-          timestamp: new Date()
-        })
-        .onConflictDoUpdate({
-          target: [affiliateStats.userId],
-          set: { 
-            totalWager: entry.wagered.all_time || 0,
-            timestamp: new Date()
-          }
-        });
-    }
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
-    }
-
-    const apiData = await response.json();
     log('API Response:', JSON.stringify(apiData, null, 2));
 
     // Handle different response structures
