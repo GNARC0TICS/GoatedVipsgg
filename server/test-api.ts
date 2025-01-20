@@ -23,7 +23,7 @@ async function analyzeLeaderboardAPI() {
     console.log('API Health Check:', healthCheck.status, healthCheck.statusText);
 
     // Make leaderboard request
-    const response = await fetch(`${API_CONFIG.baseUrl}/referral-leaderboard`, {
+    const response = await fetch(`${API_CONFIG.baseUrl}/api/affiliate/stats`, {
       headers: {
         'Authorization': `Bearer ${API_CONFIG.token}`,
         'Content-Type': 'application/json'
