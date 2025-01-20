@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays, Search } from "lucide-react";
 import { useState, useMemo } from "react";
-import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
+import { useLeaderboard, type TimePeriod } from "../hooks/use-leaderboard";
 
 type WageredData = {
   today: number;
