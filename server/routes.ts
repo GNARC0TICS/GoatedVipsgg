@@ -173,7 +173,7 @@ export function registerRoutes(app: Express): Server {
 async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
   try {
     // Fetch data from external API
-    const response = await fetch(`${API_CONFIG.baseUrl}/api/affiliate/stats`, {
+    const response = await fetch(`${API_CONFIG.baseUrl}/affiliate/referral-leaderboard`, {
       headers: {
         'Authorization': `Bearer ${API_CONFIG.token}`,
         'Content-Type': 'application/json'
