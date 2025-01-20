@@ -74,6 +74,11 @@ function Router() {
                   <WagerRaceManagement />
                 </AdminRoute>
               </Route>
+              <Route path="/admin/users">
+                <AdminRoute>
+                  <UserManagement />
+                </AdminRoute>
+              </Route>
               <Route path="/user/:id">
                 {(params) => (
                   <PageTransition>
