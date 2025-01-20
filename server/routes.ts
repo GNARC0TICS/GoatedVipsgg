@@ -101,39 +101,10 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/affiliate/stats", async (req, res) => {
     try {
       await rateLimiter.consume(req.ip || "unknown");
-      
-      const stats = await db.query.affiliateStats.findMany({
-        with: {
-          user: true
-        },
-        orderBy: (stats, { desc }) => [desc(stats.totalWager)]
-      });
-
-      const transformedData = stats.map(stat => ({
-        uid: stat.userId.toString(),
-        name: stat.user.username,
-        wagered: {
-          today: 0, // You can add daily tracking if needed
-          this_week: 0, // You can add weekly tracking if needed
-          this_month: 0, // You can add monthly tracking if needed
-          all_time: Number(stat.totalWager)
-        }
-      }));
-
-      res.json({
-        success: true,
-        metadata: {
-          totalUsers: transformedData.length,
-          lastUpdated: new Date().toISOString()
-        },
-        data: {
-          today: { data: transformedData },
-          weekly: { data: transformedData },
-          monthly: { data: transformedData },
-          all_time: { data: transformedData }
-        }
-      });
-      
+      const page = parseInt(req.query.page as string) || 0;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const data = await fetchLeaderboardData(page, limit);
+      res.json(data);
     } catch (error: any) {
       if (error.consumedPoints) {
         res.status(429).json({ error: "Too many requests" });
