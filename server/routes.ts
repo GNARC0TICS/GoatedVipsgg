@@ -215,29 +215,14 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
       }
     });
 
-    const formattedData = dbResponse.map(stat => ({
-      uid: stat.userId.toString(),
-      name: stat.user?.username || 'Unknown User',
-      wagered: {
-        today: parseFloat(stat.totalWager.toString()),
-        this_week: parseFloat(stat.totalWager.toString()),
-        this_month: parseFloat(stat.totalWager.toString()),
-        all_time: parseFloat(stat.totalWager.toString())
-      }
-    }));
-
+    // Return the API data directly
     return {
       success: true,
       metadata: {
-        totalUsers: dbResponse.length,
+        totalUsers: apiData.data.today.data.length,
         lastUpdated: new Date().toISOString()
       },
-      data: {
-        today: { data: formattedData },
-        all_time: { data: formattedData },
-        monthly: { data: formattedData },
-        weekly: { data: formattedData }
-      }
+      data: apiData.data
     };
   } catch (error) {
     log(`Error in fetchLeaderboardData: ${error}`);
