@@ -1,103 +1,103 @@
-import express, { type Request, Response, NextFunction } from "express";
+
+import express from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
-import { exec } from "child_process";
 import { promisify } from "util";
+import { exec } from "child_process";
 
 const execAsync = promisify(exec);
 const app = express();
+const PORT = 5000;
 
-// Basic middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+async function setupMiddleware() {
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
+  app.use(requestLogger);
+  app.use(errorHandler);
+}
 
-// Request logging middleware with enhanced error tracking
-app.use((req, res, next) => {
+function requestLogger(req: express.Request, res: express.Response, next: express.NextFunction) {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  let capturedResponse: Record<string, any> | undefined;
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
+  const originalJson = res.json;
+  res.json = function(body, ...args) {
+    capturedResponse = body;
+    return originalJson.apply(res, [body, ...args]);
   };
 
   res.on("finish", () => {
-    const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      const duration = Date.now() - start;
+      let logMessage = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (capturedResponse) {
+        logMessage += ` :: ${JSON.stringify(capturedResponse)}`;
       }
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-      log(logLine);
+      log(logMessage.slice(0, 79) + (logMessage.length > 79 ? "…" : ""));
     }
   });
 
   next();
-});
+}
 
-// Error handling middleware with detailed logging
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+function errorHandler(err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) {
   console.error("Server error:", err);
   res.status(500).json({ error: err.message || "Internal Server Error" });
-});
+}
 
-// Application startup with enhanced error handling
+async function checkDatabase() {
+  try {
+    await db.execute(sql`SELECT 1`);
+    log("Database connection successful");
+  } catch (error: any) {
+    if (error.message?.includes('endpoint is disabled')) {
+      log("Database endpoint is disabled. Please enable the database in the Replit Database tab.");
+    } else {
+      throw error;
+    }
+  }
+}
+
+async function cleanupPort() {
+  try {
+    const { stdout } = await execAsync(`lsof -t -i:${PORT}`);
+    if (stdout) {
+      const pid = parseInt(stdout.trim());
+      if (pid !== process.pid) {
+        await execAsync(`kill -9 ${pid}`);
+        log(`Killed existing process on port ${PORT}`);
+      }
+    }
+  } catch (error) {
+    // No process running on port, we can proceed
+  }
+}
+
 async function startServer() {
   try {
     log("Starting server initialization...");
+    await checkDatabase();
+    await cleanupPort();
+    await setupMiddleware();
 
-    // 1. Database check
-    try {
-      await db.execute(sql`SELECT 1`);
-      log("Database connection successful");
-    } catch (error: any) {
-      if (error.message?.includes('endpoint is disabled')) {
-        log("Database endpoint is disabled. Please enable the database in the Replit Database tab.");
-      } else {
-        throw error;
-      }
-    }
-
-    // 2. Kill existing process on port 5000 if any
-    const port = 5000;
-    try {
-      const { stdout } = await execAsync(`lsof -t -i:${port}`);
-      if (stdout) {
-        const pid = parseInt(stdout.trim());
-        if (pid !== process.pid) {
-          await execAsync(`kill -9 ${pid}`);
-          log(`Killed existing process on port ${port}`);
-        }
-      }
-    } catch (error) {
-      // No process running on port, we can proceed
-    }
-
-    // 3. Create server and register routes
     const server = registerRoutes(app);
 
-    // Setup Vite in development
     if (app.get("env") === "development") {
       await setupVite(app, server);
     } else {
       serveStatic(app);
     }
 
-    // Start server
-    server.listen(port, "0.0.0.0")
+    server.listen(PORT, "0.0.0.0")
       .on("error", (err: NodeJS.ErrnoException) => {
         console.error(`Failed to start server: ${err.message}`);
         process.exit(1);
       })
       .on("listening", () => {
-        log(`Server running on port ${port}`);
+        log(`Server running on port ${PORT}`);
       });
 
   } catch (error) {
