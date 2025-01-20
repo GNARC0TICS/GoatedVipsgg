@@ -29,6 +29,7 @@ type AuthMode = "login" | "register";
 export function AuthModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<AuthMode>("login");
+  const [isAdminLogin, setIsAdminLogin] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -43,7 +44,8 @@ export function AuthModal() {
 
   const authMutation = useMutation({
     mutationFn: async (data: InsertUser) => {
-      const response = await fetch(`/api/${mode}`, {
+      const endpoint = isAdminLogin ? `admin/${mode}` : mode;
+      const response = await fetch(`/api/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -140,6 +142,18 @@ export function AuthModal() {
                 </FormItem>
               )}
             />
+            {mode === "login" && (
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  type="checkbox"
+                  id="adminLogin"
+                  checked={isAdminLogin}
+                  onChange={(e) => setIsAdminLogin(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="adminLogin" className="text-sm">Admin Login</label>
+              </div>
+            )}
             <div className="flex flex-col gap-2">
               <Button
                 type="submit"
