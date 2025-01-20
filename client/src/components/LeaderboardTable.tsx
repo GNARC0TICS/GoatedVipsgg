@@ -1,7 +1,7 @@
 import { Table, TableHeader, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays, Search } from "lucide-react";
+import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays, Search, Crown, Medal, Award } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { CircleDot } from 'lucide-react'; // Added import for CircleDot
@@ -163,7 +163,15 @@ export function LeaderboardTable() {
                 >
                   <TableCell className="font-heading">
                     <div className="flex items-center gap-2">
-                      {index + 1 + currentPage * ITEMS_PER_PAGE <= 3 && <Trophy className="h-4 w-4 text-[#D7FF00]" />}
+                      {index + 1 + currentPage * ITEMS_PER_PAGE <= 3 ? (
+                        index + 1 + currentPage * ITEMS_PER_PAGE === 1 ? (
+                          <Crown className="h-4 w-4 text-[#D7FF00]" />
+                        ) : index + 1 + currentPage * ITEMS_PER_PAGE === 2 ? (
+                          <Award className="h-4 w-4 text-[#D7FF00]" />
+                        ) : (
+                          <Medal className="h-4 w-4 text-[#D7FF00]" />
+                        )
+                      ) : null}
                       {index + 1 + currentPage * ITEMS_PER_PAGE}
                     </div>
                   </TableCell>
