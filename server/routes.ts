@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocket, WebSocketServer } from 'ws';
 import { log } from "./vite";
 import { setupAuth } from "./auth";
+import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 import { requireAdmin, requireAuth } from './middleware/auth';
 import { z } from 'zod';
