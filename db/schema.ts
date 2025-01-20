@@ -60,6 +60,13 @@ export const affiliateStats = pgTable("affiliate_stats", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
+export const affiliateStatsRelations = relations(affiliateStats, ({ one }) => ({
+  user: one(users, {
+    fields: [affiliateStats.userId],
+    references: [users.id],
+  }),
+}));
+
 // New tables for additional features
 
 export const supportTickets = pgTable("support_tickets", {
