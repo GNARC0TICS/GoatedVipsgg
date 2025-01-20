@@ -1,0 +1,159 @@
+    {
+      "uid": "GqafxYNApPTE2zrOCTyB",
+      "name": "wongck",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "kuAMKTmRTX14BjkUC0yU",
+      "name": "Mikko",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "uoLJQCQO9wgi3KLF6Ygd",
+      "name": "koclok",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "bbiXPXTLyYJGvAoJiF5x",
+      "name": "Krusty",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "rZHaHk0pSqRlFrLv6615",
+      "name": "jv1994",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "v4ekiCdrG35i4kuTWHfZ",
+      "name": "Exodus",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "aC13Xo6TuzM6Kf2vRi1E",
+      "name": "Pause",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "y2tFtWo0kjIW7B89JrdZ",
+      "name": "Khunhtetwai24",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "UhEAZf6OVXU59rV4ubKE",
+      "name": "Shiravi433",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "xU8SZXApjkX6OKl5vymW",
+      "name": "Helen",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "QmNzDA3ZhDFpGfGajiLw",
+      "name": "bless",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 235.28459894629322,
+        "all_time": 405.09014481085785
+      }
+    },
+    {
+      "uid": "mKwBjeqA3xH2cshjympU",
+      "name": "Zohail",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "ogGTqWkkOBl9k1ZfPkcS",
+      "name": "kientrung",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "fLxUlBd6o3YImOqrJkxi",
+      "name": "Hamzawi",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "Yq8UL9vpmRQOncGq8C5K",
+      "name": "Khwajazabi",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "DM9mtptWB92tzohIcni8",
+      "name": "Jjghig8g",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
