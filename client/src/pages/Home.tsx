@@ -104,9 +104,9 @@ export default function Home() {
                 Each game outcome can be independently verified.
               </p>
               <Link href="/provably-fair">
-                <Button variant="link" className="font-heading text-[#D7FF00] p-0 flex items-center gap-2 hover:text-[#D7FF00]/80">
+                <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
                   Learn More <ArrowRight className="h-4 w-4" />
-                </Button>
+                </span>
               </Link>
             </div>
           </div>
@@ -132,7 +132,7 @@ export default function Home() {
             <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
               <Coins className="h-8 w-8 text-[#D7FF00] mb-4" />
               <div className="flex items-center gap-2 mb-4">
-                <h3 className="text-2xl font-heading uppercase text-white">$GOAT Token</h3>
+                <h3 className="text-2xl font-heading uppercase text-white">$GOATED Token</h3>
                 <span className="text-xs font-heading text-[#D7FF00] px-2 py-1 bg-[#D7FF00]/10 rounded-full">
                   COMING SOON
                 </span>
@@ -141,9 +141,9 @@ export default function Home() {
                 Upcoming token launch with exclusive benefits for holders. Get airdrops based on your wagered amount
                 and unlock special perks.
               </p>
-              <Button variant="link" className="font-heading text-[#D7FF00] p-0 flex items-center gap-2 hover:text-[#D7FF00]/80">
+              <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
                 Learn About Airdrops <ArrowRight className="h-4 w-4" />
-              </Button>
+              </span>
             </div>
           </div>
         </motion.div>
