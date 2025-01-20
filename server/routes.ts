@@ -215,32 +215,15 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
     const dataArray = Array.isArray(responseData) ? responseData : [responseData];
 
     // Transform the API data into the expected structure
-    const transformedData = await Promise.all(dataArray.map(async entry => {
-      // Sync with database
-      await db.insert(affiliateStats).values({
-        userId: parseInt(entry.uid) || 0,
-        totalWager: entry.wagered?.all_time || 0,
-        commission: (entry.wagered?.all_time || 0) * 0.1, // 10% commission rate
-        timestamp: new Date()
-      }).onConflictDoUpdate({
-        target: [affiliateStats.userId],
-        set: {
-          totalWager: entry.wagered?.all_time || 0,
-          commission: (entry.wagered?.all_time || 0) * 0.1,
-          timestamp: new Date()
-        }
-      });
-
-      return {
-        uid: entry.uid || '',
-        name: entry.name || '',
-        wagered: {
-          today: entry.wagered?.today || 0,
-          this_week: entry.wagered?.this_week || 0,
-          this_month: entry.wagered?.this_month || 0,
-          all_time: entry.wagered?.all_time || 0
-        }
-      };
+    const transformedData = dataArray.map(entry => ({
+      uid: entry.uid || '',
+      name: entry.name || '',
+      wagered: {
+        today: entry.wagered?.today || 0,
+        this_week: entry.wagered?.this_week || 0,
+        this_month: entry.wagered?.this_month || 0,
+        all_time: entry.wagered?.all_time || 0
+      }
     }));
 
     return {
