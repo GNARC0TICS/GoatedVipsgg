@@ -8,7 +8,7 @@ import { RateLimiterMemory } from 'rate-limiter-flexible';
 import { requireAdmin, requireAuth } from './middleware/auth';
 import { z } from 'zod';
 import { db } from '@db';
-import { wagerRaces, users, affiliateStats } from '@db/schema';
+import { wagerRaces, users } from '@db/schema';
 import { eq } from 'drizzle-orm';
 
 // Rate limiter setup
@@ -213,41 +213,6 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
 
     // Ensure we have an array to work with
     const dataArray = Array.isArray(responseData) ? responseData : [responseData];
-
-    // Sync data with database
-    for (const entry of dataArray) {
-      // Find or create user
-      const [user] = await db
-        .insert(users)
-        .values({
-          username: entry.name,
-          email: `${entry.name.toLowerCase()}@placeholder.com`,
-          password: 'placeholder',
-          isAdmin: false
-        })
-        .onConflictDoUpdate({
-          target: users.username,
-          set: { lastLogin: new Date() }
-        })
-        .returning();
-
-      // Update affiliate stats
-      await db
-        .insert(affiliateStats)
-        .values({
-          userId: user.id,
-          totalWager: entry.wagered?.all_time || 0,
-          commission: 0,
-          timestamp: new Date()
-        })
-        .onConflictDoUpdate({
-          target: [affiliateStats.userId],
-          set: { 
-            totalWager: entry.wagered?.all_time || 0,
-            timestamp: new Date()
-          }
-        });
-    }
 
     // Transform the API data into the expected structure
     const transformedData = dataArray.map(entry => ({
