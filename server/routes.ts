@@ -142,7 +142,43 @@ async function handleCreateWagerRace(req: any, res: any) {
   }
 }
 
-app.put("/api/admin/wager-races/:id/status", requireAdmin, async (req, res) => {
+export function setupRESTRoutes(app: Express) {
+  app.get("/api/profile", requireAuth, handleProfileRequest);
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, username))
+        .limit(1);
+
+      if (!user || !user.isAdmin) {
+        return res.status(401).json({ error: "Invalid admin credentials" });
+      }
+
+      // Verify password and generate token
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        isAdmin: user.isAdmin
+      });
+
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production'
+      });
+      
+      res.json({ user });
+    } catch (error) {
+      console.error('Admin login error:', error);
+      res.status(500).json({ error: "Failed to process admin login" });
+    }
+  });
+  app.get("/api/admin/users", requireAdmin, handleAdminUsersRequest);
+  app.get("/api/admin/wager-races", requireAdmin, handleWagerRacesRequest);
+  app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);
+  app.put("/api/admin/wager-races/:id/status", requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
