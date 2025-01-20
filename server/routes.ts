@@ -175,10 +175,38 @@ export function setupRESTRoutes(app: Express) {
       res.status(500).json({ error: "Failed to process admin login" });
     }
   });
+  
   app.get("/api/admin/users", requireAdmin, handleAdminUsersRequest);
   app.get("/api/admin/wager-races", requireAdmin, handleWagerRacesRequest);
   app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);
+  
   app.put("/api/admin/wager-races/:id/status", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      const race = await db
+        .update(wagerRaces)
+        .set({ status, updatedAt: new Date() })
+        .where(eq(wagerRaces.id, parseInt(id)))
+        .returning();
+      
+      // Broadcast update to all connected clients
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ type: 'RACE_STATUS_UPDATE', data: race[0] }));
+        }
+      });
+      
+      res.json(race[0]);
+    } catch (error) {
+      log(`Error updating race status: ${error}`);
+      res.status(500).json({ error: "Failed to update race status" });
+    }
+  });
+
+  app.get("/api/affiliate/stats", handleAffiliateStats);
+}
   try {
     const { id } = req.params;
     const { status } = req.body;
