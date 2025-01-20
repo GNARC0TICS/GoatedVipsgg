@@ -214,31 +214,16 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
     // Ensure we have an array to work with
     const dataArray = Array.isArray(responseData) ? responseData : [responseData];
 
-    // Transform and store data
-    const transformedData = await Promise.all(dataArray.map(async entry => {
-      // Store in affiliate_stats table
-      await db.insert(affiliateStats).values({
-        userId: parseInt(entry.uid),
-        totalWager: entry.wagered?.all_time || 0,
-        timestamp: new Date()
-      }).onConflictDoUpdate({
-        target: [affiliateStats.userId],
-        set: {
-          totalWager: entry.wagered?.all_time || 0,
-          timestamp: new Date()
-        }
-      });
-
-      return {
-        uid: entry.uid || '',
-        name: entry.name || '',
-        wagered: {
-          today: entry.wagered?.today || 0,
-          this_week: entry.wagered?.this_week || 0,
-          this_month: entry.wagered?.this_month || 0,
-          all_time: entry.wagered?.all_time || 0
-        }
-      };
+    // Transform the API data into the expected structure
+    const transformedData = dataArray.map(entry => ({
+      uid: entry.uid || '',
+      name: entry.name || '',
+      wagered: {
+        today: entry.wagered?.today || 0,
+        this_week: entry.wagered?.this_week || 0,
+        this_month: entry.wagered?.this_month || 0,
+        all_time: entry.wagered?.all_time || 0
+      }
     }));
 
     return {
