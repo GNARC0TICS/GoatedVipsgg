@@ -186,7 +186,23 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
 
     const apiData = await response.json();
 
-    // Return the API data with the expected structure
+    // Check if data exists and is an array
+    if (!apiData?.data || !Array.isArray(apiData.data)) {
+      return {
+        success: false,
+        metadata: {
+          totalUsers: 0,
+          lastUpdated: new Date().toISOString()
+        },
+        data: {
+          today: { data: [] },
+          all_time: { data: [] },
+          monthly: { data: [] },
+          weekly: { data: [] }
+        }
+      };
+    }
+
     // Transform the API data into the expected structure
     const transformedData = apiData.data.map(entry => ({
       uid: entry.uid || '',
