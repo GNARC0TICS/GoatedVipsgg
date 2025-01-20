@@ -94,7 +94,8 @@ export function useLeaderboard(timePeriod: TimePeriod = 'today', page: number = 
     
     return {
       ...entry,
-      isWagering: currentWager > previousWager
+      isWagering: currentWager > previousWager,
+      wagerChange: currentWager - previousWager
     };
   }).sort((a, b) => {
     const getWagerValue = (entry: LeaderboardEntry) => {
