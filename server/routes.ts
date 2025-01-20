@@ -220,13 +220,11 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
       await db.insert(affiliateStats).values({
         userId: parseInt(entry.uid),
         totalWager: entry.wagered?.all_time || 0,
-        commission: (entry.wagered?.all_time || 0) * 0.005, // 0.5% commission
         timestamp: new Date()
       }).onConflictDoUpdate({
         target: [affiliateStats.userId],
         set: {
           totalWager: entry.wagered?.all_time || 0,
-          commission: (entry.wagered?.all_time || 0) * 0.005,
           timestamp: new Date()
         }
       });
