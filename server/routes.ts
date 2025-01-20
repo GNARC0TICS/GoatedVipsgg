@@ -185,9 +185,12 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
     }
 
     const apiData = await response.json();
+    log('API Response:', JSON.stringify(apiData, null, 2));
 
-    // Check if data exists and is an array
-    if (!apiData?.data || !Array.isArray(apiData.data)) {
+    // Handle different response structures
+    const responseData = apiData.data || apiData.results || apiData;
+    if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
+      log('No data received from API');
       return {
         success: false,
         metadata: {
@@ -203,8 +206,11 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
       };
     }
 
+    // Ensure we have an array to work with
+    const dataArray = Array.isArray(responseData) ? responseData : [responseData];
+
     // Transform the API data into the expected structure
-    const transformedData = apiData.data.map(entry => ({
+    const transformedData = dataArray.map(entry => ({
       uid: entry.uid || '',
       name: entry.name || '',
       wagered: {
