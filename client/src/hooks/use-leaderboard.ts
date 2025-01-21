@@ -41,9 +41,14 @@ export function useLeaderboard(timePeriod: TimePeriod = 'today') {
       }
       const data = await response.json();
       if (!data?.success) {
+        console.error('API Response:', data);
         throw new Error('API returned unsuccessful response');
       }
-      if (!data?.data || !data.data[periodKey]?.data) {
+      const periodKey = timePeriod === 'weekly' ? 'weekly' :
+                       timePeriod === 'monthly' ? 'monthly' :
+                       timePeriod === 'today' ? 'today' : 'all_time';
+      if (!data?.data?.[periodKey]?.data) {
+        console.error('Invalid data structure:', data);
         throw new Error('Invalid data format received from API');
       }
       return data;
