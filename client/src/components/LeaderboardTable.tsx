@@ -164,9 +164,9 @@ export function LeaderboardTable() {
                   <div className="flex items-center justify-end gap-2">
                     ${getWagerAmount(entry).toLocaleString()}
                     {entry.wagerChange > 0 && (
-                      <div className="text-green-500 flex items-center gap-1">
-                        <TrendingUp className="h-4 w-4 animate-pulse" />
-                        <span className="text-xs">+${entry.wagerChange.toLocaleString()}</span>
+                      <div className="text-green-500 flex items-center gap-1 animate-fadeInOut">
+                        <TrendingUp className="h-4 w-4 animate-bounce" />
+                        <span className="text-xs font-bold animate-pulse">+${entry.wagerChange.toLocaleString()}</span>
                       </div>
                     )}
                   </div>

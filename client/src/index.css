@@ -1,4 +1,16 @@
 
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-10px); }
+  10% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.animate-fadeInOut {
+  animation: fadeInOut 5s ease-in-out;
+}
+
+
 @keyframes glow {
   0%, 100% {
     box-shadow: 0 0 20px rgba(215, 255, 0, 0.1);

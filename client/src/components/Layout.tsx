@@ -87,21 +87,46 @@ export function Layout({ children }: LayoutProps) {
             </div>
 
             <div className="flex items-center gap-6">
-              <Tooltip>
-                <TooltipTrigger asChild>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    onClick={() => window.open('/notification-preferences', '_self')} 
-                    className="text-[#8A8B91] hover:text-white"
+                    className="text-[#8A8B91] hover:text-white relative"
                   >
                     <Bell className="h-5 w-5" />
+                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
                   </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Notifications & Preferences</p>
-                </TooltipContent>
-              </Tooltip>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-80 bg-[#1A1B21] border-[#2A2B31]">
+                  <DropdownMenuLabel className="flex items-center justify-between">
+                    Notifications
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => window.open('/notification-preferences', '_self')}
+                      className="h-8 w-8"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {/* Example notifications */}
+                    <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
+                      <div className="text-sm font-medium">New Wager Race Started</div>
+                      <div className="text-xs text-[#8A8B91]">Monthly race has begun with $5000 prize pool</div>
+                      <div className="text-xs text-[#8A8B91]">2 minutes ago</div>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
+                      <div className="text-sm font-medium">VIP Status Update</div>
+                      <div className="text-xs text-[#8A8B91]">You're close to reaching Silver tier!</div>
+                      <div className="text-xs text-[#8A8B91]">1 hour ago</div>
+                    </DropdownMenuItem>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <div className="flex items-center gap-4">
                 <AuthModal />
                 <Button
