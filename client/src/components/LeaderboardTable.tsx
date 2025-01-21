@@ -1,74 +1,58 @@
 import { Table, TableHeader, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays, Search, Crown, Medal, Award, TrendingUp } from "lucide-react";
+import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays, Search, Crown, Medal, Award, TrendingUp, Star } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
-import { CircleDot } from 'lucide-react'; // Added import for CircleDot
-
-type WageredData = {
-  today: number;
-  this_week: number;
-  this_month: number;
-  all_time: number;
-};
-
-type LeaderboardEntry = {
-  uid: string;
-  name: string;
-  wagered: WageredData;
-};
+import { CircleDot } from 'lucide-react';
+import { QuickProfile } from "@/components/QuickProfile";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 const ITEMS_PER_PAGE = 10;
-
-// Added QuickProfile component
-const QuickProfile = ({ userId, username, children }: { userId: string; username: string; children: React.ReactNode }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const toggleModal = () => setIsOpen(!isOpen);
-
-  return (
-    <>
-      <span onClick={toggleModal}>{children}</span>
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-4 rounded shadow-lg">
-            <h2>{username}'s Profile</h2>
-            <p>User ID: {userId}</p>
-            {/* Placeholder for stats - replace with actual data fetching */}
-            <p>Today's Wager: Loading...</p>
-            <p>Weekly Wager: Loading...</p>
-            <p>Monthly Wager: Loading...</p>
-            <p>All-Time Wager: Loading...</p>
-            <button onClick={toggleModal}>Close</button>
-          </div>
-        </div>
-      )}
-    </>
-  );
-};
-
 
 export function LeaderboardTable() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('today');
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: leaderboardEntries, isLoading, error, metadata, refetch } = useLeaderboard(timePeriod, currentPage);
+  const { data: leaderboardEntries, isLoading, error, metadata, refetch } = useLeaderboard(timePeriod);
 
-  // Reset page when changing time period
   const handleTimePeriodChange = (newPeriod: TimePeriod) => {
     setTimePeriod(newPeriod);
     setCurrentPage(0);
     refetch();
   };
 
-  // Filter data based on search query
   const filteredData = useMemo(() => {
     if (!leaderboardEntries) return [];
     return leaderboardEntries.filter(entry =>
       entry.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [leaderboardEntries, searchQuery]);
+
+  const getTrophyIcon = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return <Crown className="h-8 w-8 text-yellow-400 animate-pulse" />;
+      case 2:
+        return <Medal className="h-7 w-7 text-gray-400" />;
+      case 3:
+        return <Award className="h-7 w-7 text-amber-700" />;
+      default:
+        return <Star className="h-5 w-5 text-zinc-600" />;
+    }
+  };
+
+  const totalPages = useMemo(() => {
+    return Math.ceil((filteredData?.length || 0) / ITEMS_PER_PAGE);
+  }, [filteredData]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[400px] flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   const getWagerAmount = (entry: LeaderboardEntry) => {
     if (!entry?.wagered) return 0;
@@ -98,22 +82,20 @@ export function LeaderboardTable() {
     }
   };
 
-  const totalPages = useMemo(() => {
-    return Math.ceil((filteredData?.length || 0) / ITEMS_PER_PAGE);
-  }, [filteredData]);
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-heading text-white mb-2">Live Leaderboard</h2>
-          <p className="text-[#8A8B91] text-sm">Track top players and their wagering activity in real-time</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <CircleDot className="h-3 w-3 text-red-500 animate-pulse" />
-          <span className="text-[#8A8B91] text-sm">Live Updates</span>
+          <h2 className="text-3xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2">Live Leaderboard</h2>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <CircleDot className="h-4 w-4 text-red-500 animate-pulse" />
+              <span className="text-[#8A8B91]">Live Competition</span>
+            </div>
+          </div>
         </div>
       </div>
+
       <div className="flex flex-col gap-4">
         <div className="flex gap-2 justify-center flex-wrap">
           {[
@@ -150,89 +132,52 @@ export function LeaderboardTable() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm">
+      <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-16 md:w-20 font-heading text-[#D7FF00]">RANK</TableHead>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="w-20 font-heading text-[#D7FF00]">RANK</TableHead>
               <TableHead className="font-heading text-[#D7FF00]">USERNAME</TableHead>
               <TableHead className="text-right font-heading text-[#D7FF00]">WAGER</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell colSpan={3}>
-                    <div className="h-12 animate-pulse bg-[#2A2B31]/20 rounded" />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : error ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center text-red-500">
-                  Failed to load leaderboard data
+            {filteredData.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map((entry, index) => (
+              <TableRow key={entry.uid} className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]">
+                <TableCell className="font-heading">
+                  <div className="flex items-center gap-2">
+                    {getTrophyIcon(index + 1 + currentPage * ITEMS_PER_PAGE)}
+                    {index + 1 + currentPage * ITEMS_PER_PAGE}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <QuickProfile userId={entry.uid} username={entry.name}>
+                    <div className="flex items-center gap-2 cursor-pointer">
+                      <User className="h-4 w-4 text-[#D7FF00]" />
+                      <span className={`truncate ${index < 3 ? 'font-bold' : ''}`}>
+                        {entry.name}
+                      </span>
+                    </div>
+                  </QuickProfile>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    ${getWagerAmount(entry).toLocaleString()}
+                    {entry.wagerChange > 0 && (
+                      <div className="text-green-500 flex items-center gap-1">
+                        <TrendingUp className="h-4 w-4 animate-pulse" />
+                        <span className="text-xs">+${entry.wagerChange.toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
-            ) : (
-              filteredData.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map((entry, index) => (
-                <TableRow
-                  key={entry.uid}
-                  className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]"
-                >
-                  <TableCell className="font-heading">
-                    <div className="flex items-center gap-2">
-                      {index + 1 + currentPage * ITEMS_PER_PAGE <= 3 ? (
-                        index + 1 + currentPage * ITEMS_PER_PAGE === 1 ? (
-                          <Crown className="h-4 w-4 text-[#D7FF00]" />
-                        ) : index + 1 + currentPage * ITEMS_PER_PAGE === 2 ? (
-                          <Award className="h-4 w-4 text-[#D7FF00]" />
-                        ) : (
-                          <Medal className="h-4 w-4 text-[#D7FF00]" />
-                        )
-                      ) : null}
-                      {index + 1 + currentPage * ITEMS_PER_PAGE}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-sans">
-                    <QuickProfile userId={entry.uid} username={entry.name}>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-[#D7FF00] hidden md:block" />
-                        <span className={`truncate max-w-[120px] md:max-w-none ${index < 3 ? 'font-bold' : ''}`}>
-                          {entry.name}
-                        </span>
-                      </div>
-                    </QuickProfile>
-                  </TableCell>
-                  <TableCell className="text-right font-sans">
-                    <div className="flex items-center justify-end gap-2">
-                      ${getWagerAmount(entry).toLocaleString()}
-                      {entry.wagerChange > 0 ? (
-                        <div className="text-green-500 flex items-center gap-1">
-                          <TrendingUp className="h-4 w-4 animate-pulse" />
-                          <span className="text-xs">+${entry.wagerChange.toLocaleString()}</span>
-                        </div>
-                      ) : entry.wagerChange < 0 ? (
-                        <div className="text-red-500 flex items-center gap-1">
-                          <TrendingUp className="h-4 w-4 rotate-180" />
-                          <span className="text-xs">${entry.wagerChange.toLocaleString()}</span>
-                        </div>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
         <div className="flex items-center justify-between px-4 py-4 border-t border-[#2A2B31]">
           <div className="text-sm text-[#8A8B91]">
-            <div>Showing {currentPage * ITEMS_PER_PAGE + 1} to {Math.min((currentPage + 1) * ITEMS_PER_PAGE, filteredData.length)} of {filteredData.length}</div>
-            {metadata && (
-              <div className="mt-1">
-                Total Players: {metadata.totalUsers.toLocaleString()} | Last Updated: {new Date(metadata.lastUpdated).toLocaleTimeString()}
-              </div>
-            )}
+            Showing {currentPage * ITEMS_PER_PAGE + 1} to {Math.min((currentPage + 1) * ITEMS_PER_PAGE, filteredData.length)} of {filteredData.length}
           </div>
           <div className="flex gap-2">
             <Button
@@ -240,7 +185,7 @@ export function LeaderboardTable() {
               size="sm"
               onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
               disabled={currentPage === 0}
-              className="border-[#2A2B31] hover:border-[#D7FF00]/50 transition-all duration-300 hover:shadow-md hover:shadow-[#D7FF00]/20 active:scale-95"
+              className="border-[#2A2B31] hover:border-[#D7FF00]/50"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -249,7 +194,7 @@ export function LeaderboardTable() {
               size="sm"
               onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
               disabled={currentPage === totalPages - 1}
-              className="border-[#2A2B31] hover:border-[#D7FF00]/50 transition-all duration-300 hover:shadow-md hover:shadow-[#D7FF00]/20 active:scale-95"
+              className="border-[#2A2B31] hover:border-[#D7FF00]/50"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -259,3 +204,17 @@ export function LeaderboardTable() {
     </div>
   );
 }
+
+type WageredData = {
+  today: number;
+  this_week: number;
+  this_month: number;
+  all_time: number;
+};
+
+type LeaderboardEntry = {
+  uid: string;
+  name: string;
+  wagered: WageredData;
+  wagerChange: number; // Added wagerChange property
+};
