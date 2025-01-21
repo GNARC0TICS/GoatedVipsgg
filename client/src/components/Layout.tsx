@@ -78,9 +78,20 @@ export function Layout({ children }: LayoutProps) {
                 </Link>
               </div>
 
-              <div className="hidden md:flex items-center gap-6">
+              <div className="hidden md:flex items-center gap-8">
                 <NavLink href="/" label="HOME" />
-                <NavLink href="/wager-races" label="WAGER RACES" />
+                <NavLink 
+                  href="/wager-races" 
+                  label={
+                    <div className="flex items-center gap-2">
+                      WAGER RACES
+                      <div className="flex items-center gap-1">
+                        <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                        <span className="text-xs text-red-500">LIVE</span>
+                      </div>
+                    </div>
+                  } 
+                />
                 <NavLink href="/vip-program" label="VIP PROGRAM" />
                 <NavLink href="/promotions" label="PROMOTIONS" />
                 <NavLink 
@@ -207,7 +218,7 @@ export function Layout({ children }: LayoutProps) {
   );
 }
 
-function NavLink({ href, label, tooltip }: { href: string; label: string; tooltip?: string }) {
+function NavLink({ href, label, tooltip }: { href: string; label: string | React.ReactNode; tooltip?: string }) {
   const [location] = useLocation();
   const isActive = location === href;
 
