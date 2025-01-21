@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { AuthModal } from "@/components/AuthModal";
+import AuthModal from "@/components/AuthModal";
 import { useQuery } from "@tanstack/react-query";
 import type { SelectUser } from "@db/schema";
 import { ScrollToTop } from "./ScrollToTop";
