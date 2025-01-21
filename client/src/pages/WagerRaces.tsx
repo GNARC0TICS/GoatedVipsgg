@@ -7,6 +7,7 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { useLeaderboard } from "@/hooks/use-leaderboard";
 import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { QuickProfile } from "@/components/QuickProfile";
 import { Link } from "wouter";
 
 type WageredData = {
@@ -247,9 +248,9 @@ export default function WagerRaces() {
                       </div>
                     </TableCell>
                     <TableCell className="font-sans text-white">
-                      <Link href={`/user/${player.uid}`} className="hover:text-[#D7FF00] transition-colors">
+                      <QuickProfile userId={player.uid} username={player.name}>
                         {player.name}
-                      </Link>
+                      </QuickProfile>
                     </TableCell>
                     <TableCell className="text-right font-sans">
                       ${getWagerAmount(player)?.toLocaleString()}

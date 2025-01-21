@@ -21,6 +21,34 @@ type LeaderboardEntry = {
 
 const ITEMS_PER_PAGE = 10;
 
+// Added QuickProfile component
+const QuickProfile = ({ userId, username, children }: { userId: string; username: string; children: React.ReactNode }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleModal = () => setIsOpen(!isOpen);
+
+  return (
+    <>
+      <span onClick={toggleModal}>{children}</span>
+      {isOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-4 rounded shadow-lg">
+            <h2>{username}'s Profile</h2>
+            <p>User ID: {userId}</p>
+            {/* Placeholder for stats - replace with actual data fetching */}
+            <p>Today's Wager: Loading...</p>
+            <p>Weekly Wager: Loading...</p>
+            <p>Monthly Wager: Loading...</p>
+            <p>All-Time Wager: Loading...</p>
+            <button onClick={toggleModal}>Close</button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+
 export function LeaderboardTable() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('today');
   const [currentPage, setCurrentPage] = useState(0);
@@ -167,12 +195,14 @@ export function LeaderboardTable() {
                     </div>
                   </TableCell>
                   <TableCell className="font-sans">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-[#D7FF00] hidden md:block" />
-                      <span className={`truncate max-w-[120px] md:max-w-none ${index < 3 ? 'font-bold' : ''}`}>
-                        {entry.name}
-                      </span>
-                    </div>
+                    <QuickProfile userId={entry.uid} username={entry.name}>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-[#D7FF00] hidden md:block" />
+                        <span className={`truncate max-w-[120px] md:max-w-none ${index < 3 ? 'font-bold' : ''}`}>
+                          {entry.name}
+                        </span>
+                      </div>
+                    </QuickProfile>
                   </TableCell>
                   <TableCell className="text-right font-sans">
                     <div className="flex items-center justify-end gap-2">
