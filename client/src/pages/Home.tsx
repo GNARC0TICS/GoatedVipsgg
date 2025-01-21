@@ -46,7 +46,7 @@ export default function Home() {
           <Link href="/vip-transfer" className="block">
             <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
               <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
-              <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20">
+              <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20 card-hover">
                 <h3 className="text-2xl font-heading uppercase mb-4 text-white">VIP Transfer</h3>
                 <p className="text-[#8A8B91] mb-6 font-body">Transfer your VIP status from other platforms and get cash bonuses.</p>
                 <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
@@ -59,7 +59,7 @@ export default function Home() {
           <Link href="/wager-races" className="block">
             <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
               <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
-              <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20">
+              <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20 card-hover">
                 <div className="flex items-center gap-2 mb-4">
                   <h3 className="text-2xl font-heading uppercase text-white">Wager Races</h3>
                   <div className="flex items-center gap-1">
@@ -78,7 +78,7 @@ export default function Home() {
           <Link href="/vip-program" className="block">
             <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
               <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
-              <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20">
+              <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20 card-hover">
                 <h3 className="text-2xl font-heading uppercase mb-4 text-white">VIP Rewards</h3>
                 <p className="text-[#8A8B91] mb-6 font-body">Exclusive benefits like instant rakeback, level up bonuses, and monthly rewards.</p>
                 <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
@@ -97,7 +97,7 @@ export default function Home() {
         >
           <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
             <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
-            <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20">
+            <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20 card-hover">
               <Shield className="h-8 w-8 text-[#D7FF00] mb-4" />
               <h3 className="text-2xl font-heading uppercase mb-4 text-white">Provably Fair</h3>
               <p className="text-[#8A8B91] mb-6 font-body">
@@ -114,7 +114,7 @@ export default function Home() {
 
           <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
             <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
-            <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20">
+            <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20 card-hover">
               <Gift className="h-8 w-8 text-[#D7FF00] mb-4" />
               <h3 className="text-2xl font-heading uppercase mb-4 text-white">Bonus Codes</h3>
               <p className="text-[#8A8B91] mb-6 font-body">
@@ -131,7 +131,7 @@ export default function Home() {
           <Link href="/goated-token" className="block">
             <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
               <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
-              <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20">
+              <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20 card-hover">
                 <Coins className="h-8 w-8 text-[#D7FF00] mb-4" />
                 <div className="flex items-center gap-2 mb-4">
                   <h3 className="text-2xl font-heading uppercase text-white">$GOATED Token</h3>
