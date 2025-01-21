@@ -88,13 +88,22 @@ export default function WagerRaces() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
-                <motion.h1
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-3xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2"
-                >
-                  {`${raceType.charAt(0).toUpperCase() + raceType.slice(1)} Wager Race`}
-                </motion.h1>
+                <div className="flex justify-between items-center">
+                  <motion.h1
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-3xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2"
+                  >
+                    {`${raceType.charAt(0).toUpperCase() + raceType.slice(1)} Wager Race`}
+                  </motion.h1>
+                  <Button
+                    variant="outline"
+                    className="border-[#D7FF00] text-[#D7FF00] hover:bg-[#D7FF00] hover:text-black"
+                    onClick={() => window.location.href = '/how-it-works'}
+                  >
+                    How it Works
+                  </Button>
+                </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <CircleDot className="h-4 w-4 text-red-500 animate-pulse" />
