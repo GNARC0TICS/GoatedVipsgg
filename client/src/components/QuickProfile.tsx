@@ -24,6 +24,7 @@ interface UserStats {
 export function QuickProfile({ userId, username, children }: QuickProfileProps) {
   const { data: stats, isLoading } = useQuery<UserStats>({
     queryKey: [`/api/users/${userId}/stats`],
+    staleTime: 30000, // Cache for 30 seconds
   });
 
   return (
@@ -35,7 +36,9 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
       </SheetTrigger>
       <SheetContent side="right" className="w-[400px] bg-[#1A1B21]/95 backdrop-blur-lg border-[#2A2B31]">
         {isLoading ? (
-          <LoadingSpinner />
+          <div className="flex items-center justify-center h-full">
+            <LoadingSpinner />
+          </div>
         ) : (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -59,7 +62,9 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
                     <Clock className="h-4 w-4 text-[#D7FF00]" />
                     <span className="text-[#8A8B91] text-sm">Today</span>
                   </div>
-                  <p className="text-xl font-bold">${stats?.wagered.today.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-white">
+                    ${stats?.wagered.today.toLocaleString() || '0'}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -69,7 +74,9 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
                     <Calendar className="h-4 w-4 text-[#D7FF00]" />
                     <span className="text-[#8A8B91] text-sm">Weekly</span>
                   </div>
-                  <p className="text-xl font-bold">${stats?.wagered.this_week.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-white">
+                    ${stats?.wagered.this_week.toLocaleString() || '0'}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -79,7 +86,9 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
                     <Calendar className="h-4 w-4 text-[#D7FF00]" />
                     <span className="text-[#8A8B91] text-sm">Monthly</span>
                   </div>
-                  <p className="text-xl font-bold">${stats?.wagered.this_month.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-white">
+                    ${stats?.wagered.this_month.toLocaleString() || '0'}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -89,7 +98,9 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
                     <TrendingUp className="h-4 w-4 text-[#D7FF00]" />
                     <span className="text-[#8A8B91] text-sm">All Time</span>
                   </div>
-                  <p className="text-xl font-bold">${stats?.wagered.all_time.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-white">
+                    ${stats?.wagered.all_time.toLocaleString() || '0'}
+                  </p>
                 </CardContent>
               </Card>
             </div>
