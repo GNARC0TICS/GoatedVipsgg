@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trophy, CircleDot, Crown, Medal, Award, Star, Timer, TrendingUp } from "lucide-react";
+import { Trophy, CircleDot, Crown, Medal, Award, Star, Timer, TrendingUp, ArrowRight } from "lucide-react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { useLeaderboard } from "@/hooks/use-leaderboard";
 import { Card } from "@/components/ui/card";
