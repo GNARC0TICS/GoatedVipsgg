@@ -31,6 +31,8 @@ export default function Telegram() {
               <li>• Real-time updates on promotions and events</li>
               <li>• Direct interaction with community members</li>
               <li>• VIP-only announcements and opportunities</li>
+              <li>• Exclusive bonus code drops</li>
+              <li>• Regular challenges and giveaways</li>
             </ul>
           </div>
 
