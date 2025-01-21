@@ -15,14 +15,14 @@ interface BonusCode {
 const bonusCodes: BonusCode[] = [
   {
     code: "WELCOME2024",
-    description: "New player welcome bonus",
+    description: "New Year welcome bonus - EXPIRED",
     expiryDate: "2024-01-15",
     value: "$10 Free Bonus",
     expired: true
   },
   {
     code: "RELOAD5",
-    description: "Special reload bonus",
+    description: "January reload bonus - EXPIRED",
     expiryDate: "2024-01-10",
     value: "$5 Free Bonus",
     expired: true

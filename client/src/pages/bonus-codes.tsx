@@ -4,20 +4,7 @@ import { motion } from "framer-motion";
 import { Gift, Copy } from "lucide-react";
 
 export default function BonusCodes() {
-  const bonusCodes = [
-    {
-      code: "WELCOME2024",
-      description: "Welcome bonus for new users",
-      value: "100% up to $100",
-      expiresAt: "2024-02-01"
-    },
-    {
-      code: "RELOAD50",
-      description: "Reload bonus for existing users",
-      value: "50% up to $50",
-      expiresAt: "2024-01-31"
-    }
-  ];
+  const bonusCodes = []; // Updated bonusCodes array
 
   const copyToClipboard = (code: string) => {
     navigator.clipboard.writeText(code);
