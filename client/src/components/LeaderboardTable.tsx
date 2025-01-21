@@ -46,10 +46,18 @@ export function LeaderboardTable() {
     return Math.ceil((filteredData?.length || 0) / ITEMS_PER_PAGE);
   }, [filteredData]);
 
-  if (isLoading) {
+  if (isLoading || !leaderboardEntries) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-[400px] flex items-center justify-center text-red-500">
+        Error loading leaderboard data. Please try again later.
       </div>
     );
   }

@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
 
 type WageredData = {
   today: number;
@@ -12,6 +11,7 @@ type LeaderboardEntry = {
   uid: string;
   name: string;
   wagered: WageredData;
+  wagerChange?: number;
 };
 
 type APIResponse = {
@@ -30,94 +30,26 @@ type APIResponse = {
 
 export type TimePeriod = 'today' | 'weekly' | 'monthly' | 'all_time';
 
-export function useLeaderboard(timePeriod: TimePeriod = 'today', page: number = 0) {
+export function useLeaderboard(timePeriod: TimePeriod = 'today') {
   const { data, isLoading, error, refetch } = useQuery<APIResponse>({
-    queryKey: ['/api/affiliate/stats', timePeriod, page],
+    queryKey: ['leaderboard', timePeriod],
     queryFn: async () => {
-      const response = await fetch(`/api/affiliate/stats?period=${timePeriod}&page=${page}&limit=10`);
+      const response = await fetch(`/api/affiliate/stats?period=${timePeriod}`);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error('Failed to fetch leaderboard data');
       }
       return response.json();
     },
-    refetchInterval: 30000, // Refetch every 30 seconds for live updates
-    select: (data) => {
-      if (!data?.data) {
-        throw new Error('Invalid data format received from API');
-      }
-
-      // Map the time period to the correct data array
-      const periodKey = timePeriod === 'weekly' ? 'weekly' :
-                       timePeriod === 'monthly' ? 'monthly' :
-                       timePeriod === 'today' ? 'today' : 'all_time';
-
-      const periodData = data.data[periodKey].data;
-
-      return {
-        ...data,
-        data: {
-          ...data.data,
-          [periodKey]: {
-            data: periodData.map((entry) => ({
-              uid: entry.uid,
-              name: entry.name,
-              wagered: {
-                today: entry.wagered?.today || 0,
-                this_week: entry.wagered?.this_week || 0,
-                this_month: entry.wagered?.this_month || 0,
-                all_time: entry.wagered?.all_time || 0
-              }
-            }))
-          }
-        }
-      };
-    }
+    refetchInterval: 30000,
+    retry: 3,
+    staleTime: 10000,
   });
 
-  // Get the correct data array based on the time period
   const periodKey = timePeriod === 'weekly' ? 'weekly' :
                    timePeriod === 'monthly' ? 'monthly' :
                    timePeriod === 'today' ? 'today' : 'all_time';
 
-  const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
-  
-  // Compare current and previous wager amounts
-  const sortedData = data?.data?.[periodKey]?.data?.map(entry => {
-    if (!entry || !entry.wagered) return null;
-    
-    const prevEntry = previousData.find(p => p.uid === entry.uid);
-    const currentWager = entry.wagered[timePeriod === 'weekly' ? 'this_week' : 
-                                    timePeriod === 'monthly' ? 'this_month' : 
-                                    timePeriod === 'today' ? 'today' : 'all_time'] || 0;
-    const previousWager = prevEntry?.wagered ? 
-                         prevEntry.wagered[timePeriod === 'weekly' ? 'this_week' : 
-                                         timePeriod === 'monthly' ? 'this_month' : 
-                                         timePeriod === 'today' ? 'today' : 'all_time'] || 0 : 0;
-    
-    return {
-      ...entry,
-      isWagering: currentWager > previousWager,
-      wagerChange: currentWager - previousWager
-    };
-  }).sort((a, b) => {
-    const getWagerValue = (entry: LeaderboardEntry) => {
-      if (!entry?.wagered) return 0;
-      switch (periodKey) {
-        case 'weekly': return entry.wagered.this_week;
-        case 'monthly': return entry.wagered.this_month;
-        case 'today': return entry.wagered.today;
-        default: return entry.wagered.all_time;
-      }
-    };
-    return (getWagerValue(b) || 0) - (getWagerValue(a) || 0);
-  }) || [];
-
-  // Update previous data after successful fetch
-  useEffect(() => {
-    if (data?.data[periodKey]?.data) {
-      setPreviousData(data.data[periodKey].data);
-    }
-  }, [data]);
+  const sortedData = data?.data?.[periodKey]?.data || [];
 
   return {
     data: sortedData,
