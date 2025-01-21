@@ -1,5 +1,6 @@
+
 import { motion } from "framer-motion";
-import { Clock, Copy, CheckCircle } from "lucide-react";
+import { Bell, Clock, Copy, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -8,26 +9,23 @@ interface BonusCode {
   description: string;
   expiryDate: string;
   value: string;
+  expired: boolean;
 }
 
 const bonusCodes: BonusCode[] = [
   {
     code: "WELCOME2024",
     description: "New player welcome bonus",
-    expiryDate: "2024-02-15",
-    value: "100% up to $100"
+    expiryDate: "2024-01-15",
+    value: "$10 Free Bonus",
+    expired: true
   },
   {
-    code: "GOATEDVIP",
-    description: "VIP exclusive reload bonus",
-    expiryDate: "2024-01-31",
-    value: "50% up to $500"
-  },
-  {
-    code: "WEEKEND50",
-    description: "Weekend special bonus",
-    expiryDate: "2024-01-20",
-    value: "50% up to $200"
+    code: "RELOAD5",
+    description: "Special reload bonus",
+    expiryDate: "2024-01-10",
+    value: "$5 Free Bonus",
+    expired: true
   }
 ];
 
@@ -51,9 +49,13 @@ export default function BonusCodes() {
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading text-white mb-6">
             BONUS CODES
           </h1>
-          <p className="text-xl text-[#8A8B91] max-w-2xl mx-auto">
-            Exclusive bonus codes to enhance your gaming experience. New codes added regularly!
+          <p className="text-xl text-[#8A8B91] max-w-2xl mx-auto mb-6">
+            Keep an eye on this page for exclusive bonus codes. New codes are added regularly!
           </p>
+          <div className="flex items-center justify-center gap-2 text-[#D7FF00]">
+            <Bell className="h-5 w-5" />
+            <p className="text-sm">Enable email notifications to get instant updates on new bonus codes</p>
+          </div>
         </motion.div>
 
         <div className="grid gap-6">
@@ -66,14 +68,14 @@ export default function BonusCodes() {
               className="relative group"
             >
               <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative p-6 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
+              <div className={`relative p-6 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm ${bonus.expired ? 'opacity-50' : 'hover:border-[#D7FF00]/50'} transition-colors`}>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
                     <h3 className="text-xl font-heading text-white mb-2">{bonus.code}</h3>
                     <p className="text-[#8A8B91] mb-2">{bonus.description}</p>
                     <div className="flex items-center gap-2 text-sm text-[#8A8B91]">
                       <Clock className="h-4 w-4" />
-                      <span>Expires: {new Date(bonus.expiryDate).toLocaleDateString()}</span>
+                      <span>{bonus.expired ? 'Expired' : `Expires: ${new Date(bonus.expiryDate).toLocaleDateString()}`}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -82,6 +84,7 @@ export default function BonusCodes() {
                       variant="outline"
                       className="relative group border-[#2A2B31] hover:border-[#D7FF00] hover:bg-[#D7FF00]/10"
                       onClick={() => copyToClipboard(bonus.code)}
+                      disabled={bonus.expired}
                     >
                       {copiedCode === bonus.code ? (
                         <>
@@ -91,7 +94,7 @@ export default function BonusCodes() {
                       ) : (
                         <>
                           <Copy className="h-4 w-4 mr-2" />
-                          Copy Code
+                          {bonus.expired ? 'Expired' : 'Copy Code'}
                         </>
                       )}
                     </Button>
