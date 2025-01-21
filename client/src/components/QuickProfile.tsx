@@ -34,7 +34,7 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
           {children}
         </span>
       </SheetTrigger>
-      <SheetContent side="right" className="w-[400px] bg-[#1A1B21]/95 backdrop-blur-lg border-[#2A2B31] overflow-y-auto">
+      <SheetContent side="right" className="fixed inset-y-0 right-0 w-[400px] bg-[#1A1B21]/95 backdrop-blur-lg border-[#2A2B31] overflow-y-auto data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <LoadingSpinner />
