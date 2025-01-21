@@ -13,11 +13,17 @@
 
 @keyframes glow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(215, 255, 0, 0.1);
+    box-shadow: 0 0 20px rgba(215, 255, 0, 0.2);
+    text-shadow: 0 0 10px rgba(215, 255, 0, 0.2);
   }
   50% {
-    box-shadow: 0 0 30px rgba(215, 255, 0, 0.2);
+    box-shadow: 0 0 40px rgba(215, 255, 0, 0.4);
+    text-shadow: 0 0 20px rgba(215, 255, 0, 0.4);
   }
+}
+
+.content-glow {
+  animation: glow 3s ease-in-out infinite;
 }
 
 .glow-gold {
