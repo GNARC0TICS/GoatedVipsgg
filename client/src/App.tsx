@@ -24,7 +24,6 @@ import Help from "./pages/Help";
 import UserProfile from "@/pages/UserProfile";
 import { Redirect } from "@/lib/navigation";
 import Telegram from "@/pages/Telegram";
-import HowItWorks from "@/pages/HowItWorks";
 
 
 function ErrorFallback({ error }: { error: Error }) {
