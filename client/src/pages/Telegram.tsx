@@ -16,7 +16,7 @@ export default function Telegram() {
             <img 
               src="/images/Goated Logo - Yellow.png" 
               alt="Goated Logo" 
-              className="h-16 w-16 mx-auto mb-4"
+              className="h-20 w-32 mx-auto mb-4 object-contain"
             />
             <h1 className="text-4xl font-heading text-white mb-4">Goombas x Goated VIPs</h1>
             <p className="text-[#8A8B91] text-lg mb-8">
