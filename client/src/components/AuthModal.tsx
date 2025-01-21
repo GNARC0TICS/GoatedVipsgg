@@ -1,39 +1,19 @@
 import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useToast } from "@/hooks/use-toast";
 import { insertUserSchema } from "@db/schema";
-import type { InsertUser } from "@db/schema";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth";
 
-type AuthMode = "login" | "register";
-
-export function AuthModal() {
+export default function AuthModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const [mode, setMode] = useState<AuthMode>("login");
-  const [isAdminLogin, setIsAdminLogin] = useState(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const { login, register } = useAuth();
 
-  const form = useForm<InsertUser>({
+  const form = useForm({
     resolver: zodResolver(insertUserSchema),
     defaultValues: {
       username: "",
@@ -42,43 +22,18 @@ export function AuthModal() {
     },
   });
 
-  const authMutation = useMutation({
-    mutationFn: async (data: InsertUser) => {
-      const endpoint = isAdminLogin ? `admin/${mode}` : mode;
-      const response = await fetch(`/api/${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error);
+  const onSubmit = async (values: any) => {
+    try {
+      if (mode === "login") {
+        await login({ username: values.username, password: values.password });
+      } else {
+        await register(values);
       }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user"] });
       setIsOpen(false);
-      toast({
-        title: `${mode === "login" ? "Login" : "Registration"} successful`,
-        description: `Welcome ${form.getValues("username")}!`,
-      });
       form.reset();
-    },
-    onError: (error: Error) => {
-      toast({
-        title: `${mode === "login" ? "Login" : "Registration"} failed`,
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = (data: InsertUser) => {
-    authMutation.mutate(data);
+    } catch (error) {
+      // Error handling is done in the auth context
+    }
   };
 
   return (
@@ -122,7 +77,7 @@ export function AuthModal() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" {...field} className="bg-[#2A2B31]" />
+                      <Input {...field} type="email" className="bg-[#2A2B31]" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -136,35 +91,15 @@ export function AuthModal() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} className="bg-[#2A2B31]" />
+                    <Input {...field} type="password" className="bg-[#2A2B31]" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            {mode === "login" && (
-              <div className="flex items-center gap-2 mb-4">
-                <input
-                  type="checkbox"
-                  id="adminLogin"
-                  checked={isAdminLogin}
-                  onChange={(e) => setIsAdminLogin(e.target.checked)}
-                  className="w-4 h-4"
-                />
-                <label htmlFor="adminLogin" className="text-sm">Admin Login</label>
-              </div>
-            )}
             <div className="flex flex-col gap-2">
-              <Button
-                type="submit"
-                className="w-full bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
-                disabled={authMutation.isPending}
-              >
-                {authMutation.isPending
-                  ? "Processing..."
-                  : mode === "login"
-                  ? "Sign In"
-                  : "Create Account"}
+              <Button type="submit" className="w-full">
+                {mode === "login" ? "Sign In" : "Create Account"}
               </Button>
               <Button
                 type="button"
