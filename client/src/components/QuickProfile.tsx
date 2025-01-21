@@ -22,10 +22,23 @@ interface UserStats {
 }
 
 export function QuickProfile({ userId, username, children }: QuickProfileProps) {
-  const { data: stats, isLoading } = useQuery<UserStats>({
-    queryKey: [`/api/users/${userId}/stats`],
-    staleTime: 30000, // Cache for 30 seconds
+  const { data: leaderboardData, isLoading } = useQuery({
+    queryKey: ['/api/affiliate/stats'],
+    staleTime: 30000,
   });
+
+  const stats = React.useMemo(() => {
+    if (!leaderboardData?.data) return null;
+    
+    const userStats = {
+      today: leaderboardData.data.today.data.find(p => p.uid === userId)?.wagered.today || 0,
+      this_week: leaderboardData.data.weekly.data.find(p => p.uid === userId)?.wagered.this_week || 0,
+      this_month: leaderboardData.data.monthly.data.find(p => p.uid === userId)?.wagered.this_month || 0,
+      all_time: leaderboardData.data.all_time.data.find(p => p.uid === userId)?.wagered.all_time || 0
+    };
+    
+    return { wagered: userStats };
+  }, [leaderboardData, userId]);
 
   return (
     <Sheet>
