@@ -93,6 +93,7 @@ function Router() {
               <Route path="/provably-fair" component={ProvablyFair} />
               <Route path="/telegram" component={Telegram} />
               <Route path="/how-it-works" component={HowItWorks} />
+              <Route path="/goated-token" component={GoatedToken} />
               <Route component={NotFound} />
             </Switch>
           </ErrorBoundary>
