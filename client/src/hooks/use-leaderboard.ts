@@ -82,12 +82,14 @@ export function useLeaderboard(timePeriod: TimePeriod = 'today', page: number = 
   const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
   
   // Compare current and previous wager amounts
-  const sortedData = data?.data[periodKey]?.data?.map(entry => {
+  const sortedData = data?.data?.[periodKey]?.data?.map(entry => {
+    if (!entry || !entry.wagered) return null;
+    
     const prevEntry = previousData.find(p => p.uid === entry.uid);
     const currentWager = entry.wagered[timePeriod === 'weekly' ? 'this_week' : 
                                     timePeriod === 'monthly' ? 'this_month' : 
                                     timePeriod === 'today' ? 'today' : 'all_time'] || 0;
-    const previousWager = prevEntry ? 
+    const previousWager = prevEntry?.wagered ? 
                          prevEntry.wagered[timePeriod === 'weekly' ? 'this_week' : 
                                          timePeriod === 'monthly' ? 'this_month' : 
                                          timePeriod === 'today' ? 'today' : 'all_time'] || 0 : 0;
