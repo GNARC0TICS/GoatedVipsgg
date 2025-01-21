@@ -25,6 +25,7 @@ import UserProfile from "@/pages/UserProfile";
 import { Redirect } from "@/lib/navigation";
 import Telegram from "@/pages/Telegram";
 import HowItWorks from "@/pages/HowItWorks";
+import GoatedToken from "@/pages/GoatedToken";
 
 
 function ErrorFallback({ error }: { error: Error }) {
