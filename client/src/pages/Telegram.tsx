@@ -13,7 +13,11 @@ export default function Telegram() {
           className="max-w-3xl mx-auto text-center"
         >
           <div className="mb-8">
-            <MessageCircle className="h-16 w-16 text-[#D7FF00] mx-auto mb-4" />
+            <img 
+              src="/images/Goated Logo - Yellow.png" 
+              alt="Goated Logo" 
+              className="h-16 w-16 mx-auto mb-4"
+            />
             <h1 className="text-4xl font-heading text-white mb-4">Goombas x Goated VIPs</h1>
             <p className="text-[#8A8B91] text-lg mb-8">
               Join our exclusive Telegram community where VIP members share insights, strategies, and connect with fellow players. Be part of an engaging community that's passionate about gaming and success.
