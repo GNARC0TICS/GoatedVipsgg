@@ -119,7 +119,7 @@ export default function Home() {
               <p className="text-[#8A8B91] mb-6 font-body">
                 Exclusive bonus codes updated regularly. Claim special rewards and boost your gaming experience.
               </p>
-              <Link href="/bonus-codes">
+              <Link to="/bonus-codes">
                 <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
                   View Codes <ArrowRight className="h-4 w-4" />
                 </span>
