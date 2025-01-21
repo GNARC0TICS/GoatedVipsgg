@@ -84,7 +84,7 @@ export function AuthModal() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="font-body">
+        <Button variant="outline" className="font-heading uppercase">
           Login / Register
         </Button>
       </DialogTrigger>
