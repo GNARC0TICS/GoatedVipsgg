@@ -7,7 +7,15 @@ import type { SelectUser } from "@db/schema";
 import { ScrollToTop } from "./ScrollToTop";
 import { useEffect, useRef, useState } from "react";
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Bell } from 'lucide-react';
+import { Bell, Settings } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface LayoutProps {
   children: ReactNode;
