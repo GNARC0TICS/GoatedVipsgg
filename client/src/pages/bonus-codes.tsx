@@ -1,25 +1,54 @@
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Gift, Copy } from "lucide-react";
+import { Gift, Copy, Bell, CheckCircle } from "lucide-react";
+import { useState } from "react";
 
 export default function BonusCodes() {
-  const bonusCodes = []; // Updated bonusCodes array
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const bonusCodes = [
+    {
+      code: "WELCOME2024",
+      description: "New Year welcome bonus - EXPIRED",
+      expiresAt: "2024-01-15",
+      value: "$10 Free Bonus",
+      expired: true
+    },
+    {
+      code: "RELOAD5",
+      description: "January reload bonus - EXPIRED",
+      expiresAt: "2024-01-10",
+      value: "$5 Free Bonus",
+      expired: true
+    }
+  ];
 
   const copyToClipboard = (code: string) => {
     navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
   };
 
   return (
     <div className="min-h-screen bg-[#14151A]">
       <div className="container mx-auto px-4 py-16">
-        <motion.h1
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-4xl font-heading font-bold text-[#D7FF00] mb-8"
+          className="text-center mb-12"
         >
-          BONUS CODES
-        </motion.h1>
+          <h1 className="text-4xl md:text-5xl font-heading font-bold text-[#D7FF00] mb-8">
+            BONUS CODES
+          </h1>
+          <p className="text-xl text-[#8A8B91] max-w-2xl mx-auto mb-6">
+            Keep an eye on this page for exclusive bonus codes. New codes are added regularly!
+          </p>
+          <div className="flex items-center justify-center gap-2 text-[#D7FF00]">
+            <Bell className="h-5 w-5" />
+            <p className="text-sm">Enable email notifications to get instant updates on new bonus codes</p>
+          </div>
+        </motion.div>
 
         <div className="grid gap-6 md:grid-cols-2">
           {bonusCodes.map((bonus, index) => (
@@ -41,11 +70,21 @@ export default function BonusCodes() {
                     </div>
                     <Button
                       variant="outline"
-                      size="icon"
                       onClick={() => copyToClipboard(bonus.code)}
-                      className="shrink-0"
+                      className="shrink-0 border-[#2A2B31] hover:border-[#D7FF00] hover:bg-[#D7FF00]/10"
+                      disabled={bonus.expired}
                     >
-                      <Copy className="h-4 w-4" />
+                      {copiedCode === bonus.code ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2 text-[#D7FF00]" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4 mr-2" />
+                          {bonus.expired ? 'Expired' : 'Copy Code'}
+                        </>
+                      )}
                     </Button>
                   </div>
 
