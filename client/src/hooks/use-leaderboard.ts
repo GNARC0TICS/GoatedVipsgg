@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 
 type WageredData = {
@@ -38,7 +39,11 @@ export function useLeaderboard(timePeriod: TimePeriod = 'today') {
       if (!response.ok) {
         throw new Error('Failed to fetch leaderboard data');
       }
-      return response.json();
+      const data = await response.json();
+      if (!data?.success || !data?.data) {
+        throw new Error('Invalid data format received from API');
+      }
+      return data;
     },
     refetchInterval: 30000,
     retry: 3,

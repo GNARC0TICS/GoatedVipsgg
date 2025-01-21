@@ -179,8 +179,6 @@ const statsCache = {
 async function handleAffiliateStats(req: any, res: any) {
   try {
     await rateLimiter.consume(req.ip || "unknown");
-    const page = parseInt(req.query.page as string) || 0;
-    const limit = parseInt(req.query.limit as string) || 10;
     
     // Check cache (valid for 5 seconds)
     const now = Date.now();
