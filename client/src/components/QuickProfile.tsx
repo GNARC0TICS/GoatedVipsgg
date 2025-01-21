@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trophy, TrendingUp, Calendar, Clock } from "lucide-react";
