@@ -40,7 +40,10 @@ export function useLeaderboard(timePeriod: TimePeriod = 'today') {
         throw new Error('Failed to fetch leaderboard data');
       }
       const data = await response.json();
-      if (!data?.success || !data?.data) {
+      if (!data?.success) {
+        throw new Error('API returned unsuccessful response');
+      }
+      if (!data?.data || !data.data[periodKey]?.data) {
         throw new Error('Invalid data format received from API');
       }
       return data;
