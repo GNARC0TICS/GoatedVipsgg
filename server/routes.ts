@@ -170,25 +170,12 @@ async function handleCreateWagerRace(req: any, res: any) {
   }
 }
 
-// Cache storage
-const statsCache = {
-  data: null as any,
-  lastUpdated: 0
-};
-
 async function handleAffiliateStats(req: any, res: any) {
   try {
     await rateLimiter.consume(req.ip || "unknown");
-    
-    // Check cache (valid for 5 seconds)
-    const now = Date.now();
-    if (statsCache.data && (now - statsCache.lastUpdated) < 5000) {
-      return res.json(statsCache.data);
-    }
-
+    const page = parseInt(req.query.page as string) || 0;
+    const limit = parseInt(req.query.limit as string) || 10;
     const data = await fetchLeaderboardData(page, limit);
-    statsCache.data = data;
-    statsCache.lastUpdated = now;
     res.json(data);
   } catch (error: any) {
     if (error.consumedPoints) {

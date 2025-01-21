@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trophy, CircleDot, Crown, Medal, Award, Star, Timer, TrendingUp, ArrowRight } from "lucide-react";
+import { Trophy, CircleDot, Crown, Medal, Award, Star, Timer, TrendingUp } from "lucide-react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { useLeaderboard } from "@/hooks/use-leaderboard";
 import { Card } from "@/components/ui/card";
@@ -95,11 +95,6 @@ export default function WagerRaces() {
                 >
                   {`${raceType.charAt(0).toUpperCase() + raceType.slice(1)} Wager Race`}
                 </motion.h1>
-                <Link href="/how-it-works">
-                  <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
-                    How it works <ArrowRight className="h-4 w-4" />
-                  </span>
-                </Link>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <CircleDot className="h-4 w-4 text-red-500 animate-pulse" />
