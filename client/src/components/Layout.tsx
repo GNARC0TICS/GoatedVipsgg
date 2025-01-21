@@ -83,11 +83,11 @@ export function Layout({ children }: LayoutProps) {
                 <NavLink 
                   href="/wager-races" 
                   label={
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 font-heading">
                       WAGER RACES
                       <div className="flex items-center gap-1">
                         <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
-                        <span className="text-xs text-red-500">LIVE</span>
+                        <span className="text-xs text-red-500 font-heading">LIVE</span>
                       </div>
                     </div>
                   } 
@@ -114,7 +114,6 @@ export function Layout({ children }: LayoutProps) {
                     className="text-[#8A8B91] hover:text-white relative"
                   >
                     <Bell className="h-5 w-5" />
-                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-80 bg-[#1A1B21] border-[#2A2B31]">
