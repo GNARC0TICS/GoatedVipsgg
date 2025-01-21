@@ -61,7 +61,7 @@ export default function BonusCodes() {
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
-                  
+
                   <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#2A2B31]">
                     <code className="bg-[#2A2B31] px-2 py-1 rounded text-[#D7FF00] font-mono">
                       {bonus.code}
