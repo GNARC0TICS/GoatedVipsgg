@@ -5,8 +5,40 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { insertUserSchema } from "@db/schema";
 import { useAuth } from "@/lib/auth";
+import { toast } from "@/components/ui/use-toast";
+
+
+const registerSchema = z.object({
+  username: z.string().min(3).max(50).refine(async (username) => {
+    const userExists = await checkIfUsernameExists(username); // Assuming this function exists
+    if (userExists) {
+      throw new z.ZodError([
+        {
+          code: z.ZodIssueCode.custom,
+          message: "Username already exists",
+          path: ["username"],
+        },
+      ]);
+    }
+    return true;
+  }),
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+
+async function checkIfUsernameExists(username: string) {
+  //Implement your logic to check if username exists in your database here.
+  // This is a placeholder, replace with your actual database query.
+  // Example using a hypothetical database client:
+  // const user = await db.user.findFirst({ where: { username } });
+  // return user !== null;
+  return false; // Placeholder return value
+}
+
 
 export default function AuthModal() {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,7 +46,7 @@ export default function AuthModal() {
   const { login, register } = useAuth();
 
   const form = useForm({
-    resolver: zodResolver(insertUserSchema),
+    resolver: zodResolver(mode === 'register' ? registerSchema : insertUserSchema),
     defaultValues: {
       username: "",
       password: "",
@@ -32,7 +64,13 @@ export default function AuthModal() {
       setIsOpen(false);
       form.reset();
     } catch (error) {
-      // Error handling is done in the auth context
+      const message = error instanceof Error ? error.message : "An unexpected error occurred";
+      console.error(error);
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
     }
   };
 
