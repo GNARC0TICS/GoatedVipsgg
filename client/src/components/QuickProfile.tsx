@@ -48,7 +48,7 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
           {children}
         </span>
       </SheetTrigger>
-      <SheetContent side="right" className="fixed inset-y-0 right-0 w-[400px] bg-[#1A1B21]/95 backdrop-blur-lg border-[#2A2B31] overflow-y-auto data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right">
+      <SheetContent side="right" className="fixed inset-y-0 right-0 w-[90vw] md:w-[400px] bg-[#1A1B21]/95 backdrop-blur-lg border-[#2A2B31] overflow-y-auto data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <LoadingSpinner />
@@ -69,7 +69,7 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
               <Card className="bg-[#1A1B21] border-[#2A2B31]">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-2 mb-2">

@@ -83,10 +83,10 @@ export function LeaderboardTable() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
         <div>
-          <h2 className="text-3xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2">Live Leaderboard</h2>
+          <h2 className="text-2xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2">Live Leaderboard</h2>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <CircleDot className="h-4 w-4 text-red-500 animate-pulse" />
