@@ -55,37 +55,37 @@ export default function Home() {
             </div>
           </Link>
 
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
-              <div className="flex items-center gap-2 mb-4">
-                <h3 className="text-2xl font-heading uppercase text-white">Wager Races</h3>
-                <div className="flex items-center gap-1">
-                  <CircleDot className="h-3 w-3 text-red-500 animate-pulse" />
-                  <span className="text-xs text-[#8A8B91]">LIVE</span>
+          <Link href="/wager-races" className="block">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="text-2xl font-heading uppercase text-white">Wager Races</h3>
+                  <div className="flex items-center gap-1">
+                    <CircleDot className="h-3 w-3 text-red-500 animate-pulse" />
+                    <span className="text-xs text-[#8A8B91]">LIVE</span>
+                  </div>
                 </div>
-              </div>
-              <p className="text-[#8A8B91] mb-6 font-body">Compete in exclusive wager races for massive prize pools and rewards.</p>
-              <Link href="/wager-races">
+                <p className="text-[#8A8B91] mb-6 font-body">Compete in exclusive wager races for massive prize pools and rewards.</p>
                 <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
                   How it works <ArrowRight className="h-4 w-4" />
                 </span>
-              </Link>
+              </div>
             </div>
-          </div>
+          </Link>
 
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
-              <h3 className="text-2xl font-heading uppercase mb-4 text-white">VIP Rewards</h3>
-              <p className="text-[#8A8B91] mb-6 font-body">Exclusive benefits like instant rakeback, level up bonuses, and monthly rewards.</p>
-              <Link href="/vip-program">
+          <Link href="/vip-program" className="block">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
+                <h3 className="text-2xl font-heading uppercase mb-4 text-white">VIP Rewards</h3>
+                <p className="text-[#8A8B91] mb-6 font-body">Exclusive benefits like instant rakeback, level up bonuses, and monthly rewards.</p>
                 <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
                   Explore VIP Program <ArrowRight className="h-4 w-4" />
                 </span>
-              </Link>
+              </div>
             </div>
-          </div>
+          </Link>
         </motion.div>
 
         <motion.div
