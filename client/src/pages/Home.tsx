@@ -42,18 +42,18 @@ export default function Home() {
           transition={{ delay: 0.2 }}
           className="grid md:grid-cols-3 gap-6 mb-6"
         >
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
-              <h3 className="text-2xl font-heading uppercase mb-4 text-white">VIP Transfer</h3>
-              <p className="text-[#8A8B91] mb-6 font-body">Transfer your VIP status from other platforms and get cash bonuses.</p>
-              <Link href="/vip-transfer">
+          <Link href="/vip-transfer" className="block">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-colors">
+                <h3 className="text-2xl font-heading uppercase mb-4 text-white">VIP Transfer</h3>
+                <p className="text-[#8A8B91] mb-6 font-body">Transfer your VIP status from other platforms and get cash bonuses.</p>
                 <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
                   Find out more <ArrowRight className="h-4 w-4" />
                 </span>
-              </Link>
+              </div>
             </div>
-          </div>
+          </Link>
 
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
