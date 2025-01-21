@@ -91,6 +91,7 @@ function Router() {
               <Route path="/help" component={Help} />
               <Route path="/provably-fair" component={ProvablyFair} />
               <Route path="/telegram" component={Telegram} />
+              <Route path="/how-it-works" component={HowItWorks} />
               <Route component={NotFound} />
             </Switch>
           </ErrorBoundary>
