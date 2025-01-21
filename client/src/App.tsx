@@ -24,7 +24,6 @@ import Help from "./pages/Help";
 import UserProfile from "@/pages/UserProfile";
 import { Redirect } from "@/lib/navigation";
 import Telegram from "@/pages/Telegram";
-import HowItWorks from "@/pages/HowItWorks";
 
 
 function ErrorFallback({ error }: { error: Error }) {
@@ -92,7 +91,6 @@ function Router() {
               <Route path="/help" component={Help} />
               <Route path="/provably-fair" component={ProvablyFair} />
               <Route path="/telegram" component={Telegram} />
-              <Route path="/how-it-works" component={HowItWorks} />
               <Route component={NotFound} />
             </Switch>
           </ErrorBoundary>
