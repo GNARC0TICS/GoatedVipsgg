@@ -167,13 +167,21 @@ export default function WagerRaces() {
                   {getTrophyIcon(2)}
                 </div>
                 <div className="text-center mt-8">
-                  <p className="text-base font-bold truncate text-white/90">{top10Players[1]?.name || '-'}</p>
-                  <p className="text-sm font-heading text-[#D7FF00] mt-2">
-                    ${getPrizeAmount(2).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-white/60 mt-1">
-                    ${getWagerAmount(top10Players[1] || { wagered: { this_month: 0 } }).toLocaleString()} wagered
-                  </p>
+                  {top10Players[1] ? (
+                    <QuickProfile userId={top10Players[1].uid} username={top10Players[1].name}>
+                      <div className="cursor-pointer hover:text-[#D7FF00] transition-colors">
+                        <p className="text-base font-bold truncate text-white/90">{top10Players[1].name}</p>
+                        <p className="text-sm font-heading text-[#D7FF00] mt-2">
+                          ${getPrizeAmount(2).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-white/60 mt-1">
+                          ${getWagerAmount(top10Players[1]).toLocaleString()} wagered
+                        </p>
+                      </div>
+                    </QuickProfile>
+                  ) : (
+                    <p className="text-base font-bold truncate text-white/90">-</p>
+                  )}
                 </div>
               </motion.div>
 
@@ -189,13 +197,21 @@ export default function WagerRaces() {
                 </div>
                 {getTrophyIcon(1)}
                 <div className="text-center mt-4">
-                  <p className="text-xl font-bold truncate text-white">{top10Players[0]?.name || '-'}</p>
-                  <p className="text-lg font-heading text-[#D7FF00] mt-2">
-                    ${getPrizeAmount(1).toLocaleString()}
-                  </p>
-                  <p className="text-sm text-white/60 mt-1">
-                    ${getWagerAmount(top10Players[0] || { wagered: { this_month: 0 } }).toLocaleString()} wagered
-                  </p>
+                  {top10Players[0] ? (
+                    <QuickProfile userId={top10Players[0].uid} username={top10Players[0].name}>
+                      <div className="cursor-pointer hover:text-[#D7FF00] transition-colors">
+                        <p className="text-xl font-bold truncate text-white">{top10Players[0].name}</p>
+                        <p className="text-lg font-heading text-[#D7FF00] mt-2">
+                          ${getPrizeAmount(1).toLocaleString()}
+                        </p>
+                        <p className="text-sm text-white/60 mt-1">
+                          ${getWagerAmount(top10Players[0]).toLocaleString()} wagered
+                        </p>
+                      </div>
+                    </QuickProfile>
+                  ) : (
+                    <p className="text-xl font-bold truncate text-white">-</p>
+                  )}
                 </div>
               </motion.div>
 
@@ -213,13 +229,21 @@ export default function WagerRaces() {
                   {getTrophyIcon(3)}
                 </div>
                 <div className="text-center mt-8">
-                  <p className="text-base font-bold truncate text-white/90">{top10Players[2]?.name || '-'}</p>
-                  <p className="text-sm font-heading text-[#D7FF00] mt-2">
-                    ${getPrizeAmount(3).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-white/60 mt-1">
-                    ${getWagerAmount(top10Players[2] || { wagered: { this_month: 0 } }).toLocaleString()} wagered
-                  </p>
+                  {top10Players[2] ? (
+                    <QuickProfile userId={top10Players[2].uid} username={top10Players[2].name}>
+                      <div className="cursor-pointer hover:text-[#D7FF00] transition-colors">
+                        <p className="text-base font-bold truncate text-white/90">{top10Players[2].name}</p>
+                        <p className="text-sm font-heading text-[#D7FF00] mt-2">
+                          ${getPrizeAmount(3).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-white/60 mt-1">
+                          ${getWagerAmount(top10Players[2]).toLocaleString()} wagered
+                        </p>
+                      </div>
+                    </QuickProfile>
+                  ) : (
+                    <p className="text-base font-bold truncate text-white/90">-</p>
+                  )}
                 </div>
               </motion.div>
             </div>
