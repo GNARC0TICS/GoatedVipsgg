@@ -63,11 +63,11 @@ export function setupAuth(app: Express) {
           .limit(1);
 
         if (!user) {
-          return done(null, false, { message: "Incorrect username." });
+          return done(null, false, { message: "Invalid username or password" });
         }
         const isMatch = await crypto.compare(password, user.password);
         if (!isMatch) {
-          return done(null, false, { message: "Incorrect password." });
+          return done(null, false, { message: "Invalid username or password" });
         }
         return done(null, user);
       } catch (err) {
@@ -97,22 +97,42 @@ export function setupAuth(app: Express) {
     try {
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
-        return res
-          .status(400)
-          .send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
+        const errors = result.error.issues.map(i => i.message).join(", ");
+        return res.status(400).json({
+          status: "error",
+          message: "Validation failed",
+          errors
+        });
       }
 
       const { username, password, email } = result.data;
 
-      // Check if user already exists
-      const [existingUser] = await db
+      // Check for existing username
+      const [existingUsername] = await db
         .select()
         .from(users)
         .where(eq(users.username, username))
         .limit(1);
 
-      if (existingUser) {
-        return res.status(400).send("Username already exists");
+      if (existingUsername) {
+        return res.status(400).json({
+          status: "error",
+          message: "Username already exists"
+        });
+      }
+
+      // Check for existing email
+      const [existingEmail] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (existingEmail) {
+        return res.status(400).json({
+          status: "error",
+          message: "Email already registered"
+        });
       }
 
       // Hash the password
@@ -125,7 +145,7 @@ export function setupAuth(app: Express) {
           username,
           password: hashedPassword,
           email,
-          isAdmin: false,
+          isAdmin: false
         })
         .returning();
 
@@ -135,11 +155,24 @@ export function setupAuth(app: Express) {
           return next(err);
         }
         return res.json({
+          status: "success",
           message: "Registration successful",
-          user: { id: newUser.id, username: newUser.username, isAdmin: newUser.isAdmin },
+          user: {
+            id: newUser.id,
+            username: newUser.username,
+            email: newUser.email,
+            isAdmin: newUser.isAdmin
+          }
         });
       });
-    } catch (error) {
+    } catch (error: any) {
+      // Handle database-level errors
+      if (error.code === '23505') { // Unique constraint violation
+        return res.status(400).json({
+          status: "error",
+          message: "Username or email already exists"
+        });
+      }
       next(error);
     }
   });
@@ -151,7 +184,10 @@ export function setupAuth(app: Express) {
       }
 
       if (!user) {
-        return res.status(400).send(info.message ?? "Login failed");
+        return res.status(400).json({
+          status: "error",
+          message: info.message ?? "Login failed"
+        });
       }
 
       req.logIn(user, (err) => {
@@ -160,8 +196,14 @@ export function setupAuth(app: Express) {
         }
 
         return res.json({
+          status: "success",
           message: "Login successful",
-          user: { id: user.id, username: user.username, isAdmin: user.isAdmin },
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            isAdmin: user.isAdmin
+          }
         });
       });
     })(req, res, next);
@@ -170,16 +212,31 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", (req, res) => {
     req.logout((err) => {
       if (err) {
-        return res.status(500).send("Logout failed");
+        return res.status(500).json({
+          status: "error",
+          message: "Logout failed"
+        });
       }
-      res.json({ message: "Logout successful" });
+      res.json({
+        status: "success",
+        message: "Logout successful"
+      });
     });
   });
 
   app.get("/api/user", (req, res) => {
     if (req.isAuthenticated()) {
-      return res.json(req.user);
+      const user = req.user;
+      return res.json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        isAdmin: user.isAdmin
+      });
     }
-    res.status(401).send("Not logged in");
+    res.status(401).json({
+      status: "error",
+      message: "Not logged in"
+    });
   });
 }

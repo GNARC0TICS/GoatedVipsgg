@@ -9,6 +9,7 @@ import { requireAdmin, requireAuth } from './middleware/auth';
 import { db } from '@db';
 import { wagerRaces, users } from '@db/schema';
 import { eq } from 'drizzle-orm';
+import { z } from 'zod';
 
 const rateLimiter = new RateLimiterMemory({
   points: 60,
@@ -16,6 +17,11 @@ const rateLimiter = new RateLimiterMemory({
 });
 
 let wss: WebSocketServer;
+
+const adminLoginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
 
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
@@ -29,7 +35,16 @@ function setupRESTRoutes(app: Express) {
   app.get("/api/profile", requireAuth, handleProfileRequest);
   app.post("/api/admin/login", async (req, res) => {
     try {
-      const { username, password } = req.body;
+      const result = adminLoginSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          status: "error",
+          message: "Validation failed",
+          errors: result.error.issues.map(i => i.message).join(", ")
+        });
+      }
+
+      const { username, password } = result.data;
       const [user] = await db
         .select()
         .from(users)
@@ -37,7 +52,10 @@ function setupRESTRoutes(app: Express) {
         .limit(1);
 
       if (!user || !user.isAdmin) {
-        return res.status(401).json({ error: "Invalid admin credentials" });
+        return res.status(401).json({
+          status: "error",
+          message: "Invalid admin credentials"
+        });
       }
 
       // Verify password and generate token
@@ -52,10 +70,22 @@ function setupRESTRoutes(app: Express) {
         secure: process.env.NODE_ENV === 'production'
       });
 
-      res.json({ user });
+      res.json({
+        status: "success",
+        message: "Admin login successful",
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          isAdmin: user.isAdmin
+        }
+      });
     } catch (error) {
-      console.error('Admin login error:', error);
-      res.status(500).json({ error: "Failed to process admin login" });
+      log('Admin login error:', error);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to process admin login"
+      });
     }
   });
 
@@ -68,23 +98,47 @@ function setupRESTRoutes(app: Express) {
       const { id } = req.params;
       const { status } = req.body;
 
+      if (!status || !["upcoming", "live", "completed"].includes(status)) {
+        return res.status(400).json({
+          status: "error",
+          message: "Invalid race status"
+        });
+      }
+
       const race = await db
         .update(wagerRaces)
         .set({ status, updatedAt: new Date() })
         .where(eq(wagerRaces.id, parseInt(id)))
         .returning();
 
+      if (!race.length) {
+        return res.status(404).json({
+          status: "error",
+          message: "Race not found"
+        });
+      }
+
       // Broadcast update to all connected clients
       wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: 'RACE_STATUS_UPDATE', data: race[0] }));
+          client.send(JSON.stringify({
+            type: 'RACE_STATUS_UPDATE',
+            data: race[0]
+          }));
         }
       });
 
-      res.json(race[0]);
+      res.json({
+        status: "success",
+        message: "Race status updated successfully",
+        data: race[0]
+      });
     } catch (error) {
       log(`Error updating race status: ${error}`);
-      res.status(500).json({ error: "Failed to update race status" });
+      res.status(500).json({
+        status: "error",
+        message: "Failed to update race status"
+      });
     }
   });
 
@@ -106,10 +160,23 @@ async function handleProfileRequest(req: any, res: any) {
       .where(eq(users.id, req.user!.id))
       .limit(1);
 
-    res.json(user);
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found"
+      });
+    }
+
+    res.json({
+      status: "success",
+      data: user
+    });
   } catch (error) {
     log(`Error fetching profile: ${error}`);
-    res.status(500).json({ error: "Failed to fetch profile" });
+    res.status(500).json({
+      status: "error",
+      message: "Failed to fetch profile"
+    });
   }
 }
 
@@ -127,10 +194,16 @@ async function handleAdminUsersRequest(_req: any, res: any) {
       .from(users)
       .orderBy(users.createdAt);
 
-    res.json(usersList);
+    res.json({
+      status: "success",
+      data: usersList
+    });
   } catch (error) {
     log(`Error fetching users: ${error}`);
-    res.status(500).json({ error: "Failed to fetch users" });
+    res.status(500).json({
+      status: "error",
+      message: "Failed to fetch users"
+    });
   }
 }
 
@@ -139,10 +212,16 @@ async function handleWagerRacesRequest(_req: any, res: any) {
     const races = await db.query.wagerRaces.findMany({
       orderBy: (races, { desc }) => [desc(races.createdAt)]
     });
-    res.json(races);
+    res.json({
+      status: "success",
+      data: races
+    });
   } catch (error) {
     log(`Error fetching wager races: ${error}`);
-    res.status(500).json({ error: "Failed to fetch wager races" });
+    res.status(500).json({
+      status: "error",
+      message: "Failed to fetch wager races"
+    });
   }
 }
 
@@ -163,10 +242,17 @@ async function handleCreateWagerRace(req: any, res: any) {
       }
     });
 
-    res.json(race[0]);
+    res.json({
+      status: "success",
+      message: "Race created successfully",
+      data: race[0]
+    });
   } catch (error) {
     log(`Error creating wager race: ${error}`);
-    res.status(500).json({ error: "Failed to create wager race" });
+    res.status(500).json({
+      status: "error",
+      message: "Failed to create wager race"
+    });
   }
 }
 
@@ -261,7 +347,7 @@ function transformLeaderboardData(apiData: any) {
   const responseData = apiData.data || apiData.results || apiData;
   if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
     return {
-      success: false,
+      status: "success",
       metadata: {
         totalUsers: 0,
         lastUpdated: new Date().toISOString()
@@ -288,7 +374,7 @@ function transformLeaderboardData(apiData: any) {
   }));
 
   return {
-    success: true,
+    status: "success",
     metadata: {
       totalUsers: transformedData.length,
       lastUpdated: new Date().toISOString()
