@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import { ArrowLeftCircle, ArrowRightCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
@@ -20,28 +20,52 @@ export const FeatureCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [, setLocation] = useLocation();
+  const x = useMotionValue(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   const nextSlide = () => {
-    setCurrentIndex((prev) => (prev + 1) % announcements.length);
+    if (!isDragging) {
+      setCurrentIndex((prev) => (prev + 1) % announcements.length);
+    }
   };
 
   const prevSlide = () => {
-    setCurrentIndex((prev) => (prev - 1 + announcements.length) % announcements.length);
+    if (!isDragging) {
+      setCurrentIndex((prev) => (prev - 1 + announcements.length) % announcements.length);
+    }
+  };
+
+  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    setIsDragging(false);
+    const threshold = 50;
+    if (Math.abs(info.offset.x) > threshold) {
+      if (info.offset.x > 0) {
+        prevSlide();
+      } else {
+        nextSlide();
+      }
+    }
   };
 
   useEffect(() => {
-    const interval = setInterval(nextSlide, 3000);
+    const interval = setInterval(() => {
+      if (!isDragging) {
+        nextSlide();
+      }
+    }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isDragging]);
 
   const handleClick = (link: string) => {
-    if (link.startsWith('#')) {
-      const element = document.querySelector(link);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+    if (!isDragging) {
+      if (link.startsWith('#')) {
+        const element = document.querySelector(link);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      } else {
+        setLocation(link);
       }
-    } else {
-      setLocation(link);
     }
   };
 
@@ -49,8 +73,6 @@ export const FeatureCarousel = () => {
     <div 
       ref={containerRef} 
       className="relative h-24 overflow-hidden mb-8 group touch-none"
-      onTouchStart={(e) => e.stopPropagation()}
-      onTouchMove={(e) => e.stopPropagation()}
     >
       <div className="flex justify-center items-center h-full relative">
         <button 
@@ -63,15 +85,25 @@ export const FeatureCarousel = () => {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragStart={() => setIsDragging(true)}
+            onDragEnd={handleDragEnd}
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            transition={{ duration: 0.3 }}
-            className="text-center px-16"
+            transition={{ 
+              type: "spring",
+              stiffness: 300,
+              damping: 30
+            }}
+            style={{ x }}
+            className="text-center px-16 touch-none cursor-grab active:cursor-grabbing"
           >
             <button
               onClick={() => handleClick(announcements[currentIndex].link)}
-              className="text-3xl md:text-4xl font-heading font-extrabold bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent hover:from-[#D7FF00]/80 hover:to-[#D7FF00]/40 transition-all cursor-pointer"
+              className="text-3xl md:text-4xl font-heading font-extrabold bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent hover:from-[#D7FF00]/80 hover:to-[#D7FF00]/40 transition-all pointer-events-auto"
             >
               {announcements[currentIndex].text}
             </button>
