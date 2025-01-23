@@ -28,6 +28,8 @@ import HowItWorks from "@/pages/HowItWorks";
 import GoatedToken from "@/pages/GoatedToken";
 import Support from "@/pages/support";
 import FAQ from "@/pages/faq";
+import VipProgram from './pages/VipProgram'; // Added import for VipProgram
+
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -98,6 +100,7 @@ function Router() {
             <Route path="/telegram" component={Telegram} />
             <Route path="/how-it-works" component={HowItWorks} />
             <Route path="/goated-token" component={GoatedToken} />
+            <Route path="/vip-program" component={VipProgram} /> {/* Added VIP Program route */}
             <Route component={NotFound} />
           </Switch>
         </ErrorBoundary>
