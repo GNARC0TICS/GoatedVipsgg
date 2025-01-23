@@ -7,7 +7,7 @@ import type { SelectUser } from "@db/schema";
 import { ScrollToTop } from "./ScrollToTop";
 import { useEffect, useRef, useState } from "react";
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Bell, Settings, MessageCircle, X } from 'lucide-react';
+import { Bell, Settings, User, LogOut, ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { FloatingSupport } from "./FloatingSupport";
+import { useToast } from "@/hooks/use-toast";
 
 interface LayoutProps {
   children: ReactNode;
@@ -27,6 +28,7 @@ export function Layout({ children }: LayoutProps) {
   const footerRef = useRef<HTMLElement>(null);
   const [isFooterVisible, setIsFooterVisible] = useState(false);
   const [showFloatingSupport, setShowFloatingSupport] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -35,6 +37,27 @@ export function Layout({ children }: LayoutProps) {
   const { data: user } = useQuery<SelectUser>({
     queryKey: ["/api/user"],
   });
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Logout failed');
+      }
+
+      window.location.reload();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to logout. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -96,19 +119,13 @@ export function Layout({ children }: LayoutProps) {
                 />
                 <NavLink href="/vip-program" label="VIP PROGRAM" />
                 <NavLink href="/promotions" label="PROMOTIONS" />
-                <NavLink href="/support" 
+                <NavLink href="/telegram" 
                   label={
                     <div className="flex items-center gap-2">
-                      <MessageCircle className="w-4 h-4" />
-                      SUPPORT
+                      TELEGRAM
                     </div>
                   } 
-                  tooltip="Get help from our support team"
-                />
-                <NavLink 
-                  href="/telegram" 
-                  label="TELEGRAM" 
-                  tooltip="Join our Telegram group"
+                  tooltip="Join our Telegram community"
                 />
                 {user?.isAdmin && (
                   <NavLink href="/admin/wager-races" label="ADMIN" />
@@ -156,8 +173,40 @@ export function Layout({ children }: LayoutProps) {
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
+
               <div className="flex items-center gap-4">
-                <AuthModal />
+                {user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="flex items-center gap-2 text-white">
+                        <User className="h-5 w-5" />
+                        <span className="hidden md:inline">{user.username}</span>
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 bg-[#1A1B21] border-[#2A2B31]">
+                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <Link href={`/user/${user.id}`}>
+                        <DropdownMenuItem className="cursor-pointer">
+                          Profile
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link href="/notification-preferences">
+                        <DropdownMenuItem className="cursor-pointer">
+                          Settings
+                        </DropdownMenuItem>
+                      </Link>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleLogout} className="text-red-500 cursor-pointer">
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Logout
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <AuthModal />
+                )}
                 <Button
                   onClick={() => window.open('https://www.goated.com/r/SPIN', '_blank')}
                   className="relative group overflow-hidden text-white fill-animation hover:text-black transition-all duration-300 font-heading uppercase"
@@ -244,7 +293,6 @@ function NavLink({ href, label, tooltip }: { href: string; label: string | React
       }`} />
     </span>
   );
-
 
   return (
     <Tooltip>

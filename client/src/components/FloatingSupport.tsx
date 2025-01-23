@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,15 +11,7 @@ interface FloatingSupportProps {
 
 export function FloatingSupport({ onClose }: FloatingSupportProps) {
   const [isMinimized, setIsMinimized] = useState(true);
-  const [showInitialMessage, setShowInitialMessage] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowInitialMessage(true);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []);
+  const [hasUnreadMessage, setHasUnreadMessage] = useState(true);
 
   return (
     <AnimatePresence>
@@ -27,55 +19,23 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
-        className="fixed bottom-4 right-4 z-50"
+        className="fixed bottom-20 right-4 z-50"
       >
         {isMinimized ? (
           <div className="relative">
             <Button
-              onClick={() => setIsMinimized(false)}
+              onClick={() => {
+                setIsMinimized(false);
+                setHasUnreadMessage(false);
+              }}
               size="icon"
               className="h-14 w-14 rounded-full bg-[#D7FF00] hover:bg-[#D7FF00]/90 text-[#14151A] shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <MessageCircle className="h-7 w-7" />
+              {hasUnreadMessage && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full border-2 border-background animate-pulse" />
+              )}
             </Button>
-
-            {showInitialMessage && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="absolute bottom-full right-0 mb-4"
-              >
-                <Card className="p-6 w-72 bg-[#1A1B21] border-[#2A2B31] shadow-lg">
-                  <div className="flex items-start justify-between mb-3">
-                    <span className="font-bold text-[#D7FF00]">VIP Support</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => setShowInitialMessage(false)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <p className="text-sm text-white mb-4">
-                    Welcome to VIP Support! How can we assist you today?
-                  </p>
-                  <div className="flex justify-end">
-                    <Button
-                      variant="link"
-                      className="text-[#D7FF00] hover:text-[#D7FF00]/80 p-0 h-auto"
-                      onClick={() => {
-                        setIsMinimized(false);
-                        setShowInitialMessage(false);
-                      }}
-                    >
-                      Get Assistance <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </div>
-                </Card>
-              </motion.div>
-            )}
           </div>
         ) : (
           <Card className="w-[400px] bg-[#1A1B21] border-[#2A2B31]">
@@ -139,19 +99,14 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
                     💬 Contact on Telegram
                   </Button>
                 </a>
-                <a
-                  href="https://t.me/goated_group"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                >
+                <Link href="/telegram" className="block">
                   <Button
                     variant="ghost"
                     className="w-full justify-start text-left hover:bg-[#2A2B31]/50"
                   >
                     👥 Join Telegram Community
                   </Button>
-                </a>
+                </Link>
               </div>
             </div>
           </Card>
