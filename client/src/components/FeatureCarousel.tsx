@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { ArrowLeftCircle, ArrowRightCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
@@ -46,7 +46,12 @@ export const FeatureCarousel = () => {
   };
 
   return (
-    <div ref={containerRef} className="relative h-24 overflow-hidden mb-8 group">
+    <div 
+      ref={containerRef} 
+      className="relative h-24 overflow-hidden mb-8 group touch-none"
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchMove={(e) => e.stopPropagation()}
+    >
       <div className="flex justify-center items-center h-full relative">
         <button 
           onClick={prevSlide}
