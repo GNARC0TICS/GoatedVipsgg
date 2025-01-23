@@ -35,11 +35,16 @@ export const FeatureCarousel = () => {
     }
   };
 
+  const dragConstraints = useRef<HTMLDivElement>(null);
+
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     setIsDragging(false);
     const threshold = 50;
-    if (Math.abs(info.offset.x) > threshold) {
-      if (info.offset.x > 0) {
+    const velocity = info.velocity.x;
+    const offset = info.offset.x;
+    
+    if (Math.abs(velocity) > 100 || Math.abs(offset) > threshold) {
+      if (offset > 0 || velocity > 100) {
         prevSlide();
       } else {
         nextSlide();
@@ -86,8 +91,10 @@ export const FeatureCarousel = () => {
           <motion.div
             key={currentIndex}
             drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.2}
+            dragConstraints={dragConstraints}
+            dragElastic={0.5}
+            dragMomentum={true}
+            dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
             onDragStart={() => setIsDragging(true)}
             onDragEnd={handleDragEnd}
             initial={{ opacity: 0, x: 100 }}
