@@ -27,7 +27,7 @@ import Telegram from "@/pages/Telegram";
 import HowItWorks from "@/pages/HowItWorks";
 import GoatedToken from "@/pages/GoatedToken";
 import Support from "@/pages/support";
-
+import FAQ from "@/pages/faq";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -65,43 +65,44 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
 function Router() {
   return (
-      <Layout>
-        <AnimatePresence mode="wait">
-          <ErrorBoundary FallbackComponent={ErrorFallback}>
-            <Switch>
-              <Route path="/" component={Home} />
-              <Route path="/vip-transfer" component={VipTransfer} />
-              <Route path="/wager-races" component={WagerRaces} />
-              <Route path="/bonus-codes" component={BonusCodes} />
-              <Route path="/notification-preferences" component={NotificationPreferences} />
-              <Route path="/support" component={Support} />
-              <Route path="/admin/wager-races">
-                <AdminRoute>
-                  <WagerRaceManagement />
-                </AdminRoute>
-              </Route>
-              <Route path="/admin/users">
-                <AdminRoute>
-                  <UserManagement />
-                </AdminRoute>
-              </Route>
-              <Route path="/user/:id">
-                {(params) => (
-                  <PageTransition>
-                    <UserProfile userId={params.id} />
-                  </PageTransition>
-                )}
-              </Route>
-              <Route path="/help" component={Help} />
-              <Route path="/provably-fair" component={ProvablyFair} />
-              <Route path="/telegram" component={Telegram} />
-              <Route path="/how-it-works" component={HowItWorks} />
-              <Route path="/goated-token" component={GoatedToken} />
-              <Route component={NotFound} />
-            </Switch>
-          </ErrorBoundary>
-        </AnimatePresence>
-      </Layout>
+    <Layout>
+      <AnimatePresence mode="wait">
+        <ErrorBoundary FallbackComponent={ErrorFallback}>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/vip-transfer" component={VipTransfer} />
+            <Route path="/wager-races" component={WagerRaces} />
+            <Route path="/bonus-codes" component={BonusCodes} />
+            <Route path="/notification-preferences" component={NotificationPreferences} />
+            <Route path="/support" component={Support} />
+            <Route path="/faq" component={FAQ} />
+            <Route path="/admin/wager-races">
+              <AdminRoute>
+                <WagerRaceManagement />
+              </AdminRoute>
+            </Route>
+            <Route path="/admin/users">
+              <AdminRoute>
+                <UserManagement />
+              </AdminRoute>
+            </Route>
+            <Route path="/user/:id">
+              {(params) => (
+                <PageTransition>
+                  <UserProfile userId={params.id} />
+                </PageTransition>
+              )}
+            </Route>
+            <Route path="/help" component={Help} />
+            <Route path="/provably-fair" component={ProvablyFair} />
+            <Route path="/telegram" component={Telegram} />
+            <Route path="/how-it-works" component={HowItWorks} />
+            <Route path="/goated-token" component={GoatedToken} />
+            <Route component={NotFound} />
+          </Switch>
+        </ErrorBoundary>
+      </AnimatePresence>
+    </Layout>
   );
 }
 
