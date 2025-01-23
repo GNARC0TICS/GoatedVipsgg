@@ -7,7 +7,7 @@ import type { SelectUser } from "@db/schema";
 import { ScrollToTop } from "./ScrollToTop";
 import { useEffect, useRef, useState } from "react";
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Bell, Settings } from 'lucide-react';
+import { Bell, Settings, MessageCircle, X } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { FloatingSupport } from "./FloatingSupport";
 
 interface LayoutProps {
   children: ReactNode;
@@ -25,6 +26,7 @@ export function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
   const footerRef = useRef<HTMLElement>(null);
   const [isFooterVisible, setIsFooterVisible] = useState(false);
+  const [showFloatingSupport, setShowFloatingSupport] = useState(true);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -94,6 +96,15 @@ export function Layout({ children }: LayoutProps) {
                 />
                 <NavLink href="/vip-program" label="VIP PROGRAM" />
                 <NavLink href="/promotions" label="PROMOTIONS" />
+                <NavLink href="/support" 
+                  label={
+                    <div className="flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4" />
+                      SUPPORT
+                    </div>
+                  } 
+                  tooltip="Get help from our support team"
+                />
                 <NavLink 
                   href="/telegram" 
                   label="TELEGRAM" 
@@ -163,6 +174,8 @@ export function Layout({ children }: LayoutProps) {
       <main className="flex-grow pt-16">
         {children}
       </main>
+
+      {showFloatingSupport && <FloatingSupport onClose={() => setShowFloatingSupport(false)} />}
 
       <ScrollToTop />
 
