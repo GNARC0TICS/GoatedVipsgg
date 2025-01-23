@@ -18,14 +18,9 @@ const rateLimiter = new RateLimiterMemory({
 
 let wss: WebSocketServer;
 
-const adminLoginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
-});
-
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
-  setupAuth(app);
+  setupAuth(app);  // Ensure auth is set up first
   setupRESTRoutes(app);
   setupWebSocket(httpServer);
   return httpServer;
@@ -391,6 +386,11 @@ function transformLeaderboardData(apiData: any) {
 function sortByWagered(data: any[], period: string) {
   return [...data].sort((a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0));
 }
+
+const adminLoginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
 
 function generateToken(payload: any): string {
   //Implementation for generateToken is missing in original code, but it's not relevant to the fix.  Leaving as is.
