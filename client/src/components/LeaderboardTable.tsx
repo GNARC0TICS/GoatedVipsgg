@@ -7,6 +7,7 @@ import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { CircleDot } from 'lucide-react';
 import { QuickProfile } from "@/components/QuickProfile";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { motion } from "framer-motion";
 
 const ITEMS_PER_PAGE = 10;
 
