@@ -244,7 +244,7 @@ export function LeaderboardTable() {
                     )}
                   </div>
                 </TableCell>
-              </TableRow>
+              </motion.tr>
             ))}
           </TableBody>
         </Table>
