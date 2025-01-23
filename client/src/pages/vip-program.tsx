@@ -96,7 +96,7 @@ const vipLevels = [
 
 export default function VipProgram() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -104,7 +104,7 @@ export default function VipProgram() {
       >
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold mb-4 text-[#D7FF00]">VIP PROGRAM</h1>
-          <p className="text-xl text-foreground max-w-3xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Experience exclusive benefits, personalized service, and enhanced rewards as you progress through our VIP levels.
           </p>
         </div>
@@ -116,7 +116,7 @@ export default function VipProgram() {
               <CardTitle>Instant Rakeback</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-foreground">
+              <p className="text-muted-foreground">
                 Earn cashback on your wagers instantly, with increasing rates as you climb the VIP ladder.
               </p>
             </CardContent>
@@ -128,7 +128,7 @@ export default function VipProgram() {
               <CardTitle>Level Up Bonus</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-foreground">
+              <p className="text-muted-foreground">
                 Receive substantial bonuses every time you advance to a new VIP level.
               </p>
             </CardContent>
@@ -140,7 +140,7 @@ export default function VipProgram() {
               <CardTitle>Weekly & Monthly Rewards</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-foreground">
+              <p className="text-muted-foreground">
                 Regular bonuses based on your activity, with enhanced rewards for higher VIP levels.
               </p>
             </CardContent>
@@ -152,7 +152,7 @@ export default function VipProgram() {
               <CardTitle>VIP Support</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-foreground">
+              <p className="text-muted-foreground">
                 Dedicated VIP host and priority support for Sapphire level and above.
               </p>
             </CardContent>
@@ -161,38 +161,40 @@ export default function VipProgram() {
 
         <Card className="mb-16">
           <CardHeader>
-            <CardTitle>VIP Levels & Benefits</CardTitle>
+            <CardTitle className="text-2xl">VIP Levels & Benefits</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Level</TableHead>
-                  <TableHead>Benefits</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {vipLevels.map((level) => (
-                  <TableRow key={level.level}>
-                    <TableCell>{level.level}</TableCell>
-                    <TableCell>
-                      <ul className="list-disc list-inside">
-                        {level.benefits.map((benefit, index) => (
-                          <li key={index} className="text-foreground">{benefit}</li>
-                        ))}
-                      </ul>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Level</TableHead>
+                    <TableHead>Benefits</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {vipLevels.map((level) => (
+                    <TableRow key={level.level}>
+                      <TableCell className="font-medium">{level.level}</TableCell>
+                      <TableCell>
+                        <ul className="list-disc list-inside">
+                          {level.benefits.map((benefit, index) => (
+                            <li key={index} className="text-muted-foreground">{benefit}</li>
+                          ))}
+                        </ul>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
 
         <div className="text-center">
           <Button
             onClick={() => window.open('https://www.goated.com/r/SPIN', '_blank')}
-            className="bg-[#D7FF00] text-[#14151A] hover:bg-[#D7FF00]/90"
+            className="bg-[#D7FF00] text-[#14151A] hover:bg-[#D7FF00]/90 transition-colors"
           >
             Join VIP Program <ArrowRight className="ml-2 h-4 w-4" />
           </Button>

@@ -13,7 +13,7 @@ const vipLevels = [
 
 export default function VipTransfer() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -27,7 +27,7 @@ export default function VipTransfer() {
         </h2>
 
         <div className="prose prose-invert max-w-none mb-12">
-          <p className="text-lg leading-relaxed text-foreground">
+          <p className="text-lg leading-relaxed">
             Are you a high roller on a competing crypto casino platform? If you're on a higher VIP level
             elsewhere, Goated.com offers an exciting opportunity for you to transfer your VIP status and
             enjoy great rewards! The "VIP Transfer" promotion is designed to help loyal players maximize
@@ -40,7 +40,7 @@ export default function VipTransfer() {
         </h3>
 
         <div className="prose prose-invert max-w-none mb-12">
-          <p className="text-lg leading-relaxed text-foreground">
+          <p className="text-lg leading-relaxed">
             If you're eligible for the VIP Transfer promotion, you'll need to meet certain wagering
             requirements at Goated.com within the first 30 days to qualify. The amount you wager on
             competing platforms determines the Goated VIP level you could unlock and the potential
@@ -80,7 +80,7 @@ export default function VipTransfer() {
           <div className="flex items-start gap-2">
             <Info className="w-5 h-5 text-[#D7FF00] mt-1" />
             <div>
-              <p className="text-sm text-foreground">
+              <p className="text-sm text-muted-foreground">
                 The cash bonus is calculated using the formula: "Cash Bonus = wager × (gameEdge / 0.04) × 0.015"
               </p>
               <p className="text-xs text-muted-foreground mt-2">
@@ -93,7 +93,7 @@ export default function VipTransfer() {
 
         <div className="space-y-6">
           <h3 className="text-3xl font-bold text-[#D7FF00]">Important Details</h3>
-          <ul className="list-disc list-inside space-y-2 text-lg text-foreground">
+          <ul className="list-disc list-inside space-y-2 text-lg text-muted-foreground">
             <li>This offer is only available to players whose accounts are less than 40 days old.</li>
             <li>
               You must meet the wagering requirement within the first 30 days of your account at
