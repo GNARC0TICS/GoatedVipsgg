@@ -13,11 +13,12 @@ const vipLevels = [
 
 export default function VipTransfer() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background pointer-events-none" />
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="container mx-auto px-4 py-16"
+        className="container mx-auto px-4 py-16 relative"
       >
         <h1 className="text-5xl font-bold mb-6 text-[#D7FF00]">
           GOATED.COM VIP TRANSFER PROMOTION:
@@ -26,7 +27,7 @@ export default function VipTransfer() {
           UNLOCK HIGHER VIP LEVELS WITH EASE!
         </h2>
 
-        <div className="prose prose-invert max-w-none mb-12">
+        <div className="prose max-w-none mb-12">
           <p className="text-lg leading-relaxed">
             Are you a high roller on a competing crypto casino platform? If you're on a higher VIP level
             elsewhere, Goated.com offers an exciting opportunity for you to transfer your VIP status and
@@ -39,7 +40,7 @@ export default function VipTransfer() {
           HOW DOES THE VIP TRANSFER WORK?
         </h3>
 
-        <div className="prose prose-invert max-w-none mb-12">
+        <div className="prose max-w-none mb-12">
           <p className="text-lg leading-relaxed">
             If you're eligible for the VIP Transfer promotion, you'll need to meet certain wagering
             requirements at Goated.com within the first 30 days to qualify. The amount you wager on
