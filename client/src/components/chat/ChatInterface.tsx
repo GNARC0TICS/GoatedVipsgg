@@ -6,45 +6,98 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Bot, User } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: number;
   message: string;
-  userId: number;
+  userId: number | null;
   createdAt: string;
   isStaffReply: boolean;
 }
 
 export function ChatInterface() {
   const { user } = useUser();
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const connectWebSocket = () => {
+    try {
+      setIsConnecting(true);
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const websocket = new WebSocket(`${protocol}//${window.location.host}/ws/chat`);
+
+      websocket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        if (message.type === 'error') {
+          toast({
+            title: "Error",
+            description: message.message,
+            variant: "destructive"
+          });
+          return;
+        }
+        setMessages(prev => [...prev, message]);
+        scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+      };
+
+      websocket.onopen = () => {
+        setIsConnecting(false);
+        setWs(websocket);
+      };
+
+      websocket.onclose = () => {
+        setIsConnecting(false);
+        console.log("WebSocket connection closed");
+        // Try to reconnect after 5 seconds
+        reconnectTimeoutRef.current = setTimeout(() => {
+          connectWebSocket();
+        }, 5000);
+      };
+
+      websocket.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        toast({
+          title: "Connection Error",
+          description: "Failed to connect to chat service. Retrying...",
+          variant: "destructive"
+        });
+      };
+
+      return websocket;
+    } catch (error) {
+      console.error("Error creating WebSocket:", error);
+      setIsConnecting(false);
+      return null;
+    }
+  };
 
   useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws/chat`);
+    // Fetch chat history
+    fetch('/api/chat/history', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => {
+        setMessages(data);
+        scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+      })
+      .catch(console.error);
 
-    websocket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      setMessages((prev) => [...prev, message]);
-      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
-
-    websocket.onclose = () => {
-      console.log("WebSocket connection closed");
-      setTimeout(() => {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        setWs(new WebSocket(`${protocol}//${window.location.host}/ws/chat`));
-      }, 5000);
-    };
-
-    setWs(websocket);
+    // Connect to WebSocket
+    const websocket = connectWebSocket();
 
     return () => {
-      websocket.close();
+      if (websocket) {
+        websocket.close();
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -62,33 +115,29 @@ export function ChatInterface() {
     setNewMessage("");
   };
 
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
     <Card className="w-full max-w-4xl mx-auto bg-[#1A1B21] border-[#2A2B31]">
       <CardHeader className="border-b border-[#2A2B31] p-4">
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 bg-[#D7FF00] rounded-full animate-pulse" />
-          <h3 className="font-heading text-lg text-white">VIP Support Chat</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 bg-[#D7FF00] rounded-full animate-pulse" />
+            <h3 className="font-heading text-lg text-white">VIP Support</h3>
+          </div>
+          {isConnecting && (
+            <span className="text-sm text-[#8A8B91]">Connecting...</span>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-[500px] px-6 py-4">
           <div className="space-y-4">
-            <div className="flex gap-3">
-              <Avatar className="h-8 w-8 bg-[#D7FF00]">
-                <Bot className="h-4 w-4 text-[#14151A]" />
-              </Avatar>
-              <div className="flex-1">
-                <div className="bg-[#2A2B31] rounded-lg p-4 max-w-[80%]">
-                  <p className="text-sm text-white">
-                    Welcome to VIP Support! How can we assist you today? Our team is here to help with any questions or concerns you may have.
-                  </p>
-                </div>
-                <span className="text-xs text-[#8A8B91] mt-1 block">
-                  {new Date().toLocaleTimeString()}
-                </span>
-              </div>
-            </div>
-
             {messages.map((msg, idx) => (
               <div
                 key={msg.id || idx}
@@ -110,7 +159,7 @@ export function ChatInterface() {
                     <p className="text-sm">{msg.message}</p>
                   </div>
                   <span className="text-xs text-[#8A8B91] mt-1 block">
-                    {new Date(msg.createdAt).toLocaleTimeString()}
+                    {formatTime(msg.createdAt)}
                   </span>
                 </div>
                 {msg.userId === user?.id && (

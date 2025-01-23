@@ -138,6 +138,23 @@ function setupRESTRoutes(app: Express) {
   });
 
   app.get("/api/affiliate/stats", handleAffiliateStats);
+
+  // Add new route to fetch chat history
+  app.get("/api/chat/history", requireAuth, async (req, res) => {
+    try {
+      const messages = await db.query.ticketMessages.findMany({
+        orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+        limit: 50
+      });
+      res.json(messages);
+    } catch (error) {
+      log(`Error fetching chat history: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch chat history"
+      });
+    }
+  });
 }
 
 async function handleProfileRequest(req: any, res: any) {
@@ -276,52 +293,26 @@ function setupWebSocket(httpServer: Server) {
   wss = new WebSocketServer({ noServer: true });
 
   httpServer.on('upgrade', (request, socket, head) => {
-    if (request.url === '/ws/affiliate-stats') {
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit('connection', ws, request);
-      });
-    } else if (request.url === '/ws/chat') {
+    // Skip vite HMR requests
+    if (request.headers['sec-websocket-protocol'] === 'vite-hmr') {
+      return;
+    }
+
+    if (request.url === '/ws/chat') {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit('connection', ws, request);
         handleChatConnection(ws);
       });
     }
   });
-
-  wss.on('connection', handleWebSocketConnection);
 }
 
-async function handleWebSocketConnection(ws: WebSocket) {
-  log('WebSocket client connected');
-  let interval: NodeJS.Timeout;
-
-  try {
-    const data = await fetchLeaderboardData();
-    ws.send(JSON.stringify(data));
-
-    interval = setInterval(async () => {
-      try {
-        const data = await fetchLeaderboardData();
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify(data));
-        }
-      } catch (error) {
-        log(`Error sending WebSocket update: ${error}`);
-      }
-    }, 30000);
-
-    ws.on('close', () => {
-      log('WebSocket client disconnected');
-      clearInterval(interval);
-    });
-
-  } catch (error) {
-    log(`Error in WebSocket connection: ${error}`);
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.close();
-    }
-  }
-}
+const chatMessageSchema = z.object({
+  type: z.literal('chat_message'),
+  message: z.string().min(1).max(1000),
+  userId: z.number().optional(),
+  isStaffReply: z.boolean().default(false)
+});
 
 async function handleChatConnection(ws: WebSocket) {
   log('Chat WebSocket client connected');
@@ -329,33 +320,42 @@ async function handleChatConnection(ws: WebSocket) {
   ws.on('message', async (data) => {
     try {
       const message = JSON.parse(data.toString());
+      const result = chatMessageSchema.safeParse(message);
 
-      if (message.type === 'chat_message') {
-        // Save message to database
-        const [savedMessage] = await db.insert(ticketMessages)
-          .values({
-            ticketId: message.ticketId,
-            userId: message.userId,
-            message: message.message,
-            isStaffReply: message.isStaffReply
-          })
-          .returning();
-
-        // Broadcast message to all connected clients
-        const broadcastMessage = {
-          id: savedMessage.id,
-          message: savedMessage.message,
-          userId: savedMessage.userId,
-          createdAt: savedMessage.createdAt,
-          isStaffReply: savedMessage.isStaffReply
-        };
-
-        wss.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(broadcastMessage));
-          }
-        });
+      if (!result.success) {
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: 'Invalid message format'
+        }));
+        return;
       }
+
+      const { message: messageText, userId, isStaffReply } = result.data;
+
+      // Save message to database
+      const [savedMessage] = await db.insert(ticketMessages)
+        .values({
+          message: messageText,
+          userId: userId || null,
+          isStaffReply,
+          createdAt: new Date()
+        })
+        .returning();
+
+      // Broadcast message to all connected clients
+      const broadcastMessage = {
+        id: savedMessage.id,
+        message: savedMessage.message,
+        userId: savedMessage.userId,
+        createdAt: savedMessage.createdAt,
+        isStaffReply: savedMessage.isStaffReply
+      };
+
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(broadcastMessage));
+        }
+      });
     } catch (error) {
       log(`Error handling chat message: ${error}`);
       ws.send(JSON.stringify({
@@ -368,6 +368,16 @@ async function handleChatConnection(ws: WebSocket) {
   ws.on('close', () => {
     log('Chat WebSocket client disconnected');
   });
+
+  // Send welcome message
+  const welcomeMessage = {
+    id: Date.now(),
+    message: "Welcome to VIP Support! How can we assist you today? Our team is here to help with any questions or concerns you may have.",
+    userId: null,
+    createdAt: new Date(),
+    isStaffReply: true
+  };
+  ws.send(JSON.stringify(welcomeMessage));
 }
 
 async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
