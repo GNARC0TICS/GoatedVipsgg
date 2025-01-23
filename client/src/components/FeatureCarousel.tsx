@@ -80,13 +80,6 @@ export const FeatureCarousel = () => {
       className="relative h-24 overflow-hidden mb-8 group touch-none"
     >
       <div ref={dragConstraints} className="flex justify-center items-center h-full relative">
-        <button 
-          onClick={prevSlide}
-          className="absolute left-4 text-[#D7FF00] opacity-0 group-hover:opacity-100 hover:text-[#D7FF00]/80 transition-all"
-        >
-          <ArrowLeftCircle className="w-6 h-6" />
-        </button>
-        
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
@@ -116,13 +109,6 @@ export const FeatureCarousel = () => {
             </button>
           </motion.div>
         </AnimatePresence>
-
-        <button 
-          onClick={nextSlide}
-          className="absolute right-4 text-[#D7FF00] opacity-0 group-hover:opacity-100 hover:text-[#D7FF00]/80 transition-all"
-        >
-          <ArrowRightCircle className="w-6 h-6" />
-        </button>
       </div>
     </div>
   );
