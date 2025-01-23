@@ -91,7 +91,7 @@ export default function WagerRaces() {
                 <motion.h1
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-3xl md:text-4xl font-heading font-bold text-white mb-2"
+                  className="text-3xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2"
                 >
                   {`${raceType.charAt(0).toUpperCase() + raceType.slice(1)} Wager Race`}
                 </motion.h1>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X } from 'lucide-react';
+import { MessageCircle, X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Link } from 'wouter';
@@ -11,6 +11,7 @@ interface FloatingSupportProps {
 
 export function FloatingSupport({ onClose }: FloatingSupportProps) {
   const [isMinimized, setIsMinimized] = useState(true);
+  const [hasUnreadMessage, setHasUnreadMessage] = useState(true);
 
   return (
     <AnimatePresence>
@@ -23,11 +24,17 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
         {isMinimized ? (
           <div className="relative">
             <Button
-              onClick={() => setIsMinimized(false)}
+              onClick={() => {
+                setIsMinimized(false);
+                setHasUnreadMessage(false);
+              }}
               size="icon"
               className="h-14 w-14 rounded-full bg-[#D7FF00] hover:bg-[#D7FF00]/90 text-[#14151A] shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <MessageCircle className="h-7 w-7" />
+              {hasUnreadMessage && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full border-2 border-background animate-pulse" />
+              )}
             </Button>
           </div>
         ) : (
@@ -35,7 +42,7 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
             <div className="p-4 border-b border-[#2A2B31] flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 bg-[#D7FF00] rounded-full animate-pulse" />
-                <h3 className="font-heading text-lg text-white">Need Help?</h3>
+                <h3 className="font-heading text-lg text-white">VIP Support</h3>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -58,6 +65,9 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
               </div>
             </div>
             <div className="p-6 space-y-4">
+              <p className="text-[#8A8B91] mb-6">
+                Our VIP support team is here to help you. Choose an option below:
+              </p>
               <div className="space-y-3">
                 <Link href="/support" className="block">
                   <Button
@@ -94,7 +104,7 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
                     variant="ghost"
                     className="w-full justify-start text-left hover:bg-[#2A2B31]/50"
                   >
-                    👥 Join Our Community
+                    👥 Join Telegram Community
                   </Button>
                 </Link>
               </div>

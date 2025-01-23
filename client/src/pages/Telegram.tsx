@@ -5,8 +5,8 @@ import { MessageCircle } from "lucide-react";
 
 export default function Telegram() {
   return (
-    <div className="min-h-screen">
-      <main className="container mx-auto px-4 py-12 relative z-10">
+    <div className="min-h-screen bg-[#14151A]">
+      <main className="container mx-auto px-4 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

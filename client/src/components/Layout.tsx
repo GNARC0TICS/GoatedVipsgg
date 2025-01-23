@@ -121,7 +121,7 @@ export function Layout({ children }: LayoutProps) {
                 <NavLink href="/promotions" label="PROMOTIONS" />
                 <NavLink href="/telegram" 
                   label={
-                    <div className="flex items-center gap-2 font-heading">
+                    <div className="flex items-center gap-2">
                       TELEGRAM
                     </div>
                   } 
