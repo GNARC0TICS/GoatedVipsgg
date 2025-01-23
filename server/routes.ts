@@ -7,8 +7,8 @@ import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 import { requireAdmin, requireAuth } from './middleware/auth';
 import { db } from '@db';
-import { wagerRaces, users } from '@db/schema';
-import { eq } from 'drizzle-orm';
+import { wagerRaces, users, ticketMessages, supportTickets } from '@db/schema';
+import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 
 const rateLimiter = new RateLimiterMemory({
@@ -280,6 +280,11 @@ function setupWebSocket(httpServer: Server) {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit('connection', ws, request);
       });
+    } else if (request.url === '/ws/chat') {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+        handleChatConnection(ws);
+      });
     }
   });
 
@@ -316,6 +321,53 @@ async function handleWebSocketConnection(ws: WebSocket) {
       ws.close();
     }
   }
+}
+
+async function handleChatConnection(ws: WebSocket) {
+  log('Chat WebSocket client connected');
+
+  ws.on('message', async (data) => {
+    try {
+      const message = JSON.parse(data.toString());
+
+      if (message.type === 'chat_message') {
+        // Save message to database
+        const [savedMessage] = await db.insert(ticketMessages)
+          .values({
+            ticketId: message.ticketId,
+            userId: message.userId,
+            message: message.message,
+            isStaffReply: message.isStaffReply
+          })
+          .returning();
+
+        // Broadcast message to all connected clients
+        const broadcastMessage = {
+          id: savedMessage.id,
+          message: savedMessage.message,
+          userId: savedMessage.userId,
+          createdAt: savedMessage.createdAt,
+          isStaffReply: savedMessage.isStaffReply
+        };
+
+        wss.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(broadcastMessage));
+          }
+        });
+      }
+    } catch (error) {
+      log(`Error handling chat message: ${error}`);
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Failed to process message'
+      }));
+    }
+  });
+
+  ws.on('close', () => {
+    log('Chat WebSocket client disconnected');
+  });
 }
 
 async function fetchLeaderboardData(page: number = 0, limit: number = 10) {

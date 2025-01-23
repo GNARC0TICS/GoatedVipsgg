@@ -26,6 +26,7 @@ import { Redirect } from "@/lib/navigation";
 import Telegram from "@/pages/Telegram";
 import HowItWorks from "@/pages/HowItWorks";
 import GoatedToken from "@/pages/GoatedToken";
+import Support from "@/pages/support";
 
 
 function ErrorFallback({ error }: { error: Error }) {
@@ -73,6 +74,7 @@ function Router() {
               <Route path="/wager-races" component={WagerRaces} />
               <Route path="/bonus-codes" component={BonusCodes} />
               <Route path="/notification-preferences" component={NotificationPreferences} />
+              <Route path="/support" component={Support} />
               <Route path="/admin/wager-races">
                 <AdminRoute>
                   <WagerRaceManagement />
