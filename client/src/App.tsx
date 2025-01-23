@@ -10,6 +10,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import VipTransfer from "@/pages/VipTransfer";
+import VipProgram from "@/pages/VipProgram";
 import ProvablyFair from "@/pages/ProvablyFair";
 import WagerRaces from "@/pages/WagerRaces";
 import BonusCodes from "@/pages/bonus-codes";
@@ -71,6 +72,7 @@ function Router() {
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/vip-transfer" component={VipTransfer} />
+        <Route path="/vip-program" component={VipProgram} />
             <Route path="/wager-races" component={WagerRaces} />
             <Route path="/bonus-codes" component={BonusCodes} />
             <Route path="/notification-preferences" component={NotificationPreferences} />
