@@ -30,13 +30,41 @@ export function LeaderboardTable() {
   }, [leaderboardEntries, searchQuery]);
 
   const getTrophyIcon = (rank: number) => {
+    const baseAnimation = {
+      scale: [1, 1.1, 1],
+      rotate: [-5, 5, -5, 5, 0],
+      transition: { duration: 2, repeat: Infinity }
+    };
+
     switch (rank) {
       case 1:
-        return <Crown className="h-8 w-8 text-yellow-400 animate-pulse" />;
+        return (
+          <motion.div animate={baseAnimation}>
+            <Crown className="h-8 w-8 text-yellow-400" />
+          </motion.div>
+        );
       case 2:
-        return <Medal className="h-7 w-7 text-gray-400" />;
+        return (
+          <motion.div 
+            animate={{ 
+              scale: [1, 1.05, 1],
+              transition: { duration: 2, repeat: Infinity }
+            }}
+          >
+            <Medal className="h-7 w-7 text-gray-400" />
+          </motion.div>
+        );
       case 3:
-        return <Award className="h-7 w-7 text-amber-700" />;
+        return (
+          <motion.div
+            animate={{ 
+              scale: [1, 1.05, 1],
+              transition: { duration: 2, repeat: Infinity }
+            }}
+          >
+            <Award className="h-7 w-7 text-amber-700" />
+          </motion.div>
+        );
       default:
         return <Star className="h-5 w-5 text-zinc-600" />;
     }
@@ -151,7 +179,18 @@ export function LeaderboardTable() {
           </TableHeader>
           <TableBody>
             {filteredData.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map((entry, index) => (
-              <TableRow key={entry.uid} className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]">
+              <motion.tr
+                key={entry.uid}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] transition-colors"
+                whileHover={{ 
+                  backgroundColor: "rgba(26,27,33,0.8)",
+                  scale: 1.02,
+                  transition: { duration: 0.2 }
+                }}
+              >
                 <TableCell className="font-heading">
                   <div className="flex items-center gap-2">
                     {getTrophyIcon(index + 1 + currentPage * ITEMS_PER_PAGE)}
@@ -172,10 +211,36 @@ export function LeaderboardTable() {
                   <div className="flex items-center justify-end gap-2">
                     ${getWagerAmount(entry).toLocaleString()}
                     {entry.wagerChange > 0 && (
-                      <div className="text-green-500 flex items-center gap-1 animate-fadeInOut">
-                        <TrendingUp className="h-4 w-4 animate-bounce" />
-                        <span className="text-xs font-bold animate-pulse">+${entry.wagerChange.toLocaleString()}</span>
-                      </div>
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-green-500 flex items-center gap-1"
+                      >
+                        <motion.div
+                          animate={{ 
+                            y: [0, -4, 0],
+                          }}
+                          transition={{ 
+                            repeat: Infinity,
+                            duration: 1.5
+                          }}
+                        >
+                          <TrendingUp className="h-4 w-4" />
+                        </motion.div>
+                        <motion.span 
+                          className="text-xs font-bold"
+                          animate={{ 
+                            opacity: [1, 0.5, 1],
+                            scale: [1, 1.05, 1]
+                          }}
+                          transition={{ 
+                            repeat: Infinity,
+                            duration: 2
+                          }}
+                        >
+                          +${entry.wagerChange.toLocaleString()}
+                        </motion.span>
+                      </motion.div>
                     )}
                   </div>
                 </TableCell>
