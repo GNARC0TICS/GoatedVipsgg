@@ -110,10 +110,6 @@ export function Layout({ children }: LayoutProps) {
                   label={
                     <div className="flex items-center gap-2 font-heading">
                       WAGER RACES
-                      <div className="flex items-center gap-1">
-                        <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
-                        <span className="text-xs text-red-500 font-heading">LIVE</span>
-                      </div>
                     </div>
                   } 
                 />
@@ -121,7 +117,7 @@ export function Layout({ children }: LayoutProps) {
                 <NavLink href="/promotions" label="PROMOTIONS" />
                 <NavLink href="/telegram" 
                   label={
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 font-bold">
                       TELEGRAM
                     </div>
                   } 
