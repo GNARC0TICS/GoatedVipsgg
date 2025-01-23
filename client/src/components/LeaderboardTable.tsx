@@ -48,8 +48,16 @@ export function LeaderboardTable() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <LoadingSpinner />
+      <div className="space-y-4">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="animate-pulse flex items-center p-4 bg-[#1A1B21]/50">
+            <div className="h-10 w-10 bg-[#2A2B31] rounded-full"></div>
+            <div className="ml-4 space-y-2 flex-1">
+              <div className="h-4 bg-[#2A2B31] rounded w-1/4"></div>
+              <div className="h-4 bg-[#2A2B31] rounded w-1/2"></div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
