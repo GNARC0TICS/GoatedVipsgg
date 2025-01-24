@@ -30,87 +30,19 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="mb-8 relative h-[72px]"
+            className="mb-8"
           >
-            <motion.div
-              initial={{ x: 0 }}
-              animate={{ x: data && data[0] ? "-100%" : 0, y: data && data[0] ? "-100%" : 0, scale: data && data[0] ? 0.7 : 1 }}
-              transition={{ duration: 0.5 }}
-              className="absolute top-0 left-0 w-full max-w-md mx-auto"
-            >
-              <div className="bg-[#D7FF00]/10 border border-[#D7FF00] rounded-lg p-4 backdrop-blur-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Gift className="h-5 w-5 text-[#D7FF00] animate-pulse" />
-                    <span className="text-white font-heading">NEW USER PROMO:</span>
-                  </div>
-                  <div className="bg-[#D7FF00] px-3 py-1 rounded font-mono text-black font-bold tracking-wider">
-                    VIPBOOST
-                  </div>
+            <div className="bg-[#D7FF00]/10 border border-[#D7FF00] rounded-lg p-4 mx-auto max-w-md backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Gift className="h-5 w-5 text-[#D7FF00] animate-pulse" />
+                  <span className="text-white font-heading">NEW USER PROMO:</span>
+                </div>
+                <div className="bg-[#D7FF00] px-3 py-1 rounded font-mono text-black font-bold tracking-wider">
+                  VIPBOOST
                 </div>
               </div>
-            </motion.div>
-
-            {data && data[0] && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="absolute top-0 left-0 w-full max-w-md mx-auto"
-              >
-                <motion.div
-                  initial={{ y: "100%" }}
-                  animate={{ y: [null, 0, 0, "100%"] }}
-                  transition={{
-                    duration: 12,
-                    repeat: Infinity,
-                    times: [0, 0.1, 0.9, 1]
-                  }}
-                >
-                  <div className="bg-[#D7FF00]/10 border border-[#D7FF00] rounded-lg p-4 backdrop-blur-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="h-5 w-5 text-[#FFD700]" />
-                        <span className="text-white font-heading">MONTHLY MVP:</span>
-                      </div>
-                      <button 
-                        onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].id }))}
-                        className="font-mono text-[#D7FF00] hover:text-white transition-colors"
-                      >
-                        {data[0].name} (${data[0].wagered?.this_month?.toLocaleString() || '0'})
-                      </button>
-                    </div>
-                  </div>
-                  <div className="mt-2 bg-[#D7FF00]/10 border border-[#D7FF00] rounded-lg p-4 backdrop-blur-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="h-5 w-5 text-[#FFD700]" />
-                        <span className="text-white font-heading">WEEKLY MVP:</span>
-                      </div>
-                      <button 
-                        onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].id }))}
-                        className="font-mono text-[#D7FF00] hover:text-white transition-colors"
-                      >
-                        {data[0].name} (${data[0].wagered?.this_week?.toLocaleString() || '0'})
-                      </button>
-                    </div>
-                  </div>
-                  <div className="mt-2 bg-[#D7FF00]/10 border border-[#D7FF00] rounded-lg p-4 backdrop-blur-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="h-5 w-5 text-[#FFD700]" />
-                        <span className="text-white font-heading">DAILY MVP:</span>
-                      </div>
-                      <button 
-                        onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].id }))}
-                        className="font-mono text-[#D7FF00] hover:text-white transition-colors"
-                      >
-                        {data[0].name} (${data[0].wagered?.today?.toLocaleString() || '0'})
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
+            </div>
           </motion.div>
 
           <motion.div
