@@ -4,8 +4,11 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowRight, Trophy, CircleDot, Shield, Coins, Gift } from "lucide-react";
 import { FeatureCarousel } from "@/components/FeatureCarousel";
+import { useLeaderboard } from "@/hooks/use-leaderboard";
 
 export default function Home() {
+  const { data: leaderboardData } = useLeaderboard('monthly');
+  const data = leaderboardData || [];
   return (
     <div className="min-h-screen bg-[#14151A]">
       <main className="container relative mx-auto px-4 py-12">
