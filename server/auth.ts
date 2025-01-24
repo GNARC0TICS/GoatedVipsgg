@@ -8,6 +8,8 @@ import { promisify } from "util";
 import { users, insertUserSchema, type SelectUser } from "@db/schema";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
+import nodemailer from "nodemailer";
+import { generateToken } from "./config/auth"; // Added import
 
 const scryptAsync = promisify(scrypt);
 
@@ -35,6 +37,30 @@ declare global {
     interface User extends SelectUser {}
   }
 }
+
+const transporter = nodemailer.createTransport({
+  service: 'smtp',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  }
+});
+
+export const sendVerificationEmail = async (email: string, token: string) => {
+  const verificationLink = `${process.env.APP_URL}/verify-email?token=${token}`;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Verify your GoatedVIPs account",
+    html: `
+      <h1>Welcome to GoatedVIPs!</h1>
+      <p>Please verify your email by clicking the link below:</p>
+      <a href="${verificationLink}">Verify Email</a>
+    `
+  });
+};
+
 
 export function setupAuth(app: Express) {
   const MemoryStore = createMemoryStore(session);
@@ -150,8 +176,12 @@ export function setupAuth(app: Express) {
           password: hashedPassword,
           email,
           isAdmin: false,
+          verified: false, // Add verified field
         })
         .returning();
+
+      const token = generateToken({ id: newUser.id }); // Generate token
+      await sendVerificationEmail(email, token); // Send verification email
 
       // Log the user in after registration
       req.login(newUser, (err) => {
@@ -160,7 +190,7 @@ export function setupAuth(app: Express) {
         }
         return res.json({
           status: "success",
-          message: "Registration successful",
+          message: "Registration successful. Please check your email to verify your account.",
           user: {
             id: newUser.id,
             username: newUser.username,

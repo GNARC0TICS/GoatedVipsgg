@@ -274,3 +274,64 @@ export default function UserProfile({ userId }: { userId: string }) {
     </div>
   );
 }
+import { useState } from "react";
+import { useUser } from "@/hooks/use-user";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+
+export default function UserProfile() {
+  const { user, updateProfile } = useUser();
+  const { toast } = useToast();
+  const [displayName, setDisplayName] = useState(user?.displayName || "");
+  const [avatar, setAvatar] = useState(user?.avatar || "");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await updateProfile({ displayName, avatar });
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="container mx-auto py-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile Settings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Display Name</label>
+              <Input
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Enter display name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Avatar URL</label>
+              <Input
+                value={avatar}
+                onChange={(e) => setAvatar(e.target.value)}
+                placeholder="Enter avatar URL"
+              />
+            </div>
+            <Button type="submit">Save Changes</Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
