@@ -11,34 +11,6 @@ export default function Home() {
   const data = leaderboardData || [];
   return (
     <div className="min-h-screen bg-[#14151A]">
-      <div className="sticky top-16 w-full z-40 border-b border-[#2A2B31] bg-[#1A1B21]/95 backdrop-blur-sm">
-        <div className="container mx-auto flex justify-between items-center gap-2 h-10">
-          <div className="flex items-center gap-6">
-            <a 
-              href="https://www.Goated.com/r/VIPBOOST" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 hover:text-[#D7FF00] transition-all duration-300"
-            >
-              <Gift className="h-4 w-4 text-[#D7FF00]" />
-              <span className="text-[#D7FF00] text-sm font-mono tracking-wider">VIPBOOST</span>
-            </a>
-
-            {data && data[0] && (
-              <button 
-                onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].id }))}
-                className="flex items-center gap-2 hover:text-[#D7FF00] transition-all duration-300 group"
-              >
-                <Trophy className="h-4 w-4 text-[#FFD700] group-hover:scale-110 transition-transform" />
-                <span className="text-[#D7FF00] text-sm font-mono whitespace-nowrap">
-                  MVP: {data[0].name} (${data[0].wagered?.this_month?.toLocaleString() || '0'})
-                </span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
       <main className="container relative mx-auto px-4 py-12">
         <div className="text-center mb-16">
           <motion.div
@@ -53,15 +25,6 @@ export default function Home() {
               className="mx-auto h-56 md:h-72 w-auto object-contain wiggle-animation"
             />
           </motion.div>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-xl text-[#8A8B91] max-w-2xl mx-auto mb-8"
-          >
-            Join an elite community of players at Goated.com, where your wagering transforms into rewards. Compete in exclusive wager races, claim daily bonus codes, and earn monthly payouts in our player-first ecosystem. From live streams to exclusive insights, become part of a thriving community where winning strategies are shared daily.
-          </motion.p>
 
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -112,6 +75,15 @@ export default function Home() {
           <div className="max-w-4xl mx-auto">
             <FeatureCarousel />
           </div>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-xl text-[#8A8B91] max-w-2xl mx-auto mb-8"
+          >
+            Join an elite community of players at Goated.com, where your wagering transforms into rewards. Compete in exclusive wager races, claim daily bonus codes, and earn monthly payouts in our player-first ecosystem. From live streams to exclusive insights, become part of a thriving community where winning strategies are shared daily.
+          </motion.p>
         </div>
 
         <motion.div
