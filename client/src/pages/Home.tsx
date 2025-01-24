@@ -55,88 +55,94 @@ export default function Home() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="space-y-4 mb-8"
+            className="max-w-7xl mx-auto mb-16"
           >
             {data?.length > 0 && (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-[#D7FF00]/10 border border-[#D7FF00] rounded-lg p-4 backdrop-blur-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="h-5 w-5 text-[#FFD700]" />
-                        <span className="text-white font-heading">
-                          WEEKLY MVP:
-                        </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#FFD700]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
+                  <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#FFD700]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20">
+                    <div className="flex items-center gap-4 mb-4">
+                      <Trophy className="h-12 w-12 text-[#FFD700]" />
+                      <div>
+                        <h3 className="text-2xl font-heading text-white mb-1">WEEKLY MVP</h3>
+                        <p className="text-[#8A8B91] text-sm">Top performer this week</p>
                       </div>
-                      {(() => {
-                        const weeklyLeader = [...data].sort(
-                          (a, b) =>
-                            (b.wagered?.this_week || 0) -
-                            (a.wagered?.this_week || 0),
-                        )[0];
-                        return (
-                          weeklyLeader && (
-                            <button
-                              onClick={() =>
-                                window.dispatchEvent(
-                                  new CustomEvent("openQuickProfile", {
-                                    detail: weeklyLeader.uid,
-                                  }),
-                                )
-                              }
-                              className="font-mono text-[#D7FF00] hover:text-white transition-colors"
-                            >
-                              {weeklyLeader.name} ($
-                              {weeklyLeader.wagered?.this_week?.toLocaleString() ||
-                                "0"}
-                              )
-                            </button>
-                          )
-                        );
-                      })()}
                     </div>
-                  </div>
-
-                  <div className="bg-[#D7FF00]/10 border border-[#D7FF00] rounded-lg p-4 backdrop-blur-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="h-5 w-5 text-[#FFD700]" />
-                        <span className="text-white font-heading">
-                          DAILY MVP:
-                        </span>
-                      </div>
-                      {(() => {
-                        const dailyLeader = [...data].sort(
-                          (a, b) =>
-                            (b.wagered?.today || 0) - (a.wagered?.today || 0),
-                        )[0];
-                        return (
-                          dailyLeader && (
-                            <button
-                              onClick={() =>
-                                window.dispatchEvent(
-                                  new CustomEvent("openQuickProfile", {
-                                    detail: dailyLeader.uid,
-                                  }),
-                                )
-                              }
-                              className="font-mono text-[#D7FF00] hover:text-white transition-colors"
-                            >
-                              {dailyLeader.name} ($
-                              {dailyLeader.wagered?.today?.toLocaleString() ||
-                                "0"}
+                    {(() => {
+                      const weeklyLeader = [...data].sort(
+                        (a, b) =>
+                          (b.wagered?.this_week || 0) -
+                          (a.wagered?.this_week || 0),
+                      )[0];
+                      return (
+                        weeklyLeader && (
+                          <button
+                            onClick={() =>
+                              window.dispatchEvent(
+                                new CustomEvent("openQuickProfile", {
+                                  detail: weeklyLeader.uid,
+                                }),
                               )
-                            </button>
-                          )
-                        );
-                      })()}
-                    </div>
+                            }
+                            className="w-full text-center py-3 mt-2 rounded-lg bg-[#FFD700]/10 hover:bg-[#FFD700]/20 transition-all duration-300"
+                          >
+                            <span className="font-mono text-[#FFD700] text-xl">
+                              {weeklyLeader.name}
+                            </span>
+                            <div className="text-[#8A8B91] text-sm mt-1">
+                              ${weeklyLeader.wagered?.this_week?.toLocaleString() || "0"} wagered
+                            </div>
+                          </button>
+                        )
+                      );
+                    })()}
                   </div>
                 </div>
-              </>
+
+                <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
+                  <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20">
+                    <div className="flex items-center gap-4 mb-4">
+                      <Trophy className="h-12 w-12 text-[#D7FF00]" />
+                      <div>
+                        <h3 className="text-2xl font-heading text-white mb-1">DAILY MVP</h3>
+                        <p className="text-[#8A8B91] text-sm">Top performer today</p>
+                      </div>
+                    </div>
+                    {(() => {
+                      const dailyLeader = [...data].sort(
+                        (a, b) =>
+                          (b.wagered?.today || 0) - (a.wagered?.today || 0),
+                      )[0];
+                      return (
+                        dailyLeader && (
+                          <button
+                            onClick={() =>
+                              window.dispatchEvent(
+                                new CustomEvent("openQuickProfile", {
+                                  detail: dailyLeader.uid,
+                                }),
+                              )
+                            }
+                            className="w-full text-center py-3 mt-2 rounded-lg bg-[#D7FF00]/10 hover:bg-[#D7FF00]/20 transition-all duration-300"
+                          >
+                            <span className="font-mono text-[#D7FF00] text-xl">
+                              {dailyLeader.name}
+                            </span>
+                            <div className="text-[#8A8B91] text-sm mt-1">
+                              ${dailyLeader.wagered?.today?.toLocaleString() || "0"} wagered
+                            </div>
+                          </button>
+                        )
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
             )}
           </motion.div>
 
