@@ -240,7 +240,9 @@ export default function WagerRaces() {
                     1ST PLACE
                   </span>
                 </div>
-                {getTrophyIcon(1)}
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 filter drop-shadow-lg">
+                  {getTrophyIcon(1)}
+                </div>
                 <div className="text-center mt-4">
                   <p className="text-xl font-bold truncate text-white">
                     {top10Players[0]?.name || "-"}
