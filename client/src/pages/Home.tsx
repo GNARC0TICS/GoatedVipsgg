@@ -32,6 +32,52 @@ export default function Home() {
             Join an elite community of players at Goated.com, where your wagering transforms into rewards. Compete in exclusive wager races, claim daily bonus codes, and earn monthly payouts in our player-first ecosystem. From live streams to exclusive insights, become part of a thriving community where winning strategies are shared daily.
           </motion.p>
 
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="mb-8"
+          >
+            <div className="bg-[#D7FF00]/10 border border-[#D7FF00] rounded-lg p-4 mx-auto max-w-md backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Gift className="h-5 w-5 text-[#D7FF00] animate-pulse" />
+                  <span className="text-white font-heading">NEW USER PROMO:</span>
+                </div>
+                <div className="bg-[#D7FF00] px-3 py-1 rounded font-mono text-black font-bold tracking-wider">
+                  VIP BOOST
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mb-8"
+          >
+            {data && data[0] && (
+              <div className="bg-gradient-to-r from-[#1A1B21]/90 to-[#1A1B21]/70 border border-[#D7FF00]/20 rounded-lg p-4 mx-auto max-w-md backdrop-blur-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Trophy className="h-6 w-6 text-[#FFD700]" />
+                    <div>
+                      <h3 className="text-white font-heading text-lg">Monthly MVP</h3>
+                      <p className="text-[#D7FF00] font-mono">{data[0].name}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-white/60 text-sm">Wagered</p>
+                    <p className="text-[#D7FF00] font-mono font-bold">
+                      ${data[0].wagered?.this_month?.toLocaleString() || '0'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </motion.div>
+
           <div className="max-w-4xl mx-auto">
             <FeatureCarousel />
           </div>
