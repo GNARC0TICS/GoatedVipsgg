@@ -170,12 +170,12 @@ export function LeaderboardTable() {
       </div>
 
       <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden shadow-glow-lg">
-        <Table>
+        <Table className="min-w-[300px] w-full max-w-full">
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="w-20 font-heading text-[#D7FF00]">RANK</TableHead>
-              <TableHead className="font-heading text-[#D7FF00]">USERNAME</TableHead>
-              <TableHead className="text-right font-heading text-[#D7FF00]">WAGER</TableHead>
+              <TableHead className="w-[60px] md:w-20 font-heading text-[#D7FF00] px-2 md:px-4">RANK</TableHead>
+              <TableHead className="font-heading text-[#D7FF00] px-2 md:px-4">USERNAME</TableHead>
+              <TableHead className="text-right font-heading text-[#D7FF00] px-2 md:px-4">WAGER</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -348,16 +348,16 @@ export function Layout({ children }: LayoutProps) {
         <div className="bg-[#14151A] text-[#8A8B91] text-sm py-6">
           <div className="container mx-auto px-4 text-center">
             <div className="flex flex-col items-center gap-4 mb-6">
-              <div className="flex items-center justify-center gap-8">
+              <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 px-4">
                 <img
                   src="/images/Goated logo with text.png"
                   alt="Goated"
-                  className="h-12 w-auto"
+                  className="h-10 md:h-12 w-auto object-contain max-w-[200px]"
                 />
                 <img
                   src="/images/Goated logo with text1.png"
                   alt="Goated Partner"
-                  className="h-12 w-auto"
+                  className="h-10 md:h-12 w-auto object-contain max-w-[200px]"
                 />
               </div>
             </div>
