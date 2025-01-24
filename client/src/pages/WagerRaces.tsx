@@ -105,7 +105,7 @@ export default function WagerRaces() {
         <div className="flex flex-col gap-8">
           {/* Header Section */}
           <div className="relative">
-            <div className="absolute inset-0 bg-[url('/images/race-bg.png')] bg-cover bg-center opacity-50"></div>
+            <div className="absolute inset-0 bg-[url('/images/race.gif')] bg-cover bg-center opacity-50"></div>
             <div className="relative z-10 py-12 px-4 text-center">
               <div className="flex justify-center gap-4 mb-8">
                 <Button variant="secondary" className="bg-[#1A1B21]/80 hover:bg-[#1A1B21]">
