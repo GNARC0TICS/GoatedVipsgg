@@ -106,7 +106,7 @@ export default function WagerRaces() {
           <div className="relative">
             <div
               className="absolute inset-0 bg-[url('/images/race.gif')] bg-cover bg-center opacity-50"
-              style={{ animation: "loopBackground infinite" }}
+              style={{ animation: "loopBackground 20s infinite" }}
             ></div>
             <div className="relative z-10 py-12 px-4 text-center">
               <div className="flex justify-center gap-4 mb-8">
