@@ -270,11 +270,18 @@ export function Layout({ children }: LayoutProps) {
         <div className="bg-[#14151A] text-[#8A8B91] text-sm py-6">
           <div className="container mx-auto px-4 text-center">
             <div className="flex flex-col items-center gap-4 mb-6">
-              <img
-                src="/images/Goated logo with text.png"
-                alt="Goated"
-                className="h-12 w-auto"
-              />
+              <div className="flex items-center justify-center gap-8">
+                <img
+                  src="/images/Goated logo with text.png"
+                  alt="Goated"
+                  className="h-12 w-auto"
+                />
+                <img
+                  src="/images/Goated logo with text1.png"
+                  alt="Goated Partner"
+                  className="h-12 w-auto"
+                />
+              </div>
             </div>
             <p className="mb-2">© 2024 Goatedrewards.com. All rights reserved.</p>
             <p className="mb-2">Disclaimer: This website is not operated by Goated.com, and it's not an official site of the Goated.com team.</p>
