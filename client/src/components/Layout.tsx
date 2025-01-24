@@ -101,7 +101,7 @@ export function Layout({ children }: LayoutProps) {
                   <img
                     src="/images/logo-neon.png"
                     alt="GOATED"
-                    className="h-8 w-auto relative z-10 transition-transform duration-300 hover:scale-105 wiggle"
+                    className="h-6 md:h-8 w-auto relative z-10 transition-transform duration-300 hover:scale-105 wiggle"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.onerror = null;
