@@ -122,7 +122,7 @@ export function LeaderboardTable() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
+      <div className="flex flex-col items-center justify-center mb-4 md:mb-6 text-center">
         <div>
           <motion.h2 
             key={timePeriod}
@@ -130,7 +130,7 @@ export function LeaderboardTable() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.4 }}
-            className="text-3xl md:text-5xl font-heading font-bold text-[#D7FF00] mb-2 text-center tracking-tighter glow-text"
+            className="text-3xl md:text-5xl font-heading font-bold text-[#D7FF00] mb-2 tracking-tighter glow-text"
           >
             {timePeriod === 'today' && "TODAY"}
             {timePeriod === 'weekly' && "WEEKLY"}
@@ -139,7 +139,7 @@ export function LeaderboardTable() {
           </motion.h2>
           <div className="flex items-center justify-center gap-4">
             <div className="flex items-center gap-2">
-              <CircleDot className="h-4 w-4 text-[#D7FF00] animate-pulse" />
+              <CircleDot className="h-4 w-4 text-red-500 animate-pulse" />
               <span className="text-[#D7FF00] font-heading tracking-tight glow-text">LIVE UPDATES</span>
             </div>
           </div>
