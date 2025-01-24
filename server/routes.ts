@@ -184,8 +184,6 @@ function verifyTelegramHash(data: any, botToken: string) {
   return data.hash === hash;
 };
 
-app.get("/api/admin/users", requireAdmin, handleAdminUsersRequest);
-  
   // Telegram Authentication Route
   app.post('/api/auth/telegram', async (req, res) => {
     const telegramData = req.body;
