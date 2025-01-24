@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -105,17 +104,26 @@ export default function WagerRaces() {
         <div className="flex flex-col gap-8">
           {/* Header Section */}
           <div className="relative">
-            <div className="absolute inset-0 bg-[url('/images/race.gif')] bg-cover bg-center opacity-50" style={{ animation: 'loopBackground infinite' }}></div>
+            <div
+              className="absolute inset-0 bg-[url('/images/race.gif')] bg-cover bg-center opacity-50"
+              style={{ animation: "loopBackground infinite" }}
+            ></div>
             <div className="relative z-10 py-12 px-4 text-center">
               <div className="flex justify-center gap-4 mb-8">
-                <Button variant="secondary" className="bg-[#1A1B21]/80 hover:bg-[#1A1B21]">
+                <Button
+                  variant="secondary"
+                  className="bg-[#1A1B21]/80 hover:bg-[#1A1B21]"
+                >
                   This month
                 </Button>
-                <Button variant="ghost" className="text-[#8A8B91] hover:text-white">
+                <Button
+                  variant="ghost"
+                  className="text-[#8A8B91] hover:text-white"
+                >
                   Previous month
                 </Button>
               </div>
-              
+
               <div className="space-y-4">
                 <motion.div
                   initial={{ opacity: 0, y: -20 }}
@@ -126,7 +134,9 @@ export default function WagerRaces() {
                     $200
                   </h1>
                   <h2 className="text-5xl font-heading font-bold text-[#D7FF00] leading-tight">
-                    MONTHLY<br />RACE
+                    MONTHLY
+                    <br />
+                    RACE
                   </h2>
                 </motion.div>
 

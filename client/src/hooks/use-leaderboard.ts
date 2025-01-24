@@ -51,12 +51,12 @@ export function useLeaderboard(
             today: { data: [] },
             weekly: { data: [] },
             monthly: { data: [] },
-            all_time: { data: [] }
+            all_time: { data: [] },
           },
           metadata: {
             totalUsers: 0,
-            lastUpdated: new Date().toISOString()
-          }
+            lastUpdated: new Date().toISOString(),
+          },
         };
       }
 
