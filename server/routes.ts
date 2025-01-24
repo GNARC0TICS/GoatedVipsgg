@@ -7,8 +7,8 @@ import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import { db } from "@db";
-import { wagerRaces, users, ticketMessages, supportTickets } from "@db/schema";
-import { eq, and } from "drizzle-orm";
+import { wagerRaces, users, ticketMessages } from "@db/schema";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 const rateLimiter = new RateLimiterMemory({
@@ -87,62 +87,6 @@ function setupRESTRoutes(app: Express) {
   app.get("/api/admin/users", requireAdmin, handleAdminUsersRequest);
   app.get("/api/admin/wager-races", requireAdmin, handleWagerRacesRequest);
   app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);
-
-  app.put(
-    "/api/admin/wager-races/:id/status",
-    requireAdmin,
-    async (req, res) => {
-      try {
-        const { id } = req.params;
-        const { status } = req.body;
-
-        if (!status || !["upcoming", "live", "completed"].includes(status)) {
-          return res.status(400).json({
-            status: "error",
-            message: "Invalid race status",
-          });
-        }
-
-        const race = await db
-          .update(wagerRaces)
-          .set({ status, updatedAt: new Date() })
-          .where(eq(wagerRaces.id, parseInt(id)))
-          .returning();
-
-        if (!race.length) {
-          return res.status(404).json({
-            status: "error",
-            message: "Race not found",
-          });
-        }
-
-        // Broadcast update to all connected clients
-        wss.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(
-              JSON.stringify({
-                type: "RACE_STATUS_UPDATE",
-                data: race[0],
-              }),
-            );
-          }
-        });
-
-        res.json({
-          status: "success",
-          message: "Race status updated successfully",
-          data: race[0],
-        });
-      } catch (error) {
-        log(`Error updating race status: ${error}`);
-        res.status(500).json({
-          status: "error",
-          message: "Failed to update race status",
-        });
-      }
-    },
-  );
-
   app.get("/api/affiliate/stats", handleAffiliateStats);
 
   // Add new route to fetch chat history
@@ -277,9 +221,6 @@ async function handleCreateWagerRace(req: any, res: any) {
 async function handleAffiliateStats(req: any, res: any) {
   try {
     await rateLimiter.consume(req.ip || "unknown");
-    const page = parseInt(req.query.page as string) || 0;
-    const limit = parseInt(req.query.limit as string) || 10;
-
     const response = await fetch(
       `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
       {
@@ -287,7 +228,7 @@ async function handleAffiliateStats(req: any, res: any) {
           Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
           "Content-Type": "application/json",
         },
-      },
+      }
     );
 
     if (!response.ok) {
@@ -302,7 +243,7 @@ async function handleAffiliateStats(req: any, res: any) {
     const transformedData = transformLeaderboardData(apiData);
 
     res.json(transformedData);
-  } catch (error: any) {
+  } catch (error) {
     log(`Error in /api/affiliate/stats: ${error}`);
     // Consolidated error handling: Return empty data structure to prevent UI breaking
     res.json({
@@ -323,10 +264,7 @@ async function handleAffiliateStats(req: any, res: any) {
 
 function transformLeaderboardData(apiData: any) {
   const responseData = apiData.data || apiData.results || apiData;
-  if (
-    !responseData ||
-    (Array.isArray(responseData) && responseData.length === 0)
-  ) {
+  if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
     return {
       status: "success",
       metadata: {
@@ -407,7 +345,7 @@ async function handleChatConnection(ws: WebSocket) {
           JSON.stringify({
             type: "error",
             message: "Invalid message format",
-          }),
+          })
         );
         return;
       }
@@ -445,7 +383,7 @@ async function handleChatConnection(ws: WebSocket) {
         JSON.stringify({
           type: "error",
           message: "Failed to process message",
-        }),
+        })
       );
     }
   });
@@ -468,7 +406,7 @@ async function handleChatConnection(ws: WebSocket) {
 
 function sortByWagered(data: any[], period: string) {
   return [...data].sort(
-    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0),
+    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
   );
 }
 

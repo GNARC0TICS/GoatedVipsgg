@@ -39,7 +39,7 @@ export function LeaderboardTable() {
   const getTrophyIcon = (rank: number) => {
     switch (rank) {
       case 1:
-        return <Crown className="h-8 w-8 text-yellow-400" />;
+        return <Crown className="h-8 w-8 text-yellow-400 animate-pulse" />;
       case 2:
         return <Medal className="h-7 w-7 text-gray-400" />;
       case 3:
@@ -51,7 +51,7 @@ export function LeaderboardTable() {
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-[#2A2B31] bg-card overflow-hidden">
+      <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -62,7 +62,7 @@ export function LeaderboardTable() {
           </TableHeader>
           <TableBody>
             {[...Array(10)].map((_, i) => (
-              <TableRow key={i} className="bg-card/50">
+              <TableRow key={i} className="bg-[#1A1B21]/50 backdrop-blur-sm">
                 <TableCell>
                   <div className="animate-pulse h-6 w-16 bg-muted rounded" />
                 </TableCell>
@@ -115,7 +115,7 @@ export function LeaderboardTable() {
             key={timePeriod}
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-3xl md:text-5xl font-heading font-bold text-[#D7FF00] mb-2"
+            className="text-3xl md:text-5xl font-heading font-bold text-[#D7FF00] mb-2 glow"
           >
             {timePeriod.toUpperCase()} LEADERBOARD
           </motion.h2>
@@ -145,8 +145,8 @@ export function LeaderboardTable() {
               }}
               className={`font-heading flex items-center gap-2 ${
                 timePeriod === id
-                  ? "bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
-                  : "border-[#2A2B31] hover:border-[#D7FF00]/50"
+                  ? "bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 shadow-glow-sm"
+                  : "border-[#2A2B31] hover:border-[#D7FF00]/50 bg-[#1A1B21]/50 backdrop-blur-sm"
               }`}
             >
               {renderTimePeriodIcon(id as TimePeriod)}
@@ -163,13 +163,13 @@ export function LeaderboardTable() {
               placeholder="Search players..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31] text-white"
             />
           </div>
         </div>
       </div>
 
-      <div className="rounded-lg border border-[#2A2B31] bg-card overflow-hidden">
+      <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden shadow-glow-lg">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -187,12 +187,14 @@ export function LeaderboardTable() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="bg-card/50 hover:bg-card"
+                  className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] transition-colors"
                 >
                   <TableCell className="font-heading">
                     <div className="flex items-center gap-2">
                       {getTrophyIcon(index + 1 + currentPage * ITEMS_PER_PAGE)}
-                      {index + 1 + currentPage * ITEMS_PER_PAGE}
+                      <span className="text-[#D7FF00]">
+                        {index + 1 + currentPage * ITEMS_PER_PAGE}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -203,13 +205,17 @@ export function LeaderboardTable() {
                           alt="Tier"
                           className="w-5 h-5"
                         />
-                        <span className="truncate">{entry.name}</span>
+                        <span className="truncate text-white hover:text-[#D7FF00] transition-colors">
+                          {entry.name}
+                        </span>
                       </div>
                     </QuickProfile>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      ${getWagerAmount(entry).toLocaleString()}
+                      <span className="text-white font-semibold">
+                        ${getWagerAmount(entry).toLocaleString()}
+                      </span>
                       {entry.isWagering && entry.wagerChange > 0 && (
                         <motion.div
                           initial={{ opacity: 0, scale: 0.8 }}
