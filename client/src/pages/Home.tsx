@@ -11,33 +11,31 @@ export default function Home() {
   const data = leaderboardData || [];
   return (
     <div className="min-h-screen bg-[#14151A]">
-      <main className="container relative mx-auto px-4 py-12">
-        <div className="flex justify-center gap-2 py-2 px-4 bg-[#1A1B21]/80 border-b border-[#2A2B31]">
-          <a 
-            href="https://www.Goated.com/r/VIPBOOST" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="px-3 py-1.5 rounded hover:bg-[#D7FF00]/5 transition-all duration-300"
-          >
-            <div className="flex items-center gap-2">
+      <div className="sticky top-16 w-full z-40 border-b border-[#2A2B31] bg-[#1A1B21]/95 backdrop-blur-sm">
+        <div className="container mx-auto flex justify-between items-center gap-2 h-10">
+          <div className="flex items-center gap-6">
+            <a 
+              href="https://www.Goated.com/r/VIPBOOST" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 hover:text-[#D7FF00] transition-all duration-300"
+            >
               <Gift className="h-4 w-4 text-[#D7FF00]" />
               <span className="text-[#D7FF00] text-sm font-mono tracking-wider">VIPBOOST</span>
-            </div>
-          </a>
+            </a>
 
-          {data && data[0] && (
-            <button 
-              onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].id }))}
-              className="px-3 py-1.5 rounded hover:bg-[#D7FF00]/5 transition-all duration-300"
-            >
-              <div className="flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-[#FFD700]" />
-                <span className="text-[#D7FF00] text-sm font-mono">
+            {data && data[0] && (
+              <button 
+                onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].id }))}
+                className="flex items-center gap-2 hover:text-[#D7FF00] transition-all duration-300 group"
+              >
+                <Trophy className="h-4 w-4 text-[#FFD700] group-hover:scale-110 transition-transform" />
+                <span className="text-[#D7FF00] text-sm font-mono whitespace-nowrap">
                   MVP: {data[0].name} (${data[0].wagered?.this_month?.toLocaleString() || '0'})
                 </span>
-              </div>
-            </button>
-          )}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="text-center mb-16">
