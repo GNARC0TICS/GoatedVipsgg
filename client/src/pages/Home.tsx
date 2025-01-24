@@ -12,7 +12,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#14151A]">
       <main className="container relative mx-auto px-4 py-12">
-        <div className="text-center mb-16">
+        <div className="text-center mb-24 max-w-6xl mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -116,7 +116,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="grid md:grid-cols-3 gap-6 mb-6"
+          className="grid md:grid-cols-3 gap-8 mb-12 max-w-7xl mx-auto"
         >
           <Link href="/vip-transfer" className="block">
             <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
@@ -231,7 +231,8 @@ export default function Home() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
         >
-          <div className="rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm p-8">
+          <div className="rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm p-8 max-w-7xl mx-auto">
+            <h2 className="text-3xl font-heading text-white mb-8 text-center">LEADERBOARD</h2>
             <LeaderboardTable />
           </div>
         </motion.div>
