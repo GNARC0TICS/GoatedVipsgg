@@ -85,16 +85,41 @@ export function LeaderboardTable() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="animate-pulse flex items-center p-4 bg-[#1A1B21]/50">
-            <div className="h-10 w-10 bg-[#2A2B31] rounded-full"></div>
-            <div className="ml-4 space-y-2 flex-1">
-              <div className="h-4 bg-[#2A2B31] rounded w-1/4"></div>
-              <div className="h-4 bg-[#2A2B31] rounded w-1/2"></div>
-            </div>
-          </div>
-        ))}
+      <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="w-20 font-heading text-[#D7FF00]">RANK</TableHead>
+              <TableHead className="font-heading text-[#D7FF00]">USERNAME</TableHead>
+              <TableHead className="text-right font-heading text-[#D7FF00]">WAGER</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {[...Array(10)].map((_, i) => (
+              <motion.tr
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  duration: 0.5,
+                  delay: i * 0.05,
+                  ease: [0.23, 1, 0.32, 1]
+                }}
+                className="bg-[#1A1B21]/50 backdrop-blur-sm"
+              >
+                <TableCell>
+                  <div className="animate-pulse h-6 w-16 bg-[#2A2B31] rounded"></div>
+                </TableCell>
+                <TableCell>
+                  <div className="animate-pulse h-6 w-32 bg-[#2A2B31] rounded"></div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="animate-pulse h-6 w-24 bg-[#2A2B31] rounded ml-auto"></div>
+                </TableCell>
+              </motion.tr>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     );
   }
@@ -202,14 +227,18 @@ export function LeaderboardTable() {
             {filteredData.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map((entry, index) => (
               <motion.tr
                 key={entry.uid}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-                className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] transition-colors"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  duration: 0.5,
+                  delay: index * 0.1,
+                  ease: [0.23, 1, 0.32, 1]
+                }}
+                className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] transition-all duration-300 relative overflow-hidden"
                 whileHover={{ 
-                  backgroundColor: "rgba(26,27,33,0.8)",
                   scale: 1.02,
-                  transition: { duration: 0.2 }
+                  transition: { duration: 0.2 },
+                  boxShadow: "0 8px 30px rgba(0,0,0,0.12)"
                 }}
               >
                 <TableCell className="font-heading">
