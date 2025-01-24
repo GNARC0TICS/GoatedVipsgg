@@ -3,8 +3,8 @@ export type TierLevel = 'COPPER' | 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | '
 
 export const tierThresholds = {
   COPPER: 0,
-  BRONZE: 1000,
-  SILVER: 10000,
+  BRONZE: 10000,
+  SILVER: 40000,
   GOLD: 100000,
   PLATINUM: 450000,
   PEARL: 1500000,
