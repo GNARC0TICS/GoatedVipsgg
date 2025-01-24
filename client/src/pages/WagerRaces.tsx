@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -145,7 +146,6 @@ export default function WagerRaces() {
                 </div>
               </div>
             </div>
-          </div>
 
             {/* Info Boxes */}
             <motion.div
@@ -298,10 +298,10 @@ export default function WagerRaces() {
             animate={{ opacity: 1, y: 0 }}
             className="bg-[#1A1B21]/50 backdrop-blur-sm rounded-xl border border-[#2A2B31] overflow-hidden mt-4"
           >
-            {" "}
-            {/* Added mt-4 to move the table up */}
             <div className="bg-[#2A2B31] px-6 py-4">
-              <h3 className="text-xl font-heading font-bold text-[#D7FF00]">{`${raceType.charAt(0).toUpperCase() + raceType.slice(1)} Race Leaderboard`}</h3>
+              <h3 className="text-xl font-heading font-bold text-[#D7FF00]">
+                {`${raceType.charAt(0).toUpperCase() + raceType.slice(1)} Race Leaderboard`}
+              </h3>
             </div>
             <Table>
               <TableHeader>
