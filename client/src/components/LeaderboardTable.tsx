@@ -139,8 +139,8 @@ export function LeaderboardTable() {
             </motion.span>
           </h2>
           <div className="flex items-center gap-2">
-            <CircleDot className="h-4 w-4 text-red-500 animate-pulse" />
-            <span className="text-[#8A8B91]">Live Updates</span>
+            <CircleDot className="h-4 w-4 text-[#D7FF00] animate-pulse" />
+            <span className="text-[#D7FF00] font-heading tracking-tight content-glow">LIVE UPDATES</span>
           </div>
         </div>
       </div>
