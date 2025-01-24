@@ -10,6 +10,7 @@ import { db } from "@db";
 import { wagerRaces, users, ticketMessages } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import * as crypto from 'crypto';
 
 const rateLimiter = new RateLimiterMemory({
   points: 60,
@@ -209,7 +210,7 @@ app.post('/api/auth/telegram', async (req, res) => {
         })
         .where(eq(users.id, existingUser.id))
         .returning();
-      
+
       return res.json({ user: updatedUser });
     }
 
@@ -231,27 +232,6 @@ app.post('/api/auth/telegram', async (req, res) => {
   }
 });
 
-        username: users.username,
-        email: users.email,
-        isAdmin: users.isAdmin,
-        createdAt: users.createdAt,
-        lastLogin: users.lastLogin,
-      })
-      .from(users)
-      .orderBy(users.createdAt);
-
-    res.json({
-      status: "success",
-      data: usersList,
-    });
-  } catch (error) {
-    log(`Error fetching users: ${error}`);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to fetch users",
-    });
-  }
-}
 
 async function handleWagerRacesRequest(_req: any, res: any) {
   try {
