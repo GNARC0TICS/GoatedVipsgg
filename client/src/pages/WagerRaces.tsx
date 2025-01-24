@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { QuickProfile } from "@/components/QuickProfile";
 import { Link } from "wouter";
+import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 
 type WageredData = {
   today: number;
@@ -253,7 +254,14 @@ export default function WagerRaces() {
                     </TableCell>
                     <TableCell className="font-sans text-white">
                       <QuickProfile userId={player.uid} username={player.name}>
-                        {player.name}
+                        <div className="flex items-center gap-2 cursor-pointer">
+                          <img 
+                            src={getTierIcon(getTierFromWager(player.wagered.all_time))} 
+                            alt="Tier"
+                            className="w-5 h-5"
+                          />
+                          <span className="truncate">{player.name}</span>
+                        </div>
                       </QuickProfile>
                     </TableCell>
                     <TableCell className="text-right font-sans">

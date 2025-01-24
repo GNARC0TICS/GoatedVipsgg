@@ -2,8 +2,9 @@
 import React from 'react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, TrendingUp, Calendar, Clock } from "lucide-react";
+import { TrendingUp, Calendar, Clock } from "lucide-react";
 import { motion } from "framer-motion";
+import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "./LoadingSpinner";
 
@@ -61,7 +62,11 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
           >
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 rounded-full bg-[#2A2B31] flex items-center justify-center">
-                <Trophy className="h-8 w-8 text-[#D7FF00]" />
+                <img 
+                  src={getTierIcon(getTierFromWager(stats?.wagered.all_time || 0))} 
+                  alt="Tier"
+                  className="h-12 w-12"
+                />
               </div>
               <div>
                 <h2 className="text-2xl font-heading text-white">{username}</h2>
