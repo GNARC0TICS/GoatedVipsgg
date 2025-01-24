@@ -12,6 +12,43 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#14151A]">
       <main className="container relative mx-auto px-4 py-12">
+        <div className="flex justify-center gap-4 mb-8">
+          <a 
+            href="https://www.Goated.com/r/VIPBOOST" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="bg-[#D7FF00]/10 border border-[#D7FF00] rounded-lg p-3 backdrop-blur-sm hover:bg-[#D7FF00]/20 transition-all duration-300"
+          >
+            <div className="flex items-center gap-2">
+              <Gift className="h-5 w-5 text-[#D7FF00] animate-pulse" />
+              <span className="text-white font-heading">NEW USER PROMO:</span>
+              <span className="bg-[#D7FF00] px-3 py-1 rounded font-mono text-black font-bold tracking-wider">
+                VIPBOOST
+              </span>
+            </div>
+          </a>
+
+          {data && data[0] && (
+            <button 
+              onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].id }))}
+              className="bg-gradient-to-r from-[#1A1B21]/90 to-[#1A1B21]/70 border border-[#D7FF00]/20 rounded-lg p-3 backdrop-blur-sm hover:bg-[#1A1B21] transition-all duration-300"
+            >
+              <div className="flex items-center gap-3">
+                <Trophy className="h-5 w-5 text-[#FFD700]" />
+                <div>
+                  <span className="text-white font-heading">Monthly MVP:</span>
+                  <span className="text-[#D7FF00] font-mono ml-2">{data[0].name}</span>
+                </div>
+                <div className="text-right ml-4">
+                  <span className="text-[#D7FF00] font-mono font-bold">
+                    ${data[0].wagered?.this_month?.toLocaleString() || '0'}
+                  </span>
+                </div>
+              </div>
+            </button>
+          )}
+        </div>
+
         <div className="text-center mb-16">
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
