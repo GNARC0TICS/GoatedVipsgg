@@ -16,7 +16,14 @@ export function LeaderboardTable() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('today');
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: leaderboardEntries, isLoading, error, metadata, refetch } = useLeaderboard(timePeriod);
+  const { data: leaderboardData, isLoading, error, metadata, refetch } = useLeaderboard();
+  
+  const leaderboardEntries = useMemo(() => {
+    if (!leaderboardData?.data) return [];
+    return leaderboardData.data[timePeriod === 'weekly' ? 'weekly' : 
+                               timePeriod === 'monthly' ? 'monthly' : 
+                               timePeriod === 'today' ? 'today' : 'all_time'].data;
+  }, [leaderboardData, timePeriod]);
 
   const handleTimePeriodChange = (newPeriod: TimePeriod) => {
     setTimePeriod(newPeriod);

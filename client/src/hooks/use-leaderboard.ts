@@ -32,9 +32,9 @@ export type TimePeriod = 'today' | 'weekly' | 'monthly' | 'all_time';
 
 export function useLeaderboard(timePeriod: TimePeriod = 'today', page: number = 0) {
   const { data, isLoading, error, refetch } = useQuery<APIResponse>({
-    queryKey: ['/api/affiliate/stats', timePeriod, page],
+    queryKey: ['/api/affiliate/stats'],
     queryFn: async () => {
-      const response = await fetch(`/api/affiliate/stats?period=${timePeriod}&page=${page}&limit=10`);
+      const response = await fetch(`/api/affiliate/stats?limit=10`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
