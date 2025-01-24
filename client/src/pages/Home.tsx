@@ -37,7 +37,9 @@ export default function Home() {
             )}
           </div>
         </div>
+      </div>
 
+      <main className="container relative mx-auto px-4 py-12">
         <div className="text-center mb-16">
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
