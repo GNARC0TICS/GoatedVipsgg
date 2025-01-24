@@ -14,7 +14,7 @@ import { FeatureCarousel } from "@/components/FeatureCarousel";
 import { useLeaderboard } from "@/hooks/use-leaderboard";
 
 export default function Home() {
-  const { data: leaderboardData } = useLeaderboard("monthly");
+  const { data: leaderboardData } = useLeaderboard("today");
   const data = leaderboardData || [];
   return (
     <div className="min-h-screen bg-[#14151A]">
