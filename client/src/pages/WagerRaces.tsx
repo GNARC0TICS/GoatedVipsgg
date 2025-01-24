@@ -103,42 +103,49 @@ export default function WagerRaces() {
       <div className="container mx-auto px-4 py-8 md:py-16">
         <div className="flex flex-col gap-8">
           {/* Header Section */}
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <motion.h1
+          <div className="relative">
+            <div className="absolute inset-0 bg-[url('/images/race-bg.png')] bg-cover bg-center opacity-50"></div>
+            <div className="relative z-10 py-12 px-4 text-center">
+              <div className="flex justify-center gap-4 mb-8">
+                <Button variant="secondary" className="bg-[#1A1B21]/80 hover:bg-[#1A1B21]">
+                  This month
+                </Button>
+                <Button variant="ghost" className="text-[#8A8B91] hover:text-white">
+                  Previous month
+                </Button>
+              </div>
+              
+              <div className="space-y-4">
+                <motion.div
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-3xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2"
+                  className="text-center"
                 >
-                  {`${raceType.charAt(0).toUpperCase() + raceType.slice(1)} Wager Race`}
-                </motion.h1>
-                <Link
-                  href="/how-it-works"
-                  className="flex items-center gap-2 text-[#D7FF00] hover:text-[#D7FF00]/80 transition-colors"
-                >
-                  How it Works
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <CircleDot className="h-4 w-4 text-red-500 animate-pulse" />
-                    <span className="text-[#8A8B91]">Live Competition</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[#8A8B91]">
-                    <Timer className="h-4 w-4 text-[#D7FF00]" />
-                    <span>Ends in: </span>
-                    <CountdownTimer
-                      endDate={new Date(
-                        new Date().getFullYear(),
-                        new Date().getMonth() + 1,
-                        0,
-                      ).toISOString()}
-                    />
+                  <h1 className="text-6xl font-heading font-bold text-white mb-2">
+                    $200
+                  </h1>
+                  <h2 className="text-5xl font-heading font-bold text-[#D7FF00] leading-tight">
+                    MONTHLY<br />RACE
+                  </h2>
+                </motion.div>
+
+                <div className="flex justify-center gap-6 mt-8">
+                  <div className="bg-[#1A1B21]/80 backdrop-blur-sm px-6 py-4 rounded-lg">
+                    <div className="text-4xl font-bold text-[#D7FF00]">
+                      <CountdownTimer
+                        endDate={new Date(
+                          new Date().getFullYear(),
+                          new Date().getMonth() + 1,
+                          0,
+                        ).toISOString()}
+                        large={true}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
             {/* Info Boxes */}
             <motion.div

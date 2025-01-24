@@ -3,10 +3,10 @@ import { differenceInSeconds } from "date-fns";
 
 interface CountdownTimerProps {
   endDate: string;
-  onComplete?: () => void;
+  large?: boolean;
 }
 
-export function CountdownTimer({ endDate, onComplete }: CountdownTimerProps) {
+export function CountdownTimer({ endDate, large = false }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
     hours: number;
@@ -34,9 +34,28 @@ export function CountdownTimer({ endDate, onComplete }: CountdownTimerProps) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [endDate, onComplete]);
+  }, [endDate]);
 
-  return (
+  return large ? (
+    <div className="flex items-center gap-6">
+      <div className="text-center">
+        <div className="text-4xl font-bold text-[#D7FF00]">{timeLeft.days.toString().padStart(2, '0')}</div>
+        <div className="text-xs text-[#8A8B91] uppercase">Days</div>
+      </div>
+      <div className="text-center">
+        <div className="text-4xl font-bold text-[#D7FF00]">{timeLeft.hours.toString().padStart(2, '0')}</div>
+        <div className="text-xs text-[#8A8B91] uppercase">Hours</div>
+      </div>
+      <div className="text-center">
+        <div className="text-4xl font-bold text-[#D7FF00]">{timeLeft.minutes.toString().padStart(2, '0')}</div>
+        <div className="text-xs text-[#8A8B91] uppercase">Minutes</div>
+      </div>
+      <div className="text-center">
+        <div className="text-4xl font-bold text-[#D7FF00]">{timeLeft.seconds.toString().padStart(2, '0')}</div>
+        <div className="text-xs text-[#8A8B91] uppercase">Seconds</div>
+      </div>
+    </div>
+  ) : (
     <div className="font-mono text-lg flex items-center gap-2">
       {timeLeft.days > 0 && (
         <>
@@ -57,4 +76,8 @@ export function CountdownTimer({ endDate, onComplete }: CountdownTimerProps) {
       </span>
     </div>
   );
+}
+
+function getTimeLeft() {
+  return { days: 0, hours: 0, minutes: 0, seconds: 0 };
 }
