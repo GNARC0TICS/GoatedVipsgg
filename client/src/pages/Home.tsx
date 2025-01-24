@@ -57,13 +57,28 @@ export default function Home() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Trophy className="h-5 w-5 text-[#FFD700]" />
-                      <span className="text-white font-heading">MONTHLY MVP:</span>
+                      <span className="text-white font-heading">WEEKLY MVP:</span>
                     </div>
                     <button 
                       onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].id }))}
                       className="font-mono text-[#D7FF00] hover:text-white transition-colors"
                     >
-                      {data[0].name} (${data[0].wagered?.this_month?.toLocaleString() || '0'})
+                      {data[0].name} (${data[0].wagered?.this_week?.toLocaleString() || '0'})
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-[#D7FF00]/10 border border-[#D7FF00] rounded-lg p-4 backdrop-blur-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5 text-[#FFD700]" />
+                      <span className="text-white font-heading">DAILY MVP:</span>
+                    </div>
+                    <button 
+                      onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].id }))}
+                      className="font-mono text-[#D7FF00] hover:text-white transition-colors"
+                    >
+                      {data[0].name} (${data[0].wagered?.today?.toLocaleString() || '0'})
                     </button>
                   </div>
                 </div>
