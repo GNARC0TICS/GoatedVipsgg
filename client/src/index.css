@@ -153,14 +153,14 @@ html {
     background-size: 200% 100%;
     background-position: right bottom;
     transition: all 0.3s ease-out;
-    font-family: var(--font-heading);
+    font-family: "Mona Sans", system-ui, -apple-system;
     font-weight: 800;
     font-stretch: condensed;
     text-transform: uppercase;
     letter-spacing: 0.02em;
     border: 2px solid #D7FF00;
     box-shadow: 0 0 20px rgba(215, 255, 0, 0.15);
-    color: #000000;
+    color: #14151A;
   }
 
   .fill-animation:hover {
