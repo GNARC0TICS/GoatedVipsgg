@@ -115,9 +115,12 @@ export function LeaderboardTable() {
             key={timePeriod}
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-3xl md:text-5xl font-heading font-bold text-[#D7FF00] mb-2 glow"
+            className="text-3xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2 text-center tracking-tighter"
+            style={{
+              textShadow: '0 0 10px rgba(215, 255, 0, 0.5), 0 0 20px rgba(215, 255, 0, 0.3)'
+            }}
           >
-            {timePeriod.toUpperCase()} LEADERBOARD
+            {timePeriod.toUpperCase()}
           </motion.h2>
           <div className="flex items-center justify-center gap-4">
             <div className="flex items-center gap-2">
