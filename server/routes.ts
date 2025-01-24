@@ -10,7 +10,6 @@ import { db } from "@db";
 import { wagerRaces, users, ticketMessages } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import * as crypto from 'crypto';
 
 const rateLimiter = new RateLimiterMemory({
   points: 60,
@@ -169,70 +168,6 @@ async function handleAdminUsersRequest(_req: any, res: any) {
     });
   }
 }
-
-// Telegram auth verification
-function verifyTelegramHash(data: any, botToken: string) {
-  const secret = crypto.createHash('sha256').update(botToken).digest();
-  const checkString = Object.keys(data)
-    .filter(key => key !== 'hash')
-    .sort()
-    .map(key => `${key}=${data[key]}`)
-    .join('\n');
-  const hash = crypto.createHmac('sha256', secret)
-    .update(checkString)
-    .digest('hex');
-  return data.hash === hash;
-};
-
-  // Telegram Authentication Route
-  app.post('/api/auth/telegram', async (req, res) => {
-    const telegramData = req.body;
-    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-
-    if (!verifyTelegramHash(telegramData, BOT_TOKEN)) {
-      return res.status(401).json({ error: 'Invalid authentication' });
-    }
-
-    try {
-      // Check if user exists with this telegram_id
-      const [existingUser] = await db
-        .select()
-        .from(users)
-        .where(eq(users.telegramId, telegramData.id))
-        .limit(1);
-
-      if (existingUser) {
-        // Update existing user
-        const [updatedUser] = await db
-          .update(users)
-          .set({
-            telegramUsername: telegramData.username,
-            lastLoginAt: new Date(),
-          })
-          .where(eq(users.id, existingUser.id))
-          .returning();
-
-        return res.json({ user: updatedUser });
-      }
-
-      // Create new user
-      const [newUser] = await db
-        .insert(users)
-        .values({
-          username: telegramData.username,
-          telegramId: telegramData.id,
-          telegramUsername: telegramData.username,
-          lastLoginAt: new Date(),
-        })
-        .returning();
-
-      return res.json({ user: newUser });
-    } catch (error) {
-      console.error('Telegram auth error:', error);
-      return res.status(500).json({ error: 'Internal server error' });
-    }
-  });
-
 
 async function handleWagerRacesRequest(_req: any, res: any) {
   try {
