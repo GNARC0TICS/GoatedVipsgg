@@ -174,15 +174,15 @@ export function Layout({ children }: LayoutProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 md:gap-6">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-[#8A8B91] hover:text-white relative"
+                    className="text-[#8A8B91] hover:text-white relative h-8 w-8 md:h-10 md:w-10"
                   >
-                    <Bell className="h-5 w-5" />
+                    <Bell className="h-4 w-4 md:h-5 md:w-5" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-80 bg-[#1A1B21] border-[#2A2B31]">
@@ -227,13 +227,13 @@ export function Layout({ children }: LayoutProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 md:gap-4">
                 {user ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="flex items-center gap-2 text-white"
+                        className="flex items-center gap-1 md:gap-2 text-white px-2 md:px-4 h-8 md:h-10"
                       >
                         <User className="h-5 w-5" />
                         <span className="hidden md:inline">
@@ -272,13 +272,13 @@ export function Layout({ children }: LayoutProps) {
                   onClick={() =>
                     window.open("https://www.goated.com/r/SPIN", "_blank")
                   }
-                  className="relative group overflow-hidden text-[#14151A] fill-animation hover:text-[#D7FF00] transition-all duration-300 font-mona-sans font-extrabold uppercase tracking-tight"
+                  className="relative group overflow-hidden text-[#14151A] fill-animation hover:text-[#D7FF00] transition-all duration-300 font-mona-sans font-extrabold uppercase tracking-tight h-8 md:h-10 px-3 md:px-4 text-sm md:text-base"
                   style={{
                     fontStretch: "condensed",
                     fontVariationSettings: "'COND' 100, 'wght' 800",
                   }}
                 >
-                  <span className="relative z-10">PLAY NOW →</span>
+                  <span className="relative z-10">PLAY →</span>
                 </Button>
               </div>
             </div>
