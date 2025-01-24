@@ -76,7 +76,7 @@ function setupRESTRoutes(app: Express) {
         },
       });
     } catch (error) {
-      log("Admin login error:", error);
+      log(`Admin login error: ${error}`);
       res.status(500).json({
         status: "error",
         message: "Failed to process admin login",
@@ -279,20 +279,94 @@ async function handleAffiliateStats(req: any, res: any) {
     await rateLimiter.consume(req.ip || "unknown");
     const page = parseInt(req.query.page as string) || 0;
     const limit = parseInt(req.query.limit as string) || 10;
-    const data = await fetchLeaderboardData(page, limit);
-    res.json(data);
-  } catch (error: any) {
-    if (error.consumedPoints) {
-      res.status(429).json({ error: "Too many requests" });
-    } else {
-      log(`Error in /api/affiliate/stats: ${error}`);
-      res.status(500).json({
-        success: false,
-        error: "Failed to fetch affiliate stats",
-        message: error.message,
-      });
+
+    const response = await fetch(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        log("API Authentication failed - check API token");
+        throw new Error("API Authentication failed");
+      }
+      throw new Error(`API request failed: ${response.status}`);
     }
+
+    const apiData = await response.json();
+    const transformedData = transformLeaderboardData(apiData);
+
+    res.json(transformedData);
+  } catch (error: any) {
+    log(`Error in /api/affiliate/stats: ${error}`);
+    // Consolidated error handling: Return empty data structure to prevent UI breaking
+    res.json({
+      status: "success",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    });
   }
+}
+
+function transformLeaderboardData(apiData: any) {
+  const responseData = apiData.data || apiData.results || apiData;
+  if (
+    !responseData ||
+    (Array.isArray(responseData) && responseData.length === 0)
+  ) {
+    return {
+      status: "success",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    };
+  }
+
+  const dataArray = Array.isArray(responseData) ? responseData : [responseData];
+  const transformedData = dataArray.map((entry) => ({
+    uid: entry.uid || "",
+    name: entry.name || "",
+    wagered: {
+      today: entry.wagered?.today || 0,
+      this_week: entry.wagered?.this_week || 0,
+      this_month: entry.wagered?.this_month || 0,
+      all_time: entry.wagered?.all_time || 0,
+    },
+  }));
+
+  return {
+    status: "success",
+    metadata: {
+      totalUsers: transformedData.length,
+      lastUpdated: new Date().toISOString(),
+    },
+    data: {
+      today: { data: sortByWagered(transformedData, "today") },
+      weekly: { data: sortByWagered(transformedData, "this_week") },
+      monthly: { data: sortByWagered(transformedData, "this_month") },
+      all_time: { data: sortByWagered(transformedData, "all_time") },
+    },
+  };
 }
 
 function setupWebSocket(httpServer: Server) {
@@ -390,77 +464,6 @@ async function handleChatConnection(ws: WebSocket) {
     isStaffReply: true,
   };
   ws.send(JSON.stringify(welcomeMessage));
-}
-
-async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
-  const response = await fetch(
-    `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-        "Content-Type": "application/json",
-      },
-    },
-  );
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      log("API Authentication failed - check API token");
-      throw new Error("API Authentication failed");
-    }
-    throw new Error(`API request failed: ${response.status}`);
-  }
-
-  const apiData = await response.json();
-  return transformLeaderboardData(apiData);
-}
-
-function transformLeaderboardData(apiData: any) {
-  const responseData = apiData.data || apiData.results || apiData;
-  if (
-    !responseData ||
-    (Array.isArray(responseData) && responseData.length === 0)
-  ) {
-    return {
-      status: "success",
-      metadata: {
-        totalUsers: 0,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: { data: [] },
-        all_time: { data: [] },
-        monthly: { data: [] },
-        weekly: { data: [] },
-      },
-    };
-  }
-
-  const dataArray = Array.isArray(responseData) ? responseData : [responseData];
-  const transformedData = dataArray.map((entry) => ({
-    uid: entry.uid || "",
-    name: entry.name || "",
-    wagered: {
-      today: entry.wagered?.today || 0,
-      this_week: entry.wagered?.this_week || 0,
-      this_month: entry.wagered?.this_month || 0,
-      all_time: entry.wagered?.all_time || 0,
-    },
-  }));
-
-  return {
-    status: "success",
-    metadata: {
-      totalUsers: transformedData.length,
-      lastUpdated: new Date().toISOString(),
-    },
-    data: {
-      today: { data: sortByWagered(transformedData, "today") },
-      weekly: { data: sortByWagered(transformedData, "this_week") },
-      monthly: { data: sortByWagered(transformedData, "this_month") },
-      all_time: { data: sortByWagered(transformedData, "all_time") },
-    },
-  };
 }
 
 function sortByWagered(data: any[], period: string) {
