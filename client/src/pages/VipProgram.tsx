@@ -1,15 +1,99 @@
 
 import { motion } from "framer-motion";
+import { ChevronDown } from "lucide-react";
+import { useState } from "react";
+
+interface TierLevel {
+  level: string;
+  xpRequired: string;
+}
 
 const tiers = [
-  { name: "COPPER", icon: "/images/Goated Emblems/copper.548d79cf.svg" },
-  { name: "BRONZE", icon: "/images/Goated Emblems/bronze.e6ea941b.svg" },
-  { name: "SILVER", icon: "/images/Goated Emblems/silver.8e3ec67f.svg" },
-  { name: "GOLD", icon: "/images/Goated Emblems/gold.1c810178.svg" },
-  { name: "PLATINUM", icon: "/images/Goated Emblems/platinum.d258f583.svg" },
-  { name: "PEARL", icon: "/images/Goated Emblems/pearl.1815809f.svg" },
-  { name: "SAPPHIRE", icon: "/images/Goated Emblems/sapphire.91e6756b.svg" },
-  { name: "EMERALD", icon: "/images/Goated Emblems/emerald.46bd38eb.svg" }
+  { 
+    name: "COPPER",
+    icon: "/images/Goated Emblems/copper.548d79cf.svg",
+    levels: [{ level: "Copper 1", xpRequired: "0" }]
+  },
+  { 
+    name: "BRONZE", 
+    icon: "/images/Goated Emblems/bronze.e6ea941b.svg",
+    levels: [
+      { level: "Bronze 1", xpRequired: "1,000" },
+      { level: "Bronze 2", xpRequired: "2,000" },
+      { level: "Bronze 3", xpRequired: "3,000" },
+      { level: "Bronze 4", xpRequired: "4,000" }
+    ]
+  },
+  { 
+    name: "SILVER", 
+    icon: "/images/Goated Emblems/silver.8e3ec67f.svg",
+    levels: [
+      { level: "Silver 1", xpRequired: "10,000" },
+      { level: "Silver 2", xpRequired: "20,000" },
+      { level: "Silver 3", xpRequired: "30,000" },
+      { level: "Silver 4", xpRequired: "40,000" }
+    ]
+  },
+  { 
+    name: "GOLD", 
+    icon: "/images/Goated Emblems/gold.1c810178.svg",
+    levels: [
+      { level: "Gold 1", xpRequired: "100,000" },
+      { level: "Gold 2", xpRequired: "150,000" },
+      { level: "Gold 3", xpRequired: "200,000" },
+      { level: "Gold 4", xpRequired: "250,000" }
+    ]
+  },
+  { 
+    name: "PLATINUM", 
+    icon: "/images/Goated Emblems/platinum.d258f583.svg",
+    levels: [
+      { level: "Platinum 1", xpRequired: "450,000" },
+      { level: "Platinum 2", xpRequired: "600,000" },
+      { level: "Platinum 3", xpRequired: "750,000" },
+      { level: "Platinum 4", xpRequired: "900,000" }
+    ]
+  },
+  { 
+    name: "PEARL", 
+    icon: "/images/Goated Emblems/pearl.1815809f.svg",
+    levels: [
+      { level: "Pearl 1", xpRequired: "1,500,000" },
+      { level: "Pearl 2", xpRequired: "1,650,000" },
+      { level: "Pearl 3", xpRequired: "1,800,000" },
+      { level: "Pearl 4", xpRequired: "2,000,000" }
+    ]
+  },
+  { 
+    name: "SAPPHIRE", 
+    icon: "/images/Goated Emblems/sapphire.91e6756b.svg",
+    levels: [
+      { level: "Sapphire 1", xpRequired: "3,000,000" },
+      { level: "Sapphire 2", xpRequired: "3,750,000" },
+      { level: "Sapphire 3", xpRequired: "4,500,000" },
+      { level: "Sapphire 4", xpRequired: "5,250,000" }
+    ]
+  },
+  { 
+    name: "EMERALD", 
+    icon: "/images/Goated Emblems/emerald.46bd38eb.svg",
+    levels: [
+      { level: "Emerald 1", xpRequired: "7,000,000" },
+      { level: "Emerald 2", xpRequired: "9,000,000" },
+      { level: "Emerald 3", xpRequired: "11,000,000" },
+      { level: "Emerald 4", xpRequired: "13,000,000" }
+    ]
+  },
+  { 
+    name: "DIAMOND", 
+    icon: "/images/Goated Emblems/diamond.svg",
+    levels: [
+      { level: "Diamond 1", xpRequired: "20,000,000" },
+      { level: "Diamond 2", xpRequired: "25,000,000" },
+      { level: "Diamond 3", xpRequired: "30,000,000" },
+      { level: "Diamond 4", xpRequired: "35,000,000" }
+    ]
+  }
 ];
 
 const benefits = [
@@ -25,6 +109,8 @@ const benefits = [
 ];
 
 export default function VipProgram() {
+  const [expandedTier, setExpandedTier] = useState<string | null>(null);
+
   return (
     <div className="min-h-screen bg-[#14151A] text-white">
       <motion.div 
@@ -41,36 +127,55 @@ export default function VipProgram() {
           maximizing the cumulative bonuses you receive for every dollar wagered.
         </p>
 
-        {/* VIP Tiers Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+        {/* VIP Levels */}
+        <div className="space-y-4 mb-16">
           {tiers.map((tier) => (
-            <div 
-              key={tier.name}
-              className="bg-[#1A1B21]/50 backdrop-blur-sm p-6 rounded-xl border border-[#2A2B31] hover:border-[#D7FF00]/50 transition-all"
-            >
-              <img 
-                src={tier.icon} 
-                alt={`${tier.name} tier`} 
-                className="w-24 h-24 mx-auto mb-4"
-              />
-              <h3 className="text-center text-xl font-bold">{tier.name}</h3>
+            <div key={tier.name} className="bg-[#1A1B21]/50 backdrop-blur-sm rounded-xl border border-[#2A2B31]">
+              <button
+                onClick={() => setExpandedTier(expandedTier === tier.name ? null : tier.name)}
+                className="w-full px-6 py-4 flex items-center justify-between hover:bg-[#2A2B31]/20 transition-colors rounded-xl"
+              >
+                <div className="flex items-center gap-4">
+                  <img src={tier.icon} alt={tier.name} className="w-8 h-8" />
+                  <span className="text-xl font-bold">{tier.name}</span>
+                </div>
+                <ChevronDown 
+                  className={`w-6 h-6 transition-transform ${expandedTier === tier.name ? 'rotate-180' : ''}`}
+                />
+              </button>
+              
+              {expandedTier === tier.name && (
+                <div className="px-6 pb-4">
+                  <div className="grid grid-cols-3 gap-4 text-sm font-medium text-gray-400 mb-2">
+                    <div>LEVEL</div>
+                    <div>XP REQUIRED</div>
+                    <div>COMPLETED</div>
+                  </div>
+                  {tier.levels.map((level: TierLevel) => (
+                    <div key={level.level} className="grid grid-cols-3 gap-4 py-2 border-t border-[#2A2B31]">
+                      <div>{level.level}</div>
+                      <div>{level.xpRequired}</div>
+                      <div>
+                        <span className="text-[#D7FF00]">✓</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
 
         {/* Benefits Table */}
+        <h2 className="text-3xl font-bold mb-6 text-[#D7FF00]">Benefits</h2>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-[#2A2B31]">
-                <th className="py-4 text-left text-[#D7FF00]">REWARD</th>
+                <th className="py-4 text-left">REWARD</th>
                 {tiers.map((tier) => (
                   <th key={tier.name} className="py-4 text-center">
-                    <img 
-                      src={tier.icon} 
-                      alt={tier.name} 
-                      className="w-8 h-8 mx-auto mb-2"
-                    />
+                    <img src={tier.icon} alt={tier.name} className="w-6 h-6 mx-auto mb-2" />
                     {tier.name}
                   </th>
                 ))}
