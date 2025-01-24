@@ -201,7 +201,11 @@ export function LeaderboardTable() {
                 <TableCell>
                   <QuickProfile userId={entry.uid} username={entry.name}>
                     <div className="flex items-center gap-2 cursor-pointer">
-                      <User className="h-4 w-4 text-[#D7FF00]" />
+                      <img 
+                        src={getTierIcon(getTierFromWager(entry.wagered.all_time))} 
+                        alt="Tier"
+                        className="w-5 h-5"
+                      />
                       <span className={`truncate ${index < 3 ? 'font-bold' : ''}`}>
                         {entry.name}
                       </span>

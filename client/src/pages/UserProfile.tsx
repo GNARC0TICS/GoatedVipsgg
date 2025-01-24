@@ -101,7 +101,11 @@ export default function UserProfile({ userId }: { userId: string }) {
                 <div className="flex flex-col md:flex-row md:items-center gap-6">
                   <div className="relative">
                     <div className="w-24 h-24 rounded-full bg-[#2A2B31] flex items-center justify-center">
-                      <User className="h-12 w-12 text-[#D7FF00]" />
+                      <img 
+                        src={getTierIcon(getTierFromWager(user.totalWagered))} 
+                        alt="Tier"
+                        className="w-16 h-16"
+                      />
                     </div>
                     <div className="absolute -bottom-2 -right-2 bg-[#D7FF00] text-black font-bold px-2 py-1 rounded-full text-sm">
                       #{user.currentRank}
