@@ -86,7 +86,7 @@ const tiers = [
   },
   { 
     name: "DIAMOND", 
-    icon: "/images/Goated Emblems/diamond.svg",
+    icon: "/images/Goated Emblems/diamond.1c810178.svg",
     levels: [
       { level: "Diamond 1", xpRequired: "20,000,000" },
       { level: "Diamond 2", xpRequired: "25,000,000" },
@@ -146,18 +146,14 @@ export default function VipProgram() {
               
               {expandedTier === tier.name && (
                 <div className="px-6 pb-4">
-                  <div className="grid grid-cols-3 gap-4 text-sm font-medium text-gray-400 mb-2">
-                    <div>LEVEL</div>
-                    <div>XP REQUIRED</div>
-                    <div>COMPLETED</div>
+                  <div className="grid grid-cols-2 gap-8 text-sm uppercase tracking-wider text-[#D7FF00] mb-2">
+                    <div>Level</div>
+                    <div>XP Required</div>
                   </div>
                   {tier.levels.map((level: TierLevel) => (
-                    <div key={level.level} className="grid grid-cols-3 gap-4 py-2 border-t border-[#2A2B31]">
-                      <div>{level.level}</div>
-                      <div>{level.xpRequired}</div>
-                      <div>
-                        <span className="text-[#D7FF00]">✓</span>
-                      </div>
+                    <div key={level.level} className="grid grid-cols-2 gap-8 py-3 border-t border-[#2A2B31] hover:bg-[#2A2B31]/10 transition-colors">
+                      <div className="font-medium">{level.level}</div>
+                      <div className="text-[#8A8B91]">{level.xpRequired} XP</div>
                     </div>
                   ))}
                 </div>
