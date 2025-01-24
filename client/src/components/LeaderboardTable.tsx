@@ -124,23 +124,12 @@ export function LeaderboardTable() {
     <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
         <div>
-          <h2 className="text-2xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2">
-            <motion.span
-              key={timePeriod}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {timePeriod === 'today' && "Today's Wager"}
-              {timePeriod === 'weekly' && "Weekly Wager"}
-              {timePeriod === 'monthly' && "Monthly Wager"}
-              {timePeriod === 'all_time' && "All-Time Wager"}
-            </motion.span>
-          </h2>
-          <div className="flex items-center gap-2">
-            <CircleDot className="h-4 w-4 text-[#D7FF00] animate-pulse" />
-            <span className="text-[#D7FF00] font-heading tracking-tight content-glow">LIVE UPDATES</span>
+          <h2 className="text-2xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2">Live Leaderboard</h2>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <CircleDot className="h-4 w-4 text-red-500 animate-pulse" />
+              <span className="text-[#8A8B91]">Live Competition</span>
+            </div>
           </div>
         </div>
       </div>
