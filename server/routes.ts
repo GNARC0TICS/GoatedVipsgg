@@ -147,9 +147,30 @@ async function handleAdminUsersRequest(_req: any, res: any) {
     const usersList = await db
       .select({
         id: users.id,
+        username: users.username,
+        email: users.email,
+        isAdmin: users.isAdmin,
+        createdAt: users.createdAt,
+        lastLogin: users.lastLogin,
+      })
+      .from(users)
+      .orderBy(users.createdAt);
+
+    res.json({
+      status: "success",
+      data: usersList,
+    });
+  } catch (error) {
+    log(`Error fetching users: ${error}`);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to fetch users",
+    });
+  }
+}
 
 // Telegram auth verification
-const verifyTelegramHash = (data: any, botToken: string) => {
+function verifyTelegramHash(data: any, botToken: string) {
   const secret = crypto.createHash('sha256').update(botToken).digest();
   const checkString = Object.keys(data)
     .filter(key => key !== 'hash')
