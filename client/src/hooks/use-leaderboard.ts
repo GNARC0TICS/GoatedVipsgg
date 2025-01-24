@@ -46,10 +46,20 @@ export function useLeaderboard(
     refetchInterval: 30000, // Refetch every 30 seconds for live updates
     select: (data) => {
       if (!data?.data) {
-        throw new Error("Invalid data format received from API");
+        return {
+          data: {
+            today: { data: [] },
+            weekly: { data: [] },
+            monthly: { data: [] },
+            all_time: { data: [] }
+          },
+          metadata: {
+            totalUsers: 0,
+            lastUpdated: new Date().toISOString()
+          }
+        };
       }
 
-      // Map the time period to the correct data array
       const periodKey =
         timePeriod === "weekly"
           ? "weekly"
@@ -59,7 +69,7 @@ export function useLeaderboard(
               ? "today"
               : "all_time";
 
-      const periodData = data.data[periodKey].data;
+      const periodData = data.data[periodKey]?.data || [];
 
       return {
         ...data,
