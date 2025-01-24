@@ -177,6 +177,28 @@ export default function AuthModal() {
                   ? "Don't have an account? Register"
                   : "Already have an account? Login"}
               </Button>
+              
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-[#2A2B31]" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-[#14151A] px-2 text-[#8A8B91]">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+              
+              <script 
+                async 
+                src="https://telegram.org/js/telegram-widget.js?22" 
+                data-telegram-login="YourBotName"
+                data-size="large" 
+                data-radius="8"
+                data-request-access="write"
+                data-userpic="false"
+                data-auth-url={`${window.location.origin}/api/auth/telegram`}>
+              </script>
             </div>
           </form>
         </Form>

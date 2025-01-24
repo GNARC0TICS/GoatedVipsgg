@@ -12,6 +12,8 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
+  telegramId: text("telegram_id"),
+  telegramUsername: text("telegram_username"),
   id: serial("id").primaryKey(),
   username: text("username").unique().notNull(),
   password: text("password").notNull(),
