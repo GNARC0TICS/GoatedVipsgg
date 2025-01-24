@@ -1,6 +1,11 @@
-
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useTransform,
+  PanInfo,
+} from "framer-motion";
 import { ArrowLeftCircle, ArrowRightCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
@@ -26,7 +31,7 @@ const announcements = [
   { text: "NEWSLETTER SUBSCRIPTION", link: "/notification-preferences" },
   { text: "PROMO CODES", link: "/bonus-codes" },
   { text: "TERMS AND CONDITIONS", link: "/help" },
-  { text: "GOATED x GOOMBAS VIPS", link: "/vip-program" }
+  { text: "GOATED x GOOMBAS VIPS", link: "/vip-program" },
 ];
 
 export const FeatureCarousel = () => {
@@ -44,18 +49,23 @@ export const FeatureCarousel = () => {
 
   const prevSlide = () => {
     if (!isDragging) {
-      setCurrentIndex((prev) => (prev - 1 + announcements.length) % announcements.length);
+      setCurrentIndex(
+        (prev) => (prev - 1 + announcements.length) % announcements.length,
+      );
     }
   };
 
   const dragConstraints = useRef<HTMLDivElement>(null);
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleDragEnd = (
+    event: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo,
+  ) => {
     setIsDragging(false);
     const threshold = 50;
     const velocity = info.velocity.x;
     const offset = info.offset.x;
-    
+
     if (Math.abs(velocity) > 100 || Math.abs(offset) > threshold) {
       if (offset > 0 || velocity > 100) {
         prevSlide();
@@ -76,10 +86,10 @@ export const FeatureCarousel = () => {
 
   const handleClick = (link: string) => {
     if (!isDragging) {
-      if (link.startsWith('#')) {
+      if (link.startsWith("#")) {
         const element = document.querySelector(link);
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
+          element.scrollIntoView({ behavior: "smooth" });
         }
       } else {
         setLocation(link);
@@ -88,11 +98,14 @@ export const FeatureCarousel = () => {
   };
 
   return (
-    <div 
-      ref={containerRef} 
+    <div
+      ref={containerRef}
       className="relative h-24 overflow-hidden mb-8 group touch-none"
     >
-      <div ref={dragConstraints} className="flex justify-center items-center h-full relative">
+      <div
+        ref={dragConstraints}
+        className="flex justify-center items-center h-full relative"
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
@@ -106,10 +119,10 @@ export const FeatureCarousel = () => {
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            transition={{ 
+            transition={{
               type: "spring",
               stiffness: 300,
-              damping: 30
+              damping: 30,
             }}
             style={{ x }}
             className="text-center px-16 touch-none cursor-grab active:cursor-grabbing"

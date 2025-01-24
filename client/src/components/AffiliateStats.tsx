@@ -1,5 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from "recharts";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -12,7 +19,7 @@ type AffiliateData = {
 
 export function AffiliateStats() {
   const { data, isLoading } = useQuery<AffiliateData[]>({
-    queryKey: ['/api/affiliate/stats'],
+    queryKey: ["/api/affiliate/stats"],
   });
 
   if (isLoading) {

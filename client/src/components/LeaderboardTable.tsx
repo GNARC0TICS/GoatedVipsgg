@@ -1,11 +1,32 @@
-import { Table, TableHeader, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Trophy, ChevronLeft, ChevronRight, Clock, Calendar, CalendarDays, Search, Crown, Medal, Award, TrendingUp, Star } from "lucide-react";
+import {
+  User,
+  Trophy,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Calendar,
+  CalendarDays,
+  Search,
+  Crown,
+  Medal,
+  Award,
+  TrendingUp,
+  Star,
+} from "lucide-react";
 import { useState, useMemo } from "react";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
-import { CircleDot } from 'lucide-react';
+import { CircleDot } from "lucide-react";
 import { QuickProfile } from "@/components/QuickProfile";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { motion } from "framer-motion";
@@ -13,16 +34,28 @@ import { motion } from "framer-motion";
 const ITEMS_PER_PAGE = 10;
 
 export function LeaderboardTable() {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('today');
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("today");
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: leaderboardData, isLoading, error, metadata, refetch } = useLeaderboard();
-  
+  const {
+    data: leaderboardData,
+    isLoading,
+    error,
+    metadata,
+    refetch,
+  } = useLeaderboard();
+
   const leaderboardEntries = useMemo(() => {
     if (!leaderboardData?.data) return [];
-    return leaderboardData.data[timePeriod === 'weekly' ? 'weekly' : 
-                               timePeriod === 'monthly' ? 'monthly' : 
-                               timePeriod === 'today' ? 'today' : 'all_time'].data;
+    return leaderboardData.data[
+      timePeriod === "weekly"
+        ? "weekly"
+        : timePeriod === "monthly"
+          ? "monthly"
+          : timePeriod === "today"
+            ? "today"
+            : "all_time"
+    ].data;
   }, [leaderboardData, timePeriod]);
 
   const handleTimePeriodChange = (newPeriod: TimePeriod) => {
@@ -33,8 +66,8 @@ export function LeaderboardTable() {
 
   const filteredData = useMemo(() => {
     if (!leaderboardEntries) return [];
-    return leaderboardEntries.filter(entry =>
-      entry.name.toLowerCase().includes(searchQuery.toLowerCase())
+    return leaderboardEntries.filter((entry) =>
+      entry.name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [leaderboardEntries, searchQuery]);
 
@@ -42,7 +75,7 @@ export function LeaderboardTable() {
     const baseAnimation = {
       scale: [1, 1.1, 1],
       rotate: [-5, 5, -5, 5, 0],
-      transition: { duration: 2, repeat: Infinity }
+      transition: { duration: 2, repeat: Infinity },
     };
 
     switch (rank) {
@@ -54,10 +87,10 @@ export function LeaderboardTable() {
         );
       case 2:
         return (
-          <motion.div 
-            animate={{ 
+          <motion.div
+            animate={{
               scale: [1, 1.05, 1],
-              transition: { duration: 2, repeat: Infinity }
+              transition: { duration: 2, repeat: Infinity },
             }}
           >
             <Medal className="h-7 w-7 text-gray-400" />
@@ -66,9 +99,9 @@ export function LeaderboardTable() {
       case 3:
         return (
           <motion.div
-            animate={{ 
+            animate={{
               scale: [1, 1.05, 1],
-              transition: { duration: 2, repeat: Infinity }
+              transition: { duration: 2, repeat: Infinity },
             }}
           >
             <Award className="h-7 w-7 text-amber-700" />
@@ -89,9 +122,15 @@ export function LeaderboardTable() {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="w-20 font-heading text-[#D7FF00]">RANK</TableHead>
-              <TableHead className="font-heading text-[#D7FF00]">USERNAME</TableHead>
-              <TableHead className="text-right font-heading text-[#D7FF00]">WAGER</TableHead>
+              <TableHead className="w-20 font-heading text-[#D7FF00]">
+                RANK
+              </TableHead>
+              <TableHead className="font-heading text-[#D7FF00]">
+                USERNAME
+              </TableHead>
+              <TableHead className="text-right font-heading text-[#D7FF00]">
+                WAGER
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -100,10 +139,10 @@ export function LeaderboardTable() {
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ 
+                transition={{
                   duration: 0.5,
                   delay: i * 0.05,
-                  ease: [0.23, 1, 0.32, 1]
+                  ease: [0.23, 1, 0.32, 1],
                 }}
                 className="bg-[#1A1B21]/50 backdrop-blur-sm"
               >
@@ -128,26 +167,26 @@ export function LeaderboardTable() {
     if (!entry?.wagered) return 0;
 
     switch (timePeriod) {
-      case 'weekly':
+      case "weekly":
         return entry.wagered.this_week || 0;
-      case 'monthly':
+      case "monthly":
         return entry.wagered.this_month || 0;
-      case 'today':
+      case "today":
         return entry.wagered.today || 0;
-      case 'all_time':
+      case "all_time":
         return entry.wagered.all_time || 0;
     }
   };
 
   const renderTimePeriodIcon = (period: TimePeriod) => {
     switch (period) {
-      case 'today':
+      case "today":
         return <Clock className="h-4 w-4" />;
-      case 'weekly':
+      case "weekly":
         return <Calendar className="h-4 w-4" />;
-      case 'monthly':
+      case "monthly":
         return <CalendarDays className="h-4 w-4" />;
-      case 'all_time':
+      case "all_time":
         return <Trophy className="h-4 w-4" />;
     }
   };
@@ -156,7 +195,7 @@ export function LeaderboardTable() {
     <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col items-center justify-center mb-4 md:mb-6 text-center">
         <div>
-          <motion.h2 
+          <motion.h2
             key={timePeriod}
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -164,15 +203,17 @@ export function LeaderboardTable() {
             transition={{ duration: 0.4 }}
             className="text-3xl md:text-5xl font-heading font-bold text-[#D7FF00] mb-2 tracking-tighter glow-text"
           >
-            {timePeriod === 'today' && "TODAY"}
-            {timePeriod === 'weekly' && "WEEKLY"}
-            {timePeriod === 'monthly' && "MONTHLY"}
-            {timePeriod === 'all_time' && "ALL TIME"}
+            {timePeriod === "today" && "TODAY"}
+            {timePeriod === "weekly" && "WEEKLY"}
+            {timePeriod === "monthly" && "MONTHLY"}
+            {timePeriod === "all_time" && "ALL TIME"}
           </motion.h2>
           <div className="flex items-center justify-center gap-4">
             <div className="flex items-center gap-2">
               <CircleDot className="h-4 w-4 text-red-500 animate-pulse" />
-              <span className="text-[#D7FF00] font-heading tracking-tight glow-text">LIVE UPDATES</span>
+              <span className="text-[#D7FF00] font-heading tracking-tight glow-text">
+                LIVE UPDATES
+              </span>
             </div>
           </div>
         </div>
@@ -181,17 +222,19 @@ export function LeaderboardTable() {
       <div className="flex flex-col gap-4">
         <div className="flex gap-2 justify-center flex-wrap">
           {[
-            { id: 'today', label: 'TODAY' },
-            { id: 'weekly', label: 'WEEKLY' },
-            { id: 'monthly', label: 'MONTHLY' },
-            { id: 'all_time', label: 'ALL TIME' }
+            { id: "today", label: "TODAY" },
+            { id: "weekly", label: "WEEKLY" },
+            { id: "monthly", label: "MONTHLY" },
+            { id: "all_time", label: "ALL TIME" },
           ].map(({ id, label }) => (
             <Button
               key={id}
-              variant={timePeriod === id ? 'default' : 'outline'}
+              variant={timePeriod === id ? "default" : "outline"}
               onClick={() => handleTimePeriodChange(id as TimePeriod)}
               className={`font-heading tracking-tight flex items-center gap-2 ${
-                timePeriod === id ? 'bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90' : 'border-[#2A2B31] hover:border-[#D7FF00]/50'
+                timePeriod === id
+                  ? "bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
+                  : "border-[#2A2B31] hover:border-[#D7FF00]/50"
               }`}
             >
               {renderTimePeriodIcon(id as TimePeriod)}
@@ -218,101 +261,118 @@ export function LeaderboardTable() {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="w-20 font-heading text-[#D7FF00]">RANK</TableHead>
-              <TableHead className="font-heading text-[#D7FF00]">USERNAME</TableHead>
-              <TableHead className="text-right font-heading text-[#D7FF00]">WAGER</TableHead>
+              <TableHead className="w-20 font-heading text-[#D7FF00]">
+                RANK
+              </TableHead>
+              <TableHead className="font-heading text-[#D7FF00]">
+                USERNAME
+              </TableHead>
+              <TableHead className="text-right font-heading text-[#D7FF00]">
+                WAGER
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredData.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map((entry, index) => (
-              <motion.tr
-                key={entry.uid}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ 
-                  duration: 0.5,
-                  delay: index * 0.1,
-                  ease: [0.23, 1, 0.32, 1]
-                }}
-                className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] transition-all duration-300 relative overflow-hidden"
-                whileHover={{ 
-                  scale: 1.02,
-                  transition: { duration: 0.2 },
-                  boxShadow: "0 8px 30px rgba(0,0,0,0.12)"
-                }}
-              >
-                <TableCell className="font-heading">
-                  <div className="flex items-center gap-2">
-                    {getTrophyIcon(index + 1 + currentPage * ITEMS_PER_PAGE)}
-                    {index + 1 + currentPage * ITEMS_PER_PAGE}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <QuickProfile userId={entry.uid} username={entry.name}>
-                    <div className="flex items-center gap-2 cursor-pointer">
-                      <img 
-                        src={getTierIcon(getTierFromWager(entry.wagered.all_time))} 
-                        alt="Tier"
-                        className="w-5 h-5"
-                      />
-                      <span className={`truncate ${index < 3 ? 'font-bold' : ''}`}>
-                        {entry.name}
-                      </span>
+            {filteredData
+              .slice(
+                currentPage * ITEMS_PER_PAGE,
+                (currentPage + 1) * ITEMS_PER_PAGE,
+              )
+              .map((entry, index) => (
+                <motion.tr
+                  key={entry.uid}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.5,
+                    delay: index * 0.1,
+                    ease: [0.23, 1, 0.32, 1],
+                  }}
+                  className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] transition-all duration-300 relative overflow-hidden"
+                  whileHover={{
+                    scale: 1.02,
+                    transition: { duration: 0.2 },
+                    boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+                  }}
+                >
+                  <TableCell className="font-heading">
+                    <div className="flex items-center gap-2">
+                      {getTrophyIcon(index + 1 + currentPage * ITEMS_PER_PAGE)}
+                      {index + 1 + currentPage * ITEMS_PER_PAGE}
                     </div>
-                  </QuickProfile>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    ${getWagerAmount(entry).toLocaleString()}
-                    {entry.wagerChange > 0 && (
-                      <motion.div 
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="text-green-500 flex items-center gap-1"
-                      >
+                  </TableCell>
+                  <TableCell>
+                    <QuickProfile userId={entry.uid} username={entry.name}>
+                      <div className="flex items-center gap-2 cursor-pointer">
+                        <img
+                          src={getTierIcon(
+                            getTierFromWager(entry.wagered.all_time),
+                          )}
+                          alt="Tier"
+                          className="w-5 h-5"
+                        />
+                        <span
+                          className={`truncate ${index < 3 ? "font-bold" : ""}`}
+                        >
+                          {entry.name}
+                        </span>
+                      </div>
+                    </QuickProfile>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      ${getWagerAmount(entry).toLocaleString()}
+                      {entry.wagerChange > 0 && (
                         <motion.div
-                          animate={{ 
-                            y: [0, -4, 0],
-                          }}
-                          transition={{ 
-                            repeat: Infinity,
-                            duration: 4,
-                            repeatDelay: 2
-                          }}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="text-green-500 flex items-center gap-1"
                         >
-                          <TrendingUp className="h-4 w-4" />
+                          <motion.div
+                            animate={{
+                              y: [0, -4, 0],
+                            }}
+                            transition={{
+                              repeat: Infinity,
+                              duration: 4,
+                              repeatDelay: 2,
+                            }}
+                          >
+                            <TrendingUp className="h-4 w-4" />
+                          </motion.div>
+                          <motion.span
+                            className="text-xs font-bold"
+                            animate={{
+                              opacity: [1, 0.5, 1],
+                              scale: [1, 1.05, 1],
+                            }}
+                            transition={{
+                              repeat: Infinity,
+                              duration: 4,
+                              repeatDelay: 2,
+                            }}
+                          >
+                            +${entry.wagerChange.toLocaleString()}
+                          </motion.span>
                         </motion.div>
-                        <motion.span 
-                          className="text-xs font-bold"
-                          animate={{ 
-                            opacity: [1, 0.5, 1],
-                            scale: [1, 1.05, 1]
-                          }}
-                          transition={{ 
-                            repeat: Infinity,
-                            duration: 4,
-                            repeatDelay: 2
-                          }}
-                        >
-                          +${entry.wagerChange.toLocaleString()}
-                        </motion.span>
-                      </motion.div>
-                    )}
-                  </div>
-                </TableCell>
-              </motion.tr>
-            ))}
+                      )}
+                    </div>
+                  </TableCell>
+                </motion.tr>
+              ))}
           </TableBody>
         </Table>
         <div className="flex items-center justify-between px-4 py-4 border-t border-[#2A2B31]">
           <div className="text-sm text-[#8A8B91]">
-            Showing {currentPage * ITEMS_PER_PAGE + 1} to {Math.min((currentPage + 1) * ITEMS_PER_PAGE, filteredData.length)} of {filteredData.length}
+            Showing {currentPage * ITEMS_PER_PAGE + 1} to{" "}
+            {Math.min((currentPage + 1) * ITEMS_PER_PAGE, filteredData.length)}{" "}
+            of {filteredData.length}
           </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
               disabled={currentPage === 0}
               className="border-[#2A2B31] hover:border-[#D7FF00]/50"
             >
@@ -321,7 +381,9 @@ export function LeaderboardTable() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+              onClick={() =>
+                setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
+              }
               disabled={currentPage === totalPages - 1}
               className="border-[#2A2B31] hover:border-[#D7FF00]/50"
             >

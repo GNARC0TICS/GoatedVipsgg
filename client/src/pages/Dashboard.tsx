@@ -12,7 +12,7 @@ export default function Dashboard() {
       <header className="border-b">
         <div className="container mx-auto py-4 flex items-center justify-between">
           <Link href="/">
-            <motion.img 
+            <motion.img
               src="/images/logo-neon.png"
               alt="Goated"
               initial={{ opacity: 0, y: -20 }}
@@ -21,7 +21,7 @@ export default function Dashboard() {
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.onerror = null; // Prevent infinite loop
-                target.src = '/images/fallback-logo.png'; // Fallback image
+                target.src = "/images/fallback-logo.png"; // Fallback image
               }}
             />
           </Link>
@@ -40,8 +40,12 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-12"
         >
-          <h1 className="text-3xl font-heading font-extrabold uppercase mb-4">Affiliate Dashboard</h1>
-          <p className="text-muted-foreground font-sans">Track your referral performance</p>
+          <h1 className="text-3xl font-heading font-extrabold uppercase mb-4">
+            Affiliate Dashboard
+          </h1>
+          <p className="text-muted-foreground font-sans">
+            Track your referral performance
+          </p>
         </motion.div>
 
         <motion.div

@@ -6,8 +6,12 @@ import { useQuery } from "@tanstack/react-query";
 import type { SelectUser } from "@db/schema";
 import { ScrollToTop } from "./ScrollToTop";
 import { useEffect, useRef, useState } from "react";
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Bell, Settings, User, LogOut, ChevronDown } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+import { Bell, Settings, User, LogOut, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,13 +44,13 @@ export function Layout({ children }: LayoutProps) {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('/api/logout', {
-        method: 'POST',
-        credentials: 'include'
+      const response = await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include",
       });
 
       if (!response.ok) {
-        throw new Error('Logout failed');
+        throw new Error("Logout failed");
       }
 
       window.location.reload();
@@ -54,7 +58,7 @@ export function Layout({ children }: LayoutProps) {
       toast({
         title: "Error",
         description: "Failed to logout. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -66,7 +70,7 @@ export function Layout({ children }: LayoutProps) {
           setIsFooterVisible(true);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     if (footerRef.current) {
@@ -97,7 +101,8 @@ export function Layout({ children }: LayoutProps) {
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.onerror = null;
-                      target.src = "https://placehold.co/120x32/14151A/D7FF00?text=GOATED";
+                      target.src =
+                        "https://placehold.co/120x32/14151A/D7FF00?text=GOATED";
                     }}
                   />
                 </Link>
@@ -105,26 +110,29 @@ export function Layout({ children }: LayoutProps) {
 
               <div className="hidden md:flex items-center gap-8">
                 <NavLink href="/" label="HOME" />
-                <NavLink 
-                  href="/wager-races" 
+                <NavLink
+                  href="/wager-races"
                   label={
                     <div className="flex items-center gap-2 font-heading">
                       WAGER RACES
                       <div className="flex items-center gap-1">
                         <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
-                        <span className="text-xs text-red-500 font-heading">LIVE</span>
+                        <span className="text-xs text-red-500 font-heading">
+                          LIVE
+                        </span>
                       </div>
                     </div>
-                  } 
+                  }
                 />
                 <NavLink href="/vip-program" label="VIP PROGRAM" />
                 <NavLink href="/promotions" label="PROMOTIONS" />
-                <NavLink href="/telegram" 
+                <NavLink
+                  href="/telegram"
                   label={
                     <div className="flex items-center gap-2 font-heading">
                       TELEGRAM
                     </div>
-                  } 
+                  }
                   tooltip="Join our Telegram community"
                 />
                 {user?.isAdmin && (
@@ -136,9 +144,9 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex items-center gap-6">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="text-[#8A8B91] hover:text-white relative"
                   >
                     <Bell className="h-5 w-5" />
@@ -150,7 +158,9 @@ export function Layout({ children }: LayoutProps) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => window.open('/notification-preferences', '_self')}
+                      onClick={() =>
+                        window.open("/notification-preferences", "_self")
+                      }
                       className="h-8 w-8"
                     >
                       <Settings className="h-4 w-4" />
@@ -160,14 +170,24 @@ export function Layout({ children }: LayoutProps) {
                   <div className="max-h-[300px] overflow-y-auto">
                     {/* Example notifications */}
                     <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
-                      <div className="text-sm font-medium">New Wager Race Started</div>
-                      <div className="text-xs text-[#8A8B91]">Monthly race has begun with $5000 prize pool</div>
-                      <div className="text-xs text-[#8A8B91]">2 minutes ago</div>
+                      <div className="text-sm font-medium">
+                        New Wager Race Started
+                      </div>
+                      <div className="text-xs text-[#8A8B91]">
+                        Monthly race has begun with $5000 prize pool
+                      </div>
+                      <div className="text-xs text-[#8A8B91]">
+                        2 minutes ago
+                      </div>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
-                      <div className="text-sm font-medium">VIP Status Update</div>
-                      <div className="text-xs text-[#8A8B91]">You're close to reaching Silver tier!</div>
+                      <div className="text-sm font-medium">
+                        VIP Status Update
+                      </div>
+                      <div className="text-xs text-[#8A8B91]">
+                        You're close to reaching Silver tier!
+                      </div>
                       <div className="text-xs text-[#8A8B91]">1 hour ago</div>
                     </DropdownMenuItem>
                   </div>
@@ -178,9 +198,14 @@ export function Layout({ children }: LayoutProps) {
                 {user ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="flex items-center gap-2 text-white">
+                      <Button
+                        variant="ghost"
+                        className="flex items-center gap-2 text-white"
+                      >
                         <User className="h-5 w-5" />
-                        <span className="hidden md:inline">{user.username}</span>
+                        <span className="hidden md:inline">
+                          {user.username}
+                        </span>
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -198,7 +223,10 @@ export function Layout({ children }: LayoutProps) {
                         </DropdownMenuItem>
                       </Link>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleLogout} className="text-red-500 cursor-pointer">
+                      <DropdownMenuItem
+                        onClick={handleLogout}
+                        className="text-red-500 cursor-pointer"
+                      >
                         <LogOut className="h-4 w-4 mr-2" />
                         Logout
                       </DropdownMenuItem>
@@ -208,9 +236,14 @@ export function Layout({ children }: LayoutProps) {
                   <AuthModal />
                 )}
                 <Button
-                  onClick={() => window.open('https://www.goated.com/r/SPIN', '_blank')}
+                  onClick={() =>
+                    window.open("https://www.goated.com/r/SPIN", "_blank")
+                  }
                   className="relative group overflow-hidden text-[#14151A] fill-animation hover:text-[#D7FF00] transition-all duration-300 font-mona-sans font-extrabold uppercase tracking-tight"
-                  style={{ fontStretch: "condensed", fontVariationSettings: "'COND' 100, 'wght' 800" }}
+                  style={{
+                    fontStretch: "condensed",
+                    fontVariationSettings: "'COND' 100, 'wght' 800",
+                  }}
                 >
                   <span className="relative z-10">PLAY NOW →</span>
                 </Button>
@@ -220,21 +253,26 @@ export function Layout({ children }: LayoutProps) {
         </nav>
       </header>
 
-      <main className="flex-grow pt-16">
-        {children}
-      </main>
+      <main className="flex-grow pt-16">{children}</main>
 
-      {showFloatingSupport && <FloatingSupport onClose={() => setShowFloatingSupport(false)} />}
+      {showFloatingSupport && (
+        <FloatingSupport onClose={() => setShowFloatingSupport(false)} />
+      )}
 
       <ScrollToTop />
 
-      <footer ref={footerRef} className={`${isFooterVisible ? 'entrance-zoom' : 'opacity-0'} bg-[#D7FF00] relative`}>
+      <footer
+        ref={footerRef}
+        className={`${isFooterVisible ? "entrance-zoom" : "opacity-0"} bg-[#D7FF00] relative`}
+      >
         <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent pointer-events-none" />
         <div className="container mx-auto px-4 py-16 relative">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <h4 className="font-heading text-[#14151A] text-2xl font-bold">Ready to get Goated?</h4>
+                <h4 className="font-heading text-[#14151A] text-2xl font-bold">
+                  Ready to get Goated?
+                </h4>
                 <img
                   src="/images/Goated Logo - Black.png"
                   alt="Goated"
@@ -242,18 +280,25 @@ export function Layout({ children }: LayoutProps) {
                 />
               </div>
               <p className="text-[#14151A] mb-6">
-                Sign up now and enjoy additional rewards from our side. Start your journey to becoming a casino legend!
+                Sign up now and enjoy additional rewards from our side. Start
+                your journey to becoming a casino legend!
               </p>
               <Button
-                onClick={() => window.open('https://www.goated.com/r/EARLYACCESS', '_blank')}
+                onClick={() =>
+                  window.open("https://www.goated.com/r/EARLYACCESS", "_blank")
+                }
                 className="bg-[#14151A] text-white hover:bg-[#14151A]/90 transition-colors"
               >
                 Sign Up Now
               </Button>
             </div>
             <div>
-              <h4 className="font-heading text-[#14151A] text-2xl font-bold mb-4">Stay Updated</h4>
-              <p className="text-[#14151A] mb-6">Subscribe to our newsletter for exclusive offers and updates!</p>
+              <h4 className="font-heading text-[#14151A] text-2xl font-bold mb-4">
+                Stay Updated
+              </h4>
+              <p className="text-[#14151A] mb-6">
+                Subscribe to our newsletter for exclusive offers and updates!
+              </p>
               <form onSubmit={(e) => e.preventDefault()} className="flex gap-2">
                 <input
                   type="email"
@@ -283,8 +328,13 @@ export function Layout({ children }: LayoutProps) {
                 />
               </div>
             </div>
-            <p className="mb-2">© 2024 goatedvips.replit.app. All rights reserved.</p>
-            <p className="mb-2">Disclaimer: This website is not operated by Goated.com, and it's not an official site of the Goated.com team.</p>
+            <p className="mb-2">
+              © 2024 goatedvips.replit.app. All rights reserved.
+            </p>
+            <p className="mb-2">
+              Disclaimer: This website is not operated by Goated.com, and it's
+              not an official site of the Goated.com team.
+            </p>
             <p>Gamble responsibly. 18+ only. BeGambleAware.org</p>
           </div>
         </div>
@@ -293,27 +343,37 @@ export function Layout({ children }: LayoutProps) {
   );
 }
 
-function NavLink({ href, label, tooltip }: { href: string; label: string | React.ReactNode; tooltip?: string }) {
+function NavLink({
+  href,
+  label,
+  tooltip,
+}: {
+  href: string;
+  label: string | React.ReactNode;
+  tooltip?: string;
+}) {
   const [location] = useLocation();
   const isActive = location === href;
 
   const linkContent = (
-    <span className={`relative font-heading cursor-pointer group ${
-      isActive ? "text-[#D7FF00]" : "text-white"
-    } transition-colors duration-300`}>
+    <span
+      className={`relative font-heading cursor-pointer group ${
+        isActive ? "text-[#D7FF00]" : "text-white"
+      } transition-colors duration-300`}
+    >
       {label}
-      <span className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-[#D7FF00] transition-all duration-300 ${
-        isActive ? "w-full" : "group-hover:w-full"
-      }`} />
+      <span
+        className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-[#D7FF00] transition-all duration-300 ${
+          isActive ? "w-full" : "group-hover:w-full"
+        }`}
+      />
     </span>
   );
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Link href={href}>
-          {linkContent}
-        </Link>
+        <Link href={href}>{linkContent}</Link>
       </TooltipTrigger>
       {tooltip && (
         <TooltipContent>

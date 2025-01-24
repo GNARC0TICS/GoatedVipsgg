@@ -28,14 +28,15 @@ import HowItWorks from "@/pages/HowItWorks";
 import GoatedToken from "@/pages/GoatedToken";
 import Support from "@/pages/support";
 import FAQ from "@/pages/faq";
-import VipProgram from './pages/VipProgram'; // Added import for VipProgram
-
+import VipProgram from "./pages/VipProgram"; // Added import for VipProgram
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="max-w-md w-full mx-4 p-6 text-center">
-        <h2 className="text-2xl font-bold text-destructive mb-4">Something went wrong</h2>
+        <h2 className="text-2xl font-bold text-destructive mb-4">
+          Something went wrong
+        </h2>
         <pre className="text-sm bg-muted p-4 rounded-lg overflow-auto">
           {error.message}
         </pre>
@@ -75,7 +76,10 @@ function Router() {
             <Route path="/vip-transfer" component={VipTransfer} />
             <Route path="/wager-races" component={WagerRaces} />
             <Route path="/bonus-codes" component={BonusCodes} />
-            <Route path="/notification-preferences" component={NotificationPreferences} />
+            <Route
+              path="/notification-preferences"
+              component={NotificationPreferences}
+            />
             <Route path="/support" component={Support} />
             <Route path="/faq" component={FAQ} />
             <Route path="/admin/wager-races">
@@ -100,7 +104,8 @@ function Router() {
             <Route path="/telegram" component={Telegram} />
             <Route path="/how-it-works" component={HowItWorks} />
             <Route path="/goated-token" component={GoatedToken} />
-            <Route path="/vip-program" component={VipProgram} /> {/* Added VIP Program route */}
+            <Route path="/vip-program" component={VipProgram} />{" "}
+            {/* Added VIP Program route */}
             <Route component={NotFound} />
           </Switch>
         </ErrorBoundary>

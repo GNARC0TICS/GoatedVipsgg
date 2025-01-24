@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -16,22 +15,23 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export default function UserManagement() {
   const [search, setSearch] = useState("");
-  
+
   const { data: users, isLoading } = useQuery({
     queryKey: ["/api/admin/users"],
   });
 
   if (isLoading) return <LoadingSpinner />;
 
-  const filteredUsers = users?.filter(user => 
-    user.username.toLowerCase().includes(search.toLowerCase()) ||
-    user.email.toLowerCase().includes(search.toLowerCase())
+  const filteredUsers = users?.filter(
+    (user) =>
+      user.username.toLowerCase().includes(search.toLowerCase()) ||
+      user.email.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-2xl font-bold mb-6">User Management</h1>
-      
+
       <Card className="mb-6">
         <CardContent className="p-4">
           <Input
@@ -68,7 +68,7 @@ export default function UserManagement() {
                   {new Date(user.createdAt).toLocaleDateString()}
                 </TableCell>
                 <TableCell>
-                  {user.lastLogin 
+                  {user.lastLogin
                     ? new Date(user.lastLogin).toLocaleDateString()
                     : "Never"}
                 </TableCell>

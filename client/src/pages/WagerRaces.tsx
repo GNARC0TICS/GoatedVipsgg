@@ -1,8 +1,25 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trophy, CircleDot, Crown, Medal, Award, Star, Timer, TrendingUp, ArrowRight } from "lucide-react";
+import {
+  Trophy,
+  CircleDot,
+  Crown,
+  Medal,
+  Award,
+  Star,
+  Timer,
+  TrendingUp,
+  ArrowRight,
+} from "lucide-react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { useLeaderboard } from "@/hooks/use-leaderboard";
 import { Card } from "@/components/ui/card";
@@ -25,21 +42,21 @@ type LeaderboardEntry = {
 };
 
 export default function WagerRaces() {
-  const [raceType] = useState<'weekly' | 'monthly' | 'weekend'>('monthly');
-  const { data: leaderboardData, isLoading } = useLeaderboard('monthly');
+  const [raceType] = useState<"weekly" | "monthly" | "weekend">("monthly");
+  const { data: leaderboardData, isLoading } = useLeaderboard("monthly");
 
   const prizePool = 200;
   const prizeDistribution: Record<number, number> = {
-    1: 0.50,
+    1: 0.5,
     2: 0.15,
-    3: 0.10,
+    3: 0.1,
     4: 0.0357,
     5: 0.0357,
     6: 0.0357,
     7: 0.0357,
     8: 0.0357,
     9: 0.0357,
-    10: 0.0358
+    10: 0.0358,
   };
 
   const getTrophyIcon = (rank: number) => {
@@ -57,9 +74,9 @@ export default function WagerRaces() {
 
   const getWagerAmount = (player: LeaderboardEntry) => {
     switch (raceType) {
-      case 'weekly':
+      case "weekly":
         return player.wagered.this_week;
-      case 'monthly':
+      case "monthly":
         return player.wagered.this_month;
       default:
         return player.wagered.this_week;
@@ -96,7 +113,10 @@ export default function WagerRaces() {
                 >
                   {`${raceType.charAt(0).toUpperCase() + raceType.slice(1)} Wager Race`}
                 </motion.h1>
-                <Link href="/how-it-works" className="flex items-center gap-2 text-[#D7FF00] hover:text-[#D7FF00]/80 transition-colors">
+                <Link
+                  href="/how-it-works"
+                  className="flex items-center gap-2 text-[#D7FF00] hover:text-[#D7FF00]/80 transition-colors"
+                >
                   How it Works
                   <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -108,7 +128,13 @@ export default function WagerRaces() {
                   <div className="flex items-center gap-2 text-[#8A8B91]">
                     <Timer className="h-4 w-4 text-[#D7FF00]" />
                     <span>Ends in: </span>
-                    <CountdownTimer endDate={new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString()} />
+                    <CountdownTimer
+                      endDate={new Date(
+                        new Date().getFullYear(),
+                        new Date().getMonth() + 1,
+                        0,
+                      ).toISOString()}
+                    />
                   </div>
                 </div>
               </div>
@@ -122,24 +148,34 @@ export default function WagerRaces() {
             >
               <div className="grid grid-cols-3 gap-8">
                 <div className="text-center">
-                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">PRIZE POOL</h3>
+                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">
+                    PRIZE POOL
+                  </h3>
                   <div className="flex items-center justify-center gap-2">
                     <Trophy className="h-5 w-5 text-[#D7FF00]" />
-                    <p className="text-xl font-bold">${prizePool.toLocaleString()}</p>
+                    <p className="text-xl font-bold">
+                      ${prizePool.toLocaleString()}
+                    </p>
                   </div>
                 </div>
                 <div className="text-center">
-                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">POSITIONS PAID</h3>
+                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">
+                    POSITIONS PAID
+                  </h3>
                   <div className="flex items-center justify-center gap-2">
                     <Medal className="h-5 w-5 text-[#D7FF00]" />
                     <p className="text-xl font-bold">10</p>
                   </div>
                 </div>
                 <div className="text-center">
-                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">CURRENT LEADER</h3>
+                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">
+                    CURRENT LEADER
+                  </h3>
                   <div className="flex items-center justify-center gap-2">
                     <Crown className="h-5 w-5 text-[#D7FF00]" />
-                    <p className="text-xl font-bold truncate">{currentLeader?.name || 'No Leader'}</p>
+                    <p className="text-xl font-bold truncate">
+                      {currentLeader?.name || "No Leader"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -161,18 +197,26 @@ export default function WagerRaces() {
                 className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-6 rounded-2xl border-2 border-[#C0C0C0] w-[180px] h-[180px] transform -translate-y-4"
               >
                 <div className="absolute -top-12 left-1/2 -translate-x-1/2">
-                  <span className="bg-[#C0C0C0] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">2ND PLACE</span>
+                  <span className="bg-[#C0C0C0] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">
+                    2ND PLACE
+                  </span>
                 </div>
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 filter drop-shadow-lg">
                   {getTrophyIcon(2)}
                 </div>
                 <div className="text-center mt-8">
-                  <p className="text-base font-bold truncate text-white/90">{top10Players[1]?.name || '-'}</p>
+                  <p className="text-base font-bold truncate text-white/90">
+                    {top10Players[1]?.name || "-"}
+                  </p>
                   <p className="text-sm font-heading text-[#D7FF00] mt-2">
                     ${getPrizeAmount(2).toLocaleString()}
                   </p>
                   <p className="text-xs text-white/60 mt-1">
-                    ${getWagerAmount(top10Players[1] || { wagered: { this_month: 0 } }).toLocaleString()} wagered
+                    $
+                    {getWagerAmount(
+                      top10Players[1] || { wagered: { this_month: 0 } },
+                    ).toLocaleString()}{" "}
+                    wagered
                   </p>
                 </div>
               </motion.div>
@@ -185,16 +229,24 @@ export default function WagerRaces() {
                 className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-6 rounded-2xl border-2 border-[#FFD700] w-[220px] h-[200px] z-10 glow-gold"
               >
                 <div className="absolute -top-12 left-1/2 -translate-x-1/2">
-                  <span className="bg-[#FFD700] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">1ST PLACE</span>
+                  <span className="bg-[#FFD700] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">
+                    1ST PLACE
+                  </span>
                 </div>
                 {getTrophyIcon(1)}
                 <div className="text-center mt-4">
-                  <p className="text-xl font-bold truncate text-white">{top10Players[0]?.name || '-'}</p>
+                  <p className="text-xl font-bold truncate text-white">
+                    {top10Players[0]?.name || "-"}
+                  </p>
                   <p className="text-lg font-heading text-[#D7FF00] mt-2">
                     ${getPrizeAmount(1).toLocaleString()}
                   </p>
                   <p className="text-sm text-white/60 mt-1">
-                    ${getWagerAmount(top10Players[0] || { wagered: { this_month: 0 } }).toLocaleString()} wagered
+                    $
+                    {getWagerAmount(
+                      top10Players[0] || { wagered: { this_month: 0 } },
+                    ).toLocaleString()}{" "}
+                    wagered
                   </p>
                 </div>
               </motion.div>
@@ -207,18 +259,26 @@ export default function WagerRaces() {
                 className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-6 rounded-2xl border-2 border-[#CD7F32] w-[180px] h-[160px] transform -translate-y-8"
               >
                 <div className="absolute -top-12 left-1/2 -translate-x-1/2">
-                  <span className="bg-[#CD7F32] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">3RD PLACE</span>
+                  <span className="bg-[#CD7F32] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">
+                    3RD PLACE
+                  </span>
                 </div>
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 filter drop-shadow-lg">
                   {getTrophyIcon(3)}
                 </div>
                 <div className="text-center mt-8">
-                  <p className="text-base font-bold truncate text-white/90">{top10Players[2]?.name || '-'}</p>
+                  <p className="text-base font-bold truncate text-white/90">
+                    {top10Players[2]?.name || "-"}
+                  </p>
                   <p className="text-sm font-heading text-[#D7FF00] mt-2">
                     ${getPrizeAmount(3).toLocaleString()}
                   </p>
                   <p className="text-xs text-white/60 mt-1">
-                    ${getWagerAmount(top10Players[2] || { wagered: { this_month: 0 } }).toLocaleString()} wagered
+                    $
+                    {getWagerAmount(
+                      top10Players[2] || { wagered: { this_month: 0 } },
+                    ).toLocaleString()}{" "}
+                    wagered
                   </p>
                 </div>
               </motion.div>
@@ -230,22 +290,35 @@ export default function WagerRaces() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-[#1A1B21]/50 backdrop-blur-sm rounded-xl border border-[#2A2B31] overflow-hidden mt-4"
-          > {/* Added mt-4 to move the table up */}
+          >
+            {" "}
+            {/* Added mt-4 to move the table up */}
             <div className="bg-[#2A2B31] px-6 py-4">
               <h3 className="text-xl font-heading font-bold text-[#D7FF00]">{`${raceType.charAt(0).toUpperCase() + raceType.slice(1)} Race Leaderboard`}</h3>
             </div>
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-20 font-heading text-[#D7FF00]">RANK</TableHead>
-                  <TableHead className="font-heading text-[#D7FF00]">USERNAME</TableHead>
-                  <TableHead className="text-right font-heading text-[#D7FF00]">TOTAL WAGER</TableHead>
-                  <TableHead className="text-right font-heading text-[#D7FF00]">PRIZE</TableHead>
+                  <TableHead className="w-20 font-heading text-[#D7FF00]">
+                    RANK
+                  </TableHead>
+                  <TableHead className="font-heading text-[#D7FF00]">
+                    USERNAME
+                  </TableHead>
+                  <TableHead className="text-right font-heading text-[#D7FF00]">
+                    TOTAL WAGER
+                  </TableHead>
+                  <TableHead className="text-right font-heading text-[#D7FF00]">
+                    PRIZE
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {top10Players.map((player, index) => (
-                  <TableRow key={player.uid} className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]">
+                  <TableRow
+                    key={player.uid}
+                    className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]"
+                  >
                     <TableCell className="font-heading">
                       <div className="flex items-center gap-2">
                         {getTrophyIcon(index + 1)}
@@ -255,8 +328,10 @@ export default function WagerRaces() {
                     <TableCell className="font-sans text-white">
                       <QuickProfile userId={player.uid} username={player.name}>
                         <div className="flex items-center gap-2 cursor-pointer">
-                          <img 
-                            src={getTierIcon(getTierFromWager(player.wagered.all_time))} 
+                          <img
+                            src={getTierIcon(
+                              getTierFromWager(player.wagered.all_time),
+                            )}
                             alt="Tier"
                             className="w-5 h-5"
                           />
@@ -266,7 +341,14 @@ export default function WagerRaces() {
                     </TableCell>
                     <TableCell className="text-right font-sans">
                       <motion.span
-                        animate={{ scale: [1, 1.1, 1], backgroundColor: ["transparent", "#008000", "transparent"] }}
+                        animate={{
+                          scale: [1, 1.1, 1],
+                          backgroundColor: [
+                            "transparent",
+                            "#008000",
+                            "transparent",
+                          ],
+                        }}
                         transition={{ duration: 5, repeat: 1, repeatDelay: 0 }}
                       >
                         ${getWagerAmount(player)?.toLocaleString()}

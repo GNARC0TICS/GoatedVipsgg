@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
@@ -13,19 +12,25 @@ export default function Telegram() {
           className="max-w-3xl mx-auto text-center"
         >
           <div className="mb-8">
-            <img 
-              src="/images/Goated Logo - Yellow.png" 
-              alt="Goated Logo" 
+            <img
+              src="/images/Goated Logo - Yellow.png"
+              alt="Goated Logo"
               className="h-20 w-32 mx-auto mb-4 object-contain"
             />
-            <h1 className="text-4xl font-heading text-white mb-4">Goombas x Goated VIPs</h1>
+            <h1 className="text-4xl font-heading text-white mb-4">
+              Goombas x Goated VIPs
+            </h1>
             <p className="text-[#8A8B91] text-lg mb-8">
-              Join our exclusive Telegram community where VIP members share insights, strategies, and connect with fellow players. Be part of an engaging community that's passionate about gaming and success.
+              Join our exclusive Telegram community where VIP members share
+              insights, strategies, and connect with fellow players. Be part of
+              an engaging community that's passionate about gaming and success.
             </p>
           </div>
 
           <div className="bg-[#1A1B21]/50 border border-[#2A2B31] rounded-xl p-8 mb-8">
-            <h2 className="text-2xl font-heading text-white mb-4">What to Expect</h2>
+            <h2 className="text-2xl font-heading text-white mb-4">
+              What to Expect
+            </h2>
             <ul className="text-[#8A8B91] text-left space-y-4">
               <li>• Exclusive gaming strategies and tips</li>
               <li>• Real-time updates on promotions and events</li>
@@ -36,9 +41,9 @@ export default function Telegram() {
             </ul>
           </div>
 
-          <a 
-            href="https://t.me/+iFlHl5V9VcszZTVh" 
-            target="_blank" 
+          <a
+            href="https://t.me/+iFlHl5V9VcszZTVh"
+            target="_blank"
             rel="noopener noreferrer"
           >
             <Button className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 font-heading text-lg px-8 py-6">

@@ -1,15 +1,15 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocket, WebSocketServer } from 'ws';
+import { WebSocket, WebSocketServer } from "ws";
 import { log } from "./vite";
 import { setupAuth } from "./auth";
 import { API_CONFIG } from "./config/api";
-import { RateLimiterMemory } from 'rate-limiter-flexible';
-import { requireAdmin, requireAuth } from './middleware/auth';
-import { db } from '@db';
-import { wagerRaces, users, ticketMessages, supportTickets } from '@db/schema';
-import { eq, and } from 'drizzle-orm';
-import { z } from 'zod';
+import { RateLimiterMemory } from "rate-limiter-flexible";
+import { requireAdmin, requireAuth } from "./middleware/auth";
+import { db } from "@db";
+import { wagerRaces, users, ticketMessages, supportTickets } from "@db/schema";
+import { eq, and } from "drizzle-orm";
+import { z } from "zod";
 
 const rateLimiter = new RateLimiterMemory({
   points: 60,
@@ -20,7 +20,7 @@ let wss: WebSocketServer;
 
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
-  setupAuth(app);  // Ensure auth is set up first
+  setupAuth(app); // Ensure auth is set up first
   setupRESTRoutes(app);
   setupWebSocket(httpServer);
   return httpServer;
@@ -35,7 +35,7 @@ function setupRESTRoutes(app: Express) {
         return res.status(400).json({
           status: "error",
           message: "Validation failed",
-          errors: result.error.issues.map(i => i.message).join(", ")
+          errors: result.error.issues.map((i) => i.message).join(", "),
         });
       }
 
@@ -49,7 +49,7 @@ function setupRESTRoutes(app: Express) {
       if (!user || !user.isAdmin) {
         return res.status(401).json({
           status: "error",
-          message: "Invalid admin credentials"
+          message: "Invalid admin credentials",
         });
       }
 
@@ -57,12 +57,12 @@ function setupRESTRoutes(app: Express) {
       const token = generateToken({
         userId: user.id,
         email: user.email,
-        isAdmin: user.isAdmin
+        isAdmin: user.isAdmin,
       });
 
-      res.cookie('token', token, {
+      res.cookie("token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production'
+        secure: process.env.NODE_ENV === "production",
       });
 
       res.json({
@@ -72,14 +72,14 @@ function setupRESTRoutes(app: Express) {
           id: user.id,
           username: user.username,
           email: user.email,
-          isAdmin: user.isAdmin
-        }
+          isAdmin: user.isAdmin,
+        },
       });
     } catch (error) {
-      log('Admin login error:', error);
+      log("Admin login error:", error);
       res.status(500).json({
         status: "error",
-        message: "Failed to process admin login"
+        message: "Failed to process admin login",
       });
     }
   });
@@ -88,54 +88,60 @@ function setupRESTRoutes(app: Express) {
   app.get("/api/admin/wager-races", requireAdmin, handleWagerRacesRequest);
   app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);
 
-  app.put("/api/admin/wager-races/:id/status", requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { status } = req.body;
+  app.put(
+    "/api/admin/wager-races/:id/status",
+    requireAdmin,
+    async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { status } = req.body;
 
-      if (!status || !["upcoming", "live", "completed"].includes(status)) {
-        return res.status(400).json({
-          status: "error",
-          message: "Invalid race status"
-        });
-      }
-
-      const race = await db
-        .update(wagerRaces)
-        .set({ status, updatedAt: new Date() })
-        .where(eq(wagerRaces.id, parseInt(id)))
-        .returning();
-
-      if (!race.length) {
-        return res.status(404).json({
-          status: "error",
-          message: "Race not found"
-        });
-      }
-
-      // Broadcast update to all connected clients
-      wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({
-            type: 'RACE_STATUS_UPDATE',
-            data: race[0]
-          }));
+        if (!status || !["upcoming", "live", "completed"].includes(status)) {
+          return res.status(400).json({
+            status: "error",
+            message: "Invalid race status",
+          });
         }
-      });
 
-      res.json({
-        status: "success",
-        message: "Race status updated successfully",
-        data: race[0]
-      });
-    } catch (error) {
-      log(`Error updating race status: ${error}`);
-      res.status(500).json({
-        status: "error",
-        message: "Failed to update race status"
-      });
-    }
-  });
+        const race = await db
+          .update(wagerRaces)
+          .set({ status, updatedAt: new Date() })
+          .where(eq(wagerRaces.id, parseInt(id)))
+          .returning();
+
+        if (!race.length) {
+          return res.status(404).json({
+            status: "error",
+            message: "Race not found",
+          });
+        }
+
+        // Broadcast update to all connected clients
+        wss.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                type: "RACE_STATUS_UPDATE",
+                data: race[0],
+              }),
+            );
+          }
+        });
+
+        res.json({
+          status: "success",
+          message: "Race status updated successfully",
+          data: race[0],
+        });
+      } catch (error) {
+        log(`Error updating race status: ${error}`);
+        res.status(500).json({
+          status: "error",
+          message: "Failed to update race status",
+        });
+      }
+    },
+  );
 
   app.get("/api/affiliate/stats", handleAffiliateStats);
 
@@ -144,14 +150,14 @@ function setupRESTRoutes(app: Express) {
     try {
       const messages = await db.query.ticketMessages.findMany({
         orderBy: (messages, { asc }) => [asc(messages.createdAt)],
-        limit: 50
+        limit: 50,
       });
       res.json(messages);
     } catch (error) {
       log(`Error fetching chat history: ${error}`);
       res.status(500).json({
         status: "error",
-        message: "Failed to fetch chat history"
+        message: "Failed to fetch chat history",
       });
     }
   });
@@ -166,7 +172,7 @@ async function handleProfileRequest(req: any, res: any) {
         email: users.email,
         isAdmin: users.isAdmin,
         createdAt: users.createdAt,
-        lastLogin: users.lastLogin
+        lastLogin: users.lastLogin,
       })
       .from(users)
       .where(eq(users.id, req.user!.id))
@@ -175,19 +181,19 @@ async function handleProfileRequest(req: any, res: any) {
     if (!user) {
       return res.status(404).json({
         status: "error",
-        message: "User not found"
+        message: "User not found",
       });
     }
 
     res.json({
       status: "success",
-      data: user
+      data: user,
     });
   } catch (error) {
     log(`Error fetching profile: ${error}`);
     res.status(500).json({
       status: "error",
-      message: "Failed to fetch profile"
+      message: "Failed to fetch profile",
     });
   }
 }
@@ -201,20 +207,20 @@ async function handleAdminUsersRequest(_req: any, res: any) {
         email: users.email,
         isAdmin: users.isAdmin,
         createdAt: users.createdAt,
-        lastLogin: users.lastLogin
+        lastLogin: users.lastLogin,
       })
       .from(users)
       .orderBy(users.createdAt);
 
     res.json({
       status: "success",
-      data: usersList
+      data: usersList,
     });
   } catch (error) {
     log(`Error fetching users: ${error}`);
     res.status(500).json({
       status: "error",
-      message: "Failed to fetch users"
+      message: "Failed to fetch users",
     });
   }
 }
@@ -222,17 +228,17 @@ async function handleAdminUsersRequest(_req: any, res: any) {
 async function handleWagerRacesRequest(_req: any, res: any) {
   try {
     const races = await db.query.wagerRaces.findMany({
-      orderBy: (races, { desc }) => [desc(races.createdAt)]
+      orderBy: (races, { desc }) => [desc(races.createdAt)],
     });
     res.json({
       status: "success",
-      data: races
+      data: races,
     });
   } catch (error) {
     log(`Error fetching wager races: ${error}`);
     res.status(500).json({
       status: "error",
-      message: "Failed to fetch wager races"
+      message: "Failed to fetch wager races",
     });
   }
 }
@@ -243,27 +249,27 @@ async function handleCreateWagerRace(req: any, res: any) {
       .insert(wagerRaces)
       .values({
         ...req.body,
-        createdBy: req.user!.id
+        createdBy: req.user!.id,
       })
       .returning();
 
     // Broadcast update to all connected clients
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ type: 'RACE_UPDATE', data: race[0] }));
+        client.send(JSON.stringify({ type: "RACE_UPDATE", data: race[0] }));
       }
     });
 
     res.json({
       status: "success",
       message: "Race created successfully",
-      data: race[0]
+      data: race[0],
     });
   } catch (error) {
     log(`Error creating wager race: ${error}`);
     res.status(500).json({
       status: "error",
-      message: "Failed to create wager race"
+      message: "Failed to create wager race",
     });
   }
 }
@@ -283,7 +289,7 @@ async function handleAffiliateStats(req: any, res: any) {
       res.status(500).json({
         success: false,
         error: "Failed to fetch affiliate stats",
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -292,15 +298,15 @@ async function handleAffiliateStats(req: any, res: any) {
 function setupWebSocket(httpServer: Server) {
   wss = new WebSocketServer({ noServer: true });
 
-  httpServer.on('upgrade', (request, socket, head) => {
+  httpServer.on("upgrade", (request, socket, head) => {
     // Skip vite HMR requests
-    if (request.headers['sec-websocket-protocol'] === 'vite-hmr') {
+    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
       return;
     }
 
-    if (request.url === '/ws/chat') {
+    if (request.url === "/ws/chat") {
       wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit('connection', ws, request);
+        wss.emit("connection", ws, request);
         handleChatConnection(ws);
       });
     }
@@ -308,37 +314,40 @@ function setupWebSocket(httpServer: Server) {
 }
 
 const chatMessageSchema = z.object({
-  type: z.literal('chat_message'),
+  type: z.literal("chat_message"),
   message: z.string().min(1).max(1000),
   userId: z.number().optional(),
-  isStaffReply: z.boolean().default(false)
+  isStaffReply: z.boolean().default(false),
 });
 
 async function handleChatConnection(ws: WebSocket) {
-  log('Chat WebSocket client connected');
+  log("Chat WebSocket client connected");
 
-  ws.on('message', async (data) => {
+  ws.on("message", async (data) => {
     try {
       const message = JSON.parse(data.toString());
       const result = chatMessageSchema.safeParse(message);
 
       if (!result.success) {
-        ws.send(JSON.stringify({
-          type: 'error',
-          message: 'Invalid message format'
-        }));
+        ws.send(
+          JSON.stringify({
+            type: "error",
+            message: "Invalid message format",
+          }),
+        );
         return;
       }
 
       const { message: messageText, userId, isStaffReply } = result.data;
 
       // Save message to database
-      const [savedMessage] = await db.insert(ticketMessages)
+      const [savedMessage] = await db
+        .insert(ticketMessages)
         .values({
           message: messageText,
           userId: userId || null,
           isStaffReply,
-          createdAt: new Date()
+          createdAt: new Date(),
         })
         .returning();
 
@@ -348,7 +357,7 @@ async function handleChatConnection(ws: WebSocket) {
         message: savedMessage.message,
         userId: savedMessage.userId,
         createdAt: savedMessage.createdAt,
-        isStaffReply: savedMessage.isStaffReply
+        isStaffReply: savedMessage.isStaffReply,
       };
 
       wss.clients.forEach((client) => {
@@ -358,40 +367,46 @@ async function handleChatConnection(ws: WebSocket) {
       });
     } catch (error) {
       log(`Error handling chat message: ${error}`);
-      ws.send(JSON.stringify({
-        type: 'error',
-        message: 'Failed to process message'
-      }));
+      ws.send(
+        JSON.stringify({
+          type: "error",
+          message: "Failed to process message",
+        }),
+      );
     }
   });
 
-  ws.on('close', () => {
-    log('Chat WebSocket client disconnected');
+  ws.on("close", () => {
+    log("Chat WebSocket client disconnected");
   });
 
   // Send welcome message
   const welcomeMessage = {
     id: Date.now(),
-    message: "Welcome to VIP Support! How can we assist you today? Our team is here to help with any questions or concerns you may have.",
+    message:
+      "Welcome to VIP Support! How can we assist you today? Our team is here to help with any questions or concerns you may have.",
     userId: null,
     createdAt: new Date(),
-    isStaffReply: true
+    isStaffReply: true,
   };
   ws.send(JSON.stringify(welcomeMessage));
 }
 
 async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
-  const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`, {
-    headers: {
-      'Authorization': `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-      'Content-Type': 'application/json'
-    }
-  });
+  const response = await fetch(
+    `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
 
   if (!response.ok) {
     if (response.status === 401) {
-      log('API Authentication failed - check API token');
-      throw new Error('API Authentication failed');
+      log("API Authentication failed - check API token");
+      throw new Error("API Authentication failed");
     }
     throw new Error(`API request failed: ${response.status}`);
   }
@@ -402,51 +417,56 @@ async function fetchLeaderboardData(page: number = 0, limit: number = 10) {
 
 function transformLeaderboardData(apiData: any) {
   const responseData = apiData.data || apiData.results || apiData;
-  if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
+  if (
+    !responseData ||
+    (Array.isArray(responseData) && responseData.length === 0)
+  ) {
     return {
       status: "success",
       metadata: {
         totalUsers: 0,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
       },
       data: {
         today: { data: [] },
         all_time: { data: [] },
         monthly: { data: [] },
-        weekly: { data: [] }
-      }
+        weekly: { data: [] },
+      },
     };
   }
 
   const dataArray = Array.isArray(responseData) ? responseData : [responseData];
-  const transformedData = dataArray.map(entry => ({
-    uid: entry.uid || '',
-    name: entry.name || '',
+  const transformedData = dataArray.map((entry) => ({
+    uid: entry.uid || "",
+    name: entry.name || "",
     wagered: {
       today: entry.wagered?.today || 0,
       this_week: entry.wagered?.this_week || 0,
       this_month: entry.wagered?.this_month || 0,
-      all_time: entry.wagered?.all_time || 0
-    }
+      all_time: entry.wagered?.all_time || 0,
+    },
   }));
 
   return {
     status: "success",
     metadata: {
       totalUsers: transformedData.length,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
     },
     data: {
-      today: { data: sortByWagered(transformedData, 'today') },
-      weekly: { data: sortByWagered(transformedData, 'this_week') },
-      monthly: { data: sortByWagered(transformedData, 'this_month') },
-      all_time: { data: sortByWagered(transformedData, 'all_time') }
-    }
+      today: { data: sortByWagered(transformedData, "today") },
+      weekly: { data: sortByWagered(transformedData, "this_week") },
+      monthly: { data: sortByWagered(transformedData, "this_month") },
+      all_time: { data: sortByWagered(transformedData, "all_time") },
+    },
   };
 }
 
 function sortByWagered(data: any[], period: string) {
-  return [...data].sort((a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0));
+  return [...data].sort(
+    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0),
+  );
 }
 
 const adminLoginSchema = z.object({

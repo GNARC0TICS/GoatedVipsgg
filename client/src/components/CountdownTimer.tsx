@@ -44,11 +44,17 @@ export function CountdownTimer({ endDate, onComplete }: CountdownTimerProps) {
           <span className="text-muted-foreground">:</span>
         </>
       )}
-      <span className="font-bold">{String(timeLeft.hours).padStart(2, '0')}h</span>
+      <span className="font-bold">
+        {String(timeLeft.hours).padStart(2, "0")}h
+      </span>
       <span className="text-muted-foreground">:</span>
-      <span className="font-bold">{String(timeLeft.minutes).padStart(2, '0')}m</span>
+      <span className="font-bold">
+        {String(timeLeft.minutes).padStart(2, "0")}m
+      </span>
       <span className="text-muted-foreground">:</span>
-      <span className="font-bold">{String(timeLeft.seconds).padStart(2, '0')}s</span>
+      <span className="font-bold">
+        {String(timeLeft.seconds).padStart(2, "0")}s
+      </span>
     </div>
   );
 }

@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
+import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 
 type WageredData = {
   today: number;
@@ -28,11 +28,14 @@ type APIResponse = {
   };
 };
 
-export type TimePeriod = 'today' | 'weekly' | 'monthly' | 'all_time';
+export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
 
-export function useLeaderboard(timePeriod: TimePeriod = 'today', page: number = 0) {
+export function useLeaderboard(
+  timePeriod: TimePeriod = "today",
+  page: number = 0,
+) {
   const { data, isLoading, error, refetch } = useQuery<APIResponse>({
-    queryKey: ['/api/affiliate/stats'],
+    queryKey: ["/api/affiliate/stats"],
     queryFn: async () => {
       const response = await fetch(`/api/affiliate/stats?limit=10`);
       if (!response.ok) {
@@ -43,13 +46,18 @@ export function useLeaderboard(timePeriod: TimePeriod = 'today', page: number = 
     refetchInterval: 30000, // Refetch every 30 seconds for live updates
     select: (data) => {
       if (!data?.data) {
-        throw new Error('Invalid data format received from API');
+        throw new Error("Invalid data format received from API");
       }
 
       // Map the time period to the correct data array
-      const periodKey = timePeriod === 'weekly' ? 'weekly' :
-                       timePeriod === 'monthly' ? 'monthly' :
-                       timePeriod === 'today' ? 'today' : 'all_time';
+      const periodKey =
+        timePeriod === "weekly"
+          ? "weekly"
+          : timePeriod === "monthly"
+            ? "monthly"
+            : timePeriod === "today"
+              ? "today"
+              : "all_time";
 
       const periodData = data.data[periodKey].data;
 
@@ -65,50 +73,76 @@ export function useLeaderboard(timePeriod: TimePeriod = 'today', page: number = 
                 today: entry.wagered?.today || 0,
                 this_week: entry.wagered?.this_week || 0,
                 this_month: entry.wagered?.this_month || 0,
-                all_time: entry.wagered?.all_time || 0
-              }
-            }))
-          }
-        }
+                all_time: entry.wagered?.all_time || 0,
+              },
+            })),
+          },
+        },
       };
-    }
+    },
   });
 
   // Get the correct data array based on the time period
-  const periodKey = timePeriod === 'weekly' ? 'weekly' :
-                   timePeriod === 'monthly' ? 'monthly' :
-                   timePeriod === 'today' ? 'today' : 'all_time';
+  const periodKey =
+    timePeriod === "weekly"
+      ? "weekly"
+      : timePeriod === "monthly"
+        ? "monthly"
+        : timePeriod === "today"
+          ? "today"
+          : "all_time";
 
   const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
-  
+
   // Compare current and previous wager amounts
-  const sortedData = data?.data[periodKey]?.data?.map(entry => {
-    const prevEntry = previousData.find(p => p.uid === entry.uid);
-    const currentWager = entry.wagered[timePeriod === 'weekly' ? 'this_week' : 
-                                    timePeriod === 'monthly' ? 'this_month' : 
-                                    timePeriod === 'today' ? 'today' : 'all_time'] || 0;
-    const previousWager = prevEntry ? 
-                         prevEntry.wagered[timePeriod === 'weekly' ? 'this_week' : 
-                                         timePeriod === 'monthly' ? 'this_month' : 
-                                         timePeriod === 'today' ? 'today' : 'all_time'] || 0 : 0;
-    
-    return {
-      ...entry,
-      isWagering: currentWager > previousWager,
-      wagerChange: currentWager - previousWager
-    };
-  }).sort((a, b) => {
-    const getWagerValue = (entry: LeaderboardEntry) => {
-      if (!entry?.wagered) return 0;
-      switch (periodKey) {
-        case 'weekly': return entry.wagered.this_week;
-        case 'monthly': return entry.wagered.this_month;
-        case 'today': return entry.wagered.today;
-        default: return entry.wagered.all_time;
-      }
-    };
-    return (getWagerValue(b) || 0) - (getWagerValue(a) || 0);
-  }) || [];
+  const sortedData =
+    data?.data[periodKey]?.data
+      ?.map((entry) => {
+        const prevEntry = previousData.find((p) => p.uid === entry.uid);
+        const currentWager =
+          entry.wagered[
+            timePeriod === "weekly"
+              ? "this_week"
+              : timePeriod === "monthly"
+                ? "this_month"
+                : timePeriod === "today"
+                  ? "today"
+                  : "all_time"
+          ] || 0;
+        const previousWager = prevEntry
+          ? prevEntry.wagered[
+              timePeriod === "weekly"
+                ? "this_week"
+                : timePeriod === "monthly"
+                  ? "this_month"
+                  : timePeriod === "today"
+                    ? "today"
+                    : "all_time"
+            ] || 0
+          : 0;
+
+        return {
+          ...entry,
+          isWagering: currentWager > previousWager,
+          wagerChange: currentWager - previousWager,
+        };
+      })
+      .sort((a, b) => {
+        const getWagerValue = (entry: LeaderboardEntry) => {
+          if (!entry?.wagered) return 0;
+          switch (periodKey) {
+            case "weekly":
+              return entry.wagered.this_week;
+            case "monthly":
+              return entry.wagered.this_month;
+            case "today":
+              return entry.wagered.today;
+            default:
+              return entry.wagered.all_time;
+          }
+        };
+        return (getWagerValue(b) || 0) - (getWagerValue(a) || 0);
+      }) || [];
 
   // Update previous data after successful fetch
   useEffect(() => {
@@ -122,6 +156,6 @@ export function useLeaderboard(timePeriod: TimePeriod = 'today', page: number = 
     metadata: data?.metadata,
     isLoading,
     error: error as Error | null,
-    refetch
+    refetch,
   };
 }

@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Link } from 'wouter';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { MessageCircle, X, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Link } from "wouter";
 
 interface FloatingSupportProps {
   onClose: () => void;
@@ -66,7 +66,8 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
             </div>
             <div className="p-6 space-y-4">
               <p className="text-[#8A8B91] mb-6">
-                Our VIP support team is here to help you. Choose an option below:
+                Our VIP support team is here to help you. Choose an option
+                below:
               </p>
               <div className="space-y-3">
                 <Link href="/support" className="block">

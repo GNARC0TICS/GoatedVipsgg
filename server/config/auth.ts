@@ -1,6 +1,6 @@
-import { OAuth2Client } from 'google-auth-library';
-import jwt from 'jsonwebtoken';
-import { z } from 'zod';
+import { OAuth2Client } from "google-auth-library";
+import jwt from "jsonwebtoken";
+import { z } from "zod";
 
 // Validation schemas
 export const googleTokenSchema = z.object({
@@ -14,8 +14,8 @@ export const jwtPayloadSchema = z.object({
 });
 
 // JWT Configuration
-const JWT_SECRET = process.env.JWT_SECRET || 'your-jwt-secret';
-const JWT_EXPIRES_IN = '7d';
+const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret";
+const JWT_EXPIRES_IN = "7d";
 
 // Google OAuth Configuration
 export const googleClient = new OAuth2Client({
@@ -34,11 +34,11 @@ export const verifyToken = (token: string) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     const result = jwtPayloadSchema.safeParse(decoded);
     if (!result.success) {
-      throw new Error('Invalid token payload');
+      throw new Error("Invalid token payload");
     }
     return result.data;
   } catch (error) {
-    throw new Error('Invalid token');
+    throw new Error("Invalid token");
   }
 };
 
@@ -49,12 +49,12 @@ export const verifyGoogleToken = async (token: string) => {
       idToken: token,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
-    
+
     const payload = ticket.getPayload();
     if (!payload) {
-      throw new Error('Invalid Google token payload');
+      throw new Error("Invalid Google token payload");
     }
-    
+
     return {
       googleId: payload.sub,
       email: payload.email!,
@@ -62,6 +62,6 @@ export const verifyGoogleToken = async (token: string) => {
       picture: payload.picture,
     };
   } catch (error) {
-    throw new Error('Failed to verify Google token');
+    throw new Error("Failed to verify Google token");
   }
 };

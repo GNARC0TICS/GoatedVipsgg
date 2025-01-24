@@ -1,11 +1,15 @@
-import { Request, Response, NextFunction } from 'express';
-import { db } from '@db';
-import { users } from '@db/schema';
-import { eq } from 'drizzle-orm';
+import { Request, Response, NextFunction } from "express";
+import { db } from "@db";
+import { users } from "@db/schema";
+import { eq } from "drizzle-orm";
 
-export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+export async function requireAdmin(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   if (!req.isAuthenticated()) {
-    return res.status(401).json({ error: 'Authentication required' });
+    return res.status(401).json({ error: "Authentication required" });
   }
 
   try {
@@ -16,20 +20,24 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
       .limit(1);
 
     if (!user || !user.isAdmin) {
-      return res.status(403).json({ error: 'Admin access required' });
+      return res.status(403).json({ error: "Admin access required" });
     }
 
     next();
   } catch (error) {
-    console.error('Error in admin middleware:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in admin middleware:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 }
 
 // Initialize the first admin user
-export async function initializeAdmin(username: string, password: string, adminKey: string) {
+export async function initializeAdmin(
+  username: string,
+  password: string,
+  adminKey: string,
+) {
   if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-    throw new Error('Invalid admin key');
+    throw new Error("Invalid admin key");
   }
 
   try {
@@ -40,7 +48,7 @@ export async function initializeAdmin(username: string, password: string, adminK
       .limit(1);
 
     if (existingAdmin) {
-      throw new Error('Admin user already exists');
+      throw new Error("Admin user already exists");
     }
 
     const [newAdmin] = await db
@@ -55,7 +63,7 @@ export async function initializeAdmin(username: string, password: string, adminK
 
     return newAdmin;
   } catch (error) {
-    console.error('Error initializing admin:', error);
+    console.error("Error initializing admin:", error);
     throw error;
   }
 }

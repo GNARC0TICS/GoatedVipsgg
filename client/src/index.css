@@ -1,17 +1,27 @@
 @keyframes fadeInOut {
-  0% { opacity: 0; transform: translateY(-10px); }
-  10% { opacity: 1; transform: translateY(0); }
-  90% { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .animate-fadeInOut {
   animation: fadeInOut 5s ease-in-out;
 }
 
-
 @keyframes glow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 20px rgba(215, 255, 0, 0.2);
     text-shadow: 0 0 10px rgba(215, 255, 0, 0.2);
   }
@@ -34,9 +44,10 @@
 @tailwind utilities;
 
 .glow-text {
-  text-shadow: 0 0 10px rgba(215, 255, 0, 0.5),
-               0 0 20px rgba(215, 255, 0, 0.3),
-               0 0 30px rgba(215, 255, 0, 0.2);
+  text-shadow:
+    0 0 10px rgba(215, 255, 0, 0.5),
+    0 0 20px rgba(215, 255, 0, 0.3),
+    0 0 30px rgba(215, 255, 0, 0.2);
 }
 
 html {
@@ -59,46 +70,93 @@ html {
 
   body {
     @apply antialiased text-foreground min-h-screen;
-    background: linear-gradient(135deg, #14151A 0%, #1A1B21 50%, #14151A 100%);
+    background: linear-gradient(135deg, #14151a 0%, #1a1b21 50%, #14151a 100%);
     position: relative;
     overflow-x: hidden;
   }
 
   @keyframes pulse {
-    0%, 100% { opacity: 0.2; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(1.1); }
+    0%,
+    100% {
+      opacity: 0.2;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.4;
+      transform: scale(1.1);
+    }
   }
 
   @keyframes gradient {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-heading font-extrabold uppercase tracking-tight;
   }
 
-  h1 { @apply text-4xl md:text-5xl; }
-  h2 { @apply text-3xl md:text-4xl; }
-  h3 { @apply text-2xl md:text-3xl; }
-  h4 { @apply text-xl md:text-2xl; }
-  h5 { @apply text-lg md:text-xl; }
-  h6 { @apply text-base md:text-lg; }
+  h1 {
+    @apply text-4xl md:text-5xl;
+  }
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+  h3 {
+    @apply text-2xl md:text-3xl;
+  }
+  h4 {
+    @apply text-xl md:text-2xl;
+  }
+  h5 {
+    @apply text-lg md:text-xl;
+  }
+  h6 {
+    @apply text-base md:text-lg;
+  }
 
-  p, span, a { @apply text-sm md:text-base; }
+  p,
+  span,
+  a {
+    @apply text-sm md:text-base;
+  }
 }
 
 @keyframes wiggle {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  25% { transform: rotate(-8deg) scale(1.05); }
-  50% { transform: rotate(0deg) scale(1.1); }
-  75% { transform: rotate(8deg) scale(1.05); }
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(-8deg) scale(1.05);
+  }
+  50% {
+    transform: rotate(0deg) scale(1.1);
+  }
+  75% {
+    transform: rotate(8deg) scale(1.05);
+  }
 }
 
 @keyframes fillAnimation {
-  from { background-size: 0% 100%; }
-  to { background-size: 100% 100%; }
+  from {
+    background-size: 0% 100%;
+  }
+  to {
+    background-size: 100% 100%;
+  }
 }
 
 @layer components {
@@ -113,23 +171,42 @@ html {
   .card-hover:hover {
     transform: translateY(-5px);
     box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.3);
-    background: linear-gradient(145deg, rgba(26,27,33,0.95), rgba(42,43,49,0.8));
+    background: linear-gradient(
+      145deg,
+      rgba(26, 27, 33, 0.95),
+      rgba(42, 43, 49, 0.8)
+    );
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.05);
     transition: all 0.3s ease-in-out;
   }
 
   @keyframes initial-wiggle {
-    0%, 100% { transform: rotate(0deg) scale(1); }
-    25% { transform: rotate(-12deg) scale(1.1); }
-    50% { transform: rotate(0deg) scale(1.15); }
-    75% { transform: rotate(12deg) scale(1.1); }
+    0%,
+    100% {
+      transform: rotate(0deg) scale(1);
+    }
+    25% {
+      transform: rotate(-12deg) scale(1.1);
+    }
+    50% {
+      transform: rotate(0deg) scale(1.15);
+    }
+    75% {
+      transform: rotate(12deg) scale(1.1);
+    }
   }
 
   @keyframes hover-effect {
-    0% { transform: translateY(0) scale(1); }
-    50% { transform: translateY(-3px) scale(1.05); }
-    100% { transform: translateY(0) scale(1); }
+    0% {
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      transform: translateY(-3px) scale(1.05);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+    }
   }
 
   .wiggle-animation {
@@ -141,7 +218,11 @@ html {
   }
 
   .fill-animation {
-    background: linear-gradient(to right, rgba(20, 21, 26, 0.9) 50%, #D7FF00 50%);
+    background: linear-gradient(
+      to right,
+      rgba(20, 21, 26, 0.9) 50%,
+      #d7ff00 50%
+    );
     background-size: 200% 100%;
     background-position: right bottom;
     transition: all 0.3s ease-out;
@@ -150,14 +231,14 @@ html {
     font-stretch: condensed;
     text-transform: uppercase;
     letter-spacing: 0.02em;
-    border: 2px solid #D7FF00;
+    border: 2px solid #d7ff00;
     box-shadow: 0 0 20px rgba(215, 255, 0, 0.15);
-    color: #14151A;
+    color: #14151a;
   }
 
   .fill-animation:hover {
     background-position: left bottom;
-    color: #D7FF00 !important;
+    color: #d7ff00 !important;
     box-shadow: 0 0 30px rgba(215, 255, 0, 0.25);
     transform: translateY(-1px);
   }
@@ -173,13 +254,13 @@ html {
   }
 
   .nav-link::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: -2px;
     left: 0;
     width: 100%;
     height: 2px;
-    background: #D7FF00;
+    background: #d7ff00;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
   }
@@ -190,11 +271,11 @@ html {
 }
 
 @keyframes entranceZoom {
-  from { 
+  from {
     transform: scale(0.8);
     opacity: 0;
   }
-  to { 
+  to {
     transform: scale(1);
     opacity: 1;
   }

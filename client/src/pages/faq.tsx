@@ -16,11 +16,13 @@ const faqCategories = [
     items: [
       {
         question: "How do I start earning rewards?",
-        answer: "Start by registering an account and linking it to your Goated.com account. Once linked, you'll automatically begin earning rewards based on your gameplay and wagering activity.",
+        answer:
+          "Start by registering an account and linking it to your Goated.com account. Once linked, you'll automatically begin earning rewards based on your gameplay and wagering activity.",
       },
       {
         question: "What are the VIP levels?",
-        answer: "Our VIP program features multiple tiers, each offering increasingly valuable benefits. Progress through levels by maintaining consistent gameplay and meeting wagering requirements.",
+        answer:
+          "Our VIP program features multiple tiers, each offering increasingly valuable benefits. Progress through levels by maintaining consistent gameplay and meeting wagering requirements.",
       },
     ],
   },
@@ -29,11 +31,13 @@ const faqCategories = [
     items: [
       {
         question: "How are rewards calculated?",
-        answer: "Rewards are calculated based on your wagering volume and VIP level. Higher levels receive enhanced rewards and exclusive perks.",
+        answer:
+          "Rewards are calculated based on your wagering volume and VIP level. Higher levels receive enhanced rewards and exclusive perks.",
       },
       {
         question: "When do I receive my rewards?",
-        answer: "Rewards are credited automatically to your account on a weekly basis. Special promotions and bonuses may have different distribution schedules.",
+        answer:
+          "Rewards are credited automatically to your account on a weekly basis. Special promotions and bonuses may have different distribution schedules.",
       },
     ],
   },
@@ -42,11 +46,13 @@ const faqCategories = [
     items: [
       {
         question: "How do I contact support?",
-        answer: "You can reach our VIP support team through live chat, Telegram (@xGoombas), or join our community group for assistance.",
+        answer:
+          "You can reach our VIP support team through live chat, Telegram (@xGoombas), or join our community group for assistance.",
       },
       {
         question: "What if I encounter technical issues?",
-        answer: "If you experience any technical issues, please contact our VIP support team immediately. We're available 24/7 to assist you.",
+        answer:
+          "If you experience any technical issues, please contact our VIP support team immediately. We're available 24/7 to assist you.",
       },
     ],
   },
@@ -60,7 +66,9 @@ export default function FAQPage() {
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-white mb-4">Frequently Asked Questions</h1>
+            <h1 className="text-4xl font-bold text-white mb-4">
+              Frequently Asked Questions
+            </h1>
             <p className="text-[#8A8B91] text-lg">
               Find answers to common questions about our platform and services
             </p>
@@ -73,7 +81,11 @@ export default function FAQPage() {
                   {faqCategories.map((category) => (
                     <Button
                       key={category.title}
-                      variant={selectedCategory === category.title ? "secondary" : "ghost"}
+                      variant={
+                        selectedCategory === category.title
+                          ? "secondary"
+                          : "ghost"
+                      }
                       className="w-full justify-start"
                       onClick={() => setSelectedCategory(category.title)}
                     >

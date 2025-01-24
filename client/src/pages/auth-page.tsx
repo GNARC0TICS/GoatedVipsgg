@@ -1,7 +1,20 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { useUser } from "@/hooks/use-user";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -51,7 +64,9 @@ export default function AuthPage() {
       >
         <Card>
           <CardHeader>
-            <CardTitle className="font-heading uppercase">{isLogin ? "Sign In" : "Create Account"}</CardTitle>
+            <CardTitle className="font-heading uppercase">
+              {isLogin ? "Sign In" : "Create Account"}
+            </CardTitle>
             <CardDescription className="font-sans">
               {isLogin
                 ? "Enter your credentials to access your account"
@@ -60,7 +75,10 @@ export default function AuthPage() {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 <FormField
                   control={form.control}
                   name="username"
@@ -97,7 +115,9 @@ export default function AuthPage() {
               className="mt-4 w-full font-sans"
               onClick={() => setIsLogin(!isLogin)}
             >
-              {isLogin ? "Need an account? Sign up" : "Already have an account? Sign in"}
+              {isLogin
+                ? "Need an account? Sign up"
+                : "Already have an account? Sign in"}
             </Button>
           </CardContent>
         </Card>

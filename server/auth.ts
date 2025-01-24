@@ -21,7 +21,11 @@ const crypto = {
   compare: async (suppliedPassword: string, storedPassword: string) => {
     const [hashedPassword, salt] = storedPassword.split(".");
     const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
-    const suppliedPasswordBuf = (await scryptAsync(suppliedPassword, salt, 64)) as Buffer;
+    const suppliedPasswordBuf = (await scryptAsync(
+      suppliedPassword,
+      salt,
+      64,
+    )) as Buffer;
     return timingSafeEqual(hashedPasswordBuf, suppliedPasswordBuf);
   },
 };
@@ -73,7 +77,7 @@ export function setupAuth(app: Express) {
       } catch (err) {
         return done(err);
       }
-    })
+    }),
   );
 
   passport.serializeUser((user, done) => {
@@ -97,11 +101,11 @@ export function setupAuth(app: Express) {
     try {
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
-        const errors = result.error.issues.map(i => i.message).join(", ");
+        const errors = result.error.issues.map((i) => i.message).join(", ");
         return res.status(400).json({
           status: "error",
           message: "Validation failed",
-          errors
+          errors,
         });
       }
 
@@ -117,7 +121,7 @@ export function setupAuth(app: Express) {
       if (existingUsername) {
         return res.status(400).json({
           status: "error",
-          message: "Username already exists"
+          message: "Username already exists",
         });
       }
 
@@ -131,7 +135,7 @@ export function setupAuth(app: Express) {
       if (existingEmail) {
         return res.status(400).json({
           status: "error",
-          message: "Email already registered"
+          message: "Email already registered",
         });
       }
 
@@ -145,7 +149,7 @@ export function setupAuth(app: Express) {
           username,
           password: hashedPassword,
           email,
-          isAdmin: false
+          isAdmin: false,
         })
         .returning();
 
@@ -161,16 +165,17 @@ export function setupAuth(app: Express) {
             id: newUser.id,
             username: newUser.username,
             email: newUser.email,
-            isAdmin: newUser.isAdmin
-          }
+            isAdmin: newUser.isAdmin,
+          },
         });
       });
     } catch (error: any) {
       // Handle database-level errors
-      if (error.code === '23505') { // Unique constraint violation
+      if (error.code === "23505") {
+        // Unique constraint violation
         return res.status(400).json({
           status: "error",
-          message: "Username or email already exists"
+          message: "Username or email already exists",
         });
       }
       next(error);
@@ -178,35 +183,38 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: any, user: Express.User | false, info: IVerifyOptions) => {
-      if (err) {
-        return next(err);
-      }
-
-      if (!user) {
-        return res.status(400).json({
-          status: "error",
-          message: info.message ?? "Login failed"
-        });
-      }
-
-      req.logIn(user, (err) => {
+    passport.authenticate(
+      "local",
+      (err: any, user: Express.User | false, info: IVerifyOptions) => {
         if (err) {
           return next(err);
         }
 
-        return res.json({
-          status: "success",
-          message: "Login successful",
-          user: {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            isAdmin: user.isAdmin
+        if (!user) {
+          return res.status(400).json({
+            status: "error",
+            message: info.message ?? "Login failed",
+          });
+        }
+
+        req.logIn(user, (err) => {
+          if (err) {
+            return next(err);
           }
+
+          return res.json({
+            status: "success",
+            message: "Login successful",
+            user: {
+              id: user.id,
+              username: user.username,
+              email: user.email,
+              isAdmin: user.isAdmin,
+            },
+          });
         });
-      });
-    })(req, res, next);
+      },
+    )(req, res, next);
   });
 
   app.post("/api/logout", (req, res) => {
@@ -214,12 +222,12 @@ export function setupAuth(app: Express) {
       if (err) {
         return res.status(500).json({
           status: "error",
-          message: "Logout failed"
+          message: "Logout failed",
         });
       }
       res.json({
         status: "success",
-        message: "Logout successful"
+        message: "Logout successful",
       });
     });
   });
@@ -231,12 +239,12 @@ export function setupAuth(app: Express) {
         id: user.id,
         username: user.username,
         email: user.email,
-        isAdmin: user.isAdmin
+        isAdmin: user.isAdmin,
       });
     }
     res.status(401).json({
       status: "error",
-      message: "Not logged in"
+      message: "Not logged in",
     });
   });
 }

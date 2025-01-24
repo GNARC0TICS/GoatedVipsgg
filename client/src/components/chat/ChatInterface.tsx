@@ -30,20 +30,22 @@ export function ChatInterface() {
   const connectWebSocket = () => {
     try {
       setIsConnecting(true);
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const websocket = new WebSocket(`${protocol}//${window.location.host}/ws/chat`);
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const websocket = new WebSocket(
+        `${protocol}//${window.location.host}/ws/chat`,
+      );
 
       websocket.onmessage = (event) => {
         const message = JSON.parse(event.data);
-        if (message.type === 'error') {
+        if (message.type === "error") {
           toast({
             title: "Error",
             description: message.message,
-            variant: "destructive"
+            variant: "destructive",
           });
           return;
         }
-        setMessages(prev => [...prev, message]);
+        setMessages((prev) => [...prev, message]);
         scrollRef.current?.scrollIntoView({ behavior: "smooth" });
       };
 
@@ -66,7 +68,7 @@ export function ChatInterface() {
         toast({
           title: "Connection Error",
           description: "Failed to connect to chat service. Retrying...",
-          variant: "destructive"
+          variant: "destructive",
         });
       };
 
@@ -80,9 +82,9 @@ export function ChatInterface() {
 
   useEffect(() => {
     // Fetch chat history
-    fetch('/api/chat/history', { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => {
+    fetch("/api/chat/history", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
         setMessages(data);
         scrollRef.current?.scrollIntoView({ behavior: "smooth" });
       })
@@ -117,8 +119,8 @@ export function ChatInterface() {
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString(undefined, {
-      hour: '2-digit',
-      minute: '2-digit'
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -148,7 +150,9 @@ export function ChatInterface() {
                     <Bot className="h-4 w-4 text-[#14151A]" />
                   </Avatar>
                 )}
-                <div className={`flex-1 ${msg.userId === user?.id ? "text-right" : ""}`}>
+                <div
+                  className={`flex-1 ${msg.userId === user?.id ? "text-right" : ""}`}
+                >
                   <div
                     className={`inline-block rounded-lg p-4 ${
                       msg.userId === user?.id
@@ -176,9 +180,18 @@ export function ChatInterface() {
                 </Avatar>
                 <div className="bg-[#2A2B31] rounded-lg p-3 inline-block">
                   <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-[#8A8B91] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-2 h-2 bg-[#8A8B91] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-2 h-2 bg-[#8A8B91] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span
+                      className="w-2 h-2 bg-[#8A8B91] rounded-full animate-bounce"
+                      style={{ animationDelay: "0ms" }}
+                    />
+                    <span
+                      className="w-2 h-2 bg-[#8A8B91] rounded-full animate-bounce"
+                      style={{ animationDelay: "150ms" }}
+                    />
+                    <span
+                      className="w-2 h-2 bg-[#8A8B91] rounded-full animate-bounce"
+                      style={{ animationDelay: "300ms" }}
+                    />
                   </div>
                 </div>
               </div>
@@ -196,8 +209,8 @@ export function ChatInterface() {
               placeholder="Type your message..."
               className="flex-1 bg-[#2A2B31] border-none text-white placeholder:text-[#8A8B91]"
             />
-            <Button 
-              onClick={sendMessage} 
+            <Button
+              onClick={sendMessage}
               size="icon"
               className="bg-[#D7FF00] hover:bg-[#D7FF00]/90 text-[#14151A]"
             >

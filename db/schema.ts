@@ -1,4 +1,13 @@
-import { pgTable, text, serial, integer, timestamp, boolean, decimal, jsonb } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  timestamp,
+  boolean,
+  decimal,
+  jsonb,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 
@@ -42,7 +51,9 @@ export const wagerRaceParticipants = pgTable("wager_race_participants", {
 
 export const notificationPreferences = pgTable("notification_preferences", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
   wagerRaceUpdates: boolean("wager_race_updates").default(true).notNull(),
   vipStatusChanges: boolean("vip_status_changes").default(true).notNull(),
   promotionalOffers: boolean("promotional_offers").default(true).notNull(),
@@ -74,8 +85,8 @@ export const supportTickets = pgTable("support_tickets", {
   userId: integer("user_id").references(() => users.id),
   subject: text("subject").notNull(),
   description: text("description").notNull(),
-  status: text("status").notNull().default('open'), // 'open' | 'in_progress' | 'closed'
-  priority: text("priority").notNull().default('medium'), // 'low' | 'medium' | 'high'
+  status: text("status").notNull().default("open"), // 'open' | 'in_progress' | 'closed'
+  priority: text("priority").notNull().default("medium"), // 'low' | 'medium' | 'high'
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   assignedTo: integer("assigned_to").references(() => users.id),
@@ -119,42 +130,63 @@ export const wagerRaceRelations = relations(wagerRaces, ({ one, many }) => ({
   participants: many(wagerRaceParticipants),
 }));
 
-export const supportTicketRelations = relations(supportTickets, ({ one, many }) => ({
-  user: one(users, {
-    fields: [supportTickets.userId],
-    references: [users.id],
+export const supportTicketRelations = relations(
+  supportTickets,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [supportTickets.userId],
+      references: [users.id],
+    }),
+    assignedStaff: one(users, {
+      fields: [supportTickets.assignedTo],
+      references: [users.id],
+    }),
+    messages: many(ticketMessages),
   }),
-  assignedStaff: one(users, {
-    fields: [supportTickets.assignedTo],
-    references: [users.id],
-  }),
-  messages: many(ticketMessages),
-}));
+);
 
 // Schema validation
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
-export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences);
-export const selectNotificationPreferencesSchema = createSelectSchema(notificationPreferences);
+export const insertNotificationPreferencesSchema = createInsertSchema(
+  notificationPreferences,
+);
+export const selectNotificationPreferencesSchema = createSelectSchema(
+  notificationPreferences,
+);
 export const insertWagerRaceSchema = createInsertSchema(wagerRaces);
 export const selectWagerRaceSchema = createSelectSchema(wagerRaces);
-export const insertWagerRaceParticipantSchema = createInsertSchema(wagerRaceParticipants);
-export const selectWagerRaceParticipantSchema = createSelectSchema(wagerRaceParticipants);
+export const insertWagerRaceParticipantSchema = createInsertSchema(
+  wagerRaceParticipants,
+);
+export const selectWagerRaceParticipantSchema = createSelectSchema(
+  wagerRaceParticipants,
+);
 export const insertSupportTicketSchema = createInsertSchema(supportTickets);
 export const selectSupportTicketSchema = createSelectSchema(supportTickets);
-export const insertNewsletterSubscriptionSchema = createInsertSchema(newsletterSubscriptions);
-export const selectNewsletterSubscriptionSchema = createSelectSchema(newsletterSubscriptions);
+export const insertNewsletterSubscriptionSchema = createInsertSchema(
+  newsletterSubscriptions,
+);
+export const selectNewsletterSubscriptionSchema = createSelectSchema(
+  newsletterSubscriptions,
+);
 
 // Types
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
-export type InsertNotificationPreferences = typeof notificationPreferences.$inferInsert;
-export type SelectNotificationPreferences = typeof notificationPreferences.$inferSelect;
+export type InsertNotificationPreferences =
+  typeof notificationPreferences.$inferInsert;
+export type SelectNotificationPreferences =
+  typeof notificationPreferences.$inferSelect;
 export type InsertWagerRace = typeof wagerRaces.$inferInsert;
 export type SelectWagerRace = typeof wagerRaces.$inferSelect;
-export type InsertWagerRaceParticipant = typeof wagerRaceParticipants.$inferInsert;
-export type SelectWagerRaceParticipant = typeof wagerRaceParticipants.$inferSelect;
+export type InsertWagerRaceParticipant =
+  typeof wagerRaceParticipants.$inferInsert;
+export type SelectWagerRaceParticipant =
+  typeof wagerRaceParticipants.$inferSelect;
 export type InsertSupportTicket = typeof supportTickets.$inferInsert;
 export type SelectSupportTicket = typeof supportTickets.$inferSelect;
-export type InsertNewsletterSubscription = typeof newsletterSubscriptions.$inferInsert;
-export type SelectNewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
+export type InsertNewsletterSubscription =
+  typeof newsletterSubscriptions.$inferInsert;
+export type SelectNewsletterSubscription =
+  typeof newsletterSubscriptions.$inferSelect;

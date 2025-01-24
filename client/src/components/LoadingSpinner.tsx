@@ -16,13 +16,13 @@ export function LoadingSpinner() {
         className="flex flex-col items-center"
       >
         <motion.div
-          animate={{ 
+          animate={{
             rotate: 360,
             scale: [1, 1.1, 1],
           }}
-          transition={{ 
+          transition={{
             rotate: { duration: 2, repeat: Infinity, ease: "linear" },
-            scale: { duration: 1, repeat: Infinity, ease: "easeInOut" }
+            scale: { duration: 1, repeat: Infinity, ease: "easeInOut" },
           }}
           className="relative mb-4"
         >

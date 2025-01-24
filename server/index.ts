@@ -1,4 +1,3 @@
-
 import express from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -17,19 +16,22 @@ async function setupMiddleware() {
   app.use(requestLogger);
   app.use(errorHandler);
 
-  app.get('/api/health', (_req, res) => {
-    res.json({ status: 'healthy' });
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "healthy" });
   });
-
 }
 
-function requestLogger(req: express.Request, res: express.Response, next: express.NextFunction) {
+function requestLogger(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction,
+) {
   const start = Date.now();
   const path = req.path;
   let capturedResponse: Record<string, any> | undefined;
 
   const originalJson = res.json;
-  res.json = function(body, ...args) {
+  res.json = function (body, ...args) {
     capturedResponse = body;
     return originalJson.apply(res, [body, ...args]);
   };
@@ -48,7 +50,12 @@ function requestLogger(req: express.Request, res: express.Response, next: expres
   next();
 }
 
-function errorHandler(err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) {
+function errorHandler(
+  err: Error,
+  _req: express.Request,
+  res: express.Response,
+  _next: express.NextFunction,
+) {
   console.error("Server error:", err);
   res.status(500).json({ error: err.message || "Internal Server Error" });
 }
@@ -58,8 +65,10 @@ async function checkDatabase() {
     await db.execute(sql`SELECT 1`);
     log("Database connection successful");
   } catch (error: any) {
-    if (error.message?.includes('endpoint is disabled')) {
-      log("Database endpoint is disabled. Please enable the database in the Replit Database tab.");
+    if (error.message?.includes("endpoint is disabled")) {
+      log(
+        "Database endpoint is disabled. Please enable the database in the Replit Database tab.",
+      );
     } else {
       throw error;
     }
@@ -71,7 +80,7 @@ async function cleanupPort() {
     // Find and kill process using port 5000
     await execAsync(`fuser -k ${PORT}/tcp`);
     // Wait for port to be released
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   } catch (error) {
     // No process to kill, we can proceed
   }
@@ -92,7 +101,8 @@ async function startServer() {
       serveStatic(app);
     }
 
-    server.listen(PORT, "0.0.0.0")
+    server
+      .listen(PORT, "0.0.0.0")
       .on("error", (err: NodeJS.ErrnoException) => {
         console.error(`Failed to start server: ${err.message}`);
         process.exit(1);
@@ -100,7 +110,6 @@ async function startServer() {
       .on("listening", () => {
         log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
       });
-
   } catch (error) {
     console.error("Failed to start application:", error);
     process.exit(1);

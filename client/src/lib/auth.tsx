@@ -1,14 +1,17 @@
-
-import { createContext, useContext, useEffect, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
-import type { SelectUser } from '@db/schema';
+import { createContext, useContext, useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import type { SelectUser } from "@db/schema";
 
 interface AuthContextType {
   user: SelectUser | null;
   isLoading: boolean;
   login: (credentials: { username: string; password: string }) => Promise<void>;
-  register: (credentials: { username: string; password: string; email: string }) => Promise<void>;
+  register: (credentials: {
+    username: string;
+    password: string;
+    email: string;
+  }) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -20,15 +23,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const { data: user } = useQuery<SelectUser>({
-    queryKey: ['/api/user'],
+    queryKey: ["/api/user"],
     retry: false,
   });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
       });
       if (!res.ok) {
@@ -38,26 +41,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
-        title: 'Success',
-        description: 'Successfully logged in',
+        title: "Success",
+        description: "Successfully logged in",
       });
     },
     onError: (error) => {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (credentials: { username: string; password: string; email: string }) => {
-      const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+    mutationFn: async (credentials: {
+      username: string;
+      password: string;
+      email: string;
+    }) => {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
       });
       if (!res.ok) {
@@ -67,31 +74,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
-        title: 'Success',
-        description: 'Account created successfully',
+        title: "Success",
+        description: "Account created successfully",
       });
     },
     onError: (error) => {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/logout', { method: 'POST' });
-      if (!res.ok) throw new Error('Logout failed');
+      const res = await fetch("/api/logout", { method: "POST" });
+      if (!res.ok) throw new Error("Logout failed");
     },
     onSuccess: () => {
-      queryClient.setQueryData(['/api/user'], null);
+      queryClient.setQueryData(["/api/user"], null);
       toast({
-        title: 'Success',
-        description: 'Successfully logged out',
+        title: "Success",
+        description: "Successfully logged out",
       });
     },
   });
@@ -118,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

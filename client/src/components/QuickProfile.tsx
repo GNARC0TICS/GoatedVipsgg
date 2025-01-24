@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, Calendar, Clock } from "lucide-react";
@@ -23,22 +22,34 @@ interface UserStats {
   };
 }
 
-export function QuickProfile({ userId, username, children }: QuickProfileProps) {
+export function QuickProfile({
+  userId,
+  username,
+  children,
+}: QuickProfileProps) {
   const { data: leaderboardData, isLoading } = useQuery({
-    queryKey: ['/api/affiliate/stats'],
+    queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
   });
 
   const stats = React.useMemo(() => {
     if (!leaderboardData?.data) return null;
-    
+
     const userStats = {
-      today: leaderboardData.data.today.data.find(p => p.uid === userId)?.wagered.today || 0,
-      this_week: leaderboardData.data.weekly.data.find(p => p.uid === userId)?.wagered.this_week || 0,
-      this_month: leaderboardData.data.monthly.data.find(p => p.uid === userId)?.wagered.this_month || 0,
-      all_time: leaderboardData.data.all_time.data.find(p => p.uid === userId)?.wagered.all_time || 0
+      today:
+        leaderboardData.data.today.data.find((p) => p.uid === userId)?.wagered
+          .today || 0,
+      this_week:
+        leaderboardData.data.weekly.data.find((p) => p.uid === userId)?.wagered
+          .this_week || 0,
+      this_month:
+        leaderboardData.data.monthly.data.find((p) => p.uid === userId)?.wagered
+          .this_month || 0,
+      all_time:
+        leaderboardData.data.all_time.data.find((p) => p.uid === userId)
+          ?.wagered.all_time || 0,
     };
-    
+
     return { wagered: userStats };
   }, [leaderboardData, userId]);
 
@@ -49,7 +60,10 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
           {children}
         </span>
       </SheetTrigger>
-      <SheetContent side="right" className="fixed inset-y-0 right-0 w-[90vw] md:w-[400px] bg-[#1A1B21]/95 backdrop-blur-lg border-[#2A2B31] overflow-y-auto data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right">
+      <SheetContent
+        side="right"
+        className="fixed inset-y-0 right-0 w-[90vw] md:w-[400px] bg-[#1A1B21]/95 backdrop-blur-lg border-[#2A2B31] overflow-y-auto data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right"
+      >
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <LoadingSpinner />
@@ -62,8 +76,10 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
           >
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 rounded-full bg-[#2A2B31] flex items-center justify-center">
-                <img 
-                  src={getTierIcon(getTierFromWager(stats?.wagered.all_time || 0))} 
+                <img
+                  src={getTierIcon(
+                    getTierFromWager(stats?.wagered.all_time || 0),
+                  )}
                   alt="Tier"
                   className="h-12 w-12"
                 />
@@ -82,7 +98,7 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
                     <span className="text-[#8A8B91] text-sm">Today</span>
                   </div>
                   <p className="text-xl font-bold text-white">
-                    ${stats?.wagered.today.toLocaleString() || '0'}
+                    ${stats?.wagered.today.toLocaleString() || "0"}
                   </p>
                 </CardContent>
               </Card>
@@ -94,7 +110,7 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
                     <span className="text-[#8A8B91] text-sm">Weekly</span>
                   </div>
                   <p className="text-xl font-bold text-white">
-                    ${stats?.wagered.this_week.toLocaleString() || '0'}
+                    ${stats?.wagered.this_week.toLocaleString() || "0"}
                   </p>
                 </CardContent>
               </Card>
@@ -106,7 +122,7 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
                     <span className="text-[#8A8B91] text-sm">Monthly</span>
                   </div>
                   <p className="text-xl font-bold text-white">
-                    ${stats?.wagered.this_month.toLocaleString() || '0'}
+                    ${stats?.wagered.this_month.toLocaleString() || "0"}
                   </p>
                 </CardContent>
               </Card>
@@ -118,7 +134,7 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
                     <span className="text-[#8A8B91] text-sm">All Time</span>
                   </div>
                   <p className="text-xl font-bold text-white">
-                    ${stats?.wagered.all_time.toLocaleString() || '0'}
+                    ${stats?.wagered.all_time.toLocaleString() || "0"}
                   </p>
                 </CardContent>
               </Card>
