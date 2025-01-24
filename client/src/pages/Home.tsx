@@ -29,7 +29,7 @@ export default function Home() {
             transition={{ delay: 0.1 }}
             className="text-xl text-[#8A8B91] max-w-2xl mx-auto mb-8"
           >
-            Join Goated.com for unparalleled gaming, exclusive bonuses, and a top-tier VIP program.
+            Join an elite community of players at Goated.com, where your wagering transforms into rewards. Compete in exclusive wager races, claim daily bonus codes, and earn monthly payouts in our player-first ecosystem. From live streams to exclusive insights, become part of a thriving community where winning strategies are shared daily.
           </motion.p>
 
           <div className="max-w-4xl mx-auto">
