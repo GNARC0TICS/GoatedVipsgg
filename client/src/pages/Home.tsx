@@ -49,48 +49,55 @@ export default function Home() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
-            className="mb-8 relative h-24 overflow-hidden"
+            className="space-y-4 mb-8"
           >
             {data && data[0] && (
-              <motion.div
-                initial={{ y: 0 }}
-                animate={{ y: [-24, 0, 0, 24] }}
-                transition={{
-                  duration: 12,
-                  repeat: Infinity,
-                  repeatType: "loop",
-                  times: [0, 0.1, 0.9, 1]
-                }}
-                className="absolute w-full space-y-6"
-              >
-                <button 
-                  onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].id }))}
-                  className="flex items-center gap-2 hover:text-[#D7FF00] transition-all duration-300 group"
-                >
-                  <Trophy className="h-4 w-4 text-[#FFD700] group-hover:scale-110 transition-transform" />
-                  <span className="text-[#D7FF00] text-sm font-mono whitespace-nowrap">
-                    Monthly MVP: {data[0].name} (${data[0].wagered?.this_month?.toLocaleString() || '0'})
-                  </span>
-                </button>
-                <button 
-                  onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].id }))}
-                  className="flex items-center gap-2 hover:text-[#D7FF00] transition-all duration-300 group"
-                >
-                  <Trophy className="h-4 w-4 text-[#FFD700] group-hover:scale-110 transition-transform" />
-                  <span className="text-[#D7FF00] text-sm font-mono whitespace-nowrap">
-                    Weekly MVP: {data[0].name} (${data[0].wagered?.this_week?.toLocaleString() || '0'})
-                  </span>
-                </button>
-                <button 
-                  onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].id }))}
-                  className="flex items-center gap-2 hover:text-[#D7FF00] transition-all duration-300 group"
-                >
-                  <Trophy className="h-4 w-4 text-[#FFD700] group-hover:scale-110 transition-transform" />
-                  <span className="text-[#D7FF00] text-sm font-mono whitespace-nowrap">
-                    Daily MVP: {data[0].name} (${data[0].wagered?.today?.toLocaleString() || '0'})
-                  </span>
-                </button>
-              </motion.div>
+              <>
+                <div className="bg-[#D7FF00]/10 border border-[#D7FF00] rounded-lg p-4 backdrop-blur-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5 text-[#FFD700]" />
+                      <span className="text-white font-heading">MONTHLY MVP:</span>
+                    </div>
+                    <button 
+                      onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].id }))}
+                      className="font-mono text-[#D7FF00] hover:text-white transition-colors"
+                    >
+                      {data[0].name} (${data[0].wagered?.this_month?.toLocaleString() || '0'})
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-[#D7FF00]/10 border border-[#D7FF00] rounded-lg p-4 backdrop-blur-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5 text-[#FFD700]" />
+                      <span className="text-white font-heading">WEEKLY MVP:</span>
+                    </div>
+                    <button 
+                      onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].id }))}
+                      className="font-mono text-[#D7FF00] hover:text-white transition-colors"
+                    >
+                      {data[0].name} (${data[0].wagered?.this_week?.toLocaleString() || '0'})
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-[#D7FF00]/10 border border-[#D7FF00] rounded-lg p-4 backdrop-blur-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5 text-[#FFD700]" />
+                      <span className="text-white font-heading">DAILY MVP:</span>
+                    </div>
+                    <button 
+                      onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].id }))}
+                      className="font-mono text-[#D7FF00] hover:text-white transition-colors"
+                    >
+                      {data[0].name} (${data[0].wagered?.today?.toLocaleString() || '0'})
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </motion.div>
 
