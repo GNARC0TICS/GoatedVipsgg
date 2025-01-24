@@ -283,7 +283,7 @@ export function Layout({ children }: LayoutProps) {
                 />
               </div>
             </div>
-            <p className="mb-2">© 2024 Goatedrewards.com. All rights reserved.</p>
+            <p className="mb-2">© 2024 goatedvips.replit.app. All rights reserved.</p>
             <p className="mb-2">Disclaimer: This website is not operated by Goated.com, and it's not an official site of the Goated.com team.</p>
             <p>Gamble responsibly. 18+ only. BeGambleAware.org</p>
           </div>
