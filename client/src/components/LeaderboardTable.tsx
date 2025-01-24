@@ -223,7 +223,8 @@ export function LeaderboardTable() {
                           }}
                           transition={{ 
                             repeat: Infinity,
-                            duration: 1.5
+                            duration: 4,
+                            repeatDelay: 2
                           }}
                         >
                           <TrendingUp className="h-4 w-4" />
@@ -236,7 +237,8 @@ export function LeaderboardTable() {
                           }}
                           transition={{ 
                             repeat: Infinity,
-                            duration: 2
+                            duration: 4,
+                            repeatDelay: 2
                           }}
                         >
                           +${entry.wagerChange.toLocaleString()}

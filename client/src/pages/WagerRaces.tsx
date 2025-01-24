@@ -257,7 +257,12 @@ export default function WagerRaces() {
                       </QuickProfile>
                     </TableCell>
                     <TableCell className="text-right font-sans">
-                      ${getWagerAmount(player)?.toLocaleString()}
+                      <motion.span
+                        animate={{ scale: [1, 1.1, 1], backgroundColor: ["transparent", "#008000", "transparent"] }}
+                        transition={{ duration: 5, repeat: 1, repeatDelay: 0 }}
+                      >
+                        ${getWagerAmount(player)?.toLocaleString()}
+                      </motion.span>
                     </TableCell>
                     <TableCell className="text-right font-sans text-[#D7FF00]">
                       ${getPrizeAmount(index + 1).toLocaleString()}
