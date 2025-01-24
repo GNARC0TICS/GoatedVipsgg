@@ -209,7 +209,7 @@ export function Layout({ children }: LayoutProps) {
                 )}
                 <Button
                   onClick={() => window.open('https://www.goated.com/r/SPIN', '_blank')}
-                  className="relative group overflow-hidden text-[#14151A] fill-animation hover:text-[#D7FF00] transition-all duration-300 font-mona-sans font-extrabold uppercase tracking-tight"
+                  className="relative group overflow-hidden text-[#14151A] fill-animation hover:text-[#D7FF00] transition-all duration-300 font-heading font-extrabold uppercase tracking-tight"
                 >
                   <span className="relative z-10">PLAY NOW →</span>
                 </Button>

@@ -153,7 +153,7 @@ html {
     background-size: 200% 100%;
     background-position: right bottom;
     transition: all 0.3s ease-out;
-    font-family: "Mona Sans", system-ui, -apple-system;
+    font-family: var(--font-heading);
     font-weight: 800;
     font-stretch: condensed;
     text-transform: uppercase;
