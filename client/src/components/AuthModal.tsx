@@ -136,13 +136,13 @@ export default function AuthModal() {
               )}
             />
             <div className="flex flex-col gap-2">
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full font-mona-sans-condensed font-extrabold uppercase tracking-tight text-black bg-[#D7FF00] hover:bg-[#b2d000]">
                 {mode === "login" ? "Sign In" : "Create Account"}
               </Button>
               <Button
                 type="button"
                 variant="ghost"
-                className="text-sm"
+                className="text-sm font-mona-sans-condensed font-extrabold uppercase tracking-tight text-white hover:text-[#b2d000]"
                 onClick={() => {
                   setMode(mode === "login" ? "register" : "login");
                   form.reset();

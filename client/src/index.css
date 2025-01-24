@@ -149,15 +149,24 @@ html {
   }
 
   .fill-animation {
-    background: linear-gradient(to right, #D7FF00 50%, transparent 50%);
+    background: linear-gradient(to right, rgba(20, 21, 26, 0.9) 50%, #D7FF00 50%);
     background-size: 200% 100%;
     background-position: right bottom;
     transition: all 0.3s ease-out;
+    font-family: "Mona Sans", system-ui, -apple-system;
+    font-weight: 800;
+    font-stretch: condensed;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    border: 2px solid #D7FF00;
+    box-shadow: 0 0 20px rgba(215, 255, 0, 0.15);
   }
 
   .fill-animation:hover {
     background-position: left bottom;
-    color: #14151A !important;
+    color: #D7FF00 !important;
+    box-shadow: 0 0 30px rgba(215, 255, 0, 0.25);
+    transform: translateY(-1px);
   }
 
   .entrance-zoom {
