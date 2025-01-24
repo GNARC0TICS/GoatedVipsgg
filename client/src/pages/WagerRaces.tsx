@@ -45,7 +45,8 @@ type LeaderboardEntry = {
 export default function WagerRaces() {
   const [raceType] = useState<"weekly" | "monthly" | "weekend">("monthly");
   const { data: leaderboardData, isLoading } = useLeaderboard("monthly");
-
+  const top10Players = leaderboardData?.data?.monthly?.data?.slice(0, 10) || [];
+  
   const prizePool = 200;
   const prizeDistribution: Record<number, number> = {
     1: 0.5,
@@ -96,8 +97,7 @@ export default function WagerRaces() {
     );
   }
 
-  const top10Players = (leaderboardData || []).slice(0, 10);
-  const currentLeader = top10Players[0];
+  const currentLeader = top10Players[0] || null;
 
   return (
     <div className="min-h-screen bg-[#14151A] text-white">
