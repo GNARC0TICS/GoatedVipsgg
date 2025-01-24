@@ -235,6 +235,7 @@ export default function Home() {
             <LeaderboardTable />
           </div>
         </motion.div>
+      </div>
       </main>
     </div>
   );
