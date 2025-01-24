@@ -1,5 +1,9 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
+
+import { Menu } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
 import { useQuery } from "@tanstack/react-query";
@@ -138,6 +142,35 @@ export function Layout({ children }: LayoutProps) {
                 {user?.isAdmin && (
                   <NavLink href="/admin/wager-races" label="ADMIN" />
                 )}
+              </div>
+              <div className="md:hidden">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Menu className="h-6 w-6 text-white" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-[300px] bg-[#14151A] border-r border-[#2A2B31]">
+                    <div className="flex flex-col gap-4 pt-8">
+                      <MobileNavLink href="/" label="HOME" />
+                      <MobileNavLink href="/wager-races" label={
+                        <div className="flex items-center gap-2">
+                          WAGER RACES
+                          <div className="flex items-center gap-1">
+                            <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                            <span className="text-xs text-red-500">LIVE</span>
+                          </div>
+                        </div>
+                      } />
+                      <MobileNavLink href="/vip-program" label="VIP PROGRAM" />
+                      <MobileNavLink href="/promotions" label="PROMOTIONS" />
+                      <MobileNavLink href="/telegram" label="TELEGRAM" />
+                      {user?.isAdmin && (
+                        <MobileNavLink href="/admin/wager-races" label="ADMIN" />
+                      )}
+                    </div>
+                  </SheetContent>
+                </Sheet>
               </div>
             </div>
 
@@ -381,5 +414,25 @@ function NavLink({
         </TooltipContent>
       )}
     </Tooltip>
+  );
+}
+
+
+function MobileNavLink({ href, label }: { href: string; label: string | React.ReactNode }) {
+  const [location] = useLocation();
+  const isActive = location === href;
+
+  return (
+    <Link href={href}>
+      <div
+        className={`px-4 py-2 rounded-lg transition-colors ${
+          isActive
+            ? "bg-[#D7FF00]/10 text-[#D7FF00]"
+            : "text-white hover:bg-[#2A2B31]"
+        }`}
+      >
+        {label}
+      </div>
+    </Link>
   );
 }
