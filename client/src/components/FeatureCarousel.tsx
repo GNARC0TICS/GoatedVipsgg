@@ -5,15 +5,28 @@ import { ArrowLeftCircle, ArrowRightCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
 const announcements = [
-  { text: "PROVABLY FAIR GAMING", link: "/vip-program" },
-  { text: "INSTANT WITHDRAWALS", link: "/vip-program" },
-  { text: "24/7 LIVE SUPPORT", link: "/help" },
-  { text: "WEEKLY BONUSES & REWARDS", link: "/bonus-codes" },
-  { text: "EXCLUSIVE VIP PROGRAM", link: "/vip-program" },
-  { text: "JOIN THE GOATS", link: "/auth" },
-  { text: "EXCLUSIVE UPDATES", link: "/notification-preferences" },
-  { text: "LEADERBOARD RANKINGS", link: "#leaderboard" },
-  { text: "HELP & SUPPORT", link: "/help" }
+  { text: "WAGER RACES", link: "/wager-races" },
+  { text: "BONUS CODES", link: "/bonus-codes" },
+  { text: "AFFILIATE REWARDS", link: "/vip-program" },
+  { text: "TELEGRAM GROUP", link: "/telegram" },
+  { text: "AIRDROP NEWS", link: "/goated-token" },
+  { text: "PROVABLY FAIR", link: "/provably-fair" },
+  { text: "LIVE LEADERBOARDS", link: "#leaderboard" },
+  { text: "LIVE SUPPORT", link: "/help" },
+  { text: "PROMOTIONS", link: "/bonus-codes" },
+  { text: "WEEKLY LIVE STREAM", link: "/telegram" },
+  { text: "CHALLENGES & GIVEAWAYS", link: "/wager-races" },
+  { text: "BECOME AN AFFILIATE", link: "/vip-program" },
+  { text: "DAILY CODE DROPS", link: "/bonus-codes" },
+  { text: "JOIN THE GOATS TODAY!", link: "/auth" },
+  { text: "1700+ ACTIVE MEMBERS", link: "/telegram" },
+  { text: "$2231+ GIVEN TO OUR PLAYERS", link: "/wager-races" },
+  { text: "MULTIPLIER HUNTS", link: "/telegram" },
+  { text: "STRATEGIES AND DISCUSSION", link: "/telegram" },
+  { text: "NEWSLETTER SUBSCRIPTION", link: "/notification-preferences" },
+  { text: "PROMO CODES", link: "/bonus-codes" },
+  { text: "TERMS AND CONDITIONS", link: "/help" },
+  { text: "GOATED x GOOMBAS VIPS", link: "/vip-program" }
 ];
 
 export const FeatureCarousel = () => {
