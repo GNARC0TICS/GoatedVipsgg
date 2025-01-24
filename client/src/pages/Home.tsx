@@ -51,7 +51,7 @@ export default function Home() {
             transition={{ delay: 0.3 }}
             className="space-y-4 mb-8"
           >
-            {data && (
+            {data?.length > 0 && (
               <>
                 <div className="bg-[#D7FF00]/10 border border-[#D7FF00] rounded-lg p-4 backdrop-blur-sm">
                   <div className="flex items-center justify-between">
@@ -59,14 +59,17 @@ export default function Home() {
                       <Trophy className="h-5 w-5 text-[#FFD700]" />
                       <span className="text-white font-heading">WEEKLY MVP:</span>
                     </div>
-                    {data.sort((a, b) => (b.wagered?.this_week || 0) - (a.wagered?.this_week || 0))[0] && (
-                      <button 
-                        onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].uid }))}
-                        className="font-mono text-[#D7FF00] hover:text-white transition-colors"
-                      >
-                        {data[0].name} (${data[0].wagered?.this_week?.toLocaleString() || '0'})
-                      </button>
-                    )}
+                    {(() => {
+                      const weeklyLeader = [...data].sort((a, b) => (b.wagered?.this_week || 0) - (a.wagered?.this_week || 0))[0];
+                      return weeklyLeader && (
+                        <button 
+                          onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: weeklyLeader.uid }))}
+                          className="font-mono text-[#D7FF00] hover:text-white transition-colors"
+                        >
+                          {weeklyLeader.name} (${weeklyLeader.wagered?.this_week?.toLocaleString() || '0'})
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -76,14 +79,17 @@ export default function Home() {
                       <Trophy className="h-5 w-5 text-[#FFD700]" />
                       <span className="text-white font-heading">DAILY MVP:</span>
                     </div>
-                    {data.sort((a, b) => (b.wagered?.today || 0) - (a.wagered?.today || 0))[0] && (
-                      <button 
-                        onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: data[0].uid }))}
-                        className="font-mono text-[#D7FF00] hover:text-white transition-colors"
-                      >
-                        {data[0].name} (${data[0].wagered?.today?.toLocaleString() || '0'})
-                      </button>
-                    )}
+                    {(() => {
+                      const dailyLeader = [...data].sort((a, b) => (b.wagered?.today || 0) - (a.wagered?.today || 0))[0];
+                      return dailyLeader && (
+                        <button 
+                          onClick={() => window.dispatchEvent(new CustomEvent('openQuickProfile', { detail: dailyLeader.uid }))}
+                          className="font-mono text-[#D7FF00] hover:text-white transition-colors"
+                        >
+                          {dailyLeader.name} (${dailyLeader.wagered?.today?.toLocaleString() || '0'})
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
 
