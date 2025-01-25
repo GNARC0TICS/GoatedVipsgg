@@ -9,8 +9,7 @@ import { createServer } from "http";
 
 const execAsync = promisify(exec);
 const app = express();
-const BASE_PORT = 5000;
-const MAX_PORT_ATTEMPTS = 5;
+const PORT = 5000;
 
 async function setupMiddleware() {
   app.use(express.json());
@@ -77,42 +76,25 @@ async function checkDatabase() {
   }
 }
 
-async function findAvailablePort(startPort: number): Promise<number> {
-  for (let port = startPort; port < startPort + MAX_PORT_ATTEMPTS; port++) {
-    try {
-      const server = createServer();
-      await new Promise((resolve, reject) => {
-        server.listen(port, "0.0.0.0")
-          .once('listening', () => {
-            server.close();
-            resolve(port);
-          })
-          .once('error', (err: NodeJS.ErrnoException) => {
-            if (err.code === 'EADDRINUSE') {
-              resolve(null);
-            } else {
-              reject(err);
-            }
-          });
-      });
-      return port;
-    } catch (err) {
-      if (port === startPort + MAX_PORT_ATTEMPTS - 1) {
-        throw new Error('No available ports found');
-      }
-    }
+async function cleanupPort() {
+  try {
+    // Try to kill existing process on port 5000
+    await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
+    // Wait a moment for the port to be released
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  } catch (error) {
+    // If no process was found or killed, that's fine
+    log("No existing process found on port " + PORT);
   }
-  throw new Error('No available ports found');
 }
 
 async function startServer() {
   try {
     log("Starting server initialization...");
     await checkDatabase();
-    await setupMiddleware();
+    await cleanupPort(); 
 
     const server = registerRoutes(app);
-    const port = await findAvailablePort(BASE_PORT);
 
     if (app.get("env") === "development") {
       await setupVite(app, server);
@@ -120,15 +102,24 @@ async function startServer() {
       serveStatic(app);
     }
 
+    await setupMiddleware();
+
     server
-      .listen(port, "0.0.0.0")
-      .on("error", (err: NodeJS.ErrnoException) => {
-        console.error(`Failed to start server: ${err.message}`);
-        process.exit(1);
+      .listen(PORT, "0.0.0.0")
+      .on("error", async (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EADDRINUSE') {
+          log(`Port ${PORT} is in use, attempting to free it...`);
+          await cleanupPort();
+          server.listen(PORT, "0.0.0.0");
+        } else {
+          console.error(`Failed to start server: ${err.message}`);
+          process.exit(1);
+        }
       })
       .on("listening", () => {
-        log(`Server running on port ${port} (http://0.0.0.0:${port})`);
+        log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
       });
+
   } catch (error) {
     console.error("Failed to start application:", error);
     process.exit(1);
