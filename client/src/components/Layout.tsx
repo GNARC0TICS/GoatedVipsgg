@@ -149,17 +149,17 @@ export function Layout({ children }: LayoutProps) {
                     LEADERBOARDS <ChevronDown className="h-4 w-4" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="bg-[#1A1B21] border-[#2A2B31]">
-                    <Link href="/leaderboards/daily">
-                      <DropdownMenuItem>Daily</DropdownMenuItem>
+                    <Link href="/leaderboard?period=daily">
+                      <DropdownMenuItem className="font-bold">Daily</DropdownMenuItem>
                     </Link>
-                    <Link href="/leaderboards/weekly">
-                      <DropdownMenuItem>Weekly</DropdownMenuItem>
+                    <Link href="/leaderboard?period=weekly">
+                      <DropdownMenuItem className="font-bold">Weekly</DropdownMenuItem>
                     </Link>
-                    <Link href="/leaderboards/monthly">
-                      <DropdownMenuItem>Monthly</DropdownMenuItem>
+                    <Link href="/leaderboard?period=monthly">
+                      <DropdownMenuItem className="font-bold">Monthly</DropdownMenuItem>
                     </Link>
-                    <Link href="/leaderboards/all-time">
-                      <DropdownMenuItem>All Time</DropdownMenuItem>
+                    <Link href="/leaderboard?period=all_time">
+                      <DropdownMenuItem className="font-bold">All Time</DropdownMenuItem>
                     </Link>
                   </DropdownMenuContent>
                 </DropdownMenu>
