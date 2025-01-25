@@ -2,7 +2,7 @@
 /* Import Mona Sans */
 @font-face {
   font-family: "Mona Sans";
-  src: url("/fonts/MonaSans-ExtraBoldCondensed.woff2") format("woff2");
+  src: url("/fonts/MonaSansCondensed-ExtraBold.woff2") format("woff2");
   font-weight: 800;
   font-style: normal;
   font-stretch: condensed;
