@@ -149,17 +149,25 @@ export function Layout({ children }: LayoutProps) {
                     LEADERBOARDS <ChevronDown className="h-4 w-4" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="bg-[#1A1B21] border-[#2A2B31]">
-                    <Link href="/leaderboard?period=daily">
-                      <DropdownMenuItem className="font-bold">Daily</DropdownMenuItem>
+                    <Link href="/leaderboard">
+                      <DropdownMenuItem className="font-bold" onClick={() => window.history.pushState({}, "", "/leaderboard?period=daily")}>
+                        Daily
+                      </DropdownMenuItem>
                     </Link>
-                    <Link href="/leaderboard?period=weekly">
-                      <DropdownMenuItem className="font-bold">Weekly</DropdownMenuItem>
+                    <Link href="/leaderboard">
+                      <DropdownMenuItem className="font-bold" onClick={() => window.history.pushState({}, "", "/leaderboard?period=weekly")}>
+                        Weekly
+                      </DropdownMenuItem>
                     </Link>
-                    <Link href="/leaderboard?period=monthly">
-                      <DropdownMenuItem className="font-bold">Monthly</DropdownMenuItem>
+                    <Link href="/leaderboard">
+                      <DropdownMenuItem className="font-bold" onClick={() => window.history.pushState({}, "", "/leaderboard?period=monthly")}>
+                        Monthly
+                      </DropdownMenuItem>
                     </Link>
-                    <Link href="/leaderboard?period=all_time">
-                      <DropdownMenuItem className="font-bold">All Time</DropdownMenuItem>
+                    <Link href="/leaderboard">
+                      <DropdownMenuItem className="font-bold" onClick={() => window.history.pushState({}, "", "/leaderboard?period=all_time")}>
+                        All Time
+                      </DropdownMenuItem>
                     </Link>
                   </DropdownMenuContent>
                 </DropdownMenu>
