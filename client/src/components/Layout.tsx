@@ -149,23 +149,23 @@ export function Layout({ children }: LayoutProps) {
                     LEADERBOARDS <ChevronDown className="h-4 w-4" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="bg-[#1A1B21] border-[#2A2B31]">
-                    <Link href="/leaderboard">
-                      <DropdownMenuItem className="font-bold" onClick={() => window.history.pushState({}, "", "/leaderboard?period=daily")}>
+                    <Link href="/leaderboard?period=daily">
+                      <DropdownMenuItem className="font-bold">
                         Daily
                       </DropdownMenuItem>
                     </Link>
-                    <Link href="/leaderboard">
-                      <DropdownMenuItem className="font-bold" onClick={() => window.history.pushState({}, "", "/leaderboard?period=weekly")}>
+                    <Link href="/leaderboard?period=weekly">
+                      <DropdownMenuItem className="font-bold">
                         Weekly
                       </DropdownMenuItem>
                     </Link>
-                    <Link href="/leaderboard">
-                      <DropdownMenuItem className="font-bold" onClick={() => window.history.pushState({}, "", "/leaderboard?period=monthly")}>
+                    <Link href="/leaderboard?period=monthly">
+                      <DropdownMenuItem className="font-bold">
                         Monthly
                       </DropdownMenuItem>
                     </Link>
-                    <Link href="/leaderboard">
-                      <DropdownMenuItem className="font-bold" onClick={() => window.history.pushState({}, "", "/leaderboard?period=all_time")}>
+                    <Link href="/leaderboard?period=all_time">
+                      <DropdownMenuItem className="font-bold">
                         All Time
                       </DropdownMenuItem>
                     </Link>
@@ -202,9 +202,10 @@ export function Layout({ children }: LayoutProps) {
                           </div>
                         </div>
                       } />
-                      <MobileNavLink href="/leaderboards/daily" label="DAILY LEADERBOARD" />
-                      <MobileNavLink href="/leaderboards/weekly" label="WEEKLY LEADERBOARD" />
-                      <MobileNavLink href="/leaderboards/monthly" label="MONTHLY LEADERBOARD" />
+                      <MobileNavLink href="/leaderboard?period=daily" label="DAILY LEADERBOARD" />
+                      <MobileNavLink href="/leaderboard?period=weekly" label="WEEKLY LEADERBOARD" />
+                      <MobileNavLink href="/leaderboard?period=monthly" label="MONTHLY LEADERBOARD" />
+                      <MobileNavLink href="/leaderboard?period=all_time" label="ALL TIME LEADERBOARD" />
 
                       <div className="px-4 py-2 mt-4 text-[#D7FF00] font-heading text-sm">MORE</div>
                       <MobileNavLink href="/promotions" label="PROMOTIONS" />

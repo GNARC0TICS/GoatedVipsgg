@@ -122,7 +122,7 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
               textShadow: '0 0 10px rgba(215, 255, 0, 0.5), 0 0 20px rgba(215, 255, 0, 0.3)'
             }}
           >
-            {timePeriod.toUpperCase()}
+            {(timePeriod || 'today').toUpperCase()}
           </motion.h2>
           <div className="flex items-center justify-center gap-4">
             <div className="flex items-center gap-2">
@@ -146,13 +146,13 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
         </div>
       </div>
 
-      <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden shadow-glow-lg">
-        <Table className="min-w-[300px] w-full max-w-full">
+      <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-x-auto shadow-glow-lg">
+        <Table className="w-full">
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="w-[60px] md:w-20 font-heading text-[#D7FF00] px-2 md:px-4">RANK</TableHead>
-              <TableHead className="font-heading text-[#D7FF00] px-2 md:px-4">USERNAME</TableHead>
-              <TableHead className="text-right font-heading text-[#D7FF00] px-2 md:px-4">WAGER</TableHead>
+              <TableHead className="w-[50px] md:w-20 font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap">RANK</TableHead>
+              <TableHead className="font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base">USERNAME</TableHead>
+              <TableHead className="text-right font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap">WAGER</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -166,10 +166,12 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                   className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] transition-colors"
                 >
-                  <TableCell className="font-heading">
-                    <div className="flex items-center gap-2">
-                      {getTrophyIcon(index + 1 + currentPage * ITEMS_PER_PAGE)}
-                      <span className="text-[#D7FF00]">
+                  <TableCell className="font-heading px-1 md:px-4">
+                    <div className="flex items-center gap-1 md:gap-2">
+                      <div className="hidden md:block">
+                        {getTrophyIcon(index + 1 + currentPage * ITEMS_PER_PAGE)}
+                      </div>
+                      <span className="text-[#D7FF00] text-xs md:text-base">
                         {index + 1 + currentPage * ITEMS_PER_PAGE}
                       </span>
                     </div>
@@ -191,7 +193,7 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <span className="text-white font-semibold">
-                        ${getWagerAmount(entry).toLocaleString()}
+                        ${(getWagerAmount(entry) || 0).toLocaleString()}
                       </span>
                       {entry.isWagering && entry.wagerChange > 0 && (
                         <motion.div

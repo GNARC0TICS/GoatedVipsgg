@@ -48,11 +48,11 @@ export default function Leaderboard() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="text-4xl md:text-5xl font-heading font-bold text-[#D7FF00] mb-8">
-            LEADERBOARD
+          <h1 className="text-4xl md:text-5xl font-heading font-bold text-white mb-8">
+            LEADERBOARDS
           </h1>
 
-          <div className="flex justify-center gap-4 mb-12">
+          <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-8 md:mb-12 px-2">
             {[
               { id: "today", label: "DAILY" },
               { id: "weekly", label: "WEEKLY" },
