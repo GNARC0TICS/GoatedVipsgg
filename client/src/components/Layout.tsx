@@ -145,27 +145,27 @@ export function Layout({ children }: LayoutProps) {
                   }
                 />
                 <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center gap-2 font-heading text-white">
-                    LEADERBOARDS <ChevronDown className="h-4 w-4" />
+                  <DropdownMenuTrigger className="flex items-center gap-2 font-heading text-white group">
+                    LEADERBOARDS <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-[#1A1B21] border-[#2A2B31]">
+                  <DropdownMenuContent className="bg-[#1A1B21] border-[#2A2B31] animate-in fade-in-0 zoom-in-95 duration-100">
                     <Link href="/leaderboard?period=daily">
-                      <DropdownMenuItem className="font-bold">
+                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-colors hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
                         Daily
                       </DropdownMenuItem>
                     </Link>
                     <Link href="/leaderboard?period=weekly">
-                      <DropdownMenuItem className="font-bold">
+                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-colors hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
                         Weekly
                       </DropdownMenuItem>
                     </Link>
                     <Link href="/leaderboard?period=monthly">
-                      <DropdownMenuItem className="font-bold">
+                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-colors hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
                         Monthly
                       </DropdownMenuItem>
                     </Link>
                     <Link href="/leaderboard?period=all_time">
-                      <DropdownMenuItem className="font-bold">
+                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-colors hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
                         All Time
                       </DropdownMenuItem>
                     </Link>
