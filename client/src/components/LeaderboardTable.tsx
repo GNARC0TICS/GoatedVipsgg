@@ -18,7 +18,7 @@ import { useState, useMemo } from "react";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { QuickProfile } from "@/components/QuickProfile";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -156,61 +156,64 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredData
-              .slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE)
-              .map((entry, index) => (
-                <motion.tr
-                  key={entry.uid}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] transition-colors"
-                >
-                  <TableCell className="font-heading px-1 md:px-4">
-                    <div className="flex items-center gap-1 md:gap-2">
-                      <div className="hidden md:block">
-                        {getTrophyIcon(index + 1 + currentPage * ITEMS_PER_PAGE)}
-                      </div>
-                      <span className="text-[#D7FF00] text-xs md:text-base">
-                        {index + 1 + currentPage * ITEMS_PER_PAGE}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <QuickProfile userId={entry.uid} username={entry.name}>
-                      <div className="flex items-center gap-2 cursor-pointer">
-                        <img
-                          src={getTierIcon(getTierFromWager(entry.wagered.all_time))}
-                          alt="Tier"
-                          className="w-5 h-5"
-                        />
-                        <span className="truncate text-white hover:text-[#D7FF00] transition-colors">
-                          {entry.name}
+            <AnimatePresence>
+              {filteredData
+                .slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE)
+                .map((entry, index) => (
+                  <motion.tr
+                    key={entry.uid}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] transition-colors"
+                    exit={{ opacity: 0, y: 20 }}
+                  >
+                    <TableCell className="font-heading px-1 md:px-4">
+                      <div className="flex items-center gap-1 md:gap-2">
+                        <div className="hidden md:block">
+                          {getTrophyIcon(index + 1 + currentPage * ITEMS_PER_PAGE)}
+                        </div>
+                        <span className="text-[#D7FF00] text-xs md:text-base">
+                          {index + 1 + currentPage * ITEMS_PER_PAGE}
                         </span>
                       </div>
-                    </QuickProfile>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <span className="text-white font-semibold">
-                        ${(getWagerAmount(entry) || 0).toLocaleString()}
-                      </span>
-                      {entry.isWagering && entry.wagerChange > 0 && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="text-green-500 flex items-center gap-1"
-                        >
-                          <TrendingUp className="h-4 w-4" />
-                          <span className="text-xs font-bold">
-                            +${entry.wagerChange.toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <QuickProfile userId={entry.uid} username={entry.name}>
+                        <div className="flex items-center gap-2 cursor-pointer">
+                          <img
+                            src={getTierIcon(getTierFromWager(entry.wagered.all_time))}
+                            alt="Tier"
+                            className="w-5 h-5"
+                          />
+                          <span className="truncate text-white hover:text-[#D7FF00] transition-colors">
+                            {entry.name}
                           </span>
-                        </motion.div>
-                      )}
-                    </div>
-                  </TableCell>
-                </motion.tr>
-              ))}
+                        </div>
+                      </QuickProfile>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="text-white font-semibold">
+                          ${(getWagerAmount(entry) || 0).toLocaleString()}
+                        </span>
+                        {entry.isWagering && entry.wagerChange > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="text-green-500 flex items-center gap-1"
+                          >
+                            <TrendingUp className="h-4 w-4" />
+                            <span className="text-xs font-bold">
+                              +${entry.wagerChange.toLocaleString()}
+                            </span>
+                          </motion.div>
+                        )}
+                      </div>
+                    </TableCell>
+                  </motion.tr>
+                ))}
+            </AnimatePresence>
           </TableBody>
         </Table>
       </div>
