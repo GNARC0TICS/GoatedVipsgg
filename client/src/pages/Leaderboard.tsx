@@ -14,7 +14,6 @@ export default function Leaderboard() {
     const params = new URLSearchParams(window.location.search);
     const periodParam = params.get("period");
     if (periodParam) {
-      // Map URL parameters to TimePeriod type
       const periodMap: Record<string, TimePeriod> = {
         daily: "today",
         weekly: "weekly",
@@ -28,7 +27,6 @@ export default function Leaderboard() {
   }, [location]);
 
   const updatePeriod = (newPeriod: string) => {
-    // Map TimePeriod to URL parameter
     const urlPeriodMap: Record<string, string> = {
       today: "daily",
       weekly: "weekly",
@@ -59,25 +57,35 @@ export default function Leaderboard() {
               { id: "monthly", label: "MONTHLY" },
               { id: "all_time", label: "ALL TIME" }
             ].map(({ id, label }) => (
-              <Button
+              <motion.div
                 key={id}
-                variant={period === id ? "default" : "outline"}
-                onClick={() => updatePeriod(id)}
-                className={`font-heading font-bold ${
-                  period === id
-                    ? "bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 shadow-glow-sm"
-                    : "border-[#2A2B31] hover:border-[#D7FF00]/50"
-                }`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                {label}
-              </Button>
+                <Button
+                  variant={period === id ? "default" : "outline"}
+                  onClick={() => updatePeriod(id)}
+                  className={`font-heading font-bold transition-all duration-300 ${
+                    period === id
+                      ? "bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 shadow-glow-sm"
+                      : "border-[#2A2B31] hover:border-[#D7FF00]/50 hover:text-[#D7FF00]"
+                  }`}
+                >
+                  {label}
+                </Button>
+              </motion.div>
             ))}
           </div>
         </motion.div>
 
-        <div className="rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm p-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm p-8"
+        >
           <LeaderboardTable key={period} timePeriod={period} />
-        </div>
+        </motion.div>
       </main>
     </div>
   );

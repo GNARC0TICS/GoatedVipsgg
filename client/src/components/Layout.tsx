@@ -1,9 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-
 import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
 import { useQuery } from "@tanstack/react-query";
@@ -26,6 +24,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FloatingSupport } from "./FloatingSupport";
 import { useToast } from "@/hooks/use-toast";
+import { motion } from 'framer-motion';
+
 
 interface LayoutProps {
   children: ReactNode;
@@ -146,26 +146,29 @@ export function Layout({ children }: LayoutProps) {
                 />
                 <DropdownMenu>
                   <DropdownMenuTrigger className="flex items-center gap-2 font-heading text-white group">
-                    LEADERBOARDS <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                    <span className="transition-colors duration-300 group-hover:text-[#D7FF00]">
+                      LEADERBOARDS
+                    </span>
+                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-data-[state=open]:rotate-180 group-hover:text-[#D7FF00]" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-[#1A1B21] border-[#2A2B31] animate-in fade-in-0 zoom-in-95 duration-100">
+                  <DropdownMenuContent className="bg-[#1A1B21] border-[#2A2B31] animate-in fade-in-0 zoom-in-95 duration-200" sideOffset={8}>
                     <Link href="/leaderboard?period=daily">
-                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-colors hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
+                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-all duration-200 hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
                         Daily
                       </DropdownMenuItem>
                     </Link>
                     <Link href="/leaderboard?period=weekly">
-                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-colors hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
+                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-all duration-200 hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
                         Weekly
                       </DropdownMenuItem>
                     </Link>
                     <Link href="/leaderboard?period=monthly">
-                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-colors hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
+                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-all duration-200 hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
                         Monthly
                       </DropdownMenuItem>
                     </Link>
                     <Link href="/leaderboard?period=all_time">
-                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-colors hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
+                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-all duration-200 hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
                         All Time
                       </DropdownMenuItem>
                     </Link>
@@ -437,11 +440,11 @@ function NavLink({
     <span
       className={`relative font-heading cursor-pointer group ${
         isActive ? "text-[#D7FF00]" : "text-white"
-      } transition-colors duration-300`}
+      } transition-all duration-300 ease-in-out hover:text-[#D7FF00]`}
     >
       {label}
       <span
-        className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-[#D7FF00] transition-all duration-300 ${
+        className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-[#D7FF00] transition-all duration-300 ease-in-out ${
           isActive ? "w-full" : "group-hover:w-full"
         }`}
       />
@@ -454,7 +457,7 @@ function NavLink({
         <Link href={href}>{linkContent}</Link>
       </TooltipTrigger>
       {tooltip && (
-        <TooltipContent>
+        <TooltipContent sideOffset={5} className="bg-[#1A1B21] border-[#2A2B31]">
           <p>{tooltip}</p>
         </TooltipContent>
       )}
@@ -463,21 +466,24 @@ function NavLink({
 }
 
 
+
 function MobileNavLink({ href, label }: { href: string; label: string | React.ReactNode }) {
   const [location] = useLocation();
   const isActive = location === href;
 
   return (
     <Link href={href}>
-      <div
-        className={`px-4 py-2 rounded-lg transition-colors ${
+      <motion.div
+        whileHover={{ x: 4 }}
+        whileTap={{ scale: 0.98 }}
+        className={`px-4 py-2 rounded-lg transition-all duration-200 ${
           isActive
             ? "bg-[#D7FF00]/10 text-[#D7FF00]"
-            : "text-white hover:bg-[#2A2B31]"
+            : "text-white hover:bg-[#2A2B31] hover:text-[#D7FF00]"
         }`}
       >
         {label}
-      </div>
+      </motion.div>
     </Link>
   );
 }
