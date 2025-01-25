@@ -202,9 +202,10 @@ export function Layout({ children }: LayoutProps) {
                           </div>
                         </div>
                       } />
-                      <MobileNavLink href="/leaderboards/daily" label="DAILY LEADERBOARD" />
-                      <MobileNavLink href="/leaderboards/weekly" label="WEEKLY LEADERBOARD" />
-                      <MobileNavLink href="/leaderboards/monthly" label="MONTHLY LEADERBOARD" />
+                      <MobileNavLink href="/leaderboard?period=daily" label="DAILY LEADERBOARD" />
+                      <MobileNavLink href="/leaderboard?period=weekly" label="WEEKLY LEADERBOARD" />
+                      <MobileNavLink href="/leaderboard?period=monthly" label="MONTHLY LEADERBOARD" />
+                      <MobileNavLink href="/leaderboard?period=all_time" label="ALL TIME LEADERBOARD" />
 
                       <div className="px-4 py-2 mt-4 text-[#D7FF00] font-heading text-sm">MORE</div>
                       <MobileNavLink href="/promotions" label="PROMOTIONS" />

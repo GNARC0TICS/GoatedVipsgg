@@ -52,7 +52,7 @@ export default function Leaderboard() {
             LEADERBOARD
           </h1>
 
-          <div className="flex justify-center gap-4 mb-12">
+          <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-8 md:mb-12 px-2">
             {[
               { id: "today", label: "DAILY" },
               { id: "weekly", label: "WEEKLY" },
