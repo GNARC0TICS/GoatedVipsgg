@@ -191,7 +191,7 @@ export function Layout({ children }: LayoutProps) {
                       <MobileNavLink href="/how-it-works" label="HOW IT WORKS" />
                       <MobileNavLink href="/tips-and-strategies" label="TIPS & STRATEGIES" />
                       <MobileNavLink href="/vip-program" label="VIP PROGRAM" />
-                      
+
                       <div className="px-4 py-2 mt-4 text-[#D7FF00] font-heading text-sm">COMPETE</div>
                       <MobileNavLink href="/wager-races" label={
                         <div className="flex items-center gap-2">
@@ -205,7 +205,7 @@ export function Layout({ children }: LayoutProps) {
                       <MobileNavLink href="/leaderboards/daily" label="DAILY LEADERBOARD" />
                       <MobileNavLink href="/leaderboards/weekly" label="WEEKLY LEADERBOARD" />
                       <MobileNavLink href="/leaderboards/monthly" label="MONTHLY LEADERBOARD" />
-                      
+
                       <div className="px-4 py-2 mt-4 text-[#D7FF00] font-heading text-sm">MORE</div>
                       <MobileNavLink href="/promotions" label="PROMOTIONS" />
                       <MobileNavLink href="/telegram" label="TELEGRAM" />

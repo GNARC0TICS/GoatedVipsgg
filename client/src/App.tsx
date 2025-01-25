@@ -16,6 +16,7 @@ import BonusCodes from "@/pages/bonus-codes";
 import NotificationPreferences from "@/pages/notification-preferences";
 import WagerRaceManagement from "@/pages/admin/WagerRaceManagement";
 import UserManagement from "@/pages/admin/UserManagement";
+import Leaderboard from "@/pages/Leaderboard"; // Added import
 import { Layout } from "@/components/Layout";
 import { PageTransition } from "@/components/PageTransition";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -28,7 +29,7 @@ import HowItWorks from "@/pages/HowItWorks";
 import GoatedToken from "@/pages/GoatedToken";
 import Support from "@/pages/support";
 import FAQ from "@/pages/faq";
-import VipProgram from "./pages/VipProgram"; // Added import for VipProgram
+import VipProgram from "./pages/VipProgram";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -51,7 +52,6 @@ function ErrorFallback({ error }: { error: Error }) {
   );
 }
 
-// Admin route wrapper component
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useUser();
 
@@ -76,6 +76,7 @@ function Router() {
             <Route path="/vip-transfer" component={VipTransfer} />
             <Route path="/wager-races" component={WagerRaces} />
             <Route path="/bonus-codes" component={BonusCodes} />
+            <Route path="/leaderboard" component={Leaderboard} /> {/* Added Leaderboard route */}
             <Route
               path="/notification-preferences"
               component={NotificationPreferences}
@@ -104,8 +105,7 @@ function Router() {
             <Route path="/telegram" component={Telegram} />
             <Route path="/how-it-works" component={HowItWorks} />
             <Route path="/goated-token" component={GoatedToken} />
-            <Route path="/vip-program" component={VipProgram} />{" "}
-            {/* Added VIP Program route */}
+            <Route path="/vip-program" component={VipProgram} />
             <Route component={NotFound} />
           </Switch>
         </ErrorBoundary>
