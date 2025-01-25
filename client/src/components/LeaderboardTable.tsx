@@ -122,7 +122,7 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
               textShadow: '0 0 10px rgba(215, 255, 0, 0.5), 0 0 20px rgba(215, 255, 0, 0.3)'
             }}
           >
-            {timePeriod.toUpperCase()}
+            {(timePeriod || 'today').toUpperCase()}
           </motion.h2>
           <div className="flex items-center justify-center gap-4">
             <div className="flex items-center gap-2">
