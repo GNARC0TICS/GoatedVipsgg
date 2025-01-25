@@ -146,7 +146,7 @@ export function Layout({ children }: LayoutProps) {
                 />
                 <DropdownMenu>
                   <DropdownMenuTrigger className="flex items-center gap-2 font-heading text-white group">
-                    <span className="transition-colors duration-300 group-hover:text-[#D7FF00]">
+                    <span className="font-bold transition-colors duration-300 group-hover:text-[#D7FF00]">
                       LEADERBOARDS
                     </span>
                     <ChevronDown className="h-4 w-4 transition-transform duration-300 group-data-[state=open]:rotate-180 group-hover:text-[#D7FF00]" />
