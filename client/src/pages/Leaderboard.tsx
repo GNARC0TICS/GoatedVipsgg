@@ -48,8 +48,9 @@ export default function Leaderboard() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="text-4xl md:text-5xl font-heading font-bold text-white mb-8">
-            LEADERBOARDS
+          <h1 className="text-4xl md:text-5xl font-heading font-bold mb-8">
+            <span className="text-[#D7FF00] animate-pulse shadow-[0_0_15px_rgba(215,255,0,0.5)] px-2">WAGER</span>{" "}
+            <span className="text-white">LEADERBOARDS</span>
           </h1>
 
           <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-8 md:mb-12 px-2">
