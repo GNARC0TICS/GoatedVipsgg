@@ -18,13 +18,15 @@ import { useState, useMemo } from "react";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { QuickProfile } from "@/components/QuickProfile";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { motion } from "framer-motion";
 
 const ITEMS_PER_PAGE = 10;
 
-export function LeaderboardTable() {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>("today");
+interface LeaderboardTableProps {
+  timePeriod: TimePeriod;
+}
+
+export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const { data, isLoading, error, metadata, refetch } = useLeaderboard(timePeriod);
@@ -131,44 +133,16 @@ export function LeaderboardTable() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-4">
-        <div className="flex gap-2 justify-center flex-wrap">
-          {[
-            { id: "today", label: "TODAY" },
-            { id: "weekly", label: "WEEKLY" },
-            { id: "monthly", label: "MONTHLY" },
-            { id: "all_time", label: "ALL TIME" },
-          ].map(({ id, label }) => (
-            <Button
-              key={id}
-              variant={timePeriod === id ? "default" : "outline"}
-              onClick={() => {
-                setTimePeriod(id as TimePeriod);
-                refetch();
-              }}
-              className={`font-heading flex items-center gap-2 ${
-                timePeriod === id
-                  ? "bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 shadow-glow-sm"
-                  : "border-[#2A2B31] hover:border-[#D7FF00]/50 bg-[#1A1B21]/50 backdrop-blur-sm"
-              }`}
-            >
-              {renderTimePeriodIcon(id as TimePeriod)}
-              {label}
-            </Button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2 max-w-md mx-auto w-full">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search players..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31] text-white"
-            />
-          </div>
+      <div className="flex items-center gap-2 max-w-md mx-auto w-full">
+        <div className="relative w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search players..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31] text-white"
+          />
         </div>
       </div>
 
