@@ -114,6 +114,22 @@ export function Layout({ children }: LayoutProps) {
 
               <div className="hidden md:flex items-center gap-8">
                 <NavLink href="/" label="HOME" />
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center gap-2 font-heading text-white">
+                    GET STARTED <ChevronDown className="h-4 w-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-[#1A1B21] border-[#2A2B31]">
+                    <Link href="/how-it-works">
+                      <DropdownMenuItem>How It Works</DropdownMenuItem>
+                    </Link>
+                    <Link href="/tips-and-strategies">
+                      <DropdownMenuItem>Tips & Strategies</DropdownMenuItem>
+                    </Link>
+                    <Link href="/vip-program">
+                      <DropdownMenuItem>VIP Program</DropdownMenuItem>
+                    </Link>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <NavLink
                   href="/wager-races"
                   label={
@@ -128,17 +144,27 @@ export function Layout({ children }: LayoutProps) {
                     </div>
                   }
                 />
-                <NavLink href="/vip-program" label="VIP PROGRAM" />
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center gap-2 font-heading text-white">
+                    LEADERBOARDS <ChevronDown className="h-4 w-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-[#1A1B21] border-[#2A2B31]">
+                    <Link href="/leaderboards/daily">
+                      <DropdownMenuItem>Daily</DropdownMenuItem>
+                    </Link>
+                    <Link href="/leaderboards/weekly">
+                      <DropdownMenuItem>Weekly</DropdownMenuItem>
+                    </Link>
+                    <Link href="/leaderboards/monthly">
+                      <DropdownMenuItem>Monthly</DropdownMenuItem>
+                    </Link>
+                    <Link href="/leaderboards/all-time">
+                      <DropdownMenuItem>All Time</DropdownMenuItem>
+                    </Link>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <NavLink href="/promotions" label="PROMOTIONS" />
-                <NavLink
-                  href="/telegram"
-                  label={
-                    <div className="flex items-center gap-2 font-heading">
-                      TELEGRAM
-                    </div>
-                  }
-                  tooltip="Join our Telegram community"
-                />
+                <NavLink href="/telegram" label="TELEGRAM" tooltip="Join our Telegram community" />
                 {user?.isAdmin && (
                   <NavLink href="/admin/wager-races" label="ADMIN" />
                 )}
@@ -152,7 +178,13 @@ export function Layout({ children }: LayoutProps) {
                   </SheetTrigger>
                   <SheetContent side="left" className="w-[300px] bg-[#14151A] border-r border-[#2A2B31]">
                     <div className="flex flex-col gap-4 pt-8">
+                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm">GET STARTED</div>
                       <MobileNavLink href="/" label="HOME" />
+                      <MobileNavLink href="/how-it-works" label="HOW IT WORKS" />
+                      <MobileNavLink href="/tips-and-strategies" label="TIPS & STRATEGIES" />
+                      <MobileNavLink href="/vip-program" label="VIP PROGRAM" />
+                      
+                      <div className="px-4 py-2 mt-4 text-[#D7FF00] font-heading text-sm">COMPETE</div>
                       <MobileNavLink href="/wager-races" label={
                         <div className="flex items-center gap-2">
                           WAGER RACES
@@ -162,7 +194,11 @@ export function Layout({ children }: LayoutProps) {
                           </div>
                         </div>
                       } />
-                      <MobileNavLink href="/vip-program" label="VIP PROGRAM" />
+                      <MobileNavLink href="/leaderboards/daily" label="DAILY LEADERBOARD" />
+                      <MobileNavLink href="/leaderboards/weekly" label="WEEKLY LEADERBOARD" />
+                      <MobileNavLink href="/leaderboards/monthly" label="MONTHLY LEADERBOARD" />
+                      
+                      <div className="px-4 py-2 mt-4 text-[#D7FF00] font-heading text-sm">MORE</div>
                       <MobileNavLink href="/promotions" label="PROMOTIONS" />
                       <MobileNavLink href="/telegram" label="TELEGRAM" />
                       {user?.isAdmin && (

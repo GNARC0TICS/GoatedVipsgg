@@ -43,6 +43,30 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .dropdown-content-enter {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  
+  .dropdown-content-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 200ms, transform 200ms;
+  }
+  
+  .mobile-nav-item-enter {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  
+  .mobile-nav-item-enter-active {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 200ms, transform 200ms;
+  }
+}
+
 .glow-text {
   text-shadow:
     0 0 10px rgba(215, 255, 0, 0.5),
