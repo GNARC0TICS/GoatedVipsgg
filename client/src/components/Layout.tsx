@@ -149,23 +149,23 @@ export function Layout({ children }: LayoutProps) {
                     LEADERBOARDS <ChevronDown className="h-4 w-4" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="bg-[#1A1B21] border-[#2A2B31]">
-                    <Link href="/leaderboard">
-                      <DropdownMenuItem className="font-bold" onClick={() => window.history.pushState({}, "", "/leaderboard?period=daily")}>
+                    <Link href="/leaderboard?period=daily">
+                      <DropdownMenuItem className="font-bold">
                         Daily
                       </DropdownMenuItem>
                     </Link>
-                    <Link href="/leaderboard">
-                      <DropdownMenuItem className="font-bold" onClick={() => window.history.pushState({}, "", "/leaderboard?period=weekly")}>
+                    <Link href="/leaderboard?period=weekly">
+                      <DropdownMenuItem className="font-bold">
                         Weekly
                       </DropdownMenuItem>
                     </Link>
-                    <Link href="/leaderboard">
-                      <DropdownMenuItem className="font-bold" onClick={() => window.history.pushState({}, "", "/leaderboard?period=monthly")}>
+                    <Link href="/leaderboard?period=monthly">
+                      <DropdownMenuItem className="font-bold">
                         Monthly
                       </DropdownMenuItem>
                     </Link>
-                    <Link href="/leaderboard">
-                      <DropdownMenuItem className="font-bold" onClick={() => window.history.pushState({}, "", "/leaderboard?period=all_time")}>
+                    <Link href="/leaderboard?period=all_time">
+                      <DropdownMenuItem className="font-bold">
                         All Time
                       </DropdownMenuItem>
                     </Link>
