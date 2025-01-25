@@ -1,4 +1,4 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -191,7 +191,7 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <span className="text-white font-semibold">
-                        ${getWagerAmount(entry).toLocaleString()}
+                        ${(getWagerAmount(entry) || 0).toLocaleString()}
                       </span>
                       {entry.isWagering && entry.wagerChange > 0 && (
                         <motion.div
