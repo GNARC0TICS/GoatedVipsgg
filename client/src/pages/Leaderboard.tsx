@@ -48,8 +48,8 @@ export default function Leaderboard() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="text-4xl md:text-5xl font-heading font-bold mb-8">
-            <span className="text-[#D7FF00] animate-pulse shadow-[0_0_15px_rgba(215,255,0,0.5)] px-2">WAGER</span>{" "}
+          <h1 className="flex flex-col items-center gap-2 text-4xl md:text-5xl font-['MonaSansCondensed-ExtraBold'] mb-8">
+            <span className="text-[#D7FF00] bg-[#1A1B21]/50 px-4 py-1 rounded-lg shadow-glow-sm">WAGER</span>
             <span className="text-white">LEADERBOARDS</span>
           </h1>
 
