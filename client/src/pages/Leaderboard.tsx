@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
@@ -48,12 +48,11 @@ export default function Leaderboard() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="flex flex-col items-center gap-4 text-8xl md:text-[120px] font-heading mb-8">
-            <span className="text-[#D7FF00] bg-[#1A1B21]/50 px-8 py-3 rounded-lg shadow-glow-sm">WAGER</span>
-            <span className="text-white">LEADERBOARDS</span>
+          <h1 className="text-4xl md:text-5xl font-heading font-bold text-[#D7FF00] mb-8">
+            LEADERBOARD
           </h1>
 
-          <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-8 md:mb-12 px-2">
+          <div className="flex justify-center gap-4 mb-12">
             {[
               { id: "today", label: "DAILY" },
               { id: "weekly", label: "WEEKLY" },
