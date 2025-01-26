@@ -1,5 +1,4 @@
 import React, { Suspense } from "react";
-import { BrowserRouter } from "react-router-dom";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -17,7 +16,7 @@ import BonusCodes from "@/pages/bonus-codes";
 import NotificationPreferences from "@/pages/notification-preferences";
 import WagerRaceManagement from "@/pages/admin/WagerRaceManagement";
 import UserManagement from "@/pages/admin/UserManagement";
-import Leaderboard from "@/pages/Leaderboard";
+import Leaderboard from "@/pages/Leaderboard"; // Added import
 import { Layout } from "@/components/Layout";
 import { PageTransition } from "@/components/PageTransition";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -31,10 +30,6 @@ import GoatedToken from "@/pages/GoatedToken";
 import Support from "@/pages/support";
 import FAQ from "@/pages/faq";
 import VipProgram from "./pages/VipProgram";
-import { TutorialProvider } from "@/components/Tutorial/TutorialContext";
-import { TutorialOverlay } from "@/components/Tutorial/TutorialOverlay";
-import { TutorialPrompt } from "@/components/Tutorial/TutorialPrompt";
-
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -81,7 +76,7 @@ function Router() {
             <Route path="/vip-transfer" component={VipTransfer} />
             <Route path="/wager-races" component={WagerRaces} />
             <Route path="/bonus-codes" component={BonusCodes} />
-            <Route path="/leaderboard" component={Leaderboard} />
+            <Route path="/leaderboard" component={Leaderboard} /> {/* Added Leaderboard route */}
             <Route
               path="/notification-preferences"
               component={NotificationPreferences}
@@ -122,22 +117,16 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TutorialProvider>
-        <BrowserRouter>
-          <ErrorBoundary FallbackComponent={ErrorFallback}>
-            <AuthProvider>
-              <Suspense fallback={<LoadingSpinner />}>
-                <TooltipProvider>
-                  <Router />
-                  <Toaster />
-                  <TutorialPrompt />
-                  <TutorialOverlay />
-                </TooltipProvider>
-              </Suspense>
-            </AuthProvider>
-          </ErrorBoundary>
-        </BrowserRouter>
-      </TutorialProvider>
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <AuthProvider>
+          <Suspense fallback={<LoadingSpinner />}>
+            <TooltipProvider>
+              <Router />
+              <Toaster />
+            </TooltipProvider>
+          </Suspense>
+        </AuthProvider>
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 }
