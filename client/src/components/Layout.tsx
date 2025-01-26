@@ -114,11 +114,11 @@ export function Layout({ children }: LayoutProps) {
               <div className="hidden md:flex items-center gap-8">
                 <NavLink href="/" label="HOME" />
 
-                {/* Updated GET STARTED dropdown with hover */}
+                {/* GET STARTED dropdown */}
                 <div className="relative group">
                   <Button
                     variant="ghost"
-                    className="flex items-center gap-2 font-heading text-white group-hover:text-[#D7FF00] transition-all duration-300"
+                    className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300"
                   >
                     <span className="font-bold">GET STARTED</span>
                     <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
@@ -163,7 +163,7 @@ export function Layout({ children }: LayoutProps) {
                 <div className="relative group">
                   <Button
                     variant="ghost"
-                    className="flex items-center gap-2 font-heading text-white group-hover:text-[#D7FF00] transition-all duration-300"
+                    className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300"
                   >
                     <span className="font-bold">LEADERBOARDS</span>
                     <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
