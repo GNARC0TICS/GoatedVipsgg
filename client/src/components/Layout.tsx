@@ -136,7 +136,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       </Link>
                       <Link href="/vip-program">
-                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                        <div className="px-4 py-2 font-bold hover:text-[#D7FF00] transition-colors duration-200 cursor-pointer">
                           VIP Program
                         </div>
                       </Link>
@@ -181,12 +181,12 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       </Link>
                       <Link href="/leaderboard?period=monthly">
-                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                        <div className="px-4 py-2 font-bold hover:text-[#D7FF00] transition-colors duration-200 cursor-pointer">
                           Monthly
                         </div>
                       </Link>
                       <Link href="/leaderboard?period=all_time">
-                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                        <div className="px-4 py-2 font-bold hover:text-[#D7FF00] transition-colors duration-200 cursor-pointer">
                           All Time
                         </div>
                       </Link>
