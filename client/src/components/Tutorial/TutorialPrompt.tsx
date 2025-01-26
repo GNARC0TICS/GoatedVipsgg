@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTutorial } from "./TutorialContext";
 import {
@@ -14,14 +14,26 @@ import { X } from "lucide-react";
 
 export function TutorialPrompt() {
   const { hasSeenTutorial, setHasSeenTutorial, openTutorial } = useTutorial();
-  const [isVisible, setIsVisible] = useState(!hasSeenTutorial);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    // Wait for a short delay before showing the prompt
+    const timer = setTimeout(() => {
+      setIsVisible(!hasSeenTutorial);
+    }, 1000);
+
+    console.log("TutorialPrompt mounted, hasSeenTutorial:", hasSeenTutorial);
+    return () => clearTimeout(timer);
+  }, [hasSeenTutorial]);
 
   const handleSkip = () => {
+    console.log("Tutorial skipped");
     setIsVisible(false);
     setHasSeenTutorial(true);
   };
 
   const handleStart = () => {
+    console.log("Starting tutorial");
     setIsVisible(false);
     openTutorial();
   };
@@ -34,9 +46,9 @@ export function TutorialPrompt() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
-        className="fixed bottom-4 right-4 z-50"
+        className="fixed bottom-4 right-4 z-[100]"
       >
-        <Card className="w-[400px] bg-[#1A1B21] border-[#2A2B31]">
+        <Card className="w-[400px] bg-[#1A1B21] border-[#2A2B31] shadow-xl">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-xl text-white">

@@ -30,10 +30,13 @@ export function TutorialOverlay() {
   });
 
   useEffect(() => {
+    console.log("TutorialOverlay state:", { isOpen, currentStep });
+
     if (isOpen && steps[currentStep].element) {
       const element = document.querySelector(steps[currentStep].element!);
       if (element) {
         const rect = element.getBoundingClientRect();
+        console.log("Found element:", steps[currentStep].element, rect);
         setHighlightPosition({
           top: rect.top + window.scrollY,
           left: rect.left,
@@ -46,6 +49,8 @@ export function TutorialOverlay() {
           behavior: "smooth",
           block: "center",
         });
+      } else {
+        console.log("Element not found:", steps[currentStep].element);
       }
     }
   }, [currentStep, isOpen, steps]);
@@ -58,8 +63,8 @@ export function TutorialOverlay() {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
-        {/* Backdrop - removed onClick to prevent closing */}
+      <div className="fixed inset-0 z-[200] flex items-center justify-center">
+        {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -73,7 +78,7 @@ export function TutorialOverlay() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="absolute z-10 border-2 border-[#D7FF00] rounded-lg"
+            className="absolute z-[210] border-2 border-[#D7FF00] rounded-lg"
             style={{
               top: highlightPosition.top,
               left: highlightPosition.left,
@@ -89,7 +94,7 @@ export function TutorialOverlay() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          className="relative z-20"
+          className="relative z-[220]"
           style={{
             position: "absolute",
             ...(currentTutorialStep.position === "bottom"
@@ -101,13 +106,12 @@ export function TutorialOverlay() {
             transform: "translateX(-50%)",
           }}
         >
-          <Card className="w-[400px] bg-[#1A1B21] border-[#2A2B31]">
+          <Card className="w-[400px] bg-[#1A1B21] border-[#2A2B31] shadow-xl">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl text-white">
                   {currentTutorialStep.title}
                 </CardTitle>
-                {/* Only show close button if explicitly requested */}
                 {currentTutorialStep.allowClose && (
                   <Button
                     variant="ghost"

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { useLocation } from "wouter";
 
 // Define tutorial step interface for easy extensibility
@@ -90,11 +90,19 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [hasSeenTutorial, setHasSeenTutorial] = useState(() => {
-    return localStorage.getItem("hasSeenTutorial") === "true";
+    // Initialize from localStorage, default to false if not found
+    const saved = localStorage.getItem("hasSeenTutorial");
+    return saved ? JSON.parse(saved) : false;
   });
   const [, setLocation] = useLocation();
 
+  // Debug logs
+  useEffect(() => {
+    console.log("Tutorial State:", { isOpen, currentStep, hasSeenTutorial });
+  }, [isOpen, currentStep, hasSeenTutorial]);
+
   const openTutorial = () => {
+    console.log("Opening tutorial...");
     setIsOpen(true);
     setCurrentStep(0);
   };
@@ -102,6 +110,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const closeTutorial = () => {
     // Only close if the current step allows it
     if (tutorialSteps[currentStep].allowClose) {
+      console.log("Closing tutorial...");
       setIsOpen(false);
       setCurrentStep(0);
       setHasSeenTutorial(true);
@@ -112,11 +121,13 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const nextStep = () => {
     if (currentStep < tutorialSteps.length - 1) {
       const nextStep = tutorialSteps[currentStep + 1];
+      console.log("Moving to next step:", nextStep.id);
       if (nextStep.page) {
         setLocation(nextStep.page);
       }
       setCurrentStep(currentStep + 1);
     } else {
+      console.log("Tutorial completed");
       setIsOpen(false);
       setHasSeenTutorial(true);
       localStorage.setItem("hasSeenTutorial", "true");
@@ -126,6 +137,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const prevStep = () => {
     if (currentStep > 0) {
       const prevStep = tutorialSteps[currentStep - 1];
+      console.log("Moving to previous step:", prevStep.id);
       if (prevStep.page) {
         setLocation(prevStep.page);
       }
@@ -136,6 +148,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const goToStep = (step: number) => {
     if (step >= 0 && step < tutorialSteps.length) {
       const targetStep = tutorialSteps[step];
+      console.log("Going to step:", targetStep.id);
       if (targetStep.page) {
         setLocation(targetStep.page);
       }
