@@ -11,6 +11,7 @@ export interface TutorialStep {
   page?: string; // Route to navigate to for this step
   action?: "click" | "hover" | "scroll" | null;
   allowClose?: boolean; // Only show close button when true
+  highlightStyle?: "click" | "info"; // New property to control highlight style
 }
 
 // Tutorial steps - easily customizable
@@ -24,34 +25,46 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "get-started",
     title: "Getting Started",
-    description: "Click the GET STARTED dropdown to learn the basics of our platform. You'll find our comprehensive guide under 'How It Works'.",
+    description: "Click the GET STARTED dropdown to access our platform features. This menu contains essential information about our program.",
     element: "#get-started-dropdown",
     position: "bottom",
     action: "click",
+    highlightStyle: "click"
   },
   {
-    id: "how-it-works",
-    title: "Platform Guide",
-    description: "Click 'How It Works' to see a detailed guide on linking your account and maximizing your rewards.",
-    element: "#how-it-works-button",
+    id: "wager-races",
+    title: "Monthly Wager Races",
+    description: "Join our exciting monthly wager races! Click here to view current races, prizes, and your ranking.",
+    element: "#wager-races-link",
     position: "bottom",
-    page: "/how-it-works",
+    page: "/wager-races",
+    highlightStyle: "click"
+  },
+  {
+    id: "race-details",
+    title: "Race Information",
+    description: "Check the current prize pool, countdown timer, and your position. The top performers share the monthly prize pool!",
+    element: "#race-stats",
+    position: "bottom",
+    highlightStyle: "info"
   },
   {
     id: "leaderboard",
     title: "Track Your Progress",
-    description: "View your ranking and compete with other affiliates on our leaderboards.",
+    description: "Monitor your overall wagering progress and rankings across all games. This helps you track your path to bigger rewards!",
     element: "#leaderboard-nav",
     position: "bottom",
     page: "/leaderboard",
+    highlightStyle: "click"
   },
   {
     id: "vip-program",
     title: "VIP Benefits",
-    description: "Discover exclusive rewards and perks in our VIP program.",
+    description: "Discover exclusive rewards and perks in our VIP program. Click to learn about rakeback, cashback, and special promotions.",
     element: "#vip-program-link",
     position: "bottom",
     page: "/vip-program",
+    highlightStyle: "click"
   },
   {
     id: "telegram",
@@ -60,14 +73,16 @@ export const tutorialSteps: TutorialStep[] = [
     element: "#telegram-link",
     position: "bottom",
     page: "/telegram",
+    highlightStyle: "click"
   },
   {
     id: "support",
     title: "24/7 Support",
-    description: "Need help? Our support team is always here to assist you.",
+    description: "Need help? Our support team is always here to assist you. Click here to get in touch!",
     element: "#support-button",
     position: "right",
     allowClose: true,
+    highlightStyle: "click"
   },
 ];
 
@@ -233,7 +248,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
         prevStep,
         goToStep,
         hasSeenTutorial: tutorialState.hasSeenTutorial,
-        setHasSeenTutorial: (value) => 
+        setHasSeenTutorial: (value) =>
           saveTutorialState({ hasSeenTutorial: value }),
         resetTutorial,
       }}

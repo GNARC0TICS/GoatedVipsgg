@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, MousePointerClick } from "lucide-react";
 
 export function TutorialOverlay() {
   const {
@@ -49,6 +49,15 @@ export function TutorialOverlay() {
           behavior: "smooth",
           block: "center",
         });
+
+        // If it's a clickable element, add click handler
+        if (steps[currentStep].highlightStyle === "click") {
+          const handleClick = () => {
+            nextStep();
+          };
+          element.addEventListener("click", handleClick);
+          return () => element.removeEventListener("click", handleClick);
+        }
       } else {
         console.log("Element not found:", steps[currentStep].element);
       }
@@ -64,7 +73,7 @@ export function TutorialOverlay() {
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[200] flex items-center justify-center">
-        {/* Backdrop */}
+        {/* Semi-transparent backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -78,15 +87,36 @@ export function TutorialOverlay() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="absolute z-[210] border-2 border-[#D7FF00] rounded-lg"
+            className={`absolute z-[210] rounded-lg transition-all duration-300 ${
+              currentTutorialStep.highlightStyle === "click"
+                ? "border-4 border-[#D7FF00] shadow-[0_0_30px_rgba(215,255,0,0.3)]"
+                : "border-2 border-white/50"
+            }`}
             style={{
               top: highlightPosition.top,
               left: highlightPosition.left,
               width: highlightPosition.width,
               height: highlightPosition.height,
-              boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.75)",
+              // Clear the area around the highlighted element
+              boxShadow: `0 0 0 9999px ${
+                currentTutorialStep.highlightStyle === "click"
+                  ? "rgba(0, 0, 0, 0.7)"
+                  : "rgba(0, 0, 0, 0.85)"
+              }`,
             }}
-          />
+          >
+            {/* Click indicator for clickable elements */}
+            {currentTutorialStep.highlightStyle === "click" && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="absolute -top-12 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-[#D7FF00] text-black px-3 py-1 rounded-full text-sm font-medium"
+              >
+                <MousePointerClick className="h-4 w-4" />
+                Click here
+              </motion.div>
+            )}
+          </motion.div>
         )}
 
         {/* Tutorial card */}
