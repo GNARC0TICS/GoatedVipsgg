@@ -46,9 +46,17 @@ export default function Leaderboard() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="text-4xl md:text-5xl font-heading font-bold text-white mb-8">
-            LEADERBOARDS
-          </h1>
+          <div className="mb-8">
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="mx-auto h-48 md:h-64 w-auto object-contain"
+            >
+              <source src="/images/WAGERLB.mp4" type="video/mp4" />
+            </video>
+          </div>
 
           <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-8 md:mb-12 px-2">
             {[
