@@ -113,31 +113,37 @@ export function Layout({ children }: LayoutProps) {
 
               <div className="hidden md:flex items-center gap-8">
                 <NavLink href="/" label="HOME" />
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center gap-2 font-heading text-white group">
-                    <span className="font-bold transition-colors duration-300 group-hover:text-[#D7FF00]">
-                      GET STARTED
-                    </span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-data-[state=open]:rotate-180 group-hover:text-[#D7FF00]" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-[#1A1B21] border-[#2A2B31] animate-in fade-in-0 zoom-in-95 duration-200" sideOffset={8}>
-                    <Link href="/how-it-works">
-                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-all duration-200 hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
-                        How It Works
-                      </DropdownMenuItem>
-                    </Link>
-                    <Link href="/tips-and-strategies">
-                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-all duration-200 hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
-                        Tips & Strategies
-                      </DropdownMenuItem>
-                    </Link>
-                    <Link href="/vip-program">
-                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-all duration-200 hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
-                        VIP Program
-                      </DropdownMenuItem>
-                    </Link>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+
+                {/* Updated GET STARTED dropdown with hover */}
+                <div className="relative group">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-2 font-heading text-white group-hover:text-[#D7FF00] transition-all duration-300"
+                  >
+                    <span className="font-bold">GET STARTED</span>
+                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                  </Button>
+                  <div className="absolute left-0 mt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                    <div className="bg-[#1A1B21] border border-[#2A2B31] rounded-lg shadow-lg py-1">
+                      <Link href="/how-it-works">
+                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                          How It Works
+                        </div>
+                      </Link>
+                      <Link href="/tips-and-strategies">
+                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                          Tips & Strategies
+                        </div>
+                      </Link>
+                      <Link href="/vip-program">
+                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                          VIP Program
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
                 <NavLink
                   href="/wager-races"
                   label={
@@ -152,6 +158,7 @@ export function Layout({ children }: LayoutProps) {
                     </div>
                   }
                 />
+
                 {/* Updated Leaderboard dropdown with hover functionality */}
                 <div className="relative group">
                   <Button
@@ -164,28 +171,29 @@ export function Layout({ children }: LayoutProps) {
                   <div className="absolute left-0 mt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                     <div className="bg-[#1A1B21] border border-[#2A2B31] rounded-lg shadow-lg py-1">
                       <Link href="/leaderboard?period=daily">
-                        <div className="px-4 py-2 hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
                           Daily
                         </div>
                       </Link>
                       <Link href="/leaderboard?period=weekly">
-                        <div className="px-4 py-2 hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
                           Weekly
                         </div>
                       </Link>
                       <Link href="/leaderboard?period=monthly">
-                        <div className="px-4 py-2 hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
                           Monthly
                         </div>
                       </Link>
                       <Link href="/leaderboard?period=all_time">
-                        <div className="px-4 py-2 hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
                           All Time
                         </div>
                       </Link>
                     </div>
                   </div>
                 </div>
+
                 <NavLink href="/promotions" label="PROMOTIONS" />
                 <NavLink href="/telegram" label="TELEGRAM" tooltip="Join our Telegram community" />
                 {user?.isAdmin && (
@@ -197,8 +205,8 @@ export function Layout({ children }: LayoutProps) {
               <div className="md:hidden">
                 <Sheet>
                   <SheetTrigger asChild>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="icon"
                       className="relative overflow-hidden group"
                     >
@@ -206,11 +214,11 @@ export function Layout({ children }: LayoutProps) {
                       <Menu className="h-6 w-6 text-white relative z-10 group-hover:text-[#D7FF00] transition-colors duration-300" />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent 
-                    side="left" 
+                  <SheetContent
+                    side="left"
                     className="w-[300px] bg-[#14151A] border-r border-[#2A2B31]"
                   >
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3 }}
@@ -451,7 +459,7 @@ export function Layout({ children }: LayoutProps) {
   );
 }
 
-// Updated NavLink component with enhanced hover effects
+// Updated NavLink component with enhanced hover effects and underline animation
 function NavLink({
   href,
   label,
@@ -465,7 +473,7 @@ function NavLink({
   const isActive = location === href;
 
   const linkContent = (
-    <motion.span
+    <motion.div
       className={`relative font-heading cursor-pointer group ${
         isActive ? "text-[#D7FF00]" : "text-white"
       } transition-all duration-300 ease-in-out hover:text-[#D7FF00]`}
@@ -473,14 +481,14 @@ function NavLink({
       whileTap={{ scale: 0.95 }}
     >
       {label}
-      <motion.span
-        className={`absolute -bottom-1 left-0 h-0.5 bg-[#D7FF00]`}
-        initial={{ width: isActive ? "100%" : "0%" }}
-        animate={{ width: isActive ? "100%" : "0%" }}
-        whileHover={{ width: "100%" }}
+      <motion.div
+        className="absolute -bottom-1 left-0 h-0.5 bg-[#D7FF00] origin-left"
+        initial={{ scaleX: isActive ? 1 : 0 }}
+        animate={{ scaleX: isActive ? 1 : 0 }}
+        whileHover={{ scaleX: 1 }}
         transition={{ duration: 0.3 }}
       />
-    </motion.span>
+    </motion.div>
   );
 
   return (
