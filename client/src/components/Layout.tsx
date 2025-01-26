@@ -105,8 +105,7 @@ export function Layout({ children }: LayoutProps) {
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.onerror = null;
-                      target.src =
-                        "https://placehold.co/120x32/14151A/D7FF00?text=GOATED";
+                      target.src = "https://placehold.co/120x32/14151A/D7FF00?text=GOATED";
                     }}
                   />
                 </Link>
@@ -114,27 +113,42 @@ export function Layout({ children }: LayoutProps) {
 
               <div className="hidden md:flex items-center gap-8">
                 <NavLink href="/" label="HOME" />
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center gap-2 font-heading text-white">
-                    GET STARTED <ChevronDown className="h-4 w-4" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-[#1A1B21] border-[#2A2B31]">
-                    <Link href="/how-it-works">
-                      <DropdownMenuItem>How It Works</DropdownMenuItem>
-                    </Link>
-                    <Link href="/tips-and-strategies">
-                      <DropdownMenuItem>Tips & Strategies</DropdownMenuItem>
-                    </Link>
-                    <Link href="/vip-program">
-                      <DropdownMenuItem>VIP Program</DropdownMenuItem>
-                    </Link>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+
+                {/* Updated GET STARTED dropdown with hover */}
+                <div className="relative group">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-2 font-heading text-white group-hover:text-[#D7FF00] transition-all duration-300"
+                  >
+                    <span className="font-bold">GET STARTED</span>
+                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                  </Button>
+                  <div className="absolute left-0 mt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                    <div className="bg-[#1A1B21] border border-[#2A2B31] rounded-lg shadow-lg py-1">
+                      <Link href="/how-it-works">
+                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                          How It Works
+                        </div>
+                      </Link>
+                      <Link href="/tips-and-strategies">
+                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                          Tips & Strategies
+                        </div>
+                      </Link>
+                      <Link href="/vip-program">
+                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                          VIP Program
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
                 <NavLink
                   href="/wager-races"
                   label={
-                    <div className="flex items-center gap-2 font-heading">
-                      WAGER RACES
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold transition-colors duration-300 group-hover:text-[#D7FF00]">WAGER RACES</span>
                       <div className="flex items-center gap-1">
                         <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
                         <span className="text-xs text-red-500 font-heading">
@@ -144,51 +158,72 @@ export function Layout({ children }: LayoutProps) {
                     </div>
                   }
                 />
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center gap-2 font-heading text-white group">
-                    <span className="font-bold transition-colors duration-300 group-hover:text-[#D7FF00]">
-                      LEADERBOARDS
-                    </span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-data-[state=open]:rotate-180 group-hover:text-[#D7FF00]" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-[#1A1B21] border-[#2A2B31] animate-in fade-in-0 zoom-in-95 duration-200" sideOffset={8}>
-                    <Link href="/leaderboard?period=daily">
-                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-all duration-200 hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
-                        Daily
-                      </DropdownMenuItem>
-                    </Link>
-                    <Link href="/leaderboard?period=weekly">
-                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-all duration-200 hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
-                        Weekly
-                      </DropdownMenuItem>
-                    </Link>
-                    <Link href="/leaderboard?period=monthly">
-                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-all duration-200 hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
-                        Monthly
-                      </DropdownMenuItem>
-                    </Link>
-                    <Link href="/leaderboard?period=all_time">
-                      <DropdownMenuItem className="font-bold relative cursor-pointer transition-all duration-200 hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] focus:bg-[#D7FF00]/10 focus:text-[#D7FF00]">
-                        All Time
-                      </DropdownMenuItem>
-                    </Link>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+
+                {/* Updated Leaderboard dropdown with hover functionality */}
+                <div className="relative group">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-2 font-heading text-white group-hover:text-[#D7FF00] transition-all duration-300"
+                  >
+                    <span className="font-bold">LEADERBOARDS</span>
+                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                  </Button>
+                  <div className="absolute left-0 mt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                    <div className="bg-[#1A1B21] border border-[#2A2B31] rounded-lg shadow-lg py-1">
+                      <Link href="/leaderboard?period=daily">
+                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                          Daily
+                        </div>
+                      </Link>
+                      <Link href="/leaderboard?period=weekly">
+                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                          Weekly
+                        </div>
+                      </Link>
+                      <Link href="/leaderboard?period=monthly">
+                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                          Monthly
+                        </div>
+                      </Link>
+                      <Link href="/leaderboard?period=all_time">
+                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                          All Time
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
                 <NavLink href="/promotions" label="PROMOTIONS" />
                 <NavLink href="/telegram" label="TELEGRAM" tooltip="Join our Telegram community" />
                 {user?.isAdmin && (
                   <NavLink href="/admin/wager-races" label="ADMIN" />
                 )}
               </div>
+
+              {/* Enhanced mobile navigation */}
               <div className="md:hidden">
                 <Sheet>
                   <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Menu className="h-6 w-6 text-white" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="relative overflow-hidden group"
+                    >
+                      <div className="absolute inset-0 bg-[#D7FF00]/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                      <Menu className="h-6 w-6 text-white relative z-10 group-hover:text-[#D7FF00] transition-colors duration-300" />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="left" className="w-[300px] bg-[#14151A] border-r border-[#2A2B31]">
-                    <div className="flex flex-col gap-4 pt-8">
+                  <SheetContent
+                    side="left"
+                    className="w-[300px] bg-[#14151A] border-r border-[#2A2B31]"
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex flex-col gap-4 pt-8"
+                    >
                       <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm">GET STARTED</div>
                       <MobileNavLink href="/" label="HOME" />
                       <MobileNavLink href="/how-it-works" label="HOW IT WORKS" />
@@ -208,7 +243,7 @@ export function Layout({ children }: LayoutProps) {
                       <MobileNavLink href="/leaderboard?period=daily" label="DAILY LEADERBOARD" />
                       <MobileNavLink href="/leaderboard?period=weekly" label="WEEKLY LEADERBOARD" />
                       <MobileNavLink href="/leaderboard?period=monthly" label="MONTHLY LEADERBOARD" />
-                      <MobileNavLink href="/leaderboard?period=all_time" label="ALL TIME LEADERBOARD" />
+                      <MobileNavLink href="/leaderboard?period=all-time" label="ALL TIME LEADERBOARD" />
 
                       <div className="px-4 py-2 mt-4 text-[#D7FF00] font-heading text-sm">MORE</div>
                       <MobileNavLink href="/promotions" label="PROMOTIONS" />
@@ -216,7 +251,7 @@ export function Layout({ children }: LayoutProps) {
                       {user?.isAdmin && (
                         <MobileNavLink href="/admin/wager-races" label="ADMIN" />
                       )}
-                    </div>
+                    </motion.div>
                   </SheetContent>
                 </Sheet>
               </div>
@@ -424,6 +459,7 @@ export function Layout({ children }: LayoutProps) {
   );
 }
 
+// Updated NavLink component with enhanced hover effects and underline animation
 function NavLink({
   href,
   label,
@@ -437,18 +473,22 @@ function NavLink({
   const isActive = location === href;
 
   const linkContent = (
-    <span
+    <motion.div
       className={`relative font-heading cursor-pointer group ${
         isActive ? "text-[#D7FF00]" : "text-white"
       } transition-all duration-300 ease-in-out hover:text-[#D7FF00]`}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
     >
       {label}
-      <span
-        className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-[#D7FF00] transition-all duration-300 ease-in-out ${
-          isActive ? "w-full" : "group-hover:w-full"
-        }`}
+      <motion.div
+        className="absolute -bottom-1 left-0 h-0.5 bg-[#D7FF00] origin-left"
+        initial={{ scaleX: isActive ? 1 : 0 }}
+        animate={{ scaleX: isActive ? 1 : 0 }}
+        whileHover={{ scaleX: 1 }}
+        transition={{ duration: 0.3 }}
       />
-    </span>
+    </motion.div>
   );
 
   return (
@@ -466,7 +506,6 @@ function NavLink({
 }
 
 
-
 function MobileNavLink({ href, label }: { href: string; label: string | React.ReactNode }) {
   const [location] = useLocation();
   const isActive = location === href;
@@ -474,7 +513,7 @@ function MobileNavLink({ href, label }: { href: string; label: string | React.Re
   return (
     <Link href={href}>
       <motion.div
-        whileHover={{ x: 4 }}
+        whileHover={{ x: 8, scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         className={`px-4 py-2 rounded-lg transition-all duration-200 ${
           isActive
