@@ -24,6 +24,17 @@ export const tutorialSteps: TutorialStep[] = [
     allowClose: true
   },
   {
+    id: "get-started",
+    title: "Getting Started",
+    description: "Click 'GET STARTED' to access essential program information and guides.",
+    element: ".get-started-dropdown",
+    position: "bottom",
+    action: "click",
+    highlightStyle: "click",
+    autoExpand: true,
+    nextRoute: "/how-it-works"
+  },
+  {
     id: "leaderboard",
     title: "Leaderboard",
     description: "Check your ranking and compete with other affiliates. Click here to view the leaderboard.",

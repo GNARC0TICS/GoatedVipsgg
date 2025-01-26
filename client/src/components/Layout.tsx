@@ -115,7 +115,7 @@ export function Layout({ children }: LayoutProps) {
                 <NavLink href="/" label="HOME" />
 
                 {/* Updated GET STARTED dropdown with hover */}
-                <div className="relative group">
+                <div className="relative group get-started-dropdown">
                   <Button
                     variant="ghost"
                     className="flex items-center gap-2 font-heading text-white group-hover:text-[#D7FF00] transition-all duration-300"

@@ -33,6 +33,25 @@ export function TutorialOverlay() {
     console.log("TutorialOverlay state:", { isOpen, currentStep });
 
     if (isOpen && steps[currentStep].element) {
+      // Handle dropdown expansion
+      if (steps[currentStep].autoExpand) {
+        const dropdown = document.querySelector(steps[currentStep].element);
+        if (dropdown) {
+          dropdown.classList.add('force-expanded');
+        }
+      }
+
+      // Handle navigation on next step
+      if (steps[currentStep].nextRoute) {
+        const handleNext = () => {
+          window.location.href = steps[currentStep].nextRoute;
+        };
+        const nextButton = document.querySelector('.tutorial-next-button');
+        if (nextButton) {
+          nextButton.addEventListener('click', handleNext);
+          return () => nextButton.removeEventListener('click', handleNext);
+        }
+      }
       const element = document.querySelector(steps[currentStep].element!);
       if (element) {
         const rect = element.getBoundingClientRect();
