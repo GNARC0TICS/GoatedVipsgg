@@ -26,11 +26,15 @@ export default function Home() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="mb-8"
           >
-            <img
-              src="/images/main.svg"
-              alt="Goated"
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
               className="mx-auto h-56 md:h-72 w-auto object-contain"
-            />
+            >
+              <source src="/images/main.mp4" type="video/mp4" />
+            </video>
           </motion.div>
 
           <motion.div
