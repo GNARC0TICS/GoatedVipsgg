@@ -26,15 +26,11 @@ export default function Home() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="mb-8"
           >
-            <div className="relative w-full h-0 pt-[56.2225%] mb-4 shadow-lg rounded-lg overflow-hidden">
-              <iframe 
-                loading="lazy" 
-                className="absolute w-full h-full top-0 left-0 border-0 p-0 m-0"
-                src="https://www.canva.com/design/DAGdQUhNLyY/Tgx6sb6YwG_q2f7p138Zjg/view?embed" 
-                allowFullScreen={true}
-                allow="fullscreen"
-              />
-            </div>
+            <img
+              src="/images/main.svg"
+              alt="Goated"
+              className="mx-auto h-56 md:h-72 w-auto object-contain"
+            />
           </motion.div>
 
           <motion.div
@@ -142,9 +138,9 @@ export default function Home() {
                                 }),
                               )
                             }
-                            className="w-full text-center py-3 mt-2 rounded-lg bg-[#D7FF00]/10 hover:bg-[#D7FF00]/20 transition-all duration-300"
+                            className="w-full text-center py-3 mt-2 rounded-lg bg-[#FFD700]/10 hover:bg-[#FFD700]/20 transition-all duration-300"
                           >
-                            <span className="font-mono text-[#D7FF00] text-xl">
+                            <span className="font-mono text-[#FFD700] text-xl">
                               {dailyLeader.name}
                             </span>
                             <div className="text-[#8A8B91] text-sm mt-1">
