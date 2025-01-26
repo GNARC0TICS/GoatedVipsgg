@@ -26,11 +26,15 @@ export default function Home() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="mb-8"
           >
-            <img
-              src="/images/Final LOGO LIVE.svg"
-              alt="Goated"
-              className="mx-auto h-56 md:h-72 w-auto object-contain animate-pulse entrance-zoom"
-            />
+            <div className="relative w-full h-0 pt-[56.2225%] mb-4 shadow-lg rounded-lg overflow-hidden">
+              <iframe 
+                loading="lazy" 
+                className="absolute w-full h-full top-0 left-0 border-0 p-0 m-0"
+                src="https://www.canva.com/design/DAGdQUhNLyY/Tgx6sb6YwG_q2f7p138Zjg/view?embed" 
+                allowFullScreen={true}
+                allow="fullscreen"
+              />
+            </div>
           </motion.div>
 
           <motion.div
