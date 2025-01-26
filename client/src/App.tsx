@@ -123,7 +123,6 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary FallbackComponent={ErrorFallback}>
         <AuthProvider>
-          <TutorialProvider>
             <Suspense fallback={<LoadingSpinner />}>
               <TooltipProvider>
                 <Router />
@@ -132,7 +131,6 @@ function App() {
                 <TutorialOverlay />
               </TooltipProvider>
             </Suspense>
-          </TutorialProvider>
         </AuthProvider>
       </ErrorBoundary>
     </QueryClientProvider>
