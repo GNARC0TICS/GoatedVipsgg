@@ -458,7 +458,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </footer>
       </div>
-    </TutorialProvider> {/* Closing TutorialProvider */}
+    </TutorialProvider>
   );
 }
 
