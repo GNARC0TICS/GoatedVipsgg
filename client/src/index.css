@@ -183,6 +183,13 @@ html {
   }
 }
 
+@keyframes trophyShake {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+  100% { transform: rotate(0deg); }
+}
+
 @layer components {
   .header-text {
     @apply font-heading font-extrabold uppercase tracking-tight;

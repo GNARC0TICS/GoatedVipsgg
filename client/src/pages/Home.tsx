@@ -31,7 +31,7 @@ export default function Home() {
               loop
               muted
               playsInline
-              className="mx-auto h-56 md:h-72 w-auto object-contain"
+              className="mx-auto h-64 md:h-80 w-auto object-contain" // Increased video size
             >
               <source src="/images/FINAL.mp4" type="video/mp4" />
             </video>
@@ -61,7 +61,7 @@ export default function Home() {
                     VIPBOOST
                   </div>
                 </div>
-                <div className="absolute inset-x-0 -bottom-8 opacity-0 group-hover:opacity-100 text-[#D7FF00] text-sm text-center transition-all duration-300">
+                <div className="absolute inset-x-0 top-full -mt-2 opacity-0 group-hover:opacity-100 text-[#D7FF00] text-sm text-center transition-all duration-300"> {/* Tooltip position changed */}
                   Use code VIPBOOST when signing up to instantly join our VIP program
                 </div>
               </div>
@@ -80,7 +80,21 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-b from-[#FFD700]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
                   <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#FFD700]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20">
                     <div className="flex items-center gap-4 mb-4">
-                      <Trophy className="h-12 w-12 text-[#FFD700]" />
+                      <Trophy 
+                        className="h-12 w-12 text-[#FFD700]" 
+                        style={{
+                          animation: 'trophyShake 0.5s ease-in-out',
+                          animationIterationCount: 1,
+                          animationDelay: '30s',
+                          animationPlayState: 'running',
+                          animationDirection: 'normal',
+                          animationFillMode: 'both',
+                          animationTimingFunction: 'ease-in-out',
+                          animationPlayState: 'running',
+                          animationDelay: '30s',
+                          animationIterationCount: 'infinite'
+                        }}
+                      />
                       <div>
                         <h3 className="text-2xl font-heading text-white mb-1">WEEKLY MVP</h3>
                         <p className="text-[#8A8B91] text-sm">Top performer this week</p>
@@ -104,7 +118,7 @@ export default function Home() {
                             }
                             className="w-full text-center py-3 mt-2 rounded-lg bg-[#FFD700]/10 hover:bg-[#FFD700]/20 transition-all duration-300"
                           >
-                            <span className="font-mono text-[#FFD700] text-xl">
+                            <span className="font-mono text-[#FFD700] text-xl font-bold"> {/* Username in bold */}
                               {weeklyLeader.name}
                             </span>
                             <div className="text-[#8A8B91] text-sm mt-1">
@@ -121,7 +135,21 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-b from-[#FFD700]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
                   <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20">
                     <div className="flex items-center gap-4 mb-4">
-                      <Trophy className="h-12 w-12 text-[#FFD700]" />
+                      <Trophy 
+                        className="h-12 w-12 text-[#FFD700]" 
+                        style={{
+                          animation: 'trophyShake 0.5s ease-in-out',
+                          animationIterationCount: 1,
+                          animationDelay: '30s',
+                          animationPlayState: 'running',
+                          animationDirection: 'normal',
+                          animationFillMode: 'both',
+                          animationTimingFunction: 'ease-in-out',
+                          animationPlayState: 'running',
+                          animationDelay: '30s',
+                          animationIterationCount: 'infinite'
+                        }}
+                      />
                       <div>
                         <h3 className="text-2xl font-heading text-white mb-1">DAILY MVP</h3>
                         <p className="text-[#8A8B91] text-sm">Top performer today</p>
@@ -144,7 +172,7 @@ export default function Home() {
                             }
                             className="w-full text-center py-3 mt-2 rounded-lg bg-[#FFD700]/10 hover:bg-[#FFD700]/20 transition-all duration-300"
                           >
-                            <span className="font-mono text-[#FFD700] text-xl">
+                            <span className="font-mono text-[#FFD700] text-xl font-bold"> {/* Username in bold */}
                               {dailyLeader.name}
                             </span>
                             <div className="text-[#8A8B91] text-sm mt-1">
