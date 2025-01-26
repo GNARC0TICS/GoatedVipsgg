@@ -25,7 +25,7 @@ import {
 import { FloatingSupport } from "./FloatingSupport";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from 'framer-motion';
-import { TutorialProvider } from "./TutorialContext"; // Assuming TutorialProvider is imported correctly
+import { TutorialProvider } from "./Tutorial/TutorialContext"; // Corrected import path
 
 
 interface LayoutProps {
@@ -90,7 +90,7 @@ export function Layout({ children }: LayoutProps) {
   }, []);
 
   return (
-    <TutorialProvider> {/* Added TutorialProvider */}
+    <TutorialProvider>
       <div className="min-h-screen bg-[#14151A] flex flex-col">
         <header className="fixed top-0 left-0 right-0 z-50">
           <div className="absolute inset-0 bg-[#14151A]/80 backdrop-blur-xl border-b border-[#2A2B31]/50" />
