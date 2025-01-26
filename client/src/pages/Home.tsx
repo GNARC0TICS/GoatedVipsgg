@@ -33,7 +33,7 @@ export default function Home() {
               playsInline
               className="mx-auto h-56 md:h-72 w-auto object-contain"
             >
-              <source src="/images/main.mp4" type="video/mp4" />
+              <source src="/images/FINAL.mp4" type="video/mp4" />
             </video>
           </motion.div>
 
@@ -118,10 +118,10 @@ export default function Home() {
                 </div>
 
                 <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#FFD700]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
                   <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20">
                     <div className="flex items-center gap-4 mb-4">
-                      <Trophy className="h-12 w-12 text-[#D7FF00]" />
+                      <Trophy className="h-12 w-12 text-[#FFD700]" />
                       <div>
                         <h3 className="text-2xl font-heading text-white mb-1">DAILY MVP</h3>
                         <p className="text-[#8A8B91] text-sm">Top performer today</p>
