@@ -10,28 +10,37 @@ export interface TutorialStep {
   position?: "top" | "bottom" | "left" | "right";
   page?: string; // Route to navigate to for this step
   action?: "click" | "hover" | "scroll" | null;
+  allowClose?: boolean; // Only show close button when true
 }
 
 // Tutorial steps - easily customizable
 export const tutorialSteps: TutorialStep[] = [
   {
     id: "welcome",
-    title: "Welcome to Goated Rewards! 🎉",
-    description: "Let's take a quick tour of our platform and show you how to maximize your rewards as an affiliate.",
-    position: "center",
+    title: "Welcome to Goated x Goombas VIPs! 🎉",
+    description: "Let's explore how to maximize your rewards as an affiliate. I'll guide you through our platform's key features.",
+    position: "bottom",
   },
   {
     id: "get-started",
     title: "Getting Started",
-    description: "Click here to learn the basics of our platform, including tips and strategies for success.",
-    element: "#get-started-button",
+    description: "Click the GET STARTED dropdown to learn the basics of our platform. You'll find our comprehensive guide under 'How It Works'.",
+    element: "#get-started-dropdown",
     position: "bottom",
-    action: "hover",
+    action: "click",
+  },
+  {
+    id: "how-it-works",
+    title: "Platform Guide",
+    description: "Click 'How It Works' to see a detailed guide on linking your account and maximizing your rewards.",
+    element: "#how-it-works-button",
+    position: "bottom",
+    page: "/how-it-works",
   },
   {
     id: "leaderboard",
-    title: "Competitive Rankings",
-    description: "Track your performance and compete with other affiliates on our leaderboards.",
+    title: "Track Your Progress",
+    description: "View your ranking and compete with other affiliates on our leaderboards.",
     element: "#leaderboard-nav",
     position: "bottom",
     page: "/leaderboard",
@@ -39,7 +48,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "vip-program",
     title: "VIP Benefits",
-    description: "Discover exclusive rewards and benefits as you progress through our VIP tiers.",
+    description: "Discover exclusive rewards and perks in our VIP program.",
     element: "#vip-program-link",
     position: "bottom",
     page: "/vip-program",
@@ -47,9 +56,10 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "telegram",
     title: "Join Our Community",
-    description: "Connect with other affiliates and stay updated with our latest news on Telegram.",
+    description: "Connect with other affiliates and get instant updates on bonus codes through our Telegram channel.",
     element: "#telegram-link",
     position: "bottom",
+    page: "/telegram",
   },
   {
     id: "support",
@@ -57,13 +67,7 @@ export const tutorialSteps: TutorialStep[] = [
     description: "Need help? Our support team is always here to assist you.",
     element: "#support-button",
     position: "right",
-  },
-  {
-    id: "newsletter",
-    title: "Stay Updated",
-    description: "Subscribe to our newsletter for exclusive offers and updates.",
-    element: "#newsletter-form",
-    position: "top",
+    allowClose: true,
   },
 ];
 
@@ -96,10 +100,13 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   };
 
   const closeTutorial = () => {
-    setIsOpen(false);
-    setCurrentStep(0);
-    setHasSeenTutorial(true);
-    localStorage.setItem("hasSeenTutorial", "true");
+    // Only close if the current step allows it
+    if (tutorialSteps[currentStep].allowClose) {
+      setIsOpen(false);
+      setCurrentStep(0);
+      setHasSeenTutorial(true);
+      localStorage.setItem("hasSeenTutorial", "true");
+    }
   };
 
   const nextStep = () => {
@@ -110,7 +117,9 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
       }
       setCurrentStep(currentStep + 1);
     } else {
-      closeTutorial();
+      setIsOpen(false);
+      setHasSeenTutorial(true);
+      localStorage.setItem("hasSeenTutorial", "true");
     }
   };
 

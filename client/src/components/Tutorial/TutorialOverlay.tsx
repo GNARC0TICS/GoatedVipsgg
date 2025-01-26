@@ -59,13 +59,12 @@ export function TutorialOverlay() {
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center">
-        {/* Backdrop */}
+        {/* Backdrop - removed onClick to prevent closing */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="absolute inset-0 bg-black/50"
-          onClick={closeTutorial}
         />
 
         {/* Highlight box for current element */}
@@ -108,14 +107,17 @@ export function TutorialOverlay() {
                 <CardTitle className="text-xl text-white">
                   {currentTutorialStep.title}
                 </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={closeTutorial}
-                  className="h-8 w-8"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                {/* Only show close button if explicitly requested */}
+                {currentTutorialStep.allowClose && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={closeTutorial}
+                    className="h-8 w-8"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
               <CardDescription className="text-[#8A8B91]">
                 Step {currentStep + 1} of {steps.length}

@@ -40,7 +40,7 @@ export function TutorialPrompt() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-xl text-white">
-                Welcome to Goated Rewards! 🎉
+                Welcome to Goated x Goombas VIPs! 🎉
               </CardTitle>
               <Button
                 variant="ghost"
