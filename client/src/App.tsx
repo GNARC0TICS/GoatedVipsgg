@@ -30,6 +30,10 @@ import GoatedToken from "@/pages/GoatedToken";
 import Support from "@/pages/support";
 import FAQ from "@/pages/faq";
 import VipProgram from "./pages/VipProgram";
+import { TutorialProvider } from "@/components/Tutorial/TutorialContext";
+import { TutorialOverlay } from "@/components/Tutorial/TutorialOverlay";
+import { TutorialPrompt } from "@/components/Tutorial/TutorialPrompt";
+
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -119,12 +123,16 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary FallbackComponent={ErrorFallback}>
         <AuthProvider>
-          <Suspense fallback={<LoadingSpinner />}>
-            <TooltipProvider>
-              <Router />
-              <Toaster />
-            </TooltipProvider>
-          </Suspense>
+          <TutorialProvider>
+            <Suspense fallback={<LoadingSpinner />}>
+              <TooltipProvider>
+                <Router />
+                <Toaster />
+                <TutorialPrompt />
+                <TutorialOverlay />
+              </TooltipProvider>
+            </Suspense>
+          </TutorialProvider>
         </AuthProvider>
       </ErrorBoundary>
     </QueryClientProvider>
