@@ -29,7 +29,7 @@ export default function Home() {
             <img
               src="/images/Final LOGO LIVE.svg"
               alt="Goated"
-              className="mx-auto h-56 md:h-72 w-auto object-contain"
+              className="mx-auto h-56 md:h-72 w-auto object-contain animate-pulse entrance-zoom"
             />
           </motion.div>
 
