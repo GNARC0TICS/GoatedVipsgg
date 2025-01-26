@@ -126,12 +126,12 @@ export function Layout({ children }: LayoutProps) {
                   <div className="absolute left-0 mt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                     <div className="bg-[#1A1B21] border border-[#2A2B31] rounded-lg shadow-lg py-1">
                       <Link href="/how-it-works">
-                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                        <div className="px-4 py-2 font-bold hover:text-[#D7FF00] transition-colors duration-200 cursor-pointer">
                           How It Works
                         </div>
                       </Link>
                       <Link href="/tips-and-strategies">
-                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                        <div className="px-4 py-2 font-bold hover:text-[#D7FF00] transition-colors duration-200 cursor-pointer">
                           Tips & Strategies
                         </div>
                       </Link>
@@ -171,12 +171,12 @@ export function Layout({ children }: LayoutProps) {
                   <div className="absolute left-0 mt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                     <div className="bg-[#1A1B21] border border-[#2A2B31] rounded-lg shadow-lg py-1">
                       <Link href="/leaderboard?period=daily">
-                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                        <div className="px-4 py-2 font-bold hover:text-[#D7FF00] transition-colors duration-200 cursor-pointer">
                           Daily
                         </div>
                       </Link>
                       <Link href="/leaderboard?period=weekly">
-                        <div className="px-4 py-2 font-bold hover:bg-[#D7FF00]/10 hover:text-[#D7FF00] transition-all duration-200 cursor-pointer">
+                        <div className="px-4 py-2 font-bold hover:text-[#D7FF00] transition-colors duration-200 cursor-pointer">
                           Weekly
                         </div>
                       </Link>
