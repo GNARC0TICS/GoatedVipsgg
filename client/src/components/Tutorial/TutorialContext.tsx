@@ -21,15 +21,37 @@ export const tutorialSteps: TutorialStep[] = [
     title: "Welcome to Goated x Goombas VIPs! 🎉",
     description: "Let's explore how to maximize your rewards as an affiliate. I'll guide you through our platform's key features.",
     position: "bottom",
+    allowClose: true
   },
   {
-    id: "get-started",
-    title: "Getting Started",
-    description: "Click the GET STARTED dropdown to access our platform features. This menu contains essential information about our program.",
-    element: "#get-started-dropdown",
+    id: "leaderboard",
+    title: "Leaderboard",
+    description: "Check your ranking and compete with other affiliates. Click here to view the leaderboard.",
+    element: "[data-tutorial='leaderboard']",
     position: "bottom",
     action: "click",
-    highlightStyle: "click"
+    highlightStyle: "click",
+    page: "/leaderboard"
+  },
+  {
+    id: "wager-races",
+    title: "Wager Races",
+    description: "Participate in exciting wager races for additional rewards!",
+    element: "[data-tutorial='wager-races']",
+    position: "bottom",
+    action: "click",
+    highlightStyle: "click",
+    page: "/wager-races"
+  },
+  {
+    id: "vip-program",
+    title: "VIP Program",
+    description: "Learn about our exclusive VIP benefits and rewards.",
+    element: "[data-tutorial='vip-program']",
+    position: "bottom",
+    action: "click",
+    highlightStyle: "click",
+    page: "/vip-program"
   },
   {
     id: "wager-races",

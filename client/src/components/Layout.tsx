@@ -513,6 +513,7 @@ function MobileNavLink({ href, label }: { href: string; label: string | React.Re
   return (
     <Link href={href}>
       <motion.div
+        data-tutorial={href.replace('/', '')}
         whileHover={{ x: 8, scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         className={`px-4 py-2 rounded-lg transition-all duration-200 ${

@@ -70,9 +70,11 @@ export function TutorialOverlay() {
   const isLastStep = currentStep === steps.length - 1;
   const isFirstStep = currentStep === 0;
 
+  const isMobile = window.innerWidth <= 768;
+  
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[200] flex items-center justify-center">
+      <div className="fixed inset-0 z-[200] flex items-center justify-center md:items-start">
         {/* Semi-transparent backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -127,13 +129,21 @@ export function TutorialOverlay() {
           className="relative z-[220]"
           style={{
             position: "absolute",
-            ...(currentTutorialStep.position === "bottom"
-              ? { top: highlightPosition.top + highlightPosition.height + 20 }
-              : currentTutorialStep.position === "top"
-              ? { bottom: window.innerHeight - highlightPosition.top + 20 }
-              : { top: "50%" }),
-            left: "50%",
-            transform: "translateX(-50%)",
+            ...(window.innerWidth <= 768 
+              ? {
+                  bottom: 20,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                }
+              : {
+                  ...(currentTutorialStep.position === "bottom"
+                    ? { top: highlightPosition.top + highlightPosition.height + 20 }
+                    : currentTutorialStep.position === "top"
+                    ? { bottom: window.innerHeight - highlightPosition.top + 20 }
+                    : { top: "50%" }),
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                }),
           }}
         >
           <Card className="w-[400px] bg-[#1A1B21] border-[#2A2B31] shadow-xl">
