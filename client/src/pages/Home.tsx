@@ -27,9 +27,9 @@ export default function Home() {
             className="mb-8"
           >
             <img
-              src="/images/Goated logo with text.png"
+              src="/images/Final LOGO LIVE.svg"
               alt="Goated"
-              className="mx-auto h-56 md:h-72 w-auto object-contain wiggle-animation"
+              className="mx-auto h-56 md:h-72 w-auto object-contain"
             />
           </motion.div>
 
