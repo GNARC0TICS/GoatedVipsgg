@@ -71,6 +71,44 @@ export const tutorialSteps: TutorialStep[] = [
   },
 ];
 
+interface TutorialState {
+  version: number;
+  hasSeenTutorial: boolean;
+  lastCompletedStep: number;
+  lastVisitDate: string;
+}
+
+const TUTORIAL_VERSION = 1; // Increment this when tutorial content changes significantly
+const TUTORIAL_STORAGE_KEY = 'tutorial_state';
+
+const getInitialTutorialState = (): TutorialState => {
+  try {
+    const savedState = localStorage.getItem(TUTORIAL_STORAGE_KEY);
+    if (savedState) {
+      const parsed = JSON.parse(savedState);
+      // If saved version is different from current, treat as new
+      if (parsed.version !== TUTORIAL_VERSION) {
+        return {
+          version: TUTORIAL_VERSION,
+          hasSeenTutorial: false,
+          lastCompletedStep: -1,
+          lastVisitDate: new Date().toISOString()
+        };
+      }
+      return parsed;
+    }
+  } catch (error) {
+    console.error('Error reading tutorial state:', error);
+  }
+
+  return {
+    version: TUTORIAL_VERSION,
+    hasSeenTutorial: false,
+    lastCompletedStep: -1,
+    lastVisitDate: new Date().toISOString()
+  };
+};
+
 interface TutorialContextType {
   isOpen: boolean;
   currentStep: number;
@@ -82,6 +120,7 @@ interface TutorialContextType {
   goToStep: (step: number) => void;
   hasSeenTutorial: boolean;
   setHasSeenTutorial: (value: boolean) => void;
+  resetTutorial: () => void; // New function to reset tutorial state
 }
 
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
@@ -89,17 +128,24 @@ const TutorialContext = createContext<TutorialContextType | undefined>(undefined
 export function TutorialProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [hasSeenTutorial, setHasSeenTutorial] = useState(() => {
-    // Initialize from localStorage, default to false if not found
-    const saved = localStorage.getItem("hasSeenTutorial");
-    return saved ? JSON.parse(saved) : false;
-  });
+  const [tutorialState, setTutorialState] = useState<TutorialState>(getInitialTutorialState);
   const [, setLocation] = useLocation();
+
+  const saveTutorialState = (newState: Partial<TutorialState>) => {
+    const updatedState = {
+      ...tutorialState,
+      ...newState,
+      lastVisitDate: new Date().toISOString()
+    };
+    setTutorialState(updatedState);
+    localStorage.setItem(TUTORIAL_STORAGE_KEY, JSON.stringify(updatedState));
+    console.log('Saved tutorial state:', updatedState);
+  };
 
   // Debug logs
   useEffect(() => {
-    console.log("Tutorial State:", { isOpen, currentStep, hasSeenTutorial });
-  }, [isOpen, currentStep, hasSeenTutorial]);
+    console.log("Tutorial State:", { isOpen, currentStep, tutorialState });
+  }, [isOpen, currentStep, tutorialState]);
 
   const openTutorial = () => {
     console.log("Opening tutorial...");
@@ -113,8 +159,10 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
       console.log("Closing tutorial...");
       setIsOpen(false);
       setCurrentStep(0);
-      setHasSeenTutorial(true);
-      localStorage.setItem("hasSeenTutorial", "true");
+      saveTutorialState({
+        hasSeenTutorial: true,
+        lastCompletedStep: currentStep
+      });
     }
   };
 
@@ -126,11 +174,14 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
         setLocation(nextStep.page);
       }
       setCurrentStep(currentStep + 1);
+      saveTutorialState({ lastCompletedStep: currentStep });
     } else {
       console.log("Tutorial completed");
       setIsOpen(false);
-      setHasSeenTutorial(true);
-      localStorage.setItem("hasSeenTutorial", "true");
+      saveTutorialState({
+        hasSeenTutorial: true,
+        lastCompletedStep: currentStep
+      });
     }
   };
 
@@ -156,6 +207,20 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const resetTutorial = () => {
+    console.log("Resetting tutorial state...");
+    const initialState = {
+      version: TUTORIAL_VERSION,
+      hasSeenTutorial: false,
+      lastCompletedStep: -1,
+      lastVisitDate: new Date().toISOString()
+    };
+    setTutorialState(initialState);
+    localStorage.setItem(TUTORIAL_STORAGE_KEY, JSON.stringify(initialState));
+    setIsOpen(false);
+    setCurrentStep(0);
+  };
+
   return (
     <TutorialContext.Provider
       value={{
@@ -167,8 +232,10 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
         nextStep,
         prevStep,
         goToStep,
-        hasSeenTutorial,
-        setHasSeenTutorial,
+        hasSeenTutorial: tutorialState.hasSeenTutorial,
+        setHasSeenTutorial: (value) => 
+          saveTutorialState({ hasSeenTutorial: value }),
+        resetTutorial,
       }}
     >
       {children}

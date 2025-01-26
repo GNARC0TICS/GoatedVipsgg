@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 
 export function TutorialPrompt() {
-  const { hasSeenTutorial, setHasSeenTutorial, openTutorial } = useTutorial();
+  const { hasSeenTutorial, setHasSeenTutorial, openTutorial, resetTutorial } = useTutorial();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -36,6 +36,13 @@ export function TutorialPrompt() {
     console.log("Starting tutorial");
     setIsVisible(false);
     openTutorial();
+  };
+
+  // For development/testing only
+  const handleReset = () => {
+    console.log("Resetting tutorial");
+    resetTutorial();
+    setIsVisible(true);
   };
 
   if (!isVisible) return null;
