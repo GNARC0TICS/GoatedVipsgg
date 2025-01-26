@@ -61,7 +61,7 @@ export default function Home() {
                     VIPBOOST
                   </div>
                 </div>
-                <div className="absolute inset-x-0 top-full -mt-2 opacity-0 group-hover:opacity-100 text-[#D7FF00] text-sm text-center transition-all duration-300"> {/* Tooltip position changed */}
+                <div className="absolute inset-x-0 bottom-full mb-2 opacity-0 group-hover:opacity-100 text-[#D7FF00] text-sm text-center transition-all duration-300 bg-[#1A1B21] p-2 rounded-lg"> {/* Tooltip position changed */}
                   Use code VIPBOOST when signing up to instantly join our VIP program
                 </div>
               </div>
@@ -81,19 +81,7 @@ export default function Home() {
                   <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#FFD700]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20">
                     <div className="flex items-center gap-4 mb-4">
                       <Trophy 
-                        className="h-12 w-12 text-[#FFD700]" 
-                        style={{
-                          animation: 'trophyShake 0.5s ease-in-out',
-                          animationIterationCount: 1,
-                          animationDelay: '30s',
-                          animationPlayState: 'running',
-                          animationDirection: 'normal',
-                          animationFillMode: 'both',
-                          animationTimingFunction: 'ease-in-out',
-                          animationPlayState: 'running',
-                          animationDelay: '30s',
-                          animationIterationCount: 'infinite'
-                        }}
+                        className="h-12 w-12 text-[#FFD700] transition-transform duration-300 group-hover:animate-bounce" 
                       />
                       <div>
                         <h3 className="text-2xl font-heading text-white mb-1">WEEKLY MVP</h3>
@@ -118,9 +106,12 @@ export default function Home() {
                             }
                             className="w-full text-center py-3 mt-2 rounded-lg bg-[#FFD700]/10 hover:bg-[#FFD700]/20 transition-all duration-300"
                           >
-                            <span className="font-mono text-[#FFD700] text-xl font-bold"> {/* Username in bold */}
+                            <button
+                              onClick={() => window.dispatchEvent(new CustomEvent("openQuickProfile", { detail: weeklyLeader.uid }))}
+                              className="font-mono text-[#FFD700] text-xl font-bold hover:text-[#FFD700]/80 transition-colors"
+                            >
                               {weeklyLeader.name}
-                            </span>
+                            </button>
                             <div className="text-[#8A8B91] text-sm mt-1">
                               ${weeklyLeader.wagered?.this_week?.toLocaleString() || "0"} wagered
                             </div>
@@ -136,19 +127,7 @@ export default function Home() {
                   <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20">
                     <div className="flex items-center gap-4 mb-4">
                       <Trophy 
-                        className="h-12 w-12 text-[#FFD700]" 
-                        style={{
-                          animation: 'trophyShake 0.5s ease-in-out',
-                          animationIterationCount: 1,
-                          animationDelay: '30s',
-                          animationPlayState: 'running',
-                          animationDirection: 'normal',
-                          animationFillMode: 'both',
-                          animationTimingFunction: 'ease-in-out',
-                          animationPlayState: 'running',
-                          animationDelay: '30s',
-                          animationIterationCount: 'infinite'
-                        }}
+                        className="h-12 w-12 text-[#FFD700] transition-transform duration-300 group-hover:animate-bounce" 
                       />
                       <div>
                         <h3 className="text-2xl font-heading text-white mb-1">DAILY MVP</h3>
@@ -172,9 +151,12 @@ export default function Home() {
                             }
                             className="w-full text-center py-3 mt-2 rounded-lg bg-[#FFD700]/10 hover:bg-[#FFD700]/20 transition-all duration-300"
                           >
-                            <span className="font-mono text-[#FFD700] text-xl font-bold"> {/* Username in bold */}
+                            <button
+                              onClick={() => window.dispatchEvent(new CustomEvent("openQuickProfile", { detail: dailyLeader.uid }))}
+                              className="font-mono text-[#FFD700] text-xl font-bold hover:text-[#FFD700]/80 transition-colors"
+                            >
                               {dailyLeader.name}
-                            </span>
+                            </button>
                             <div className="text-[#8A8B91] text-sm mt-1">
                               ${dailyLeader.wagered?.today?.toLocaleString() || "0"} wagered
                             </div>
