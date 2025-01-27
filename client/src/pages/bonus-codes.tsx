@@ -46,7 +46,7 @@ export default function BonusCodes() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-12"
         >
-          <div className="w-full max-w-6xl mx-auto mb-8">
+          <div className="w-full max-w-3xl mx-auto mb-8">
             <video
               autoPlay
               muted
