@@ -61,6 +61,7 @@ function setupRESTRoutes(app: Express) {
           acc[period] = {
             username: data.name,
             wagerAmount: data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'],
+            wageredAllTime: data.wagered.all_time,
             rank: 1,
             lastActive: new Date().toISOString() // This would ideally come from the API
           };
