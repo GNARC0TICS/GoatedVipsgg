@@ -1,6 +1,5 @@
 import { Trophy } from "lucide-react";
 import { motion } from "framer-motion";
-import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 
 type MVP = {
@@ -11,10 +10,46 @@ type MVP = {
 };
 
 const timeframes = [
-  { title: "Daily MVP", period: "daily", gradient: "from-[#FFD700]", shadow: "shadow-[#FFD700]" },
-  { title: "Weekly MVP", period: "weekly", gradient: "from-[#C0C0C0]", shadow: "shadow-[#C0C0C0]" },
-  { title: "Monthly MVP", period: "monthly", gradient: "from-[#CD7F32]", shadow: "shadow-[#CD7F32]" }
+  { 
+    title: "Daily MVP", 
+    period: "daily", 
+    colors: {
+      primary: "from-violet-500",
+      secondary: "to-fuchsia-500",
+      accent: "violet-500",
+      shine: "violet-300"
+    }
+  },
+  { 
+    title: "Weekly MVP", 
+    period: "weekly", 
+    colors: {
+      primary: "from-emerald-500",
+      secondary: "to-teal-500",
+      accent: "emerald-500",
+      shine: "emerald-300"
+    }
+  },
+  { 
+    title: "Monthly MVP", 
+    period: "monthly", 
+    colors: {
+      primary: "from-amber-500",
+      secondary: "to-orange-500",
+      accent: "amber-500",
+      shine: "amber-300"
+    }
+  }
 ];
+
+// Function to determine VIP tier based on wager amount
+function getVipTier(wagerAmount: number) {
+  if (wagerAmount >= 1000000) return "DIAMOND";
+  if (wagerAmount >= 500000) return "PLATINUM";
+  if (wagerAmount >= 100000) return "GOLD";
+  if (wagerAmount >= 50000) return "SILVER";
+  return "BRONZE";
+}
 
 export function MVPCards() {
   const { data: mvps, isLoading } = useQuery<Record<string, MVP>>({
@@ -25,91 +60,93 @@ export function MVPCards() {
     return (
       <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
         {timeframes.map((timeframe) => (
-          <Card key={timeframe.period} className="p-6 bg-[#1A1B21]/50 animate-pulse h-40">
+          <div key={timeframe.period} className="p-6 bg-[#1A1B21]/50 animate-pulse h-48 rounded-xl">
             <div className="h-full"></div>
-          </Card>
+          </div>
         ))}
       </div>
     );
   }
 
   return (
-    <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
+    <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto perspective-1000">
       {timeframes.map((timeframe) => (
         <motion.div
           key={timeframe.period}
-          initial={{ opacity: 0, y: 20, rotateX: -10 }}
+          initial={{ opacity: 0, y: 20, rotateX: -15 }}
           animate={{ opacity: 1, y: 0, rotateX: 0 }}
           whileHover={{ 
-            scale: 1.05, 
+            scale: 1.02,
             rotateY: 5,
-            z: 50 
+            rotateX: 5,
+            z: 50
           }}
-          drag
-          dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-          dragElastic={0.1}
-          whileTap={{ scale: 0.95 }}
           transition={{
             type: "spring",
-            stiffness: 300,
-            damping: 20
+            stiffness: 400,
+            damping: 30
           }}
           className={`
-            relative overflow-hidden p-6 transform-gpu
-            bg-gradient-to-br ${timeframe.gradient}/10 to-transparent
-            border border-${timeframe.gradient}/20
-            backdrop-blur-sm rounded-xl
-            ${timeframe.shadow}/20
-            hover:shadow-lg hover:shadow-${timeframe.shadow}/30
-            transition-all duration-300
-            cursor-grab active:cursor-grabbing
+            relative transform-gpu
+            rounded-xl overflow-hidden
+            bg-gradient-to-br ${timeframe.colors.primary} ${timeframe.colors.secondary}
+            shadow-xl
           `}
         >
-          <div className="absolute inset-0 bg-gradient-to-b opacity-10 blur-sm" />
+          {/* Shiny overlay */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50" />
+          <div className="absolute inset-0 bg-gradient-to-bl from-white/5 via-transparent to-black/20" />
 
-          <div className="relative">
+          {/* Card content */}
+          <div className="relative p-6 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Trophy className={`h-5 w-5 text-${timeframe.gradient}`} />
-                <h3 className="text-lg font-heading text-white">{timeframe.title}</h3>
+                <Trophy className={`h-6 w-6 text-${timeframe.colors.shine}`} />
+                <h3 className="text-xl font-heading text-white">{timeframe.title}</h3>
               </div>
             </div>
 
             {mvps[timeframe.period] ? (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   {mvps[timeframe.period].avatarUrl ? (
                     <img 
                       src={mvps[timeframe.period].avatarUrl} 
                       alt={mvps[timeframe.period].username}
-                      className="w-10 h-10 rounded-full border-2 border-[#D7FF00]"
+                      className={`w-12 h-12 rounded-full border-2 border-${timeframe.colors.accent}`}
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-[#2A2B31] flex items-center justify-center">
-                      <span className="text-lg text-[#D7FF00] font-bold">
+                    <div className={`w-12 h-12 rounded-full bg-${timeframe.colors.accent}/20 flex items-center justify-center`}>
+                      <span className={`text-lg text-${timeframe.colors.shine} font-bold`}>
                         {mvps[timeframe.period].username.charAt(0).toUpperCase()}
                       </span>
                     </div>
                   )}
                   <div>
-                    <h4 className="text-base font-heading text-white">
+                    <h4 className="text-lg font-heading text-white">
                       {mvps[timeframe.period].username}
                     </h4>
-                    <p className="text-xs text-[#8A8B91]">
-                      Rank #{mvps[timeframe.period].rank}
-                    </p>
+                    <div className={`text-xs px-2 py-1 rounded-full bg-${timeframe.colors.accent}/20 inline-block`}>
+                      <span className={`text-${timeframe.colors.shine} font-bold`}>
+                        {getVipTier(mvps[timeframe.period].wagerAmount)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex justify-between items-center text-sm mt-2">
-                  <span className="text-[#8A8B91]">Wagered:</span>
-                  <span className="text-white font-mono">
+                <div className="flex justify-between items-center text-sm mt-2 bg-black/20 p-3 rounded-lg">
+                  <span className="text-white/70">Total Wagered:</span>
+                  <span className="text-white font-mono font-bold">
                     ${mvps[timeframe.period].wagerAmount.toLocaleString()}
                   </span>
                 </div>
               </div>
             ) : (
-              <p className="text-[#8A8B91] text-center text-sm">No data available</p>
+              <p className="text-white/70 text-center text-sm">No data available</p>
             )}
+
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-white/10 to-transparent rounded-full blur-xl transform translate-x-12 -translate-y-8" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-black/20 to-transparent rounded-full blur-xl transform -translate-x-16 translate-y-16" />
           </div>
         </motion.div>
       ))}
