@@ -37,8 +37,8 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
         className="flex flex-col items-center gap-8"
       >
         <img
-          src="/images/Goated Logo - Yellow.png"
-          alt="Goated Logo"
+          src="/images/preload.PNG"
+          alt="Goated Preloader"
           className="w-32 h-32 object-contain"
         />
         <div className="w-64 h-1 bg-[#2A2B31] rounded-full overflow-hidden">
