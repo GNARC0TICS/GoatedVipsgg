@@ -130,10 +130,10 @@ function MVPCard({
                     )}
                     <div className="flex-grow min-w-0">
                       <QuickProfile userId={mvp.uid} username={mvp.username}>
-                        <h4 className="text-base font-heading text-white truncate hover:text-[#D7FF00] transition-colors">
+                        <h4 className="text-base font-heading text-white truncate hover:text-[#D7FF00] transition-colors cursor-pointer">
                           {mvp.username}
                         </h4>
-                    </QuickProfile>
+                      </QuickProfile>
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-sm bg-black/40 p-2 rounded-lg">
