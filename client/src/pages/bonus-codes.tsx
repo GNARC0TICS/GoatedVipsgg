@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Gift, Copy, Bell, CheckCircle, ArrowLeft } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 
 export default function BonusCodes() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -34,7 +34,7 @@ export default function BonusCodes() {
   return (
     <div className="min-h-screen bg-[#14151A]">
       <div className="container mx-auto px-4 py-8">
-        <Link href="/">
+        <Link to="/">
           <Button variant="ghost" className="mb-8 hover:bg-[#1A1B21]/50">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Home
