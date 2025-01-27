@@ -245,7 +245,7 @@ export default function Promotions() {
                     <div className="flex items-center gap-4 text-sm text-[#8A8B91]">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        <span>Valid until {promo.validUntil}</span>
+                        <span>{promo.validUntil === "Ongoing" ? "No Expiry Date" : `Valid until ${promo.validUntil}`}</span>
                       </div>
                       <Badge variant="outline">{promo.category}</Badge>
                     </div>
