@@ -8,6 +8,7 @@ type MVP = {
   wagerAmount: number;
   avatarUrl?: string;
   rank: number;
+  lastActive: string;
 };
 
 const timeframes = [
@@ -81,7 +82,7 @@ export function MVPCard({
           absolute inset-0
           rounded-xl overflow-hidden
           bg-gradient-to-br from-[#1A1B21] to-[#2A2B31]
-          border border-${timeframe.colors.primary}/20
+          border border-${timeframe.colors.accent}/20
           shadow-lg
           transition-all duration-300
           ${isFlipped ? 'backface-hidden' : ''}
@@ -124,16 +125,20 @@ export function MVPCard({
                   <h4 className="text-base md:text-lg font-heading text-white">
                     {mvp.username}
                   </h4>
-                  <div className={`text-xs px-2 py-1 rounded-full bg-${timeframe.colors.accent}/20 inline-block`}>
-                    <span className="text-white font-bold">
-                      {getVipTier(mvp.wagerAmount)}
-                    </span>
-                  </div>
+                  <p className="text-sm text-white/70">
+                    Rank #{mvp.rank}
+                  </p>
                 </div>
               </div>
 
               <div className="mt-auto">
-                <div className="text-center text-xs text-white/50">Click to view stats</div>
+                <div className="bg-black/20 p-3 rounded-lg">
+                  <div className="text-sm text-white/70">Current Wager</div>
+                  <div className="text-lg font-mono font-bold text-white">
+                    ${mvp.wagerAmount.toLocaleString()}
+                  </div>
+                </div>
+                <div className="text-center text-xs text-white/50 mt-2">Click to view stats</div>
               </div>
             </div>
           ) : (
@@ -148,7 +153,7 @@ export function MVPCard({
           absolute inset-0
           rounded-xl overflow-hidden
           bg-gradient-to-br from-[#1A1B21] to-[#2A2B31]
-          border border-${timeframe.colors.primary}/20
+          border border-${timeframe.colors.accent}/20
           shadow-lg
           backface-hidden [transform:rotateY(180deg)]
           ${!isFlipped ? 'pointer-events-none' : ''}
@@ -171,6 +176,12 @@ export function MVPCard({
                 <div className="text-sm text-white/70 mb-1">VIP Status</div>
                 <div className="text-lg font-bold text-white">
                   {getVipTier(mvp.wagerAmount)}
+                </div>
+              </div>
+              <div className="bg-black/20 p-3 rounded-lg">
+                <div className="text-sm text-white/70 mb-1">Last Seen</div>
+                <div className="text-base text-white">
+                  {new Date(mvp.lastActive).toLocaleDateString()}
                 </div>
               </div>
               <div className="mt-4 text-center text-xs text-white/50">
