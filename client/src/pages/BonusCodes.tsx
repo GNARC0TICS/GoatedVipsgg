@@ -56,7 +56,7 @@ export default function BonusCodes() {
               playsInline
               className="mx-auto h-48 md:h-64 w-auto object-contain"
             >
-              <source src="/images/BONUSHEAD.MP4" type="video/mp4" />
+              <source src="/images/Page Headers/BONUSHEAD.MP4" type="video/mp4" />
             </video>
           </div>
           <p className="text-xl text-[#8A8B91] max-w-2xl mx-auto mb-6">

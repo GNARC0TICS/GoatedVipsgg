@@ -54,7 +54,7 @@ export default function Leaderboard() {
               playsInline
               className="mx-auto h-48 md:h-64 w-auto object-contain"
             >
-              <source src="/images/WAGERLB.mp4" type="video/mp4" />
+              <source src="/images/Page Headers/WAGERLB.MP4" type="video/mp4" />
             </video>
           </div>
 

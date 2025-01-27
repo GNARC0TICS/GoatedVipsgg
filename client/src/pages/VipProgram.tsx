@@ -129,7 +129,7 @@ export default function VipProgram() {
             playsInline
             className="mx-auto h-48 md:h-64 w-auto object-contain"
           >
-            <source src="/images/VIPHEAD.MP4" type="video/mp4" />
+            <source src="/images/Page Headers/VIPHEAD.MP4" type="video/mp4" />
           </video>
         </div>
 
