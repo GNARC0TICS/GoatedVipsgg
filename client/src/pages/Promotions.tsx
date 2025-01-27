@@ -13,18 +13,48 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
-// Temporary data structure for promotions
+// Current active promotions
 const PROMOTIONS = [
   {
     id: 1,
-    title: "Example Promotion",
-    description: "This is a placeholder for promotion description...",
-    imageUrl: "/images/PROMOS/placeholder.jpg",
-    category: "Casino",
-    validUntil: "2024-02-28",
+    title: "Weekly Wager Race",
+    description: "Compete in our weekly wager race for a chance to win exclusive prizes and bonuses. Top wagerers will be rewarded!",
+    imageUrl: "/images/PROMOS/WEEKLYRACE.WEBP",
+    category: "VIP",
+    validUntil: "2024-12-31",
     isNew: true,
     link: "https://www.goated.com/promotions",
   },
+  {
+    id: 2,
+    title: "Lunar New Year Special",
+    description: "Celebrate the Lunar New Year with special bonuses and rewards. Limited time offer!",
+    imageUrl: "/images/PROMOS/LUNAR1.WEBP",
+    category: "Casino",
+    validUntil: "2024-02-29",
+    isNew: true,
+    link: "https://www.goated.com/promotions",
+  },
+  {
+    id: 3,
+    title: "Pragmatic Play Tournament",
+    description: "Join our exclusive Pragmatic Play tournament for a chance to win big prizes and boost your winnings!",
+    imageUrl: "/images/PROMOS/PRAG1.WEBP",
+    category: "Casino",
+    validUntil: "2024-03-31",
+    isNew: false,
+    link: "https://www.goated.com/promotions",
+  },
+  {
+    id: 4,
+    title: "Weekly Challenge",
+    description: "Take part in our weekly challenges to earn rewards and climb the leaderboard rankings!",
+    imageUrl: "/images/PROMOS/CHLNG1.WEBP",
+    category: "Sports",
+    validUntil: "2024-12-31",
+    isNew: false,
+    link: "https://www.goated.com/promotions",
+  }
 ];
 
 export default function Promotions() {
