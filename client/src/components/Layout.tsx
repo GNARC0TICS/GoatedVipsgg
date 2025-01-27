@@ -1,7 +1,7 @@
-import { ReactNode } from "react";
+import { ReactNode, useContext } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetContext } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
 import { useQuery } from "@tanstack/react-query";
@@ -321,15 +321,15 @@ export function Layout({ children }: LayoutProps) {
                       className="flex flex-col gap-4 pt-8"
                     >
                       <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">MENU</div>
-                      <MobileNavLink href="/" label="Home" onNavigate={() => setOpenMobile(false)} />
+                      <MobileNavLink href="/" label="Home" />
 
-                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">GET STARTED</div>
-                      <MobileNavLink href="/how-it-works" label="How It Works" onNavigate={() => setOpenMobile(false)} />
-                      <MobileNavLink href="/vip-transfer" label="VIP Transfer" onNavigate={() => setOpenMobile(false)} />
-                      <MobileNavLink href="/tips-and-strategies" label="Tips & Strategies" onNavigate={() => setOpenMobile(false)} />
-                      <MobileNavLink href="/vip-program" label="VIP Program" onNavigate={() => setOpenMobile(false)} />
+                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">GET STARTED</div>
+                      <MobileNavLink href="/how-it-works" label="How It Works" />
+                      <MobileNavLink href="/vip-transfer" label="VIP Transfer" />
+                      <MobileNavLink href="/tips-and-strategies" label="Tips & Strategies" />
+                      <MobileNavLink href="/vip-program" label="VIP Program" />
 
-                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">COMPETITIONS</div>
+                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">COMPETITIONS</div>
                       <MobileNavLink 
                         href="/wager-races" 
                         label={
@@ -340,51 +340,45 @@ export function Layout({ children }: LayoutProps) {
                               <span className="text-xs text-red-500">LIVE</span>
                             </div>
                           </div>
-                        } 
-                        onNavigate={() => setOpenMobile(false)}
+                        }
                       />
 
-                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">LEADERBOARDS</div>
+                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">LEADERBOARDS</div>
                       <MobileNavLink 
                         href="/leaderboard?period=daily" 
                         label="Daily Leaderboard" 
-                        onNavigate={() => setOpenMobile(false)}
                       />
                       <MobileNavLink 
                         href="/leaderboard?period=weekly" 
                         label="Weekly Leaderboard" 
-                        onNavigate={() => setOpenMobile(false)}
                       />
                       <MobileNavLink 
                         href="/leaderboard?period=monthly" 
                         label="Monthly Leaderboard" 
-                        onNavigate={() => setOpenMobile(false)}
                       />
                       <MobileNavLink 
-                        href="/leaderboard?period=all_time" 
+                        href="/leaderboard?period=all-time" 
                         label="All Time Leaderboard" 
-                        onNavigate={() => setOpenMobile(false)}
                       />
 
-                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">PROMOTIONS</div>
-                      <MobileNavLink href="/promotions" label="News & Promotions" onNavigate={() => setOpenMobile(false)} />
-                      <MobileNavLink href="/bonus-codes" label="Bonus Codes" onNavigate={() => setOpenMobile(false)} />
-                      <MobileNavLink href="/goated-token" label="Goated Airdrop" onNavigate={() => setOpenMobile(false)} />
+                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">PROMOTIONS</div>
+                      <MobileNavLink href="/promotions" label="News & Promotions" />
+                      <MobileNavLink href="/bonus-codes" label="Bonus Codes" />
+                      <MobileNavLink href="/goated-token" label="Goated Airdrop" />
 
-                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">COMMUNITY</div>
-                      <MobileNavLink href="/telegram" label="Telegram" onNavigate={() => setOpenMobile(false)} />
+                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">COMMUNITY</div>
+                      <MobileNavLink href="/telegram" label="Telegram" />
                       {user?.isAdmin && (
                         <>
-                          <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">ADMIN</div>
-                          <MobileNavLink href="/admin/wager-races" label="Admin Panel" onNavigate={() => setOpenMobile(false)} />
+                          <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">ADMIN</div>
+                          <MobileNavLink href="/admin/wager-races" label="Admin Panel" />
                         </>
                       )}
 
-                      <div className="mt-4 px-4">
+                      <div className="mt-6 px-4 border-t border-[#2A2B31]/50 pt-6">
                         <Button
                           onClick={() => {
                             window.open("https://www.goated.com/r/SPIN", "_blank");
-                            setOpenMobile(false);
                           }}
                           className="w-full bg-[#D7FF00] text-[#14151A] hover:bg-[#D7FF00]/90 transition-colors font-bold"
                         >
@@ -649,26 +643,24 @@ function NavLink({
 
 function MobileNavLink({ 
   href, 
-  label, 
-  onNavigate 
+  label
 }: { 
   href: string; 
   label: string | React.ReactNode;
-  onNavigate?: () => void;
 }) {
   const [location] = useLocation();
   const isActive = location === href;
+  const setOpen = useContext(SheetContext);
 
   return (
-    <Link href={href}>
+    <Link href={href} onClick={() => setOpen?.(false)}>
       <motion.div
-        whileHover={{ x: 8, scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        onClick={onNavigate}
-        className={`px-4 py-2.5 rounded-lg transition-all duration-200 ${
+        className={`px-4 py-2.5 rounded-lg transition-colors duration-200 ${
           isActive
             ? "bg-[#D7FF00]/10 text-[#D7FF00]"
-            : "text-white hover:bg-[#2A2B31] hover:text-[#D7FF00]"        }`}
+            : "text-white hover:bg-[#2A2B31]"
+        }`}
       >
         {label}
       </motion.div>
