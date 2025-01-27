@@ -14,8 +14,8 @@ const timeframes = [
     title: "Daily MVP", 
     period: "daily", 
     colors: {
-      primary: "from-violet-500",
-      secondary: "to-fuchsia-500",
+      primary: "violet-500",
+      secondary: "fuchsia-500",
       accent: "violet-500",
       shine: "violet-300"
     }
@@ -24,8 +24,8 @@ const timeframes = [
     title: "Weekly MVP", 
     period: "weekly", 
     colors: {
-      primary: "from-emerald-500",
-      secondary: "to-teal-500",
+      primary: "emerald-500",
+      secondary: "teal-500",
       accent: "emerald-500",
       shine: "emerald-300"
     }
@@ -34,8 +34,8 @@ const timeframes = [
     title: "Monthly MVP", 
     period: "monthly", 
     colors: {
-      primary: "from-amber-500",
-      secondary: "to-orange-500",
+      primary: "amber-500",
+      secondary: "orange-500",
       accent: "amber-500",
       shine: "amber-300"
     }
@@ -86,54 +86,69 @@ export function MVPCards() {
             stiffness: 400,
             damping: 30
           }}
-          className={`
-            relative transform-gpu
-            rounded-xl overflow-hidden
-            bg-gradient-to-br ${timeframe.colors.primary} ${timeframe.colors.secondary}
-            shadow-xl
-          `}
+          className="group relative transform-gpu rounded-xl overflow-hidden"
         >
-          {/* Shiny overlay */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50" />
-          <div className="absolute inset-0 bg-gradient-to-bl from-white/5 via-transparent to-black/20" />
+          {/* Base metallic background */}
+          <div className={`
+            absolute inset-0 
+            bg-gradient-to-br from-[#1A1B21] via-[#2A2B31] to-[#1A1B21]
+            border border-[#2A2B31]
+          `} />
+
+          {/* Colored overlay */}
+          <div className={`
+            absolute inset-0 
+            bg-gradient-to-br from-${timeframe.colors.primary}/10 to-${timeframe.colors.secondary}/10
+            opacity-80 group-hover:opacity-100 transition-opacity duration-300
+          `} />
+
+          {/* Shine effect on hover */}
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className={`
+              absolute inset-0 
+              bg-gradient-to-r from-transparent via-${timeframe.colors.shine}/10 to-transparent
+              translate-x-[-200%] group-hover:translate-x-[200%]
+              transition-transform duration-1000 ease-in-out
+            `} />
+          </div>
 
           {/* Card content */}
-          <div className="relative p-6 backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-4">
+          <div className="relative p-4 backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Trophy className={`h-6 w-6 text-${timeframe.colors.shine}`} />
-                <h3 className="text-xl font-heading text-white">{timeframe.title}</h3>
+                <Trophy className={`h-5 w-5 text-${timeframe.colors.shine}`} />
+                <h3 className="text-lg font-heading text-white">{timeframe.title}</h3>
               </div>
             </div>
 
             {mvps[timeframe.period] ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
                   {mvps[timeframe.period].avatarUrl ? (
                     <img 
                       src={mvps[timeframe.period].avatarUrl} 
                       alt={mvps[timeframe.period].username}
-                      className={`w-12 h-12 rounded-full border-2 border-${timeframe.colors.accent}`}
+                      className={`w-10 h-10 rounded-full border-2 border-${timeframe.colors.accent}`}
                     />
                   ) : (
-                    <div className={`w-12 h-12 rounded-full bg-${timeframe.colors.accent}/20 flex items-center justify-center`}>
-                      <span className={`text-lg text-${timeframe.colors.shine} font-bold`}>
+                    <div className={`w-10 h-10 rounded-full bg-${timeframe.colors.accent}/20 flex items-center justify-center`}>
+                      <span className={`text-base text-${timeframe.colors.shine} font-bold`}>
                         {mvps[timeframe.period].username.charAt(0).toUpperCase()}
                       </span>
                     </div>
                   )}
                   <div>
-                    <h4 className="text-lg font-heading text-white">
+                    <h4 className="text-base font-heading text-white">
                       {mvps[timeframe.period].username}
                     </h4>
-                    <div className={`text-xs px-2 py-1 rounded-full bg-${timeframe.colors.accent}/20 inline-block`}>
+                    <div className={`text-xs px-2 py-0.5 rounded-full bg-${timeframe.colors.accent}/20 inline-block`}>
                       <span className={`text-${timeframe.colors.shine} font-bold`}>
                         {getVipTier(mvps[timeframe.period].wagerAmount)}
                       </span>
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-between items-center text-sm mt-2 bg-black/20 p-3 rounded-lg">
+                <div className="flex justify-between items-center text-sm bg-black/40 p-2 rounded-lg">
                   <span className="text-white/70">Total Wagered:</span>
                   <span className="text-white font-mono font-bold">
                     ${mvps[timeframe.period].wagerAmount.toLocaleString()}
@@ -143,10 +158,6 @@ export function MVPCards() {
             ) : (
               <p className="text-white/70 text-center text-sm">No data available</p>
             )}
-
-            {/* Decorative elements */}
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-white/10 to-transparent rounded-full blur-xl transform translate-x-12 -translate-y-8" />
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-black/20 to-transparent rounded-full blur-xl transform -translate-x-16 translate-y-16" />
           </div>
         </motion.div>
       ))}
