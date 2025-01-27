@@ -165,7 +165,7 @@ export function Layout({ children }: LayoutProps) {
                   href="/wager-races"
                   label={
                     <div className="flex items-center gap-2">
-                      <span className="font-bold transition-colors duration-300 group-hover:text-[#D7FF00]">WAGER RACES</span>
+                      <span className="font-bold transition-colors duration-300 group-hover:text-[#D7FF00]">MONTHLY RACE</span>
                       <div className="flex items-center gap-1">
                         <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
                         <span className="text-xs text-red-500 font-heading">
@@ -272,7 +272,7 @@ export function Layout({ children }: LayoutProps) {
                       <div className="px-4 py-2 mt-4 text-[#D7FF00] font-heading text-sm">COMPETE</div>
                       <MobileNavLink href="/wager-races" label={
                         <div className="flex items-center gap-2">
-                          WAGER RACES
+                          MONTHLY RACE
                           <div className="flex items-center gap-1">
                             <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
                             <span className="text-xs text-red-500">LIVE</span>
