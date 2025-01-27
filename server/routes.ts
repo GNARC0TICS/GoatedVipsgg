@@ -48,11 +48,11 @@ function setupRESTRoutes(app: Express) {
       const rawData = await response.json();
       const stats = transformLeaderboardData(rawData);
 
-      // Extract top player from each period
+      // Extract top players from existing leaderboard data
       const mvpData = {
-        daily: stats.data.today.data[0] || null,
-        weekly: stats.data.weekly.data[0] || null,
-        monthly: stats.data.monthly.data[0] || null
+        daily: stats.data.today.data[0],
+        weekly: stats.data.weekly.data[0],
+        monthly: stats.data.monthly.data[0]
       };
 
       // Transform data for MVP cards
@@ -61,8 +61,9 @@ function setupRESTRoutes(app: Express) {
           acc[period] = {
             username: data.name,
             wagerAmount: data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'],
+            avatarUrl: null, // Add if available in your user data
             rank: 1,
-            lastActive: new Date().toISOString() // This would ideally come from the API
+            lastActive: new Date().toISOString()
           };
         }
         return acc;

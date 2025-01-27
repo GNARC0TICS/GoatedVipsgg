@@ -7,7 +7,7 @@ import { useState } from "react";
 type MVP = {
   username: string;
   wagerAmount: number;
-  avatarUrl?: string;
+  avatarUrl?: string | null;
   rank: number;
   lastActive: string;
 };
@@ -53,12 +53,12 @@ function getVipTier(wagerAmount: number) {
   return "BRONZE";
 }
 
-export function MVPCard({ 
+function MVPCard({ 
   timeframe, 
   mvp, 
   isFlipped, 
   onClick,
-  isLoading 
+  isLoading
 }: { 
   timeframe: typeof timeframes[number];
   mvp: MVP | null;
@@ -206,7 +206,7 @@ export function MVPCard({
 export function MVPCards() {
   const { data: mvps, isLoading } = useQuery<Record<string, MVP>>({
     queryKey: ["/api/mvp-stats"],
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
     retry: 3,
     staleTime: 10000,
   });
