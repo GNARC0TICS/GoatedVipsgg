@@ -1,8 +1,10 @@
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Gift, Copy, Bell, CheckCircle } from "lucide-react";
+import { Gift, Copy, Bell, CheckCircle, ArrowLeft } from "lucide-react";
 import { useState } from "react";
+import Link from "next/link";
 
 export default function BonusCodes() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -31,24 +33,35 @@ export default function BonusCodes() {
 
   return (
     <div className="min-h-screen bg-[#14151A]">
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-8">
+        <Link href="/">
+          <Button variant="ghost" className="mb-8 hover:bg-[#1A1B21]/50">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
+          </Button>
+        </Link>
+
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="mb-12"
         >
-          <h1 className="text-4xl md:text-5xl font-heading font-bold text-[#D7FF00] mb-8">
-            BONUS CODES
-          </h1>
-          <p className="text-xl text-[#8A8B91] max-w-2xl mx-auto mb-6">
-            Keep an eye on this page for exclusive bonus codes. New codes are
-            added regularly!
-          </p>
-          <div className="flex items-center justify-center gap-2 text-[#D7FF00]">
+          <div className="w-full max-w-6xl mx-auto mb-8">
+            <video
+              autoPlay
+              muted
+              playsInline
+              loop
+              className="w-full h-[200px] md:h-[300px] object-cover rounded-xl"
+            >
+              <source src="/images/Page Headers/BONUSHEAD.MP4" type="video/mp4" />
+            </video>
+          </div>
+
+          <div className="flex items-center justify-center gap-2 text-[#D7FF00] mb-8">
             <Bell className="h-5 w-5" />
             <p className="text-sm">
-              Enable email notifications to get instant updates on new bonus
-              codes
+              Enable email notifications to get instant updates on new bonus codes
             </p>
           </div>
         </motion.div>
