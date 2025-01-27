@@ -164,33 +164,32 @@ function MVPCard({
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="bg-[#1A1B21] border-[#2A2B31] max-w-2xl w-full">
           <div className="relative p-6 rounded-xl bg-gradient-to-b from-[#1A1B21]/80 to-[#1A1B21]/50 backdrop-blur-sm">
-              <div className="absolute inset-0 bg-gradient-to-b from-[#2A2B31]/20 to-transparent opacity-50 rounded-xl" />
-              <div className="relative">
-                <h4 className="text-xl font-heading text-white mb-6 flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-[#D7FF00]" />
-                  Player Statistics
-                </h4>
-                <div className="space-y-4">
-                  {[
-                    { label: "Daily Rank", value: leaderboardData?.data?.today?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#8B5CF6" },
-                    { label: "Weekly Rank", value: leaderboardData?.data?.weekly?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#10B981" },
-                    { label: "Monthly Rank", value: leaderboardData?.data?.monthly?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#F59E0B" },
-                    { label: "All-Time Rank", value: leaderboardData?.data?.all_time?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#EC4899" }
-                  ].map((stat, index) => (
-                    <div key={index} className="flex justify-between items-center p-2 rounded-lg bg-black/20 hover:bg-black/30 transition-colors">
-                      <span className="text-white/80 text-sm">{stat.label}:</span>
-                      <span className="text-white font-mono font-bold" style={{ color: stat.color }}>
-                        #{stat.value}
-                      </span>
-                    </div>
-                  ))}
-                  <div className="mt-6 p-3 rounded-lg bg-[#D7FF00]/10 border border-[#D7FF00]/20">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[#D7FF00] text-sm font-semibold">All-Time Wagered:</span>
-                      <span className="text-white font-mono font-bold text-lg">
-                        ${mvp.wagered.all_time.toLocaleString()}
-                      </span>
-                    </div>
+            <div className="absolute inset-0 bg-gradient-to-b from-[#2A2B31]/20 to-transparent opacity-50 rounded-xl" />
+            <div className="relative">
+              <h4 className="text-xl font-heading text-white mb-6 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-[#D7FF00]" />
+                Player Statistics
+              </h4>
+              <div className="space-y-4">
+                {[
+                  { label: "Daily Rank", value: leaderboardData?.data?.today?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#8B5CF6" },
+                  { label: "Weekly Rank", value: leaderboardData?.data?.weekly?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#10B981" },
+                  { label: "Monthly Rank", value: leaderboardData?.data?.monthly?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#F59E0B" },
+                  { label: "All-Time Rank", value: leaderboardData?.data?.all_time?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#EC4899" }
+                ].map((stat, index) => (
+                  <div key={index} className="flex justify-between items-center p-2 rounded-lg bg-black/20 hover:bg-black/30 transition-colors">
+                    <span className="text-white/80 text-sm">{stat.label}:</span>
+                    <span className="text-white font-mono font-bold" style={{ color: stat.color }}>
+                      #{stat.value}
+                    </span>
+                  </div>
+                ))}
+                <div className="mt-6 p-3 rounded-lg bg-[#D7FF00]/10 border border-[#D7FF00]/20">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#D7FF00] text-sm font-semibold">All-Time Wagered:</span>
+                    <span className="text-white font-mono font-bold text-lg">
+                      ${mvp.wagered.all_time.toLocaleString()}
+                    </span>
                   </div>
                 </div>
               </div>
