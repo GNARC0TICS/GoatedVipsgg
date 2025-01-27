@@ -107,23 +107,6 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col items-center justify-center mb-4 text-center">
-        <motion.h2
-          key={timePeriod}
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-3xl font-heading text-white mb-8 text-center"
-        >
-          {timePeriod === 'all_time' 
-            ? 'ALL-TIME LEADERBOARD'
-            : timePeriod === 'today'
-              ? 'DAILY LEADERBOARD'
-              : timePeriod === 'weekly'
-                ? 'WEEKLY LEADERBOARD'
-                : 'MONTHLY LEADERBOARD'}
-        </motion.h2>
-      </div>
-
       <div className="flex items-center gap-2 max-w-md mx-auto w-full mb-4">
         <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
