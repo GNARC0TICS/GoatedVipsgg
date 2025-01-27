@@ -17,12 +17,28 @@ import { Card, CardContent } from "@/components/ui/card";
 const PROMOTIONS = [
   {
     id: 1,
-    title: "Weekly Wager Race",
-    description: "Compete in our weekly wager race for a chance to win exclusive prizes and bonuses. Top wagerers will be rewarded!",
+    title: "$10,000 Weekly Race",
+    description: "We've boosted our Weekly Race to $10,000 USD! Join now and compete for massive prizes with more chances to win. Top 10 players share the prize pool, with $5,000 for 1st place!",
     imageUrl: "/images/PROMOS/WEEKLYRACE.WEBP",
     category: "VIP",
-    validUntil: "2024-12-31",
+    validUntil: "2025-05-31",
     isNew: true,
+    details: {
+      overview: "Our Weekly Race is now bigger and better than ever with an upgraded prize pool of $10,000 USD! More prizes, more chances to win—are you ready to claim your share?",
+      howToJoin: "Place your bets, climb the weekly leaderboard, and secure a spot in the top 10 to win your share of the rewards! Once the race concludes at the end of the week, your prize will be instantly credited to your VIP rewards!",
+      prizeDistribution: {
+        1: 5000,
+        2: 2500,
+        3: 1000,
+        4: 500,
+        5: 350,
+        6: 250,
+        7: 150,
+        8: 125,
+        9: 75,
+        10: 50
+      }
+    },
     link: "https://www.goated.com/promotions",
   },
   {
