@@ -86,13 +86,25 @@ export function MVPCards() {
           className="group relative transform transition-all duration-300"
         >
           {/* Gradient overlay that appears on hover */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
+          <div className={`
+            absolute inset-0 
+            bg-gradient-to-b from-${timeframe.colors.primary}/20 to-transparent 
+            rounded-xl opacity-0 group-hover:opacity-100 
+            transition-all duration-300 blur-sm
+          `} />
 
           {/* Main card container */}
-          <div className="relative p-4 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20">
+          <div className={`
+            relative p-4 rounded-xl 
+            border border-[#2A2B31] 
+            bg-[#1A1B21]/50 backdrop-blur-sm 
+            hover:border-${timeframe.colors.primary}/50 
+            transition-all duration-300 
+            shadow-lg hover:shadow-${timeframe.colors.primary}/20
+          `}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Trophy className={`h-5 w-5 text-${timeframe.colors.shine}`} />
+                <Trophy className={`h-5 w-5 text-${timeframe.colors.primary}`} />
                 <h3 className="text-lg font-heading text-white">{timeframe.title}</h3>
               </div>
             </div>
