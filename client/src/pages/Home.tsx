@@ -113,13 +113,13 @@ export default function Home() {
               <h2 className="text-4xl font-heading text-white mb-12 text-center">
                 FEATURED HIGHLIGHTS
               </h2>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="grid md:grid-cols-3 gap-8 mb-12 max-w-7xl mx-auto"
-            >
+              
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="grid md:grid-cols-3 gap-8 mb-12 max-w-7xl mx-auto"
+              >
               <Link href="/vip-transfer" className="block">
                 <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                   <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
@@ -263,6 +263,7 @@ export default function Home() {
                 </h2>
                 <LeaderboardTable timePeriod="today" />
               </div>
+              </motion.div>
             </motion.div>
           </div>
         </div>
