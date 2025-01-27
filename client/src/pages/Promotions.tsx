@@ -74,7 +74,7 @@ export default function Promotions() {
               muted
               playsInline
               loop
-              className="w-full max-w-4xl mx-auto rounded-xl"
+              className="w-[300px] md:w-[400px] mx-auto rounded-xl"
             >
               <source src="/images/Page Headers/PROMOHEAD.MP4" type="video/mp4" />
             </video>
