@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect as ReactuseEffect } from "react";
 import { QuickProfile } from "./QuickProfile";
+import { getTierFromWager, getTierIcon } from "@/lib/tier-utils"; // Added import
 
 type MVP = {
   username: string;
