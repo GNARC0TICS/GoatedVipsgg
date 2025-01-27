@@ -190,28 +190,44 @@ export default function Promotions() {
             {PROMOTIONS.map((promo) => (
               <Card
                 key={promo.id}
-                className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31] overflow-hidden group hover:border-[#D7FF00] transition-colors duration-300"
+                className={`bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31] overflow-hidden group hover:border-[#D7FF00] transition-colors duration-300 ${
+                  promo.title.includes('[ENDED]') ? 'opacity-60 grayscale' : ''
+                }`}
               >
                 <CardContent className="p-0">
                   <div className="relative">
                     <img
                       src={promo.imageUrl}
                       alt={promo.title}
-                      className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                      className={`w-full h-48 object-cover transition-transform duration-300 ${
+                        !promo.title.includes('[ENDED]') ? 'group-hover:scale-105' : ''
+                      }`}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.src = "https://placehold.co/400x200/1A1B21/D7FF00?text=Promotion";
                       }}
                     />
-                    {promo.isNew && (
-                      <Badge className="absolute top-4 right-4 bg-[#D7FF00] text-[#14151A]">
-                        NEW
-                      </Badge>
-                    )}
+                    <div className="absolute top-4 right-4 flex gap-2">
+                      {promo.title.includes('[ENDED]') ? (
+                        <Badge className="bg-red-500/80 text-white">
+                          ENDED
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-emerald-500/80 text-white flex items-center gap-1.5">
+                          <span className="h-2 w-2 bg-white rounded-full animate-pulse"></span>
+                          LIVE
+                        </Badge>
+                      )}
+                      {promo.isNew && (
+                        <Badge className="bg-[#D7FF00] text-[#14151A]">
+                          NEW
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   <div className="p-6 space-y-4">
                     <h3 className="text-xl font-heading font-bold text-white">
-                      {promo.title}
+                      {promo.title.replace('[ENDED]', '')}
                     </h3>
                     <p className="text-[#8A8B91]">{promo.description}</p>
                     <div className="flex items-center gap-4 text-sm text-[#8A8B91]">
