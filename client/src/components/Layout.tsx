@@ -1,19 +1,19 @@
-import { ReactNode, useContext } from "react";
+import { ReactNode, useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger, SheetContext } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
 import { useQuery } from "@tanstack/react-query";
 import type { SelectUser } from "@db/schema";
 import { ScrollToTop } from "./ScrollToTop";
-import { useEffect, useRef, useState } from "react";
+import { Bell, Settings, User, LogOut, ChevronDown } from "lucide-react";
 import {
   Tooltip,
-  TooltipTrigger,
   TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Bell, Settings, User, LogOut, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,38 @@ import { FloatingSupport } from "./FloatingSupport";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from 'framer-motion';
 
+function MobileNavLink({ 
+  href, 
+  label,
+  onClose
+}: { 
+  href: string; 
+  label: string | React.ReactNode;
+  onClose: () => void;
+}) {
+  const [location] = useLocation();
+  const isActive = location === href;
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onClose();
+    window.location.href = href; // Use window.location for guaranteed navigation after close
+  };
+
+  return (
+    <motion.div
+      whileTap={{ scale: 0.98 }}
+      onClick={handleClick}
+      className={`px-4 py-2.5 rounded-lg transition-colors duration-200 cursor-pointer ${
+        isActive
+          ? "bg-[#D7FF00]/10 text-[#D7FF00]"
+          : "text-white hover:bg-[#2A2B31]"
+      }`}
+    >
+      {label}
+    </motion.div>
+  );
+}
 
 interface LayoutProps {
   children: ReactNode;
@@ -88,6 +120,10 @@ export function Layout({ children }: LayoutProps) {
       }
     };
   }, []);
+
+  const handleCloseMenu = () => {
+    setOpenMobile(false);
+  };
 
   return (
     <div className="min-h-screen bg-[#14151A] flex flex-col">
@@ -298,7 +334,7 @@ export function Layout({ children }: LayoutProps) {
 
               {/* Enhanced mobile navigation */}
               <div className="md:hidden">
-                <Sheet>
+                <Sheet open={openMobile} onOpenChange={setOpenMobile}>
                   <SheetTrigger asChild>
                     <Button
                       variant="ghost"
@@ -311,8 +347,7 @@ export function Layout({ children }: LayoutProps) {
                   </SheetTrigger>
                   <SheetContent
                     side="left"
-                    onOpenAutoFocus={(e) => e.preventDefault()}
-                    className="w-[300px] bg-[#14151A] border-r border-[#2A2B31] overflow-y-auto"
+                    className="w-[300px] bg-[#14151A] border-r border-[#2A2B31] overflow-y-auto p-0"
                   >
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
@@ -321,13 +356,13 @@ export function Layout({ children }: LayoutProps) {
                       className="flex flex-col gap-4 pt-8"
                     >
                       <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">MENU</div>
-                      <MobileNavLink href="/" label="Home" />
+                      <MobileNavLink href="/" label="Home" onClose={handleCloseMenu} />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">GET STARTED</div>
-                      <MobileNavLink href="/how-it-works" label="How It Works" />
-                      <MobileNavLink href="/vip-transfer" label="VIP Transfer" />
-                      <MobileNavLink href="/tips-and-strategies" label="Tips & Strategies" />
-                      <MobileNavLink href="/vip-program" label="VIP Program" />
+                      <MobileNavLink href="/how-it-works" label="How It Works" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/vip-transfer" label="VIP Transfer" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/tips-and-strategies" label="Tips & Strategies" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/vip-program" label="VIP Program" onClose={handleCloseMenu} />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">COMPETITIONS</div>
                       <MobileNavLink 
@@ -341,43 +376,49 @@ export function Layout({ children }: LayoutProps) {
                             </div>
                           </div>
                         }
+                        onClose={handleCloseMenu}
                       />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">LEADERBOARDS</div>
                       <MobileNavLink 
                         href="/leaderboard?period=daily" 
                         label="Daily Leaderboard" 
+                        onClose={handleCloseMenu}
                       />
                       <MobileNavLink 
                         href="/leaderboard?period=weekly" 
                         label="Weekly Leaderboard" 
+                        onClose={handleCloseMenu}
                       />
                       <MobileNavLink 
                         href="/leaderboard?period=monthly" 
                         label="Monthly Leaderboard" 
+                        onClose={handleCloseMenu}
                       />
                       <MobileNavLink 
                         href="/leaderboard?period=all-time" 
                         label="All Time Leaderboard" 
+                        onClose={handleCloseMenu}
                       />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">PROMOTIONS</div>
-                      <MobileNavLink href="/promotions" label="News & Promotions" />
-                      <MobileNavLink href="/bonus-codes" label="Bonus Codes" />
-                      <MobileNavLink href="/goated-token" label="Goated Airdrop" />
+                      <MobileNavLink href="/promotions" label="News & Promotions" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/bonus-codes" label="Bonus Codes" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/goated-token" label="Goated Airdrop" onClose={handleCloseMenu} />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">COMMUNITY</div>
-                      <MobileNavLink href="/telegram" label="Telegram" />
+                      <MobileNavLink href="/telegram" label="Telegram" onClose={handleCloseMenu} />
                       {user?.isAdmin && (
                         <>
                           <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">ADMIN</div>
-                          <MobileNavLink href="/admin/wager-races" label="Admin Panel" />
+                          <MobileNavLink href="/admin/wager-races" label="Admin Panel" onClose={handleCloseMenu} />
                         </>
                       )}
 
                       <div className="mt-6 px-4 border-t border-[#2A2B31]/50 pt-6">
                         <Button
                           onClick={() => {
+                            handleCloseMenu();
                             window.open("https://www.goated.com/r/SPIN", "_blank");
                           }}
                           className="w-full bg-[#D7FF00] text-[#14151A] hover:bg-[#D7FF00]/90 transition-colors font-bold"
@@ -636,34 +677,5 @@ function NavLink({
         </TooltipContent>
       )}
     </Tooltip>
-  );
-}
-
-
-
-function MobileNavLink({ 
-  href, 
-  label
-}: { 
-  href: string; 
-  label: string | React.ReactNode;
-}) {
-  const [location] = useLocation();
-  const isActive = location === href;
-  const setOpen = useContext(SheetContext);
-
-  return (
-    <Link href={href} onClick={() => setOpen?.(false)}>
-      <motion.div
-        whileTap={{ scale: 0.98 }}
-        className={`px-4 py-2.5 rounded-lg transition-colors duration-200 ${
-          isActive
-            ? "bg-[#D7FF00]/10 text-[#D7FF00]"
-            : "text-white hover:bg-[#2A2B31]"
-        }`}
-      >
-        {label}
-      </motion.div>
-    </Link>
   );
 }
