@@ -1,4 +1,5 @@
-import React, { Suspense } from "react";
+import React, { Suspense, useState } from "react";
+import { PreLoader } from "@/components/PreLoader";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -119,16 +120,24 @@ function Router() {
 }
 
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary FallbackComponent={ErrorFallback}>
         <AuthProvider>
-          <Suspense fallback={<LoadingSpinner />}>
-            <TooltipProvider>
-              <Router />
-              <Toaster />
-            </TooltipProvider>
-          </Suspense>
+          <AnimatePresence mode="wait">
+            {isLoading ? (
+              <PreLoader onLoadComplete={() => setIsLoading(false)} />
+            ) : (
+              <Suspense fallback={<LoadingSpinner />}>
+                <TooltipProvider>
+                  <Router />
+                  <Toaster />
+                </TooltipProvider>
+              </Suspense>
+            )}
+          </AnimatePresence>
         </AuthProvider>
       </ErrorBoundary>
     </QueryClientProvider>
