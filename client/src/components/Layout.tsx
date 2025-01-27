@@ -130,14 +130,14 @@ export function Layout({ children }: LayoutProps) {
                           How It Works
                         </div>
                       </Link>
+                      <Link href="/tips-and-strategies">
+                        <div className="px-4 py-2 font-bold hover:text-[#D7FF00] transition-colors duration-200 cursor-pointer">
+                          Tips & Strategies
+                        </div>
+                      </Link>
                       <Link href="/vip-program">
                         <div className="px-4 py-2 font-bold hover:text-[#D7FF00] transition-colors duration-200 cursor-pointer">
                           VIP Program
-                        </div>
-                      </Link>
-                      <Link href="/goated-token">
-                        <div className="px-4 py-2 font-bold hover:text-[#D7FF00] transition-colors duration-200 cursor-pointer">
-                          $GOATED Token
                         </div>
                       </Link>
                     </div>
@@ -504,7 +504,6 @@ function NavLink({
     </Tooltip>
   );
 }
-
 
 
 function MobileNavLink({ href, label }: { href: string; label: string | React.ReactNode }) {
