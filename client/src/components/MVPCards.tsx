@@ -55,12 +55,14 @@ function MVPCard({
   timeframe, 
   mvp, 
   isFlipped,
-  onFlip
+  onFlip,
+  leaderboardData
 }: { 
   timeframe: typeof timeframes[0], 
   mvp: MVP | undefined,
   isFlipped: boolean,
-  onFlip: () => void
+  onFlip: () => void,
+  leaderboardData: any
 }) {
   const [showIncrease, setShowIncrease] = useState(false);
 
@@ -105,7 +107,14 @@ function MVPCard({
                   background: `linear-gradient(to bottom, ${timeframe.colors.primary}20, transparent)`,
                 }}
               />
-              <div className="relative p-4 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover h-full"
+              <div 
+                onClick={(e) => {
+                  const target = e.target as HTMLElement;
+                  if (!target.closest('.username-trigger')) {
+                    onFlip();
+                  }
+                }}
+                className="relative p-4 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover h-full cursor-pointer"
                 style={{
                   '--hover-border-color': `${timeframe.colors.primary}80`,
                   '--hover-shadow-color': `${timeframe.colors.primary}40`
@@ -137,7 +146,7 @@ function MVPCard({
                     )}
                     <div className="flex-grow min-w-0">
                       <QuickProfile userId={mvp.uid} username={mvp.username}>
-                        <h4 className="text-base font-heading text-white truncate hover:text-[#D7FF00] transition-colors cursor-pointer">
+                        <h4 className="text-base font-heading text-white truncate hover:text-[#D7FF00] transition-colors cursor-pointer username-trigger">
                           {mvp.username}
                         </h4>
                       </QuickProfile>
@@ -163,18 +172,25 @@ function MVPCard({
               <h4 className="text-lg font-heading text-white mb-4">Detailed Stats</h4>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-white/70">Win Rate:</span>
-                  <span className="text-white">65%</span>
+                  <span className="text-white/70">Daily Rank:</span>
+                  <span className="text-white">#{leaderboardData?.data?.today?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-'}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-white/70">Favorite Game:</span>
-                  <span className="text-white">Slots</span>
+                  <span className="text-white/70">Weekly Rank:</span>
+                  <span className="text-white">#{leaderboardData?.data?.weekly?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-'}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-white/70">Total Games:</span>
-                  <span className="text-white">1,234</span>
+                  <span className="text-white/70">Monthly Rank:</span>
+                  <span className="text-white">#{leaderboardData?.data?.monthly?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-'}</span>
                 </div>
-                {/* Add more stats as needed */}
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70">All-Time Rank:</span>
+                  <span className="text-white">#{leaderboardData?.data?.all_time?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70">All-Time Wagered:</span>
+                  <span className="text-white">${mvp.wagered.all_time.toLocaleString()}</span>
+                </div>
               </div>
             </div>
           )}
@@ -243,6 +259,7 @@ export function MVPCards() {
             } : undefined}
             isFlipped={flippedCards[timeframe.period] || false}
             onFlip={() => handleCardFlip(timeframe.period)}
+            leaderboardData={leaderboardData}
           />
         </motion.div>
       ))}
