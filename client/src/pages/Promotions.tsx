@@ -43,12 +43,12 @@ const PROMOTIONS = [
   },
   {
     id: 2,
-    title: "Lunar Challenges",
+    title: "Lunar Challenges [ENDED]",
     description: "Hit 88x multipliers on selected games to win a $200 bonus prize! Complete 2 out of 5 dragon-themed game challenges.",
     imageUrl: "/images/PROMOS/LUNAR1.WEBP",
     category: "Casino",
     validUntil: "2025-01-25",
-    isNew: true,
+    isNew: false,
     details: {
       overview: "Celebrate the Lunar New Year by smashing through the 88x multipliers on selected games. Win $200 bonus by completing 2 out of 5 challenges!",
       selectedGames: ["Dragon Tiger", "Dragon Hero", "8 Golden Dragon Challenge", "Dragon King Hot Pots", "Floating Dragon"],
@@ -64,12 +64,23 @@ const PROMOTIONS = [
   },
   {
     id: 3,
-    title: "Pragmatic Play Tournament",
-    description: "Join our exclusive Pragmatic Play tournament for a chance to win big prizes and boost your winnings!",
+    title: "Pragmatic Drops & Wins",
+    description: "Win a share of $2,000,000 in monthly rewards playing Pragmatic slots! Join daily prize drops and tournaments.",
     imageUrl: "/images/PROMOS/PRAG1.WEBP",
     category: "Casino",
-    validUntil: "2024-03-31",
-    isNew: false,
+    validUntil: "2024-12-31",
+    isNew: true,
+    details: {
+      overview: "Win huge rewards when you play Pragmatic's slot games on Goated! We award $2,000,000 in random drops to Pragmatic slot players every single month.",
+      eligibleGames: [
+        "5 Lions Megaways", "Big Bass Bonanza", "Gates of Olympus", 
+        "Sweet Bonanza", "The Dog House", "Wolf Gold",
+        "Wild West Gold", "Starlight Princess", "Fruit Party",
+        "And 40+ more eligible games!"
+      ],
+      rewards: "$2,000,000 monthly prize pool",
+      type: "Daily Prize Drops and Tournaments"
+    },
     link: "https://www.goated.com/promotions",
   },
   {
