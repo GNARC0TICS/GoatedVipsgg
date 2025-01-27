@@ -1,3 +1,33 @@
+@font-face {
+  font-family: 'MonaSansCondensed-ExtraBold';
+  src: url('/fonts/MonaSansCondensed-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-stretch: condensed;
+  font-display: swap;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #14151A;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2A2B31;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #D7FF00;
+}
+
 @keyframes fadeInOut {
   0% {
     opacity: 0;
@@ -29,14 +59,6 @@
     box-shadow: 0 0 40px rgba(215, 255, 0, 0.4);
     text-shadow: 0 0 20px rgba(215, 255, 0, 0.4);
   }
-}
-
-.content-glow {
-  animation: glow 3s ease-in-out infinite;
-}
-
-.glow-gold {
-  animation: glow 3s ease-in-out infinite;
 }
 
 @tailwind base;
