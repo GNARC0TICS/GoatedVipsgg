@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -52,12 +51,12 @@ export default function BonusCodes() {
               muted
               playsInline
               loop
-              className="w-full h-48 md:h-64 object-cover rounded-xl"
+              className="w-full h-48 md:h-64 object-contain rounded-xl"
             >
               <source src="/images/Page Headers/BONUSHEAD.MP4" type="video/mp4" />
             </video>
           </div>
-          
+
           <p className="text-xl text-[#8A8B91] max-w-2xl mx-auto mb-6 text-center">
             Keep an eye on this page for exclusive bonus codes. New codes are
             added regularly!
