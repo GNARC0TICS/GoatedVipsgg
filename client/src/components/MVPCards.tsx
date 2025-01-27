@@ -145,11 +145,13 @@ function MVPCard({
                       </div>
                     )}
                     <div className="flex-grow min-w-0">
+                      <div onClick={(e) => e.stopPropagation()}>
                       <QuickProfile userId={mvp.uid} username={mvp.username}>
-                        <h4 className="text-base font-heading text-white truncate hover:text-[#D7FF00] transition-colors cursor-pointer username-trigger">
-                          {mvp.username}
-                        </h4>
+                          <h4 className="text-base font-heading text-white truncate hover:text-[#D7FF00] transition-colors cursor-pointer username-trigger">
+                            {mvp.username}
+                          </h4>
                       </QuickProfile>
+                    </div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-sm bg-black/40 p-2 rounded-lg">
