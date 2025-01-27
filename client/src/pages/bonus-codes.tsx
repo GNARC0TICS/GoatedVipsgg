@@ -52,7 +52,7 @@ export default function BonusCodes() {
               muted
               playsInline
               loop
-              className="w-full h-[200px] md:h-[300px] object-cover rounded-xl"
+              className="w-full rounded-xl"
             >
               <source src="/images/Page Headers/BONUSHEAD.MP4" type="video/mp4" />
             </video>
