@@ -163,8 +163,7 @@ function AppContent() {
               </Suspense>
             )}
           </AnimatePresence>
-        </div>
-      );
+  );
 }
 
 export default App;
