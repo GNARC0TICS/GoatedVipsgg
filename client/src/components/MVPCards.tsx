@@ -78,13 +78,13 @@ export function MVPCard({
       {/* Front of card */}
       <motion.div
         className={`
-          absolute inset-0 backface-hidden
+          absolute inset-0
           rounded-xl overflow-hidden
           bg-gradient-to-br from-[#1A1B21] to-[#2A2B31]
           border border-${timeframe.colors.primary}/20
           shadow-lg
           transition-all duration-300
-          ${isFlipped ? 'pointer-events-none' : ''}
+          ${isFlipped ? 'backface-hidden' : ''}
         `}
         whileHover={{
           scale: 1.02,
@@ -100,7 +100,7 @@ export function MVPCard({
         {/* Content */}
         <div className="relative p-4 md:p-6 h-full">
           <div className="flex items-center gap-2 mb-4">
-            <Trophy className={`h-5 w-5 md:h-6 md:w-6 text-${timeframe.colors.primary}`} />
+            <Trophy className={`h-5 w-5 md:h-6 md:w-6 text-${timeframe.colors.accent}`} />
             <h3 className="text-lg md:text-xl font-heading text-white">{timeframe.title}</h3>
           </div>
 
@@ -111,10 +111,10 @@ export function MVPCard({
                   <img 
                     src={mvp.avatarUrl} 
                     alt={mvp.username}
-                    className={`w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-${timeframe.colors.primary}`}
+                    className={`w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-${timeframe.colors.accent}`}
                   />
                 ) : (
-                  <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-${timeframe.colors.primary}/10 flex items-center justify-center`}>
+                  <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-${timeframe.colors.accent}/10 flex items-center justify-center`}>
                     <span className="text-lg text-white font-bold">
                       {mvp.username.charAt(0).toUpperCase()}
                     </span>
@@ -124,7 +124,7 @@ export function MVPCard({
                   <h4 className="text-base md:text-lg font-heading text-white">
                     {mvp.username}
                   </h4>
-                  <div className={`text-xs px-2 py-1 rounded-full bg-${timeframe.colors.primary}/20 inline-block`}>
+                  <div className={`text-xs px-2 py-1 rounded-full bg-${timeframe.colors.accent}/20 inline-block`}>
                     <span className="text-white font-bold">
                       {getVipTier(mvp.wagerAmount)}
                     </span>
@@ -133,7 +133,7 @@ export function MVPCard({
               </div>
 
               <div className="mt-auto">
-                <div className="text-center text-xs text-white/50">Click for details</div>
+                <div className="text-center text-xs text-white/50">Click to view stats</div>
               </div>
             </div>
           ) : (
@@ -145,11 +145,13 @@ export function MVPCard({
       {/* Back of card */}
       <motion.div
         className={`
-          absolute inset-0 backface-hidden [transform:rotateY(180deg)]
+          absolute inset-0
           rounded-xl overflow-hidden
           bg-gradient-to-br from-[#1A1B21] to-[#2A2B31]
           border border-${timeframe.colors.primary}/20
           shadow-lg
+          backface-hidden [transform:rotateY(180deg)]
+          ${!isFlipped ? 'pointer-events-none' : ''}
         `}
       >
         <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-30" />
