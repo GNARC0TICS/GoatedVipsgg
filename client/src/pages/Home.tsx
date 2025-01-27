@@ -112,7 +112,7 @@ export default function Home() {
               className="mb-24"
             >
               <h2 className="text-4xl font-heading text-white mb-12 text-center">
-                FEATURED HIGHLIGHTS
+                EXPLORE OUR FEATURES
               </h2>
               
               <motion.div
