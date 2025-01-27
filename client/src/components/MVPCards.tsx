@@ -213,6 +213,8 @@ function MVPCard({
 
 export function MVPCards() {
   const [openCard, setOpenCard] = useState<string | null>(null);
+  const dialogTimeoutRef = React.useRef<NodeJS.Timeout>();
+
   const { data: leaderboardData, isLoading } = useQuery({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
@@ -224,12 +226,27 @@ export function MVPCards() {
     monthly: leaderboardData?.data?.monthly?.data[0]
   };
 
-  const handleCardFlip = (period: string) => {
-    setFlippedCards(prev => ({
-      ...prev,
-      [period]: !prev[period]
-    }));
-  };
+  const handleDialogChange = React.useCallback((open: boolean, period: string) => {
+    if (dialogTimeoutRef.current) {
+      clearTimeout(dialogTimeoutRef.current);
+    }
+
+    if (open) {
+      setOpenCard(period);
+    } else {
+      dialogTimeoutRef.current = setTimeout(() => {
+        setOpenCard(null);
+      }, 100);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    return () => {
+      if (dialogTimeoutRef.current) {
+        clearTimeout(dialogTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (isLoading || !mvps?.daily) {
     return (
@@ -274,7 +291,7 @@ export function MVPCards() {
               wagered: mvps[timeframe.period as keyof typeof mvps]?.wagered || {today:0, this_week:0, this_month:0, all_time:0}
             } : undefined}
             isOpen={openCard === timeframe.period}
-            onOpenChange={(open) => setOpenCard(open ? timeframe.period : null)}
+            onOpenChange={handleDialogChange}
             leaderboardData={leaderboardData}
           />
         </motion.div>
