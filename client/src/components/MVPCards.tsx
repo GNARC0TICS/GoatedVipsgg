@@ -1,3 +1,4 @@
+
 import { Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -44,7 +45,6 @@ const timeframes = [
   }
 ];
 
-// Function to determine VIP tier based on wager amount
 function getVipTier(wagerAmount: number) {
   if (wagerAmount >= 1000000) return "DIAMOND";
   if (wagerAmount >= 500000) return "PLATINUM";
@@ -57,13 +57,21 @@ export function MVPCard({
   timeframe, 
   mvp, 
   isFlipped, 
-  onClick 
+  onClick,
+  isLoading 
 }: { 
   timeframe: typeof timeframes[number];
   mvp: MVP | null;
   isFlipped: boolean;
   onClick: () => void;
+  isLoading: boolean;
 }) {
+  if (isLoading) {
+    return (
+      <div className="h-full rounded-xl bg-[#1A1B21]/50 animate-pulse" />
+    );
+  }
+
   return (
     <motion.div
       className="relative w-full h-full perspective-1000 cursor-pointer"
@@ -94,11 +102,9 @@ export function MVPCard({
           z: 50
         }}
       >
-        {/* Metallic overlays */}
         <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-30" />
         <div className="absolute inset-0 bg-gradient-to-bl from-black/40 via-transparent to-black/40" />
 
-        {/* Content */}
         <div className="relative p-4 md:p-6 h-full">
           <div className="flex items-center gap-2 mb-4">
             <Trophy className={`h-5 w-5 md:h-6 md:w-6 text-${timeframe.colors.accent}`} />
@@ -142,7 +148,9 @@ export function MVPCard({
               </div>
             </div>
           ) : (
-            <p className="text-white/50 text-center text-sm">No data available</p>
+            <div className="flex items-center justify-center h-[calc(100%-2rem)]">
+              <p className="text-white/50 text-center text-sm">No data available</p>
+            </div>
           )}
         </div>
       </motion.div>
@@ -198,19 +206,12 @@ export function MVPCard({
 export function MVPCards() {
   const { data: mvps, isLoading } = useQuery<Record<string, MVP>>({
     queryKey: ["/api/mvp-stats"],
+    refetchInterval: 30000, // Refetch every 30 seconds
+    retry: 3,
+    staleTime: 10000,
   });
 
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
-
-  if (isLoading || !mvps) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 max-w-5xl mx-auto">
-        {timeframes.map((timeframe) => (
-          <div key={timeframe.period} className="h-[200px] md:h-[240px] bg-[#1A1B21]/50 animate-pulse rounded-xl" />
-        ))}
-      </div>
-    );
-  }
 
   const handleCardClick = (period: string) => {
     setFlippedCards(prev => ({
@@ -225,9 +226,10 @@ export function MVPCards() {
         <div key={timeframe.period} className="h-[200px] md:h-[240px]">
           <MVPCard
             timeframe={timeframe}
-            mvp={mvps[timeframe.period]}
+            mvp={mvps?.[timeframe.period] || null}
             isFlipped={flippedCards[timeframe.period] || false}
             onClick={() => handleCardClick(timeframe.period)}
+            isLoading={isLoading}
           />
         </div>
       ))}
