@@ -46,13 +46,13 @@ export default function BonusCodes() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-12"
         >
-          <div className="w-full max-w-3xl mx-auto mb-8">
+          <div className="w-full max-w-xl mx-auto mb-8">
             <video
               autoPlay
               muted
               playsInline
               loop
-              className="w-full rounded-xl"
+              className="w-full h-32 md:h-40 object-cover rounded-xl"
             >
               <source src="/images/Page Headers/BONUSHEAD.MP4" type="video/mp4" />
             </video>
