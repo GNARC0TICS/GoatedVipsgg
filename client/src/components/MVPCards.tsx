@@ -234,10 +234,32 @@ export function MVPCards() {
   if (isLoading || !mvps?.daily) {
     return (
       <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
-        {timeframes.map((timeframe) => (
-          <div key={timeframe.period} className="p-6 bg-[#1A1B21]/50 animate-pulse h-48 rounded-xl">
-            <div className="h-full"></div>
-          </div>
+        {timeframes.map((timeframe, index) => (
+          <motion.div
+            key={timeframe.period}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ 
+              delay: index * 0.2,
+              duration: 0.5,
+              ease: "easeOut"
+            }}
+            className="p-6 bg-[#1A1B21]/50 h-48 rounded-xl relative overflow-hidden"
+          >
+            <div className="absolute inset-0">
+              <motion.div
+                animate={{
+                  x: ["0%", "100%"],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
+                className="h-full w-1/3 bg-gradient-to-r from-transparent via-[#D7FF00]/10 to-transparent"
+              />
+            </div>
+          </motion.div>
         ))}
       </div>
     );

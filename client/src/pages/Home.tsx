@@ -2,6 +2,7 @@ import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { Crown } from "lucide-react";
 import {
   ArrowRight,
   Trophy,
@@ -96,11 +97,22 @@ export default function Home() {
               transition={{ delay: 0.2 }}
               className="mb-24"
             >
-              <h2 className="text-4xl font-heading text-white mb-12 text-center">
+              <h2 className="text-4xl font-heading text-white mb-12 text-center flex items-center justify-center gap-3">
+                <Crown className="w-8 h-8 text-[#D7FF00]" />
                 TOP PERFORMERS
               </h2>
               <MVPCards />
             </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mb-24"
+            >
+              <h2 className="text-4xl font-heading text-white mb-12 text-center">
+                FEATURED HIGHLIGHTS
+              </h2>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
