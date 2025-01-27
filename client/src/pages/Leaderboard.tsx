@@ -49,7 +49,6 @@ export default function Leaderboard() {
           <div className="mb-8">
             <video
               autoPlay
-              loop
               muted
               playsInline
               className="mx-auto h-48 md:h-64 w-auto object-contain"
