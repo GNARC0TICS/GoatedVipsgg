@@ -40,7 +40,16 @@ export default function HowItWorks() {
                       Step 1: Sign Up with Promo Code
                     </h2>
                     <p className="text-[#8A8B91] mt-4">
-                      Start by registering on Goated using one of our official promo codes:
+                      Start by{" "}
+                      <a
+                        href="https://www.goated.com/r/GOATEDVIPS"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#D7FF00] hover:text-[#D7FF00]/80 underline"
+                      >
+                        registering on Goated
+                      </a>{" "}
+                      using one of our official promo codes:
                     </p>
                     <div className="bg-[#2A2B31] p-4 rounded-lg mt-4 flex flex-col gap-2">
                       <code className="text-[#D7FF00]">GOATEDVIPS</code>
@@ -136,7 +145,7 @@ export default function HowItWorks() {
                   }
                   className="mt-4 bg-[#14151A] text-white hover:bg-[#14151A]/90"
                 >
-                  Register with GOATEDVIPS
+                  Register with Goombas x Goated VIPs
                 </Button>
               </div>
             </div>
