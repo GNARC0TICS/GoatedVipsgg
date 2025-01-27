@@ -162,7 +162,7 @@ function MVPCard({
           </motion.div>
 
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="bg-[#1A1B21] border-[#2A2B31] max-w-2xl w-full">
+        <DialogContent className="bg-[#1A1B21] border-[#2A2B31] max-w-[95vw] md:max-w-2xl w-full mx-4 md:mx-0">
           <div className="relative p-6 rounded-xl bg-gradient-to-b from-[#1A1B21]/80 to-[#1A1B21]/50 backdrop-blur-sm">
             <div className="absolute inset-0 bg-gradient-to-b from-[#2A2B31]/20 to-transparent opacity-50 rounded-xl" />
             <div className="relative">
@@ -173,7 +173,7 @@ function MVPCard({
                     alt="VIP Tier"
                     className="w-8 h-8"
                   />
-                  <h4 className="text-2xl font-heading text-white">{mvp.username}</h4>
+                  <h4 className="text-xl md:text-2xl font-heading text-white">{mvp.username}</h4>
                 </div>
                 <div className="flex items-center gap-2 text-xl font-heading text-white">
                   <Trophy className="w-5 h-5 text-[#D7FF00]" />
@@ -244,7 +244,7 @@ export function MVPCards() {
   }
 
   return (
-    <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto perspective-1000">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-5xl mx-auto perspective-1000 px-4 md:px-0">
       {timeframes.map((timeframe) => (
         <motion.div
           key={timeframe.period}
