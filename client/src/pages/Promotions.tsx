@@ -43,12 +43,23 @@ const PROMOTIONS = [
   },
   {
     id: 2,
-    title: "Lunar New Year Special",
-    description: "Celebrate the Lunar New Year with special bonuses and rewards. Limited time offer!",
+    title: "Lunar Challenges",
+    description: "Hit 88x multipliers on selected games to win a $200 bonus prize! Complete 2 out of 5 dragon-themed game challenges.",
     imageUrl: "/images/PROMOS/LUNAR1.WEBP",
     category: "Casino",
-    validUntil: "2024-02-29",
+    validUntil: "2025-01-25",
     isNew: true,
+    details: {
+      overview: "Celebrate the Lunar New Year by smashing through the 88x multipliers on selected games. Win $200 bonus by completing 2 out of 5 challenges!",
+      selectedGames: ["Dragon Tiger", "Dragon Hero", "8 Golden Dragon Challenge", "Dragon King Hot Pots", "Floating Dragon"],
+      requirements: {
+        multiplier: "88x or higher",
+        minBet: "$0.40 USD",
+        completion: "2 out of 5 games"
+      },
+      prize: 200,
+      status: "ENDED"
+    },
     link: "https://www.goated.com/promotions",
   },
   {
