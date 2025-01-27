@@ -165,10 +165,20 @@ function MVPCard({
           <div className="relative p-6 rounded-xl bg-gradient-to-b from-[#1A1B21]/80 to-[#1A1B21]/50 backdrop-blur-sm">
             <div className="absolute inset-0 bg-gradient-to-b from-[#2A2B31]/20 to-transparent opacity-50 rounded-xl" />
             <div className="relative">
-              <h4 className="text-xl font-heading text-white mb-6 flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-[#D7FF00]" />
-                Player Statistics
-              </h4>
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <img 
+                    src={getTierIcon(getTierFromWager(mvp.wagered.all_time))}
+                    alt="VIP Tier"
+                    className="w-8 h-8"
+                  />
+                  <h4 className="text-2xl font-heading text-white">{mvp.username}</h4>
+                </div>
+                <div className="flex items-center gap-2 text-xl font-heading text-white">
+                  <Trophy className="w-5 h-5 text-[#D7FF00]" />
+                  Player Statistics
+                </div>
+              </div>
               <div className="space-y-4">
                 {[
                   { label: "Daily Rank", value: leaderboardData?.data?.today?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#8B5CF6" },
