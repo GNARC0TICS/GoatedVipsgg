@@ -1,4 +1,5 @@
-import { Trophy, TrendingUp, User } from "lucide-react";
+import React from 'react';
+import { Trophy, TrendingUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect as ReactuseEffect } from "react";
@@ -190,15 +191,11 @@ export function MVPCards() {
     staleTime: 30000,
   });
 
-  const mvps = React.useMemo(() => {
-    if (!leaderboardData?.data) return null;
-    
-    return {
-      daily: leaderboardData.data.today.data[0],
-      weekly: leaderboardData.data.weekly.data[0],
-      monthly: leaderboardData.data.monthly.data[0]
-    };
-  }, [leaderboardData]);
+  const mvps = {
+    daily: leaderboardData?.data?.today?.data[0],
+    weekly: leaderboardData?.data?.weekly?.data[0],
+    monthly: leaderboardData?.data?.monthly?.data[0]
+  };
 
   const handleCardFlip = (period: string) => {
     setFlippedCards(prev => ({
@@ -207,7 +204,7 @@ export function MVPCards() {
     }));
   };
 
-  if (isLoading || !mvps) {
+  if (isLoading || !mvps?.daily) {
     return (
       <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
         {timeframes.map((timeframe) => (
@@ -238,11 +235,11 @@ export function MVPCards() {
         >
           <MVPCard 
             timeframe={timeframe}
-            mvp={mvps?.[timeframe.period] ? {
-              username: mvps[timeframe.period].name,
-              uid: mvps[timeframe.period].uid,
-              wagerAmount: mvps[timeframe.period].wagered[timeframe.period === 'daily' ? 'today' : timeframe.period === 'weekly' ? 'this_week' : 'this_month'],
-              wagered: mvps[timeframe.period].wagered
+            mvp={mvps[timeframe.period as keyof typeof mvps] ? {
+              username: mvps[timeframe.period as keyof typeof mvps]?.name || '',
+              uid: mvps[timeframe.period as keyof typeof mvps]?.uid || '',
+              wagerAmount: mvps[timeframe.period as keyof typeof mvps]?.wagered[timeframe.period === 'daily' ? 'today' : timeframe.period === 'weekly' ? 'this_week' : 'this_month'] || 0,
+              wagered: mvps[timeframe.period as keyof typeof mvps]?.wagered || {today:0, this_week:0, this_month:0, all_time:0}
             } : undefined}
             isFlipped={flippedCards[timeframe.period] || false}
             onFlip={() => handleCardFlip(timeframe.period)}
