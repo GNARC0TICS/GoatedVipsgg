@@ -27,6 +27,57 @@ export function registerRoutes(app: Express): Server {
 }
 
 function setupRESTRoutes(app: Express) {
+  // Add new MVP stats endpoint
+  app.get("/api/mvp-stats", async (_req, res) => {
+    try {
+      await rateLimiter.consume(_req.ip || "unknown");
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const rawData = await response.json();
+      const stats = transformLeaderboardData(rawData);
+
+      // Extract top player from each period
+      const mvpData = {
+        daily: stats.data.today.data[0] || null,
+        weekly: stats.data.weekly.data[0] || null,
+        monthly: stats.data.monthly.data[0] || null
+      };
+
+      // Transform data for MVP cards
+      const result = Object.entries(mvpData).reduce((acc, [period, data]) => {
+        if (data) {
+          acc[period] = {
+            username: data.name,
+            wagerAmount: data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'],
+            rank: 1,
+            lastActive: new Date().toISOString() // This would ideally come from the API
+          };
+        }
+        return acc;
+      }, {} as Record<string, any>);
+
+      res.json(result);
+    } catch (error) {
+      log(`Error fetching MVP stats: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch MVP statistics",
+      });
+    }
+  });
+
   app.get("/api/profile", requireAuth, handleProfileRequest);
   app.post("/api/admin/login", async (req, res) => {
     try {

@@ -11,6 +11,7 @@ import {
   Gift,
 } from "lucide-react";
 import { FeatureCarousel } from "@/components/FeatureCarousel";
+import { MVPCards } from "@/components/MVPCards";
 
 export default function Home() {
   return (
@@ -71,7 +72,7 @@ export default function Home() {
             transition={{ delay: 0.3 }}
             className="max-w-7xl mx-auto mb-16"
           >
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto mb-12">
               <FeatureCarousel />
             </div>
 
@@ -79,7 +80,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-xl text-[#8A8B91] max-w-2xl mx-auto mb-8"
+              className="text-xl text-[#8A8B91] max-w-2xl mx-auto mb-12"
             >
               Join an elite community of players at Goated.com, where your
               wagering transforms into rewards. Compete in exclusive wager races,
@@ -88,6 +89,18 @@ export default function Home() {
               become part of a thriving community where winning strategies are
               shared daily.
             </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-16"
+            >
+              <h2 className="text-3xl font-heading text-white mb-8 text-center">
+                TOP PERFORMERS
+              </h2>
+              <MVPCards />
+            </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
