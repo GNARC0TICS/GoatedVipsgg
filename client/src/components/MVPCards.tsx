@@ -1,15 +1,12 @@
-
 import { Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 
 type MVP = {
   username: string;
   wagerAmount: number;
-  avatarUrl?: string | null;
+  avatarUrl?: string;
   rank: number;
-  lastActive: string;
 };
 
 const timeframes = [
@@ -45,6 +42,7 @@ const timeframes = [
   }
 ];
 
+// Function to determine VIP tier based on wager amount
 function getVipTier(wagerAmount: number) {
   if (wagerAmount >= 1000000) return "DIAMOND";
   if (wagerAmount >= 500000) return "PLATINUM";
@@ -53,185 +51,104 @@ function getVipTier(wagerAmount: number) {
   return "BRONZE";
 }
 
-function MVPCard({ 
-  timeframe, 
-  mvp, 
-  isFlipped, 
-  onClick,
-  isLoading
-}: { 
-  timeframe: typeof timeframes[number];
-  mvp: MVP | null;
-  isFlipped: boolean;
-  onClick: () => void;
-  isLoading: boolean;
-}) {
-  if (isLoading) {
+export function MVPCards() {
+  const { data: mvps, isLoading } = useQuery<Record<string, MVP>>({
+    queryKey: ["/api/mvp-stats"],
+  });
+
+  if (isLoading || !mvps) {
     return (
-      <div className="h-full rounded-xl bg-[#1A1B21]/50 animate-pulse" />
+      <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
+        {timeframes.map((timeframe) => (
+          <div key={timeframe.period} className="p-6 bg-[#1A1B21]/50 animate-pulse h-48 rounded-xl">
+            <div className="h-full"></div>
+          </div>
+        ))}
+      </div>
     );
   }
 
   return (
-    <motion.div
-      className="relative w-full h-full perspective-1000 cursor-pointer"
-      onClick={onClick}
-      initial={false}
-      animate={{ rotateY: isFlipped ? 180 : 0 }}
-      transition={{
-        type: "spring",
-        stiffness: 300,
-        damping: 30
-      }}
-    >
-      {/* Front of card */}
-      <motion.div
-        className={`
-          absolute inset-0
-          rounded-xl overflow-hidden
-          bg-gradient-to-br from-[#1A1B21] to-[#2A2B31]
-          border border-${timeframe.colors.accent}/20
-          shadow-lg
-          transition-all duration-300
-          ${isFlipped ? 'backface-hidden' : ''}
-        `}
-        whileHover={{
-          scale: 1.02,
-          rotateX: 5,
-          rotateY: 5,
-          z: 50
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-30" />
-        <div className="absolute inset-0 bg-gradient-to-bl from-black/40 via-transparent to-black/40" />
-
-        <div className="relative p-4 md:p-6 h-full">
-          <div className="flex items-center gap-2 mb-4">
-            <Trophy className={`h-5 w-5 md:h-6 md:w-6 text-${timeframe.colors.accent}`} />
-            <h3 className="text-lg md:text-xl font-heading text-white">{timeframe.title}</h3>
-          </div>
-
-          {mvp ? (
-            <div className="flex flex-col justify-between h-[calc(100%-2rem)]">
-              <div className="flex items-center gap-3">
-                {mvp.avatarUrl ? (
-                  <img 
-                    src={mvp.avatarUrl} 
-                    alt={mvp.username}
-                    className={`w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-${timeframe.colors.accent}`}
-                  />
-                ) : (
-                  <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-${timeframe.colors.accent}/10 flex items-center justify-center`}>
-                    <span className="text-lg text-white font-bold">
-                      {mvp.username.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <h4 className="text-base md:text-lg font-heading text-white">
-                    {mvp.username}
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    Rank #{mvp.rank}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-auto">
-                <div className="bg-black/20 p-3 rounded-lg">
-                  <div className="text-sm text-white/70">Current Wager</div>
-                  <div className="text-lg font-mono font-bold text-white">
-                    ${mvp.wagerAmount.toLocaleString()}
-                  </div>
-                </div>
-                <div className="text-center text-xs text-white/50 mt-2">Click to view stats</div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-[calc(100%-2rem)]">
-              <p className="text-white/50 text-center text-sm">No data available</p>
-            </div>
-          )}
-        </div>
-      </motion.div>
-
-      {/* Back of card */}
-      <motion.div
-        className={`
-          absolute inset-0
-          rounded-xl overflow-hidden
-          bg-gradient-to-br from-[#1A1B21] to-[#2A2B31]
-          border border-${timeframe.colors.accent}/20
-          shadow-lg
-          backface-hidden [transform:rotateY(180deg)]
-          ${!isFlipped ? 'pointer-events-none' : ''}
-        `}
-      >
-        <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-30" />
-        <div className="absolute inset-0 bg-gradient-to-bl from-black/40 via-transparent to-black/40" />
-
-        {mvp && (
-          <div className="relative p-4 md:p-6">
-            <h3 className="text-lg font-heading text-white mb-4">Player Stats</h3>
-            <div className="space-y-3">
-              <div className="bg-black/20 p-3 rounded-lg">
-                <div className="text-sm text-white/70 mb-1">Total Wagered</div>
-                <div className="text-lg font-mono font-bold text-white">
-                  ${mvp.wagerAmount.toLocaleString()}
-                </div>
-              </div>
-              <div className="bg-black/20 p-3 rounded-lg">
-                <div className="text-sm text-white/70 mb-1">VIP Status</div>
-                <div className="text-lg font-bold text-white">
-                  {getVipTier(mvp.wagerAmount)}
-                </div>
-              </div>
-              <div className="bg-black/20 p-3 rounded-lg">
-                <div className="text-sm text-white/70 mb-1">Last Seen</div>
-                <div className="text-base text-white">
-                  {new Date(mvp.lastActive).toLocaleDateString()}
-                </div>
-              </div>
-              <div className="mt-4 text-center text-xs text-white/50">
-                Click to flip back
-              </div>
-            </div>
-          </div>
-        )}
-      </motion.div>
-    </motion.div>
-  );
-}
-
-export function MVPCards() {
-  const { data: mvps, isLoading } = useQuery<Record<string, MVP>>({
-    queryKey: ["/api/mvp-stats"],
-    refetchInterval: 30000,
-    retry: 3,
-    staleTime: 10000,
-  });
-
-  const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
-
-  const handleCardClick = (period: string) => {
-    setFlippedCards(prev => ({
-      ...prev,
-      [period]: !prev[period]
-    }));
-  };
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 max-w-5xl mx-auto">
+    <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto perspective-1000">
       {timeframes.map((timeframe) => (
-        <div key={timeframe.period} className="h-[200px] md:h-[240px]">
-          <MVPCard
-            timeframe={timeframe}
-            mvp={mvps?.[timeframe.period] || null}
-            isFlipped={flippedCards[timeframe.period] || false}
-            onClick={() => handleCardClick(timeframe.period)}
-            isLoading={isLoading}
-          />
-        </div>
+        <motion.div
+          key={timeframe.period}
+          initial={{ opacity: 0, y: 20, rotateX: -15 }}
+          animate={{ opacity: 1, y: 0, rotateX: 0 }}
+          whileHover={{ 
+            scale: 1.02,
+            rotateY: 5,
+            rotateX: 5,
+            z: 50
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 400,
+            damping: 30
+          }}
+          className={`
+            relative transform-gpu
+            rounded-xl overflow-hidden
+            bg-gradient-to-br ${timeframe.colors.primary} ${timeframe.colors.secondary}
+            shadow-xl
+          `}
+        >
+          {/* Shiny overlay */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50" />
+          <div className="absolute inset-0 bg-gradient-to-bl from-white/5 via-transparent to-black/20" />
+
+          {/* Card content */}
+          <div className="relative p-6 backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Trophy className={`h-6 w-6 text-${timeframe.colors.shine}`} />
+                <h3 className="text-xl font-heading text-white">{timeframe.title}</h3>
+              </div>
+            </div>
+
+            {mvps[timeframe.period] ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  {mvps[timeframe.period].avatarUrl ? (
+                    <img 
+                      src={mvps[timeframe.period].avatarUrl} 
+                      alt={mvps[timeframe.period].username}
+                      className={`w-12 h-12 rounded-full border-2 border-${timeframe.colors.accent}`}
+                    />
+                  ) : (
+                    <div className={`w-12 h-12 rounded-full bg-${timeframe.colors.accent}/20 flex items-center justify-center`}>
+                      <span className={`text-lg text-${timeframe.colors.shine} font-bold`}>
+                        {mvps[timeframe.period].username.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="text-lg font-heading text-white">
+                      {mvps[timeframe.period].username}
+                    </h4>
+                    <div className={`text-xs px-2 py-1 rounded-full bg-${timeframe.colors.accent}/20 inline-block`}>
+                      <span className={`text-${timeframe.colors.shine} font-bold`}>
+                        {getVipTier(mvps[timeframe.period].wagerAmount)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center text-sm mt-2 bg-black/20 p-3 rounded-lg">
+                  <span className="text-white/70">Total Wagered:</span>
+                  <span className="text-white font-mono font-bold">
+                    ${mvps[timeframe.period].wagerAmount.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-white/70 text-center text-sm">No data available</p>
+            )}
+
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-white/10 to-transparent rounded-full blur-xl transform translate-x-12 -translate-y-8" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-black/20 to-transparent rounded-full blur-xl transform -translate-x-16 translate-y-16" />
+          </div>
+        </motion.div>
       ))}
     </div>
   );

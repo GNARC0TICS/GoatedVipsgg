@@ -94,9 +94,9 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="mb-16 md:mb-24 px-4 md:px-0"
+              className="mb-24"
             >
-              <h2 className="text-3xl md:text-4xl font-heading text-white mb-8 md:mb-12 text-center">
+              <h2 className="text-4xl font-heading text-white mb-12 text-center">
                 TOP PERFORMERS
               </h2>
               <MVPCards />
