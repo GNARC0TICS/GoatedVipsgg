@@ -117,17 +117,19 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
             key={timePeriod}
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="font-['MonaSansCondensed-ExtraBold'] text-4xl md:text-5xl text-[#D7FF00] mb-2 text-center tracking-tighter"
+            className="font-['MonaSansCondensed-ExtraBold'] text-4xl md:text-5xl text-white mb-2 text-center tracking-tighter"
             style={{
-              textShadow: '0 0 10px rgba(215, 255, 0, 0.5), 0 0 20px rgba(215, 255, 0, 0.3)'
+              textShadow: '0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.3)'
             }}
           >
-            {timePeriod === 'all_time' ? 'ALL TIME' : timePeriod.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
+            <div className="flex items-center justify-center gap-3">
+              {timePeriod === 'all_time' ? 'ALL TIME' : timePeriod.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
+              <div className="flex items-center gap-1">
+                <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                <span className="text-xs text-red-500 font-heading">LIVE</span>
+              </div>
+            </div>
           </motion.h2>
-          <div className="flex items-center gap-1">
-            <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
-            <span className="text-xs text-red-500 font-heading">LIVE</span>
-          </div>
         </div>
       </div>
 
