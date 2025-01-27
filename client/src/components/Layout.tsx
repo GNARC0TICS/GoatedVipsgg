@@ -137,6 +137,16 @@ export function Layout({ children }: LayoutProps) {
                           </span>
                         </div>
                       </Link>
+                      <Link href="/vip-transfer">
+                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                          <span className="relative">
+                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                              VIP Transfer
+                            </span>
+                          </span>
+                        </div>
+                      </Link>
                       <Link href="/tips-and-strategies">
                         <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
@@ -233,7 +243,52 @@ export function Layout({ children }: LayoutProps) {
                   </div>
                 </div>
 
-                <NavLink href="/promotions" label="PROMOTIONS" />
+                {/* Promotions dropdown */}
+                <div className="relative group">
+                  <Link href="/promotions">
+                    <Button
+                      variant="ghost"
+                      className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent"
+                    >
+                      <span className="font-bold">PROMOTIONS</span>
+                      <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                    </Button>
+                  </Link>
+                  <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                    <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                      <Link href="/promotions">
+                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                          <span className="relative">
+                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                              News & Promotions
+                            </span>
+                          </span>
+                        </div>
+                      </Link>
+                      <Link href="/bonus-codes">
+                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                          <span className="relative">
+                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                              Bonus Codes
+                            </span>
+                          </span>
+                        </div>
+                      </Link>
+                      <Link href="/goated-token">
+                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                          <span className="relative">
+                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                              Goated Airdrop
+                            </span>
+                          </span>
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
                 <NavLink href="/telegram" label="TELEGRAM" tooltip="Join our Telegram community" />
                 {user?.isAdmin && (
                   <NavLink href="/admin/wager-races" label="ADMIN" />
@@ -284,8 +339,11 @@ export function Layout({ children }: LayoutProps) {
                       <MobileNavLink href="/leaderboard?period=monthly" label="MONTHLY LEADERBOARD" />
                       <MobileNavLink href="/leaderboard?period=all-time" label="ALL TIME LEADERBOARD" />
 
+                      <div className="px-4 py-2 mt-4 text-[#D7FF00] font-heading text-sm">PROMOTIONS</div>
+                      <MobileNavLink href="/promotions" label="NEWS & PROMOTIONS" />
+                      <MobileNavLink href="/bonus-codes" label="BONUS CODES" />
+                      <MobileNavLink href="/goated-token" label="GOATED AIRDROP" />
                       <div className="px-4 py-2 mt-4 text-[#D7FF00] font-heading text-sm">MORE</div>
-                      <MobileNavLink href="/promotions" label="PROMOTIONS" />
                       <MobileNavLink href="/telegram" label="TELEGRAM" />
                       {user?.isAdmin && (
                         <MobileNavLink href="/admin/wager-races" label="ADMIN" />
