@@ -13,6 +13,9 @@ import {
   Star,
   Trophy,
   CircleDot,
+  ChevronLeft,
+  ChevronRight,
+  Users,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
@@ -38,6 +41,8 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
     );
   }, [data, searchQuery]);
 
+  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+
   const getTrophyIcon = (rank: number) => {
     switch (rank) {
       case 1:
@@ -49,6 +54,14 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
       default:
         return <Star className="h-5 w-5 text-zinc-600" />;
     }
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => Math.max(0, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1));
   };
 
   if (isLoading) {
@@ -120,20 +133,22 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
             className="text-4xl md:text-5xl text-white mb-2 text-center tracking-tighter"
             style={{
               fontFamily: 'MonaSansCondensed-ExtraBold',
+              fontStretch: "condensed",
+              fontVariationSettings: "'COND' 100, 'wght' 800",
               textShadow: '0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.3)'
             }}
           >
             <div className="flex items-center justify-center gap-3">
-                {timePeriod === 'all_time' 
-                  ? 'ALL TIME' 
-                  : timePeriod === 'today'
-                    ? 'DAILY'
-                    : timePeriod?.toUpperCase()}
-                <div className="flex items-center gap-1">
-                  <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
-                  <span className="text-xs text-red-500 font-heading">LIVE</span>
-                </div>
+              {timePeriod === 'all_time' 
+                ? 'ALL TIME' 
+                : timePeriod === 'today'
+                  ? 'DAILY'
+                  : timePeriod?.toUpperCase()}
+              <div className="flex items-center gap-1">
+                <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                <span className="text-xs text-red-500 font-heading">LIVE</span>
               </div>
+            </div>
           </motion.h2>
         </div>
       </div>
@@ -218,6 +233,39 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
               ))}
           </TableBody>
         </Table>
+
+        <div className="p-4 border-t border-[#2A2B31] flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[#8A8B91]">
+            <Users className="h-4 w-4" />
+            <span className="text-sm">
+              {metadata?.totalUsers || filteredData.length} Players
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handlePrevPage}
+              disabled={currentPage === 0}
+              className="h-8 w-8 border-[#2A2B31] hover:bg-[#2A2B31] hover:text-[#D7FF00]"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-[#8A8B91] text-sm px-2">
+              Page {currentPage + 1} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleNextPage}
+              disabled={currentPage >= totalPages - 1}
+              className="h-8 w-8 border-[#2A2B31] hover:bg-[#2A2B31] hover:text-[#D7FF00]"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
