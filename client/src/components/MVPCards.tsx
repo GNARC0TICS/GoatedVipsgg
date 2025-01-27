@@ -51,17 +51,19 @@ const timeframes = [
   }
 ];
 
+import { Dialog, DialogContent } from "./ui/dialog";
+
 function MVPCard({ 
   timeframe, 
   mvp, 
-  isFlipped,
-  onFlip,
+  isOpen,
+  onOpenChange,
   leaderboardData
 }: { 
   timeframe: typeof timeframes[0], 
   mvp: MVP | undefined,
-  isFlipped: boolean,
-  onFlip: () => void,
+  isOpen: boolean,
+  onOpenChange: (open: boolean) => void,
   leaderboardData: any
 }) {
   const [showIncrease, setShowIncrease] = useState(false);
@@ -84,22 +86,11 @@ function MVPCard({
   }
 
   return (
-    <motion.div
-      className="relative w-full h-[200px]"
-      onClick={onFlip}
-      style={{ perspective: "1000px" }}
-    >
-      <AnimatePresence initial={false} mode="wait">
-        <motion.div
-          key={isFlipped ? "back" : "front"}
-          initial={{ rotateY: isFlipped ? -180 : 0, opacity: 0 }}
-          animate={{ rotateY: isFlipped ? 0 : 0, opacity: 1 }}
-          exit={{ rotateY: isFlipped ? 0 : 180, opacity: 0 }}
-          transition={{ duration: 0.4 }}
-          className="absolute w-full h-full"
-          style={{ backfaceVisibility: "hidden" }}
-        >
-          {!isFlipped ? (
+    <>
+      <motion.div
+        className="relative w-full h-[200px] cursor-pointer"
+        onClick={() => onOpenChange(true)}
+      >
             // Front of card
             <div className="relative h-full">
               <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
@@ -168,9 +159,11 @@ function MVPCard({
                 </div>
               </div>
             </div>
-          ) : (
-            // Back of card - Detailed Stats
-            <div className="relative h-full p-6 rounded-xl border border-[#2A2B31] bg-gradient-to-b from-[#1A1B21]/80 to-[#1A1B21]/50 backdrop-blur-sm">
+          </motion.div>
+
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="bg-[#1A1B21] border-[#2A2B31] max-w-2xl w-full">
+          <div className="relative p-6 rounded-xl bg-gradient-to-b from-[#1A1B21]/80 to-[#1A1B21]/50 backdrop-blur-sm">
               <div className="absolute inset-0 bg-gradient-to-b from-[#2A2B31]/20 to-transparent opacity-50 rounded-xl" />
               <div className="relative">
                 <h4 className="text-xl font-heading text-white mb-6 flex items-center gap-2">
@@ -202,15 +195,15 @@ function MVPCard({
                 </div>
               </div>
             </div>
-          )}
-        </motion.div>
-      </AnimatePresence>
-    </motion.div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
 export function MVPCards() {
-  const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
+  const [openCard, setOpenCard] = useState<string | null>(null);
   const { data: leaderboardData, isLoading } = useQuery({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
@@ -266,8 +259,8 @@ export function MVPCards() {
               wagerAmount: mvps[timeframe.period as keyof typeof mvps]?.wagered[timeframe.period === 'daily' ? 'today' : timeframe.period === 'weekly' ? 'this_week' : 'this_month'] || 0,
               wagered: mvps[timeframe.period as keyof typeof mvps]?.wagered || {today:0, this_week:0, this_month:0, all_time:0}
             } : undefined}
-            isFlipped={flippedCards[timeframe.period] || false}
-            onFlip={() => handleCardFlip(timeframe.period)}
+            isOpen={openCard === timeframe.period}
+            onOpenChange={(open) => setOpenCard(open ? timeframe.period : null)}
             leaderboardData={leaderboardData}
           />
         </motion.div>
