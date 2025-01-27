@@ -61,15 +61,6 @@ export default function TipsAndStrategies() {
           className="space-y-8"
         >
           {/* Header */}
-          <Button
-            variant="ghost"
-            className="gap-2 mb-8"
-            onClick={() => setLocation("/")}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Button>
-
           <div className="mb-12">
             <video
               autoPlay
@@ -80,6 +71,15 @@ export default function TipsAndStrategies() {
               <source src="/images/Page Headers/TIPSHEAD.MP4" type="video/mp4" />
             </video>
           </div>
+
+          <Button
+            variant="ghost"
+            className="gap-2 mb-8"
+            onClick={() => setLocation("/")}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Home
+          </Button>
 
           <div className="prose prose-invert max-w-none">
             {/* Search and Filter Section */}
