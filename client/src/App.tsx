@@ -121,13 +121,28 @@ function Router() {
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
+  const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery({
+    queryKey: ["/api/affiliate/stats"],
+    staleTime: 30000,
+  });
+
+  const { data: mvpData, isLoading: mvpLoading } = useQuery({
+    queryKey: ["/api/mvp-stats"],
+    staleTime: 30000,
+  });
+
+  useEffect(() => {
+    if (!leaderboardLoading && !mvpLoading && leaderboardData && mvpData) {
+      setIsLoading(false);
+    }
+  }, [leaderboardLoading, mvpLoading, leaderboardData, mvpData]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary FallbackComponent={ErrorFallback}>
         <AuthProvider>
           <AnimatePresence mode="wait">
-            {isLoading ? (
+            {(isLoading || leaderboardLoading || mvpLoading) ? (
               <PreLoader onLoadComplete={() => setIsLoading(false)} />
             ) : (
               <Suspense fallback={<LoadingSpinner />}>
