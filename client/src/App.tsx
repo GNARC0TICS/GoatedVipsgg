@@ -30,8 +30,8 @@ import GoatedToken from "@/pages/GoatedToken";
 import Support from "@/pages/support";
 import FAQ from "@/pages/faq";
 import VipProgram from "./pages/VipProgram";
-import TipsAndStrategies from "@/pages/tips-and-strategies"; // Added import
-
+import TipsAndStrategies from "@/pages/tips-and-strategies";
+import Promotions from "@/pages/Promotions";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -80,6 +80,7 @@ function Router() {
             <Route path="/bonus-codes" component={BonusCodes} />
             <Route path="/leaderboard" component={Leaderboard} />
             <Route path="/tips-and-strategies" component={TipsAndStrategies} />
+            <Route path="/promotions" component={Promotions} />
             <Route
               path="/notification-preferences"
               component={NotificationPreferences}
