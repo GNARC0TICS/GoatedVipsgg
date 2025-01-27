@@ -291,7 +291,7 @@ export function MVPCards() {
               wagered: mvps[timeframe.period as keyof typeof mvps]?.wagered || {today:0, this_week:0, this_month:0, all_time:0}
             } : undefined}
             isOpen={openCard === timeframe.period}
-            onOpenChange={handleDialogChange}
+            onOpenChange={(open) => handleDialogChange(open, timeframe.period)}
             leaderboardData={leaderboardData}
           />
         </motion.div>
