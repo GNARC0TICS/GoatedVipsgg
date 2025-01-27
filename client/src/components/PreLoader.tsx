@@ -39,7 +39,7 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
         <img
           src="/images/preload.PNG"
           alt="Goated Preloader"
-          className="w-32 h-32 object-contain"
+          className="w-64 h-64 object-contain"
         />
         <div className="w-64 h-1 bg-[#2A2B31] rounded-full overflow-hidden">
           <motion.div
