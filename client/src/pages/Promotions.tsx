@@ -67,6 +67,19 @@ export default function Promotions() {
             </Button>
           </motion.div>
 
+          {/* Video Header */}
+          <motion.div variants={itemVariants} className="mb-8">
+            <video
+              autoPlay
+              muted
+              playsInline
+              loop
+              className="w-full max-w-4xl mx-auto rounded-xl"
+            >
+              <source src="/images/Page Headers/PROMOHEAD.MP4" type="video/mp4" />
+            </video>
+          </motion.div>
+
           {/* Title Section */}
           <motion.div variants={itemVariants} className="text-center space-y-4">
             <h1 className="text-4xl md:text-5xl font-heading font-bold text-[#D7FF00]">
