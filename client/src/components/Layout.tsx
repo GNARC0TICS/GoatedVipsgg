@@ -37,6 +37,7 @@ export function Layout({ children }: LayoutProps) {
   const [isFooterVisible, setIsFooterVisible] = useState(false);
   const [showFloatingSupport, setShowFloatingSupport] = useState(true);
   const { toast } = useToast();
+  const [openMobile, setOpenMobile] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -310,7 +311,8 @@ export function Layout({ children }: LayoutProps) {
                   </SheetTrigger>
                   <SheetContent
                     side="left"
-                    className="w-[300px] bg-[#14151A] border-r border-[#2A2B31]"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                    className="w-[300px] bg-[#14151A] border-r border-[#2A2B31] overflow-y-auto"
                   >
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
@@ -318,36 +320,77 @@ export function Layout({ children }: LayoutProps) {
                       transition={{ duration: 0.3 }}
                       className="flex flex-col gap-4 pt-8"
                     >
-                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm">GET STARTED</div>
-                      <MobileNavLink href="/" label="HOME" />
-                      <MobileNavLink href="/how-it-works" label="HOW IT WORKS" />
-                      <MobileNavLink href="/tips-and-strategies" label="TIPS & STRATEGIES" />
-                      <MobileNavLink href="/vip-program" label="VIP PROGRAM" />
+                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">MENU</div>
+                      <MobileNavLink href="/" label="Home" onNavigate={() => setOpenMobile(false)} />
 
-                      <div className="px-4 py-2 mt-4 text-[#D7FF00] font-heading text-sm">COMPETE</div>
-                      <MobileNavLink href="/wager-races" label={
-                        <div className="flex items-center gap-2">
-                          MONTHLY RACE
-                          <div className="flex items-center gap-1">
-                            <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
-                            <span className="text-xs text-red-500">LIVE</span>
+                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">GET STARTED</div>
+                      <MobileNavLink href="/how-it-works" label="How It Works" onNavigate={() => setOpenMobile(false)} />
+                      <MobileNavLink href="/vip-transfer" label="VIP Transfer" onNavigate={() => setOpenMobile(false)} />
+                      <MobileNavLink href="/tips-and-strategies" label="Tips & Strategies" onNavigate={() => setOpenMobile(false)} />
+                      <MobileNavLink href="/vip-program" label="VIP Program" onNavigate={() => setOpenMobile(false)} />
+
+                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">COMPETITIONS</div>
+                      <MobileNavLink 
+                        href="/wager-races" 
+                        label={
+                          <div className="flex items-center gap-2">
+                            <span>Monthly Race</span>
+                            <div className="flex items-center gap-1">
+                              <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                              <span className="text-xs text-red-500">LIVE</span>
+                            </div>
                           </div>
-                        </div>
-                      } />
-                      <MobileNavLink href="/leaderboard?period=daily" label="DAILY LEADERBOARD" />
-                      <MobileNavLink href="/leaderboard?period=weekly" label="WEEKLY LEADERBOARD" />
-                      <MobileNavLink href="/leaderboard?period=monthly" label="MONTHLY LEADERBOARD" />
-                      <MobileNavLink href="/leaderboard?period=all-time" label="ALL TIME LEADERBOARD" />
+                        } 
+                        onNavigate={() => setOpenMobile(false)}
+                      />
 
-                      <div className="px-4 py-2 mt-4 text-[#D7FF00] font-heading text-sm">PROMOTIONS</div>
-                      <MobileNavLink href="/promotions" label="NEWS & PROMOTIONS" />
-                      <MobileNavLink href="/bonus-codes" label="BONUS CODES" />
-                      <MobileNavLink href="/goated-token" label="GOATED AIRDROP" />
-                      <div className="px-4 py-2 mt-4 text-[#D7FF00] font-heading text-sm">MORE</div>
-                      <MobileNavLink href="/telegram" label="TELEGRAM" />
+                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">LEADERBOARDS</div>
+                      <MobileNavLink 
+                        href="/leaderboard?period=daily" 
+                        label="Daily Leaderboard" 
+                        onNavigate={() => setOpenMobile(false)}
+                      />
+                      <MobileNavLink 
+                        href="/leaderboard?period=weekly" 
+                        label="Weekly Leaderboard" 
+                        onNavigate={() => setOpenMobile(false)}
+                      />
+                      <MobileNavLink 
+                        href="/leaderboard?period=monthly" 
+                        label="Monthly Leaderboard" 
+                        onNavigate={() => setOpenMobile(false)}
+                      />
+                      <MobileNavLink 
+                        href="/leaderboard?period=all_time" 
+                        label="All Time Leaderboard" 
+                        onNavigate={() => setOpenMobile(false)}
+                      />
+
+                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">PROMOTIONS</div>
+                      <MobileNavLink href="/promotions" label="News & Promotions" onNavigate={() => setOpenMobile(false)} />
+                      <MobileNavLink href="/bonus-codes" label="Bonus Codes" onNavigate={() => setOpenMobile(false)} />
+                      <MobileNavLink href="/goated-token" label="Goated Airdrop" onNavigate={() => setOpenMobile(false)} />
+
+                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">COMMUNITY</div>
+                      <MobileNavLink href="/telegram" label="Telegram" onNavigate={() => setOpenMobile(false)} />
                       {user?.isAdmin && (
-                        <MobileNavLink href="/admin/wager-races" label="ADMIN" />
+                        <>
+                          <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">ADMIN</div>
+                          <MobileNavLink href="/admin/wager-races" label="Admin Panel" onNavigate={() => setOpenMobile(false)} />
+                        </>
                       )}
+
+                      <div className="mt-4 px-4">
+                        <Button
+                          onClick={() => {
+                            window.open("https://www.goated.com/r/SPIN", "_blank");
+                            setOpenMobile(false);
+                          }}
+                          className="w-full bg-[#D7FF00] text-[#14151A] hover:bg-[#D7FF00]/90 transition-colors font-bold"
+                        >
+                          PLAY NOW →
+                        </Button>
+                      </div>
                     </motion.div>
                   </SheetContent>
                 </Sheet>
@@ -603,7 +646,16 @@ function NavLink({
 }
 
 
-function MobileNavLink({ href, label }: { href: string; label: string | React.ReactNode }) {
+
+function MobileNavLink({ 
+  href, 
+  label, 
+  onNavigate 
+}: { 
+  href: string; 
+  label: string | React.ReactNode;
+  onNavigate?: () => void;
+}) {
   const [location] = useLocation();
   const isActive = location === href;
 
@@ -612,11 +664,11 @@ function MobileNavLink({ href, label }: { href: string; label: string | React.Re
       <motion.div
         whileHover={{ x: 8, scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+        onClick={onNavigate}
+        className={`px-4 py-2.5 rounded-lg transition-all duration-200 ${
           isActive
             ? "bg-[#D7FF00]/10 text-[#D7FF00]"
-            : "text-white hover:bg-[#2A2B31] hover:text-[#D7FF00]"
-        }`}
+            : "text-white hover:bg-[#2A2B31] hover:text-[#D7FF00]"        }`}
       >
         {label}
       </motion.div>
