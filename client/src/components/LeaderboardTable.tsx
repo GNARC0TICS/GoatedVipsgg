@@ -2,16 +2,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Clock,
-  Calendar,
-  CalendarDays,
   Search,
   Crown,
   Medal,
   Award,
-  TrendingUp,
   Star,
-  Trophy,
+  TrendingUp,
   CircleDot,
   ChevronLeft,
   ChevronRight,
@@ -109,52 +105,26 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
     }
   };
 
-  const renderTimePeriodIcon = (period: TimePeriod) => {
-    switch (period) {
-      case "today":
-        return <Clock className="h-4 w-4" />;
-      case "weekly":
-        return <Calendar className="h-4 w-4" />;
-      case "monthly":
-        return <CalendarDays className="h-4 w-4" />;
-      case "all_time":
-        return <Trophy className="h-4 w-4" />;
-    }
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex flex-col items-center justify-center mb-4 text-center">
-        <div>
-          <motion.h2
-            key={timePeriod}
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl mb-2 text-center tracking-tighter"
-            style={{
-              color: '#FFFFFF',
-              fontFamily: 'MonaSansCondensed-ExtraBold, sans-serif',
-              fontStretch: "condensed",
-              fontVariationSettings: "'COND' 100, 'wght' 800",
-              textShadow: '0 0 10px rgba(215, 255, 0, 0.2), 0 0 20px rgba(215, 255, 0, 0.1)'
-            }}
-          >
-            <div className="flex items-center justify-center gap-3">
-              {timePeriod === 'all_time'
-                ? 'ALL TIME'
-                : timePeriod === 'today'
-                  ? 'DAILY'
-                  : timePeriod?.toUpperCase()}
-              <div className="flex items-center gap-1">
-                <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-xs text-red-500 font-heading">LIVE</span>
-              </div>
-            </div>
-          </motion.h2>
-        </div>
+        <motion.h2
+          key={timePeriod}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-3xl font-heading text-white mb-8 text-center"
+        >
+          {timePeriod === 'all_time' 
+            ? 'ALL-TIME LEADERBOARD'
+            : timePeriod === 'today'
+              ? 'DAILY LEADERBOARD'
+              : timePeriod === 'weekly'
+                ? 'WEEKLY LEADERBOARD'
+                : 'MONTHLY LEADERBOARD'}
+        </motion.h2>
       </div>
 
-      <div className="flex items-center gap-2 max-w-md mx-auto w-full">
+      <div className="flex items-center gap-2 max-w-md mx-auto w-full mb-4">
         <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -164,6 +134,10 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31] text-white"
           />
+        </div>
+        <div className="flex items-center gap-1 px-3 py-1 bg-[#1A1B21]/50 border border-[#2A2B31] rounded-lg">
+          <CircleDot className="h-3 w-3 text-red-500 animate-pulse" />
+          <span className="text-xs text-red-500 font-heading">LIVE</span>
         </div>
       </div>
 
