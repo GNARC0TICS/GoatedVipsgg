@@ -1,13 +1,16 @@
-import { Trophy } from "lucide-react";
-import { motion } from "framer-motion";
+import { Trophy, TrendingUp, User } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect as ReactuseEffect } from "react";
+import { Link } from "wouter";
 
 type MVP = {
   username: string;
   wagerAmount: number;
   avatarUrl?: string;
   rank: number;
-  wageredAllTime?: number; // Add all-time wager amount
+  wageredAllTime?: number;
+  lastWagerChange?: number;
 };
 
 const timeframes = [
@@ -40,19 +43,151 @@ const timeframes = [
   }
 ];
 
-// Updated to use all-time wager amount for VIP tier
-function getVipTier(allTimeWager: number) {
-  if (allTimeWager >= 1000000) return "DIAMOND";
-  if (allTimeWager >= 500000) return "PLATINUM";
-  if (allTimeWager >= 100000) return "GOLD";
-  if (allTimeWager >= 50000) return "SILVER";
-  return "BRONZE";
+function MVPCard({ 
+  timeframe, 
+  mvp, 
+  isFlipped,
+  onFlip
+}: { 
+  timeframe: typeof timeframes[0], 
+  mvp: MVP | undefined,
+  isFlipped: boolean,
+  onFlip: () => void
+}) {
+  const [showIncrease, setShowIncrease] = useState(false);
+
+  // Show increase indicator for 10 seconds when wager amount changes
+  ReactuseEffect(() => {
+    if (mvp?.lastWagerChange) {
+      setShowIncrease(true);
+      const timer = setTimeout(() => setShowIncrease(false), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [mvp?.lastWagerChange]);
+
+  if (!mvp) {
+    return (
+      <div className="p-6 bg-[#1A1B21]/50 animate-pulse h-48 rounded-xl">
+        <div className="h-full"></div>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      className="relative w-full h-[200px]"
+      onClick={onFlip}
+      style={{ perspective: "1000px" }}
+    >
+      <AnimatePresence initial={false} mode="wait">
+        <motion.div
+          key={isFlipped ? "back" : "front"}
+          initial={{ rotateY: isFlipped ? -180 : 0, opacity: 0 }}
+          animate={{ rotateY: isFlipped ? 0 : 0, opacity: 1 }}
+          exit={{ rotateY: isFlipped ? 0 : 180, opacity: 0 }}
+          transition={{ duration: 0.4 }}
+          className="absolute w-full h-full"
+          style={{ backfaceVisibility: "hidden" }}
+        >
+          {!isFlipped ? (
+            // Front of card
+            <div className="relative h-full">
+              <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
+                style={{ 
+                  background: `linear-gradient(to bottom, ${timeframe.colors.primary}20, transparent)`,
+                }}
+              />
+              <div className="relative p-4 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover h-full"
+                style={{
+                  '--hover-border-color': `${timeframe.colors.primary}80`,
+                  '--hover-shadow-color': `${timeframe.colors.primary}40`
+                } as React.CSSProperties}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Trophy style={{ color: timeframe.colors.primary }} className="h-5 w-5" />
+                    <h3 className="text-lg font-heading text-white">{timeframe.title}</h3>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    {mvp.avatarUrl ? (
+                      <img 
+                        src={mvp.avatarUrl} 
+                        alt={mvp.username}
+                        className="w-10 h-10 rounded-full border-2"
+                        style={{ borderColor: timeframe.colors.accent }}
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: `${timeframe.colors.primary}20` }}>
+                        <span className="text-base font-bold"
+                              style={{ color: timeframe.colors.shine }}>
+                          {mvp.username.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex-grow min-w-0">
+                      <Link href={`/profile/${mvp.username}`} className="block" onClick={(e) => e.stopPropagation()}>
+                        <h4 className="text-base font-heading text-white truncate hover:text-[#D7FF00] transition-colors">
+                          {mvp.username}
+                        </h4>
+                      </Link>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-sm bg-black/40 p-2 rounded-lg">
+                    <span className="text-white/70">Period Total:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-mono font-bold">
+                        ${mvp.wagerAmount.toLocaleString()}
+                      </span>
+                      {showIncrease && (
+                        <TrendingUp className="h-4 w-4 text-emerald-500 animate-pulse" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            // Back of card - Detailed Stats
+            <div className="relative h-full p-4 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm">
+              <h4 className="text-lg font-heading text-white mb-4">Detailed Stats</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70">Win Rate:</span>
+                  <span className="text-white">65%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70">Favorite Game:</span>
+                  <span className="text-white">Slots</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70">Total Games:</span>
+                  <span className="text-white">1,234</span>
+                </div>
+                {/* Add more stats as needed */}
+              </div>
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
+    </motion.div>
+  );
 }
 
 export function MVPCards() {
+  const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
   const { data: mvps, isLoading } = useQuery<Record<string, MVP>>({
     queryKey: ["/api/mvp-stats"],
   });
+
+  const handleCardFlip = (period: string) => {
+    setFlippedCards(prev => ({
+      ...prev,
+      [period]: !prev[period]
+    }));
+  };
 
   if (isLoading || !mvps) {
     return (
@@ -83,76 +218,12 @@ export function MVPCards() {
           }}
           className="group relative transform transition-all duration-300"
         >
-          {/* Gradient overlay that appears on hover */}
-          <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
-               style={{ 
-                 background: `linear-gradient(to bottom, ${timeframe.colors.primary}20, transparent)`,
-               }}
+          <MVPCard 
+            timeframe={timeframe}
+            mvp={mvps[timeframe.period]}
+            isFlipped={flippedCards[timeframe.period] || false}
+            onFlip={() => handleCardFlip(timeframe.period)}
           />
-
-          {/* Main card container */}
-          <div className="relative p-4 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover"
-               style={{
-                 '--hover-border-color': `${timeframe.colors.primary}80`,
-                 '--hover-shadow-color': `${timeframe.colors.primary}40`
-               } as React.CSSProperties}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Trophy style={{ color: timeframe.colors.primary }} className="h-5 w-5" />
-                <h3 className="text-lg font-heading text-white">{timeframe.title}</h3>
-              </div>
-            </div>
-
-            {mvps[timeframe.period] ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  {mvps[timeframe.period].avatarUrl ? (
-                    <img 
-                      src={mvps[timeframe.period].avatarUrl} 
-                      alt={mvps[timeframe.period].username}
-                      className="w-10 h-10 rounded-full border-2"
-                      style={{ borderColor: timeframe.colors.accent }}
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center"
-                         style={{ backgroundColor: `${timeframe.colors.primary}20` }}>
-                      <span className="text-base font-bold"
-                            style={{ color: timeframe.colors.shine }}>
-                        {mvps[timeframe.period].username.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex-grow min-w-0"> {/* Added flex-grow and min-w-0 for text truncation */}
-                    <h4 className="text-base font-heading text-white truncate">
-                      {mvps[timeframe.period].username}
-                    </h4>
-                    <div className="text-xs px-2 py-0.5 rounded-full inline-block"
-                         style={{ backgroundColor: `${timeframe.colors.primary}20` }}>
-                      <span className="font-bold" style={{ color: timeframe.colors.shine }}>
-                        {getVipTier(mvps[timeframe.period].wageredAllTime || 0)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col text-sm bg-black/40 p-2 rounded-lg overflow-hidden">
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/70 text-xs">Period Total:</span>
-                    <span className="text-white font-mono font-bold text-right truncate ml-2">
-                      ${mvps[timeframe.period].wagerAmount.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-white/70 text-xs">All Time:</span>
-                    <span className="text-white font-mono font-bold text-right truncate ml-2">
-                      ${(mvps[timeframe.period].wageredAllTime || 0).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-white/70 text-center text-sm">No data available</p>
-            )}
-          </div>
         </motion.div>
       ))}
     </div>

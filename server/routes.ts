@@ -26,6 +26,32 @@ export function registerRoutes(app: Express): Server {
   return httpServer;
 }
 
+const transformMVPData = (mvpData: any) => {
+  return Object.entries(mvpData).reduce((acc, [period, data]) => {
+    if (data) {
+      // Calculate if there was a wager change
+      const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'];
+      const previousWager = data.wagered.previous || 0; // This would come from the API
+      const hasIncrease = currentWager > previousWager;
+
+      acc[period] = {
+        username: data.name,
+        wagerAmount: currentWager,
+        rank: 1,
+        lastWagerChange: hasIncrease ? Date.now() : undefined,
+        // Add any additional stats needed for the detailed view
+        stats: {
+          winRate: data.stats?.winRate || 0,
+          favoriteGame: data.stats?.favoriteGame || 'Unknown',
+          totalGames: data.stats?.totalGames || 0
+        }
+      };
+    }
+    return acc;
+  }, {} as Record<string, any>);
+};
+
+
 function setupRESTRoutes(app: Express) {
   // Add new MVP stats endpoint
   app.get("/api/mvp-stats", async (_req, res) => {
@@ -47,28 +73,13 @@ function setupRESTRoutes(app: Express) {
 
       const rawData = await response.json();
       const stats = transformLeaderboardData(rawData);
-
-      // Extract top player from each period
       const mvpData = {
         daily: stats.data.today.data[0] || null,
         weekly: stats.data.weekly.data[0] || null,
         monthly: stats.data.monthly.data[0] || null
       };
 
-      // Transform data for MVP cards
-      const result = Object.entries(mvpData).reduce((acc, [period, data]) => {
-        if (data) {
-          acc[period] = {
-            username: data.name,
-            wagerAmount: data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'],
-            wageredAllTime: data.wagered.all_time,
-            rank: 1,
-            lastActive: new Date().toISOString() // This would ideally come from the API
-          };
-        }
-        return acc;
-      }, {} as Record<string, any>);
-
+      const result = transformMVPData(mvpData);
       res.json(result);
     } catch (error) {
       log(`Error fetching MVP stats: ${error}`);
