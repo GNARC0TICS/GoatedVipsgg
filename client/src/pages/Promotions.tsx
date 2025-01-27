@@ -22,6 +22,7 @@ const PROMOTIONS = [
     imageUrl: "/images/PROMOS/WEEKLYRACE.WEBP",
     category: "VIP",
     validUntil: "2025-05-31",
+    isEnded: false,
     isNew: true,
     details: {
       overview: "Our Weekly Race is now bigger and better than ever with an upgraded prize pool of $10,000 USD! More prizes, more chances to win—are you ready to claim your share?",
@@ -68,7 +69,7 @@ const PROMOTIONS = [
     description: "Win a share of $2,000,000 in monthly rewards playing Pragmatic slots! Join daily prize drops and tournaments.",
     imageUrl: "/images/PROMOS/PRAG1.WEBP",
     category: "Casino",
-    validUntil: "2024-12-31",
+    validUntil: "Ongoing",
     isNew: true,
     details: {
       overview: "Win huge rewards when you play Pragmatic's slot games on Goated! We award $2,000,000 in random drops to Pragmatic slot players every single month.",
@@ -85,12 +86,18 @@ const PROMOTIONS = [
   },
   {
     id: 4,
-    title: "Weekly Challenge",
-    description: "Take part in our weekly challenges to earn rewards and climb the leaderboard rankings!",
+    title: "Goated Slot Challenges",
+    description: "Hit specified multipliers on selected slot games to win juicy prizes! New challenges added weekly.",
     imageUrl: "/images/PROMOS/CHLNG1.WEBP",
-    category: "Sports",
-    validUntil: "2024-12-31",
+    category: "Casino",
+    validUntil: "Ongoing",
     isNew: false,
+    details: {
+      overview: "It's time to win juicy prizes for your daily play at Goated! Check out our single-game challenges where you will be automatically credited for achieving the specified target multiplier on different games.",
+      howToParticipate: "Simply hit or beat the specified multipliers in the challenge to win the attached prize! You must be the first player to beat it while fulfilling the required minimum bet amount.",
+      additionalInfo: "You may use Bonus Buys, but they make it harder to reach the target multiplier as the winning multiplier is based on the total bet amount rather than the base bet.",
+      frequency: "Our challenges are updated every single week, so keep coming back to check, and don't miss out on the prizes up for grabs!"
+    },
     link: "https://www.goated.com/promotions",
   }
 ];
@@ -187,7 +194,12 @@ export default function Promotions() {
             variants={itemVariants}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            {PROMOTIONS.map((promo) => (
+            {PROMOTIONS.sort((a, b) => {
+              // Sort ended promotions to the end
+              if (a.title?.includes('[ENDED]') && !b.title?.includes('[ENDED]')) return 1;
+              if (!a.title?.includes('[ENDED]') && b.title?.includes('[ENDED]')) return -1;
+              return 0;
+            }).map((promo) => (
               <Card
                 key={promo.id}
                 className={`bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31] overflow-hidden group hover:border-[#D7FF00] transition-colors duration-300 ${
