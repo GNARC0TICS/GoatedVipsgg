@@ -12,6 +12,12 @@ type MVP = {
   rank: number;
   wageredAllTime?: number;
   lastWagerChange?: number;
+  wagered: {
+    today: number;
+    this_week: number;
+    this_month: number;
+    all_time: number;
+  };
 };
 
 const timeframes = [

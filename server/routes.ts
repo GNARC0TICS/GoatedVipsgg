@@ -73,10 +73,21 @@ function setupRESTRoutes(app: Express) {
 
       const rawData = await response.json();
       const stats = transformLeaderboardData(rawData);
+
+      // Extract top players from existing leaderboard data with complete user data
       const mvpData = {
-        daily: stats.data.today.data[0] || null,
-        weekly: stats.data.weekly.data[0] || null,
-        monthly: stats.data.monthly.data[0] || null
+        daily: {
+          ...stats.data.today.data[0],
+          wagerAmount: stats.data.today.data[0]?.wagered.today || 0
+        },
+        weekly: {
+          ...stats.data.weekly.data[0],
+          wagerAmount: stats.data.weekly.data[0]?.wagered.this_week || 0
+        },
+        monthly: {
+          ...stats.data.monthly.data[0],
+          wagerAmount: stats.data.monthly.data[0]?.wagered.this_month || 0
+        }
       };
 
       const result = transformMVPData(mvpData);
