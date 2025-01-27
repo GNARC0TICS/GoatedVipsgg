@@ -61,22 +61,27 @@ export default function TipsAndStrategies() {
           className="space-y-8"
         >
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              className="gap-2"
-              onClick={() => setLocation("/")}
+          <Button
+            variant="ghost"
+            className="gap-2 mb-8"
+            onClick={() => setLocation("/")}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Home
+          </Button>
+
+          <div className="mb-12">
+            <video
+              autoPlay
+              muted
+              playsInline
+              className="w-full h-48 md:h-64 object-contain"
             >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Home
-            </Button>
+              <source src="/images/Page Headers/TIPSHEAD.MP4" type="video/mp4" />
+            </video>
           </div>
 
           <div className="prose prose-invert max-w-none">
-            <h1 className="text-4xl font-heading text-[#D7FF00] mb-8">
-              Tips & Strategies
-            </h1>
-
             {/* Search and Filter Section */}
             <div className="flex flex-col md:flex-row gap-4 mb-8">
               <div className="relative flex-1">
