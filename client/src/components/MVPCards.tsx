@@ -91,7 +91,6 @@ function MVPCard({
         className="relative w-full h-[200px] cursor-pointer"
         onClick={() => onOpenChange(true)}
       >
-            // Front of card
             <div className="relative h-full">
               <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
                 style={{ 
@@ -102,7 +101,7 @@ function MVPCard({
                 onClick={(e) => {
                   const target = e.target as HTMLElement;
                   if (!target.closest('.username-trigger')) {
-                    onFlip();
+                    onOpenChange(true);
                   }
                 }}
                 className="relative p-4 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover h-full cursor-pointer"
