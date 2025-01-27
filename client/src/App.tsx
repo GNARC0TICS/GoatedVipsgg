@@ -133,7 +133,10 @@ function App() {
 }
 
 function AppContent() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(() => {
+    return !localStorage.getItem('hasVisited');
+  });
+
   const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
@@ -145,24 +148,27 @@ function AppContent() {
   });
 
   useEffect(() => {
+    if (!isInitialLoad) return;
+
     if (!leaderboardLoading && !mvpLoading && leaderboardData && mvpData) {
-      setIsLoading(false);
+      localStorage.setItem('hasVisited', 'true');
+      setIsInitialLoad(false);
     }
-  }, [leaderboardLoading, mvpLoading, leaderboardData, mvpData]);
+  }, [leaderboardLoading, mvpLoading, leaderboardData, mvpData, isInitialLoad]);
 
   return (
-          <AnimatePresence mode="wait">
-            {(isLoading || leaderboardLoading || mvpLoading) ? (
-              <PreLoader onLoadComplete={() => setIsLoading(false)} />
-            ) : (
-              <Suspense fallback={<LoadingSpinner />}>
-                <TooltipProvider>
-                  <Router />
-                  <Toaster />
-                </TooltipProvider>
-              </Suspense>
-            )}
-          </AnimatePresence>
+    <AnimatePresence mode="wait">
+      {isInitialLoad ? (
+        <PreLoader onLoadComplete={() => setIsInitialLoad(false)} />
+      ) : (
+        <Suspense fallback={<LoadingSpinner />}>
+          <TooltipProvider>
+            <Router />
+            <Toaster />
+          </TooltipProvider>
+        </Suspense>
+      )}
+    </AnimatePresence>
   );
 }
 
