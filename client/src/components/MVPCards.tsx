@@ -7,6 +7,7 @@ type MVP = {
   wagerAmount: number;
   avatarUrl?: string;
   rank: number;
+  wageredAllTime?: number; // Add all-time wager amount
 };
 
 const timeframes = [
@@ -39,12 +40,12 @@ const timeframes = [
   }
 ];
 
-// Function to determine VIP tier based on wager amount
-function getVipTier(wagerAmount: number) {
-  if (wagerAmount >= 1000000) return "DIAMOND";
-  if (wagerAmount >= 500000) return "PLATINUM";
-  if (wagerAmount >= 100000) return "GOLD";
-  if (wagerAmount >= 50000) return "SILVER";
+// Updated to use all-time wager amount for VIP tier
+function getVipTier(allTimeWager: number) {
+  if (allTimeWager >= 1000000) return "DIAMOND";
+  if (allTimeWager >= 500000) return "PLATINUM";
+  if (allTimeWager >= 100000) return "GOLD";
+  if (allTimeWager >= 50000) return "SILVER";
   return "BRONZE";
 }
 
@@ -121,23 +122,31 @@ export function MVPCards() {
                       </span>
                     </div>
                   )}
-                  <div>
-                    <h4 className="text-base font-heading text-white">
+                  <div className="flex-grow min-w-0"> {/* Added flex-grow and min-w-0 for text truncation */}
+                    <h4 className="text-base font-heading text-white truncate">
                       {mvps[timeframe.period].username}
                     </h4>
                     <div className="text-xs px-2 py-0.5 rounded-full inline-block"
                          style={{ backgroundColor: `${timeframe.colors.primary}20` }}>
                       <span className="font-bold" style={{ color: timeframe.colors.shine }}>
-                        {getVipTier(mvps[timeframe.period].wagerAmount)}
+                        {getVipTier(mvps[timeframe.period].wageredAllTime || 0)}
                       </span>
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-between items-center text-sm bg-black/40 p-2 rounded-lg">
-                  <span className="text-white/70">Total Wagered:</span>
-                  <span className="text-white font-mono font-bold">
-                    ${mvps[timeframe.period].wagerAmount.toLocaleString()}
-                  </span>
+                <div className="flex flex-col text-sm bg-black/40 p-2 rounded-lg overflow-hidden">
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/70 text-xs">Period Total:</span>
+                    <span className="text-white font-mono font-bold text-right truncate ml-2">
+                      ${mvps[timeframe.period].wagerAmount.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-white/70 text-xs">All Time:</span>
+                    <span className="text-white font-mono font-bold text-right truncate ml-2">
+                      ${(mvps[timeframe.period].wageredAllTime || 0).toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               </div>
             ) : (
