@@ -70,18 +70,18 @@
     opacity: 0;
     transform: translateY(-10px);
   }
-  
+
   .dropdown-content-enter-active {
     opacity: 1;
     transform: translateY(0);
     transition: opacity 200ms, transform 200ms;
   }
-  
+
   .mobile-nav-item-enter {
     opacity: 0;
     transform: translateX(-20px);
   }
-  
+
   .mobile-nav-item-enter-active {
     opacity: 1;
     transform: translateX(0);

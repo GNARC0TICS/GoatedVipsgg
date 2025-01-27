@@ -14,30 +14,27 @@ const timeframes = [
     title: "Daily MVP", 
     period: "daily", 
     colors: {
-      primary: "violet-500",
-      secondary: "fuchsia-500",
-      accent: "violet-500",
-      shine: "violet-300"
+      primary: "#8B5CF6", // violet
+      accent: "#7C3AED",
+      shine: "#A78BFA"
     }
   },
   { 
     title: "Weekly MVP", 
     period: "weekly", 
     colors: {
-      primary: "emerald-500",
-      secondary: "teal-500",
-      accent: "emerald-500",
-      shine: "emerald-300"
+      primary: "#10B981", // emerald
+      accent: "#059669",
+      shine: "#34D399"
     }
   },
   { 
     title: "Monthly MVP", 
     period: "monthly", 
     colors: {
-      primary: "amber-500",
-      secondary: "orange-500",
-      accent: "amber-500",
-      shine: "amber-300"
+      primary: "#F59E0B", // amber
+      accent: "#D97706",
+      shine: "#FBBF24"
     }
   }
 ];
@@ -86,25 +83,21 @@ export function MVPCards() {
           className="group relative transform transition-all duration-300"
         >
           {/* Gradient overlay that appears on hover */}
-          <div className={`
-            absolute inset-0 
-            bg-gradient-to-b from-${timeframe.colors.primary}/20 to-transparent 
-            rounded-xl opacity-0 group-hover:opacity-100 
-            transition-all duration-300 blur-sm
-          `} />
+          <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
+               style={{ 
+                 background: `linear-gradient(to bottom, ${timeframe.colors.primary}20, transparent)`,
+               }}
+          />
 
           {/* Main card container */}
-          <div className={`
-            relative p-4 rounded-xl 
-            border border-[#2A2B31] 
-            bg-[#1A1B21]/50 backdrop-blur-sm 
-            hover:border-${timeframe.colors.primary}/50 
-            transition-all duration-300 
-            shadow-lg hover:shadow-${timeframe.colors.primary}/20
-          `}>
+          <div className="relative p-4 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover"
+               style={{
+                 '--hover-border-color': `${timeframe.colors.primary}80`,
+                 '--hover-shadow-color': `${timeframe.colors.primary}40`
+               } as React.CSSProperties}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Trophy className={`h-5 w-5 text-${timeframe.colors.primary}`} />
+                <Trophy style={{ color: timeframe.colors.primary }} className="h-5 w-5" />
                 <h3 className="text-lg font-heading text-white">{timeframe.title}</h3>
               </div>
             </div>
@@ -116,11 +109,14 @@ export function MVPCards() {
                     <img 
                       src={mvps[timeframe.period].avatarUrl} 
                       alt={mvps[timeframe.period].username}
-                      className={`w-10 h-10 rounded-full border-2 border-${timeframe.colors.accent}`}
+                      className="w-10 h-10 rounded-full border-2"
+                      style={{ borderColor: timeframe.colors.accent }}
                     />
                   ) : (
-                    <div className={`w-10 h-10 rounded-full bg-${timeframe.colors.accent}/20 flex items-center justify-center`}>
-                      <span className={`text-base text-${timeframe.colors.shine} font-bold`}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center"
+                         style={{ backgroundColor: `${timeframe.colors.primary}20` }}>
+                      <span className="text-base font-bold"
+                            style={{ color: timeframe.colors.shine }}>
                         {mvps[timeframe.period].username.charAt(0).toUpperCase()}
                       </span>
                     </div>
@@ -129,8 +125,9 @@ export function MVPCards() {
                     <h4 className="text-base font-heading text-white">
                       {mvps[timeframe.period].username}
                     </h4>
-                    <div className={`text-xs px-2 py-0.5 rounded-full bg-${timeframe.colors.accent}/20 inline-block`}>
-                      <span className={`text-${timeframe.colors.shine} font-bold`}>
+                    <div className="text-xs px-2 py-0.5 rounded-full inline-block"
+                         style={{ backgroundColor: `${timeframe.colors.primary}20` }}>
+                      <span className="font-bold" style={{ color: timeframe.colors.shine }}>
                         {getVipTier(mvps[timeframe.period].wagerAmount)}
                       </span>
                     </div>
