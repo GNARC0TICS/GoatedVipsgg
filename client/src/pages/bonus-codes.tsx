@@ -34,13 +34,6 @@ export default function BonusCodes() {
   return (
     <div className="min-h-screen bg-[#14151A]">
       <div className="container mx-auto px-4 py-8">
-        <Link to="/">
-          <Button variant="ghost" className="mb-8 hover:bg-[#1A1B21]/50">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Home
-          </Button>
-        </Link>
-
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -64,6 +57,12 @@ export default function BonusCodes() {
               Enable email notifications to get instant updates on new bonus codes
             </p>
           </div>
+          <Link to="/" className="flex justify-center mt-6">
+            <Button variant="ghost" className="hover:bg-[#1A1B21]/50">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Home
+            </Button>
+          </Link>
         </motion.div>
 
         <div className="grid gap-6 md:grid-cols-2">
