@@ -116,13 +116,15 @@ export function Layout({ children }: LayoutProps) {
 
                 {/* GET STARTED dropdown */}
                 <div className="relative group">
-                  <Button
-                    variant="ghost"
-                    className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent"
-                  >
-                    <span className="font-bold">GET STARTED</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                  </Button>
+                  <Link href="/how-it-works">
+                    <Button
+                      variant="ghost"
+                      className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent"
+                    >
+                      <span className="font-bold">GET STARTED</span>
+                      <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                    </Button>
+                  </Link>
                   <div className="absolute left-0 mt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                     <div className="bg-[#1A1B21] border border-[#2A2B31] rounded-lg shadow-lg py-1">
                       <Link href="/how-it-works">
@@ -161,13 +163,15 @@ export function Layout({ children }: LayoutProps) {
 
                 {/* Updated Leaderboard dropdown with hover functionality */}
                 <div className="relative group">
-                  <Button
-                    variant="ghost"
-                    className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent"
-                  >
-                    <span className="font-bold">LEADERBOARDS</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                  </Button>
+                  <Link href="/leaderboard?period=daily">
+                    <Button
+                      variant="ghost"
+                      className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent"
+                    >
+                      <span className="font-bold">LEADERBOARDS</span>
+                      <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                    </Button>
+                  </Link>
                   <div className="absolute left-0 mt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                     <div className="bg-[#1A1B21] border border-[#2A2B31] rounded-lg shadow-lg py-1">
                       <Link href="/leaderboard?period=daily">
