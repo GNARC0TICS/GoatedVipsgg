@@ -185,9 +185,20 @@ function MVPCard({
 
 export function MVPCards() {
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
-  const { data: mvps, isLoading } = useQuery<Record<string, MVP>>({
-    queryKey: ["/api/mvp-stats"],
+  const { data: leaderboardData, isLoading } = useQuery({
+    queryKey: ["/api/affiliate/stats"],
+    staleTime: 30000,
   });
+
+  const mvps = React.useMemo(() => {
+    if (!leaderboardData?.data) return null;
+    
+    return {
+      daily: leaderboardData.data.today.data[0],
+      weekly: leaderboardData.data.weekly.data[0],
+      monthly: leaderboardData.data.monthly.data[0]
+    };
+  }, [leaderboardData]);
 
   const handleCardFlip = (period: string) => {
     setFlippedCards(prev => ({
@@ -227,7 +238,12 @@ export function MVPCards() {
         >
           <MVPCard 
             timeframe={timeframe}
-            mvp={mvps[timeframe.period]}
+            mvp={mvps?.[timeframe.period] ? {
+              username: mvps[timeframe.period].name,
+              uid: mvps[timeframe.period].uid,
+              wagerAmount: mvps[timeframe.period].wagered[timeframe.period === 'daily' ? 'today' : timeframe.period === 'weekly' ? 'this_week' : 'this_month'],
+              wagered: mvps[timeframe.period].wagered
+            } : undefined}
             isFlipped={flippedCards[timeframe.period] || false}
             onFlip={() => handleCardFlip(timeframe.period)}
           />
