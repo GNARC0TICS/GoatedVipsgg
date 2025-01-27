@@ -73,47 +73,23 @@ export function MVPCards() {
       {timeframes.map((timeframe) => (
         <motion.div
           key={timeframe.period}
-          initial={{ opacity: 0, y: 20, rotateX: -15 }}
-          animate={{ opacity: 1, y: 0, rotateX: 0 }}
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
           whileHover={{ 
-            scale: 1.02,
-            rotateY: 5,
-            rotateX: 5,
-            z: 50
+            scale: 1.02
           }}
           transition={{
             type: "spring",
             stiffness: 400,
             damping: 30
           }}
-          className="group relative transform-gpu rounded-xl overflow-hidden"
+          className="group relative transform transition-all duration-300"
         >
-          {/* Base metallic background */}
-          <div className={`
-            absolute inset-0 
-            bg-gradient-to-br from-[#1A1B21] via-[#2A2B31] to-[#1A1B21]
-            border border-[#2A2B31]
-          `} />
+          {/* Gradient overlay that appears on hover */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
 
-          {/* Colored overlay */}
-          <div className={`
-            absolute inset-0 
-            bg-gradient-to-br from-${timeframe.colors.primary}/10 to-${timeframe.colors.secondary}/10
-            opacity-80 group-hover:opacity-100 transition-opacity duration-300
-          `} />
-
-          {/* Shine effect on hover */}
-          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className={`
-              absolute inset-0 
-              bg-gradient-to-r from-transparent via-${timeframe.colors.shine}/10 to-transparent
-              translate-x-[-200%] group-hover:translate-x-[200%]
-              transition-transform duration-1000 ease-in-out
-            `} />
-          </div>
-
-          {/* Card content */}
-          <div className="relative p-4 backdrop-blur-sm">
+          {/* Main card container */}
+          <div className="relative p-4 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Trophy className={`h-5 w-5 text-${timeframe.colors.shine}`} />
