@@ -55,8 +55,21 @@ export default function Promotions() {
           animate="visible"
           className="space-y-8"
         >
-          {/* Header */}
-          <motion.div variants={itemVariants}>
+          {/* Video Header */}
+          <motion.div variants={itemVariants} className="mb-8">
+            <video
+              autoPlay
+              muted
+              playsInline
+              loop
+              className="w-[350px] md:w-[450px] mx-auto rounded-xl"
+            >
+              <source src="/images/Page Headers/PROMOHEAD.MP4" type="video/mp4" />
+            </video>
+          </motion.div>
+
+          {/* Back Button */}
+          <motion.div variants={itemVariants} className="flex justify-center mb-8">
             <Button
               variant="ghost"
               className="gap-2"
@@ -65,30 +78,6 @@ export default function Promotions() {
               <ArrowLeft className="h-4 w-4" />
               Back to Home
             </Button>
-          </motion.div>
-
-          {/* Video Header */}
-          <motion.div variants={itemVariants} className="mb-8">
-            <video
-              autoPlay
-              muted
-              playsInline
-              loop
-              className="w-[300px] md:w-[400px] mx-auto rounded-xl"
-            >
-              <source src="/images/Page Headers/PROMOHEAD.MP4" type="video/mp4" />
-            </video>
-          </motion.div>
-
-          {/* Title Section */}
-          <motion.div variants={itemVariants} className="text-center space-y-4">
-            <h1 className="text-4xl md:text-5xl font-heading font-bold text-[#D7FF00]">
-              Current Promotions
-            </h1>
-            <p className="text-lg text-[#8A8B91] max-w-2xl mx-auto">
-              Discover the latest promotions and bonuses available on Goated. Don't
-              miss out on these exclusive offers!
-            </p>
           </motion.div>
 
           {/* Filter Section */}
