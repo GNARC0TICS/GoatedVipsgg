@@ -2,10 +2,11 @@ import { Trophy, TrendingUp, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect as ReactuseEffect } from "react";
-import { Link } from "wouter";
+import { QuickProfile } from "./QuickProfile";
 
 type MVP = {
   username: string;
+  uid: string;
   wagerAmount: number;
   avatarUrl?: string;
   rank: number;
@@ -128,11 +129,11 @@ function MVPCard({
                       </div>
                     )}
                     <div className="flex-grow min-w-0">
-                      <Link href={`/profile/${mvp.username}`} className="block" onClick={(e) => e.stopPropagation()}>
+                      <QuickProfile userId={mvp.uid} username={mvp.username}>
                         <h4 className="text-base font-heading text-white truncate hover:text-[#D7FF00] transition-colors">
                           {mvp.username}
                         </h4>
-                      </Link>
+                    </QuickProfile>
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-sm bg-black/40 p-2 rounded-lg">
