@@ -54,14 +54,14 @@ export default function TipsAndStrategies() {
 
   return (
     <div className="min-h-screen bg-[#14151A] text-white">
-      <div className="container mx-auto px-4 pt-4 pb-8 md:py-16">
+      <div className="container mx-auto px-4 pt-2 pb-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="space-y-8"
         >
           {/* Header */}
-          <div className="mb-12">
+          <div className="mb-4">
             <video
               autoPlay
               muted
