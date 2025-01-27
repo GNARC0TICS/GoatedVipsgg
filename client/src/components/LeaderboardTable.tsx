@@ -123,12 +123,16 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
             }}
           >
             <div className="flex items-center justify-center gap-3">
-              {timePeriod === 'all_time' ? 'ALL TIME' : timePeriod.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
-              <div className="flex items-center gap-1">
-                <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-xs text-red-500 font-heading">LIVE</span>
+                {timePeriod === 'all_time' 
+                  ? 'ALL TIME' 
+                  : timePeriod === 'today'
+                    ? 'DAILY'
+                    : timePeriod?.toUpperCase()}
+                <div className="flex items-center gap-1">
+                  <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                  <span className="text-xs text-red-500 font-heading">LIVE</span>
+                </div>
               </div>
-            </div>
           </motion.h2>
         </div>
       </div>
