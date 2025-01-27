@@ -117,11 +117,7 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
             key={timePeriod}
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl text-white mb-2 text-center tracking-tighter"
-            style={{
-              fontFamily: "'MonaSansCondensed-ExtraBold'",
-              textShadow: '0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.3)'
-            }}
+            className="font-['MonaSansCondensed-ExtraBold'] text-4xl md:text-5xl text-white mb-2 text-center tracking-tighter"
             style={{
               textShadow: '0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.3)'
             }}
