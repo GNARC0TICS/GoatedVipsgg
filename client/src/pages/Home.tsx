@@ -264,7 +264,7 @@ export default function Home() {
                 <LeaderboardTable timePeriod="today" />
               </div>
             </motion.div>
-          </motion.div>
+          </div>
         </div>
       </main>
     </div>
