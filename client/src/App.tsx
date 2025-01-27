@@ -1,4 +1,5 @@
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { PreLoader } from "@/components/PreLoader";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
