@@ -121,6 +121,18 @@ function Router() {
 }
 
 function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ErrorBoundary>
+    </QueryClientProvider>
+  );
+}
+
+function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
   const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery({
     queryKey: ["/api/affiliate/stats"],
@@ -139,9 +151,6 @@ function App() {
   }, [leaderboardLoading, mvpLoading, leaderboardData, mvpData]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ErrorBoundary FallbackComponent={ErrorFallback}>
-        <AuthProvider>
           <AnimatePresence mode="wait">
             {(isLoading || leaderboardLoading || mvpLoading) ? (
               <PreLoader onLoadComplete={() => setIsLoading(false)} />
@@ -154,10 +163,8 @@ function App() {
               </Suspense>
             )}
           </AnimatePresence>
-        </AuthProvider>
-      </ErrorBoundary>
-    </QueryClientProvider>
-  );
+        </div>
+      );
 }
 
 export default App;
