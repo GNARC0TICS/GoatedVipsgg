@@ -121,6 +121,18 @@ export default function VipProgram() {
           EARN REWARDS WITH GOATED VIP PROGRAM
         </h1>
 
+        <div className="mb-8">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="mx-auto h-48 md:h-64 w-auto object-contain"
+          >
+            <source src="/images/VIPHEAD.MP4" type="video/mp4" />
+          </video>
+        </div>
+
         <p className="text-lg mb-12">
           Goated's VIP program is tailored to accommodate all types of players,
           with a focus on maximizing the cumulative bonuses you receive for

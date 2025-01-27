@@ -48,6 +48,17 @@ export default function BonusCodes() {
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading text-white mb-6">
             BONUS CODES
           </h1>
+          <div className="mb-8">
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="mx-auto h-48 md:h-64 w-auto object-contain"
+            >
+              <source src="/images/BONUSHEAD.MP4" type="video/mp4" />
+            </video>
+          </div>
           <p className="text-xl text-[#8A8B91] max-w-2xl mx-auto mb-6">
             Keep an eye on this page for exclusive bonus codes. New codes are
             added regularly!
