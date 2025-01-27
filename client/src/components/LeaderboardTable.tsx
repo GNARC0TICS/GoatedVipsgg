@@ -117,18 +117,16 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
             key={timePeriod}
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-3xl md:text-4xl font-heading font-bold text-[#D7FF00] mb-2 text-center tracking-tighter"
+            className="font-['MonaSansCondensed-ExtraBold'] text-3xl md:text-4xl text-[#D7FF00] mb-2 text-center tracking-tighter"
             style={{
               textShadow: '0 0 10px rgba(215, 255, 0, 0.5), 0 0 20px rgba(215, 255, 0, 0.3)'
             }}
           >
-            {(timePeriod || 'today').toUpperCase()}
+            {timePeriod === 'all_time' ? 'ALL TIME' : timePeriod.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
           </motion.h2>
-          <div className="flex items-center justify-center gap-4">
-            <div className="flex items-center gap-2">
-              <CircleDot className="h-4 w-4 text-red-500 animate-pulse" />
-              <span className="text-[#D7FF00] font-heading">LIVE UPDATES</span>
-            </div>
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+            <span className="text-[#D7FF00] font-['MonaSansCondensed-ExtraBold']">LIVE</span>
           </div>
         </div>
       </div>
