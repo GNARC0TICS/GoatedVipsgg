@@ -83,9 +83,10 @@ export default function Promotions() {
           {/* Description Text */}
           <motion.div variants={itemVariants} className="text-center mb-12">
             <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-              Stay up to date with all of Goated's latest promotions, bonuses, and platform updates. 
-              Check back regularly for new opportunities to maximize your gaming experience and 
-              learn about exciting features being added to our platform.
+              Stay up to date with all of Goated's latest promotions, bonuses, and platform updates, 
+              including exclusive news about Goombas x Goated VIPs partnership. Check back regularly 
+              to see ongoing promotions currently available on Goated.com and discover new opportunities 
+              to maximize your gaming experience.
             </p>
           </motion.div>
 
