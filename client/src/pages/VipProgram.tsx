@@ -117,10 +117,6 @@ export default function VipProgram() {
         animate={{ opacity: 1, y: 0 }}
         className="container mx-auto px-4 py-16"
       >
-        <h1 className="text-5xl font-bold mb-6 text-[#D7FF00]">
-          EARN REWARDS WITH GOATED VIP PROGRAM
-        </h1>
-
         <div className="mb-8">
           <video
             autoPlay
@@ -131,6 +127,18 @@ export default function VipProgram() {
             <source src="/images/Page Headers/VIPHEAD.MP4" type="video/mp4" />
           </video>
         </div>
+
+        <button
+          onClick={() => window.location.href = '/'}
+          className="mb-8 px-4 py-2 flex items-center gap-2 text-white hover:text-[#D7FF00] transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </button>
+
+        <h2 className="text-4xl font-bold mb-6 text-[#D7FF00]">
+          EARN REWARDS WITH GOATED VIP PROGRAM
+        </h2>
 
         <p className="text-lg mb-12">
           Goated's VIP program is tailored to accommodate all types of players,
