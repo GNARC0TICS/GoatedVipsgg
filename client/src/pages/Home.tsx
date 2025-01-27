@@ -234,7 +234,7 @@ export default function Home() {
             >
               <div className="rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm p-8 max-w-7xl mx-auto">
                 <h2 className="text-3xl font-heading text-white mb-8 text-center">
-                  LEADERBOARD
+                  DAILY LEADERBOARD
                 </h2>
                 <LeaderboardTable timePeriod="today" />
               </div>
