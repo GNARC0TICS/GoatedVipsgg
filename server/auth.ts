@@ -60,13 +60,13 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
-        // Validate and sanitize credentials
-        const sanitizedUsername = username?.trim();
-        const sanitizedPassword = password?.trim();
-        
-        if (!sanitizedUsername || !sanitizedPassword) {
+        if (!username || !password) {
           return done(null, false, { message: "Username and password are required" });
         }
+
+        // Sanitize credentials
+        const sanitizedUsername = username.trim();
+        const sanitizedPassword = password.trim();
 
         // Trim whitespace
         username = username.trim();
