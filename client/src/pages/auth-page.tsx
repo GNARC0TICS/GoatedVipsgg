@@ -19,14 +19,12 @@ import { useForm } from "react-hook-form";
 import { useUser } from "@/hooks/use-user";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertUserSchema } from "@db/schema";
-import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const { login, register } = useUser();
-  const { toast } = useToast();
 
   const form = useForm({
     resolver: zodResolver(insertUserSchema),
@@ -39,20 +37,15 @@ export default function AuthPage() {
 
   const onSubmit = async (values: any) => {
     try {
-      const result = await (isLogin ? login(values) : register(values));
-      if (!result.ok) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: result.message,
-        });
-      }
+      // Only include email for registration
+      const credentials = isLogin 
+        ? { username: values.username, password: values.password }
+        : values;
+
+      await (isLogin ? login(credentials) : register(credentials));
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
+      // Error handling is now done in the mutation callbacks in useUser
+      console.error("Auth error:", error);
     }
   };
 

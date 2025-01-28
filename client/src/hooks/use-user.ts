@@ -1,19 +1,17 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { InsertUser, SelectUser } from "@db/schema";
+import { useToast } from "@/hooks/use-toast";
 
-type RequestResult =
-  | {
-      ok: true;
-    }
-  | {
-      ok: false;
-      message: string;
-    };
+type RequestResult = {
+  status: "success" | "error";
+  message: string;
+  user?: SelectUser;
+};
 
 async function handleRequest(
   url: string,
   method: string,
-  body?: InsertUser,
+  body?: InsertUser
 ): Promise<RequestResult> {
   try {
     const response = await fetch(url, {
@@ -23,24 +21,27 @@ async function handleRequest(
       credentials: "include",
     });
 
-    if (!response.ok) {
-      if (response.status >= 500) {
-        return { ok: false, message: response.statusText };
-      }
+    const data = await response.json();
 
-      const message = await response.text();
-      return { ok: false, message };
+    if (!response.ok) {
+      return {
+        status: "error",
+        message: data.message || response.statusText,
+      };
     }
 
-    return { ok: true };
+    return data;
   } catch (e: any) {
-    return { ok: false, message: e.toString() };
+    return {
+      status: "error",
+      message: e.toString(),
+    };
   }
 }
 
 async function fetchUser(): Promise<SelectUser | null> {
-  const response = await fetch("/api/user", {
-    credentials: "include",
+  const response = await fetch('/api/user', {
+    credentials: 'include'
   });
 
   if (!response.ok) {
@@ -48,11 +49,7 @@ async function fetchUser(): Promise<SelectUser | null> {
       return null;
     }
 
-    if (response.status >= 500) {
-      throw new Error(`${response.status}: ${response.statusText}`);
-    }
-
-    throw new Error(`${response.status}: ${await response.text()}`);
+    throw new Error(await response.text());
   }
 
   return response.json();
@@ -60,36 +57,82 @@ async function fetchUser(): Promise<SelectUser | null> {
 
 export function useUser() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  const {
-    data: user,
-    error,
-    isLoading,
-  } = useQuery<SelectUser | null, Error>({
-    queryKey: ["/api/user"],
+  const { data: user, error, isLoading } = useQuery<SelectUser | null, Error>({
+    queryKey: ['/api/user'],
     queryFn: fetchUser,
     staleTime: Infinity,
-    retry: false,
+    retry: false
   });
 
   const loginMutation = useMutation<RequestResult, Error, InsertUser>({
-    mutationFn: (userData) => handleRequest("/api/login", "POST", userData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    mutationFn: (userData) => handleRequest('/api/login', 'POST', userData),
+    onSuccess: (data) => {
+      if (data.status === "success") {
+        queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+        toast({
+          title: "Success",
+          description: data.message,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: data.message,
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
     },
   });
 
   const logoutMutation = useMutation<RequestResult, Error>({
-    mutationFn: () => handleRequest("/api/logout", "POST"),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    mutationFn: () => handleRequest('/api/logout', 'POST'),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['/api/user'], null);
+      toast({
+        title: "Success",
+        description: data.message,
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
     },
   });
 
   const registerMutation = useMutation<RequestResult, Error, InsertUser>({
-    mutationFn: (userData) => handleRequest("/api/register", "POST", userData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    mutationFn: (userData) => handleRequest('/api/register', 'POST', userData),
+    onSuccess: (data) => {
+      if (data.status === "success") {
+        queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+        toast({
+          title: "Success",
+          description: data.message,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: data.message,
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
     },
   });
 
