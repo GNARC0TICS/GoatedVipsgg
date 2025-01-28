@@ -1,7 +1,7 @@
 import React, { Suspense, useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "react-error-boundary";
@@ -33,7 +33,6 @@ import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 import { Redirect } from "@/lib/navigation";
 import { PreLoader } from "@/components/PreLoader";
-
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -132,6 +131,7 @@ function Router() {
 }
 
 function AppContent() {
+  const { user } = useUser();
   const [isInitialLoad, setIsInitialLoad] = useState(() => {
     return !localStorage.getItem('hasVisited');
   });
@@ -139,11 +139,13 @@ function AppContent() {
   const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
+    enabled: !!user, // Only fetch if user is logged in
   });
 
   const { data: mvpData, isLoading: mvpLoading } = useQuery({
     queryKey: ["/api/mvp-stats"],
     staleTime: 30000,
+    enabled: !!user, // Only fetch if user is logged in
   });
 
   useEffect(() => {
