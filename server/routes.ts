@@ -7,7 +7,7 @@ import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import { db } from "@db";
-import { wagerRaces, users, ticketMessages, insertUserSchema } from "@db/schema";
+import { wagerRaces, users, ticketMessages } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -20,197 +20,7 @@ let wss: WebSocketServer;
 
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
-  setupAuth(app); // Ensure auth is set up first
-
-  // Login validation schema
-  const loginSchema = z.object({
-    username: z.string().min(1, "Username is required"),
-    password: z.string().min(1, "Password is required"),
-  });
-
-  // Register validation schema (extends login schema with additional fields)
-  const registerSchema = loginSchema.extend({
-    email: z.string().email("Invalid email format"),
-  });
-
-  // Update auth routes with better error handling
-  app.post("/api/register", async (req, res) => {
-    try {
-      const result = registerSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({
-          status: "error",
-          message: "Validation failed",
-          errors: result.error.issues.map((i) => i.message),
-        });
-      }
-
-      const { username, email, password } = result.data;
-
-      // Check for existing username or email
-      const existingUser = await db.query.users.findFirst({
-        where: (users, { or, eq }) =>
-          or(eq(users.username, username), eq(users.email, email)),
-      });
-
-      if (existingUser) {
-        return res.status(400).json({
-          status: "error",
-          message: "Username or email already exists",
-        });
-      }
-
-      // Create user through auth system
-      const user = await db
-        .insert(users)
-        .values({
-          username,
-          email,
-          password, // Will be hashed by auth system
-          isAdmin: false,
-        })
-        .returning();
-
-      res.status(201).json({
-        status: "success",
-        message: "Registration successful",
-        user: {
-          id: user[0].id,
-          username: user[0].username,
-          email: user[0].email,
-        },
-      });
-    } catch (error) {
-      console.error("Registration error:", error);
-      res.status(500).json({
-        status: "error",
-        message: "Internal server error during registration",
-      });
-    }
-  });
-
-  app.post("/api/login", async (req, res) => {
-    try {
-      const result = loginSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({
-          status: "error",
-          message: "Validation failed",
-          errors: result.error.issues.map((i) => i.message),
-        });
-      }
-
-      const { username, password } = result.data;
-
-      // Check if this is an admin login
-      if (
-        username === process.env.ADMIN_USERNAME &&
-        password === process.env.ADMIN_PASSWORD
-      ) {
-        const [adminUser] = await db
-          .select()
-          .from(users)
-          .where(eq(users.isAdmin, true))
-          .limit(1);
-
-        if (adminUser) {
-          return res.json({
-            status: "success",
-            message: "Admin login successful",
-            user: {
-              id: adminUser.id,
-              username: adminUser.username,
-              email: adminUser.email,
-              isAdmin: true,
-            },
-          });
-        }
-      }
-
-      // Regular user login
-      const user = await db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.username, username),
-      });
-
-      if (!user) {
-        return res.status(401).json({
-          status: "error",
-          message: "Invalid credentials",
-        });
-      }
-
-      // Update last login timestamp
-      await db
-        .update(users)
-        .set({ lastLogin: new Date() })
-        .where(eq(users.id, user.id));
-
-      res.json({
-        status: "success",
-        message: "Login successful",
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          isAdmin: user.isAdmin,
-        },
-      });
-    } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({
-        status: "error",
-        message: "Internal server error during login",
-      });
-    }
-  });
-
-  // Add new MVP stats endpoint
-  app.get("/api/mvp-stats", async (_req, res) => {
-    try {
-      await rateLimiter.consume(_req.ip || "unknown");
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const rawData = await response.json();
-      const stats = transformLeaderboardData(rawData);
-
-      // Extract top players from existing leaderboard data with complete user data
-      const mvpData = {
-        daily: {
-          ...stats.data.today.data[0],
-          wagerAmount: stats.data.today.data[0]?.wagered.today || 0
-        },
-        weekly: {
-          ...stats.data.weekly.data[0],
-          wagerAmount: stats.data.weekly.data[0]?.wagered.this_week || 0
-        },
-        monthly: {
-          ...stats.data.monthly.data[0],
-          wagerAmount: stats.data.monthly.data[0]?.wagered.this_month || 0
-        }
-      };
-
-      const result = transformMVPData(mvpData);
-      res.json(result);
-    } catch (error) {
-      log(`Error fetching MVP stats: ${error}`);
-      res.status(500).json({
-        status: "error",
-        message: "Failed to fetch MVP statistics",
-      });
-    }
-  });
+  setupAuth(app); // Auth routes are now handled by setupAuth
 
   app.get("/api/profile", requireAuth, handleProfileRequest);
   app.get("/api/admin/users", requireAdmin, handleAdminUsersRequest);
@@ -234,6 +44,7 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
+
   setupRESTRoutes(app);
   setupWebSocket(httpServer);
   return httpServer;
