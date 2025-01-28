@@ -8,6 +8,7 @@ import { promisify } from "util";
 import { users, insertUserSchema, type SelectUser } from "@db/schema";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
+import express from 'express';
 
 const scryptAsync = promisify(scrypt);
 
@@ -222,23 +223,18 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", (req, res, next) => {
+  app.post("/api/login", express.json(), (req, res, next) => {
     // Validate request body exists
-    if (!req.body) {
-      return res.status(400).json({
-        status: "error",
-        message: "Request body is missing"
-      });
-    }
-
-    // Validate credentials
-    const { username, password } = req.body;
-    if (!username || !password) {
+    if (!req.body || !req.body.username || !req.body.password) {
       return res.status(400).json({
         status: "error",
         message: "Username and password are required"
       });
     }
+
+    // Validate credentials
+    const { username, password } = req.body;
+    
 
     passport.authenticate(
       "local",
