@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -49,18 +50,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       return response.json();
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: credentials.username.trim(),
-          password: credentials.password.trim(),
-        }),
-        credentials: 'include' // Added for potential session management
-      });
-      if (!res.ok) {
-        const error = await res.text();
-        throw new Error(error);
-      }
-      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
