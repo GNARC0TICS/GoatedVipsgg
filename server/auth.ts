@@ -60,6 +60,10 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
+        if (!username || !password) {
+          return done(null, false, { message: "Missing credentials" });
+        }
+        
         const [user] = await db
           .select()
           .from(users)

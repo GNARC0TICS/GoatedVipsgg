@@ -44,8 +44,15 @@ export async function initializeAdmin(
   password: string = ADMIN_PASSWORD,
   adminKey: string = ADMIN_KEY,
 ) {
-  if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-    throw new Error("Invalid admin key");
+  try {
+    // Check if required credentials exist
+    if (!username || !password || !adminKey) {
+      throw new Error("Missing admin credentials");
+    }
+
+    // Verify admin key
+    if (adminKey !== process.env.ADMIN_SECRET_KEY) {
+      throw new Error("Invalid admin key");
   }
 
   try {
