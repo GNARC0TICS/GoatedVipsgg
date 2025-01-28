@@ -63,6 +63,20 @@ export function setupAuth(app: Express) {
         if (!username || !password) {
           return done(null, false, { message: "Missing credentials" });
         }
+
+        // Check if this is an admin login attempt
+        if (username === process.env.ADMIN_USERNAME && 
+            password === process.env.ADMIN_PASSWORD) {
+          const [adminUser] = await db
+            .select()
+            .from(users)
+            .where(eq(users.isAdmin, true))
+            .limit(1);
+          
+          if (adminUser) {
+            return done(null, adminUser);
+          }
+        }
         
         const [user] = await db
           .select()
