@@ -223,7 +223,17 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    if (!req.body.username || !req.body.password) {
+    // Validate request body exists
+    if (!req.body) {
+      return res.status(400).json({
+        status: "error",
+        message: "Request body is missing"
+      });
+    }
+
+    // Validate credentials
+    const { username, password } = req.body;
+    if (!username || !password) {
       return res.status(400).json({
         status: "error",
         message: "Username and password are required"
