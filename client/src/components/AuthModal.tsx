@@ -74,7 +74,8 @@ export default function AuthModal() {
 
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     try {
-      if (!values.username || !values.password) {
+      // Validate required fields
+      if (!values?.username || !values?.password) {
         toast({
           variant: "destructive",
           title: "Validation Error",
