@@ -56,7 +56,16 @@ export async function initializeAdmin(
       .limit(1);
 
     if (existingAdmin) {
-      throw new Error("Admin user already exists");
+      const [updatedAdmin] = await db
+        .update(users)
+        .set({
+          username,
+          password,
+          email: `${username}@admin.local`,
+        })
+        .where(eq(users.id, existingAdmin.id))
+        .returning();
+      return updatedAdmin;
     }
 
     const [newAdmin] = await db
