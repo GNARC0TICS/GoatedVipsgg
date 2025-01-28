@@ -36,6 +36,44 @@ declare global {
   }
 }
 
+async function initializeAdmin() {
+  try {
+    // Only proceed if all required env vars are present
+    const adminUsername = process.env.ADMIN_USERNAME;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminUsername || !adminPassword) {
+      console.warn('Admin credentials not fully configured');
+      return;
+    }
+
+    // Check if admin user exists
+    const [existingAdmin] = await db
+      .select()
+      .from(users)
+      .where(eq(users.isAdmin, true))
+      .limit(1);
+
+    if (existingAdmin) {
+      console.log('Admin user already exists');
+      return;
+    }
+
+    // Create admin user
+    const hashedPassword = await crypto.hash(adminPassword);
+    await db.insert(users).values({
+      username: adminUsername,
+      password: hashedPassword,
+      email: `${adminUsername}@admin.local`,
+      isAdmin: true,
+    });
+
+    console.log('Admin user initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize admin user:', error);
+  }
+}
+
 export function setupAuth(app: Express) {
   const MemoryStore = createMemoryStore(session);
   const sessionSettings: session.SessionOptions = {
@@ -57,6 +95,9 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Initialize admin user on startup
+  initializeAdmin().catch(console.error);
+
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
@@ -72,12 +113,12 @@ export function setupAuth(app: Express) {
             .from(users)
             .where(eq(users.isAdmin, true))
             .limit(1);
-          
+
           if (adminUser) {
             return done(null, adminUser);
           }
         }
-        
+
         const [user] = await db
           .select()
           .from(users)
