@@ -74,14 +74,26 @@ export default function AuthModal() {
 
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     try {
+      if (!values.username || !values.password) {
+        toast({
+          variant: "destructive",
+          title: "Validation Error",
+          description: "Username and password are required",
+        });
+        return;
+      }
+
       setIsLoading(true);
       const isLogin = mode === "login";
-      const result = await (isLogin ? login(values) : register(values));
+      const result = await (isLogin ? login({
+        username: values.username,
+        password: values.password
+      }) : register(values));
 
       if (!result.ok) {
         toast({
           variant: "destructive",
-          title: isLogin ? "Login Failed" : "Registration Failed",
+          title: isLogin ? "Login Failed" : "Registration Failed", 
           description: result.message || "An error occurred. Please try again.",
         });
         return;

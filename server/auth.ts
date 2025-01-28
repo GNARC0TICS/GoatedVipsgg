@@ -61,7 +61,15 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         if (!username || !password) {
-          return done(null, false, { message: "Missing credentials" });
+          return done(null, false, { message: "Username and password are required" });
+        }
+
+        // Trim whitespace
+        username = username.trim();
+        password = password.trim();
+
+        if (!username || !password) {
+          return done(null, false, { message: "Username and password cannot be empty" });
         }
 
         // Check if this is an admin login attempt
