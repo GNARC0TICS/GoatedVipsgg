@@ -29,10 +29,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
+      if (!credentials.username || !credentials.password) {
+        throw new Error("Username and password are required");
+      }
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(credentials),
+        body: JSON.stringify({
+          username: credentials.username.trim(),
+          password: credentials.password.trim(),
+        }),
+        credentials: 'include' // Added for potential session management
       });
       if (!res.ok) {
         const error = await res.text();

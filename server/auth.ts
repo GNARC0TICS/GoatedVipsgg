@@ -80,12 +80,12 @@ export function setupAuth(app: Express) {
             .from(users)
             .where(eq(users.isAdmin, true))
             .limit(1);
-          
+
           if (adminUser) {
             return done(null, adminUser);
           }
         }
-        
+
         const [user] = await db
           .select()
           .from(users)
@@ -219,6 +219,13 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
+    if (!req.body.username || !req.body.password) {
+      return res.status(400).json({
+        status: "error",
+        message: "Username and password are required"
+      });
+    }
+
     passport.authenticate(
       "local",
       (err: any, user: Express.User | false, info: IVerifyOptions) => {
