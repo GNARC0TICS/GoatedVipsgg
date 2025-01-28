@@ -65,10 +65,8 @@ export default function AuthPage() {
       >
         <Card>
           <CardHeader>
-            <CardTitle className="font-heading uppercase">
-              {isLogin ? "Sign In" : "Create Account"}
-            </CardTitle>
-            <CardDescription className="font-sans">
+            <CardTitle>{isLogin ? "Sign In" : "Create Account"}</CardTitle>
+            <CardDescription>
               {isLogin
                 ? "Enter your credentials to access your account"
                 : "Create a new account to get started"}
@@ -85,51 +83,66 @@ export default function AuthPage() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-sans">Username</FormLabel>
+                      <FormLabel>Username</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Enter username" {...field} />
                       </FormControl>
-                      <FormMessage className="font-sans" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 {!isLogin && (
                   <FormField
                     control={form.control}
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-sans">Email</FormLabel>
+                        <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input type="email" {...field} />
+                          <Input 
+                            type="email" 
+                            placeholder="Enter email"
+                            {...field} 
+                          />
                         </FormControl>
-                        <FormMessage className="font-sans" />
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
                 )}
+
                 <FormField
                   control={form.control}
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-sans">Password</FormLabel>
+                      <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input type="password" {...field} />
+                        <Input 
+                          type="password" 
+                          placeholder="Enter password"
+                          {...field} 
+                        />
                       </FormControl>
-                      <FormMessage className="font-sans" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full uppercase font-heading">
+
+                <Button type="submit" className="w-full">
                   {isLogin ? "Sign In" : "Create Account"}
                 </Button>
               </form>
             </Form>
+
             <Button
               variant="link"
-              className="mt-4 w-full font-sans"
-              onClick={() => setIsLogin(!isLogin)}
+              className="mt-4 w-full"
+              onClick={() => {
+                setIsLogin(!isLogin);
+                form.reset();
+              }}
             >
               {isLogin
                 ? "Need an account? Sign up"
