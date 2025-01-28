@@ -127,6 +127,16 @@ export function setupAuth(app: Express) {
         });
       }
 
+      // Rate limiting check
+      const ipAddress = req.ip;
+      const registrationAttempts = await rateLimiter.get(ipAddress);
+      if (registrationAttempts > 5) {
+        return res.status(429).json({
+          status: "error",
+          message: "Too many registration attempts. Please try again later.",
+        });
+      }
+
       const { username, password, email } = result.data;
 
       // Check for existing username

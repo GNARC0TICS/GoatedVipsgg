@@ -58,6 +58,7 @@ async function checkIfUsernameExists(username: string) {
 export default function AuthModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [isLoading, setIsLoading] = useState(false); // Added loading state
   const { login, register } = useAuth();
 
   const form = useForm({
@@ -71,24 +72,36 @@ export default function AuthModal() {
     },
   });
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     try {
-      if (mode === "login") {
-        await login({ username: values.username, password: values.password });
-      } else {
-        await register(values);
+      setIsLoading(true);
+      const isLogin = mode === "login";
+      const result = await (isLogin ? login(values) : register(values));
+
+      if (!result.ok) {
+        toast({
+          variant: "destructive",
+          title: isLogin ? "Login Failed" : "Registration Failed",
+          description: result.message || "An error occurred. Please try again.",
+        });
+        return;
       }
-      setIsOpen(false);
-      form.reset();
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "An unexpected error occurred";
-      console.error(error);
+
       toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
+        title: "Success",
+        description: isLogin ? "Welcome back!" : "Account created successfully!",
       });
+
+      setIsOpen(false);
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error.message || "An unexpected error occurred";
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -161,6 +174,7 @@ export default function AuthModal() {
               <Button
                 type="submit"
                 className="w-full font-mona-sans-condensed font-extrabold uppercase tracking-tight text-black bg-[#D7FF00] hover:bg-[#b2d000]"
+                disabled={isLoading} // Added loading state to disable button
               >
                 {mode === "login" ? "Sign In" : "Create Account"}
               </Button>
