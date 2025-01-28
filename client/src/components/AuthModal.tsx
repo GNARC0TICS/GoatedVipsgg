@@ -72,10 +72,22 @@ export default function AuthModal() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof registerSchema>) => {
+  const onSubmit = async (values: any) => {
     try {
-      // Validate required fields
-      if (!values?.username || !values?.password) {
+      // Ensure values exist before accessing properties
+      if (!values || typeof values !== 'object') {
+        toast({
+          variant: "destructive",
+          title: "Form Error",
+          description: "Invalid form data",
+        });
+        return;
+      }
+
+      const username = values.username?.trim();
+      const password = values.password?.trim();
+      
+      if (!username || !password) {
         toast({
           variant: "destructive",
           title: "Validation Error",
