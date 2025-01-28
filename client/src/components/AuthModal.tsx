@@ -72,14 +72,13 @@ export default function AuthModal() {
     },
   });
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     try {
-      // Ensure values exist before accessing properties
-      if (!values || typeof values !== 'object') {
+      if (!values.username || !values.password) {
         toast({
           variant: "destructive",
-          title: "Form Error",
-          description: "Invalid form data",
+          title: "Validation Error",
+          description: "Username and password are required",
         });
         return;
       }
