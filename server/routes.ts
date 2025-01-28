@@ -7,7 +7,7 @@ import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import { db } from "@db";
-import { wagerRaces, users, ticketMessages } from "@db/schema";
+import { wagerRaces, users, ticketMessages, insertUserSchema } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -21,38 +21,149 @@ let wss: WebSocketServer;
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
   setupAuth(app); // Ensure auth is set up first
-  setupRESTRoutes(app);
-  setupWebSocket(httpServer);
-  return httpServer;
-}
 
-const transformMVPData = (mvpData: any) => {
-  return Object.entries(mvpData).reduce((acc, [period, data]) => {
-    if (data) {
-      // Calculate if there was a wager change
-      const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'];
-      const previousWager = data.wagered.previous || 0; // This would come from the API
-      const hasIncrease = currentWager > previousWager;
+  // Login validation schema
+  const loginSchema = z.object({
+    username: z.string().min(1, "Username is required"),
+    password: z.string().min(1, "Password is required"),
+  });
 
-      acc[period] = {
-        username: data.name,
-        wagerAmount: currentWager,
-        rank: 1,
-        lastWagerChange: hasIncrease ? Date.now() : undefined,
-        // Add any additional stats needed for the detailed view
-        stats: {
-          winRate: data.stats?.winRate || 0,
-          favoriteGame: data.stats?.favoriteGame || 'Unknown',
-          totalGames: data.stats?.totalGames || 0
-        }
-      };
+  // Register validation schema (extends login schema with additional fields)
+  const registerSchema = loginSchema.extend({
+    email: z.string().email("Invalid email format"),
+  });
+
+  // Update auth routes with better error handling
+  app.post("/api/register", async (req, res) => {
+    try {
+      const result = registerSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          status: "error",
+          message: "Validation failed",
+          errors: result.error.issues.map((i) => i.message),
+        });
+      }
+
+      const { username, email, password } = result.data;
+
+      // Check for existing username or email
+      const existingUser = await db.query.users.findFirst({
+        where: (users, { or, eq }) =>
+          or(eq(users.username, username), eq(users.email, email)),
+      });
+
+      if (existingUser) {
+        return res.status(400).json({
+          status: "error",
+          message: "Username or email already exists",
+        });
+      }
+
+      // Create user through auth system
+      const user = await db
+        .insert(users)
+        .values({
+          username,
+          email,
+          password, // Will be hashed by auth system
+          isAdmin: false,
+        })
+        .returning();
+
+      res.status(201).json({
+        status: "success",
+        message: "Registration successful",
+        user: {
+          id: user[0].id,
+          username: user[0].username,
+          email: user[0].email,
+        },
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({
+        status: "error",
+        message: "Internal server error during registration",
+      });
     }
-    return acc;
-  }, {} as Record<string, any>);
-};
+  });
 
+  app.post("/api/login", async (req, res) => {
+    try {
+      const result = loginSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          status: "error",
+          message: "Validation failed",
+          errors: result.error.issues.map((i) => i.message),
+        });
+      }
 
-function setupRESTRoutes(app: Express) {
+      const { username, password } = result.data;
+
+      // Check if this is an admin login
+      if (
+        username === process.env.ADMIN_USERNAME &&
+        password === process.env.ADMIN_PASSWORD
+      ) {
+        const [adminUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.isAdmin, true))
+          .limit(1);
+
+        if (adminUser) {
+          return res.json({
+            status: "success",
+            message: "Admin login successful",
+            user: {
+              id: adminUser.id,
+              username: adminUser.username,
+              email: adminUser.email,
+              isAdmin: true,
+            },
+          });
+        }
+      }
+
+      // Regular user login
+      const user = await db.query.users.findFirst({
+        where: (users, { eq }) => eq(users.username, username),
+      });
+
+      if (!user) {
+        return res.status(401).json({
+          status: "error",
+          message: "Invalid credentials",
+        });
+      }
+
+      // Update last login timestamp
+      await db
+        .update(users)
+        .set({ lastLogin: new Date() })
+        .where(eq(users.id, user.id));
+
+      res.json({
+        status: "success",
+        message: "Login successful",
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          isAdmin: user.isAdmin,
+        },
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({
+        status: "error",
+        message: "Internal server error during login",
+      });
+    }
+  });
+
   // Add new MVP stats endpoint
   app.get("/api/mvp-stats", async (_req, res) => {
     try {
@@ -102,62 +213,6 @@ function setupRESTRoutes(app: Express) {
   });
 
   app.get("/api/profile", requireAuth, handleProfileRequest);
-  app.post("/api/admin/login", async (req, res) => {
-    try {
-      const result = adminLoginSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({
-          status: "error",
-          message: "Validation failed",
-          errors: result.error.issues.map((i) => i.message).join(", "),
-        });
-      }
-
-      const { username, password } = result.data;
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.username, username))
-        .limit(1);
-
-      if (!user || !user.isAdmin) {
-        return res.status(401).json({
-          status: "error",
-          message: "Invalid admin credentials",
-        });
-      }
-
-      // Verify password and generate token
-      const token = generateToken({
-        userId: user.id,
-        email: user.email,
-        isAdmin: user.isAdmin,
-      });
-
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-      });
-
-      res.json({
-        status: "success",
-        message: "Admin login successful",
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          isAdmin: user.isAdmin,
-        },
-      });
-    } catch (error) {
-      log(`Admin login error: ${error}`);
-      res.status(500).json({
-        status: "error",
-        message: "Failed to process admin login",
-      });
-    }
-  });
-
   app.get("/api/admin/users", requireAdmin, handleAdminUsersRequest);
   app.get("/api/admin/wager-races", requireAdmin, handleWagerRacesRequest);
   app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);
@@ -179,6 +234,39 @@ function setupRESTRoutes(app: Express) {
       });
     }
   });
+  setupRESTRoutes(app);
+  setupWebSocket(httpServer);
+  return httpServer;
+}
+
+const transformMVPData = (mvpData: any) => {
+  return Object.entries(mvpData).reduce((acc, [period, data]) => {
+    if (data) {
+      // Calculate if there was a wager change
+      const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'];
+      const previousWager = data.wagered.previous || 0; // This would come from the API
+      const hasIncrease = currentWager > previousWager;
+
+      acc[period] = {
+        username: data.name,
+        wagerAmount: currentWager,
+        rank: 1,
+        lastWagerChange: hasIncrease ? Date.now() : undefined,
+        // Add any additional stats needed for the detailed view
+        stats: {
+          winRate: data.stats?.winRate || 0,
+          favoriteGame: data.stats?.favoriteGame || 'Unknown',
+          totalGames: data.stats?.totalGames || 0
+        }
+      };
+    }
+    return acc;
+  }, {} as Record<string, any>);
+};
+
+
+function setupRESTRoutes(app: Express) {
+
 }
 
 async function handleProfileRequest(req: any, res: any) {
