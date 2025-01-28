@@ -29,24 +29,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
-      // Validate credentials
       if (!credentials?.username?.trim() || !credentials?.password?.trim()) {
         throw new Error("Username and password are required");
       }
-
-      const data = {
-        username: credentials.username.trim(),
-        password: credentials.password.trim()
-      };
 
       const response = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: credentials.username.trim(),
-          password: credentials.password.trim(),
+          password: credentials.password.trim()
         }),
-        credentials: "include",
+        credentials: "include"
       });
 
       if (!response.ok) {
@@ -55,9 +49,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       return response.json();
-
-      const res = await fetch("/api/login", {
-        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: credentials.username.trim(),
