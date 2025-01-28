@@ -1,3 +1,4 @@
+
 import { Request, Response, NextFunction } from "express";
 import { db } from "@db";
 import { users } from "@db/schema";
@@ -53,9 +54,8 @@ export async function initializeAdmin(
     // Verify admin key
     if (adminKey !== process.env.ADMIN_SECRET_KEY) {
       throw new Error("Invalid admin key");
-  }
+    }
 
-  try {
     const [existingAdmin] = await db
       .select()
       .from(users)
