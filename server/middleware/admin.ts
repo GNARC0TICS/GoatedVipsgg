@@ -31,9 +31,13 @@ export async function requireAdmin(
 }
 
 // Initialize the first admin user on startup
-export const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-export const ADMIN_KEY = process.env.ADMIN_SECRET_KEY || 'admin-secret';
+export const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+export const ADMIN_KEY = process.env.ADMIN_SECRET_KEY;
+
+if (!ADMIN_USERNAME || !ADMIN_PASSWORD || !ADMIN_KEY) {
+  console.error('Missing required admin environment variables');
+}
 
 export async function initializeAdmin(
   username: string = ADMIN_USERNAME,
