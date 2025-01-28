@@ -30,11 +30,15 @@ export async function requireAdmin(
   }
 }
 
-// Initialize the first admin user
+// Initialize the first admin user on startup
+export const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+export const ADMIN_KEY = process.env.ADMIN_SECRET_KEY || 'admin-secret';
+
 export async function initializeAdmin(
-  username: string,
-  password: string,
-  adminKey: string,
+  username: string = ADMIN_USERNAME,
+  password: string = ADMIN_PASSWORD,
+  adminKey: string = ADMIN_KEY,
 ) {
   if (adminKey !== process.env.ADMIN_SECRET_KEY) {
     throw new Error("Invalid admin key");

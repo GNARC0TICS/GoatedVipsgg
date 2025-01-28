@@ -6,6 +6,7 @@ import { sql } from "drizzle-orm";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
+import { initializeAdmin } from "./middleware/admin"; // Added import
 
 const execAsync = promisify(exec);
 const app = express();
@@ -94,7 +95,13 @@ async function startServer() {
     await checkDatabase();
     await cleanupPort(); 
 
-    const server = registerRoutes(app);
+    registerRoutes(app); //Assuming setupRoutes is registerRoutes
+
+    // Initialize admin user
+    initializeAdmin().catch(console.error);
+
+    const server = createServer(app); //Changed to use createServer for consistency
+
 
     if (app.get("env") === "development") {
       await setupVite(app, server);
