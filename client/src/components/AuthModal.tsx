@@ -74,7 +74,14 @@ export default function AuthModal() {
 
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     try {
-      if (!values.username || !values.password) {
+      // Add explicit type checking and validation
+      const formData = {
+        username: values?.username?.trim(),
+        password: values?.password?.trim(),
+        email: mode === 'register' ? values?.email?.trim() : undefined
+      };
+
+      if (!formData.username || !formData.password) {
         toast({
           variant: "destructive",
           title: "Validation Error",

@@ -60,7 +60,11 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
-        if (!username || !password) {
+        // Validate and sanitize credentials
+        const sanitizedUsername = username?.trim();
+        const sanitizedPassword = password?.trim();
+        
+        if (!sanitizedUsername || !sanitizedPassword) {
           return done(null, false, { message: "Username and password are required" });
         }
 
