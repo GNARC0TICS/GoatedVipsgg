@@ -13,16 +13,20 @@ export const users = pgTable("users", {
   lastLogin: timestamp("last_login"),
 });
 
-// Schema validation with custom messages
-export const insertUserSchema = z.object({
+// Separate schemas for login and registration
+export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const insertUserSchema = loginSchema.extend({
   email: z.string().email("Invalid email format"),
 });
 
 export const selectUserSchema = createSelectSchema(users);
 
 // Types
+export type LoginUser = z.infer<typeof loginSchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type SelectUser = typeof users.$inferSelect;
 

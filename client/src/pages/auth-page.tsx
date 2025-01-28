@@ -18,7 +18,7 @@ import {
 import { useForm } from "react-hook-form";
 import { useUser } from "@/hooks/use-user";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertUserSchema } from "@db/schema";
+import { insertUserSchema, loginSchema } from "@db/schema";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
@@ -27,7 +27,7 @@ export default function AuthPage() {
   const { login, register } = useUser();
 
   const form = useForm({
-    resolver: zodResolver(insertUserSchema),
+    resolver: zodResolver(isLogin ? loginSchema : insertUserSchema),
     defaultValues: {
       username: "",
       password: "",
@@ -37,14 +37,15 @@ export default function AuthPage() {
 
   const onSubmit = async (values: any) => {
     try {
-      // Only include email for registration
-      const credentials = isLogin 
-        ? { username: values.username, password: values.password }
-        : values;
-
-      await (isLogin ? login(credentials) : register(credentials));
-    } catch (error: any) {
-      // Error handling is now done in the mutation callbacks in useUser
+      if (isLogin) {
+        await login({
+          username: values.username,
+          password: values.password,
+        });
+      } else {
+        await register(values);
+      }
+    } catch (error) {
       console.error("Auth error:", error);
     }
   };
