@@ -20,31 +20,7 @@ let wss: WebSocketServer;
 
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
-  setupAuth(app); // Auth routes are now handled by setupAuth
-
-  app.get("/api/profile", requireAuth, handleProfileRequest);
-  app.get("/api/admin/users", requireAdmin, handleAdminUsersRequest);
-  app.get("/api/admin/wager-races", requireAdmin, handleWagerRacesRequest);
-  app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);
-  app.get("/api/affiliate/stats", handleAffiliateStats);
-
-  // Add new route to fetch chat history
-  app.get("/api/chat/history", requireAuth, async (req, res) => {
-    try {
-      const messages = await db.query.ticketMessages.findMany({
-        orderBy: (messages, { asc }) => [asc(messages.createdAt)],
-        limit: 50,
-      });
-      res.json(messages);
-    } catch (error) {
-      log(`Error fetching chat history: ${error}`);
-      res.status(500).json({
-        status: "error",
-        message: "Failed to fetch chat history",
-      });
-    }
-  });
-
+  setupAuth(app); // Ensure auth is set up first
   setupRESTRoutes(app);
   setupWebSocket(httpServer);
   return httpServer;
@@ -77,7 +53,132 @@ const transformMVPData = (mvpData: any) => {
 
 
 function setupRESTRoutes(app: Express) {
+  // Add new MVP stats endpoint
+  app.get("/api/mvp-stats", async (_req, res) => {
+    try {
+      await rateLimiter.consume(_req.ip || "unknown");
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const rawData = await response.json();
+      const stats = transformLeaderboardData(rawData);
+
+      // Extract top players from existing leaderboard data with complete user data
+      const mvpData = {
+        daily: {
+          ...stats.data.today.data[0],
+          wagerAmount: stats.data.today.data[0]?.wagered.today || 0
+        },
+        weekly: {
+          ...stats.data.weekly.data[0],
+          wagerAmount: stats.data.weekly.data[0]?.wagered.this_week || 0
+        },
+        monthly: {
+          ...stats.data.monthly.data[0],
+          wagerAmount: stats.data.monthly.data[0]?.wagered.this_month || 0
+        }
+      };
+
+      const result = transformMVPData(mvpData);
+      res.json(result);
+    } catch (error) {
+      log(`Error fetching MVP stats: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch MVP statistics",
+      });
+    }
+  });
+
+  app.get("/api/profile", requireAuth, handleProfileRequest);
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const result = adminLoginSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          status: "error",
+          message: "Validation failed",
+          errors: result.error.issues.map((i) => i.message).join(", "),
+        });
+      }
+
+      const { username, password } = result.data;
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, username))
+        .limit(1);
+
+      if (!user || !user.isAdmin) {
+        return res.status(401).json({
+          status: "error",
+          message: "Invalid admin credentials",
+        });
+      }
+
+      // Verify password and generate token
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      });
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+      });
+
+      res.json({
+        status: "success",
+        message: "Admin login successful",
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          isAdmin: user.isAdmin,
+        },
+      });
+    } catch (error) {
+      log(`Admin login error: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to process admin login",
+      });
+    }
+  });
+
+  app.get("/api/admin/users", requireAdmin, handleAdminUsersRequest);
+  app.get("/api/admin/wager-races", requireAdmin, handleWagerRacesRequest);
+  app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);
+  app.get("/api/affiliate/stats", handleAffiliateStats);
+
+  // Add new route to fetch chat history
+  app.get("/api/chat/history", requireAuth, async (req, res) => {
+    try {
+      const messages = await db.query.ticketMessages.findMany({
+        orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+        limit: 50,
+      });
+      res.json(messages);
+    } catch (error) {
+      log(`Error fetching chat history: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch chat history",
+      });
+    }
+  });
 }
 
 async function handleProfileRequest(req: any, res: any) {

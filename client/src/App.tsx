@@ -1,15 +1,15 @@
 import React, { Suspense, useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { PreLoader } from "@/components/PreLoader";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/lib/auth";
+import { AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "react-error-boundary";
 import NotFound from "@/pages/not-found";
-import AuthPage from "@/pages/auth-page";
-import { useUser } from "@/hooks/use-user";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { AnimatePresence } from "framer-motion";
 import Home from "@/pages/Home";
 import VipTransfer from "@/pages/VipTransfer";
 import ProvablyFair from "@/pages/ProvablyFair";
@@ -21,8 +21,11 @@ import UserManagement from "@/pages/admin/UserManagement";
 import Leaderboard from "@/pages/Leaderboard";
 import { Layout } from "@/components/Layout";
 import { PageTransition } from "@/components/PageTransition";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useUser } from "@/hooks/use-user";
 import Help from "./pages/Help";
 import UserProfile from "@/pages/UserProfile";
+import { Redirect } from "@/lib/navigation";
 import Telegram from "@/pages/Telegram";
 import HowItWorks from "@/pages/HowItWorks";
 import GoatedToken from "@/pages/GoatedToken";
@@ -31,8 +34,6 @@ import FAQ from "@/pages/faq";
 import VipProgram from "./pages/VipProgram";
 import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
-import { Redirect } from "@/lib/navigation";
-import { PreLoader } from "@/components/PreLoader";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -70,17 +71,6 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
-  const { user, isLoading } = useUser();
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  // Show auth page if user is not logged in
-  if (!user) {
-    return <AuthPage />;
-  }
-
   return (
     <Layout>
       <AnimatePresence mode="wait">
@@ -130,8 +120,19 @@ function Router() {
   );
 }
 
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ErrorBoundary>
+    </QueryClientProvider>
+  );
+}
+
 function AppContent() {
-  const { user } = useUser();
   const [isInitialLoad, setIsInitialLoad] = useState(() => {
     return !localStorage.getItem('hasVisited');
   });
@@ -139,13 +140,11 @@ function AppContent() {
   const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
-    enabled: !!user, // Only fetch if user is logged in
   });
 
   const { data: mvpData, isLoading: mvpLoading } = useQuery({
     queryKey: ["/api/mvp-stats"],
     staleTime: 30000,
-    enabled: !!user, // Only fetch if user is logged in
   });
 
   useEffect(() => {
@@ -170,16 +169,6 @@ function AppContent() {
         </Suspense>
       )}
     </AnimatePresence>
-  );
-}
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ErrorBoundary FallbackComponent={ErrorFallback}>
-        <AppContent />
-      </ErrorBoundary>
-    </QueryClientProvider>
   );
 }
 

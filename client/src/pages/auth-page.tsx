@@ -18,35 +18,40 @@ import {
 import { useForm } from "react-hook-form";
 import { useUser } from "@/hooks/use-user";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertUserSchema, loginSchema } from "@db/schema";
+import { insertUserSchema } from "@db/schema";
+import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const { login, register } = useUser();
+  const { toast } = useToast();
 
   const form = useForm({
-    resolver: zodResolver(isLogin ? loginSchema : insertUserSchema),
+    resolver: zodResolver(insertUserSchema),
     defaultValues: {
       username: "",
       password: "",
-      email: "",
     },
   });
 
   const onSubmit = async (values: any) => {
     try {
-      if (isLogin) {
-        await login({
-          username: values.username,
-          password: values.password,
+      const result = await (isLogin ? login(values) : register(values));
+      if (!result.ok) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.message,
         });
-      } else {
-        await register(values);
       }
-    } catch (error) {
-      console.error("Auth error:", error);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
     }
   };
 
@@ -59,8 +64,10 @@ export default function AuthPage() {
       >
         <Card>
           <CardHeader>
-            <CardTitle>{isLogin ? "Sign In" : "Create Account"}</CardTitle>
-            <CardDescription>
+            <CardTitle className="font-heading uppercase">
+              {isLogin ? "Sign In" : "Create Account"}
+            </CardTitle>
+            <CardDescription className="font-sans">
               {isLogin
                 ? "Enter your credentials to access your account"
                 : "Create a new account to get started"}
@@ -77,66 +84,36 @@ export default function AuthPage() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Username</FormLabel>
+                      <FormLabel className="font-sans">Username</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter username" {...field} />
+                        <Input {...field} />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="font-sans" />
                     </FormItem>
                   )}
                 />
-
-                {!isLogin && (
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="email" 
-                            placeholder="Enter email"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
                 <FormField
                   control={form.control}
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel className="font-sans">Password</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="password" 
-                          placeholder="Enter password"
-                          {...field} 
-                        />
+                        <Input type="password" {...field} />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="font-sans" />
                     </FormItem>
                   )}
                 />
-
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full uppercase font-heading">
                   {isLogin ? "Sign In" : "Create Account"}
                 </Button>
               </form>
             </Form>
-
             <Button
               variant="link"
-              className="mt-4 w-full"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                form.reset();
-              }}
+              className="mt-4 w-full font-sans"
+              onClick={() => setIsLogin(!isLogin)}
             >
               {isLogin
                 ? "Need an account? Sign up"

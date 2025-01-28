@@ -1,7 +1,15 @@
-import { pgTable, text, serial, integer, timestamp, boolean, decimal, jsonb } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  timestamp,
+  boolean,
+  decimal,
+  jsonb,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -12,23 +20,6 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastLogin: timestamp("last_login"),
 });
-
-// Separate schemas for login and registration
-export const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
-});
-
-export const insertUserSchema = loginSchema.extend({
-  email: z.string().email("Invalid email format"),
-});
-
-export const selectUserSchema = createSelectSchema(users);
-
-// Types
-export type LoginUser = z.infer<typeof loginSchema>;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type SelectUser = typeof users.$inferSelect;
 
 export const wagerRaces = pgTable("wager_races", {
   id: serial("id").primaryKey(),
@@ -87,6 +78,8 @@ export const affiliateStatsRelations = relations(affiliateStats, ({ one }) => ({
   }),
 }));
 
+// New tables for additional features
+
 export const supportTickets = pgTable("support_tickets", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
@@ -117,6 +110,7 @@ export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
   source: text("source"), // Track where the subscription came from
 });
 
+// Relations
 export const userRelations = relations(users, ({ one, many }) => ({
   preferences: one(notificationPreferences, {
     fields: [users.id],
@@ -151,6 +145,9 @@ export const supportTicketRelations = relations(
   }),
 );
 
+// Schema validation
+export const insertUserSchema = createInsertSchema(users);
+export const selectUserSchema = createSelectSchema(users);
 export const insertNotificationPreferencesSchema = createInsertSchema(
   notificationPreferences,
 );
@@ -174,6 +171,9 @@ export const selectNewsletterSubscriptionSchema = createSelectSchema(
   newsletterSubscriptions,
 );
 
+// Types
+export type InsertUser = typeof users.$inferInsert;
+export type SelectUser = typeof users.$inferSelect;
 export type InsertNotificationPreferences =
   typeof notificationPreferences.$inferInsert;
 export type SelectNotificationPreferences =
