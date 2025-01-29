@@ -564,11 +564,18 @@ export function Layout({ children }: LayoutProps) {
                 <h4 className="font-heading text-[#14151A] text-2xl font-bold">
                   Ready to get Goated?
                 </h4>
-                <img
-                  src="/images/Goated Logo - Black.png"
-                  alt="Goated"
-                  className="h-8 w-auto entrance-zoom wiggle-animation"
-                />
+                <a 
+                  href="https://www.goated.com/r/VIPBOOST" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="transform transition-transform duration-300 hover:scale-110"
+                >
+                  <img
+                    src="/images/Goated Logo - Black.png"
+                    alt="Goated"
+                    className="h-8 w-auto entrance-zoom wiggle-animation"
+                  />
+                </a>
               </div>
               <p className="text-[#14151A] mb-6">
                 Sign up now and enjoy additional rewards from our side. Start
@@ -584,9 +591,23 @@ export function Layout({ children }: LayoutProps) {
               </Button>
             </div>
             <div>
-              <h4 className="font-heading text-[#14151A] text-2xl font-bold mb-4">
-                Stay Updated
-              </h4>
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-heading text-[#14151A] text-2xl font-bold">
+                  Stay Updated
+                </h4>
+                <a 
+                  href="https://t.me/goatedvip" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="transform transition-transform duration-300 hover:scale-110"
+                >
+                  <img
+                    src="/images/Goated logo with text.png"
+                    alt="Goated"
+                    className="h-10 w-auto object-contain"
+                  />
+                </a>
+              </div>
               <p className="text-[#14151A] mb-6">
                 Subscribe to our newsletter for exclusive offers and updates!
               </p>
