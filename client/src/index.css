@@ -70,17 +70,18 @@
   50% { opacity: 0.3; }
 }
 
-@keyframes pulse-crown {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  75% { transform: rotate(10deg); }
 }
 
 .animate-flicker {
   animation: flicker 1.5s ease-in-out infinite;
 }
 
-.animate-pulse-crown {
-  animation: pulse-crown 2s ease-in-out infinite;
+.animate-wiggle {
+  animation: wiggle 2s ease-in-out infinite;
 }
 
 @layer utilities {
@@ -198,21 +199,6 @@ html {
   }
 }
 
-@keyframes wiggle {
-  0%,
-  100% {
-    transform: rotate(0deg) scale(1);
-  }
-  25% {
-    transform: rotate(-8deg) scale(1.05);
-  }
-  50% {
-    transform: rotate(0deg) scale(1.1);
-  }
-  75% {
-    transform: rotate(8deg) scale(1.05);
-  }
-}
 
 @keyframes fillAnimation {
   from {
