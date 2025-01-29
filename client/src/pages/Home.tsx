@@ -2,11 +2,10 @@ import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Crown, ArrowLeftRight, Trophy, CircleDot, Shield, Coins, Gift, Zap, Diamond } from "lucide-react";
+import { Crown, ArrowLeftRight, Trophy, CircleDot, Shield, Coins, Gift, Zap, Diamond, ArrowRight, Timer } from "lucide-react";
 import { FeatureCarousel } from "@/components/FeatureCarousel";
 import { MVPCards } from "@/components/MVPCards";
 import { RaceTimer } from "@/components/RaceTimer";
-import { ArrowRight, ArrowLeftRight, Timer } from "lucide-react"; // Corrected and consolidated import
 
 
 export default function Home() {
