@@ -2,7 +2,7 @@ import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Crown, Swap, Trophy, CircleDot, Shield, Coins, Gift, Zap, Diamond } from "lucide-react"; // Added Swap and Diamond icons
+import { Crown, ArrowLeftRight, Trophy, CircleDot, Shield, Coins, Gift, Zap, Diamond } from "lucide-react";
 import { FeatureCarousel } from "@/components/FeatureCarousel";
 import { MVPCards } from "@/components/MVPCards";
 import { RaceTimer } from "@/components/RaceTimer";
@@ -121,7 +121,7 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
                     <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 card-hover">
                       <div className="flex items-center gap-3 mb-4"> {/* Added icon container */}
-                        <Swap className="w-8 h-8 text-[#D7FF00]" /> {/* Added Swap icon */}
+                        <ArrowLeftRight className="w-8 h-8 text-[#D7FF00]" />
                         <h3 className="text-2xl font-heading uppercase mb-4 text-white">
                           VIP Transfer
                         </h3>
