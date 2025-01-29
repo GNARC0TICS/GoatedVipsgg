@@ -86,7 +86,7 @@ const tiers = [
   },
   {
     name: "DIAMOND",
-    icon: "/images/Goated Emblems/diamond.1c810178.svg",
+    icon: "/images/Goated Emblems/diamond.ddf47a1e.svg",
     levels: [
       { level: "Diamond 1", xpRequired: "20,000,000" },
       { level: "Diamond 2", xpRequired: "25,000,000" },
