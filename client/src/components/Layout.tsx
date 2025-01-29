@@ -544,27 +544,27 @@ export function Layout({ children }: LayoutProps) {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <div className="max-h-[300px] overflow-y-auto">
-                    {/* Example notifications */}
+                    {/* Active notifications */}
                     <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
                       <div className="text-sm font-medium">
-                        New Wager Race Started
+                        Monthly Wager Race Live!
                       </div>
                       <div className="text-xs text-[#8A8B91]">
-                        Monthly race has begun with $5000 prize pool
+                        Compete for a share of the $200 prize pool - Join now!
                       </div>
                       <div className="text-xs text-[#8A8B91]">
-                        2 minutes ago
+                        Just now
                       </div>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
                       <div className="text-sm font-medium">
-                        VIP Status Update
+                        Welcome to GoatedVIPs!
                       </div>
                       <div className="text-xs text-[#8A8B91]">
-                        You're close to reaching Silver tier!
+                        Your #1 source for casino rewards and competitions
                       </div>
-                      <div className="text-xs text-[#8A8B91]">1 hour ago</div>
+                      <div className="text-xs text-[#8A8B91]">2 days ago</div>
                     </DropdownMenuItem>
                   </div>
                 </DropdownMenuContent>
