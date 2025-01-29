@@ -591,7 +591,7 @@ export function Layout({ children }: LayoutProps) {
               </Button>
             </div>
             <div>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-4 mb-4">
                 <h4 className="font-heading text-[#14151A] text-2xl font-bold">
                   Stay Updated
                 </h4>
@@ -604,7 +604,7 @@ export function Layout({ children }: LayoutProps) {
                   <img
                     src="/images/Goated logo with text.png"
                     alt="Goated"
-                    className="h-10 w-auto object-contain"
+                    className="h-14 w-auto object-contain"
                   />
                 </a>
               </div>
