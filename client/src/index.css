@@ -150,10 +150,8 @@ html {
   h3,
   h4,
   h5,
-  h6,
-  .nav-link {
-    font-family: "MonaSansCondensed-ExtraBold", var(--font-heading);
-    @apply font-extrabold uppercase tracking-tight;
+  h6 {
+    @apply font-heading font-extrabold uppercase tracking-tight;
   }
 
   h1 {
@@ -349,32 +347,6 @@ html {
 
 .animate-pulse-subtle {
   animation: pulse-subtle 2s ease-in-out infinite;
-}
-
-@keyframes pulse-crown {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1) rotate(0deg);
-  }
-  50% {
-    opacity: 0.7;
-    transform: scale(1.1) rotate(5deg);
-  }
-}
-
-.animate-pulse-crown {
-  animation: pulse-crown 3s ease-in-out infinite;
-}
-
-@keyframes flicker {
-  0%, 100% { opacity: 1; }
-  25% { opacity: 0.6; }
-  50% { opacity: 0.3; }
-  75% { opacity: 0.8; }
-}
-
-.animate-flicker {
-  animation: flicker 1s linear infinite;
 }
 
 @keyframes scroll {

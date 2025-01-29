@@ -37,7 +37,7 @@ export function getTierIcon(tier: TierLevel): string {
     PEARL: "/images/Goated Emblems/pearl.1815809f.svg",
     SAPPHIRE: "/images/Goated Emblems/sapphire.91e6756b.svg",
     EMERALD: "/images/Goated Emblems/emerald.46bd38eb.svg",
-    DIAMOND: "/images/Goated Emblems/diamond.1c810178.svg",
+    DIAMOND: "/images/Goated Emblems/diamond.ddf47a1e.svg",
   };
   return icons[tier];
 }
