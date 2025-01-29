@@ -438,21 +438,6 @@ export function Layout({ children }: LayoutProps) {
                       <MobileNavLink href="/tips-and-strategies" label="Tips & Strategies" onClose={handleCloseMenu} />
                       <MobileNavLink href="/vip-program" label="VIP Program" onClose={handleCloseMenu} />
 
-                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">COMPETITIONS</div>
-                      <MobileNavLink 
-                        href="/wager-races" 
-                        label={
-                          <div className="flex items-center gap-2">
-                            <span>Monthly Race</span>
-                            <div className="flex items-center gap-1">
-                              <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
-                              <span className="text-xs text-red-500">LIVE</span>
-                            </div>
-                          </div>
-                        }
-                        onClose={handleCloseMenu}
-                      />
-
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">LEADERBOARDS</div>
                       <MobileNavLink 
                         href="/leaderboard?period=daily" 
@@ -478,10 +463,36 @@ export function Layout({ children }: LayoutProps) {
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">PROMOTIONS</div>
                       <MobileNavLink href="/promotions" label="News & Promotions" onClose={handleCloseMenu} />
                       <MobileNavLink href="/goated-token" label="Goated Airdrop" onClose={handleCloseMenu} />
-                      <MobileNavLink href="/bonus-codes" label="Bonus Codes" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/bonus-codes" label={
+                        <div className="flex items-center gap-2">
+                          <span>Bonus Codes</span>
+                          <Gift className="h-4 w-4" />
+                        </div>
+                      } onClose={handleCloseMenu} />
 
-                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">COMMUNITY</div>
-                      <MobileNavLink href="/telegram" label="Telegram" onClose={handleCloseMenu} />
+                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">MONTHLY RACE</div>
+                      <MobileNavLink 
+                        href="/wager-races" 
+                        label={
+                          <div className="flex items-center gap-2">
+                            <span>Monthly Race</span>
+                            <div className="flex items-center gap-1">
+                              <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                              <span className="text-xs text-red-500">LIVE</span>
+                            </div>
+                          </div>
+                        }
+                        onClose={handleCloseMenu}
+                      />
+
+                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">SOCIALS</div>
+                      <MobileNavLink href="/telegram" label="Telegram Community" onClose={handleCloseMenu} />
+
+                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">HELP & SUPPORT</div>
+                      <MobileNavLink href="/help" label="Help Center" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/faq" label="FAQ" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/support" label="Contact Support" onClose={handleCloseMenu} />
+
                       {user?.isAdmin && (
                         <>
                           <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">ADMIN</div>
