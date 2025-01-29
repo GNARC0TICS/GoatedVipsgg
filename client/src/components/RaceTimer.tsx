@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, ChevronDown, ChevronUp, Clock, AlertCircle } from "lucide-react";
+import { Trophy, ChevronDown, ChevronUp, Clock, AlertCircle, History } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -22,35 +22,35 @@ interface RaceData {
   participants: RaceParticipant[];
 }
 
-/**
- * RaceTimer Component
- * 
- * Displays the current monthly race status, countdown timer, and top participants
- * Features:
- * - Expandable view showing top 10 participants
- * - Real-time countdown to end of month
- * - Automatic data refresh every 30 seconds
- * - Smooth animations and transitions
- * - Error handling with fallback UI
- */
 export function RaceTimer() {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showPrevious, setShowPrevious] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
   const { toast } = useToast();
 
   // Fetch current race data
-  const { data: raceData, error } = useQuery<RaceData>({
+  const { data: currentRaceData, error: currentError } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/current"],
     refetchInterval: 30000, // Refresh every 30 seconds
     retry: 3,
   });
 
+  // Fetch previous month's data
+  const { data: previousRaceData, error: previousError } = useQuery<RaceData>({
+    queryKey: ["/api/wager-races/previous"],
+    enabled: showPrevious, // Only fetch when viewing previous month
+  });
+
+  // Use the appropriate data based on which view is active
+  const raceData = showPrevious ? previousRaceData : currentRaceData;
+  const error = showPrevious ? previousError : currentError;
+
   // Calculate and update time remaining until end of month
   useEffect(() => {
-    if (!raceData?.endDate) return;
+    if (!currentRaceData?.endDate) return;
 
     const updateTimer = () => {
-      const end = new Date(raceData.endDate);
+      const end = new Date(currentRaceData.endDate);
       const now = new Date();
       const diff = end.getTime() - now.getTime();
 
@@ -69,7 +69,7 @@ export function RaceTimer() {
     updateTimer();
     const interval = setInterval(updateTimer, 60000); // Update every minute
     return () => clearInterval(interval);
-  }, [raceData?.endDate]);
+  }, [currentRaceData?.endDate]);
 
   // Error state
   if (error) {
@@ -92,6 +92,14 @@ export function RaceTimer() {
   // Loading or no race data
   if (!raceData) return null;
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric',
+      month: 'long'
+    });
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -107,22 +115,39 @@ export function RaceTimer() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-[#D7FF00]" />
-              <span className="font-heading text-white">Monthly Race</span>
+              <span className="font-heading text-white">
+                {showPrevious ? 'Previous Race' : 'Monthly Race'}
+              </span>
             </div>
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-[#D7FF00]" />
-              <span className="text-white font-mono">{timeLeft}</span>
+              {!showPrevious && (
+                <>
+                  <Clock className="h-4 w-4 text-[#D7FF00]" />
+                  <span className="text-white font-mono">{timeLeft}</span>
+                </>
+              )}
             </div>
           </div>
           <div className="flex justify-between items-center mt-2">
             <span className="text-[#8A8B91] text-sm">
-              Prize Pool: ${raceData.prizePool.toLocaleString()}
+              {formatDate(raceData.startDate)}
             </span>
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4 text-[#8A8B91]" />
-            ) : (
-              <ChevronDown className="h-4 w-4 text-[#8A8B91]" />
-            )}
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPrevious(!showPrevious);
+                }}
+                className="p-1 rounded hover:bg-[#2A2B31] transition-colors"
+              >
+                <History className="h-4 w-4 text-[#8A8B91]" />
+              </button>
+              {isExpanded ? (
+                <ChevronUp className="h-4 w-4 text-[#8A8B91]" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-[#8A8B91]" />
+              )}
+            </div>
           </div>
         </div>
 
@@ -136,6 +161,11 @@ export function RaceTimer() {
               className="overflow-hidden"
             >
               <div className="p-4 border-t border-[#2A2B31]">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-[#8A8B91] text-sm">
+                    Prize Pool: ${raceData.prizePool.toLocaleString()}
+                  </span>
+                </div>
                 {raceData.participants.map((participant, index) => (
                   <div 
                     key={participant.uid}

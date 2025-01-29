@@ -10,6 +10,8 @@ import { db } from "@db";
 import { wagerRaces, users, ticketMessages } from "@db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { z } from "zod";
+import { historicalRaces } from "@db/schema"; // Assuming historicalRaces schema exists
+
 
 // Rate limiting setup
 const rateLimiter = new RateLimiterMemory({
@@ -104,7 +106,45 @@ export function registerRoutes(app: Express): Server {
 }
 
 function setupRESTRoutes(app: Express) {
-  // Add current race data endpoint using leaderboard data
+  // Add endpoint to fetch previous month's results
+  app.get("/api/wager-races/previous", async (_req, res) => {
+    try {
+      const now = new Date();
+      const previousMonth = now.getMonth() === 0 ? 12 : now.getMonth();
+      const previousYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+
+      const [previousRace] = await db
+        .select()
+        .from(historicalRaces)
+        .where(
+          and(
+            eq(historicalRaces.month, previousMonth),
+            eq(historicalRaces.year, previousYear)
+          )
+        )
+        .limit(1);
+
+      if (!previousRace) {
+        return res.status(404).json({
+          status: "error",
+          message: "No previous race data found",
+        });
+      }
+
+      res.json({
+        status: "success",
+        data: previousRace,
+      });
+    } catch (error) {
+      log(`Error fetching previous race: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch previous race data",
+      });
+    }
+  });
+
+  // Modified current race endpoint to handle month end
   app.get("/api/wager-races/current", async (_req, res) => {
     try {
       await rateLimiter.consume(_req.ip || "unknown");
@@ -128,6 +168,40 @@ function setupRESTRoutes(app: Express) {
       // Get current month's info
       const now = new Date();
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+      // Check if previous month needs to be archived
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
+      // If it's the first day of the month and we haven't archived yet
+      if (now.getDate() === 1 && now.getHours() < 1) {
+        const previousMonth = now.getMonth() === 0 ? 12 : now.getMonth();
+        const previousYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+
+        // Check if we already have an entry for the previous month
+        const [existingEntry] = await db
+          .select()
+          .from(historicalRaces)
+          .where(
+            and(
+              eq(historicalRaces.month, previousMonth),
+              eq(historicalRaces.year, previousYear)
+            )
+          )
+          .limit(1);
+
+        if (!existingEntry && stats.data.monthly.data.length > 0) {
+          // Store the previous month's results
+          await db.insert(historicalRaces).values({
+            month: previousMonth,
+            year: previousYear,
+            prizePool: 200, // Fixed prize pool amount
+            startDate: new Date(previousYear, previousMonth - 1, 1),
+            endDate: new Date(previousYear, previousMonth, 0, 23, 59, 59),
+            participants: stats.data.monthly.data.slice(0, 10), // Store top 10
+          });
+        }
+      }
 
       const raceData = {
         id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,

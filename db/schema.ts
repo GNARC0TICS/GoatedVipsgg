@@ -110,7 +110,17 @@ export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
   source: text("source"), // Track where the subscription came from
 });
 
-// Relations
+export const historicalRaces = pgTable("historical_races", {
+  id: serial("id").primaryKey(),
+  month: integer("month").notNull(),
+  year: integer("year").notNull(),
+  prizePool: decimal("prize_pool", { precision: 10, scale: 2 }).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  participants: jsonb("participants").notNull(), // Store top 10 participants
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const userRelations = relations(users, ({ one, many }) => ({
   preferences: one(notificationPreferences, {
     fields: [users.id],
@@ -145,7 +155,6 @@ export const supportTicketRelations = relations(
   }),
 );
 
-// Schema validation
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 export const insertNotificationPreferencesSchema = createInsertSchema(
@@ -171,7 +180,9 @@ export const selectNewsletterSubscriptionSchema = createSelectSchema(
   newsletterSubscriptions,
 );
 
-// Types
+export const insertHistoricalRaceSchema = createInsertSchema(historicalRaces);
+export const selectHistoricalRaceSchema = createSelectSchema(historicalRaces);
+
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
 export type InsertNotificationPreferences =
@@ -190,3 +201,6 @@ export type InsertNewsletterSubscription =
   typeof newsletterSubscriptions.$inferInsert;
 export type SelectNewsletterSubscription =
   typeof newsletterSubscriptions.$inferSelect;
+
+export type InsertHistoricalRace = typeof historicalRaces.$inferInsert;
+export type SelectHistoricalRace = typeof historicalRaces.$inferSelect;
