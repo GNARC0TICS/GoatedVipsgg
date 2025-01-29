@@ -39,7 +39,7 @@ export default function Help() {
                   Contact Us
                 </h2>
                 <p className="text-[#8A8B91]">
-                  Email: support@goated.com
+                  Email: GoombasLIVE@gmail.com
                   <br />
                   Discord: Join our community
                 </p>
