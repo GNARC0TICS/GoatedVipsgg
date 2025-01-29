@@ -8,9 +8,10 @@ import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import { db } from "@db";
 import { wagerRaces, users, ticketMessages } from "@db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, gte, lte } from "drizzle-orm";
 import { z } from "zod";
 
+// Rate limiting setup
 const rateLimiter = new RateLimiterMemory({
   points: 60,
   duration: 1,
@@ -20,7 +21,7 @@ let wss: WebSocketServer;
 
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
-  setupAuth(app); // Ensure auth is set up first
+  setupAuth(app);
   setupRESTRoutes(app);
   setupWebSocket(httpServer);
   return httpServer;
@@ -179,6 +180,170 @@ function setupRESTRoutes(app: Express) {
       });
     }
   });
+
+  // Add new wager race endpoints
+  app.get("/api/wager-races/current", async (_req, res) => {
+    try {
+      // Get the current month's race
+      const now = new Date();
+      const [currentRace] = await db
+        .select()
+        .from(wagerRaces)
+        .where(
+          and(
+            lte(wagerRaces.startDate, now),
+            gte(wagerRaces.endDate, now),
+            eq(wagerRaces.status, "live")
+          )
+        )
+        .limit(1);
+
+      if (!currentRace) {
+        return res.status(404).json({
+          status: "error",
+          message: "No active race found",
+        });
+      }
+
+      // Get participant data from the API
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const apiData = await response.json();
+      const participants = transformParticipantData(apiData);
+
+      // Combine race data with participant info
+      const raceData = {
+        ...currentRace,
+        participants: participants.slice(0, 10), // Top 10 participants
+      };
+
+      res.json(raceData);
+    } catch (error) {
+      log(`Error fetching current race: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch current race",
+      });
+    }
+  });
+
+  // Add endpoint for completed race results
+  app.get("/api/wager-races/:id/results", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [race] = await db
+        .select()
+        .from(wagerRaces)
+        .where(eq(wagerRaces.id, parseInt(id)))
+        .limit(1);
+
+      if (!race) {
+        return res.status(404).json({
+          status: "error",
+          message: "Race not found",
+        });
+      }
+
+      // Get final participant standings from the API
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const apiData = await response.json();
+      const winners = transformParticipantData(apiData).slice(0, 10);
+
+      res.json({
+        race,
+        winners,
+      });
+    } catch (error) {
+      log(`Error fetching race results: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch race results",
+      });
+    }
+  });
+
+  // Update race status endpoint
+  app.put("/api/admin/wager-races/:id/status", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      const [updatedRace] = await db
+        .update(wagerRaces)
+        .set({ status })
+        .where(eq(wagerRaces.id, parseInt(id)))
+        .returning();
+
+      if (!updatedRace) {
+        return res.status(404).json({
+          status: "error",
+          message: "Race not found",
+        });
+      }
+
+      // Broadcast race status update
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(
+            JSON.stringify({
+              type: "RACE_STATUS_UPDATE",
+              data: updatedRace,
+            })
+          );
+        }
+      });
+
+      res.json({
+        status: "success",
+        data: updatedRace,
+      });
+    } catch (error) {
+      log(`Error updating race status: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to update race status",
+      });
+    }
+  });
+}
+
+// Helper function to transform participant data
+function transformParticipantData(apiData: any) {
+  const responseData = apiData.data || apiData.results || apiData;
+  if (!responseData) return [];
+
+  const dataArray = Array.isArray(responseData) ? responseData : [responseData];
+  return dataArray.map((entry) => ({
+    uid: entry.uid || "",
+    name: entry.name || "",
+    wagered: entry.wagered?.this_month || 0,
+    position: 0, // Will be calculated on the client side
+  }));
 }
 
 async function handleProfileRequest(req: any, res: any) {

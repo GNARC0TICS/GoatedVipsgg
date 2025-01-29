@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { FeatureCarousel } from "@/components/FeatureCarousel";
 import { MVPCards } from "@/components/MVPCards";
+import { RaceTimer } from "@/components/RaceTimer";
 
 export default function Home() {
   return (
@@ -268,7 +269,6 @@ export default function Home() {
                 </div>
               </motion.div>
 
-              {/* Call to Action Button */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -287,6 +287,7 @@ export default function Home() {
           </motion.div>
         </div>
       </main>
+      <RaceTimer />
     </div>
   );
 }
