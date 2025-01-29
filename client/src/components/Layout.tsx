@@ -607,18 +607,32 @@ export function Layout({ children }: LayoutProps) {
           <div className="container mx-auto px-4 text-center">
             <div className="flex flex-col items-center gap-4 mb-6">
               <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 px-4">
-                <img
-                  src="/images/Goated logo with text.png"
-                  alt="Goated"
-                  className="h-10 md:h-12 w-auto object-contain max-w-[200px]"
-                />
-                <img
-                  src="/images/Goated logo with text1.png"
-                  alt="Goated Partner"
-                  className="h-10 md:h-12 w-auto object-contain max-w-[200px]"
-                />
+                <a 
+                    href="https://www.goated.com/r/VIPBOOST" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="transform transition-transform duration-300 hover:scale-105"
+                  >
+                    <img
+                      src="/images/Goated logo with text.png"
+                      alt="Goated"
+                      className="h-10 md:h-12 w-auto object-contain max-w-[200px]"
+                    />
+                  </a>
+                  <a 
+                    href="https://t.me/goatedvip" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="transform transition-transform duration-300 hover:scale-105"
+                  >
+                    <img
+                      src="/images/Goated logo with text1.png"
+                      alt="Goated Partner"
+                      className="h-10 md:h-12 w-auto object-contain max-w-[200px]"
+                    />
+                  </a>
+                </div>
               </div>
-            </div>
             <p className="mb-2">
               © 2024 goatedvips.replit.app. All rights reserved.
             </p>
@@ -655,7 +669,7 @@ function NavLink({
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
-      {label}
+            {label}
       <motion.div
         className="absolute -bottom-1 left-0 h-0.5 bg-[#D7FF00] origin-left"
         initial={{ scaleX: isActive ? 1 : 0 }}
