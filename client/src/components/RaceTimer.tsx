@@ -15,9 +15,9 @@ interface RaceParticipant {
 
 interface RaceData {
   id: string;
-  status: 'upcoming' | 'live' | 'completed';
-  endDate: string;
+  status: 'live';
   startDate: string;
+  endDate: string;
   prizePool: number;
   participants: RaceParticipant[];
 }
@@ -25,11 +25,12 @@ interface RaceData {
 /**
  * RaceTimer Component
  * 
- * Displays the current race status, countdown timer, and top participants
+ * Displays the current monthly race status, countdown timer, and top participants
  * Features:
  * - Expandable view showing top 10 participants
- * - Automatic status updates
- * - Smooth transitions between race states
+ * - Real-time countdown to end of month
+ * - Automatic data refresh every 30 seconds
+ * - Smooth animations and transitions
  * - Error handling with fallback UI
  */
 export function RaceTimer() {
@@ -37,22 +38,14 @@ export function RaceTimer() {
   const [timeLeft, setTimeLeft] = useState<string>("");
   const { toast } = useToast();
 
-  // Fetch current race data with error handling
+  // Fetch current race data
   const { data: raceData, error } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/current"],
     refetchInterval: 30000, // Refresh every 30 seconds
     retry: 3,
-    onError: (error) => {
-      console.error("Failed to fetch race data:", error);
-      toast({
-        title: "Error",
-        description: "Unable to load race data. Please try again later.",
-        variant: "destructive",
-      });
-    },
   });
 
-  // Calculate and update time remaining
+  // Calculate and update time remaining until end of month
   useEffect(() => {
     if (!raceData?.endDate) return;
 
@@ -143,7 +136,7 @@ export function RaceTimer() {
               className="overflow-hidden"
             >
               <div className="p-4 border-t border-[#2A2B31]">
-                {raceData.participants.slice(0, 10).map((participant, index) => (
+                {raceData.participants.map((participant, index) => (
                   <div 
                     key={participant.uid}
                     className="flex items-center justify-between py-2"

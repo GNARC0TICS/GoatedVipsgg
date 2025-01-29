@@ -19,20 +19,19 @@ const rateLimiter = new RateLimiterMemory({
 
 let wss: WebSocketServer;
 
-export function registerRoutes(app: Express): Server {
-  const httpServer = createServer(app);
-  setupAuth(app);
-  setupRESTRoutes(app);
-  setupWebSocket(httpServer);
-  return httpServer;
+// Helper functions
+function sortByWagered(data: any[], period: string) {
+  return [...data].sort(
+    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
+  );
 }
 
 const transformMVPData = (mvpData: any) => {
-  return Object.entries(mvpData).reduce((acc, [period, data]) => {
+  return Object.entries(mvpData).reduce((acc: Record<string, any>, [period, data]: [string, any]) => {
     if (data) {
       // Calculate if there was a wager change
       const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'];
-      const previousWager = data.wagered.previous || 0; // This would come from the API
+      const previousWager = data.wagered?.previous || 0;
       const hasIncrease = currentWager > previousWager;
 
       acc[period] = {
@@ -40,7 +39,6 @@ const transformMVPData = (mvpData: any) => {
         wagerAmount: currentWager,
         rank: 1,
         lastWagerChange: hasIncrease ? Date.now() : undefined,
-        // Add any additional stats needed for the detailed view
         stats: {
           winRate: data.stats?.winRate || 0,
           favoriteGame: data.stats?.favoriteGame || 'Unknown',
@@ -49,13 +47,65 @@ const transformMVPData = (mvpData: any) => {
       };
     }
     return acc;
-  }, {} as Record<string, any>);
+  }, {});
 };
 
+function transformLeaderboardData(apiData: any) {
+  const responseData = apiData.data || apiData.results || apiData;
+  if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
+    return {
+      status: "success",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    };
+  }
+
+  const dataArray = Array.isArray(responseData) ? responseData : [responseData];
+  const transformedData = dataArray.map((entry) => ({
+    uid: entry.uid || "",
+    name: entry.name || "",
+    wagered: {
+      today: entry.wagered?.today || 0,
+      this_week: entry.wagered?.this_week || 0,
+      this_month: entry.wagered?.this_month || 0,
+      all_time: entry.wagered?.all_time || 0,
+    },
+  }));
+
+  return {
+    status: "success",
+    metadata: {
+      totalUsers: transformedData.length,
+      lastUpdated: new Date().toISOString(),
+    },
+    data: {
+      today: { data: sortByWagered(transformedData, "today") },
+      weekly: { data: sortByWagered(transformedData, "this_week") },
+      monthly: { data: sortByWagered(transformedData, "this_month") },
+      all_time: { data: sortByWagered(transformedData, "all_time") },
+    },
+  };
+}
+
+export function registerRoutes(app: Express): Server {
+  const httpServer = createServer(app);
+  setupAuth(app);
+  setupRESTRoutes(app);
+  setupWebSocket(httpServer);
+  return httpServer;
+}
 
 function setupRESTRoutes(app: Express) {
-  // Add new MVP stats endpoint
-  app.get("/api/mvp-stats", async (_req, res) => {
+  // Add current race data endpoint using leaderboard data
+  app.get("/api/wager-races/current", async (_req, res) => {
     try {
       await rateLimiter.consume(_req.ip || "unknown");
       const response = await fetch(
@@ -75,96 +125,42 @@ function setupRESTRoutes(app: Express) {
       const rawData = await response.json();
       const stats = transformLeaderboardData(rawData);
 
-      // Extract top players from existing leaderboard data with complete user data
-      const mvpData = {
-        daily: {
-          ...stats.data.today.data[0],
-          wagerAmount: stats.data.today.data[0]?.wagered.today || 0
-        },
-        weekly: {
-          ...stats.data.weekly.data[0],
-          wagerAmount: stats.data.weekly.data[0]?.wagered.this_week || 0
-        },
-        monthly: {
-          ...stats.data.monthly.data[0],
-          wagerAmount: stats.data.monthly.data[0]?.wagered.this_month || 0
-        }
+      // Get current month's info
+      const now = new Date();
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+      const raceData = {
+        id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
+        status: 'live',
+        startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+        endDate: endOfMonth.toISOString(),
+        prizePool: 100000, // Fixed prize pool
+        participants: stats.data.monthly.data.map((participant: any, index: number) => ({
+          uid: participant.uid,
+          name: participant.name,
+          wagered: participant.wagered.this_month,
+          position: index + 1
+        })).slice(0, 10) // Top 10 participants
       };
 
-      const result = transformMVPData(mvpData);
-      res.json(result);
+      res.json(raceData);
     } catch (error) {
-      log(`Error fetching MVP stats: ${error}`);
+      log(`Error fetching current race: ${error}`);
       res.status(500).json({
         status: "error",
-        message: "Failed to fetch MVP statistics",
+        message: "Failed to fetch current race",
       });
     }
   });
 
   app.get("/api/profile", requireAuth, handleProfileRequest);
-  app.post("/api/admin/login", async (req, res) => {
-    try {
-      const result = adminLoginSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({
-          status: "error",
-          message: "Validation failed",
-          errors: result.error.issues.map((i) => i.message).join(", "),
-        });
-      }
-
-      const { username, password } = result.data;
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.username, username))
-        .limit(1);
-
-      if (!user || !user.isAdmin) {
-        return res.status(401).json({
-          status: "error",
-          message: "Invalid admin credentials",
-        });
-      }
-
-      // Verify password and generate token
-      const token = generateToken({
-        userId: user.id,
-        email: user.email,
-        isAdmin: user.isAdmin,
-      });
-
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-      });
-
-      res.json({
-        status: "success",
-        message: "Admin login successful",
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          isAdmin: user.isAdmin,
-        },
-      });
-    } catch (error) {
-      log(`Admin login error: ${error}`);
-      res.status(500).json({
-        status: "error",
-        message: "Failed to process admin login",
-      });
-    }
-  });
-
+  app.post("/api/admin/login", handleAdminLogin);
   app.get("/api/admin/users", requireAdmin, handleAdminUsersRequest);
   app.get("/api/admin/wager-races", requireAdmin, handleWagerRacesRequest);
   app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);
   app.get("/api/affiliate/stats", handleAffiliateStats);
 
-  // Add new route to fetch chat history
+  // Chat history endpoint
   app.get("/api/chat/history", requireAuth, async (req, res) => {
     try {
       const messages = await db.query.ticketMessages.findMany({
@@ -180,172 +176,9 @@ function setupRESTRoutes(app: Express) {
       });
     }
   });
-
-  // Add new wager race endpoints
-  app.get("/api/wager-races/current", async (_req, res) => {
-    try {
-      // Get the current month's race
-      const now = new Date();
-      const [currentRace] = await db
-        .select()
-        .from(wagerRaces)
-        .where(
-          and(
-            lte(wagerRaces.startDate, now),
-            gte(wagerRaces.endDate, now),
-            eq(wagerRaces.status, "live")
-          )
-        )
-        .limit(1);
-
-      if (!currentRace) {
-        return res.status(404).json({
-          status: "error",
-          message: "No active race found",
-        });
-      }
-
-      // Get participant data from the API
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const apiData = await response.json();
-      const participants = transformParticipantData(apiData);
-
-      // Combine race data with participant info
-      const raceData = {
-        ...currentRace,
-        participants: participants.slice(0, 10), // Top 10 participants
-      };
-
-      res.json(raceData);
-    } catch (error) {
-      log(`Error fetching current race: ${error}`);
-      res.status(500).json({
-        status: "error",
-        message: "Failed to fetch current race",
-      });
-    }
-  });
-
-  // Add endpoint for completed race results
-  app.get("/api/wager-races/:id/results", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const [race] = await db
-        .select()
-        .from(wagerRaces)
-        .where(eq(wagerRaces.id, parseInt(id)))
-        .limit(1);
-
-      if (!race) {
-        return res.status(404).json({
-          status: "error",
-          message: "Race not found",
-        });
-      }
-
-      // Get final participant standings from the API
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const apiData = await response.json();
-      const winners = transformParticipantData(apiData).slice(0, 10);
-
-      res.json({
-        race,
-        winners,
-      });
-    } catch (error) {
-      log(`Error fetching race results: ${error}`);
-      res.status(500).json({
-        status: "error",
-        message: "Failed to fetch race results",
-      });
-    }
-  });
-
-  // Update race status endpoint
-  app.put("/api/admin/wager-races/:id/status", requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { status } = req.body;
-
-      const [updatedRace] = await db
-        .update(wagerRaces)
-        .set({ status })
-        .where(eq(wagerRaces.id, parseInt(id)))
-        .returning();
-
-      if (!updatedRace) {
-        return res.status(404).json({
-          status: "error",
-          message: "Race not found",
-        });
-      }
-
-      // Broadcast race status update
-      wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(
-            JSON.stringify({
-              type: "RACE_STATUS_UPDATE",
-              data: updatedRace,
-            })
-          );
-        }
-      });
-
-      res.json({
-        status: "success",
-        data: updatedRace,
-      });
-    } catch (error) {
-      log(`Error updating race status: ${error}`);
-      res.status(500).json({
-        status: "error",
-        message: "Failed to update race status",
-      });
-    }
-  });
 }
 
-// Helper function to transform participant data
-function transformParticipantData(apiData: any) {
-  const responseData = apiData.data || apiData.results || apiData;
-  if (!responseData) return [];
-
-  const dataArray = Array.isArray(responseData) ? responseData : [responseData];
-  return dataArray.map((entry) => ({
-    uid: entry.uid || "",
-    name: entry.name || "",
-    wagered: entry.wagered?.this_month || 0,
-    position: 0, // Will be calculated on the client side
-  }));
-}
-
+// Request handlers
 async function handleProfileRequest(req: any, res: any) {
   try {
     const [user] = await db
@@ -377,6 +210,106 @@ async function handleProfileRequest(req: any, res: any) {
     res.status(500).json({
       status: "error",
       message: "Failed to fetch profile",
+    });
+  }
+}
+
+async function handleAffiliateStats(req: any, res: any) {
+  try {
+    await rateLimiter.consume(req.ip || "unknown");
+    const response = await fetch(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        log("API Authentication failed - check API token");
+        throw new Error("API Authentication failed");
+      }
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const apiData = await response.json();
+    const transformedData = transformLeaderboardData(apiData);
+
+    res.json(transformedData);
+  } catch (error) {
+    log(`Error in /api/affiliate/stats: ${error}`);
+    // Return empty data structure to prevent UI breaking
+    res.json({
+      status: "success",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    });
+  }
+}
+
+async function handleAdminLogin(req: any, res: any) {
+  try {
+    const result = adminLoginSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        status: "error",
+        message: "Validation failed",
+        errors: result.error.issues.map((i) => i.message).join(", "),
+      });
+    }
+
+    const { username, password } = result.data;
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
+
+    if (!user || !user.isAdmin) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid admin credentials",
+      });
+    }
+
+    // Verify password and generate token
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      isAdmin: user.isAdmin,
+    });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    res.json({
+      status: "success",
+      message: "Admin login successful",
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      },
+    });
+  } catch (error) {
+    log(`Admin login error: ${error}`);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to process admin login",
     });
   }
 }
@@ -455,95 +388,6 @@ async function handleCreateWagerRace(req: any, res: any) {
       message: "Failed to create wager race",
     });
   }
-}
-
-async function handleAffiliateStats(req: any, res: any) {
-  try {
-    await rateLimiter.consume(req.ip || "unknown");
-    const response = await fetch(
-      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        log("API Authentication failed - check API token");
-        throw new Error("API Authentication failed");
-      }
-      throw new Error(`API request failed: ${response.status}`);
-    }
-
-    const apiData = await response.json();
-    const transformedData = transformLeaderboardData(apiData);
-
-    res.json(transformedData);
-  } catch (error) {
-    log(`Error in /api/affiliate/stats: ${error}`);
-    // Consolidated error handling: Return empty data structure to prevent UI breaking
-    res.json({
-      status: "success",
-      metadata: {
-        totalUsers: 0,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: { data: [] },
-        weekly: { data: [] },
-        monthly: { data: [] },
-        all_time: { data: [] },
-      },
-    });
-  }
-}
-
-function transformLeaderboardData(apiData: any) {
-  const responseData = apiData.data || apiData.results || apiData;
-  if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
-    return {
-      status: "success",
-      metadata: {
-        totalUsers: 0,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: { data: [] },
-        weekly: { data: [] },
-        monthly: { data: [] },
-        all_time: { data: [] },
-      },
-    };
-  }
-
-  const dataArray = Array.isArray(responseData) ? responseData : [responseData];
-  const transformedData = dataArray.map((entry) => ({
-    uid: entry.uid || "",
-    name: entry.name || "",
-    wagered: {
-      today: entry.wagered?.today || 0,
-      this_week: entry.wagered?.this_week || 0,
-      this_month: entry.wagered?.this_month || 0,
-      all_time: entry.wagered?.all_time || 0,
-    },
-  }));
-
-  return {
-    status: "success",
-    metadata: {
-      totalUsers: transformedData.length,
-      lastUpdated: new Date().toISOString(),
-    },
-    data: {
-      today: { data: sortByWagered(transformedData, "today") },
-      weekly: { data: sortByWagered(transformedData, "this_week") },
-      monthly: { data: sortByWagered(transformedData, "this_month") },
-      all_time: { data: sortByWagered(transformedData, "all_time") },
-    },
-  };
 }
 
 function setupWebSocket(httpServer: Server) {
@@ -641,12 +485,6 @@ async function handleChatConnection(ws: WebSocket) {
     isStaffReply: true,
   };
   ws.send(JSON.stringify(welcomeMessage));
-}
-
-function sortByWagered(data: any[], period: string) {
-  return [...data].sort(
-    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
-  );
 }
 
 const adminLoginSchema = z.object({
