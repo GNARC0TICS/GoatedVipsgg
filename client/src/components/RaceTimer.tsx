@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { Trophy, ChevronDown, ChevronUp, Clock, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 // Types for race data
 interface RaceParticipant {
@@ -29,15 +30,26 @@ interface RaceData {
  * - Expandable view showing top 10 participants
  * - Automatic status updates
  * - Smooth transitions between race states
+ * - Error handling with fallback UI
  */
 export function RaceTimer() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
+  const { toast } = useToast();
 
-  // Fetch current race data
-  const { data: raceData } = useQuery<RaceData>({
+  // Fetch current race data with error handling
+  const { data: raceData, error } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/current"],
     refetchInterval: 30000, // Refresh every 30 seconds
+    retry: 3,
+    onError: (error) => {
+      console.error("Failed to fetch race data:", error);
+      toast({
+        title: "Error",
+        description: "Unable to load race data. Please try again later.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Calculate and update time remaining
@@ -66,6 +78,25 @@ export function RaceTimer() {
     return () => clearInterval(interval);
   }, [raceData?.endDate]);
 
+  // Error state
+  if (error) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="fixed bottom-4 right-4 z-50"
+      >
+        <div className="bg-destructive/90 backdrop-blur-sm border border-destructive/50 rounded-lg p-4 text-destructive-foreground">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
+            <span>Unable to load race data</span>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Loading or no race data
   if (!raceData) return null;
 
   return (
@@ -119,11 +150,11 @@ export function RaceTimer() {
                   >
                     <div className="flex items-center gap-2">
                       <span className={`
-                        w-5 h-5 flex items-center justify-center rounded-full
-                        ${index === 0 ? 'bg-yellow-500' : ''}
-                        ${index === 1 ? 'bg-gray-400' : ''}
-                        ${index === 2 ? 'bg-amber-700' : ''}
-                        ${index > 2 ? 'bg-[#2A2B31]' : ''}
+                        w-5 h-5 flex items-center justify-center rounded-full text-sm font-medium
+                        ${index === 0 ? 'bg-yellow-500 text-black' : ''}
+                        ${index === 1 ? 'bg-gray-400 text-black' : ''}
+                        ${index === 2 ? 'bg-amber-700 text-white' : ''}
+                        ${index > 2 ? 'bg-[#2A2B31] text-white' : ''}
                       `}>
                         {index + 1}
                       </span>
