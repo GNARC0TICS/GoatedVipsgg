@@ -692,7 +692,7 @@ export function Layout({ children }: LayoutProps) {
                   Stay Updated
                 </h4>
                 <a 
-                  href="https://t.me/goatedvip" 
+                  href="https://t.me/+iFlHl5V9VcszZTVh" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="transform transition-transform duration-300 hover:scale-110"
@@ -737,7 +737,7 @@ export function Layout({ children }: LayoutProps) {
                     />
                   </a>
                   <a 
-                    href="https://t.me/goatedvip" 
+                    href="https://t.me/+iFlHl5V9VcszZTVh" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="transform transition-transform duration-300 hover:scale-105"
