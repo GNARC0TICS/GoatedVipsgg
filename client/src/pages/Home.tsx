@@ -111,7 +111,8 @@ export default function Home() {
               transition={{ delay: 0.3 }}
               className="mb-24"
             >
-              <h2 className="text-4xl font-heading text-white mb-12 text-center">
+              <h2 className="text-4xl font-heading text-white mb-12 text-center flex items-center justify-center gap-3">
+                <Zap className="w-8 h-8 text-[#D7FF00]" />
                 EXPLORE OUR FEATURES
               </h2>
               
@@ -259,11 +260,28 @@ export default function Home() {
                 transition={{ delay: 0.4 }}
               >
                 <div className="rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm p-8 max-w-7xl mx-auto">
-                  <h2 className="text-3xl font-heading text-white mb-8 text-center">
+                  <h2 className="text-3xl font-heading text-white mb-8 text-center flex items-center justify-center gap-3">
+                    <Trophy className="w-7 h-7 text-[#D7FF00]" />
                     DAILY LEADERBOARD
                   </h2>
                   <LeaderboardTable timePeriod="today" />
                 </div>
+              </motion.div>
+
+              {/* Call to Action Button */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center mt-16"
+              >
+                <a 
+                  href="https://www.Goated.com/r/VIPBOOST" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-block bg-[#D7FF00] text-black font-heading text-xl px-8 py-4 rounded-lg hover:bg-[#D7FF00]/90 transition-all duration-300 transform hover:scale-105"
+                >
+                  JOIN THE GOATS TODAY! 🐐
+                </a>
               </motion.div>
             </motion.div>
           </motion.div>
