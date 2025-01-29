@@ -604,7 +604,7 @@ export function Layout({ children }: LayoutProps) {
                   <img
                     src="/images/Goated logo with text.png"
                     alt="Goated"
-                    className="h-14 w-auto object-contain"
+                    className="h-16 w-auto object-contain"
                   />
                 </a>
               </div>
