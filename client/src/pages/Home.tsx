@@ -2,11 +2,19 @@ import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Crown, ArrowLeftRight, Trophy, CircleDot, Shield, Coins, Gift, Zap, Diamond, ArrowRight, Timer } from "lucide-react";
+import { Crown } from "lucide-react";
+import {
+  ArrowRight,
+  Trophy,
+  CircleDot,
+  Shield,
+  Coins,
+  Gift,
+  Zap,
+} from "lucide-react";
 import { FeatureCarousel } from "@/components/FeatureCarousel";
 import { MVPCards } from "@/components/MVPCards";
 import { RaceTimer } from "@/components/RaceTimer";
-
 
 export default function Home() {
   return (
@@ -91,7 +99,8 @@ export default function Home() {
               transition={{ delay: 0.2 }}
               className="mb-24"
             >
-              <h2 className="text-4xl font-heading text-white mb-12 text-center">
+              <h2 className="text-4xl font-heading text-white mb-12 text-center flex items-center justify-center gap-3">
+                <Crown className="w-8 h-8 text-[#D7FF00] animate-pulse-crown" />
                 TOP PERFORMERS
               </h2>
               <MVPCards />
@@ -103,7 +112,8 @@ export default function Home() {
               transition={{ delay: 0.3 }}
               className="mb-24"
             >
-              <h2 className="text-4xl font-heading text-white mb-12 text-center">
+              <h2 className="text-4xl font-heading text-white mb-12 text-center flex items-center justify-center gap-3">
+                <Zap className="w-8 h-8 text-[#D7FF00] animate-flicker" />
                 EXPLORE OUR FEATURES
               </h2>
 
@@ -135,9 +145,15 @@ export default function Home() {
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                     <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
                     <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 card-hover">
-                      <h3 className="text-2xl font-heading uppercase mb-4 text-white">
-                        Wager Races
-                      </h3>
+                      <div className="flex items-center gap-2 mb-4">
+                        <h3 className="text-2xl font-heading uppercase text-white">
+                          Wager Races
+                        </h3>
+                        <div className="flex items-center gap-1">
+                          <CircleDot className="h-3 w-3 text-red-500 animate-pulse" />
+                          <span className="text-xs text-[#8A8B91]">LIVE</span>
+                        </div>
+                      </div>
                       <p className="text-[#8A8B91] mb-6 font-body">
                         Compete in exclusive wager races for massive prize pools and
                         rewards.
