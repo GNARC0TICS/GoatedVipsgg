@@ -134,7 +134,8 @@ function App() {
 
 function AppContent() {
   const [isInitialLoad, setIsInitialLoad] = useState(() => {
-    return !localStorage.getItem('hasVisited');
+    // Only show preloader on first visit of the session
+    return !sessionStorage.getItem('hasVisited');
   });
 
   const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery({
@@ -151,7 +152,7 @@ function AppContent() {
     if (!isInitialLoad) return;
 
     if (!leaderboardLoading && !mvpLoading && leaderboardData && mvpData) {
-      localStorage.setItem('hasVisited', 'true');
+      sessionStorage.setItem('hasVisited', 'true');
       setIsInitialLoad(false);
     }
   }, [leaderboardLoading, mvpLoading, leaderboardData, mvpData, isInitialLoad]);
