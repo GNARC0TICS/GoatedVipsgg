@@ -609,13 +609,24 @@ export function Layout({ children }: LayoutProps) {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
-                  <AuthModal />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" className="font-heading uppercase opacity-50 cursor-not-allowed">
+                          Login / Register
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Currently under maintenance. Check back soon!</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
                 <Button
                   onClick={() =>
                     window.open("https://www.goated.com/r/SPIN", "_blank")
                   }
-                  className="relative group overflow-hidden text-[#14151A] fill-animation hover:text-[#D7FF00] transition-all duration-300 font-mona-sans font-extrabold uppercase tracking-tight h-8 md:h-10 px-3 md:px-4 text-sm md:text-base"
+                  className="relative group overflow-hidden text-[#14151A] fill-animation hover:text-[#D7FF00] transition-all duration-3000 font-mona-sans font-extrabold uppercase tracking-tight h-8 md:h-10 px-3 md:px-4 text-sm md:text-base"
                   style={{
                     fontStretch: "condensed",
                     fontVariationSettings: "'COND' 100, 'wght' 800",
