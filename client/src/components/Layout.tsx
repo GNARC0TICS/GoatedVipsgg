@@ -223,6 +223,53 @@ export function Layout({ children }: LayoutProps) {
                   }
                 />
 
+                {/* Promotions dropdown */}
+                <div className="relative group">
+                  <Link href="/promotions">
+                    <Button
+                      variant="ghost"
+                      className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent"
+                    >
+                      <span className="font-bold">PROMOTIONS</span>
+                      <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                    </Button>
+                  </Link>
+                  <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                    <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                      <Link href="/promotions">
+                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                          <span className="relative">
+                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                              News & Promotions
+                            </span>
+                          </span>
+                        </div>
+                      </Link>
+                      <Link href="/bonus-codes">
+                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                          <span className="relative">
+                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                              Bonus Codes
+                            </span>
+                          </span>
+                        </div>
+                      </Link>
+                      <Link href="/goated-token">
+                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                          <span className="relative">
+                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                              Goated Airdrop
+                            </span>
+                          </span>
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Updated Leaderboard dropdown with hover functionality */}
                 <div className="relative group">
                   <Link href="/leaderboard?period=daily">
@@ -272,53 +319,6 @@ export function Layout({ children }: LayoutProps) {
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
                               All Time
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Promotions dropdown */}
-                <div className="relative group">
-                  <Link href="/promotions">
-                    <Button
-                      variant="ghost"
-                      className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent"
-                    >
-                      <span className="font-bold">PROMOTIONS</span>
-                      <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                    </Button>
-                  </Link>
-                  <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
-                    <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
-                      <Link href="/promotions">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              News & Promotions
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                      <Link href="/bonus-codes">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              Bonus Codes
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                      <Link href="/goated-token">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              Goated Airdrop
                             </span>
                           </span>
                         </div>
