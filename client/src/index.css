@@ -364,8 +364,15 @@ html {
   animation: pulse-crown 3s ease-in-out infinite;
 }
 
-.animate-bounce-slow {
-  animation: bounce 2s infinite;
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  25% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+  75% { opacity: 0.8; }
+}
+
+.animate-flicker {
+  animation: flicker 1s linear infinite;
 }
 
 @keyframes scroll {

@@ -113,7 +113,7 @@ export default function Home() {
               className="mb-24"
             >
               <h2 className="text-4xl font-heading text-white mb-12 text-center flex items-center justify-center gap-3">
-                <Zap className="w-8 h-8 text-[#D7FF00] animate-bounce-slow" />
+                <Zap className="w-8 h-8 text-[#D7FF00] animate-flicker" />
                 EXPLORE OUR FEATURES
               </h2>
 
