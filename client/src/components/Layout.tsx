@@ -7,7 +7,7 @@ import AuthModal from "@/components/AuthModal";
 import { useQuery } from "@tanstack/react-query";
 import type { SelectUser } from "@db/schema";
 import { ScrollToTop } from "./ScrollToTop";
-import { Bell, Settings, User, LogOut, ChevronDown } from "lucide-react";
+import { Bell, Settings, User, LogOut, ChevronDown, Gift } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -231,16 +231,6 @@ export function Layout({ children }: LayoutProps) {
                           </span>
                         </div>
                       </Link>
-                      <Link href="/bonus-codes">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              Bonus Codes
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
                       <Link href="/goated-token">
                         <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
@@ -248,6 +238,17 @@ export function Layout({ children }: LayoutProps) {
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
                               Goated Airdrop
                             </span>
+                          </span>
+                        </div>
+                      </Link>
+                      <Link href="/bonus-codes">
+                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                          <span className="relative flex items-center gap-2">
+                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                              Bonus Codes
+                            </span>
+                            <Gift className="h-4 w-4" />
                           </span>
                         </div>
                       </Link>
@@ -291,16 +292,6 @@ export function Layout({ children }: LayoutProps) {
                           </span>
                         </div>
                       </Link>
-                      <Link href="/bonus-codes">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              Bonus Codes
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
                       <Link href="/goated-token">
                         <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
@@ -308,6 +299,17 @@ export function Layout({ children }: LayoutProps) {
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
                               Goated Airdrop
                             </span>
+                          </span>
+                        </div>
+                      </Link>
+                      <Link href="/bonus-codes">
+                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                          <span className="relative flex items-center gap-2">
+                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                              Bonus Codes
+                            </span>
+                            <Gift className="h-4 w-4" />
                           </span>
                         </div>
                       </Link>
@@ -448,8 +450,8 @@ export function Layout({ children }: LayoutProps) {
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">PROMOTIONS</div>
                       <MobileNavLink href="/promotions" label="News & Promotions" onClose={handleCloseMenu} />
-                      <MobileNavLink href="/bonus-codes" label="Bonus Codes" onClose={handleCloseMenu} />
                       <MobileNavLink href="/goated-token" label="Goated Airdrop" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/bonus-codes" label="Bonus Codes" onClose={handleCloseMenu} />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">COMMUNITY</div>
                       <MobileNavLink href="/telegram" label="Telegram" onClose={handleCloseMenu} />
