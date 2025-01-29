@@ -1,4 +1,3 @@
-
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -11,6 +10,7 @@ import {
   Shield,
   Coins,
   Gift,
+  Zap,
 } from "lucide-react";
 import { FeatureCarousel } from "@/components/FeatureCarousel";
 import { MVPCards } from "@/components/MVPCards";
@@ -115,7 +115,7 @@ export default function Home() {
                 <Zap className="w-8 h-8 text-[#D7FF00]" />
                 EXPLORE OUR FEATURES
               </h2>
-              
+
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
