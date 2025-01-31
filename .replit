@@ -33,13 +33,14 @@ args = "Start application"
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
+mode = "sequential"
 
 [workflows.workflow.metadata]
 agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "NODE_OPTIONS='--loader tsx' tsx server/index.ts"
+args = "tsx server/index.ts"
 
 [auth]
 pageEnabled = false
