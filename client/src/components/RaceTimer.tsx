@@ -35,8 +35,17 @@ export function RaceTimer() {
     refetchInterval: 30000, // Refresh every 30 seconds
     retry: 3,
     onSuccess: (data) => {
-      if (data?.status === 'completed' || new Date(data?.endDate) < new Date()) {
+      if (!data) return;
+      
+      const now = new Date();
+      const endDate = new Date(data.endDate);
+      const isComplete = now > endDate || data.status === 'completed';
+      
+      if (isComplete) {
         setShowCompletionOverlay(true);
+        // Calculate next race start time
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        setTimeLeft(`Next Race: ${nextMonth.toLocaleDateString()}`);
       }
     }
   });
@@ -56,12 +65,15 @@ export function RaceTimer() {
     if (!currentRaceData?.endDate) return;
 
     const updateTimer = () => {
-      const end = new Date(currentRaceData.endDate);
       const now = new Date();
+      const end = new Date(currentRaceData.endDate);
       const diff = end.getTime() - now.getTime();
-
-      if (diff <= 0 || currentRaceData?.status === 'completed') {
-        setTimeLeft("Race Ended");
+      
+      const isComplete = now > end || currentRaceData?.status === 'completed';
+      
+      if (isComplete) {
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        setTimeLeft(`Next Race: ${nextMonth.toLocaleDateString()}`);
         setShowCompletionOverlay(true);
         
         // Calculate time until next race
