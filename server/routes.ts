@@ -39,6 +39,30 @@ const transformMVPData = (mvpData: any) => {
       acc[period] = {
         username: data.name,
         wagerAmount: currentWager,
+
+function handleLeaderboardConnection(ws: WebSocket) {
+  log("Leaderboard WebSocket client connected");
+
+  ws.on("close", () => {
+    log("Leaderboard WebSocket client disconnected");
+  });
+
+  // Send initial data
+  ws.send(JSON.stringify({ type: "CONNECTED" }));
+}
+
+// Broadcast leaderboard updates to all connected clients
+export function broadcastLeaderboardUpdate(data: any) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: "LEADERBOARD_UPDATE",
+        data
+      }));
+    }
+  });
+}
+
         rank: 1,
         lastWagerChange: hasIncrease ? Date.now() : undefined,
         stats: {
@@ -473,7 +497,12 @@ function setupWebSocket(httpServer: Server) {
       return;
     }
 
-    if (request.url === "/ws/chat") {
+    if (request.url === "/ws/leaderboard") {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit("connection", ws, request);
+        handleLeaderboardConnection(ws);
+      });
+    } else if (request.url === "/ws/chat") {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit("connection", ws, request);
         handleChatConnection(ws);

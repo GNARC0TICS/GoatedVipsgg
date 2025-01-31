@@ -40,6 +40,24 @@ export function useLeaderboard(
   timePeriod: TimePeriod = "today",
   page: number = 0,
 ) {
+  const [ws, setWs] = React.useState<WebSocket | null>(null);
+
+  React.useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws/leaderboard`);
+    
+    websocket.onmessage = (event) => {
+      const update = JSON.parse(event.data);
+      if (update.type === "LEADERBOARD_UPDATE") {
+        refetch();
+      }
+    };
+
+    setWs(websocket);
+
+    return () => websocket.close();
+  }, []);
+
   const { data, isLoading, error, refetch } = useQuery<APIResponse>({
     queryKey: ["/api/affiliate/stats", timePeriod, page],
     queryFn: async () => {
