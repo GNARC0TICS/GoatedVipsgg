@@ -460,17 +460,8 @@ export function Layout({ children }: LayoutProps) {
                         onClose={handleCloseMenu}
                       />
 
-                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">PROMOTIONS</div>
-                      <MobileNavLink href="/promotions" label="News & Promotions" onClose={handleCloseMenu} />
-                      <MobileNavLink href="/goated-token" label="Goated Airdrop" onClose={handleCloseMenu} />
-                      <MobileNavLink href="/bonus-codes" label={
-                        <div className="flex items-center gap-2">
-                          <span>Bonus Codes</span>
-                          <Gift className="h-4 w-4" />
-                        </div>
-                      } onClose={handleCloseMenu} />
-
-                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">MONTHLY RACE</div>
+                      {/* Monthly Race - Pinned to Top */}
+                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">FEATURED</div>
                       <MobileNavLink 
                         href="/wager-races" 
                         label={
@@ -483,6 +474,20 @@ export function Layout({ children }: LayoutProps) {
                           </div>
                         }
                         onClose={handleCloseMenu}
+                      />
+
+                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">PROMOTIONS</div>
+                      <MobileNavLink href="/promotions" label="News & Promotions" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/goated-token" label="Goated Airdrop" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/bonus-codes" label={
+                        <div className="flex items-center gap-2">
+                          <span>Bonus Codes</span>
+                          <Gift className="h-4 w-4" />
+                        </div>
+                      } onClose={handleCloseMenu} />
+
+                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">ACCOUNT</div>
+                      <MobileNavLink href="/profile" label="Profile" onClose={handleCloseMenu}
                       />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">SOCIALS</div>
