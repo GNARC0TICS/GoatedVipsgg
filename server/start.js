@@ -12,7 +12,7 @@ const { execSync } = require('child_process');
 
 try {
   // Execute with proper error handling and stdio inheritance
-  execSync('tsx server/index.ts', { 
+  execSync('NODE_ENV=development NODE_OPTIONS="--import tsx" node server/index.ts', { 
     stdio: 'inherit',
     env: {
       ...process.env,
