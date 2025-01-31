@@ -39,7 +39,7 @@ agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "tsx server/index.ts"
+args = "npx tsx server/index.ts"
 
 [auth]
 pageEnabled = false
