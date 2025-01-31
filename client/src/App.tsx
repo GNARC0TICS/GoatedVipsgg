@@ -36,7 +36,7 @@ import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 
 interface UserProfileProps {
-  userId: string;
+  id: string;
 }
 
 function ErrorFallback({ error }: { error: Error }) {
@@ -106,7 +106,7 @@ function Router() {
             <Route path="/user/:id">
               {(params) => (
                 <PageTransition>
-                  <UserProfile userId={params.id} key={params.id} />
+                  <UserProfile id={params.id} key={params.id} />
                 </PageTransition>
               )}
             </Route>

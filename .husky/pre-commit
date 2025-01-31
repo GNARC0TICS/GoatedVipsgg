@@ -1,8 +1,14 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Run lint-staged which will run prettier and eslint
+# Run ESLint and Prettier checks via lint-staged
 npm run lint-staged
 
 # Run TypeScript type checking
 npm run type-check
+
+# Verify consistent imports
+npm run lint-imports
+
+# Verify no relative imports outside of current directory
+npm run lint-paths
