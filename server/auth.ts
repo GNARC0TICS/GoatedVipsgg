@@ -98,15 +98,25 @@ export function setupAuth(app: Express) {
         // Check if this is an admin login attempt
         if (username === process.env.ADMIN_USERNAME && 
             password === process.env.ADMIN_PASSWORD) {
-          const [adminUser] = await db
+          // Create admin user if doesn't exist
+          let [adminUser] = await db
             .select()
             .from(users)
             .where(eq(users.isAdmin, true))
             .limit(1);
 
-          if (adminUser) {
-            return done(null, adminUser);
+          if (!adminUser) {
+            [adminUser] = await db
+              .insert(users)
+              .values({
+                username: username,
+                password: await crypto.hash(password),
+                email: 'admin@goatedvips.com',
+                isAdmin: true,
+              })
+              .returning();
           }
+          return done(null, adminUser);
         }
 
         const [user] = await db
