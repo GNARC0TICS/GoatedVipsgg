@@ -124,6 +124,7 @@ function Router() {
             <Route path="/how-it-works" component={HowItWorks} />
             <Route path="/goated-token" component={GoatedToken} />
             <Route path="/admin/user-management" component={UserManagement} />
+            <Route path="/admin/bonus-codes" component={BonusCodeManagement} />
             <Route path="/vip-program" component={VipProgram} />
             <Route component={NotFound} />
           </Switch>

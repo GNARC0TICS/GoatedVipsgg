@@ -433,6 +433,11 @@ export function Layout({ children }: LayoutProps) {
                             Wager Race Management
                           </div>
                         </Link>
+                        <Link href="/admin/bonus-codes">
+                          <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                            Bonus Code Management
+                          </div>
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -533,6 +538,7 @@ export function Layout({ children }: LayoutProps) {
                           <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">ADMIN</div>
                           <MobileNavLink href="/admin/user-management" label="User Management" onClose={handleCloseMenu} />
                           <MobileNavLink href="/admin/wager-races" label="Wager Race Management" onClose={handleCloseMenu} />
+                          <MobileNavLink href="/admin/bonus-codes" label="Bonus Code Management" onClose={handleCloseMenu} />
                         </>
                       )}
 
@@ -586,7 +592,7 @@ export function Layout({ children }: LayoutProps) {
                         Monthly Wager Race Live!
                       </div>
                       <div className="text-xs text-[#8A8B91]">
-                        Compete for a share of the $200 prize pool - Join now!
+                        Compete for a share of the $2000 prize pool - Join now!
                       </div>
                       <div className="text-xs text-[#8A8B91]">
                         Just now
