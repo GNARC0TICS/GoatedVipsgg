@@ -38,7 +38,12 @@ const transformMVPData = (mvpData: any) => {
 
       acc[period] = {
         username: data.name,
-        wagerAmount: currentWager,
+        wagerAmount: currentWager
+      };
+    }
+    return acc;
+  }, {});
+};
 
 function handleLeaderboardConnection(ws: WebSocket): void {
   log("Leaderboard WebSocket client connected");
