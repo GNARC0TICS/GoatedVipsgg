@@ -30,12 +30,18 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const { data, isLoading, error, metadata, refetch } = useLeaderboard(timePeriod);
 
+  // Handle loading and error states
+  if (isLoading) return <LoadingSpinner />;
+  if (error) return <div className="text-red-500">Failed to load leaderboard data</div>;
+  if (!data?.data) return null;
+
+
   const filteredData = useMemo(() => {
-    if (!data) return [];
-    return data.filter((entry) =>
+    if (!data?.data) return [];
+    return data.data.filter((entry) =>
       entry.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [data, searchQuery]);
+  }, [data?.data, searchQuery]);
 
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
 
@@ -60,36 +66,6 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
     setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1));
   };
 
-  if (isLoading) {
-    return (
-      <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-20 font-heading text-[#D7FF00]">RANK</TableHead>
-              <TableHead className="font-heading text-[#D7FF00]">USERNAME</TableHead>
-              <TableHead className="text-right font-heading text-[#D7FF00]">WAGER</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {[...Array(10)].map((_, i) => (
-              <TableRow key={i} className="bg-[#1A1B21]/50 backdrop-blur-sm">
-                <TableCell>
-                  <div className="animate-pulse h-6 w-16 bg-muted rounded" />
-                </TableCell>
-                <TableCell>
-                  <div className="animate-pulse h-6 w-32 bg-muted rounded" />
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="animate-pulse h-6 w-24 bg-muted rounded ml-auto" />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
-  }
 
   const getWagerAmount = (entry: any) => {
     if (!entry?.wagered) return 0;
@@ -230,3 +206,9 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
     </div>
   );
 }
+
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center h-screen">
+    <div className="animate-spin rounded-full h-32 w-32 border-t-4 border-b-4 border-blue-500"></div>
+  </div>
+);

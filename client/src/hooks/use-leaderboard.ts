@@ -46,11 +46,28 @@ export function useLeaderboard(
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const websocket = new WebSocket(`${protocol}//${window.location.host}/ws/leaderboard`);
 
+    websocket.onopen = () => {
+      console.log('WebSocket connection opened');
+    };
+
     websocket.onmessage = (event) => {
-      const update = JSON.parse(event.data);
-      if (update.type === "LEADERBOARD_UPDATE") {
-        refetch();
+      try {
+        const update = JSON.parse(event.data);
+        if (update.type === "LEADERBOARD_UPDATE") {
+          refetch();
+        }
+      } catch (error) {
+        console.error("Error parsing WebSocket message:", error);
       }
+    };
+
+    websocket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    websocket.onclose = () => {
+      console.log('WebSocket connection closed');
+      // Optionally, try to reconnect
     };
 
     setWs(websocket);
@@ -61,30 +78,15 @@ export function useLeaderboard(
   const { data, isLoading, error, refetch } = useQuery<APIResponse>({
     queryKey: ["/api/affiliate/stats", timePeriod, page],
     queryFn: async () => {
-      // Try to get cached data first
-      const cachedData = sessionStorage.getItem(`leaderboard-${timePeriod}-${page}`);
-      if (cachedData) {
-        const parsed = JSON.parse(cachedData);
-        const cacheTime = parsed.timestamp;
-        // Use cache if it's less than 30 seconds old
-        if (Date.now() - cacheTime < 30000) {
-          return parsed.data;
-        }
-      }
-
       const response = await fetch(`/api/affiliate/stats?page=${page}&limit=10`);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if (response.status === 404) {
+          throw new Error("Leaderboard data not found");
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
       }
-      const freshData = await response.json();
-
-      // Cache the new data
-      sessionStorage.setItem(`leaderboard-${timePeriod}-${page}`, JSON.stringify({
-        data: freshData,
-        timestamp: Date.now()
-      }));
-
-      return freshData;
+      return response.json();
     },
     refetchInterval: 30000, // Refetch every 30 seconds for live updates
     staleTime: 30000, // Consider data fresh for 30 seconds
@@ -93,47 +95,20 @@ export function useLeaderboard(
 
   const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
 
-  const periodKey =
-    timePeriod === "weekly"
-      ? "weekly"
-      : timePeriod === "monthly"
-        ? "monthly"
-        : timePeriod === "today"
-          ? "today"
-          : "all_time";
+  const periodKey = timePeriod; //Simplified period key selection
 
-  // Compare current and previous wager amounts
   const sortedData = data?.data[periodKey]?.data?.map((entry) => {
     const prevEntry = previousData.find((p) => p.uid === entry.uid);
-    const currentWager = entry.wagered[
-      timePeriod === "weekly"
-        ? "this_week"
-        : timePeriod === "monthly"
-          ? "this_month"
-          : timePeriod === "today"
-            ? "today"
-            : "all_time"
-    ];
-    const previousWager = prevEntry
-      ? prevEntry.wagered[
-          timePeriod === "weekly"
-            ? "this_week"
-            : timePeriod === "monthly"
-              ? "this_month"
-              : timePeriod === "today"
-                ? "today"
-                : "all_time"
-        ]
-      : 0;
+    const currentWager = entry.wagered[periodKey];
+    const previousWager = prevEntry ? prevEntry.wagered[periodKey] : 0;
 
     return {
       ...entry,
       isWagering: currentWager > previousWager,
       wagerChange: currentWager - previousWager,
     };
-  });
+  }) || [];
 
-  // Update previous data after successful fetch
   useEffect(() => {
     if (data?.data[periodKey]?.data) {
       setPreviousData(data.data[periodKey].data);
@@ -141,7 +116,7 @@ export function useLeaderboard(
   }, [data, periodKey]);
 
   return {
-    data: sortedData || [],
+    data: sortedData,
     metadata: data?.metadata,
     isLoading,
     error: error as Error | null,
