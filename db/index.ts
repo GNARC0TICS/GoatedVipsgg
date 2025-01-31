@@ -1,7 +1,7 @@
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
-import * as schema from "@db/schema";
-import { log } from "../server/vite";
+import * as schema from "./schema.js";
+import { log } from "../server/vite.js";
 
 if (!process.env.DATABASE_URL) {
   throw new Error(

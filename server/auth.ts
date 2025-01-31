@@ -5,8 +5,8 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { users } from "@db/schema";
-import { db } from "@db";
+import { users } from "../db/schema.js";
+import { db } from "../db/index.js";
 import { eq } from "drizzle-orm";
 import { log } from "./vite.js";
 
