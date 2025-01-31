@@ -391,7 +391,12 @@ export default function WagerRaces() {
                           Winners will receive their prizes directly to their Goated account within 24 hours of race completion.
                         </p>
                         <Button
-                          onClick={() => setShowCompletedRace(false)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowCompletedRace(false);
+                            // Clear the previous race data from query cache
+                            queryClient.setQueryData(["/api/wager-races/previous"], null);
+                          }}
                           className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
                         >
                           Close

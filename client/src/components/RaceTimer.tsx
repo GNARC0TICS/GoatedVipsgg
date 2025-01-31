@@ -39,6 +39,15 @@ export function RaceTimer() {
   const { data: previousRaceData, error: previousError } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/previous"],
     enabled: showPrevious, // Only fetch when viewing previous month
+    select: (data) => {
+      if (!data) return null;
+      // Ensure dates are valid
+      return {
+        ...data,
+        startDate: data.startDate || new Date().toISOString(),
+        endDate: data.endDate || new Date().toISOString()
+      };
+    }
   });
 
   // Use the appropriate data based on which view is active
