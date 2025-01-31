@@ -15,7 +15,7 @@ interface RaceParticipant {
 
 interface RaceData {
   id: string;
-  status: 'live';
+  status: 'live' | 'completed' | 'transition';
   startDate: string;
   endDate: string;
   prizePool: number;
@@ -227,7 +227,7 @@ export function RaceTimer() {
 
         {/* Race Completion Overlay */}
         <AnimatePresence>
-          {showCompletionOverlay && (
+          {(showCompletionOverlay || currentRaceData?.status === 'completed') && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
