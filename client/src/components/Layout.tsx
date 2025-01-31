@@ -430,6 +430,19 @@ export function Layout({ children }: LayoutProps) {
                       className="flex flex-col gap-4 pt-8"
                     >
                       <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">MENU</div>
+                      <MobileNavLink 
+                        href="/wager-races" 
+                        label={
+                          <div className="flex items-center gap-2">
+                            <span>Monthly Race</span>
+                            <div className="flex items-center gap-1">
+                              <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                              <span className="text-xs text-red-500">LIVE</span>
+                            </div>
+                          </div>
+                        }
+                        onClose={handleCloseMenu}
+                      />
                       <MobileNavLink href="/" label="Home" onClose={handleCloseMenu} />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">GET STARTED</div>
@@ -470,20 +483,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       } onClose={handleCloseMenu} />
 
-                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">MONTHLY RACE</div>
-                      <MobileNavLink 
-                        href="/wager-races" 
-                        label={
-                          <div className="flex items-center gap-2">
-                            <span>Monthly Race</span>
-                            <div className="flex items-center gap-1">
-                              <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
-                              <span className="text-xs text-red-500">LIVE</span>
-                            </div>
-                          </div>
-                        }
-                        onClose={handleCloseMenu}
-                      />
+                      
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">SOCIALS</div>
                       <MobileNavLink href="/telegram" label="Telegram Community" onClose={handleCloseMenu} />
