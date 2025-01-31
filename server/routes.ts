@@ -287,6 +287,67 @@ async function handleProfileRequest(req: any, res: any) {
         createdAt: users.createdAt,
         lastLogin: users.lastLogin,
       })
+
+  // Admin stats endpoint
+  app.get("/api/admin/stats", requireAdmin, async (_req, res) => {
+    try {
+      const [totalUsers] = await db
+        .select({ count: sql`count(*)` })
+        .from(users);
+
+      const [activeRaces] = await db
+        .select({ count: sql`count(*)` })
+        .from(wagerRaces)
+        .where(eq(wagerRaces.status, "live"));
+
+      const [completedRaces] = await db
+        .select({ count: sql`count(*)` })
+        .from(wagerRaces)
+        .where(eq(wagerRaces.status, "completed"));
+
+      const [totalPrizePool] = await db
+        .select({ sum: sql`sum(prize_pool)` })
+        .from(wagerRaces);
+
+      // Get wager trend data for the last 7 days
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const wagerTrend = await db
+        .select({
+          date: sql`date(created_at)`,
+          amount: sql`sum(total_wager)`,
+        })
+        .from(wagerRaceParticipants)
+        .where(gte(wagerRaceParticipants.joinedAt, sevenDaysAgo))
+        .groupBy(sql`date(created_at)`)
+        .orderBy(sql`date(created_at)`);
+
+      res.json({
+        totalUsers: totalUsers?.count || 0,
+        activeRaces: activeRaces?.count || 0,
+        completedRaces: completedRaces?.count || 0,
+        totalPrizePool: totalPrizePool?.sum || 0,
+        totalParticipants: await db
+          .select()
+          .from(wagerRaceParticipants)
+          .execute()
+          .then((r) => r.length),
+        activeParticipants: await db
+          .select()
+          .from(wagerRaceParticipants)
+          .innerJoin(wagerRaces, eq(wagerRaceParticipants.raceId, wagerRaces.id))
+          .where(eq(wagerRaces.status, "live"))
+          .execute()
+          .then((r) => r.length),
+        wagerTrend,
+      });
+    } catch (error) {
+      console.error("Error fetching admin stats:", error);
+      res.status(500).json({ error: "Failed to fetch admin stats" });
+    }
+  });
+
       .from(users)
       .where(eq(users.id, req.user!.id))
       .limit(1);

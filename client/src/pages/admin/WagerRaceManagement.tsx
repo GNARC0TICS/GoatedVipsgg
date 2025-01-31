@@ -53,6 +53,8 @@ const wagerRaceSchema = z.object({
   description: z.string().optional(),
 });
 
+import { AdminAnalytics } from "@/components/AdminAnalytics";
+
 export default function WagerRaceManagement() {
   const { toast } = useToast();
   const [editingRace, setEditingRace] = useState(null);
@@ -201,7 +203,8 @@ export default function WagerRaceManagement() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <AdminAnalytics />
         {/* Header with Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
