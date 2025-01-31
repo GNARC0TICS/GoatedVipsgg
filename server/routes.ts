@@ -7,19 +7,19 @@ import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import { db } from "@db";
-import { wagerRaces, users, ticketMessages, wagerRaceParticipants } from "@db/schema";
-import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { wagerRaces, users, ticketMessages } from "@db/schema";
+import { eq, and, gte, lte } from "drizzle-orm";
 import { z } from "zod";
-import { historicalRaces } from "@db/schema";
+import { historicalRaces } from "@db/schema"; // Assuming historicalRaces schema exists
 
-// WebSocket setup
-let wss: WebSocketServer;
 
 // Rate limiting setup
 const rateLimiter = new RateLimiterMemory({
   points: 60,
   duration: 1,
 });
+
+let wss: WebSocketServer;
 
 // Helper functions
 function sortByWagered(data: any[], period: string) {
@@ -28,9 +28,10 @@ function sortByWagered(data: any[], period: string) {
   );
 }
 
-const transformMVPData = (mvpData: any): Record<string, any> => {
-  return Object.entries(mvpData).reduce((acc: Record<string, any>, [period, data]) => {
+const transformMVPData = (mvpData: any) => {
+  return Object.entries(mvpData).reduce((acc: Record<string, any>, [period, data]: [string, any]) => {
     if (data) {
+      // Calculate if there was a wager change
       const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'];
       const previousWager = data.wagered?.previous || 0;
       const hasIncrease = currentWager > previousWager;
@@ -38,6 +39,30 @@ const transformMVPData = (mvpData: any): Record<string, any> => {
       acc[period] = {
         username: data.name,
         wagerAmount: currentWager,
+
+function handleLeaderboardConnection(ws: WebSocket) {
+  log("Leaderboard WebSocket client connected");
+
+  ws.on("close", () => {
+    log("Leaderboard WebSocket client disconnected");
+  });
+
+  // Send initial data
+  ws.send(JSON.stringify({ type: "CONNECTED" }));
+}
+
+// Broadcast leaderboard updates to all connected clients
+export function broadcastLeaderboardUpdate(data: any) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: "LEADERBOARD_UPDATE",
+        data
+      }));
+    }
+  });
+}
+
         rank: 1,
         lastWagerChange: hasIncrease ? Date.now() : undefined,
         stats: {
@@ -51,9 +76,50 @@ const transformMVPData = (mvpData: any): Record<string, any> => {
   }, {});
 };
 
-import express from "express";
+function transformLeaderboardData(apiData: any) {
+  const responseData = apiData.data || apiData.results || apiData;
+  if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
+    return {
+      status: "success",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    };
+  }
 
-const app = express();
+  const dataArray = Array.isArray(responseData) ? responseData : [responseData];
+  const transformedData = dataArray.map((entry) => ({
+    uid: entry.uid || "",
+    name: entry.name || "",
+    wagered: {
+      today: entry.wagered?.today || 0,
+      this_week: entry.wagered?.this_week || 0,
+      this_month: entry.wagered?.this_month || 0,
+      all_time: entry.wagered?.all_time || 0,
+    },
+  }));
+
+  return {
+    status: "success",
+    metadata: {
+      totalUsers: transformedData.length,
+      lastUpdated: new Date().toISOString(),
+    },
+    data: {
+      today: { data: sortByWagered(transformedData, "today") },
+      weekly: { data: sortByWagered(transformedData, "this_week") },
+      monthly: { data: sortByWagered(transformedData, "this_month") },
+      all_time: { data: sortByWagered(transformedData, "all_time") },
+    },
+  };
+}
 
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
@@ -208,66 +274,6 @@ function setupRESTRoutes(app: Express) {
       });
     }
   });
-
-  // Admin stats endpoint
-  app.get("/api/admin/stats", requireAdmin, async (_req, res) => {
-    try {
-      const [totalUsers] = await db
-        .select({ count: sql`count(*)` })
-        .from(users);
-
-      const [activeRaces] = await db
-        .select({ count: sql`count(*)` })
-        .from(wagerRaces)
-        .where(eq(wagerRaces.status, "live"));
-
-      const [completedRaces] = await db
-        .select({ count: sql`count(*)` })
-        .from(wagerRaces)
-        .where(eq(wagerRaces.status, "completed"));
-
-      const [totalPrizePool] = await db
-        .select({ sum: sql`sum(prize_pool)` })
-        .from(wagerRaces);
-
-      // Get wager trend data for the last 7 days
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-      const wagerTrend = await db
-        .select({
-          date: sql`date(created_at)`,
-          amount: sql`sum(total_wager)`,
-        })
-        .from(wagerRaceParticipants)
-        .where(gte(wagerRaceParticipants.joinedAt, sevenDaysAgo))
-        .groupBy(sql`date(created_at)`)
-        .orderBy(sql`date(created_at)`);
-
-      res.json({
-        totalUsers: totalUsers?.count || 0,
-        activeRaces: activeRaces?.count || 0,
-        completedRaces: completedRaces?.count || 0,
-        totalPrizePool: totalPrizePool?.sum || 0,
-        totalParticipants: await db
-          .select()
-          .from(wagerRaceParticipants)
-          .execute()
-          .then((r) => r.length),
-        activeParticipants: await db
-          .select()
-          .from(wagerRaceParticipants)
-          .innerJoin(wagerRaces, eq(wagerRaceParticipants.raceId, wagerRaces.id))
-          .where(eq(wagerRaces.status, "live"))
-          .execute()
-          .then((r) => r.length),
-        wagerTrend,
-      });
-    } catch (error) {
-      console.error("Error fetching admin stats:", error);
-      res.status(500).json({ error: "Failed to fetch admin stats" });
-    }
-  });
 }
 
 // Request handlers
@@ -306,8 +312,49 @@ async function handleProfileRequest(req: any, res: any) {
   }
 }
 
-// Admin stats endpoint (This was already present in the edited snippet but is included here for completeness)
+async function handleAffiliateStats(req: any, res: any) {
+  try {
+    await rateLimiter.consume(req.ip || "unknown");
+    const response = await fetch(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
+    if (!response.ok) {
+      if (response.status === 401) {
+        log("API Authentication failed - check API token");
+        throw new Error("API Authentication failed");
+      }
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const apiData = await response.json();
+    const transformedData = transformLeaderboardData(apiData);
+
+    res.json(transformedData);
+  } catch (error) {
+    log(`Error in /api/affiliate/stats: ${error}`);
+    // Return empty data structure to prevent UI breaking
+    res.json({
+      status: "success",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    });
+  }
+}
 
 async function handleAdminLogin(req: any, res: any) {
   try {
@@ -551,115 +598,4 @@ const adminLoginSchema = z.object({
 function generateToken(payload: any): string {
   //Implementation for generateToken is missing in original code, but it's not relevant to the fix.  Leaving as is.
   return "";
-}
-
-function handleLeaderboardConnection(ws: WebSocket): void {
-  log("Leaderboard WebSocket client connected");
-
-  ws.on("close", () => {
-    log("Leaderboard WebSocket client disconnected");
-  });
-
-  // Send initial data
-  ws.send(JSON.stringify({ type: "CONNECTED" }));
-}
-
-export function broadcastLeaderboardUpdate(data: any) {
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({
-        type: "LEADERBOARD_UPDATE",
-        data
-      }));
-    }
-  });
-}
-
-function transformLeaderboardData(apiData: any) {
-  const responseData = apiData.data || apiData.results || apiData;
-  if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
-    return {
-      status: "success",
-      metadata: {
-        totalUsers: 0,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: { data: [] },
-        weekly: { data: [] },
-        monthly: { data: [] },
-        all_time: { data: [] },
-      },
-    };
-  }
-
-  const dataArray = Array.isArray(responseData) ? responseData : [responseData];
-  const transformedData = dataArray.map((entry) => ({
-    uid: entry.uid || "",
-    name: entry.name || "",
-    wagered: {
-      today: entry.wagered?.today || 0,
-      this_week: entry.wagered?.this_week || 0,
-      this_month: entry.wagered?.this_month || 0,
-      all_time: entry.wagered?.all_time || 0,
-    },
-  }));
-
-  return {
-    status: "success",
-    metadata: {
-      totalUsers: transformedData.length,
-      lastUpdated: new Date().toISOString(),
-    },
-    data: {
-      today: { data: sortByWagered(transformedData, "today") },
-      weekly: { data: sortByWagered(transformedData, "this_week") },
-      monthly: { data: sortByWagered(transformedData, "this_month") },
-      all_time: { data: sortByWagered(transformedData, "all_time") },
-    },
-  };
-}
-
-async function handleAffiliateStats(req: any, res: any) {
-  try {
-    await rateLimiter.consume(req.ip || "unknown");
-    const response = await fetch(
-      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        log("API Authentication failed - check API token");
-        throw new Error("API Authentication failed");
-      }
-      throw new Error(`API request failed: ${response.status}`);
-    }
-
-    const apiData = await response.json();
-    const transformedData = transformLeaderboardData(apiData);
-
-    res.json(transformedData);
-  } catch (error) {
-    log(`Error in /api/affiliate/stats: ${error}`);
-    // Return empty data structure to prevent UI breaking
-    res.json({
-      status: "success",
-      metadata: {
-        totalUsers: 0,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: { data: [] },
-        weekly: { data: [] },
-        monthly: { data: [] },
-        all_time: { data: [] },
-      },
-    });
-  }
 }

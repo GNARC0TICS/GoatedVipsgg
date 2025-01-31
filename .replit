@@ -19,7 +19,6 @@ localPort = 5001
 externalPort = 5000
 
 [workflows]
-runButton = "Start application"
 
 [[workflows.workflow]]
 name = "Project"
@@ -38,8 +37,12 @@ author = "agent"
 agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "NODE_OPTIONS='--import tsx' tsx server/index.ts"
+args = "npm run dev"
+waitForPort = 5000
 
 [auth]
 pageEnabled = false
