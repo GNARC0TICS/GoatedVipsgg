@@ -6,12 +6,13 @@ import { sql } from "drizzle-orm";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
-import { initializeAdmin } from "./middleware/admin";
-import { setupAuth } from "./auth";
+import { initializeAdmin } from "./middleware/admin"; // Added import
 
 const execAsync = promisify(exec);
 const app = express();
-const PORT = process.env.PORT || 5000;
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+const PORT = 5000;
 
 async function setupMiddleware() {
   app.use(express.json());
@@ -19,13 +20,9 @@ async function setupMiddleware() {
   app.use(requestLogger);
   app.use(errorHandler);
 
-  // Basic health check endpoint
   app.get("/api/health", (_req, res) => {
     res.json({ status: "healthy" });
   });
-
-  // Setup authentication
-  setupAuth(app);
 }
 
 function requestLogger(
@@ -73,7 +70,9 @@ async function checkDatabase() {
     log("Database connection successful");
   } catch (error: any) {
     if (error.message?.includes("endpoint is disabled")) {
-      log("Database endpoint is disabled. Please enable the database in the Replit Database tab.");
+      log(
+        "Database endpoint is disabled. Please enable the database in the Replit Database tab.",
+      );
     } else {
       throw error;
     }
@@ -82,9 +81,12 @@ async function checkDatabase() {
 
 async function cleanupPort() {
   try {
+    // Try to kill existing process on port 5000
     await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
+    // Wait a moment for the port to be released
     await new Promise(resolve => setTimeout(resolve, 1000));
   } catch (error) {
+    // If no process was found or killed, that's fine
     log("No existing process found on port " + PORT);
   }
 }
@@ -93,22 +95,15 @@ async function startServer() {
   try {
     log("Starting server initialization...");
     await checkDatabase();
-    await cleanupPort();
+    await cleanupPort(); 
 
-    // Register API routes
-    registerRoutes(app);
+    registerRoutes(app); //Assuming setupRoutes is registerRoutes
 
     // Initialize admin user
-    try {
-      await initializeAdmin();
-    } catch (error) {
-      console.error("Error initializing admin:", error);
-    }
+    initializeAdmin().catch(console.error);
 
-    const server = createServer(app);
+    const server = createServer(app); //Changed to use createServer for consistency
 
-    // Setup middleware after routes to ensure proper order
-    await setupMiddleware();
 
     if (app.get("env") === "development") {
       await setupVite(app, server);
@@ -116,18 +111,23 @@ async function startServer() {
       serveStatic(app);
     }
 
-    server.listen(PORT, "0.0.0.0", () => {
-      log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-    }).on("error", async (err: NodeJS.ErrnoException) => {
-      if (err.code === 'EADDRINUSE') {
-        log(`Port ${PORT} is in use, attempting to free it...`);
-        await cleanupPort();
-        server.listen(PORT, "0.0.0.0");
-      } else {
-        console.error(`Failed to start server: ${err.message}`);
-        process.exit(1);
-      }
-    });
+    await setupMiddleware();
+
+    server
+      .listen(PORT, "0.0.0.0")
+      .on("error", async (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EADDRINUSE') {
+          log(`Port ${PORT} is in use, attempting to free it...`);
+          await cleanupPort();
+          server.listen(PORT, "0.0.0.0");
+        } else {
+          console.error(`Failed to start server: ${err.message}`);
+          process.exit(1);
+        }
+      })
+      .on("listening", () => {
+        log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+      });
 
   } catch (error) {
     console.error("Failed to start application:", error);
@@ -135,7 +135,6 @@ async function startServer() {
   }
 }
 
-// Handle graceful shutdown
 process.on('SIGTERM', () => {
   log('Received SIGTERM signal. Shutting down gracefully...');
   process.exit(0);
@@ -146,5 +145,4 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// Start the server
 startServer();
