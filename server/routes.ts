@@ -365,6 +365,27 @@ async function handleAdminLogin(req: any, res: any) {
   }
 }
 
+async function handleVerifyUser(req: any, res: any) {
+  try {
+    const { userId } = req.params;
+    const [updatedUser] = await db
+      .update(users)
+      .set({ isVerified: true })
+      .where(eq(users.id, parseInt(userId)))
+      .returning();
+    
+    res.json({
+      status: "success",
+      data: updatedUser
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to verify user"
+    });
+  }
+}
+
 async function handleAdminUsersRequest(_req: any, res: any) {
   try {
     const usersList = await db

@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Button } from "@/components/ui/button"; // Import Button component
 
 export default function UserManagement() {
   const [search, setSearch] = useState("");
@@ -19,6 +20,25 @@ export default function UserManagement() {
   const { data: users, isLoading } = useQuery({
     queryKey: ["/api/admin/users"],
   });
+
+  const verifyUser = async (userId) => {
+    // Implement your verification logic here.  This will likely involve a fetch call
+    // to your backend to update the user's verification status.
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/verify`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      // Refetch user data after successful verification
+      //This will update the UI automatically thanks to react-query
+    } catch (error) {
+      console.error("Error verifying user:", error);
+      // Handle error appropriately (e.g., display an error message)
+    }
+  };
+
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -44,14 +64,14 @@ export default function UserManagement() {
       </Card>
 
       <div className="rounded-md border">
-        <Table>
+        <Table className="mb-6">
           <TableHeader>
             <TableRow>
               <TableHead>Username</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead>Last Login</TableHead>
+              <TableHead>Telegram</TableHead>
+              <TableHead>Verification</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -59,18 +79,21 @@ export default function UserManagement() {
               <TableRow key={user.id}>
                 <TableCell>{user.username}</TableCell>
                 <TableCell>{user.email}</TableCell>
+                <TableCell>{user.telegramUsername || '-'}</TableCell>
                 <TableCell>
-                  <Badge variant={user.isAdmin ? "default" : "secondary"}>
-                    {user.isAdmin ? "Admin" : "User"}
+                  <Badge variant={user.isVerified ? "success" : "secondary"}>
+                    {user.isVerified ? "Verified" : "Pending"}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {new Date(user.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  {user.lastLogin
-                    ? new Date(user.lastLogin).toLocaleDateString()
-                    : "Never"}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => verifyUser(user.id)}
+                    disabled={user.isVerified}
+                  >
+                    Verify User
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
