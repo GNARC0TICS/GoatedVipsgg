@@ -57,10 +57,9 @@ export default function WagerRaces() {
       }
     };
   }, []);
-  const { data: previousRace, isLoading: isLoadingPreviousRace } = useQuery<any>({
+  const { data: previousRace } = useQuery<any>({
     queryKey: ["/api/wager-races/previous"],
-    enabled: showCompletedRace,
-    refetchOnWindowFocus: false
+    enabled: showCompletedRace
   });
 
   useEffect(() => {
@@ -364,9 +363,9 @@ export default function WagerRaces() {
                         Monthly Race Complete!
                       </h2>
                       <div className="space-y-6">
-                        {previousRace?.participants?.map((winner: any, index: number) => (
+                        {previousRace.participants.map((winner: any, index: number) => (
                           <div
-                            key={winner?.uid || index}
+                            key={winner.uid}
                             className="flex items-center justify-between bg-black/20 p-4 rounded-lg"
                           >
                             <div className="flex items-center gap-4">
