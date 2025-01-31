@@ -40,7 +40,7 @@ const transformMVPData = (mvpData: any) => {
         username: data.name,
         wagerAmount: currentWager,
 
-function handleLeaderboardConnection(ws: WebSocket) {
+function handleLeaderboardConnection(ws: WebSocket): void {
   log("Leaderboard WebSocket client connected");
 
   ws.on("close", () => {
