@@ -26,6 +26,7 @@ export function RaceTimer() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPrevious, setShowPrevious] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
+  const [showCompletionOverlay, setShowCompletionOverlay] = useState(false);
   const { toast } = useToast();
 
   // Fetch current race data
@@ -56,6 +57,7 @@ export function RaceTimer() {
 
       if (diff <= 0) {
         setTimeLeft("Race Ended");
+        setShowCompletionOverlay(true);
         return;
       }
 
@@ -196,6 +198,53 @@ export function RaceTimer() {
                   </a>
                 </Link>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Race Completion Overlay */}
+        <AnimatePresence>
+          {showCompletionOverlay && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/90 backdrop-blur-sm rounded-lg flex items-center justify-center"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="p-6 text-center"
+              >
+                <h3 className="text-[#D7FF00] font-heading mb-4">Race Complete!</h3>
+                <div className="space-y-4 mb-4">
+                  {raceData.participants.slice(0, 3).map((winner, index) => (
+                    <div key={winner.uid} className="flex items-center justify-between bg-[#1A1B21]/80 p-2 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className={`
+                          w-6 h-6 flex items-center justify-center rounded-full text-sm font-medium
+                          ${index === 0 ? 'bg-yellow-500 text-black' : ''}
+                          ${index === 1 ? 'bg-gray-400 text-black' : ''}
+                          ${index === 2 ? 'bg-amber-700 text-white' : ''}
+                        `}>
+                          {index + 1}
+                        </span>
+                        <span className="text-white">{winner.name}</span>
+                      </div>
+                      <span className="text-[#D7FF00] font-mono">${winner.wagered.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[#8A8B91] text-sm mb-4">
+                  Next race starts on {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString()}
+                </p>
+                <button
+                  onClick={() => setShowCompletionOverlay(false)}
+                  className="text-[#D7FF00] text-sm hover:underline"
+                >
+                  Close
+                </button>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
