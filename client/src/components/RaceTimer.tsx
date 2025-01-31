@@ -58,6 +58,16 @@ export function RaceTimer() {
       if (diff <= 0) {
         setTimeLeft("Race Ended");
         setShowCompletionOverlay(true);
+        
+        // Calculate time until next race
+        const nextRaceStart = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
+        const timeUntilNext = nextRaceStart.getTime() - now.getTime();
+        
+        const daysUntil = Math.floor(timeUntilNext / (1000 * 60 * 60 * 24));
+        const hoursUntil = Math.floor((timeUntilNext % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutesUntil = Math.floor((timeUntilNext % (1000 * 60 * 60)) / (1000 * 60));
+        
+        setTimeLeft(`Next Race: ${daysUntil}d ${hoursUntil}h ${minutesUntil}m`);
         return;
       }
 
