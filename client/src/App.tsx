@@ -19,6 +19,7 @@ import NotificationPreferences from "@/pages/notification-preferences";
 import WagerRaceManagement from "@/pages/admin/WagerRaceManagement";
 import UserManagement from "@/pages/admin/UserManagement";
 import NotificationManagement from "@/pages/admin/NotificationManagement";
+import BonusCodeManagement from "@/pages/admin/BonusCodeManagement";
 import SupportManagement from "@/pages/admin/SupportManagement";
 import Leaderboard from "@/pages/Leaderboard";
 import { Layout } from "@/components/Layout";
