@@ -18,6 +18,8 @@ import BonusCodes from "@/pages/bonus-codes";
 import NotificationPreferences from "@/pages/notification-preferences";
 import WagerRaceManagement from "@/pages/admin/WagerRaceManagement";
 import UserManagement from "@/pages/admin/UserManagement";
+import NotificationManagement from "@/pages/admin/NotificationManagement";
+import SupportManagement from "@/pages/admin/SupportManagement";
 import Leaderboard from "@/pages/Leaderboard";
 import { Layout } from "@/components/Layout";
 import { PageTransition } from "@/components/PageTransition";
@@ -97,6 +99,16 @@ function Router() {
             <Route path="/admin/users">
               <AdminRoute>
                 <UserManagement />
+              </AdminRoute>
+            </Route>
+            <Route path="/admin/notifications">
+              <AdminRoute>
+                <NotificationManagement />
+              </AdminRoute>
+            </Route>
+            <Route path="/admin/support">
+              <AdminRoute>
+                <SupportManagement />
               </AdminRoute>
             </Route>
             <Route path="/user/:id">

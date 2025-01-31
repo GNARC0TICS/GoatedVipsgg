@@ -418,6 +418,16 @@ export function Layout({ children }: LayoutProps) {
                             User Management
                           </div>
                         </Link>
+                        <Link href="/admin/notifications">
+                          <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                            Notification Management
+                          </div>
+                        </Link>
+                        <Link href="/admin/support">
+                          <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                            Support Management
+                          </div>
+                        </Link>
                         <Link href="/admin/wager-races">
                           <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
                             Wager Race Management
