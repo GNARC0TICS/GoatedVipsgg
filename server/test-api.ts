@@ -32,7 +32,7 @@ async function analyzeLeaderboardAPI() {
     );
 
     // Make leaderboard request
-    const response = await fetch(`${API_CONFIG.baseUrl}/api/affiliate/stats`, {
+    const response = await fetch(`${API_CONFIG.baseUrl}/${API_CONFIG.endpoints.leaderboard}`, {
       headers: {
         Authorization: `Bearer ${API_CONFIG.token}`,
         "Content-Type": "application/json",
