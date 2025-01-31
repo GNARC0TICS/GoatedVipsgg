@@ -101,6 +101,17 @@ export const ticketMessages = pgTable("ticket_messages", {
   isStaffReply: boolean("is_staff_reply").default(false).notNull(),
 });
 
+export const bonusCodes = pgTable("bonus_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").unique().notNull(),
+  description: text("description").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expired: boolean("expired").default(false).notNull(),
+  createdBy: integer("created_by").references(() => users.id),
+});
+
 export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
   id: serial("id").primaryKey(),
   email: text("email").unique().notNull(),

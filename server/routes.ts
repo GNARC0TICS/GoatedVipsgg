@@ -300,6 +300,73 @@ function setupRESTRoutes(app: Express) {
   app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);
   app.get("/api/affiliate/stats", handleAffiliateStats);
 
+// Bonus code management routes
+app.get("/api/admin/bonus-codes", requireAdmin, async (_req, res) => {
+  try {
+    const codes = await db.query.bonusCodes.findMany({
+      orderBy: (codes, { desc }) => [desc(codes.createdAt)],
+    });
+    res.json(codes);
+  } catch (error) {
+    log(`Error fetching bonus codes: ${error}`);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to fetch bonus codes",
+    });
+  }
+});
+
+app.post("/api/admin/bonus-codes", requireAdmin, async (req, res) => {
+  try {
+    const [code] = await db
+      .insert(bonusCodes)
+      .values({
+        ...req.body,
+        createdBy: req.user!.id,
+      })
+      .returning();
+    res.json(code);
+  } catch (error) {
+    log(`Error creating bonus code: ${error}`);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to create bonus code",
+    });
+  }
+});
+
+app.put("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
+  try {
+    const [code] = await db
+      .update(bonusCodes)
+      .set(req.body)
+      .where(eq(bonusCodes.id, parseInt(req.params.id)))
+      .returning();
+    res.json(code);
+  } catch (error) {
+    log(`Error updating bonus code: ${error}`);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to update bonus code",
+    });
+  }
+});
+
+app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
+  try {
+    await db
+      .delete(bonusCodes)
+      .where(eq(bonusCodes.id, parseInt(req.params.id)));
+    res.json({ status: "success" });
+  } catch (error) {
+    log(`Error deleting bonus code: ${error}`);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to delete bonus code",
+    });
+  }
+});
+
   // Chat history endpoint
   app.get("/api/chat/history", requireAuth, async (req, res) => {
     try {
