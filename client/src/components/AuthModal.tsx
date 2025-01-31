@@ -12,6 +12,13 @@ import {
   Form,
   FormControl,
   FormField,
+
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [content, setContent] = useState({
+    title: '',
+    body: ''
+  });
+
   FormItem,
   FormLabel,
   FormMessage,
@@ -118,12 +125,31 @@ export default function AuthModal() {
         return;
       }
 
-      toast({
-        title: "Success",
-        description: isLogin ? "Welcome back!" : "Account created successfully!",
-      });
+      if (!isLogin) {
+        toast({
+          title: "Account Created Successfully",
+          description: "Please check your email for verification instructions.",
+          duration: 5000,
+        });
 
-      setIsOpen(false);
+        // Show verification instructions dialog
+        setContent({
+          title: "Important Next Steps",
+          body: `
+            1. Contact admin via Telegram to verify your account
+            2. Provide your Goated.com username
+            3. Wait for admin verification
+            4. Once verified, you can access all features
+          `
+        });
+        setShowInstructions(true);
+      } else {
+        toast({
+          title: "Success",
+          description: "Welcome back!",
+        });
+        setIsOpen(false);
+      }
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || error.message || "An unexpected error occurred";
       toast({
@@ -171,6 +197,31 @@ export default function AuthModal() {
             />
             {mode === "register" && (
               <FormField
+
+          {showInstructions && (
+            <Dialog open={showInstructions} onOpenChange={setShowInstructions}>
+              <DialogContent className="bg-[#1A1B21] text-white border-[#2A2B31]">
+                <DialogHeader>
+                  <DialogTitle className="text-[#D7FF00]">{content.title}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  <div className="whitespace-pre-line text-[#8A8B91]">
+                    {content.body}
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setShowInstructions(false);
+                      setIsOpen(false);
+                    }}
+                    className="w-full bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
+                  >
+                    Got it
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+
                 control={form.control}
                 name="email"
                 render={({ field }) => (
