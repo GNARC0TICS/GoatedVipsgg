@@ -12,18 +12,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { Button } from "@/components/ui/button"; // Import Button component
+import { Button } from "@/components/ui/button";
+
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  telegramUsername?: string;
+  isVerified: boolean;
+}
+
+interface UserResponse {
+  status: string;
+  data: User[];
+}
 
 export default function UserManagement() {
   const [search, setSearch] = useState("");
 
-  const { data: users, isLoading } = useQuery({
+  const { data: response, isLoading } = useQuery<UserResponse>({
     queryKey: ["/api/admin/users"],
   });
 
-  const verifyUser = async (userId) => {
-    // Implement your verification logic here.  This will likely involve a fetch call
-    // to your backend to update the user's verification status.
+  const verifyUser = async (userId: number) => {
     try {
       const response = await fetch(`/api/admin/users/${userId}/verify`, {
         method: 'POST',
@@ -32,17 +43,16 @@ export default function UserManagement() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       // Refetch user data after successful verification
-      //This will update the UI automatically thanks to react-query
+      // This will update the UI automatically thanks to react-query
     } catch (error) {
       console.error("Error verifying user:", error);
       // Handle error appropriately (e.g., display an error message)
     }
   };
 
-
   if (isLoading) return <LoadingSpinner />;
 
-  const filteredUsers = users?.filter(
+  const filteredUsers = response?.data.filter(
     (user) =>
       user.username.toLowerCase().includes(search.toLowerCase()) ||
       user.email.toLowerCase().includes(search.toLowerCase()),
@@ -81,7 +91,7 @@ export default function UserManagement() {
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.telegramUsername || '-'}</TableCell>
                 <TableCell>
-                  <Badge variant={user.isVerified ? "success" : "secondary"}>
+                  <Badge variant={user.isVerified ? "default" : "secondary"}>
                     {user.isVerified ? "Verified" : "Pending"}
                   </Badge>
                 </TableCell>

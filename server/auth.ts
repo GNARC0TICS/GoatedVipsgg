@@ -9,10 +9,17 @@ import { users, insertUserSchema, type SelectUser } from "@db/schema";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
 import express from 'express';
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 const scryptAsync = promisify(scrypt);
 
-// Crypto utilities
+// Rate limiter configuration
+const rateLimiter = new RateLimiterMemory({
+  points: 5, // 5 attempts
+  duration: 60 * 15, // per 15 minutes
+});
+
+// Crypto utilities for password hashing
 const crypto = {
   hash: async (password: string) => {
     const salt = randomBytes(16).toString("hex");
@@ -31,6 +38,7 @@ const crypto = {
   },
 };
 
+// Type declaration for Express User
 declare global {
   namespace Express {
     interface User extends SelectUser {}
@@ -43,38 +51,29 @@ export function setupAuth(app: Express) {
     secret: process.env.REPL_ID || "goated-rewards",
     resave: false,
     saveUninitialized: false,
-    cookie: {},
+    cookie: {
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      secure: app.get("env") === "production",
+    },
     store: new MemoryStore({
-      checkPeriod: 86400000,
+      checkPeriod: 86400000, // Prune expired entries every 24h
     }),
   };
 
   if (app.get("env") === "production") {
     app.set("trust proxy", 1);
-    sessionSettings.cookie = { secure: true };
   }
 
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Passport local strategy configuration
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
         if (!username || !password) {
           return done(null, false, { message: "Username and password are required" });
-        }
-
-        // Sanitize credentials
-        const sanitizedUsername = username.trim();
-        const sanitizedPassword = password.trim();
-
-        // Trim whitespace
-        username = username.trim();
-        password = password.trim();
-
-        if (!username || !password) {
-          return done(null, false, { message: "Username and password cannot be empty" });
         }
 
         // Check if this is an admin login attempt
@@ -100,10 +99,12 @@ export function setupAuth(app: Express) {
         if (!user) {
           return done(null, false, { message: "Invalid username or password" });
         }
+
         const isMatch = await crypto.compare(password, user.password);
         if (!isMatch) {
           return done(null, false, { message: "Invalid username or password" });
         }
+
         return done(null, user);
       } catch (err) {
         return done(err);
@@ -128,8 +129,20 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Registration endpoint with rate limiting
   app.post("/api/register", async (req, res, next) => {
     try {
+      // Rate limiting check
+      try {
+        await rateLimiter.consume(req.ip);
+      } catch (err) {
+        return res.status(429).json({
+          status: "error",
+          message: "Too many registration attempts. Please try again later.",
+        });
+      }
+
+      // Validate request body
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
         const errors = result.error.issues.map((i) => i.message).join(", ");
@@ -137,16 +150,6 @@ export function setupAuth(app: Express) {
           status: "error",
           message: "Validation failed",
           errors,
-        });
-      }
-
-      // Rate limiting check
-      const ipAddress = req.ip;
-      const registrationAttempts = await rateLimiter.get(ipAddress);
-      if (registrationAttempts > 5) {
-        return res.status(429).json({
-          status: "error",
-          message: "Too many registration attempts. Please try again later.",
         });
       }
 
@@ -180,10 +183,8 @@ export function setupAuth(app: Express) {
         });
       }
 
-      // Hash the password
+      // Create new user
       const hashedPassword = await crypto.hash(password);
-
-      // Create the new user
       const [newUser] = await db
         .insert(users)
         .values({
@@ -191,6 +192,7 @@ export function setupAuth(app: Express) {
           password: hashedPassword,
           email,
           isAdmin: false,
+          isVerified: false,
         })
         .returning();
 
@@ -207,13 +209,12 @@ export function setupAuth(app: Express) {
             username: newUser.username,
             email: newUser.email,
             isAdmin: newUser.isAdmin,
+            isVerified: newUser.isVerified,
           },
         });
       });
     } catch (error: any) {
-      // Handle database-level errors
       if (error.code === "23505") {
-        // Unique constraint violation
         return res.status(400).json({
           status: "error",
           message: "Username or email already exists",
@@ -223,18 +224,14 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Login endpoint
   app.post("/api/login", express.json(), (req, res, next) => {
-    // Validate request body exists
     if (!req.body || !req.body.username || !req.body.password) {
       return res.status(400).json({
         status: "error",
         message: "Username and password are required"
       });
     }
-
-    // Validate credentials
-    const { username, password } = req.body;
-    
 
     passport.authenticate(
       "local",
@@ -263,6 +260,7 @@ export function setupAuth(app: Express) {
               username: user.username,
               email: user.email,
               isAdmin: user.isAdmin,
+              isVerified: user.isVerified,
             },
           });
         });
@@ -270,6 +268,7 @@ export function setupAuth(app: Express) {
     )(req, res, next);
   });
 
+  // Logout endpoint
   app.post("/api/logout", (req, res) => {
     req.logout((err) => {
       if (err) {
@@ -285,6 +284,7 @@ export function setupAuth(app: Express) {
     });
   });
 
+  // User info endpoint
   app.get("/api/user", (req, res) => {
     if (req.isAuthenticated()) {
       const user = req.user;
@@ -293,6 +293,7 @@ export function setupAuth(app: Express) {
         username: user.username,
         email: user.email,
         isAdmin: user.isAdmin,
+        isVerified: user.isVerified,
       });
     }
     res.status(401).json({
