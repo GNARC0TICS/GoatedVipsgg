@@ -28,8 +28,8 @@ function sortByWagered(data: any[], period: string) {
   );
 }
 
-function transformMVPData(mvpData: any) {
-  return Object.entries(mvpData).reduce((acc: Record<string, any>, [period, data]: [string, any]) => {
+const transformMVPData = (mvpData: any): Record<string, any> => {
+  return Object.entries(mvpData).reduce((acc: Record<string, any>, [period, data]) => {
     if (data) {
       // Calculate if there was a wager change
       const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'];
@@ -38,12 +38,19 @@ function transformMVPData(mvpData: any) {
 
       acc[period] = {
         username: data.name,
-        wagerAmount: currentWager
+        wagerAmount: currentWager,
+        rank: 1,
+        lastWagerChange: hasIncrease ? Date.now() : undefined,
+        stats: {
+          winRate: data.stats?.winRate || 0,
+          favoriteGame: data.stats?.favoriteGame || 'Unknown',
+          totalGames: data.stats?.totalGames || 0
+        }
       };
     }
     return acc;
   }, {});
-}
+};
 
 function handleLeaderboardConnection(ws: WebSocket): void {
   log("Leaderboard WebSocket client connected");
@@ -67,19 +74,6 @@ export function broadcastLeaderboardUpdate(data: any) {
     }
   });
 }
-
-        rank: 1,
-        lastWagerChange: hasIncrease ? Date.now() : undefined,
-        stats: {
-          winRate: data.stats?.winRate || 0,
-          favoriteGame: data.stats?.favoriteGame || 'Unknown',
-          totalGames: data.stats?.totalGames || 0
-        }
-      };
-    }
-    return acc;
-  }, {});
-};
 
 function transformLeaderboardData(apiData: any) {
   const responseData = apiData.data || apiData.results || apiData;
