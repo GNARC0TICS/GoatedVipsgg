@@ -32,6 +32,7 @@ import GoatedToken from "@/pages/GoatedToken";
 import Support from "@/pages/support";
 import FAQ from "@/pages/faq";
 import VipProgram from "./pages/VipProgram";
+import UserManagement from "@/pages/admin/UserManagement";
 import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 
@@ -111,6 +112,7 @@ function Router() {
             <Route path="/telegram" component={Telegram} />
             <Route path="/how-it-works" component={HowItWorks} />
             <Route path="/goated-token" component={GoatedToken} />
+            <Route path="/admin/user-management" component={UserManagement} />
             <Route path="/vip-program" component={VipProgram} />
             <Route component={NotFound} />
           </Switch>
