@@ -1,74 +1,117 @@
 import passport from "passport";
-import { Strategy as LocalStrategy } from "passport-local";
+import { IVerifyOptions, Strategy as LocalStrategy } from "passport-local";
 import { type Express } from "express";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { users } from "../db/schema.js";
-import { db } from "../db/index.js";
+import { users, insertUserSchema, type SelectUser } from "@db/schema";
+import { db } from "@db";
 import { eq } from "drizzle-orm";
-import { log } from "./vite.js";
+import express from 'express';
 
 const scryptAsync = promisify(scrypt);
-const MemoryStore = createMemoryStore(session);
 
-// Helper functions for password management
+// Crypto utilities
 const crypto = {
   hash: async (password: string) => {
     const salt = randomBytes(16).toString("hex");
     const buf = (await scryptAsync(password, salt, 64)) as Buffer;
     return `${buf.toString("hex")}.${salt}`;
   },
-  verify: async (supplied: string, stored: string) => {
-    const [hashedPassword, salt] = stored.split(".");
-    const hashedBuf = Buffer.from(hashedPassword, "hex");
-    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-    return timingSafeEqual(hashedBuf, suppliedBuf);
-  }
+  compare: async (suppliedPassword: string, storedPassword: string) => {
+    const [hashedPassword, salt] = storedPassword.split(".");
+    const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
+    const suppliedPasswordBuf = (await scryptAsync(
+      suppliedPassword,
+      salt,
+      64,
+    )) as Buffer;
+    return timingSafeEqual(hashedPasswordBuf, suppliedPasswordBuf);
+  },
 };
 
+declare global {
+  namespace Express {
+    interface User extends SelectUser {}
+  }
+}
+
 export function setupAuth(app: Express) {
-  // Session configuration
-  const sessionConfig = {
+  const MemoryStore = createMemoryStore(session);
+  const sessionSettings: session.SessionOptions = {
     secret: process.env.REPL_ID || "goated-rewards",
     resave: false,
     saveUninitialized: false,
-    store: new MemoryStore({ checkPeriod: 86400000 }), // Prune expired entries every 24h
-    cookie: {
-      secure: app.get("env") === "production",
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
+    cookie: {},
+    store: new MemoryStore({
+      checkPeriod: 86400000,
+    }),
   };
 
   if (app.get("env") === "production") {
     app.set("trust proxy", 1);
+    sessionSettings.cookie = { secure: true };
   }
 
-  app.use(session(sessionConfig));
+  app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Passport configuration
-  passport.use(new LocalStrategy(async (username: string, password: string, done: any) => {
-    try {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.username, username))
-        .limit(1);
+  passport.use(
+    new LocalStrategy(async (username, password, done) => {
+      try {
+        if (!username || !password) {
+          return done(null, false, { message: "Username and password are required" });
+        }
 
-      if (!user || !(await crypto.verify(password, user.password))) {
-        return done(null, false, { message: "Invalid username or password" });
+        // Sanitize credentials
+        const sanitizedUsername = username.trim();
+        const sanitizedPassword = password.trim();
+
+        // Trim whitespace
+        username = username.trim();
+        password = password.trim();
+
+        if (!username || !password) {
+          return done(null, false, { message: "Username and password cannot be empty" });
+        }
+
+        // Check if this is an admin login attempt
+        if (username === process.env.ADMIN_USERNAME && 
+            password === process.env.ADMIN_PASSWORD) {
+          const [adminUser] = await db
+            .select()
+            .from(users)
+            .where(eq(users.isAdmin, true))
+            .limit(1);
+
+          if (adminUser) {
+            return done(null, adminUser);
+          }
+        }
+
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.username, username))
+          .limit(1);
+
+        if (!user) {
+          return done(null, false, { message: "Invalid username or password" });
+        }
+        const isMatch = await crypto.compare(password, user.password);
+        if (!isMatch) {
+          return done(null, false, { message: "Invalid username or password" });
+        }
+        return done(null, user);
+      } catch (err) {
+        return done(err);
       }
+    }),
+  );
 
-      return done(null, user);
-    } catch (err) {
-      return done(err);
-    }
-  }));
-
-  passport.serializeUser((user: any, done) => {
+  passport.serializeUser((user, done) => {
     done(null, user.id);
   });
 
@@ -85,27 +128,62 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Auth routes
-  app.post("/api/register", async (req, res) => {
+  app.post("/api/register", async (req, res, next) => {
     try {
-      const { username, password, email } = req.body;
+      const result = insertUserSchema.safeParse(req.body);
+      if (!result.success) {
+        const errors = result.error.issues.map((i) => i.message).join(", ");
+        return res.status(400).json({
+          status: "error",
+          message: "Validation failed",
+          errors,
+        });
+      }
 
-      // Check existing user
-      const [existingUser] = await db
+      // Rate limiting check
+      const ipAddress = req.ip;
+      const registrationAttempts = await rateLimiter.get(ipAddress);
+      if (registrationAttempts > 5) {
+        return res.status(429).json({
+          status: "error",
+          message: "Too many registration attempts. Please try again later.",
+        });
+      }
+
+      const { username, password, email } = result.data;
+
+      // Check for existing username
+      const [existingUsername] = await db
         .select()
         .from(users)
         .where(eq(users.username, username))
         .limit(1);
 
-      if (existingUser) {
+      if (existingUsername) {
         return res.status(400).json({
           status: "error",
-          message: "Username already exists"
+          message: "Username already exists",
         });
       }
 
-      // Create user
+      // Check for existing email
+      const [existingEmail] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (existingEmail) {
+        return res.status(400).json({
+          status: "error",
+          message: "Email already registered",
+        });
+      }
+
+      // Hash the password
       const hashedPassword = await crypto.hash(password);
+
+      // Create the new user
       const [newUser] = await db
         .insert(users)
         .values({
@@ -113,64 +191,83 @@ export function setupAuth(app: Express) {
           password: hashedPassword,
           email,
           isAdmin: false,
-          isVerified: false
         })
         .returning();
 
-      log(`New user registered: ${username}`);
-
-      // Log in the new user
+      // Log the user in after registration
       req.login(newUser, (err) => {
         if (err) {
-          log(`Login error after registration: ${err}`);
-          return res.status(500).json({
-            status: "error",
-            message: "Error during login after registration"
-          });
+          return next(err);
         }
-        return res.status(201).json({
+        return res.json({
           status: "success",
+          message: "Registration successful",
           user: {
             id: newUser.id,
             username: newUser.username,
             email: newUser.email,
             isAdmin: newUser.isAdmin,
-            isVerified: newUser.isVerified
-          }
+          },
         });
       });
     } catch (error: any) {
-      log(`Registration error: ${error.message}`);
-      res.status(500).json({
-        status: "error",
-        message: "Internal server error during registration"
-      });
+      // Handle database-level errors
+      if (error.code === "23505") {
+        // Unique constraint violation
+        return res.status(400).json({
+          status: "error",
+          message: "Username or email already exists",
+        });
+      }
+      next(error);
     }
   });
 
-  app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: any, user: any, info: any) => {
-      if (err) return next(err);
-      if (!user) {
-        return res.status(401).json({
-          status: "error",
-          message: info?.message || "Invalid credentials"
-        });
-      }
-      req.login(user, (err) => {
-        if (err) return next(err);
-        return res.json({
-          status: "success",
-          user: {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            isAdmin: user.isAdmin,
-            isVerified: user.isVerified
-          }
-        });
+  app.post("/api/login", express.json(), (req, res, next) => {
+    // Validate request body exists
+    if (!req.body || !req.body.username || !req.body.password) {
+      return res.status(400).json({
+        status: "error",
+        message: "Username and password are required"
       });
-    })(req, res, next);
+    }
+
+    // Validate credentials
+    const { username, password } = req.body;
+    
+
+    passport.authenticate(
+      "local",
+      (err: any, user: Express.User | false, info: IVerifyOptions) => {
+        if (err) {
+          return next(err);
+        }
+
+        if (!user) {
+          return res.status(400).json({
+            status: "error",
+            message: info.message ?? "Login failed",
+          });
+        }
+
+        req.logIn(user, (err) => {
+          if (err) {
+            return next(err);
+          }
+
+          return res.json({
+            status: "success",
+            message: "Login successful",
+            user: {
+              id: user.id,
+              username: user.username,
+              email: user.email,
+              isAdmin: user.isAdmin,
+            },
+          });
+        });
+      },
+    )(req, res, next);
   });
 
   app.post("/api/logout", (req, res) => {
@@ -178,33 +275,29 @@ export function setupAuth(app: Express) {
       if (err) {
         return res.status(500).json({
           status: "error",
-          message: "Error during logout"
+          message: "Logout failed",
         });
       }
       res.json({
         status: "success",
-        message: "Logged out successfully"
+        message: "Logout successful",
       });
     });
   });
 
   app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({
-        status: "error",
-        message: "Not authenticated"
-      });
-    }
-    const user = req.user as any;
-    res.json({
-      status: "success",
-      user: {
+    if (req.isAuthenticated()) {
+      const user = req.user;
+      return res.json({
         id: user.id,
         username: user.username,
         email: user.email,
         isAdmin: user.isAdmin,
-        isVerified: user.isVerified
-      }
+      });
+    }
+    res.status(401).json({
+      status: "error",
+      message: "Not logged in",
     });
   });
 }

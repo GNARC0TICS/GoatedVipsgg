@@ -1,21 +1,16 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocket, WebSocketServer } from "ws";
-import { log } from "./vite.js";
-import { setupAuth } from "./auth.js";
-import { API_CONFIG } from "./config/api.js";
+import { log } from "./vite";
+import { setupAuth } from "./auth";
+import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
-import { requireAdmin, requireAuth } from "./middleware/auth.js";
-import { db } from "../db/index.js";
-import { 
-  wagerRaces, 
-  users, 
-  ticketMessages, 
-  wagerRaceParticipants,
-  historicalRaces 
-} from "../db/schema.js";
+import { requireAdmin, requireAuth } from "./middleware/auth";
+import { db } from "@db";
+import { wagerRaces, users, ticketMessages, wagerRaceParticipants } from "@db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
+import { historicalRaces } from "@db/schema";
 
 // WebSocket setup
 let wss: WebSocketServer;
@@ -33,17 +28,15 @@ function sortByWagered(data: any[], period: string) {
   );
 }
 
-// Fix the transformMVPData function to handle types properly
-const transformMVPData = (mvpData: Record<string, any>): Record<string, any> => {
+const transformMVPData = (mvpData: any): Record<string, any> => {
   return Object.entries(mvpData).reduce((acc: Record<string, any>, [period, data]) => {
-    if (data && typeof data === 'object') {
-      const wagered = data.wagered || {};
-      const currentWager = wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'] || 0;
-      const previousWager = wagered?.previous || 0;
+    if (data) {
+      const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'];
+      const previousWager = data.wagered?.previous || 0;
       const hasIncrease = currentWager > previousWager;
 
       acc[period] = {
-        username: data.name || '',
+        username: data.name,
         wagerAmount: currentWager,
         rank: 1,
         lastWagerChange: hasIncrease ? Date.now() : undefined,
@@ -135,6 +128,10 @@ function setupRESTRoutes(app: Express) {
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
       // Check if previous month needs to be archived
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
+      // If it's the first day of the month and we haven't archived yet
       if (now.getDate() === 1 && now.getHours() < 1) {
         const previousMonth = now.getMonth() === 0 ? 12 : now.getMonth();
         const previousYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
@@ -152,15 +149,14 @@ function setupRESTRoutes(app: Express) {
           .limit(1);
 
         if (!existingEntry && stats.data.monthly.data.length > 0) {
-          // Store the previous month's results with proper typing
+          // Store the previous month's results
           await db.insert(historicalRaces).values({
             month: previousMonth,
             year: previousYear,
-            prizePool: "200.00", // Convert to string for decimal type
+            prizePool: 200, // Fixed prize pool amount
             startDate: new Date(previousYear, previousMonth - 1, 1),
             endDate: new Date(previousYear, previousMonth, 0, 23, 59, 59),
             participants: stats.data.monthly.data.slice(0, 10), // Store top 10
-            createdAt: new Date()
           });
         }
       }
@@ -170,15 +166,13 @@ function setupRESTRoutes(app: Express) {
         status: 'live',
         startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
         endDate: endOfMonth.toISOString(),
-        prizePool: "200.00", // Convert to string for decimal type
-        participants: stats.data.monthly.data
-          .map((participant: any, index: number) => ({
-            uid: participant.uid,
-            name: participant.name,
-            wagered: participant.wagered?.this_month || 0,
-            position: index + 1
-          }))
-          .slice(0, 10) // Top 10 participants
+        prizePool: 200, // Updated prize pool to $200
+        participants: stats.data.monthly.data.map((participant: any, index: number) => ({
+          uid: participant.uid,
+          name: participant.name,
+          wagered: participant.wagered.this_month,
+          position: index + 1
+        })).slice(0, 10) // Top 10 participants
       };
 
       res.json(raceData);
@@ -311,6 +305,8 @@ async function handleProfileRequest(req: any, res: any) {
     });
   }
 }
+
+// Admin stats endpoint (This was already present in the edited snippet but is included here for completeness)
 
 
 async function handleAdminLogin(req: any, res: any) {

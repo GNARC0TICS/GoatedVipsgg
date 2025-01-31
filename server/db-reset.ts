@@ -5,10 +5,10 @@ import {
   wagerRaces,
   wagerRaceParticipants,
   notificationPreferences,
-} from "../db/schema.js";
+} from "../db/schema";
 import { sql } from "drizzle-orm";
-import { log } from "./vite.js";
-import { API_CONFIG } from "./config/api.js";
+import { log } from "./vite";
+import { API_CONFIG } from "./config/api";
 
 async function resetDatabase() {
   try {
