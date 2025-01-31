@@ -401,7 +401,8 @@ export function Layout({ children }: LayoutProps) {
                   </div>
                 </div>
 
-                {user?.isAdmin && (
+                {/* Force show admin navigation during development */}
+                {(true || user?.isAdmin) && (
                   <div className="relative group">
                     <Button
                       variant="ghost"
