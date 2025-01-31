@@ -259,7 +259,7 @@ export default function WagerRaces() {
                 </div>
                 <div className="text-center">
                   <h3 className="text-[#8A8B91] font-heading text-sm mb-2">
-                    CURRENT LEADER
+                    WINNER
                   </h3>
                   <div className="flex items-center justify-center gap-2">
                     <Crown className="h-5 w-5 text-[#D7FF00]" />
@@ -271,17 +271,7 @@ export default function WagerRaces() {
               </div>
             </motion.div>
 
-            {/* Payment Info Message */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-6 text-center bg-[#D7FF00]/10 p-4 rounded-lg border border-[#D7FF00]/20"
-            >
-              <p className="text-[#D7FF00] text-sm">
-                Winners will receive their prizes directly to their Goated account within 24 hours of race completion.
-              </p>
-            </motion.div>
-          </div>
+            </div>
 
           {/* Podium Section */}
           <motion.div
