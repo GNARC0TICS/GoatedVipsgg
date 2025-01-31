@@ -216,13 +216,20 @@ function setupRESTRoutes(app: Express) {
       // Get current month's info
       const now = new Date();
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      const isLastDayOfMonth = now.getDate() === new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const isFirstDayOfMonth = now.getDate() === 1;
+
+      // Set race status based on time
+      const raceStatus = isFirstDayOfMonth && now.getHours() < 1 ? 'transition' : 
+                        now > endOfMonth ? 'completed' : 'live';
 
       // Check if previous month needs to be archived
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
 
+
       // If it's the first day of the month and we haven't archived yet
-      if (now.getDate() === 1 && now.getHours() < 1) {
+      if (isLastDayOfMonth && now.getHours() >= 1) { //Check if it's the last day of the month and after 1am
         const previousMonth = now.getMonth() === 0 ? 12 : now.getMonth();
         const previousYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
 
@@ -271,7 +278,7 @@ function setupRESTRoutes(app: Express) {
 
       const raceData = {
         id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
-        status: 'live',
+        status: raceStatus,
         startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
         endDate: endOfMonth.toISOString(),
         prizePool: 200, // Updated prize pool to $200

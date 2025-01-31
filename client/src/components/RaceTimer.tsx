@@ -36,11 +36,11 @@ export function RaceTimer() {
     retry: 3,
     onSuccess: (data) => {
       if (!data) return;
-      
+
       const now = new Date();
       const endDate = new Date(data.endDate);
       const isComplete = now > endDate || data.status === 'completed';
-      
+
       if (isComplete) {
         setShowCompletionOverlay(true);
         // Calculate next race start time
@@ -68,22 +68,14 @@ export function RaceTimer() {
       const now = new Date();
       const end = new Date(currentRaceData.endDate);
       const diff = end.getTime() - now.getTime();
-      
+
+      // Check if we're past the end of the month or if race is marked complete
       const isComplete = now > end || currentRaceData?.status === 'completed';
-      const isTransition = currentRaceData?.status === 'transition';
-      
+      const isTransition = currentRaceData?.status === 'transition' || (now.getDate() === 1 && now.getHours() < 1);
+
       if (isComplete || isTransition) {
         setShowCompletionOverlay(true);
-        
-        // Calculate time until next race
-        const nextRaceStart = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
-        const timeUntilNext = nextRaceStart.getTime() - now.getTime();
-        
-        const daysUntil = Math.floor(timeUntilNext / (1000 * 60 * 60 * 24));
-        const hoursUntil = Math.floor((timeUntilNext % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutesUntil = Math.floor((timeUntilNext % (1000 * 60 * 60)) / (1000 * 60));
-        
-        setTimeLeft(`Next Race: ${daysUntil}d ${hoursUntil}h ${minutesUntil}m`);
+        setTimeLeft('Race Complete');
         return;
       }
 
