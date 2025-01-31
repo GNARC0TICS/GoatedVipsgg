@@ -43,19 +43,42 @@ export function useLeaderboard(
   const [ws, setWs] = React.useState<WebSocket | null>(null);
 
   React.useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws/leaderboard`);
-    
-    websocket.onmessage = (event) => {
-      const update = JSON.parse(event.data);
-      if (update.type === "LEADERBOARD_UPDATE") {
-        refetch();
-      }
+    let reconnectTimer: NodeJS.Timeout;
+    let ws: WebSocket;
+
+    const connect = () => {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      ws = new WebSocket(`${protocol}//${window.location.host}/ws/leaderboard`);
+      
+      ws.onmessage = (event) => {
+        try {
+          const update = JSON.parse(event.data);
+          if (update.type === "LEADERBOARD_UPDATE") {
+            refetch();
+          }
+        } catch (err) {
+          console.error('WebSocket message parsing error:', err);
+        }
+      };
+
+      ws.onclose = () => {
+        reconnectTimer = setTimeout(connect, 3000);
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        ws.close();
+      };
+
+      setWs(ws);
     };
 
-    setWs(websocket);
+    connect();
 
-    return () => websocket.close();
+    return () => {
+      clearTimeout(reconnectTimer);
+      if (ws) ws.close();
+    };
   }, []);
 
   const { data, isLoading, error, refetch } = useQuery<APIResponse>({

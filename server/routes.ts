@@ -21,14 +21,38 @@ const rateLimiter = new RateLimiterMemory({
 
 
 function handleLeaderboardConnection(ws: WebSocket) {
-  log("Leaderboard WebSocket client connected");
+  const clientId = Date.now().toString();
+  log(`Leaderboard WebSocket client connected (${clientId})`);
 
-  ws.on("close", () => {
-    log("Leaderboard WebSocket client disconnected");
+  const pingInterval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.ping();
+    }
+  }, 30000);
+
+  ws.on("pong", () => {
+    ws.isAlive = true;
   });
 
-  // Send initial data
-  ws.send(JSON.stringify({ type: "CONNECTED" }));
+  ws.on("error", (error) => {
+    log(`WebSocket error (${clientId}):`, error);
+    clearInterval(pingInterval);
+    ws.terminate();
+  });
+
+  ws.on("close", () => {
+    log(`Leaderboard WebSocket client disconnected (${clientId})`);
+    clearInterval(pingInterval);
+  });
+
+  // Send initial data with rate limiting
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ 
+      type: "CONNECTED",
+      clientId,
+      timestamp: Date.now()
+    }));
+  }
 }
 
 // Broadcast leaderboard updates to all connected clients
