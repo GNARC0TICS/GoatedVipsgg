@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
-import { differenceInSeconds } from "date-fns";
+import { useState, useEffect } from 'react';
+import { differenceInSeconds } from 'date-fns';
 
 interface CountdownTimerProps {
   endDate: string;
   large?: boolean;
+  onComplete?: () => void; // Make onComplete optional
 }
 
 export function CountdownTimer({
   endDate,
   large = false,
+  onComplete
 }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
@@ -37,58 +39,34 @@ export function CountdownTimer({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [endDate]);
+  }, [endDate, onComplete]);
 
-  return large ? (
-    <div className="flex items-center gap-6">
+  return (
+    <div className={`grid grid-cols-4 gap-2 ${large ? 'text-4xl' : 'text-2xl'} font-bold`}>
       <div className="text-center">
-        <div className="text-4xl font-bold text-[#D7FF00]">
-          {timeLeft.days.toString().padStart(2, "0")}
+        <div className="bg-[#1A1B21]/50 backdrop-blur-sm p-2 rounded-lg border border-[#2A2B31]">
+          {timeLeft.days}
         </div>
-        <div className="text-xs text-[#8A8B91] uppercase">Days</div>
+        <div className="text-xs mt-1 text-[#8A8B91]">DAYS</div>
       </div>
       <div className="text-center">
-        <div className="text-4xl font-bold text-[#D7FF00]">
-          {timeLeft.hours.toString().padStart(2, "0")}
+        <div className="bg-[#1A1B21]/50 backdrop-blur-sm p-2 rounded-lg border border-[#2A2B31]">
+          {timeLeft.hours}
         </div>
-        <div className="text-xs text-[#8A8B91] uppercase">Hours</div>
+        <div className="text-xs mt-1 text-[#8A8B91]">HOURS</div>
       </div>
       <div className="text-center">
-        <div className="text-4xl font-bold text-[#D7FF00]">
-          {timeLeft.minutes.toString().padStart(2, "0")}
+        <div className="bg-[#1A1B21]/50 backdrop-blur-sm p-2 rounded-lg border border-[#2A2B31]">
+          {timeLeft.minutes}
         </div>
-        <div className="text-xs text-[#8A8B91] uppercase">Minutes</div>
+        <div className="text-xs mt-1 text-[#8A8B91]">MINUTES</div>
       </div>
       <div className="text-center">
-        <div className="text-4xl font-bold text-[#D7FF00]">
-          {timeLeft.seconds.toString().padStart(2, "0")}
+        <div className="bg-[#1A1B21]/50 backdrop-blur-sm p-2 rounded-lg border border-[#2A2B31]">
+          {timeLeft.seconds}
         </div>
-        <div className="text-xs text-[#8A8B91] uppercase">Seconds</div>
+        <div className="text-xs mt-1 text-[#8A8B91]">SECONDS</div>
       </div>
-    </div>
-  ) : (
-    <div className="font-mono text-lg flex items-center gap-2">
-      {timeLeft.days > 0 && (
-        <>
-          <span className="font-bold">{timeLeft.days}d</span>
-          <span className="text-muted-foreground">:</span>
-        </>
-      )}
-      <span className="font-bold">
-        {String(timeLeft.hours).padStart(2, "0")}h
-      </span>
-      <span className="text-muted-foreground">:</span>
-      <span className="font-bold">
-        {String(timeLeft.minutes).padStart(2, "0")}m
-      </span>
-      <span className="text-muted-foreground">:</span>
-      <span className="font-bold">
-        {String(timeLeft.seconds).padStart(2, "0")}s
-      </span>
     </div>
   );
-}
-
-function getTimeLeft() {
-  return { days: 0, hours: 0, minutes: 0, seconds: 0 };
 }
