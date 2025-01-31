@@ -8,7 +8,7 @@ import { promisify } from "util";
 import { users } from "@db/schema";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
-import { log } from "./vite";
+import { log } from "./vite.js";
 
 const scryptAsync = promisify(scrypt);
 const MemoryStore = createMemoryStore(session);

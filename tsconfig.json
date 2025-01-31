@@ -22,6 +22,7 @@
     "typeRoots": ["./node_modules/@types"],
     "allowJs": true,
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true
   }
 }
