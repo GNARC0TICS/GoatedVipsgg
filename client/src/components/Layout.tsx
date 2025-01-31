@@ -402,7 +402,29 @@ export function Layout({ children }: LayoutProps) {
                 </div>
 
                 {user?.isAdmin && (
-                  <NavLink href="/admin/wager-races" label="ADMIN" />
+                  <div className="relative group">
+                    <Button
+                      variant="ghost"
+                      className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
+                    >
+                      <span className="font-bold">ADMIN</span>
+                      <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                    </Button>
+                    <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                      <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                        <Link href="/admin/user-management">
+                          <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                            User Management
+                          </div>
+                        </Link>
+                        <Link href="/admin/wager-races">
+                          <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                            Wager Race Management
+                          </div>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -498,7 +520,8 @@ export function Layout({ children }: LayoutProps) {
                       {user?.isAdmin && (
                         <>
                           <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">ADMIN</div>
-                          <MobileNavLink href="/admin/wager-races" label="Admin Panel" onClose={handleCloseMenu} />
+                          <MobileNavLink href="/admin/user-management" label="User Management" onClose={handleCloseMenu} />
+                          <MobileNavLink href="/admin/wager-races" label="Wager Race Management" onClose={handleCloseMenu} />
                         </>
                       )}
 
