@@ -156,7 +156,7 @@ export function Layout({ children }: LayoutProps) {
                   <Link href="/how-it-works">
                     <Button
                       variant="ghost"
-                      className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent"
+                      className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                     >
                       <span className="font-bold">GET STARTED</span>
                       <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
@@ -213,7 +213,7 @@ export function Layout({ children }: LayoutProps) {
                   <Link href="/promotions">
                     <Button
                       variant="ghost"
-                      className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent"
+                      className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                     >
                       <span className="font-bold">PROMOTIONS</span>
                       <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
@@ -276,7 +276,7 @@ export function Layout({ children }: LayoutProps) {
                   <Link href="/leaderboard?period=daily">
                     <Button
                       variant="ghost"
-                      className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent"
+                      className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                     >
                       <span className="font-bold">LEADERBOARDS</span>
                       <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
@@ -332,7 +332,7 @@ export function Layout({ children }: LayoutProps) {
                   <Link href="/socials">
                     <Button
                       variant="ghost"
-                      className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent"
+                      className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                     >
                       <span className="font-bold">SOCIALS</span>
                       <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
@@ -359,7 +359,7 @@ export function Layout({ children }: LayoutProps) {
                   <Link href="/help">
                     <Button
                       variant="ghost"
-                      className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent"
+                      className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                     >
                       <span className="font-bold">HELP & FAQ</span>
                       <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
