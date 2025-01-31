@@ -378,8 +378,11 @@ export default function WagerRaces() {
                 ))}
               </div>
               <div className="mt-8 text-center">
-                <p className="text-gray-400 mb-4">
+                <p className="text-gray-400 mb-2">
                   Next race starts: {new Date(previousRace.nextRaceStart).toLocaleDateString()}
+                </p>
+                <p className="text-sm text-[#D7FF00]/80 mb-4 bg-[#D7FF00]/10 p-3 rounded-lg">
+                  Winners will receive their prizes directly to their Goated account within 24 hours of race completion.
                 </p>
                 <Button
                   onClick={() => setShowCompletedRace(false)}
