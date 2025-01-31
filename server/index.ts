@@ -1,93 +1,31 @@
-import express from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import express, { type Express } from "express";
+import { createServer as createHttpServer } from "http";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
-import { promisify } from "util";
-import { exec } from "child_process";
-import { createServer } from "http";
-import { initializeAdmin } from "./middleware/admin"; // Added import
+import { setupAuth } from "./auth";
+import { registerRoutes } from "./routes";
+import { setupVite, log } from "./vite";
 
-const execAsync = promisify(exec);
-const app = express();
+const app: Express = express();
+const PORT = process.env.PORT || 5000;
+
+// Basic middleware setup
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-const PORT = 5000;
 
-async function setupMiddleware() {
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  app.use(requestLogger);
-  app.use(errorHandler);
+// Health check endpoint
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "healthy" });
+});
 
-  app.get("/api/health", (_req, res) => {
-    res.json({ status: "healthy" });
-  });
-}
-
-function requestLogger(
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction,
-) {
-  const start = Date.now();
-  const path = req.path;
-  let capturedResponse: Record<string, any> | undefined;
-
-  const originalJson = res.json;
-  res.json = function (body, ...args) {
-    capturedResponse = body;
-    return originalJson.apply(res, [body, ...args]);
-  };
-
-  res.on("finish", () => {
-    if (path.startsWith("/api")) {
-      const duration = Date.now() - start;
-      let logMessage = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedResponse) {
-        logMessage += ` :: ${JSON.stringify(capturedResponse)}`;
-      }
-      log(logMessage.slice(0, 79) + (logMessage.length > 79 ? "…" : ""));
-    }
-  });
-
-  next();
-}
-
-function errorHandler(
-  err: Error,
-  _req: express.Request,
-  res: express.Response,
-  _next: express.NextFunction,
-) {
-  console.error("Server error:", err);
-  res.status(500).json({ error: err.message || "Internal Server Error" });
-}
-
+// Database check
 async function checkDatabase() {
   try {
     await db.execute(sql`SELECT 1`);
-    log("Database connection successful");
+    log("Database connection established successfully");
   } catch (error: any) {
-    if (error.message?.includes("endpoint is disabled")) {
-      log(
-        "Database endpoint is disabled. Please enable the database in the Replit Database tab.",
-      );
-    } else {
-      throw error;
-    }
-  }
-}
-
-async function cleanupPort() {
-  try {
-    // Try to kill existing process on port 5000
-    await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
-    // Wait a moment for the port to be released
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  } catch (error) {
-    // If no process was found or killed, that's fine
-    log("No existing process found on port " + PORT);
+    log(`Database connection error: ${error.message}`);
+    process.exit(1);
   }
 }
 
@@ -95,46 +33,32 @@ async function startServer() {
   try {
     log("Starting server initialization...");
     await checkDatabase();
-    await cleanupPort(); 
 
-    registerRoutes(app); //Assuming setupRoutes is registerRoutes
+    // Setup authentication
+    setupAuth(app);
 
-    // Initialize admin user
-    initializeAdmin().catch(console.error);
+    // Register API routes
+    registerRoutes(app);
 
-    const server = createServer(app); //Changed to use createServer for consistency
+    const server = createHttpServer(app);
 
-
-    if (app.get("env") === "development") {
+    // Setup Vite in development
+    if (process.env.NODE_ENV !== "production") {
       await setupVite(app, server);
-    } else {
-      serveStatic(app);
     }
 
-    await setupMiddleware();
-
-    server
-      .listen(PORT, "0.0.0.0")
-      .on("error", async (err: NodeJS.ErrnoException) => {
-        if (err.code === 'EADDRINUSE') {
-          log(`Port ${PORT} is in use, attempting to free it...`);
-          await cleanupPort();
-          server.listen(PORT, "0.0.0.0");
-        } else {
-          console.error(`Failed to start server: ${err.message}`);
-          process.exit(1);
-        }
-      })
-      .on("listening", () => {
-        log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-      });
+    const listenPort = Number(PORT);
+    server.listen(listenPort, () => {
+      log(`Server running on port ${listenPort}`);
+    });
 
   } catch (error) {
-    console.error("Failed to start application:", error);
+    log(`Failed to start server: ${error}`);
     process.exit(1);
   }
 }
 
+// Handle graceful shutdown
 process.on('SIGTERM', () => {
   log('Received SIGTERM signal. Shutting down gracefully...');
   process.exit(0);
