@@ -51,6 +51,10 @@ const transformMVPData = (mvpData: any): Record<string, any> => {
   }, {});
 };
 
+import express from "express";
+
+const app = express();
+
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
   setupAuth(app);
