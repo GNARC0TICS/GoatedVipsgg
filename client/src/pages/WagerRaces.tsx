@@ -363,7 +363,7 @@ export default function WagerRaces() {
                         Monthly Race Complete!
                       </h2>
                       <div className="space-y-6">
-                        {previousRace.participants.map((winner: any, index: number) => (
+                        {previousRace?.participants?.map((winner: any, index: number) => (
                           <div
                             key={winner.uid}
                             className="flex items-center justify-between bg-black/20 p-4 rounded-lg"
