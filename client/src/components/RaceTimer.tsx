@@ -34,6 +34,11 @@ export function RaceTimer() {
     queryKey: ["/api/wager-races/current"],
     refetchInterval: 30000, // Refresh every 30 seconds
     retry: 3,
+    onSuccess: (data) => {
+      if (data?.status === 'completed' || new Date(data?.endDate) < new Date()) {
+        setShowCompletionOverlay(true);
+      }
+    }
   });
 
   // Fetch previous month's data
@@ -55,7 +60,7 @@ export function RaceTimer() {
       const now = new Date();
       const diff = end.getTime() - now.getTime();
 
-      if (diff <= 0) {
+      if (diff <= 0 || currentRaceData?.status === 'completed') {
         setTimeLeft("Race Ended");
         setShowCompletionOverlay(true);
         
