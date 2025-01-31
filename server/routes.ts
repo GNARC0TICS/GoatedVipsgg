@@ -19,26 +19,6 @@ const rateLimiter = new RateLimiterMemory({
   duration: 1,
 });
 
-let wss: WebSocketServer;
-
-// Helper functions
-function sortByWagered(data: any[], period: string) {
-  return [...data].sort(
-    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
-  );
-}
-
-const transformMVPData = (mvpData: any) => {
-  return Object.entries(mvpData).reduce((acc: Record<string, any>, [period, data]: [string, any]) => {
-    if (data) {
-      // Calculate if there was a wager change
-      const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'];
-      const previousWager = data.wagered?.previous || 0;
-      const hasIncrease = currentWager > previousWager;
-
-      acc[period] = {
-        username: data.name,
-        wagerAmount: currentWager,
 
 function handleLeaderboardConnection(ws: WebSocket) {
   log("Leaderboard WebSocket client connected");
@@ -63,6 +43,26 @@ export function broadcastLeaderboardUpdate(data: any) {
   });
 }
 
+let wss: WebSocketServer;
+
+// Helper functions
+function sortByWagered(data: any[], period: string) {
+  return [...data].sort(
+    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
+  );
+}
+
+const transformMVPData = (mvpData: any) => {
+  return Object.entries(mvpData).reduce((acc: Record<string, any>, [period, data]: [string, any]) => {
+    if (data) {
+      // Calculate if there was a wager change
+      const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'];
+      const previousWager = data.wagered?.previous || 0;
+      const hasIncrease = currentWager > previousWager;
+
+      acc[period] = {
+        username: data.name,
+        wagerAmount: currentWager,
         rank: 1,
         lastWagerChange: hasIncrease ? Date.now() : undefined,
         stats: {
