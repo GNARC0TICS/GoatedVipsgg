@@ -251,8 +251,11 @@ export function RaceTimer() {
                 className="p-6 text-center"
               >
                 <h3 className="text-[#D7FF00] font-heading mb-4">
-                  {currentRaceData?.status === 'transition' ? 'In Transition Period' : 'Race Complete!'}
+                  Race Complete!
                 </h3>
+                {currentRaceData?.status === 'transition' && (
+                  <p className="text-orange-500 text-sm mb-4">In Transition Period</p>
+                )}
                 <div className="space-y-4 mb-4">
                   {raceData.participants.slice(0, 3).map((winner, index) => (
                     <div key={winner.uid} className="flex items-center justify-between bg-[#1A1B21]/80 p-2 rounded-lg">
@@ -273,6 +276,8 @@ export function RaceTimer() {
                 </div>
                 <p className="text-[#8A8B91] text-sm mb-4">
                   Next race starts on {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString()}
+                  <br />
+                  <span className="text-[#D7FF00]/80">Winners will receive their prizes within 24 hours</span>
                 </p>
                 <button
                   onClick={() => setShowCompletionOverlay(false)}
