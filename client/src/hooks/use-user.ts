@@ -10,15 +10,6 @@ type RequestResult =
       message: string;
     };
 
-const testAdmin = {
-  id: 1,
-  username: "TestAdmin",
-  email: "admin@test.com",
-  isAdmin: true,
-  createdAt: new Date().toISOString(),
-  lastLogin: new Date().toISOString()
-};
-
 async function handleRequest(
   url: string,
   method: string,
@@ -56,10 +47,11 @@ export function useUser() {
     isLoading,
   } = useQuery<SelectUser | null, Error>({
     queryKey: ["/api/user"],
-    queryFn: () => Promise.resolve(testAdmin),
-    initialData: testAdmin,
-    staleTime: Infinity,
-    cacheTime: Infinity,
+    queryFn: async () => {
+      const response = await fetch('/api/user', { credentials: 'include' });
+      if (!response.ok) throw new Error('Not authenticated');
+      return response.json();
+    },
   });
 
   const loginMutation = useMutation<RequestResult, Error, InsertUser>({
