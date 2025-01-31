@@ -92,7 +92,7 @@ export default function AuthModal() {
 
       const username = values.username?.trim();
       const password = values.password?.trim();
-      
+
       if (!username || !password) {
         toast({
           variant: "destructive",
@@ -103,40 +103,50 @@ export default function AuthModal() {
       }
 
       setIsLoading(true);
-      const isLogin = mode === "login";
-      const result = await (isLogin ? login({
-        username: values.username,
-        password: values.password
-      }) : register(values));
+      try {
+        const result = await (mode === "login" ? login({
+          username: values.username,
+          password: values.password
+        }) : register(values));
 
-      if (!result.ok) {
-        // Handle validation errors
-        if (result.errors) {
-          const errorMessages = Object.entries(result.errors)
-            .map(([field, msg]) => `${field}: ${msg}`)
-            .join('\n');
-          
-          toast({
-            variant: "destructive",
-            title: isLogin ? "Login Failed" : "Registration Failed",
-            description: errorMessages || result.message || "Validation failed",
-          });
-        } else {
-          toast({
-            variant: "destructive",
-            title: isLogin ? "Login Failed" : "Registration Failed",
-            description: result.message || "An error occurred. Please try again.",
-          });
+        if (!result.ok) {
+          // Handle validation errors
+          if (result.errors) {
+            const errorMessages = Object.entries(result.errors)
+              .map(([field, msg]) => `${field}: ${msg}`)
+              .join('\n');
+
+            toast({
+              variant: "destructive",
+              title: mode === "login" ? "Login Failed" : "Registration Failed",
+              description: errorMessages || result.message || "Validation failed",
+            });
+          } else {
+            toast({
+              variant: "destructive",
+              title: mode === "login" ? "Login Failed" : "Registration Failed",
+              description: result.message || "An error occurred. Please try again.",
+            });
+          }
+          return;
         }
-        return;
+
+        toast({
+          title: "Success",
+          description: mode === "login" ? "Welcome back!" : "Account created successfully!",
+        });
+
+        setIsOpen(false);
+      } catch (error: any) {
+        const errorMessage = error?.response?.data?.message || error.message || "An unexpected error occurred";
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: errorMessage,
+        });
+      } finally {
+        setIsLoading(false);
       }
-
-      toast({
-        title: "Success",
-        description: isLogin ? "Welcome back!" : "Account created successfully!",
-      });
-
-      setIsOpen(false);
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || error.message || "An unexpected error occurred";
       toast({

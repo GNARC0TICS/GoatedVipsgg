@@ -278,13 +278,18 @@ export function setupAuth(app: Express) {
       "local",
       (err: any, user: Express.User | false, info: IVerifyOptions) => {
         if (err) {
-          return next(err);
+          return res.status(500).json({
+            ok: false,
+            status: "error",
+            message: "Internal server error",
+          });
         }
 
         if (!user) {
-          return res.status(400).json({
+          return res.status(401).json({
+            ok: false,
             status: "error",
-            message: info.message ?? "Login failed",
+            message: info.message ?? "Invalid credentials",
           });
         }
 
