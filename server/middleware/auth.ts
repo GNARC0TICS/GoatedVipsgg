@@ -19,12 +19,16 @@ export const requireAuth = async (
   next: NextFunction,
 ) => {
   try {
+    // Check for session token in cookie first
+    const sessionToken = req.cookies?.token;
+    // Fallback to Bearer token if no session
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Missing authentication token" });
+    const token = sessionToken || (authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null);
+
+    if (!token) {
+      return res.status(401).json({ message: "Authentication required" });
     }
 
-    const token = authHeader.split(" ")[1];
     const decoded = verifyToken(token);
 
     // Get user from database
