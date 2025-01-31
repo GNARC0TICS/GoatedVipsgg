@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import { queryClient } from "@/lib/queryClient";
 import {
   Table,
   TableBody,
@@ -345,67 +346,7 @@ export default function WagerRaces() {
               </motion.div>
 
 
-              {/* Race Completion Overlay */}
-              <AnimatePresence>
-                {showCompletedRace && previousRace && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center"
-                  >
-                    <motion.div
-                      initial={{ scale: 0.9, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      className="bg-[#1A1B21] p-8 rounded-xl border border-[#D7FF00] max-w-2xl w-full mx-4"
-                    >
-                      <h2 className="text-4xl font-heading text-[#D7FF00] text-center mb-8">
-                        Monthly Race Complete!
-                      </h2>
-                      <div className="space-y-6">
-                        {previousRace?.participants?.map((winner: any, index: number) => (
-                          <div
-                            key={winner.uid}
-                            className="flex items-center justify-between bg-black/20 p-4 rounded-lg"
-                          >
-                            <div className="flex items-center gap-4">
-                              {getTrophyIcon(index + 1)}
-                              <div>
-                                <p className="font-bold text-lg">{winner.name}</p>
-                                <p className="text-sm text-gray-400">
-                                  Wagered: ${winner.wagered.toLocaleString()}
-                                </p>
-                              </div>
-                            </div>
-                            <p className="text-[#D7FF00] font-bold">
-                              ${winner.prize}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-8 text-center">
-                        <p className="text-gray-400 mb-2">
-                          Next race starts: {new Date(previousRace.nextRaceStart).toLocaleDateString()}
-                        </p>
-                        <p className="text-sm text-[#D7FF00]/80 mb-4 bg-[#D7FF00]/10 p-3 rounded-lg">
-                          Winners will receive their prizes directly to their Goated account within 24 hours of race completion.
-                        </p>
-                        <Button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setShowCompletedRace(false);
-                            // Clear the previous race data from query cache
-                            queryClient.setQueryData(["/api/wager-races/previous"], null);
-                          }}
-                          className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
-                        >
-                          Close
-                        </Button>
-                      </div>
-                    </motion.div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              
 
               {/* 3rd Place */}
               <motion.div
