@@ -179,19 +179,48 @@ export default function WagerRaces() {
                   </h2>
                 </motion.div>
 
-                <div className="flex justify-center gap-6 mt-8">
-                  <div className="bg-[#1A1B21]/80 backdrop-blur-sm px-6 py-4 rounded-lg">
-                    <div className="text-4xl font-bold text-[#D7FF00]">
-                      <CountdownTimer
-                        endDate={new Date(
-                          new Date().getFullYear(),
-                          new Date().getMonth() + 1,
-                          0,
-                        ).toISOString()}
-                        large={true}
-                      />
+                <div className="flex flex-col items-center gap-6 mt-8">
+                  {/* Race Status */}
+                  {showCompletedRace ? (
+                    <div className="bg-[#D7FF00]/10 text-[#D7FF00] px-6 py-2 rounded-full border border-[#D7FF00] backdrop-blur-sm">
+                      Race Completed
                     </div>
-                  </div>
+                  ) : leaderboardData?.status === 'transition' ? (
+                    <div className="bg-orange-500/10 text-orange-500 px-6 py-2 rounded-full border border-orange-500 backdrop-blur-sm">
+                      In Transition Period
+                    </div>
+                  ) : (
+                    <div className="bg-[#1A1B21]/80 backdrop-blur-sm px-6 py-4 rounded-lg">
+                      <div className="text-4xl font-bold text-[#D7FF00]">
+                        <CountdownTimer
+                          endDate={new Date(
+                            new Date().getFullYear(),
+                            new Date().getMonth() + 1,
+                            0,
+                          ).toISOString()}
+                          large={true}
+                          onComplete={() => setShowCompletedRace(true)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Next Race Countdown */}
+                  {(showCompletedRace || leaderboardData?.status === 'transition') && (
+                    <div className="text-center">
+                      <div className="text-[#8A8B91] mb-2">Next Race Starts In</div>
+                      <div className="bg-[#1A1B21]/80 backdrop-blur-sm px-6 py-4 rounded-lg">
+                        <CountdownTimer
+                          endDate={new Date(
+                            new Date().getFullYear(),
+                            new Date().getMonth() + 1,
+                            1,
+                          ).toISOString()}
+                          large={true}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
