@@ -300,7 +300,178 @@ function setupRESTRoutes(app: Express) {
   app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);
   app.get("/api/affiliate/stats", handleAffiliateStats);
 
-// Bonus code management routes
+  // Support system endpoints
+  app.get("/api/support/messages", requireAuth, async (req, res) => {
+    try {
+      const messages = await db.query.ticketMessages.findMany({
+        orderBy: (messages, { desc }) => [desc(messages.createdAt)],
+        with: {
+          user: {
+            columns: {
+              username: true,
+              isAdmin: true
+            }
+          }
+        }
+      });
+
+      res.json({
+        status: "success",
+        data: messages
+      });
+    } catch (error) {
+      log(`Error fetching support messages: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch support messages"
+      });
+    }
+  });
+
+  app.get("/api/support/tickets", requireAuth, async (req, res) => {
+    try {
+      const tickets = await db.query.supportTickets.findMany({
+        orderBy: (tickets, { desc }) => [desc(tickets.createdAt)],
+        with: {
+          user: {
+            columns: {
+              username: true
+            }
+          },
+          messages: true
+        }
+      });
+
+      res.json({
+        status: "success",
+        data: tickets
+      });
+    } catch (error) {
+      log(`Error fetching support tickets: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch support tickets"
+      });
+    }
+  });
+
+  app.post("/api/support/tickets", requireAuth, async (req, res) => {
+    try {
+      const [ticket] = await db.insert(supportTickets)
+        .values({
+          userId: req.user!.id,
+          subject: req.body.subject,
+          description: req.body.description,
+          status: 'open',
+          priority: req.body.priority || 'medium',
+          createdAt: new Date()
+        })
+        .returning();
+
+      // Create initial message
+      await db.insert(ticketMessages)
+        .values({
+          ticketId: ticket.id,
+          userId: req.user!.id,
+          message: req.body.description,
+          createdAt: new Date(),
+          isStaffReply: false
+        });
+
+      res.json({
+        status: "success",
+        data: ticket
+      });
+    } catch (error) {
+      log(`Error creating support ticket: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to create support ticket"
+      });
+    }
+  });
+
+  app.post("/api/support/reply", requireAuth, async (req, res) => {
+    try {
+      const { ticketId, message } = req.body;
+      
+      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        return res.status(400).json({
+          status: "error",
+          message: "Message is required"
+        });
+      }
+
+      const [savedMessage] = await db
+        .insert(ticketMessages)
+        .values({
+          ticketId,
+          message: message.trim(),
+          userId: req.user!.id,
+          isStaffReply: req.user!.isAdmin,
+          createdAt: new Date()
+        })
+        .returning();
+
+      // Update ticket status if admin replied
+      if (req.user!.isAdmin) {
+        await db
+          .update(supportTickets)
+          .set({ status: 'in_progress' })
+          .where(eq(supportTickets.id, ticketId));
+      }
+
+      // Broadcast message to WebSocket clients
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'NEW_MESSAGE',
+            data: savedMessage
+          }));
+        }
+      });
+
+      res.json({
+        status: "success",
+        data: savedMessage
+      });
+    } catch (error) {
+      log(`Error saving support reply: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to save reply"
+      });
+    }
+  });
+
+  app.patch("/api/support/tickets/:id", requireAdmin, async (req, res) => {
+    try {
+      const { status, priority, assignedTo } = req.body;
+      const [updatedTicket] = await db
+        .update(supportTickets)
+        .set({
+          status,
+          priority,
+          assignedTo,
+          updatedAt: new Date()
+        })
+        .where(eq(supportTickets.id, parseInt(req.params.id)))
+        .returning();
+
+      res.json({
+        status: "success",
+        data: updatedTicket
+      });
+    } catch (error) {
+      log(`Error updating support ticket: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to update support ticket"
+      });
+    }
+  });
+
+  // Bonus code management routes
 app.get("/api/admin/bonus-codes", requireAdmin, async (_req, res) => {
   try {
     const codes = await db.query.bonusCodes.findMany({
@@ -679,6 +850,14 @@ const chatMessageSchema = z.object({
 
 async function handleChatConnection(ws: WebSocket) {
   log("Chat WebSocket client connected");
+  let pingInterval: NodeJS.Timeout;
+
+  // Setup ping interval
+  pingInterval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.ping();
+    }
+  }, 30000);
 
   ws.on("message", async (data) => {
     try {
@@ -735,6 +914,13 @@ async function handleChatConnection(ws: WebSocket) {
 
   ws.on("close", () => {
     log("Chat WebSocket client disconnected");
+    clearInterval(pingInterval);
+  });
+
+  ws.on("error", (error) => {
+    log(`WebSocket error: ${error}`);
+    clearInterval(pingInterval);
+    ws.terminate();
   });
 
   // Send welcome message
