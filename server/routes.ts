@@ -28,7 +28,7 @@ function sortByWagered(data: any[], period: string) {
   );
 }
 
-const transformMVPData = (mvpData: any) => {
+function transformMVPData(mvpData: any) {
   return Object.entries(mvpData).reduce((acc: Record<string, any>, [period, data]: [string, any]) => {
     if (data) {
       // Calculate if there was a wager change
@@ -43,7 +43,7 @@ const transformMVPData = (mvpData: any) => {
     }
     return acc;
   }, {});
-};
+}
 
 function handleLeaderboardConnection(ws: WebSocket): void {
   log("Leaderboard WebSocket client connected");
