@@ -1,4 +1,3 @@
-
 import {
   Card,
   CardContent,
@@ -23,17 +22,13 @@ import { insertUserSchema } from "@db/schema";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { z } from "zod";
-
-// Define the form schema type
-type FormValues = z.infer<typeof insertUserSchema>;
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const { login, register } = useUser();
   const { toast } = useToast();
 
-  const form = useForm<FormValues>({
+  const form = useForm({
     resolver: zodResolver(insertUserSchema),
     defaultValues: {
       username: "",
@@ -41,7 +36,7 @@ export default function AuthPage() {
     },
   });
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: any) => {
     try {
       const result = await (isLogin ? login(values) : register(values));
       if (!result.ok) {
@@ -51,11 +46,11 @@ export default function AuthPage() {
           description: result.message,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: error.message,
       });
     }
   };

@@ -9,14 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Info } from "lucide-react";
 
-interface VipLevel {
-  wagered: string;
-  requirement: string;
-  bonus: string;
-  level: string;
-}
-
-const vipLevels: VipLevel[] = [
+const vipLevels = [
   { wagered: "100,000", requirement: "10,000", bonus: "55", level: "Gold 1" },
   {
     wagered: "450,000",
@@ -69,11 +62,11 @@ export default function VipTransfer() {
         <div className="prose prose-invert max-w-none mb-12">
           <p className="text-lg leading-relaxed font-sans">
             Are you a high roller on a competing crypto casino platform? If
-            you&apos;re on a higher VIP level elsewhere, Goated.com offers an
+            you're on a higher VIP level elsewhere, Goated.com offers an
             exciting opportunity for you to transfer your VIP status and enjoy
-            great rewards! The &quot;VIP Transfer&quot; promotion is designed to help
+            great rewards! The "VIP Transfer" promotion is designed to help
             loyal players maximize their gaming experience by seamlessly
-            transitioning to Goated&apos;s exclusive VIP program.
+            transitioning to Goated's exclusive VIP program.
           </p>
         </div>
 
@@ -83,7 +76,7 @@ export default function VipTransfer() {
 
         <div className="prose prose-invert max-w-none mb-12">
           <p className="text-lg leading-relaxed font-sans">
-            If you&apos;re eligible for the VIP Transfer promotion, you&apos;ll need to
+            If you're eligible for the VIP Transfer promotion, you'll need to
             meet certain wagering requirements at Goated.com within the first 30
             days to qualify. The amount you wager on competing platforms
             determines the Goated VIP level you could unlock and the potential
@@ -111,12 +104,12 @@ export default function VipTransfer() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vipLevels.map((level) => (
+              {vipLevels.map((level, index) => (
                 <motion.tr
                   key={level.level}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
+                  transition={{ delay: index * 0.1 }}
                   className="bg-[#1A1B21]/50 backdrop-blur-sm"
                 >
                   <TableCell className="font-sans">${level.wagered}</TableCell>
@@ -136,11 +129,11 @@ export default function VipTransfer() {
             <Info className="w-5 h-5 text-[#D7FF00] mt-1" />
             <div>
               <p className="text-sm text-gray-400">
-                The cash bonus is calculated using the formula: &quot;Cash Bonus =
-                wager × (gameEdge / 0.04) × 0.015&quot;
+                The cash bonus is calculated using the formula: "Cash Bonus =
+                wager × (gameEdge / 0.04) × 0.015"
               </p>
               <p className="text-xs text-gray-500 mt-2">
-                Note: These cash bonus amounts assume you&apos;re playing games with
+                Note: These cash bonus amounts assume you're playing games with
                 a 1.5% house edge. Your actual bonus may vary depending on the
                 games you choose.
               </p>

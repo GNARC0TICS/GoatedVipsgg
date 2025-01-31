@@ -9,7 +9,6 @@ import { users, insertUserSchema, type SelectUser } from "@db/schema";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
 import express from 'express';
-import { rateLimiter } from "./routes";
 
 const scryptAsync = promisify(scrypt);
 
@@ -142,9 +141,9 @@ export function setupAuth(app: Express) {
       }
 
       // Rate limiting check
-      try {
-        await rateLimiter.consume(req.ip || "unknown");
-      } catch (error) {
+      const ipAddress = req.ip;
+      const registrationAttempts = await rateLimiter.get(ipAddress);
+      if (registrationAttempts > 5) {
         return res.status(429).json({
           status: "error",
           message: "Too many registration attempts. Please try again later.",

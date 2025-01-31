@@ -1,0 +1,27 @@
+The above error occurred in the <LeaderboardTable> component:
+
+LeaderboardTable@https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/src/components/LeaderboardTable.tsx:29:47
+div
+div
+MotionComponent@https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js:6536:40
+main
+div
+Home
+Route@https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js:323:14
+Switch@https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js:380:27
+ErrorBoundary@https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-error-boundary.js:18:10
+PresenceChild@https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js:7742:41
+AnimatePresence@https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js:7800:34
+main
+div
+Layout@https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/src/components/Layout.tsx:37:5
+Router
+TooltipProviderProvider@https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LSQNWB54.js:38:13
+TooltipProvider@https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js:901:43
+Suspense
+AuthProvider@https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/src/lib/auth.tsx:23:5
+ErrorBoundary@https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-error-boundary.js:18:10
+QueryClientProvider@https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js:2805:9
+App
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.

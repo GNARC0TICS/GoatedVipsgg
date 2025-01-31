@@ -16,9 +16,9 @@ import { historicalRaces } from "@db/schema";
 let wss: WebSocketServer;
 
 // Rate limiting setup
-export const rateLimiter = new RateLimiterMemory({
-  points: 60, // Number of points
-  duration: 60, // Per 60 seconds
+const rateLimiter = new RateLimiterMemory({
+  points: 60,
+  duration: 1,
 });
 
 // Helper functions
@@ -28,33 +28,10 @@ function sortByWagered(data: any[], period: string) {
   );
 }
 
-// Type definitions for MVP data
-interface MVPStats {
-  winRate?: number;
-  favoriteGame?: string;
-  totalGames?: number;
-}
-
-interface MVPWagered {
-  today?: number;
-  this_week?: number;
-  this_month?: number;
-  previous?: number;
-}
-
-interface MVPData {
-  name?: string;
-  wagered: MVPWagered;
-  stats?: MVPStats;
-}
-
-type MVPPeriod = 'daily' | 'weekly' | 'monthly';
-type MVPDataMap = Record<MVPPeriod, MVPData>;
-
-const transformMVPData = (mvpData: MVPDataMap): Record<string, any> => {
+const transformMVPData = (mvpData: any): Record<string, any> => {
   return Object.entries(mvpData).reduce((acc: Record<string, any>, [period, data]) => {
     if (data) {
-      const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'] || 0;
+      const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'];
       const previousWager = data.wagered?.previous || 0;
       const hasIncrease = currentWager > previousWager;
 
@@ -173,7 +150,14 @@ function setupRESTRoutes(app: Express) {
 
         if (!existingEntry && stats.data.monthly.data.length > 0) {
           // Store the previous month's results
-          await archiveMonthlyRace(stats, previousMonth, previousYear);
+          await db.insert(historicalRaces).values({
+            month: previousMonth,
+            year: previousYear,
+            prizePool: 200, // Fixed prize pool amount
+            startDate: new Date(previousYear, previousMonth - 1, 1),
+            endDate: new Date(previousYear, previousMonth, 0, 23, 59, 59),
+            participants: stats.data.monthly.data.slice(0, 10), // Store top 10
+          });
         }
       }
 
@@ -182,7 +166,7 @@ function setupRESTRoutes(app: Express) {
         status: 'live',
         startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
         endDate: endOfMonth.toISOString(),
-        prizePool: "200.00", // Updated prize pool to $200
+        prizePool: 200, // Updated prize pool to $200
         participants: stats.data.monthly.data.map((participant: any, index: number) => ({
           uid: participant.uid,
           name: participant.name,
@@ -322,6 +306,8 @@ async function handleProfileRequest(req: any, res: any) {
   }
 }
 
+// Admin stats endpoint (This was already present in the edited snippet but is included here for completeness)
+
 
 async function handleAdminLogin(req: any, res: any) {
   try {
@@ -375,27 +361,6 @@ async function handleAdminLogin(req: any, res: any) {
     res.status(500).json({
       status: "error",
       message: "Failed to process admin login",
-    });
-  }
-}
-
-async function handleVerifyUser(req: any, res: any) {
-  try {
-    const { userId } = req.params;
-    const [updatedUser] = await db
-      .update(users)
-      .set({ isVerified: true })
-      .where(eq(users.id, parseInt(userId)))
-      .returning();
-    
-    res.json({
-      status: "success",
-      data: updatedUser
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: "Failed to verify user"
     });
   }
 }
@@ -475,47 +440,6 @@ async function handleCreateWagerRace(req: any, res: any) {
     });
   }
 }
-
-async function handleAffiliateStats(_req: any, res: any) {
-  try {
-    const mockData = {
-      status: "success",
-      metadata: {
-        totalUsers: 100,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: {
-          data: [
-            {
-              uid: "user1",
-              name: "Player 1",
-              wagered: {
-                today: 1000,
-                this_week: 5000,
-                this_month: 20000,
-                all_time: 100000
-              }
-            }
-            // Add more mock data as needed
-          ]
-        },
-        weekly: { data: [] },
-        monthly: { data: [] },
-        all_time: { data: [] }
-      }
-    };
-
-    res.json(mockData);
-  } catch (error) {
-    console.error("Error in /api/affiliate/stats:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to fetch affiliate stats"
-    });
-  }
-}
-
 
 function setupWebSocket(httpServer: Server) {
   wss = new WebSocketServer({ noServer: true });
@@ -696,14 +620,46 @@ function transformLeaderboardData(apiData: any) {
   };
 }
 
-const archiveMonthlyRace = async (stats: any, previousMonth: number, previousYear: number) => {
-  await db.insert(historicalRaces).values({
-    month: previousMonth,
-    year: previousYear,
-    prizePool: "200.00", // Changed to string for decimal type
-    startDate: new Date(previousYear, previousMonth - 1, 1),
-    endDate: new Date(previousYear, previousMonth, 0, 23, 59, 59),
-    participants: JSON.stringify(stats.data.monthly.data.slice(0, 10)), // Convert to JSON string
-    createdAt: new Date()
-  });
-};
+async function handleAffiliateStats(req: any, res: any) {
+  try {
+    await rateLimiter.consume(req.ip || "unknown");
+    const response = await fetch(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        log("API Authentication failed - check API token");
+        throw new Error("API Authentication failed");
+      }
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const apiData = await response.json();
+    const transformedData = transformLeaderboardData(apiData);
+
+    res.json(transformedData);
+  } catch (error) {
+    log(`Error in /api/affiliate/stats: ${error}`);
+    // Return empty data structure to prevent UI breaking
+    res.json({
+      status: "success",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    });
+  }
+}

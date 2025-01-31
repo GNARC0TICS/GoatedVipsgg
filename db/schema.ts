@@ -17,9 +17,6 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   email: text("email").unique().notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
-  isVerified: boolean("is_verified").default(false).notNull(),
-  verificationNotes: text("verification_notes"),
-  telegramUsername: text("telegram_username"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastLogin: timestamp("last_login"),
 });

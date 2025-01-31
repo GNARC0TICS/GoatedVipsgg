@@ -1,0 +1,81 @@
+
+Here’s a comprehensive prompt summarizing everything you need Replit Agent to do for your project:
+
+Project Name
+Goated.com Casino Affiliate Dashboard
+
+Project Overview
+The project is a partially built and deployed web application designed to host challenges and giveaways for Goated.com affiliates. It currently fetches data from Goated.com's API to display leaderboards (e.g., weekly, monthly, all-time wager amounts) and includes a monthly wager race page. The site also has a login system but is incomplete, as users are encountering an "Internal Server Error" during registration. The project requires additional backend and frontend features to create a fully functional admin panel, resolve existing issues, and enhance usability.
+
+Tasks for Replit Agent
+1. Fix the User Registration Issue
+
+Problem: Users are encountering a 500 Internal Server Error when attempting to register.
+Required Actions:
+Investigate the root cause of the error by reviewing backend logs.
+Fix any issues related to database interaction, input validation, or missing environment variables.
+Implement proper error handling for user registration to provide meaningful error messages to users (e.g., "Email already exists" or "Required fields are missing").
+Test the registration process thoroughly to ensure reliability.
+2. Build an Admin Panel
+
+The admin panel will provide backend management tools for admins to monitor and manage the platform. Key features required:
+
+Wager Race Management
+Allow admins to create, edit, and delete wager races.
+Races should include details like prize pools, start and end dates, and criteria for participation.
+User Management
+Add functionality to:
+View and search user profiles.
+Edit user details (e.g., update email, username).
+Deactivate accounts.
+Reset user passwords.
+Include user activity tracking (e.g., wager amounts, participation in races).
+Support Functionality
+Create a support chat system that allows admins to respond to user queries in real time when they are online.
+Display the admin’s online/offline status for users.
+Notifications Management
+Add the ability for admins to create notifications and push them to the website’s notification dropdown menu.
+Notifications should include a title, description, and timestamp.
+Bulk Email System
+Integrate an email service (e.g., SendGrid or AWS SES) to send bulk emails to all registered users or specific user segments.
+Provide a simple interface in the admin panel for composing and sending emails.
+Role-Based Access Control
+Implement role-based permissions for the admin panel (e.g., super admin, moderators, support agents).
+Admin Activity Logging
+Log all admin actions (e.g., user edits, race modifications, notifications sent) in the backend for transparency and auditing purposes.
+3. Improve User-Facing Features
+
+Login System
+Fix the login process, ensuring it properly handles authentication errors and provides user-friendly error messages (e.g., incorrect password).
+Add session timeout handling and a "remember me" option.
+Notifications Dropdown
+Ensure that users can see admin-created notifications in a dropdown menu on the website.
+Notifications should display the title, description, and timestamp.
+Registration Error Feedback
+Ensure users see appropriate error messages when their registration fails (e.g., "Email already in use" or "Password too short").
+4. General Enhancements and Security
+
+Error Logging and Monitoring
+Set up error logging (e.g., using a service like Sentry) for both the frontend and backend to track and fix issues quickly.
+Database Validation
+Add constraints and validation rules to the database to ensure data integrity (e.g., unique email addresses).
+Performance Optimization
+Optimize API calls to Goated.com to reduce latency and improve responsiveness on leaderboard and race pages.
+Security Best Practices
+Sanitize user inputs to prevent SQL injection and XSS attacks.
+Encrypt sensitive user data (e.g., passwords) and use secure authentication methods (e.g., JWT).
+Secure the admin panel with role-based access controls and additional authentication steps (e.g., 2FA for admins).
+5. Testing and Deployment
+
+Testing
+Conduct end-to-end testing of all implemented features (e.g., registration, login, admin panel functionality).
+Write unit tests for critical backend functions to ensure stability.
+Deployment
+Deploy the updates to the live server, ensuring minimal downtime.
+Verify that the updates work correctly in the live environment.
+Language Preferences
+Replit Agent Interaction: English
+Website Interface: English
+Additional Notes
+The website is already deployed and partially functional. The focus is on completing the remaining backend and frontend features while ensuring the platform is stable and user-friendly.
+Emphasis should be placed on error handling, logging, and security to prevent future issues.

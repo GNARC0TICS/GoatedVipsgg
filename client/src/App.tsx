@@ -2,7 +2,7 @@ import React, { Suspense, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PreLoader } from "@/components/PreLoader";
 import { Switch, Route } from "wouter";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,7 +23,7 @@ import { Layout } from "@/components/Layout";
 import { PageTransition } from "@/components/PageTransition";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useUser } from "@/hooks/use-user";
-import Help from "@/pages/Help";
+import Help from "./pages/Help";
 import UserProfile from "@/pages/UserProfile";
 import { Redirect } from "@/lib/navigation";
 import Telegram from "@/pages/Telegram";
@@ -31,13 +31,9 @@ import HowItWorks from "@/pages/HowItWorks";
 import GoatedToken from "@/pages/GoatedToken";
 import Support from "@/pages/support";
 import FAQ from "@/pages/faq";
-import VipProgram from "@/pages/VipProgram";
+import VipProgram from "./pages/VipProgram";
 import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
-
-interface UserProfileProps {
-  id: string;
-}
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -106,7 +102,7 @@ function Router() {
             <Route path="/user/:id">
               {(params) => (
                 <PageTransition>
-                  <UserProfile id={params.id} key={params.id} />
+                  <UserProfile userId={params.id} />
                 </PageTransition>
               )}
             </Route>
@@ -138,7 +134,8 @@ function App() {
 
 function AppContent() {
   const [isInitialLoad, setIsInitialLoad] = useState(() => {
-    return !sessionStorage.getItem("hasVisited");
+    // Only show preloader on first visit of the session
+    return !sessionStorage.getItem('hasVisited');
   });
 
   const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery({
@@ -155,7 +152,7 @@ function AppContent() {
     if (!isInitialLoad) return;
 
     if (!leaderboardLoading && !mvpLoading && leaderboardData && mvpData) {
-      sessionStorage.setItem("hasVisited", "true");
+      sessionStorage.setItem('hasVisited', 'true');
       setIsInitialLoad(false);
     }
   }, [leaderboardLoading, mvpLoading, leaderboardData, mvpData, isInitialLoad]);

@@ -38,12 +38,6 @@ export const requireAuth = async (
       return res.status(401).json({ message: "User not found" });
     }
 
-    if (!user.isVerified && !user.isAdmin) {
-      return res.status(403).json({ 
-        message: "Account pending verification. Please contact admin via Telegram." 
-      });
-    }
-
     req.user = user;
     next();
   } catch (error) {

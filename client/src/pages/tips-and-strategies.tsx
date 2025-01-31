@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, Star, ThumbsUp, Search } from "lucide-react";
+import { ArrowLeft, Star, ThumbsUp, Filter, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,17 +13,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 
-interface Strategy {
-  id: number;
-  title: string;
-  author: string;
-  category: string;
-  description: string;
-  votes: number;
-  isPinned: boolean;
-}
-
-const FEATURED_STRATEGIES: Strategy[] = [
+// Temporary data structure for featured strategies
+const FEATURED_STRATEGIES = [
   {
     id: 1,
     title: "Bankroll Management 101",
@@ -44,7 +35,8 @@ const FEATURED_STRATEGIES: Strategy[] = [
   },
 ];
 
-const COMMUNITY_STRATEGIES: Strategy[] = [
+// Temporary data structure for community strategies
+const COMMUNITY_STRATEGIES = [
   {
     id: 3,
     title: "My Journey to Diamond VIP",
@@ -54,56 +46,8 @@ const COMMUNITY_STRATEGIES: Strategy[] = [
     votes: 156,
     isPinned: false,
   },
+  // Add more community strategies here
 ];
-
-interface StrategyCardProps {
-  strategy: Strategy;
-}
-
-function FeaturedStrategyCard({ strategy }: StrategyCardProps) {
-  return (
-    <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31] relative overflow-hidden">
-      <CardContent className="p-6">
-        <div className="absolute top-4 right-4">
-          <Star className="h-5 w-5 text-[#D7FF00] fill-current" />
-        </div>
-        <Badge className="bg-[#D7FF00] text-[#14151A] mb-4">
-          {strategy.category}
-        </Badge>
-        <h3 className="text-xl font-heading text-white mb-2">{strategy.title}</h3>
-        <p className="text-[#8A8B91] mb-4">{strategy.description}</p>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-[#8A8B91]">By {strategy.author}</span>
-          <div className="flex items-center gap-2">
-            <ThumbsUp className="h-4 w-4 text-[#D7FF00]" />
-            <span className="text-sm text-[#8A8B91]">{strategy.votes}</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function StrategyCard({ strategy }: StrategyCardProps) {
-  return (
-    <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
-      <CardContent className="p-6">
-        <Badge className="bg-[#2A2B31] text-white mb-4">
-          {strategy.category}
-        </Badge>
-        <h3 className="text-xl font-heading text-white mb-2">{strategy.title}</h3>
-        <p className="text-[#8A8B91] mb-4">{strategy.description}</p>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-[#8A8B91]">By {strategy.author}</span>
-          <div className="flex items-center gap-2">
-            <ThumbsUp className="h-4 w-4 text-[#8A8B91]" />
-            <span className="text-sm text-[#8A8B91]">{strategy.votes}</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 export default function TipsAndStrategies() {
   const [, setLocation] = useLocation();
@@ -116,6 +60,7 @@ export default function TipsAndStrategies() {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-8"
         >
+          {/* Header */}
           <div className="mb-4">
             <video
               autoPlay
@@ -137,6 +82,7 @@ export default function TipsAndStrategies() {
           </Button>
 
           <div className="prose prose-invert max-w-none">
+            {/* Search and Filter Section */}
             <div className="flex flex-col md:flex-row gap-4 mb-8">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8A8B91]" />
@@ -159,10 +105,9 @@ export default function TipsAndStrategies() {
               </Select>
             </div>
 
+            {/* Featured Strategies */}
             <section className="mb-12">
-              <h2 className="text-2xl font-heading text-white mb-6">
-                Featured Strategies
-              </h2>
+              <h2 className="text-2xl font-heading text-white mb-6">Featured Strategies</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {FEATURED_STRATEGIES.map((strategy) => (
                   <FeaturedStrategyCard key={strategy.id} strategy={strategy} />
@@ -170,11 +115,10 @@ export default function TipsAndStrategies() {
               </div>
             </section>
 
+            {/* Community Strategies */}
             <section>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-heading text-white">
-                  Community Strategies
-                </h2>
+                <h2 className="text-2xl font-heading text-white">Community Strategies</h2>
                 <Button className="bg-[#D7FF00] text-[#14151A] hover:bg-[#D7FF00]/90">
                   Share Your Strategy
                 </Button>
@@ -186,6 +130,7 @@ export default function TipsAndStrategies() {
               </div>
             </section>
 
+            {/* Add Strategy Section */}
             <section className="mt-12">
               <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
                 <CardContent className="p-6">
@@ -206,5 +151,46 @@ export default function TipsAndStrategies() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+function FeaturedStrategyCard({ strategy }: { strategy: any }) {
+  return (
+    <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31] relative overflow-hidden">
+      <CardContent className="p-6">
+        <div className="absolute top-4 right-4">
+          <Star className="h-5 w-5 text-[#D7FF00] fill-current" />
+        </div>
+        <Badge className="bg-[#D7FF00] text-[#14151A] mb-4">{strategy.category}</Badge>
+        <h3 className="text-xl font-heading text-white mb-2">{strategy.title}</h3>
+        <p className="text-[#8A8B91] mb-4">{strategy.description}</p>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-[#8A8B91]">By {strategy.author}</span>
+          <div className="flex items-center gap-2">
+            <ThumbsUp className="h-4 w-4 text-[#D7FF00]" />
+            <span className="text-sm text-[#8A8B91]">{strategy.votes}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function StrategyCard({ strategy }: { strategy: any }) {
+  return (
+    <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
+      <CardContent className="p-6">
+        <Badge className="bg-[#2A2B31] text-white mb-4">{strategy.category}</Badge>
+        <h3 className="text-xl font-heading text-white mb-2">{strategy.title}</h3>
+        <p className="text-[#8A8B91] mb-4">{strategy.description}</p>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-[#8A8B91]">By {strategy.author}</span>
+          <div className="flex items-center gap-2">
+            <ThumbsUp className="h-4 w-4 text-[#8A8B91]" />
+            <span className="text-sm text-[#8A8B91]">{strategy.votes}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

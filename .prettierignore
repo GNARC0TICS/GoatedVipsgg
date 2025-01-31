@@ -8,12 +8,3 @@
 .git
 replit.nix
 .replit
-dist
-build
-coverage
-*.generated.*
-*.min.*
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-.env*
