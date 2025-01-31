@@ -383,6 +383,56 @@ app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
       });
     }
   });
+
+  app.get("/api/admin/analytics", requireAdmin, async (_req, res) => {
+    try {
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const rawData = await response.json();
+      const data = rawData.data || rawData.results || rawData;
+
+      // Calculate totals
+      const totals = data.reduce((acc: any, entry: any) => {
+        acc.dailyTotal += entry.wagered?.today || 0;
+        acc.weeklyTotal += entry.wagered?.this_week || 0;
+        acc.monthlyTotal += entry.wagered?.this_month || 0;
+        acc.allTimeTotal += entry.wagered?.all_time || 0;
+        return acc;
+      }, {
+        dailyTotal: 0,
+        weeklyTotal: 0,
+        monthlyTotal: 0,
+        allTimeTotal: 0
+      });
+
+      const [userCount, raceCount] = await Promise.all([
+        db.select({ count: sql`count(*)` }).from(users),
+        db.select({ count: sql`count(*)` }).from(wagerRaces).where(eq(wagerRaces.status, 'live')),
+      ]);
+
+      const stats = {
+        totalUsers: userCount[0].count,
+        activeRaces: raceCount[0].count,
+        wagerTotals: totals
+      };
+
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
 }
 
 // Request handlers
