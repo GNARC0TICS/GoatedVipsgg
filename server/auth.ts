@@ -247,7 +247,17 @@ export function setupAuth(app: Express) {
           message: "Username or email already exists",
         });
       }
-      next(error);
+      if (error.errors) {
+        return res.status(400).json({ 
+          ok: false,
+          message: "Validation failed",
+          errors: error.errors
+        });
+      }
+      return res.status(400).json({ 
+        ok: false,
+        message: error.message || "Invalid request",
+      });
     }
   });
 
@@ -262,7 +272,7 @@ export function setupAuth(app: Express) {
 
     // Validate credentials
     const { username, password } = req.body;
-    
+
 
     passport.authenticate(
       "local",

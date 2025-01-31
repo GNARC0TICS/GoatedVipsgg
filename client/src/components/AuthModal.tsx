@@ -110,11 +110,24 @@ export default function AuthModal() {
       }) : register(values));
 
       if (!result.ok) {
-        toast({
-          variant: "destructive",
-          title: isLogin ? "Login Failed" : "Registration Failed", 
-          description: result.message || "An error occurred. Please try again.",
-        });
+        // Handle validation errors
+        if (result.errors) {
+          const errorMessages = Object.entries(result.errors)
+            .map(([field, msg]) => `${field}: ${msg}`)
+            .join('\n');
+          
+          toast({
+            variant: "destructive",
+            title: isLogin ? "Login Failed" : "Registration Failed",
+            description: errorMessages || result.message || "Validation failed",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: isLogin ? "Login Failed" : "Registration Failed",
+            description: result.message || "An error occurred. Please try again.",
+          });
+        }
         return;
       }
 
