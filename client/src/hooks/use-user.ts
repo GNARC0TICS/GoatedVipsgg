@@ -69,17 +69,27 @@ export function useUser() {
     queryKey: ["/api/user"],
     queryFn: () => {
       // For testing - always return admin user
-      return Promise.resolve({
+      const testAdmin = {
         id: 1,
         username: "TestAdmin",
         email: "admin@test.com",
         isAdmin: true,
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString()
-      });
+      };
+      queryClient.setQueryData(["/api/user"], testAdmin);
+      return Promise.resolve(testAdmin);
     },
     staleTime: Infinity,
-    retry: false
+    retry: false,
+    initialData: {
+      id: 1,
+      username: "TestAdmin",
+      email: "admin@test.com",
+      isAdmin: true,
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString()
+    }
   });
 
   const loginMutation = useMutation<RequestResult, Error, InsertUser>({
