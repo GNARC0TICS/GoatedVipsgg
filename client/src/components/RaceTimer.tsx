@@ -15,7 +15,7 @@ interface RaceParticipant {
 
 interface RaceData {
   id: string;
-  status: 'live' | 'completed' | 'transition';
+  status: 'live';
   startDate: string;
   endDate: string;
   prizePool: number;
@@ -26,7 +26,6 @@ export function RaceTimer() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPrevious, setShowPrevious] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
-  const [showCompletionOverlay, setShowCompletionOverlay] = useState(false);
   const { toast } = useToast();
 
   // Fetch current race data
@@ -34,20 +33,6 @@ export function RaceTimer() {
     queryKey: ["/api/wager-races/current"],
     refetchInterval: 30000, // Refresh every 30 seconds
     retry: 3,
-    onSuccess: (data) => {
-      if (!data) return;
-
-      const now = new Date();
-      const endDate = new Date(data.endDate);
-      const isComplete = now > endDate || data.status === 'completed';
-
-      if (isComplete) {
-        setShowCompletionOverlay(true);
-        // Calculate next race start time
-        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        setTimeLeft(`Next Race: ${nextMonth.toLocaleDateString()}`);
-      }
-    }
   });
 
   // Fetch previous month's data
@@ -65,28 +50,12 @@ export function RaceTimer() {
     if (!currentRaceData?.endDate) return;
 
     const updateTimer = () => {
-      const now = new Date();
       const end = new Date(currentRaceData.endDate);
+      const now = new Date();
       const diff = end.getTime() - now.getTime();
 
-      // Check if we're past the end of the month or if race is marked complete
-      const isComplete = now > end || currentRaceData?.status === 'completed';
-      const isTransition = currentRaceData?.status === 'transition' || (now.getDate() === 1 && now.getHours() < 1);
-
-      // Handle race states
-      if (isComplete) {
-        setShowCompletionOverlay(true);
-      } else if (isTransition) {
-        // Show transition state
-        setShowCompletionOverlay(true);
-      } else {
-        // Reset overlay when back to normal state
-        setShowCompletionOverlay(false);
-      }
-
-      // Calculate time until next race
-      if (isComplete || isTransition) {
-        setTimeLeft('Race Complete');
+      if (diff <= 0) {
+        setTimeLeft("Race Ended");
         return;
       }
 
@@ -154,12 +123,7 @@ export function RaceTimer() {
               {!showPrevious && (
                 <>
                   <Clock className="h-4 w-4 text-[#D7FF00]" />
-                  <span className={`font-mono ${timeLeft.includes('Race Ended') ? 'text-orange-500' : 'text-white'}`}>
-                    {timeLeft}
-                  </span>
-                  {timeLeft.includes('Race Ended') && (
-                    <span className="text-sm text-[#D7FF00] ml-2">Next Race: {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString()}</span>
-                  )}
+                  <span className="text-white font-mono">{timeLeft}</span>
                 </>
               )}
             </div>
@@ -232,60 +196,6 @@ export function RaceTimer() {
                   </a>
                 </Link>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Race Completion Overlay */}
-        <AnimatePresence>
-          {(showCompletionOverlay || currentRaceData?.status === 'completed') && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/90 backdrop-blur-sm rounded-lg flex items-center justify-center"
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="p-6 text-center"
-              >
-                <h3 className="text-[#D7FF00] font-heading mb-4">
-                  Race Complete!
-                </h3>
-                {currentRaceData?.status === 'transition' && (
-                  <p className="text-orange-500 text-sm mb-4">In Transition Period</p>
-                )}
-                <div className="space-y-4 mb-4">
-                  {raceData.participants.slice(0, 3).map((winner, index) => (
-                    <div key={winner.uid} className="flex items-center justify-between bg-[#1A1B21]/80 p-2 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <span className={`
-                          w-6 h-6 flex items-center justify-center rounded-full text-sm font-medium
-                          ${index === 0 ? 'bg-yellow-500 text-black' : ''}
-                          ${index === 1 ? 'bg-gray-400 text-black' : ''}
-                          ${index === 2 ? 'bg-amber-700 text-white' : ''}
-                        `}>
-                          {index + 1}
-                        </span>
-                        <span className="text-white">{winner.name}</span>
-                      </div>
-                      <span className="text-[#D7FF00] font-mono">${winner.wagered.toLocaleString()}</span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[#8A8B91] text-sm mb-4">
-                  Next race starts on {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString()}
-                  <br />
-                  <span className="text-[#D7FF00]/80">Winners will receive their prizes within 24 hours</span>
-                </p>
-                <button
-                  onClick={() => setShowCompletionOverlay(false)}
-                  className="text-[#D7FF00] text-sm hover:underline"
-                >
-                  Close
-                </button>
-              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
