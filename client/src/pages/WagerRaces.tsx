@@ -451,7 +451,7 @@ export default function WagerRaces() {
                         ${getWagerAmount(player)?.toLocaleString()}
                       </motion.span>
                     </TableCell>
-                    <TableCell className="text-right font-sans text-[#D7FF00]">
+                    <TableCell className={`text-right font-sans text-[#D7FF00] ${showCompletedRace ? 'font-bold' : ''}`}>
                       ${getPrizeAmount(index + 1).toLocaleString()}
                     </TableCell>
                   </TableRow>
