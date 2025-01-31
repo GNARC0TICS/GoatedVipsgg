@@ -73,8 +73,19 @@ export function RaceTimer() {
       const isComplete = now > end || currentRaceData?.status === 'completed';
       const isTransition = currentRaceData?.status === 'transition' || (now.getDate() === 1 && now.getHours() < 1);
 
-      if (isComplete || isTransition) {
+      // Handle race states
+      if (isComplete) {
         setShowCompletionOverlay(true);
+      } else if (isTransition) {
+        // Show transition state
+        setShowCompletionOverlay(true);
+      } else {
+        // Reset overlay when back to normal state
+        setShowCompletionOverlay(false);
+      }
+
+      // Calculate time until next race
+      if (isComplete || isTransition) {
         setTimeLeft('Race Complete');
         return;
       }
