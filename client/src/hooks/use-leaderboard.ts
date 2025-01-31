@@ -45,7 +45,7 @@ export function useLeaderboard(
   React.useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const websocket = new WebSocket(`${protocol}//${window.location.host}/ws/leaderboard`);
-
+    
     websocket.onmessage = (event) => {
       const update = JSON.parse(event.data);
       if (update.type === "LEADERBOARD_UPDATE") {
@@ -77,7 +77,7 @@ export function useLeaderboard(
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const freshData = await response.json();
-
+      
       // Cache the new data
       sessionStorage.setItem(`leaderboard-${timePeriod}-${page}`, JSON.stringify({
         data: freshData,
