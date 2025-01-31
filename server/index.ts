@@ -15,9 +15,20 @@ const PORT = 5000;
 async function setupMiddleware() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
+
+  // CORS middleware
+  app.use((_req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    next();
+  });
+
+  // Error handling middleware
   app.use(requestLogger);
   app.use(errorHandler);
 
+  // Health check endpoint
   app.get("/api/health", (_req, res) => {
     res.json({ status: "healthy" });
   });
@@ -92,18 +103,21 @@ async function startServer() {
     await checkDatabase();
     await cleanupPort();
 
-    registerRoutes(app);
-    initializeAdmin().catch(console.error);
+    // Setup middleware before routes
+    await setupMiddleware();
 
+    // Register routes after middleware
     const server = createServer(app);
+    registerRoutes(app);
+
+    // Initialize admin after routes are set up
+    initializeAdmin().catch(console.error);
 
     if (app.get("env") === "development") {
       await setupVite(app, server);
     } else {
       serveStatic(app);
     }
-
-    await setupMiddleware();
 
     server
       .listen(PORT, "0.0.0.0")

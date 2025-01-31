@@ -106,7 +106,7 @@ function Router() {
             <Route path="/user/:id">
               {(params) => (
                 <PageTransition>
-                  <UserProfile userId={params.id} />
+                  <UserProfile userId={params.id} key={params.id} />
                 </PageTransition>
               )}
             </Route>
