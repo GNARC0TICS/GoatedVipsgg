@@ -3,8 +3,8 @@ import React, { useState, useEffect } from "react";
 
 type WageredData = {
   today: number;
-  this_week: number;
-  this_month: number;
+  weekly: number;
+  monthly: number;
   all_time: number;
 };
 
@@ -34,20 +34,22 @@ type APIResponse = {
   };
 };
 
-export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
+export type TimePeriod = keyof WageredData;
 
 export function useLeaderboard(
   timePeriod: TimePeriod = "today",
-  page: number = 0,
+  page = 0,
 ) {
   const [ws, setWs] = React.useState<WebSocket | null>(null);
 
   React.useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws/leaderboard`);
+    const websocket = new WebSocket(
+      `${protocol}//${window.location.host}/ws/leaderboard`
+    );
 
     websocket.onopen = () => {
-      console.log('WebSocket connection opened');
+      console.log("WebSocket connection opened");
     };
 
     websocket.onmessage = (event) => {
@@ -66,8 +68,7 @@ export function useLeaderboard(
     };
 
     websocket.onclose = () => {
-      console.log('WebSocket connection closed');
-      // Optionally, try to reconnect
+      console.log("WebSocket connection closed");
     };
 
     setWs(websocket);
@@ -89,25 +90,22 @@ export function useLeaderboard(
       return response.json();
     },
     refetchInterval: 30000, // Refetch every 30 seconds for live updates
-    staleTime: 30000, // Consider data fresh for 30 seconds
-    cacheTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes
+    gcTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes
   });
 
   const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
 
-  const periodKey = timePeriod; //Simplified period key selection
+  const periodKey = timePeriod;
+  const currentPeriodData = data?.data[periodKey]?.data || [];
 
-  const sortedData = data?.data[periodKey]?.data?.map((entry) => {
+  const sortedData = currentPeriodData.map((entry: LeaderboardEntry) => {
     const prevEntry = previousData.find((p) => p.uid === entry.uid);
-    const currentWager = entry.wagered[periodKey];
-    const previousWager = prevEntry ? prevEntry.wagered[periodKey] : 0;
-
     return {
       ...entry,
-      isWagering: currentWager > previousWager,
-      wagerChange: currentWager - previousWager,
+      isWagering: entry.wagered[periodKey] > (prevEntry?.wagered[periodKey] || 0),
+      wagerChange: entry.wagered[periodKey] - (prevEntry?.wagered[periodKey] || 0),
     };
-  }) || [];
+  });
 
   useEffect(() => {
     if (data?.data[periodKey]?.data) {

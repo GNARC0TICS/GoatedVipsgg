@@ -6,12 +6,10 @@ import { sql } from "drizzle-orm";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
-import { initializeAdmin } from "./middleware/admin"; // Added import
+import { initializeAdmin } from "./middleware/admin";
 
 const execAsync = promisify(exec);
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 const PORT = 5000;
 
 async function setupMiddleware() {
@@ -81,12 +79,9 @@ async function checkDatabase() {
 
 async function cleanupPort() {
   try {
-    // Try to kill existing process on port 5000
     await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
-    // Wait a moment for the port to be released
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   } catch (error) {
-    // If no process was found or killed, that's fine
     log("No existing process found on port " + PORT);
   }
 }
@@ -95,15 +90,12 @@ async function startServer() {
   try {
     log("Starting server initialization...");
     await checkDatabase();
-    await cleanupPort(); 
+    await cleanupPort();
 
-    registerRoutes(app); //Assuming setupRoutes is registerRoutes
-
-    // Initialize admin user
+    registerRoutes(app);
     initializeAdmin().catch(console.error);
 
-    const server = createServer(app); //Changed to use createServer for consistency
-
+    const server = createServer(app);
 
     if (app.get("env") === "development") {
       await setupVite(app, server);
@@ -116,7 +108,7 @@ async function startServer() {
     server
       .listen(PORT, "0.0.0.0")
       .on("error", async (err: NodeJS.ErrnoException) => {
-        if (err.code === 'EADDRINUSE') {
+        if (err.code === "EADDRINUSE") {
           log(`Port ${PORT} is in use, attempting to free it...`);
           await cleanupPort();
           server.listen(PORT, "0.0.0.0");
@@ -128,20 +120,19 @@ async function startServer() {
       .on("listening", () => {
         log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
       });
-
   } catch (error) {
     console.error("Failed to start application:", error);
     process.exit(1);
   }
 }
 
-process.on('SIGTERM', () => {
-  log('Received SIGTERM signal. Shutting down gracefully...');
+process.on("SIGTERM", () => {
+  log("Received SIGTERM signal. Shutting down gracefully...");
   process.exit(0);
 });
 
-process.on('SIGINT', () => {
-  log('Received SIGINT signal. Shutting down gracefully...');
+process.on("SIGINT", () => {
+  log("Received SIGINT signal. Shutting down gracefully...");
   process.exit(0);
 });
 
