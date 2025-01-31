@@ -135,7 +135,12 @@ export function RaceTimer() {
               {!showPrevious && (
                 <>
                   <Clock className="h-4 w-4 text-[#D7FF00]" />
-                  <span className="text-white font-mono">{timeLeft}</span>
+                  <span className={`font-mono ${timeLeft.includes('Race Ended') ? 'text-orange-500' : 'text-white'}`}>
+                    {timeLeft}
+                  </span>
+                  {timeLeft.includes('Race Ended') && (
+                    <span className="text-sm text-[#D7FF00] ml-2">Next Race: {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString()}</span>
+                  )}
                 </>
               )}
             </div>
