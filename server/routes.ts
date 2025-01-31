@@ -238,15 +238,33 @@ function setupRESTRoutes(app: Express) {
           )
           .limit(1);
 
+        const prizeDistribution = [0.5, 0.3, 0.1, 0.05, 0.05, 0, 0, 0, 0, 0]; //Example distribution, needs to be defined elsewhere
+
         if (!existingEntry && stats.data.monthly.data.length > 0) {
           // Store the previous month's results
+          const winners = stats.data.monthly.data.slice(0, 10).map((winner: any, index: number) => ({
+            ...winner,
+            prize: (200 * prizeDistribution[index]).toFixed(2), // Calculate prize based on distribution
+            position: index + 1
+          }));
+
           await db.insert(historicalRaces).values({
             month: previousMonth,
             year: previousYear,
-            prizePool: 200, // Fixed prize pool amount
+            prizePool: 200,
             startDate: new Date(previousYear, previousMonth - 1, 1),
             endDate: new Date(previousYear, previousMonth, 0, 23, 59, 59),
-            participants: stats.data.monthly.data.slice(0, 10), // Store top 10
+            participants: winners,
+            isCompleted: true
+          });
+
+          // Broadcast race completion to all connected clients
+          broadcastLeaderboardUpdate({
+            type: "RACE_COMPLETED",
+            data: {
+              winners,
+              nextRaceStart: new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+            }
           });
         }
       }

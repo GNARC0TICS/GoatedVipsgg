@@ -43,7 +43,34 @@ type LeaderboardEntry = {
 
 export default function WagerRaces() {
   const [raceType] = useState<"weekly" | "monthly" | "weekend">("monthly");
+  const [showCompletedRace, setShowCompletedRace] = useState(false);
   const { data: leaderboardData, isLoading } = useLeaderboard("monthly");
+  const { data: previousRace } = useQuery<any>({
+    queryKey: ["/api/wager-races/previous"],
+    enabled: showCompletedRace
+  });
+
+  useEffect(() => {
+    // Listen for race completion events
+    const handleRaceComplete = (event: any) => {
+      if (event.type === "RACE_COMPLETED") {
+        setShowCompletedRace(true);
+        // Auto-hide after 1 hour
+        setTimeout(() => setShowCompletedRace(false), 3600000);
+      }
+    };
+
+    // Add WebSocket listener
+    if (ws?.current) {
+      ws.current.addEventListener("message", handleRaceComplete);
+    }
+
+    return () => {
+      if (ws?.current) {
+        ws.current.removeEventListener("message", handleRaceComplete);
+      }
+    };
+  }, []);
 
   const prizePool = 200;
   const prizeDistribution: Record<number, number> = {
@@ -269,6 +296,61 @@ export default function WagerRaces() {
                   </p>
                 </div>
               </motion.div>
+
+
+      {/* Race Completion Overlay */}
+      <AnimatePresence>
+        {showCompletedRace && previousRace && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-[#1A1B21] p-8 rounded-xl border border-[#D7FF00] max-w-2xl w-full mx-4"
+            >
+              <h2 className="text-4xl font-heading text-[#D7FF00] text-center mb-8">
+                Monthly Race Complete!
+              </h2>
+              <div className="space-y-6">
+                {previousRace.participants.map((winner: any, index: number) => (
+                  <div
+                    key={winner.uid}
+                    className="flex items-center justify-between bg-black/20 p-4 rounded-lg"
+                  >
+                    <div className="flex items-center gap-4">
+                      {getTrophyIcon(index + 1)}
+                      <div>
+                        <p className="font-bold text-lg">{winner.name}</p>
+                        <p className="text-sm text-gray-400">
+                          Wagered: ${winner.wagered.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-[#D7FF00] font-bold">
+                      ${winner.prize}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-8 text-center">
+                <p className="text-gray-400 mb-4">
+                  Next race starts: {new Date(previousRace.nextRaceStart).toLocaleDateString()}
+                </p>
+                <Button
+                  onClick={() => setShowCompletedRace(false)}
+                  className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
+                >
+                  Close
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
               {/* 3rd Place */}
               <motion.div
