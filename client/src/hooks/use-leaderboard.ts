@@ -43,13 +43,34 @@ export function useLeaderboard(
   const { data, isLoading, error, refetch } = useQuery<APIResponse>({
     queryKey: ["/api/affiliate/stats", timePeriod, page],
     queryFn: async () => {
+      // Try to get cached data first
+      const cachedData = sessionStorage.getItem(`leaderboard-${timePeriod}-${page}`);
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        const cacheTime = parsed.timestamp;
+        // Use cache if it's less than 30 seconds old
+        if (Date.now() - cacheTime < 30000) {
+          return parsed.data;
+        }
+      }
+
       const response = await fetch(`/api/affiliate/stats?page=${page}&limit=10`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      return response.json();
+      const freshData = await response.json();
+      
+      // Cache the new data
+      sessionStorage.setItem(`leaderboard-${timePeriod}-${page}`, JSON.stringify({
+        data: freshData,
+        timestamp: Date.now()
+      }));
+
+      return freshData;
     },
     refetchInterval: 30000, // Refetch every 30 seconds for live updates
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    cacheTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes
   });
 
   const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
