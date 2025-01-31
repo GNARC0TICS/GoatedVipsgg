@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -45,7 +45,18 @@ type LeaderboardEntry = {
 export default function WagerRaces() {
   const [raceType] = useState<"weekly" | "monthly" | "weekend">("monthly");
   const [showCompletedRace, setShowCompletedRace] = useState(false);
+  const ws = useRef<WebSocket | null>(null);
   const { data: leaderboardData, isLoading } = useLeaderboard("monthly");
+
+  useEffect(() => {
+    ws.current = new WebSocket(`wss://${window.location.hostname}/ws`);
+    
+    return () => {
+      if (ws.current) {
+        ws.current.close();
+      }
+    };
+  }, []);
   const { data: previousRace } = useQuery<any>({
     queryKey: ["/api/wager-races/previous"],
     enabled: showCompletedRace
