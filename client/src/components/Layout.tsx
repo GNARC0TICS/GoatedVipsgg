@@ -650,18 +650,7 @@ export function Layout({ children }: LayoutProps) {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" className="font-heading uppercase opacity-50 cursor-not-allowed">
-                          Login / Register
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Currently under maintenance. Check back soon!</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <AuthModal />
                 )}
                 <Button
                   onClick={() =>
