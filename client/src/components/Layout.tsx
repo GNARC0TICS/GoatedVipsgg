@@ -485,7 +485,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       } onClose={handleCloseMenu} />
 
-                      
+
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">SOCIALS</div>
                       <MobileNavLink href="/telegram" label="Telegram Community" onClose={handleCloseMenu} />
