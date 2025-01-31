@@ -182,8 +182,13 @@ export default function WagerRaces() {
                 <div className="flex flex-col items-center gap-6 mt-8">
                   {/* Race Status */}
                   {showCompletedRace ? (
-                    <div className="bg-[#D7FF00]/10 text-[#D7FF00] px-6 py-2 rounded-full border border-[#D7FF00] backdrop-blur-sm">
-                      Race Completed
+                    <div className="space-y-2">
+                      <div className="bg-[#D7FF00]/10 text-[#D7FF00] px-6 py-2 rounded-full border border-[#D7FF00] backdrop-blur-sm">
+                        Race Completed
+                      </div>
+                      <div className="bg-[#1A1B21]/80 text-[#D7FF00]/80 px-6 py-3 rounded-lg text-sm">
+                        Winners will receive their prizes directly to their Goated account within 24 hours of race completion
+                      </div>
                     </div>
                   ) : leaderboardData?.status === 'transition' ? (
                     <div className="bg-orange-500/10 text-orange-500 px-6 py-2 rounded-full border border-orange-500 backdrop-blur-sm">
