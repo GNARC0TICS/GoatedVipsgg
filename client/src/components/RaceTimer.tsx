@@ -70,10 +70,9 @@ export function RaceTimer() {
       const diff = end.getTime() - now.getTime();
       
       const isComplete = now > end || currentRaceData?.status === 'completed';
+      const isTransition = currentRaceData?.status === 'transition';
       
-      if (isComplete) {
-        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        setTimeLeft(`Next Race: ${nextMonth.toLocaleDateString()}`);
+      if (isComplete || isTransition) {
         setShowCompletionOverlay(true);
         
         // Calculate time until next race
@@ -248,7 +247,9 @@ export function RaceTimer() {
                 animate={{ scale: 1, opacity: 1 }}
                 className="p-6 text-center"
               >
-                <h3 className="text-[#D7FF00] font-heading mb-4">Race Complete!</h3>
+                <h3 className="text-[#D7FF00] font-heading mb-4">
+                  {currentRaceData?.status === 'transition' ? 'In Transition Period' : 'Race Complete!'}
+                </h3>
                 <div className="space-y-4 mb-4">
                   {raceData.participants.slice(0, 3).map((winner, index) => (
                     <div key={winner.uid} className="flex items-center justify-between bg-[#1A1B21]/80 p-2 rounded-lg">
