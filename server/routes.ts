@@ -274,7 +274,7 @@ function setupRESTRoutes(app: Express) {
         status: 'live',
         startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
         endDate: endOfMonth.toISOString(),
-        prizePool: 200, // Updated prize pool to $200
+        prizePool: 400, // Monthly race prize pool
         participants: stats.data.monthly.data.map((participant: any, index: number) => ({
           uid: participant.uid,
           name: participant.name,
