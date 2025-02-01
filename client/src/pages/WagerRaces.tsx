@@ -158,9 +158,10 @@ export default function WagerRaces() {
                 </Button>
                 <Button
                   variant="ghost"
-                  className="text-[#8A8B91] hover:text-white"
+                  className={`text-[#8A8B91] hover:text-white ${showCompletedRace ? 'text-white' : ''}`}
+                  onClick={() => setShowCompletedRace(!showCompletedRace)}
                 >
-                  Previous month
+                  {showCompletedRace ? "Current month" : "Previous month"}
                 </Button>
               </div>
 
@@ -423,7 +424,7 @@ export default function WagerRaces() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {top10Players.map((player, index) => (
+                {(showCompletedRace && previousRace?.participants ? previousRace.participants : top10Players).map((player, index) => (
                   <TableRow
                     key={player.uid}
                     className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]"
