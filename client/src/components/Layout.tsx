@@ -565,12 +565,19 @@ export function Layout({ children }: LayoutProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-[#8A8B91] hover:text-white relative h-8 w-8 md:h-10 md:w-10"
+                    className="text-[#8A8B91] hover:text-white relative h-8 w-8 md:h-10 md:w-10 transition-colors duration-200 group"
+                    onClick={(e) => {
+                      const button = e.currentTarget;
+                      button.classList.add('bell-shake');
+                      button.addEventListener('animationend', () => {
+                        button.classList.remove('bell-shake');
+                      }, { once: true });
+                    }}
                   >
-                    <Bell className="h-4 w-4 md:h-5 md:w-5" />
+                    <Bell className="h-4 w-4 md:h-5 md:w-5 transition-transform duration-200 group-hover:scale-110" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-80 bg-[#1A1B21] border-[#2A2B31]">
+                <DropdownMenuContent className="w-80 bg-[#1A1B21] border-[#2A2B31] dropdown-slide-in">
                   <DropdownMenuLabel className="flex items-center justify-between">
                     Notifications
                     <Button
