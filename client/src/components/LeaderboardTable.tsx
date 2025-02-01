@@ -143,7 +143,7 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] transition-colors"
+                    className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]/80 hover:scale-[1.02] transition-all duration-300 ease-out"
                   >
                     <TableCell className="font-heading px-1 md:px-4">
                       <div className="flex items-center gap-1 md:gap-2">

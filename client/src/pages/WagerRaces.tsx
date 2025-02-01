@@ -306,7 +306,7 @@ export default function WagerRaces() {
                   <p className="text-base font-bold truncate text-white/90">
                     {top10Players[1]?.name || "-"}
                   </p>
-                  <p className="text-sm font-heading text-[#D7FF00] mt-2">
+                  <p className="text-sm font-heading text-[#D7FF00] mt-2 animate-pulse-slow filter drop-shadow-[0_0_8px_rgba(215,255,0,0.5)]">
                     ${getPrizeAmount(2).toLocaleString()}
                   </p>
                   <p className="text-xs text-white/60 mt-1">
