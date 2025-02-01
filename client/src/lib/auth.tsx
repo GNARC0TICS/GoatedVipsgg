@@ -22,7 +22,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
 
-  const { data: userResponse } = useQuery({
+  const { data: userResponse, isError } = useQuery({
+    enabled: true,
+    initialData: { ok: false, user: null },
     queryKey: ["/api/user"],
     queryFn: async () => {
       try {
