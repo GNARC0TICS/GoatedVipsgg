@@ -7,16 +7,23 @@ import { sql } from "drizzle-orm";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
-import { initializeAdmin } from "./middleware/admin"; // Added import
+import { setupAuth } from "./auth"; // Import setupAuth
+import { initializeAdmin } from "./middleware/admin";
 
 const execAsync = promisify(exec);
 const app = express();
 const PORT = 5000;
 
 async function setupMiddleware() {
+  // Basic middleware setup
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
+
+  // Set up authentication
+  setupAuth(app);
+
+  // Other middleware
   app.use(requestLogger);
   app.use(errorHandler);
 
@@ -61,7 +68,10 @@ function errorHandler(
   _next: express.NextFunction,
 ) {
   console.error("Server error:", err);
-  res.status(500).json({ error: err.message || "Internal Server Error" });
+  res.status(500).json({ 
+    ok: false,
+    error: err.message || "Internal Server Error" 
+  });
 }
 
 async function checkDatabase() {
@@ -81,12 +91,9 @@ async function checkDatabase() {
 
 async function cleanupPort() {
   try {
-    // Try to kill existing process on port 5000
     await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
-    // Wait a moment for the port to be released
     await new Promise(resolve => setTimeout(resolve, 1000));
   } catch (error) {
-    // If no process was found or killed, that's fine
     log("No existing process found on port " + PORT);
   }
 }
@@ -95,15 +102,10 @@ async function startServer() {
   try {
     log("Starting server initialization...");
     await checkDatabase();
-    await cleanupPort(); 
+    await cleanupPort();
 
-    registerRoutes(app); //Assuming setupRoutes is registerRoutes
-
-    // Initialize admin user
-    initializeAdmin().catch(console.error);
-
-    const server = createServer(app); //Changed to use createServer for consistency
-
+    // Setup routes before auth middleware
+    const server = createServer(app);
 
     if (app.get("env") === "development") {
       await setupVite(app, server);
@@ -112,6 +114,9 @@ async function startServer() {
     }
 
     await setupMiddleware();
+
+    // Initialize admin user after middleware setup
+    initializeAdmin().catch(console.error);
 
     server
       .listen(PORT, "0.0.0.0")
