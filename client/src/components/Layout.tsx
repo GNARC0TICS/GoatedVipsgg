@@ -613,46 +613,7 @@ export function Layout({ children }: LayoutProps) {
               </DropdownMenu>
 
               <div className="flex items-center gap-2 md:gap-4">
-                {user ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="flex items-center gap-1 md:gap-2 text-white px-2 md:px-4 h-8 md:h-10"
-                      >
-                        <User className="h-5 w-5" />
-                        <span className="hidden md:inline">
-                          {user.username}
-                        </span>
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56 bg-[#1A1B21] border-[#2A2B31]">
-                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <Link href={`/user/${user.id}`}>
-                        <DropdownMenuItem className="cursor-pointer">
-                          Profile
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link href="/notification-preferences">
-                        <DropdownMenuItem className="cursor-pointer">
-                          Settings
-                        </DropdownMenuItem>
-                      </Link>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={handleLogout}
-                        className="text-red-500 cursor-pointer"
-                      >
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Logout
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <AuthModal />
-                )}
+                {location === "/" && <AuthModal />}
                 <Button
                   onClick={() =>
                     window.open("https://www.goated.com/r/SPIN", "_blank")
