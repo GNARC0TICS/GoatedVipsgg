@@ -188,6 +188,7 @@ export function registerRoutes(app: Express): Server {
   setupBonusCodeRoutes(app);
   setupChatRoutes(app);
   setupProfileRoutes(app);
+  app.use('/api', webhookRoutes); // Added webhook routes
 
   // Setup WebSocket after routes
   setupWebSocket(httpServer);
@@ -694,7 +695,7 @@ async function handleCreateTicket(req: any, res: any) {
 async function handleSupportReply(req: any, res: any) {
   try {
     const { ticketId, message } = req.body;
-    
+
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return res.status(400).json({
         status: "error",
@@ -1026,3 +1027,11 @@ function generateToken(payload: any): string {
   //Implementation for generateToken is missing in original code, but it's not relevant to the fix.  Leaving as is.
   return "";
 }
+
+// Dummy webhook routes (replace with actual implementation)
+const webhookRoutes = express.Router();
+webhookRoutes.post('/webhook', (req, res) => {
+  // Handle webhook events here
+  console.log('Webhook event received:', req.body);
+  res.json({ status: 'success' });
+});
