@@ -36,6 +36,7 @@ const announcements = [
 
 export const FeatureCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState<'next' | 'prev'>('next');
   const containerRef = useRef<HTMLDivElement>(null);
   const [, setLocation] = useLocation();
   const x = useMotionValue(0);
@@ -43,12 +44,14 @@ export const FeatureCarousel = () => {
 
   const nextSlide = () => {
     if (!isDragging) {
+      setDirection('next');
       setCurrentIndex((prev) => (prev + 1) % announcements.length);
     }
   };
 
   const prevSlide = () => {
     if (!isDragging) {
+      setDirection('prev');
       setCurrentIndex(
         (prev) => (prev - 1 + announcements.length) % announcements.length,
       );
@@ -118,13 +121,14 @@ export const FeatureCarousel = () => {
             whileDrag={{ cursor: "grabbing" }}
             onDragStart={() => setIsDragging(true)}
             onDragEnd={handleDragEnd}
-            initial={{ opacity: 0, x: 100 }}
+            initial={{ opacity: 0, x: direction === 'next' ? 100 : -100 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -100 }}
+            exit={{ opacity: 0, x: direction === 'next' ? -100 : 100 }}
             transition={{
               type: "spring",
-              stiffness: 300,
-              damping: 30,
+              stiffness: 200,
+              damping: 25,
+              mass: 0.5,
             }}
             style={{ x }}
             className="text-center px-16 touch-none cursor-grab active:cursor-grabbing"
