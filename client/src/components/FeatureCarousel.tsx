@@ -66,15 +66,25 @@ export const FeatureCarousel = () => {
     info: PanInfo,
   ) => {
     setIsDragging(false);
-    const threshold = 50;
+    const threshold = 100; // Increased threshold for better detection
     const velocity = info.velocity.x;
     const offset = info.offset.x;
+    const progress = Math.abs(offset) / window.innerWidth;
 
-    if (Math.abs(velocity) > 200 || Math.abs(offset) > threshold) {
-      if (offset > 0 || velocity > 200) {
+    // Force transition when progress is significant or velocity is high
+    if (progress > 0.15 || Math.abs(velocity) > 500) {
+      if (offset > 0) {
         prevSlide();
+        // Skip one more if velocity is very high
+        if (Math.abs(velocity) > 1000) {
+          setTimeout(prevSlide, 50);
+        }
       } else {
         nextSlide();
+        // Skip one more if velocity is very high
+        if (Math.abs(velocity) > 1000) {
+          setTimeout(nextSlide, 50);
+        }
       }
     }
   };
