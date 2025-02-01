@@ -9,8 +9,15 @@ import { users, insertUserSchema, type SelectUser } from "@db/schema";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
 import express from 'express';
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 const scryptAsync = promisify(scrypt);
+
+// Rate limiter setup
+const rateLimiter = new RateLimiterMemory({
+  points: 5, // 5 attempts
+  duration: 60 * 60, // per hour
+});
 
 // Crypto utilities
 const crypto = {
@@ -43,15 +50,18 @@ export function setupAuth(app: Express) {
     secret: process.env.REPL_ID || "goated-rewards",
     resave: false,
     saveUninitialized: false,
-    cookie: {},
+    cookie: {
+      secure: app.get("env") === "production",
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
     store: new MemoryStore({
-      checkPeriod: 86400000,
+      checkPeriod: 86400000, // prune expired entries every 24h
     }),
   };
 
   if (app.get("env") === "production") {
     app.set("trust proxy", 1);
-    sessionSettings.cookie = { secure: true };
   }
 
   app.use(session(sessionSettings));
@@ -59,7 +69,7 @@ export function setupAuth(app: Express) {
   app.use(passport.session());
 
   // Session configuration
-  passport.serializeUser((user: any, done) => {
+  passport.serializeUser((user: Express.User, done) => {
     done(null, user.id);
   });
 
@@ -84,39 +94,11 @@ export function setupAuth(app: Express) {
         }
 
         // Sanitize credentials
-        const sanitizedUsername = username.trim();
-        const sanitizedPassword = password.trim();
-
-        // Trim whitespace
         username = username.trim();
         password = password.trim();
 
         if (!username || !password) {
           return done(null, false, { message: "Username and password cannot be empty" });
-        }
-
-        // Check if this is an admin login attempt
-        if (username === process.env.ADMIN_USERNAME && 
-            password === process.env.ADMIN_PASSWORD) {
-          // Create admin user if doesn't exist
-          let [adminUser] = await db
-            .select()
-            .from(users)
-            .where(eq(users.isAdmin, true))
-            .limit(1);
-
-          if (!adminUser) {
-            [adminUser] = await db
-              .insert(users)
-              .values({
-                username: username,
-                password: await crypto.hash(password),
-                email: 'admin@goatedvips.com',
-                isAdmin: true,
-              })
-              .returning();
-          }
-          return done(null, adminUser);
         }
 
         const [user] = await db
@@ -128,10 +110,18 @@ export function setupAuth(app: Express) {
         if (!user) {
           return done(null, false, { message: "Invalid username or password" });
         }
+
         const isMatch = await crypto.compare(password, user.password);
         if (!isMatch) {
           return done(null, false, { message: "Invalid username or password" });
         }
+
+        // Update last login timestamp
+        await db
+          .update(users)
+          .set({ lastLogin: new Date() })
+          .where(eq(users.id, user.id));
+
         return done(null, user);
       } catch (err) {
         return done(err);
@@ -139,41 +129,23 @@ export function setupAuth(app: Express) {
     }),
   );
 
-  passport.serializeUser((user, done) => {
-    done(null, user.id);
-  });
-
-  passport.deserializeUser(async (id: number, done) => {
-    try {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, id))
-        .limit(1);
-      done(null, user);
-    } catch (err) {
-      done(err);
-    }
-  });
-
-  app.post("/api/register", async (req, res, next) => {
+  app.post("/api/register", async (req, res) => {
     try {
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
-        const errors = result.error.issues.map((i) => i.message).join(", ");
         return res.status(400).json({
-          status: "error",
+          ok: false,
           message: "Validation failed",
-          errors,
+          errors: result.error.issues.map((i) => i.message),
         });
       }
 
       // Rate limiting check
-      const ipAddress = req.ip;
-      const registrationAttempts = await rateLimiter.get(ipAddress);
-      if (registrationAttempts > 5) {
+      try {
+        await rateLimiter.consume(req.ip);
+      } catch (err) {
         return res.status(429).json({
-          status: "error",
+          ok: false,
           message: "Too many registration attempts. Please try again later.",
         });
       }
@@ -189,7 +161,7 @@ export function setupAuth(app: Express) {
 
       if (existingUsername) {
         return res.status(400).json({
-          status: "error",
+          ok: false,
           message: "Username already exists",
         });
       }
@@ -203,20 +175,17 @@ export function setupAuth(app: Express) {
 
       if (existingEmail) {
         return res.status(400).json({
-          status: "error",
+          ok: false,
           message: "Email already registered",
         });
       }
-
-      // Hash the password
-      const hashedPassword = await crypto.hash(password);
 
       // Create the new user
       const [newUser] = await db
         .insert(users)
         .values({
           username,
-          password: hashedPassword,
+          password: await crypto.hash(password),
           email,
           isAdmin: false,
         })
@@ -225,11 +194,13 @@ export function setupAuth(app: Express) {
       // Log the user in after registration
       req.login(newUser, (err) => {
         if (err) {
-          return next(err);
+          return res.status(500).json({
+            ok: false,
+            message: "Failed to login after registration",
+          });
         }
         return res.json({
-          status: "success",
-          message: "Registration successful",
+          ok: true,
           user: {
             id: newUser.id,
             username: newUser.username,
@@ -239,40 +210,22 @@ export function setupAuth(app: Express) {
         });
       });
     } catch (error: any) {
-      // Handle database-level errors
-      if (error.code === "23505") {
-        // Unique constraint violation
-        return res.status(400).json({
-          status: "error",
-          message: "Username or email already exists",
-        });
-      }
-      if (error.errors) {
-        return res.status(400).json({ 
-          ok: false,
-          message: "Validation failed",
-          errors: error.errors
-        });
-      }
-      return res.status(400).json({ 
+      return res.status(500).json({
         ok: false,
-        message: error.message || "Invalid request",
+        message: error.message || "Registration failed",
       });
     }
   });
 
-  app.post("/api/login", express.json(), (req, res, next) => {
-    // Validate request body exists
-    if (!req.body || !req.body.username || !req.body.password) {
-      return res.status(400).json({
-        status: "error",
-        message: "Username and password are required"
+  app.post("/api/login", express.json(), async (req, res, next) => {
+    try {
+      await rateLimiter.consume(req.ip);
+    } catch (err) {
+      return res.status(429).json({
+        ok: false,
+        message: "Too many login attempts. Please try again later.",
       });
     }
-
-    // Validate credentials
-    const { username, password } = req.body;
-
 
     passport.authenticate(
       "local",
@@ -280,7 +233,6 @@ export function setupAuth(app: Express) {
         if (err) {
           return res.status(500).json({
             ok: false,
-            status: "error",
             message: "Internal server error",
           });
         }
@@ -288,7 +240,6 @@ export function setupAuth(app: Express) {
         if (!user) {
           return res.status(401).json({
             ok: false,
-            status: "error",
             message: info.message ?? "Invalid credentials",
           });
         }
@@ -299,8 +250,7 @@ export function setupAuth(app: Express) {
           }
 
           return res.json({
-            status: "success",
-            message: "Login successful",
+            ok: true,
             user: {
               id: user.id,
               username: user.username,
@@ -317,13 +267,12 @@ export function setupAuth(app: Express) {
     req.logout((err) => {
       if (err) {
         return res.status(500).json({
-          status: "error",
+          ok: false,
           message: "Logout failed",
         });
       }
       res.json({
-        status: "success",
-        message: "Logout successful",
+        ok: true,
       });
     });
   });
@@ -339,8 +288,8 @@ export function setupAuth(app: Express) {
       });
     }
     res.status(401).json({
-      status: "error",
-      message: "Not logged in",
+      ok: false,
+      message: "Not authenticated",
     });
   });
 }

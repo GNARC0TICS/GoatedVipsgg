@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: user } = useQuery<SelectUser>({
     queryKey: ["/api/user"],
     retry: false,
+    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
   });
 
   const loginMutation = useMutation({
@@ -38,7 +38,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json"
         },
         body: JSON.stringify({
           username: credentials.username.trim(),
@@ -80,10 +79,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
+        credentials: "include"
       });
       if (!res.ok) {
-        const error = await res.text();
-        throw new Error(error);
+        const error = await res.json();
+        throw new Error(error.message || "Registration failed");
       }
       return res.json();
     },
@@ -105,14 +105,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/logout", { method: "POST" });
-      if (!res.ok) throw new Error("Logout failed");
+      const res = await fetch("/api/logout", { 
+        method: "POST",
+        credentials: "include"
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Logout failed");
+      }
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
       toast({
         title: "Success",
         description: "Successfully logged out",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
