@@ -111,12 +111,12 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
 
       <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
         <div className="overflow-x-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#2A2B31 #14151A' }}>
-          <Table className="w-full">
+          <Table className="w-full min-w-0">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[50px] md:w-20 font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap">RANK</TableHead>
-                <TableHead className="font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base">USERNAME</TableHead>
-                <TableHead className="text-right font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap">WAGER</TableHead>
+                <TableHead className="w-[40px] md:w-20 font-heading text-[#D7FF00] px-1 md:px-4 text-[10px] md:text-base whitespace-nowrap">RANK</TableHead>
+                <TableHead className="font-heading text-[#D7FF00] px-1 md:px-4 text-[10px] md:text-base min-w-[80px]">USERNAME</TableHead>
+                <TableHead className="text-right font-heading text-[#D7FF00] px-1 md:px-4 text-[10px] md:text-base whitespace-nowrap">WAGER</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -132,41 +132,41 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
                   >
                     <TableCell className="font-heading px-1 md:px-4">
                       <div className="flex items-center gap-1 md:gap-2">
-                        <div className="hidden md:block">
+                        <div className="hidden sm:block">
                           {getTrophyIcon(index + 1 + currentPage * ITEMS_PER_PAGE)}
                         </div>
-                        <span className="text-[#D7FF00] text-xs md:text-base">
+                        <span className="text-[#D7FF00] text-[11px] md:text-base">
                           {index + 1 + currentPage * ITEMS_PER_PAGE}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <QuickProfile userId={entry.uid} username={entry.name}>
-                        <div className="flex items-center gap-2 cursor-pointer">
+                        <div className="flex items-center gap-1 md:gap-2 cursor-pointer">
                           <img
                             src={getTierIcon(getTierFromWager(entry.wagered.all_time))}
                             alt="Tier"
-                            className="w-5 h-5"
+                            className="w-4 h-4 md:w-5 md:h-5"
                           />
-                          <span className="truncate text-white hover:text-[#D7FF00] transition-colors">
+                          <span className="truncate text-white hover:text-[#D7FF00] transition-colors text-[11px] md:text-base max-w-[80px] md:max-w-full">
                             {entry.name}
                           </span>
                         </div>
                       </QuickProfile>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <span className="text-white font-semibold">
+                    <TableCell className="text-right px-1 md:px-4">
+                      <div className="flex items-center justify-end gap-1 md:gap-2">
+                        <span className="text-white font-semibold text-[11px] md:text-base whitespace-nowrap">
                           ${(getWagerAmount(entry) || 0).toLocaleString()}
                         </span>
                         {entry.isWagering && entry.wagerChange > 0 && (
                           <motion.div
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="text-green-500 flex items-center gap-1"
+                            className="text-green-500 flex items-center gap-0.5 md:gap-1"
                           >
-                            <TrendingUp className="h-4 w-4" />
-                            <span className="text-xs font-bold">
+                            <TrendingUp className="h-3 w-3 md:h-4 md:w-4" />
+                            <span className="text-[10px] md:text-xs font-bold whitespace-nowrap">
                               +${entry.wagerChange.toLocaleString()}
                             </span>
                           </motion.div>
