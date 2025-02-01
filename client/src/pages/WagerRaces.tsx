@@ -85,7 +85,7 @@ export default function WagerRaces() {
     };
   }, []);
 
-  const prizePool = 400;
+  const prizePool = 500;
   const prizeDistribution: Record<number, number> = {
     1: 0.425, // $170
     2: 0.2,   // $80
@@ -260,7 +260,7 @@ export default function WagerRaces() {
                 </div>
                 <div className="text-center">
                   <h3 className="text-[#8A8B91] font-heading text-sm mb-2">
-                    WINNER
+                    1ST PLACE
                   </h3>
                   <div className="flex items-center justify-center gap-2">
                     <Crown className="h-5 w-5 text-[#D7FF00]" />
