@@ -242,13 +242,14 @@ function setupRESTRoutes(app: Express) {
 
         if (!existingEntry && stats.data.monthly.data.length > 0) {
           // Store complete race results with detailed participant data
-          const winners = stats.data.monthly.data.map((participant: any, index: number) => ({
+          // Only store top 10 participants
+          const winners = stats.data.monthly.data.slice(0, 10).map((participant: any, index: number) => ({
             uid: participant.uid,
             name: participant.name,
             wagered: participant.wagered.this_month,
             allTimeWagered: participant.wagered.all_time,
             tier: getTierFromWager(participant.wagered.all_time),
-            prize: index < 10 ? (prizePool * prizeDistribution[index]).toFixed(2) : "0",
+            prize: (prizePool * prizeDistribution[index]).toFixed(2),
             position: index + 1,
             timestamp: new Date().toISOString()
           }));
