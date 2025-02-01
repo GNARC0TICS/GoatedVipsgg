@@ -170,9 +170,11 @@ export default function WagerRaces() {
                   animate={{ opacity: 1, y: 0 }}
                   className="text-center"
                 >
-                  <h1 className="text-6xl font-heading font-bold text-white mb-2">
-                    $400
-                  </h1>
+                  {leaderboardData?.status !== 'transition' && (
+                    <h1 className="text-6xl font-heading font-bold text-white mb-2">
+                      ${prizePool}
+                    </h1>
+                  )}
                   <h2 className="text-5xl font-heading font-bold text-[#D7FF00] leading-tight">
                     MONTHLY
                     <br />
