@@ -559,112 +559,114 @@ export function Layout({ children }: LayoutProps) {
             </div>
 
             <div className="flex items-center gap-2 md:gap-6">
-              {user && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-[#8A8B91] hover:text-white relative h-8 w-8 md:h-10 md:w-10"
-                    >
-                      <Bell className="h-4 w-4 md:h-5 md:w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-80 bg-[#1A1B21] border-[#2A2B31]">
-                  <DropdownMenuLabel className="flex items-center justify-between">
-                    Notifications
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() =>
-                        window.open("/notification-preferences", "_self")
-                      }
-                      className="h-8 w-8"
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <div className="max-h-[300px] overflow-y-auto">
-                    {/* Active notifications */}
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
-                      <div className="text-sm font-medium">
-                        Monthly Wager Race Live!
-                      </div>
-                      <div className="text-xs text-[#8A8B91]">
-                        Compete for a share of the $2000 prize pool - Join now!
-                      </div>
-                      <div className="text-xs text-[#8A8B91]">
-                        Just now
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
-                      <div className="text-sm font-medium">
-                        Welcome to GoatedVIPs!
-                      </div>
-                      <div className="text-xs text-[#8A8B91]">
-                        Your #1 source for casino rewards and competitions
-                      </div>
-                      <div className="text-xs text-[#8A8B91]">2 days ago</div>
-                    </DropdownMenuItem>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <div className="flex items-center gap-2 md:gap-4">
-                {user ? (
+              <div>
+                {user && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="flex items-center gap-1 md:gap-2 text-white px-2 md:px-4 h-8 md:h-10"
+                        size="icon"
+                        className="text-[#8A8B91] hover:text-white relative h-8 w-8 md:h-10 md:w-10"
                       >
-                        <User className="h-5 w-5" />
-                        <span className="hidden md:inline">
-                          {user.username}
-                        </span>
-                        <ChevronDown className="h-4 w-4" />
+                        <Bell className="h-4 w-4 md:h-5 md:w-5" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56 bg-[#1A1B21] border-[#2A2B31]">
-                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuContent className="w-80 bg-[#1A1B21] border-[#2A2B31]">
+                      <DropdownMenuLabel className="flex items-center justify-between">
+                        Notifications
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            window.open("/notification-preferences", "_self")
+                          }
+                          className="h-8 w-8"
+                        >
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <Link href={`/user/${user.id}`}>
-                        <DropdownMenuItem className="cursor-pointer">
-                          Profile
+                      <div className="max-h-[300px] overflow-y-auto">
+                        {/* Active notifications */}
+                        <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
+                          <div className="text-sm font-medium">
+                            Monthly Wager Race Live!
+                          </div>
+                          <div className="text-xs text-[#8A8B91]">
+                                                        Compete for a share of the $2000 prize pool - Join now!
+                          </div>
+                          <div className="text-xs text-[#8A8B91]">
+                            Just now
+                          </div>
                         </DropdownMenuItem>
-                      </Link>
-                      <Link href="/notification-preferences">
-                        <DropdownMenuItem className="cursor-pointer">
-                          Settings
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
+                          <div className="text-sm font-medium">
+                            Welcome to GoatedVIPs!
+                          </div>
+                          <div className="text-xs text-[#8A8B91]">
+                            Your #1 source for casino rewards and competitions
+                          </div>
+                          <div className="text-xs text-[#8A8B91]">2 days ago</div>
                         </DropdownMenuItem>
-                      </Link>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={handleLogout}
-                        className="text-red-500 cursor-pointer"
-                      >
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Logout
-                      </DropdownMenuItem>
+                      </div>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                ) : (
-                  <AuthModal />
                 )}
-                <Button
-                  onClick={() =>
-                    window.open("https://www.goated.com/r/SPIN", "_blank")
-                  }
-                  className="relative group overflow-hidden text-[#14151A] fill-animation hover:text-[#D7FF00] transition-all duration-3000 font-mona-sans font-extrabold uppercase tracking-tight h-8 md:h-10 px-3 md:px-4 text-sm md:text-base"
-                  style={{
-                    fontStretch: "condensed",
-                    fontVariationSettings: "'COND' 100, 'wght' 800",
-                  }}
-                >
-                  <span className="relative z-10">PLAY →</span>
-                </Button>
+                <div className="flex items-center gap-2 md:gap-4">
+                  {user ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="flex items-center gap-1 md:gap-2 text-white px-2 md:px-4 h-8 md:h-10"
+                        >
+                          <User className="h-5 w-5" />
+                          <span className="hidden md:inline">
+                            {user.username}
+                          </span>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-56 bg-[#1A1B21] border-[#2A2B31]">
+                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <Link href={`/user/${user.id}`}>
+                          <DropdownMenuItem className="cursor-pointer">
+                            Profile
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link href="/notification-preferences">
+                          <DropdownMenuItem className="cursor-pointer">
+                            Settings
+                          </DropdownMenuItem>
+                        </Link>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={handleLogout}
+                          className="text-red-500 cursor-pointer"
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Logout
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <AuthModal />
+                  )}
+                  <Button
+                    onClick={() =>
+                      window.open("https://www.goated.com/r/SPIN", "_blank")
+                    }
+                    className="relative group overflow-hidden text-[#14151A] fill-animation hover:text-[#D7FF00] transition-all duration-3000 font-mona-sans font-extrabold uppercase tracking-tight h-8 md:h-10 px-3 md:px-4 text-sm md:text-base"
+                    style={{
+                      fontStretch: "condensed",
+                      fontVariationSettings: "'COND' 100, 'wght' 800",
+                    }}
+                  >
+                    <span className="relative z-10">PLAY →</span>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
