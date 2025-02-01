@@ -620,7 +620,7 @@ export function Layout({ children }: LayoutProps) {
               </DropdownMenu>
 
               <div className="flex items-center gap-2 md:gap-4">
-                {location === "/" && <AuthModal />}
+                {!user && <AuthModal />}
                 <Button
                   onClick={() =>
                     window.open("https://www.goated.com/r/SPIN", "_blank")
