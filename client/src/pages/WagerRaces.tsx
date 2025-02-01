@@ -85,7 +85,7 @@ export default function WagerRaces() {
     };
   }, []);
 
-  const prizePool = leaderboardData?.status === 'transition' ? 500 : 500;
+  const prizePool = 500; // Remove transition amount since we want to show full prize pool
   const prizeDistribution: Record<number, number> = {
     1: 0.425, // $212.50
     2: 0.2,   // $100.00

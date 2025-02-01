@@ -582,7 +582,7 @@ async function handleCurrentRace(_req: any, res: any) {
           status: now.getDate() === 1 && now.getHours() < 1 ? 'transition' : 'live',
           startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
           endDate: endOfMonth.toISOString(),
-          prizePool: now.getDate() === 1 && now.getHours() < 1 ? 250 : 500, // Keep showing $250 during transition
+          prizePool: 500, // Show full prize pool amount
           participants: stats.data.monthly.data.map((participant: any, index: number) => ({
             uid: participant.uid,
             name: participant.name,
