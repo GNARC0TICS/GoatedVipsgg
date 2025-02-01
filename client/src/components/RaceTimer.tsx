@@ -37,7 +37,7 @@ export function RaceTimer() {
   const [timeLeft, setTimeLeft] = useState<string>("");
 
   // Use the same query as the monthly race page
-  const { data: leaderboardData } = useQuery<LeaderboardData>({
+  const { data: leaderboardData, isLoading } = useQuery<LeaderboardData>({
     queryKey: ["/api/affiliate/stats"],
     refetchInterval: 30000, // Refresh every 30 seconds
   });
@@ -74,8 +74,7 @@ export function RaceTimer() {
   }, []);
 
   // Add loading state
-  if (!leaderboardData?.data?.monthly?.data) {
-    console.log("RaceTimer: No data available", leaderboardData);
+  if (isLoading || !leaderboardData) {
     return (
       <div className="fixed bottom-4 right-4 z-50 w-80 bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg p-4">
         <div className="flex items-center gap-2">
