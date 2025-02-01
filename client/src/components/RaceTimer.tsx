@@ -19,10 +19,16 @@ interface Participant {
 }
 
 interface LeaderboardData {
+  status: string;
+  metadata: {
+    totalUsers: number;
+    lastUpdated: string;
+  };
   data: {
-    monthly: {
-      data: Participant[];
-    };
+    today: { data: Participant[] };
+    weekly: { data: Participant[] };
+    monthly: { data: Participant[] };
+    all_time: { data: Participant[] };
   };
 }
 
@@ -30,16 +36,14 @@ export function RaceTimer() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
 
-  // Use affiliate stats endpoint
-  const { data: statsData } = useQuery<LeaderboardData>({
+  // Use the same query as the monthly race page
+  const { data: leaderboardData } = useQuery<LeaderboardData>({
     queryKey: ["/api/affiliate/stats"],
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Calculate time left
   useEffect(() => {
-    if (!statsData) return;
-
     function updateTimer() {
       const now = new Date();
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
@@ -60,7 +64,7 @@ export function RaceTimer() {
     updateTimer();
     const interval = setInterval(updateTimer, 60000); // Update every minute
     return () => clearInterval(interval);
-  }, [statsData]);
+  }, []);
 
   const formatDate = useCallback((date: Date) => {
     return date.toLocaleDateString('en-US', { 
@@ -70,15 +74,14 @@ export function RaceTimer() {
   }, []);
 
   // Don't render if no data
-  if (!statsData?.data?.monthly?.data) return null;
+  if (!leaderboardData?.data?.monthly?.data) return null;
 
   const startDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const participants = statsData.data.monthly.data
+  const participants = leaderboardData.data.monthly.data
     .slice(0, 10)
     .map((participant, index) => ({
       ...participant,
       position: index + 1,
-      wageredAmount: participant.wagered.this_month
     }));
 
   return (
@@ -156,7 +159,7 @@ export function RaceTimer() {
                       </span>
                     </div>
                     <span className="text-[#D7FF00] font-mono">
-                      ${participant.wageredAmount.toLocaleString()}
+                      ${participant.wagered.this_month.toLocaleString()}
                     </span>
                   </div>
                 ))}

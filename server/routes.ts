@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocket, WebSocketServer } from "ws";
 import { log } from "./vite";
 import { setupAuth } from "./auth";
-import { API_CONFIG, makeAPIRequest } from "./config/api";
+import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import { db } from "@db";
@@ -194,22 +194,37 @@ export function registerRoutes(app: Express): Server {
     next();
   });
 
-  // Error handling middleware for API routes
-  app.use('/api', (err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    console.error('API error:', err);
-    res.status(500).json({
-      ok: false,
-      message: err.message || 'Internal server error'
-    });
+  // Public routes (no auth required)
+  app.get("/api/affiliate/stats", async (_req, res) => {
+    try {
+      await rateLimiter.consume(_req.ip || "unknown");
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${API_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const rawData = await response.json();
+      const transformedData = transformLeaderboardData(rawData);
+      res.json(transformedData);
+    } catch (error) {
+      log(`Error in /api/affiliate/stats: ${error}`);
+      res.json(API_CONFIG.fallbackData.leaderboard);
+    }
   });
 
-  // Set up authentication first
+  // Set up authentication
   setupAuth(app);
 
-  // Public routes before auth middleware
-  app.get("/api/affiliate/stats", handleAffiliateStats);
-
-  // Protected routes
+  // Protected routes middleware
   app.use('/api', (req, res, next) => {
     if (req.path === '/affiliate/stats') return next();
     if (!req.isAuthenticated()) {
@@ -221,7 +236,16 @@ export function registerRoutes(app: Express): Server {
     next();
   });
   
-  // API Routes after auth setup
+  // Error handling middleware for API routes
+  app.use('/api', (err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error('API error:', err);
+    res.status(500).json({
+      ok: false,
+      message: err.message || 'Internal server error'
+    });
+  });
+
+  // Protected route groups
   setupWagerRaceRoutes(app);
   setupSupportRoutes(app);
   setupAdminRoutes(app);
@@ -229,6 +253,7 @@ export function registerRoutes(app: Express): Server {
   setupChatRoutes(app);
   setupProfileRoutes(app);
   app.use('/api', webhookRoutes); // Added webhook routes
+
 
   // Setup WebSocket after routes
   setupWebSocket(httpServer);
@@ -292,7 +317,6 @@ function setupChatRoutes(app: Express) {
 
 function setupProfileRoutes(app: Express){
     app.get("/api/profile", requireAuth, handleProfileRequest);
-    app.get("/api/affiliate/stats", handleAffiliateStats);
 }
 // Request handlers
 async function handleProfileRequest(req: any, res: any) {
@@ -328,20 +352,6 @@ async function handleProfileRequest(req: any, res: any) {
             message: "Failed to fetch profile",
         });
     }
-}
-
-// Keep external API endpoints separate from auth
-async function handleAffiliateStats(_req: any, res: any) {
-  try {
-    await rateLimiter.consume(_req.ip || "unknown");
-    const apiData = await makeAPIRequest(API_CONFIG.endpoints.leaderboard);
-    const transformedData = transformLeaderboardData(apiData);
-    res.json(transformedData);
-  } catch (error) {
-    log(`Error in /api/affiliate/stats: ${error}`);
-    // Return empty data structure to prevent UI breaking
-    res.json(API_CONFIG.fallbackData.leaderboard);
-  }
 }
 
 async function handleAdminLogin(req: any, res: any) {
