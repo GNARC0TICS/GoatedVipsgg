@@ -105,7 +105,7 @@ function MVPCard({
                     onOpenChange(true);
                   }
                 }}
-                className="relative p-4 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover h-full cursor-pointer"
+                className="relative p-4 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover h-full cursor-pointer hover:scale-[1.02] hover:border-[#D7FF00]/30 hover:shadow-[0_0_30px_rgba(215,255,0,0.1)]"
                 style={{
                   '--hover-border-color': `${timeframe.colors.primary}80`,
                   '--hover-shadow-color': `${timeframe.colors.primary}40`

@@ -62,31 +62,16 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-20 font-heading text-[#D7FF00]">RANK</TableHead>
-              <TableHead className="font-heading text-[#D7FF00]">USERNAME</TableHead>
-              <TableHead className="text-right font-heading text-[#D7FF00]">WAGER</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {[...Array(10)].map((_, i) => (
-              <TableRow key={i} className="bg-[#1A1B21]/50 backdrop-blur-sm">
-                <TableCell>
-                  <div className="animate-pulse h-6 w-16 bg-muted rounded" />
-                </TableCell>
-                <TableCell>
-                  <div className="animate-pulse h-6 w-32 bg-muted rounded" />
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="animate-pulse h-6 w-24 bg-muted rounded ml-auto" />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <div className="space-y-4">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 p-4 bg-[#1A1B21]/50 animate-pulse rounded-lg">
+            <div className="w-8 h-8 bg-[#2A2B31] rounded-full" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-[#2A2B31] rounded w-1/4" />
+              <div className="h-3 bg-[#2A2B31] rounded w-1/3" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
