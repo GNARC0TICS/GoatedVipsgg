@@ -60,7 +60,20 @@ export default function WagerRaces() {
   }, []);
   const { data: previousRace } = useQuery<any>({
     queryKey: ["/api/wager-races/previous"],
-    enabled: showCompletedRace
+    enabled: showCompletedRace,
+    staleTime: Infinity,  // Prevent auto-refresh since historical data won't change
+    select: (data) => ({
+      ...data,
+      participants: data?.participants?.map((p: any) => ({
+        ...p,
+        wagered: {
+          this_month: p.wagered || 0,
+          today: 0,
+          this_week: 0,
+          all_time: 0
+        }
+      }))
+    })
   });
 
   useEffect(() => {
@@ -135,7 +148,9 @@ export default function WagerRaces() {
     );
   }
 
-  const top10Players = (leaderboardData || []).slice(0, 10);
+  const top10Players = showCompletedRace 
+    ? (previousRace?.data?.participants || [])
+    : (leaderboardData || []).slice(0, 10);
   const currentLeader = top10Players[0];
 
   return (
