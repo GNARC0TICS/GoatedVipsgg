@@ -1,13 +1,12 @@
+
 import { useState, useRef, useEffect } from "react";
 import {
   motion,
   AnimatePresence,
   useMotionValue,
-  useTransform,
   PanInfo,
 } from "framer-motion";
-import { ArrowLeftCircle, ArrowRightCircle } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 
 const announcements = [
   { text: "WAGER RACES", link: "/wager-races" },
@@ -37,41 +36,42 @@ const announcements = [
 export const FeatureCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
-  const containerRef = useRef<HTMLDivElement>(null);
   const [, setLocation] = useLocation();
-  const x = useMotionValue(0);
   const [isDragging, setIsDragging] = useState(false);
+  const dragX = useMotionValue(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const wrap = (index: number) => {
+    if (index < 0) return announcements.length - 1;
+    if (index >= announcements.length) return 0;
+    return index;
+  };
 
   const nextSlide = () => {
     if (!isDragging) {
       setDirection('next');
-      setCurrentIndex((prev) => (prev + 1) % announcements.length);
+      setCurrentIndex((prev) => wrap(prev + 1));
     }
   };
 
   const prevSlide = () => {
     if (!isDragging) {
       setDirection('prev');
-      setCurrentIndex(
-        (prev) => (prev - 1 + announcements.length) % announcements.length,
-      );
+      setCurrentIndex((prev) => wrap(prev - 1));
     }
   };
-
-  const dragConstraints = useRef<HTMLDivElement>(null);
 
   const handleDragEnd = (
     event: MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo,
   ) => {
     setIsDragging(false);
-    const threshold = 20; // Lower threshold for easier swipes
+    const threshold = 50;
     const velocity = info.velocity.x;
     const offset = info.offset.x;
 
-    // Make swipe detection more sensitive
-    if (Math.abs(velocity) > 50 || Math.abs(offset) > threshold) {
-      if (offset > 0 || velocity > 50) {
+    if (Math.abs(velocity) > 200 || Math.abs(offset) > threshold) {
+      if (offset > 0 || velocity > 200) {
         prevSlide();
       } else {
         nextSlide();
@@ -101,41 +101,50 @@ export const FeatureCarousel = () => {
     }
   };
 
+  const variants = {
+    enter: (direction: 'next' | 'prev') => ({
+      x: direction === 'next' ? 1000 : -1000,
+      opacity: 0
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1
+    },
+    exit: (direction: 'next' | 'prev') => ({
+      zIndex: 0,
+      x: direction === 'next' ? -1000 : 1000,
+      opacity: 0
+    })
+  };
+
   return (
-    <div
-      ref={containerRef}
-      className="relative h-24 overflow-hidden mb-8 group touch-none"
-    >
-      <div
-        ref={dragConstraints}
-        className="flex justify-center items-center h-full relative"
-      >
-        <AnimatePresence mode="wait">
+    <div ref={containerRef} className="relative h-24 overflow-hidden mb-8 group touch-none">
+      <div className="flex justify-center items-center h-full relative">
+        <AnimatePresence initial={false} custom={direction} mode="popLayout">
           <motion.div
             key={currentIndex}
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
             drag="x"
-            dragConstraints={dragConstraints}
-            dragElastic={1}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.8}
             dragMomentum={true}
-            dragTransition={{ bounceStiffness: 400, bounceDamping: 40 }}
-            whileDrag={{ cursor: "grabbing" }}
             onDragStart={() => setIsDragging(true)}
             onDragEnd={handleDragEnd}
-            initial={{ opacity: 0, x: direction === 'next' ? 100 : -100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction === 'next' ? -100 : 100 }}
             transition={{
-              type: "spring",
-              stiffness: 200,
-              damping: 25,
-              mass: 0.5,
+              x: { type: "spring", stiffness: 300, damping: 30 },
+              opacity: { duration: 0.2 }
             }}
-            style={{ x }}
-            className="text-center px-16 touch-none cursor-grab active:cursor-grabbing"
+            style={{ x: dragX }}
+            className="absolute w-full flex justify-center items-center touch-pan-y"
           >
             <button
               onClick={() => handleClick(announcements[currentIndex].link)}
-              className="text-3xl md:text-4xl font-heading font-extrabold bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent hover:from-[#D7FF00]/80 hover:to-[#D7FF00]/40 transition-all pointer-events-auto"
+              className="text-3xl md:text-4xl font-heading font-extrabold bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent hover:from-[#D7FF00]/80 hover:to-[#D7FF00]/40 transition-all pointer-events-auto px-4"
             >
               {announcements[currentIndex].text}
             </button>
