@@ -19,19 +19,19 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  email: z.string().email().optional(),
+  email: z.string().email("Invalid email address").optional(),
 });
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
-  const { login, register } = useAuth();
+  const { login, register, user } = useAuth();
   const [, setLocation] = useLocation();
 
   const form = useForm({
@@ -43,7 +43,14 @@ export default function AuthPage() {
     },
   });
 
-  const onSubmit = async (values: any) => {
+  useEffect(() => {
+    // Redirect to home if already logged in
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
+
+  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
       if (isLogin) {
         await login({
@@ -51,6 +58,10 @@ export default function AuthPage() {
           password: values.password,
         });
       } else {
+        if (!values.email) {
+          form.setError("email", { message: "Email is required for registration" });
+          return;
+        }
         await register({
           username: values.username,
           password: values.password,
@@ -60,7 +71,7 @@ export default function AuthPage() {
       setLocation("/");
     } catch (error) {
       // Error handling is done in the auth provider
-      console.error(error);
+      console.error("Auth error:", error);
     }
   };
 
@@ -164,7 +175,10 @@ export default function AuthPage() {
               <Button
                 variant="link"
                 className="text-sm text-[#D7FF00] hover:text-[#D7FF00]/80"
-                onClick={() => setIsLogin(!isLogin)}
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  form.reset();
+                }}
               >
                 {isLogin
                   ? "Need an account? Sign up"

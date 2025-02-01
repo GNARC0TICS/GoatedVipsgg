@@ -46,14 +46,19 @@ declare global {
 
 export function setupAuth(app: Express) {
   const MemoryStore = createMemoryStore(session);
+
+  // Session configuration with secure settings
   const sessionSettings: session.SessionOptions = {
     secret: process.env.REPL_ID || "goated-rewards",
     resave: false,
     saveUninitialized: false,
+    name: 'sid',
     cookie: {
       secure: app.get("env") === "production",
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax',
+      path: '/'
     },
     store: new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
@@ -64,11 +69,13 @@ export function setupAuth(app: Express) {
     app.set("trust proxy", 1);
   }
 
+  // Middleware setup
+  app.use(express.json());
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Session configuration
+  // Passport configuration
   passport.serializeUser((user: Express.User, done) => {
     done(null, user.id);
   });
@@ -80,12 +87,18 @@ export function setupAuth(app: Express) {
         .from(users)
         .where(eq(users.id, id))
         .limit(1);
+
+      if (!user) {
+        return done(null, false);
+      }
+
       done(null, user);
     } catch (error) {
       done(error);
     }
   });
 
+  // Local strategy setup
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
@@ -129,6 +142,7 @@ export function setupAuth(app: Express) {
     }),
   );
 
+  // Authentication endpoints
   app.post("/api/register", async (req, res) => {
     try {
       const result = insertUserSchema.safeParse(req.body);
@@ -142,7 +156,7 @@ export function setupAuth(app: Express) {
 
       // Rate limiting check
       try {
-        await rateLimiter.consume(req.ip);
+        await rateLimiter.consume(req.ip || req.socket.remoteAddress || '');
       } catch (err) {
         return res.status(429).json({
           ok: false,
@@ -199,7 +213,7 @@ export function setupAuth(app: Express) {
             message: "Failed to login after registration",
           });
         }
-        return res.json({
+        return res.status(201).json({
           ok: true,
           user: {
             id: newUser.id,
@@ -217,9 +231,9 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", express.json(), async (req, res, next) => {
+  app.post("/api/login", async (req, res, next) => {
     try {
-      await rateLimiter.consume(req.ip);
+      await rateLimiter.consume(req.ip || req.socket.remoteAddress || '');
     } catch (err) {
       return res.status(429).json({
         ok: false,
@@ -249,7 +263,7 @@ export function setupAuth(app: Express) {
             return next(err);
           }
 
-          return res.json({
+          return res.status(200).json({
             ok: true,
             user: {
               id: user.id,
@@ -271,8 +285,18 @@ export function setupAuth(app: Express) {
           message: "Logout failed",
         });
       }
-      res.json({
-        ok: true,
+      req.session.destroy((err) => {
+        if (err) {
+          return res.status(500).json({
+            ok: false,
+            message: "Session destruction failed",
+          });
+        }
+        res.clearCookie('sid');
+        res.status(200).json({
+          ok: true,
+          message: "Logged out successfully",
+        });
       });
     });
   });
@@ -280,11 +304,14 @@ export function setupAuth(app: Express) {
   app.get("/api/user", (req, res) => {
     if (req.isAuthenticated()) {
       const user = req.user;
-      return res.json({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        isAdmin: user.isAdmin,
+      return res.status(200).json({
+        ok: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          isAdmin: user.isAdmin,
+        },
       });
     }
     res.status(401).json({
