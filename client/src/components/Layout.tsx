@@ -570,8 +570,7 @@ export function Layout({ children }: LayoutProps) {
                       <Bell className="h-4 w-4 md:h-5 md:w-5" />
                     </Button>
                   </DropdownMenuTrigger>
-              )}
-                <DropdownMenuContent className="w-80 bg-[#1A1B21] border-[#2A2B31]">
+                  <DropdownMenuContent className="w-80 bg-[#1A1B21] border-[#2A2B31]">
                   <DropdownMenuLabel className="flex items-center justify-between">
                     Notifications
                     <Button
