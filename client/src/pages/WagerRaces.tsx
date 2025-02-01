@@ -121,10 +121,10 @@ export default function WagerRaces() {
     };
   }, []);
 
-  const prizePool = showCompletedRace ? 200 : 400;
+  const prizePool = 500;
   const prizeDistribution: Record<number, number> = {
-    1: 0.425, // $170
-    2: 0.2,   // $80
+    1: 0.425, // $212.50
+    2: 0.2,   // $100
     3: 0.15,  // $60
     4: 0.075, // $30
     5: 0.06,  // $24
