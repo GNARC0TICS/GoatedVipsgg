@@ -154,6 +154,15 @@ export function registerRoutes(app: Express): Server {
 }
 
 function setupRESTRoutes(app: Express) {
+  // Add www to non-www redirect
+  app.use((req, res, next) => {
+    const host = req.hostname;
+    if (host.startsWith('www.')) {
+      const newHost = host.replace('www.', '');
+      return res.redirect(301, `${req.protocol}://${newHost}${req.originalUrl}`);
+    }
+    next();
+  });
   // Add endpoint to fetch previous month's results
   app.get("/api/wager-races/previous", async (_req, res) => {
     try {
