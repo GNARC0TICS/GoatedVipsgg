@@ -3,6 +3,11 @@ import { QueryClient } from "@tanstack/react-query";
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      staleTime: 30000, // Data stays fresh for 30 seconds
+      cacheTime: 300000, // Cache persists for 5 minutes
+      refetchOnMount: false, // Don't refetch on component mount
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+      retry: false, // Don't retry failed requests automatically
       queryFn: async ({ queryKey }) => {
         try {
           const cacheKey = Array.isArray(queryKey) ? queryKey.join('-') : queryKey;

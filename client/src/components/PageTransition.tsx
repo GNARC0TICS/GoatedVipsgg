@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 
@@ -15,6 +16,7 @@ export function PageTransition({ children }: PageTransitionProps) {
         type: "spring",
         stiffness: 260,
         damping: 20,
+        duration: 0.3 // Shorter duration
       }}
     >
       {children}
