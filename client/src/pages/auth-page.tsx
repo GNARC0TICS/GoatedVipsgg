@@ -19,11 +19,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
+import { Loader2 } from "lucide-react";
 
-const loginSchema = z.object({
+const authSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   email: z.string().email("Invalid email address").optional(),
@@ -35,7 +36,7 @@ export default function AuthPage() {
   const [, setLocation] = useLocation();
 
   const form = useForm({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(authSchema),
     defaultValues: {
       username: "",
       password: "",
@@ -43,14 +44,13 @@ export default function AuthPage() {
     },
   });
 
-  useEffect(() => {
-    // Redirect to home if already logged in
-    if (user) {
-      setLocation("/");
-    }
-  }, [user, setLocation]);
+  // Redirect if already logged in
+  if (user) {
+    setLocation("/");
+    return null;
+  }
 
-  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
+  const onSubmit = async (values: z.infer<typeof authSchema>) => {
     try {
       if (isLogin) {
         await login({
@@ -70,7 +70,6 @@ export default function AuthPage() {
       }
       setLocation("/");
     } catch (error) {
-      // Error handling is done in the auth provider
       console.error("Auth error:", error);
     }
   };
@@ -110,6 +109,7 @@ export default function AuthPage() {
                           placeholder="Enter your username" 
                           {...field}
                           className="bg-[#1A1B21] border-[#2A2B31]"
+                          autoComplete="username"
                         />
                       </FormControl>
                       <FormMessage />
@@ -130,6 +130,7 @@ export default function AuthPage() {
                             placeholder="Enter your email"
                             {...field}
                             className="bg-[#1A1B21] border-[#2A2B31]"
+                            autoComplete="email"
                           />
                         </FormControl>
                         <FormMessage />
@@ -150,6 +151,7 @@ export default function AuthPage() {
                           placeholder="Enter your password"
                           {...field}
                           className="bg-[#1A1B21] border-[#2A2B31]"
+                          autoComplete={isLogin ? "current-password" : "new-password"}
                         />
                       </FormControl>
                       <FormMessage />
@@ -162,11 +164,13 @@ export default function AuthPage() {
                   className="w-full bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
                   disabled={form.formState.isSubmitting}
                 >
-                  {form.formState.isSubmitting
-                    ? "Processing..."
-                    : isLogin
-                    ? "Sign In"
-                    : "Create Account"}
+                  {form.formState.isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isLogin ? (
+                    "Sign In"
+                  ) : (
+                    "Create Account"
+                  )}
                 </Button>
               </form>
             </Form>

@@ -17,8 +17,8 @@ const PORT = 5000;
 async function setupMiddleware() {
   // Basic middleware setup
   app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  app.use(cookieParser());
+  app.use(express.urlencoded({ extended: true }));
+  app.use(cookieParser(process.env.REPL_ID || 'session-secret'));
 
   // API middleware
   app.use('/api', (req, res, next) => {
@@ -26,7 +26,7 @@ async function setupMiddleware() {
     next();
   });
 
-  // Set up authentication
+  // Set up authentication before API routes
   setupAuth(app);
 
   // Other middleware
@@ -113,7 +113,7 @@ async function startServer() {
     // Create HTTP server first
     const server = createServer(app);
 
-    // Set up middleware before Vite
+    // Set up middleware before routes
     await setupMiddleware();
 
     // Initialize admin user after middleware setup
@@ -129,25 +129,21 @@ async function startServer() {
       serveStatic(app);
     }
 
-    // Server startup with error handling
-  server
-    .listen(PORT, "0.0.0.0")
-    .on("error", async (err: NodeJS.ErrnoException) => {
-      // Handle port conflicts
-      if (err.code === 'EADDRINUSE') {
-        log(`Port ${PORT} is in use, attempting to free it...`);
-        await cleanupPort();
-        server.listen(PORT, "0.0.0.0");
-        return;
-      }
-      
-      // Handle other errors
-      console.error(`Failed to start server: ${err.message}`);
-      process.exit(1);
-    })
-    .on("listening", () => {
-      log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-    });
+    server
+      .listen(PORT, "0.0.0.0")
+      .on("error", async (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EADDRINUSE') {
+          log(`Port ${PORT} is in use, attempting to free it...`);
+          await cleanupPort();
+          server.listen(PORT, "0.0.0.0");
+          return;
+        }
+        console.error(`Failed to start server: ${err.message}`);
+        process.exit(1);
+      })
+      .on("listening", () => {
+        log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+      });
 
   } catch (error) {
     console.error("Failed to start application:", error);
@@ -155,6 +151,7 @@ async function startServer() {
   }
 }
 
+// Handle graceful shutdown
 process.on('SIGTERM', () => {
   log('Received SIGTERM signal. Shutting down gracefully...');
   process.exit(0);

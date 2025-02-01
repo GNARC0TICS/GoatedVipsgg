@@ -24,6 +24,31 @@ const rateLimiter = new RateLimiterMemory({
   duration: RATE_LIMIT_DURATION,
 });
 
+// Keep API token separate from session auth
+const API_TOKEN = process.env.API_TOKEN || API_CONFIG.token;
+
+async function makeAPIRequest(endpoint: string) {
+  const response = await fetch(
+    `${API_CONFIG.baseUrl}${endpoint}`,
+    {
+      headers: {
+        Authorization: `Bearer ${API_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      log("API Authentication failed - check API token");
+      throw new Error("API Authentication failed");
+    }
+    throw new Error(`API request failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
 // WebSocket handling functions
 function handleLeaderboardConnection(ws: WebSocket) {
   const clientId = Date.now().toString();
@@ -290,48 +315,32 @@ async function handleProfileRequest(req: any, res: any) {
     }
 }
 
+// Update handleAffiliateStats to use the new makeAPIRequest function
 async function handleAffiliateStats(req: any, res: any) {
-    try {
-        await rateLimiter.consume(req.ip || "unknown");
-        const response = await fetch(
-            `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-                    "Content-Type": "application/json",
-                },
-            }
-        );
+  try {
+    await rateLimiter.consume(req.ip || "unknown");
 
-        if (!response.ok) {
-            if (response.status === 401) {
-                log("API Authentication failed - check API token");
-                throw new Error("API Authentication failed");
-            }
-            throw new Error(`API request failed: ${response.status}`);
-        }
+    const apiData = await makeAPIRequest(API_CONFIG.endpoints.leaderboard);
+    const transformedData = transformLeaderboardData(apiData);
 
-        const apiData = await response.json();
-        const transformedData = transformLeaderboardData(apiData);
-
-        res.json(transformedData);
-    } catch (error) {
-        log(`Error in /api/affiliate/stats: ${error}`);
-        // Return empty data structure to prevent UI breaking
-        res.json({
-            status: "success",
-            metadata: {
-                totalUsers: 0,
-                lastUpdated: new Date().toISOString(),
-            },
-            data: {
-                today: { data: [] },
-                weekly: { data: [] },
-                monthly: { data: [] },
-                all_time: { data: [] },
-            },
-        });
-    }
+    res.json(transformedData);
+  } catch (error) {
+    log(`Error in /api/affiliate/stats: ${error}`);
+    // Return empty data structure to prevent UI breaking
+    res.json({
+      status: "success",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    });
+  }
 }
 
 
@@ -504,102 +513,90 @@ async function handlePreviousRaces(_req: any, res: any) {
   }
 }
 
+// Update the API request in handleCurrentRace
 async function handleCurrentRace(_req: any, res: any) {
-    try {
-        await rateLimiter.consume(_req.ip || "unknown");
-        const response = await fetch(
-            `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-                    "Content-Type": "application/json",
-                },
-            }
-        );
+  try {
+    await rateLimiter.consume(_req.ip || "unknown");
 
-        if (!response.ok) {
-            throw new Error(`API request failed: ${response.status}`);
-        }
+    const rawData = await makeAPIRequest(API_CONFIG.endpoints.leaderboard);
+    const stats = transformLeaderboardData(rawData);
 
-        const rawData = await response.json();
-        const stats = transformLeaderboardData(rawData);
+    // Rest of the function remains unchanged
+    const now = new Date();
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-        // Get current month's info
-        const now = new Date();
-        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    // Check if previous month needs to be archived
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
 
-        // Check if previous month needs to be archived
-        const startOfToday = new Date();
-        startOfToday.setHours(0, 0, 0, 0);
+    // If it's the first day of the month and we haven't archived yet
+    if (now.getDate() === 1 && now.getHours() < 1) {
+      const previousMonth = now.getMonth() === 0 ? 12 : now.getMonth();
+      const previousYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
 
-        // If it's the first day of the month and we haven't archived yet
-        if (now.getDate() === 1 && now.getHours() < 1) {
-            const previousMonth = now.getMonth() === 0 ? 12 : now.getMonth();
-            const previousYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+      // Check if we already have an entry for the previous month
+      const [existingEntry] = await db
+        .select()
+        .from(historicalRaces)
+        .where(
+          and(
+            eq(historicalRaces.month, previousMonth),
+            eq(historicalRaces.year, previousYear)
+          )
+        )
+        .limit(1);
 
-            // Check if we already have an entry for the previous month
-            const [existingEntry] = await db
-                .select()
-                .from(historicalRaces)
-                .where(
-                    and(
-                        eq(historicalRaces.month, previousMonth),
-                        eq(historicalRaces.year, previousYear)
-                    )
-                )
-                .limit(1);
+      if (!existingEntry && stats.data.monthly.data.length > 0) {
+        // Store the previous month's results
+        const winners = stats.data.monthly.data.slice(0, 10).map((winner: any, index: number) => ({
+          ...winner,
+          prize: (200 * PRIZE_DISTRIBUTION[index]).toFixed(2), // Calculate prize based on distribution
+          position: index + 1
+        }));
 
-            if (!existingEntry && stats.data.monthly.data.length > 0) {
-                // Store the previous month's results
-                const winners = stats.data.monthly.data.slice(0, 10).map((winner: any, index: number) => ({
-                    ...winner,
-                    prize: (200 * PRIZE_DISTRIBUTION[index]).toFixed(2), // Calculate prize based on distribution
-                    position: index + 1
-                }));
-
-                await db.insert(historicalRaces).values({
-                    month: previousMonth,
-                    year: previousYear,
-                    prizePool: 200,
-                    startDate: new Date(previousYear, previousMonth - 1, 1),
-                    endDate: new Date(previousYear, previousMonth, 0, 23, 59, 59),
-                    participants: winners,
-                    isCompleted: true
-                });
-
-                // Broadcast race completion to all connected clients
-                broadcastLeaderboardUpdate({
-                    type: "RACE_COMPLETED",
-                    data: {
-                        winners,
-                        nextRaceStart: new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-                    }
-                });
-            }
-        }
-
-        const raceData = {
-          id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
-          status: now.getDate() === 1 && now.getHours() < 1 ? 'transition' : 'live',
-          startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
-          endDate: endOfMonth.toISOString(),
-          prizePool: 500, // Show full prize pool amount
-          participants: stats.data.monthly.data.map((participant: any, index: number) => ({
-            uid: participant.uid,
-            name: participant.name,
-            wagered: participant.wagered.this_month,
-            position: index + 1
-          })).slice(0, 10) // Top 10 participants
-        };
-
-        res.json(raceData);
-    } catch (error) {
-        log(`Error fetching current race: ${error}`);
-        res.status(500).json({
-            status: "error",
-            message: "Failed to fetch current race",
+        await db.insert(historicalRaces).values({
+          month: previousMonth,
+          year: previousYear,
+          prizePool: 200,
+          startDate: new Date(previousYear, previousMonth - 1, 1),
+          endDate: new Date(previousYear, previousMonth, 0, 23, 59, 59),
+          participants: winners,
+          isCompleted: true
         });
+
+        // Broadcast race completion to all connected clients
+        broadcastLeaderboardUpdate({
+          type: "RACE_COMPLETED",
+          data: {
+            winners,
+            nextRaceStart: new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+          }
+        });
+      }
     }
+
+    const raceData = {
+      id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
+      status: now.getDate() === 1 && now.getHours() < 1 ? 'transition' : 'live',
+      startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+      endDate: endOfMonth.toISOString(),
+      prizePool: 500, // Show full prize pool amount
+      participants: stats.data.monthly.data.map((participant: any, index: number) => ({
+        uid: participant.uid,
+        name: participant.name,
+        wagered: participant.wagered.this_month,
+        position: index + 1
+      })).slice(0, 10) // Top 10 participants
+    };
+
+    res.json(raceData);
+  } catch (error) {
+    log(`Error fetching current race: ${error}`);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to fetch current race",
+    });
+  }
 }
 
 async function handleSupportMessages(req: any, res: any) {
@@ -971,7 +968,7 @@ async function handleChatConnection(ws: WebSocket) {
         .returning();
 
       // Broadcast message to all connected clients
-      const broadcastMessage = {
+      const broadcastMessage ={
         id: savedMessage.id,
         message: savedMessage.message,
         userId: savedMessage.userId,

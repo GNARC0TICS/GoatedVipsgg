@@ -21,26 +21,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
 
-  // Add error boundary
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-xl font-bold mb-2">Authentication Error</h2>
-          <p className="text-[#8A8B91] mb-4">{error.message}</p>
-          <Button onClick={() => window.location.reload()}>
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const { data: userResponse, isError } = useQuery({
-    enabled: true,
-    initialData: { ok: false, user: null },
+  const { data: userResponse } = useQuery({
     queryKey: ["/api/user"],
     queryFn: async () => {
       try {
@@ -52,22 +34,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           },
         });
 
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          console.error("Received non-JSON response:", await response.text());
-          return { ok: false, user: null };
-        }
-
-        const data = await response.json();
-
         if (!response.ok) {
           if (response.status === 401) {
             return { ok: false, user: null };
           }
-          throw new Error(data.message || "Failed to fetch user data");
+          throw new Error("Failed to fetch user data");
         }
 
-        return data;
+        return await response.json();
       } catch (error) {
         console.error("Error fetching user:", error);
         return { ok: false, user: null };
@@ -79,36 +53,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
-      if (!credentials?.username?.trim() || !credentials?.password?.trim()) {
-        throw new Error("Username and password are required");
-      }
-
       const response = await fetch("/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/json",
         },
-        body: JSON.stringify({
-          username: credentials.username.trim(),
-          password: credentials.password.trim(),
-        }),
+        body: JSON.stringify(credentials),
         credentials: "include",
       });
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Received non-JSON response:", text);
-        throw new Error("Invalid server response");
-      }
-
-      const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || "Login failed");
+        const error = await response.json();
+        throw new Error(error.message || "Login failed");
       }
 
-      return data;
+      return response.json();
     },
     onSuccess: (data) => {
       if (data.ok && data.user) {
@@ -138,25 +97,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/json",
         },
         body: JSON.stringify(credentials),
         credentials: "include",
       });
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Received non-JSON response:", text);
-        throw new Error("Invalid server response");
-      }
-
-      const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || "Registration failed");
+        const error = await response.json();
+        throw new Error(error.message || "Registration failed");
       }
 
-      return data;
+      return response.json();
     },
     onSuccess: (data) => {
       if (data.ok && data.user) {
@@ -180,26 +131,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     mutationFn: async () => {
       const response = await fetch("/api/logout", {
         method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json"
-        },
         credentials: "include",
       });
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Received non-JSON response:", text);
-        throw new Error("Invalid server response");
-      }
-
-      const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || "Logout failed");
+        const error = await response.json();
+        throw new Error(error.message || "Logout failed");
       }
 
-      return data;
+      return response.json();
     },
     onSuccess: (data) => {
       if (data.ok) {
