@@ -66,25 +66,31 @@ export const FeatureCarousel = () => {
     info: PanInfo,
   ) => {
     setIsDragging(false);
-    const threshold = 100; // Increased threshold for better detection
-    const velocity = info.velocity.x;
     const offset = info.offset.x;
-    const progress = Math.abs(offset) / window.innerWidth;
+    const velocity = info.velocity.x;
+    const width = window.innerWidth;
+    const dragThreshold = width * 0.2;
+    const velocityThreshold = 200;
 
-    // Force transition when progress is significant or velocity is high
-    if (progress > 0.15 || Math.abs(velocity) > 500) {
-      if (offset > 0) {
+    const isQuickSwipe = Math.abs(velocity) > velocityThreshold;
+    const isLongDrag = Math.abs(offset) > dragThreshold;
+
+    if (isQuickSwipe || isLongDrag) {
+      if (offset > 0 || velocity > velocityThreshold) {
         prevSlide();
-        // Skip one more if velocity is very high
-        if (Math.abs(velocity) > 1000) {
-          setTimeout(prevSlide, 50);
-        }
       } else {
         nextSlide();
-        // Skip one more if velocity is very high
-        if (Math.abs(velocity) > 1000) {
-          setTimeout(nextSlide, 50);
-        }
+      }
+    }
+
+    // Force transition for edge drags
+    if (Math.abs(offset) > width * 0.4) {
+      if (offset > 0) {
+        prevSlide();
+        setTimeout(prevSlide, 50);
+      } else {
+        nextSlide();
+        setTimeout(nextSlide, 50);
       }
     }
   };
@@ -141,8 +147,8 @@ export const FeatureCarousel = () => {
             exit="exit"
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.8}
-            dragMomentum={true}
+            dragElastic={1}
+            dragMomentum={false}
             onDragStart={() => setIsDragging(true)}
             onDragEnd={handleDragEnd}
             transition={{
