@@ -241,11 +241,16 @@ function setupRESTRoutes(app: Express) {
         const prizeDistribution = [0.5, 0.3, 0.1, 0.05, 0.05, 0, 0, 0, 0, 0]; //Example distribution, needs to be defined elsewhere
 
         if (!existingEntry && stats.data.monthly.data.length > 0) {
-          // Store the previous month's results
-          const winners = stats.data.monthly.data.slice(0, 10).map((winner: any, index: number) => ({
-            ...winner,
-            prize: (200 * prizeDistribution[index]).toFixed(2), // Calculate prize based on distribution
-            position: index + 1
+          // Store complete race results with detailed participant data
+          const winners = stats.data.monthly.data.map((participant: any, index: number) => ({
+            uid: participant.uid,
+            name: participant.name,
+            wagered: participant.wagered.this_month,
+            allTimeWagered: participant.wagered.all_time,
+            tier: getTierFromWager(participant.wagered.all_time),
+            prize: index < 10 ? (prizePool * prizeDistribution[index]).toFixed(2) : "0",
+            position: index + 1,
+            timestamp: new Date().toISOString()
           }));
 
           await db.insert(historicalRaces).values({

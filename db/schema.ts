@@ -128,8 +128,12 @@ export const historicalRaces = pgTable("historical_races", {
   prizePool: decimal("prize_pool", { precision: 10, scale: 2 }).notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
-  participants: jsonb("participants").notNull(), // Store top 10 participants
+  participants: jsonb("participants").notNull(), // Store all participants
+  totalWagered: decimal("total_wagered", { precision: 18, scale: 2 }).notNull(),
+  participantCount: integer("participant_count").notNull(),
+  status: text("status").notNull().default('completed'),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  metadata: jsonb("metadata").default({}).notNull() // For future extensibility
 });
 
 export const userRelations = relations(users, ({ one, many }) => ({

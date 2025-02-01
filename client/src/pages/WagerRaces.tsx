@@ -439,7 +439,7 @@ export default function WagerRaces() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(showCompletedRace ? (previousRace?.participants || []) : top10Players).map((player, index) => (
+                {(showCompletedRace ? (previousRace?.data?.participants || []).slice(0, 10) : top10Players).map((player, index) => (
                   <TableRow
                     key={player.uid}
                     className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]"
