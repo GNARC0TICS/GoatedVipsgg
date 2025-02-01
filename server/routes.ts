@@ -206,6 +206,21 @@ export function registerRoutes(app: Express): Server {
   // Set up authentication first
   setupAuth(app);
 
+  // Public routes before auth middleware
+  app.get("/api/affiliate/stats", handleAffiliateStats);
+
+  // Protected routes
+  app.use('/api', (req, res, next) => {
+    if (req.path === '/affiliate/stats') return next();
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ 
+        ok: false, 
+        message: "Authentication required" 
+      });
+    }
+    next();
+  });
+  
   // API Routes after auth setup
   setupWagerRaceRoutes(app);
   setupSupportRoutes(app);
