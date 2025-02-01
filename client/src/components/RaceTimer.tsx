@@ -32,6 +32,21 @@ interface LeaderboardData {
   };
 }
 
+// Add default fallback data
+const fallbackData: LeaderboardData = {
+  status: "success",
+  metadata: {
+    totalUsers: 0,
+    lastUpdated: new Date().toISOString(),
+  },
+  data: {
+    today: { data: [] },
+    weekly: { data: [] },
+    monthly: { data: [] },
+    all_time: { data: [] },
+  },
+};
+
 export function RaceTimer() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
@@ -39,7 +54,10 @@ export function RaceTimer() {
   // Use the same query as the monthly race page
   const { data: leaderboardData, isLoading } = useQuery<LeaderboardData>({
     queryKey: ["/api/affiliate/stats"],
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 30000,
+    refetchOnWindowFocus: false,
+    retry: 3,
+    initialData: fallbackData,
   });
 
   // Calculate time left
