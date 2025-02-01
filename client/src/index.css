@@ -217,6 +217,24 @@ html {
 }
 
 @layer components {
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-lg border border-white/10 shadow-xl;
+    transition: all 0.3s ease-in-out;
+  }
+
+  .glass-card:hover {
+    @apply bg-white/10 border-[#D7FF00]/20 scale-[1.02];
+    box-shadow: 0 0 30px rgba(215, 255, 0, 0.1);
+  }
+
+  .glow-text {
+    text-shadow: 0 0 10px rgba(215, 255, 0, 0.5);
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
   .header-text {
     @apply font-heading font-extrabold uppercase tracking-tight;
   }

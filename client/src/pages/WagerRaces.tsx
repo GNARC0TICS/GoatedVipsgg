@@ -292,7 +292,7 @@ export default function WagerRaces() {
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
                 }}
-                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-3 md:p-6 rounded-2xl border-2 border-[#C0C0C0] w-[120px] md:w-[180px] h-[140px] md:h-[180px] transform -translate-y-4"
+                className="relative glass-card p-3 md:p-6 rounded-2xl border-2 border-[#C0C0C0] w-[120px] md:w-[180px] h-[140px] md:h-[180px] transform -translate-y-4 animate-float"
               >
                 <div className="absolute -top-12 left-1/2 -translate-x-1/2">
                   <span className="bg-[#C0C0C0] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">

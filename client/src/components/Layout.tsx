@@ -126,7 +126,8 @@ export function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#14151A] flex flex-col">
+    <div className="min-h-screen bg-[#14151A] flex flex-col relative">
+      <ParticleBackground /> {/* Added ParticleBackground component */}
       <header className="fixed top-0 left-0 right-0 z-50">
         <div className="absolute inset-0 bg-[#14151A]/80 backdrop-blur-xl border-b border-[#2A2B31]/50" />
         <nav className="container mx-auto px-4 relative">
@@ -839,4 +840,9 @@ function NavLink({
       )}
     </Tooltip>
   );
+}
+
+function ParticleBackground() {
+  //Implementation for particle background would go here.  This is a placeholder.
+  return <div>Particle Background</div>;
 }
