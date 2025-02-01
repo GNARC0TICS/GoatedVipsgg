@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, ChevronDown, ChevronUp, Clock, AlertCircle, History } from "lucide-react";
@@ -5,7 +6,7 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
-// Types for race data
+// Type definitions for race data structures
 interface RaceParticipant {
   uid: string;
   name: string;
@@ -23,16 +24,22 @@ interface RaceData {
 }
 
 export function RaceTimer() {
+  // Local state management
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPrevious, setShowPrevious] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
   const { toast } = useToast();
 
-  // Fetch current race data
-  const { data: currentRaceData, error: currentError, isLoading: isCurrentLoading } = useQuery<RaceData>({
+  // Data fetching hooks
+  const { 
+    data: currentRaceData, 
+    error: currentError, 
+    isLoading: isCurrentLoading 
+  } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/current"],
     refetchInterval: 30000, // Refresh every 30 seconds
     retry: 3,
+    // Default race data structure
     initialData: {
       id: "current",
       status: "live",
@@ -43,13 +50,16 @@ export function RaceTimer() {
     }
   });
 
-  // Fetch previous month's data
-  const { data: previousRaceData, error: previousError, isLoading: isPreviousLoading } = useQuery<RaceData>({
+  // Previous month's race data
+  const { 
+    data: previousRaceData, 
+    error: previousError, 
+    isLoading: isPreviousLoading 
+  } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/previous"],
-    enabled: showPrevious, // Only fetch when viewing previous month
+    enabled: showPrevious,
     select: (data) => {
       if (!data) return null;
-      // Ensure dates are valid
       return {
         ...data,
         startDate: data.startDate || new Date().toISOString(),
@@ -58,11 +68,11 @@ export function RaceTimer() {
     }
   });
 
-  // Use the appropriate data based on which view is active
+  // Active race data based on view selection
   const raceData = showPrevious ? previousRaceData : currentRaceData;
   const error = showPrevious ? previousError : currentError;
 
-  // Calculate and update time remaining until end of month
+  // Timer logic for countdown display
   useEffect(() => {
     if (!currentRaceData?.endDate) return;
 
@@ -88,7 +98,16 @@ export function RaceTimer() {
     return () => clearInterval(interval);
   }, [currentRaceData?.endDate]);
 
-  // Error state
+  // Helper function for date formatting
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric',
+      month: 'long'
+    });
+  };
+
+  // Error state render
   if (error) {
     return (
       <motion.div 
@@ -106,9 +125,8 @@ export function RaceTimer() {
     );
   }
 
-  // Loading or no race data
+  // Loading state render
   const isLoading = showPrevious ? isPreviousLoading : isCurrentLoading;
-
   if (isLoading) {
     return (
       <motion.div 
@@ -128,14 +146,7 @@ export function RaceTimer() {
 
   if (!raceData) return null;
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric',
-      month: 'long'
-    });
-  };
-
+  // Main component render
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -143,7 +154,7 @@ export function RaceTimer() {
       className="fixed bottom-4 right-4 z-50 w-80"
     >
       <div className="bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg shadow-lg overflow-hidden">
-        {/* Header with Timer */}
+        {/* Header Section */}
         <div 
           className="p-4 cursor-pointer"
           onClick={() => setIsExpanded(!isExpanded)}
@@ -164,6 +175,8 @@ export function RaceTimer() {
               )}
             </div>
           </div>
+          
+          {/* Navigation Controls */}
           <div className="flex justify-between items-center mt-2">
             <span className="text-[#8A8B91] text-sm">
               {formatDate(raceData.startDate)}
@@ -187,7 +200,7 @@ export function RaceTimer() {
           </div>
         </div>
 
-        {/* Expandable Leaderboard */}
+        {/* Expandable Leaderboard Section */}
         <AnimatePresence>
           {isExpanded && (
             <motion.div
@@ -202,6 +215,7 @@ export function RaceTimer() {
                     Prize Pool: ${raceData.prizePool.toLocaleString()}
                   </span>
                 </div>
+                {/* Participant List */}
                 {raceData.participants.map((participant, index) => (
                   <div 
                     key={participant.uid}
@@ -226,6 +240,7 @@ export function RaceTimer() {
                     </span>
                   </div>
                 ))}
+                {/* Footer Link */}
                 <Link href="/wager-races">
                   <a className="block text-center text-[#D7FF00] mt-4 hover:underline">
                     View Full Leaderboard
