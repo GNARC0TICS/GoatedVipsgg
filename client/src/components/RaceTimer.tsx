@@ -73,8 +73,18 @@ export function RaceTimer() {
     });
   }, []);
 
-  // Don't render if no data
-  if (!leaderboardData?.data?.monthly?.data) return null;
+  // Add loading state
+  if (!leaderboardData?.data?.monthly?.data) {
+    console.log("RaceTimer: No data available", leaderboardData);
+    return (
+      <div className="fixed bottom-4 right-4 z-50 w-80 bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg p-4">
+        <div className="flex items-center gap-2">
+          <Trophy className="h-5 w-5 text-[#D7FF00]" />
+          <span className="font-heading text-white">Loading race data...</span>
+        </div>
+      </div>
+    );
+  }
 
   const startDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const participants = leaderboardData.data.monthly.data
