@@ -33,6 +33,14 @@ export function RaceTimer() {
     queryKey: ["/api/wager-races/current"],
     refetchInterval: 30000, // Refresh every 30 seconds
     retry: 3,
+    initialData: {
+      id: "current",
+      status: "live",
+      startDate: new Date().toISOString(),
+      endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString(),
+      prizePool: 500,
+      participants: []
+    }
   });
 
   // Fetch previous month's data

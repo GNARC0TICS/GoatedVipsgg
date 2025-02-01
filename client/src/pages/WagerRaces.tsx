@@ -171,7 +171,7 @@ export default function WagerRaces() {
                   className="text-center"
                 >
                   <h1 className="text-6xl font-heading font-bold text-white mb-2">
-                    $200
+                    $500
                   </h1>
                   <h2 className="text-5xl font-heading font-bold text-[#D7FF00] leading-tight">
                     MONTHLY
