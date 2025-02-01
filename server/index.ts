@@ -129,21 +129,25 @@ async function startServer() {
       serveStatic(app);
     }
 
-    server
-      .listen(PORT, "0.0.0.0")
-      .on("error", async (err: NodeJS.ErrnoException) => {
-        if (err.code === 'EADDRINUSE') {
-          log(`Port ${PORT} is in use, attempting to free it...`);
-          await cleanupPort();
-          server.listen(PORT, "0.0.0.0");
-        } else {
-          console.error(`Failed to start server: ${err.message}`);
-          process.exit(1);
-        }
-      })
-      .on("listening", () => {
-        log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-      });
+    // Server startup with error handling
+  server
+    .listen(PORT, "0.0.0.0")
+    .on("error", async (err: NodeJS.ErrnoException) => {
+      // Handle port conflicts
+      if (err.code === 'EADDRINUSE') {
+        log(`Port ${PORT} is in use, attempting to free it...`);
+        await cleanupPort();
+        server.listen(PORT, "0.0.0.0");
+        return;
+      }
+      
+      // Handle other errors
+      console.error(`Failed to start server: ${err.message}`);
+      process.exit(1);
+    })
+    .on("listening", () => {
+      log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+    });
 
   } catch (error) {
     console.error("Failed to start application:", error);

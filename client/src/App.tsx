@@ -156,24 +156,31 @@ function Router() {
 
 // App content component
 function AppContent() {
-  const [isInitialLoad, setIsInitialLoad] = useState(() => {
-    return !sessionStorage.getItem('hasVisited');
-  });
+  // Initial load state management
+  const [isInitialLoad, setIsInitialLoad] = useState(() => !sessionStorage.getItem('hasVisited'));
 
-  const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery({
+  // Data fetching with React Query
+  const { 
+    data: leaderboardData, 
+    isLoading: leaderboardLoading 
+  } = useQuery({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
   });
 
-  const { data: mvpData, isLoading: mvpLoading } = useQuery({
+  const { 
+    data: mvpData, 
+    isLoading: mvpLoading 
+  } = useQuery({
     queryKey: ["/api/mvp-stats"],
     staleTime: 30000,
   });
 
+  // Handle initial load completion
   useEffect(() => {
-    if (!isInitialLoad) return;
-
-    if (!leaderboardLoading && !mvpLoading && leaderboardData && mvpData) {
+    const isDataLoaded = !leaderboardLoading && !mvpLoading && leaderboardData && mvpData;
+    
+    if (isInitialLoad && isDataLoaded) {
       sessionStorage.setItem('hasVisited', 'true');
       setIsInitialLoad(false);
     }

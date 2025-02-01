@@ -1,13 +1,25 @@
+
 import { QueryClient } from "@tanstack/react-query";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      // Cache configuration
       staleTime: 30000, // Data stays fresh for 30 seconds
       cacheTime: 300000, // Cache persists for 5 minutes
-      refetchOnMount: false, // Don't refetch on component mount
-      refetchOnWindowFocus: false, // Don't refetch on window focus
-      retry: false, // Don't retry failed requests automatically
+      
+      // Refetch behavior
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      refetchInterval: 30000,
+      
+      // Error handling
+      retry: (failureCount, error) => {
+        return failureCount < 3 && !error.message.includes('401');
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+
+      // Query function
       queryFn: async ({ queryKey }) => {
         try {
           const cacheKey = Array.isArray(queryKey) ? queryKey.join('-') : queryKey;
@@ -15,11 +27,8 @@ export const queryClient = new QueryClient({
           
           if (cachedData) {
             const { data, timestamp } = JSON.parse(cachedData);
-            const isStale = Date.now() - timestamp > 30000; // 30 seconds
-            
-            if (!isStale) {
-              return data;
-            }
+            const isStale = Date.now() - timestamp > 30000;
+            if (!isStale) return data;
           }
 
           const res = await fetch(queryKey[0] as string, {
@@ -31,9 +40,6 @@ export const queryClient = new QueryClient({
           });
 
           if (!res.ok) {
-            if (res.status >= 500) {
-              throw new Error(`${res.status}: ${res.statusText}`);
-            }
             throw new Error(`${res.status}: ${await res.text()}`);
           }
 
@@ -49,14 +55,6 @@ export const queryClient = new QueryClient({
           throw error;
         }
       },
-      refetchInterval: 30000, // Refetch every 30 seconds
-      refetchOnWindowFocus: true,
-      staleTime: 30000, // Consider data stale after 30 seconds
-      cacheTime: 300000, // Keep unused data in cache for 5 minutes
-      retry: (failureCount, error) => {
-        return failureCount < 3 && !error.message.includes('401');
-      },
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
       retry: (failureCount, error) => {
