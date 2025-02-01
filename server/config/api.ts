@@ -8,7 +8,6 @@ export const API_CONFIG = {
     health: "/health"
   },
   fallbackData: {
-    // Fallback data structure when API is unavailable
     leaderboard: {
       status: "success",
       metadata: {
@@ -25,18 +24,16 @@ export const API_CONFIG = {
   }
 };
 
+// Keep API token separate from session auth
+const API_TOKEN = process.env.API_TOKEN || API_CONFIG.token;
+
 // Helper function to make API requests
 export async function makeAPIRequest(endpoint: string) {
-  if (!API_CONFIG.token) {
-    log("API token is missing");
-    throw new Error("API token is required");
-  }
-
   const response = await fetch(
     `${API_CONFIG.baseUrl}${endpoint}`,
     {
       headers: {
-        Authorization: `Bearer ${API_CONFIG.token}`,
+        Authorization: `Bearer ${API_TOKEN}`,
         "Content-Type": "application/json",
       },
     }

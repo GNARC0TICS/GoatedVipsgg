@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, ChevronDown, ChevronUp, Clock, History } from "lucide-react";
 import { Link } from "wouter";
@@ -26,13 +26,11 @@ export function RaceTimer() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPrevious, setShowPrevious] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
-  const { toast } = useToast();
 
   // Fetch current race data
   const { data: currentRaceData, error: currentError } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/current"],
     refetchInterval: 30000, // Refresh every 30 seconds
-    retry: 3,
   });
 
   // Fetch previous month's data
@@ -45,11 +43,11 @@ export function RaceTimer() {
   const raceData = showPrevious ? previousRaceData : currentRaceData;
   const error = showPrevious ? previousError : currentError;
 
-  // Calculate and update time remaining until end of month
+  // Calculate time left
   useEffect(() => {
     if (!currentRaceData?.endDate) return;
 
-    const updateTimer = () => {
+    function updateTimer() {
       const end = new Date(currentRaceData.endDate);
       const now = new Date();
       const diff = end.getTime() - now.getTime();
@@ -64,33 +62,23 @@ export function RaceTimer() {
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
       setTimeLeft(`${days}d ${hours}h ${minutes}m`);
-    };
+    }
 
     updateTimer();
     const interval = setInterval(updateTimer, 60000); // Update every minute
     return () => clearInterval(interval);
   }, [currentRaceData?.endDate]);
 
-  // Error state
-  if (error) {
-    toast({
-      title: "Error",
-      description: "Unable to load race data",
-      variant: "destructive",
-    });
-    return null;
-  }
-
-  // Loading or no race data
-  if (!raceData) return null;
-
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
       year: 'numeric',
       month: 'long'
     });
-  };
+  }, []);
+
+  // Error or loading state
+  if (error || !raceData) return null;
 
   return (
     <motion.div 
@@ -111,14 +99,12 @@ export function RaceTimer() {
                 {showPrevious ? 'Previous Race' : 'Monthly Race'}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              {!showPrevious && timeLeft && (
-                <>
-                  <Clock className="h-4 w-4 text-[#D7FF00]" />
-                  <span className="text-white font-mono">{timeLeft}</span>
-                </>
-              )}
-            </div>
+            {!showPrevious && timeLeft && (
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-[#D7FF00]" />
+                <span className="text-white font-mono">{timeLeft}</span>
+              </div>
+            )}
           </div>
           <div className="flex justify-between items-center mt-2">
             <span className="text-[#8A8B91] text-sm">
