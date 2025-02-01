@@ -29,7 +29,7 @@ export function RaceTimer() {
   const { toast } = useToast();
 
   // Fetch current race data
-  const { data: currentRaceData, error: currentError } = useQuery<RaceData>({
+  const { data: currentRaceData, error: currentError, isLoading: isCurrentLoading } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/current"],
     refetchInterval: 30000, // Refresh every 30 seconds
     retry: 3,
@@ -44,7 +44,7 @@ export function RaceTimer() {
   });
 
   // Fetch previous month's data
-  const { data: previousRaceData, error: previousError } = useQuery<RaceData>({
+  const { data: previousRaceData, error: previousError, isLoading: isPreviousLoading } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/previous"],
     enabled: showPrevious, // Only fetch when viewing previous month
     select: (data) => {
@@ -107,6 +107,25 @@ export function RaceTimer() {
   }
 
   // Loading or no race data
+  const isLoading = showPrevious ? isPreviousLoading : isCurrentLoading;
+
+  if (isLoading) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="fixed bottom-4 right-4 z-50 w-80"
+      >
+        <div className="bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg p-4">
+          <div className="flex items-center justify-center gap-2">
+            <div className="animate-spin w-4 h-4 border-2 border-[#D7FF00] border-t-transparent rounded-full" />
+            <span className="text-[#8A8B91]">Loading race data...</span>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   if (!raceData) return null;
 
   const formatDate = (dateString: string) => {
