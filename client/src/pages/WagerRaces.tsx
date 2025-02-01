@@ -85,7 +85,7 @@ export default function WagerRaces() {
     };
   }, []);
 
-  const prizePool = 500;
+  const prizePool = showCompletedRace ? 200 : 500;
   const prizeDistribution: Record<number, number> = {
     1: 0.425, // $170
     2: 0.2,   // $80
@@ -172,7 +172,7 @@ export default function WagerRaces() {
                   className="text-center"
                 >
                   <h1 className="text-6xl font-heading font-bold text-white mb-2">
-                    $500
+                    ${showCompletedRace ? '200' : '500'}
                   </h1>
                   <h2 className="text-5xl font-heading font-bold text-[#D7FF00] leading-tight">
                     MONTHLY
@@ -424,7 +424,7 @@ export default function WagerRaces() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(showCompletedRace && previousRace?.participants ? previousRace.participants : top10Players).map((player, index) => (
+                {(showCompletedRace ? (previousRace?.participants || []) : top10Players).map((player, index) => (
                   <TableRow
                     key={player.uid}
                     className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]"

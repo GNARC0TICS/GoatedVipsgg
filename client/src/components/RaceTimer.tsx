@@ -38,7 +38,7 @@ export function RaceTimer() {
       status: "live",
       startDate: new Date().toISOString(),
       endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString(),
-      prizePool: 500,
+      prizePool: showPrevious ? 200 : 500,
       participants: []
     }
   });
