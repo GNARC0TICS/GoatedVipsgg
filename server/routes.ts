@@ -315,10 +315,10 @@ async function handleProfileRequest(req: any, res: any) {
     }
 }
 
-// Update handleAffiliateStats to use the new makeAPIRequest function
-async function handleAffiliateStats(req: any, res: any) {
+// Keep external API endpoints separate from auth
+async function handleAffiliateStats(_req: any, res: any) {
   try {
-    await rateLimiter.consume(req.ip || "unknown");
+    await rateLimiter.consume(_req.ip || "unknown");
     const apiData = await makeAPIRequest(API_CONFIG.endpoints.leaderboard);
     const transformedData = transformLeaderboardData(apiData);
     res.json(transformedData);
@@ -328,7 +328,6 @@ async function handleAffiliateStats(req: any, res: any) {
     res.json(API_CONFIG.fallbackData.leaderboard);
   }
 }
-
 
 async function handleAdminLogin(req: any, res: any) {
   try {
@@ -499,79 +498,27 @@ async function handlePreviousRaces(_req: any, res: any) {
   }
 }
 
-// Update the API request in handleCurrentRace
 async function handleCurrentRace(_req: any, res: any) {
   try {
     await rateLimiter.consume(_req.ip || "unknown");
     const rawData = await makeAPIRequest(API_CONFIG.endpoints.leaderboard);
     const stats = transformLeaderboardData(rawData);
 
-    // Rest of the function remains unchanged
     const now = new Date();
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-
-    // Check if previous month needs to be archived
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-
-    // If it's the first day of the month and we haven't archived yet
-    if (now.getDate() === 1 && now.getHours() < 1) {
-      const previousMonth = now.getMonth() === 0 ? 12 : now.getMonth();
-      const previousYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-
-      // Check if we already have an entry for the previous month
-      const [existingEntry] = await db
-        .select()
-        .from(historicalRaces)
-        .where(
-          and(
-            eq(historicalRaces.month, previousMonth),
-            eq(historicalRaces.year, previousYear)
-          )
-        )
-        .limit(1);
-
-      if (!existingEntry && stats.data.monthly.data.length > 0) {
-        // Store the previous month's results
-        const winners = stats.data.monthly.data.slice(0, 10).map((winner: any, index: number) => ({
-          ...winner,
-          prize: (200 * PRIZE_DISTRIBUTION[index]).toFixed(2), // Calculate prize based on distribution
-          position: index + 1
-        }));
-
-        await db.insert(historicalRaces).values({
-          month: previousMonth,
-          year: previousYear,
-          prizePool: 200,
-          startDate: new Date(previousYear, previousMonth - 1, 1),
-          endDate: new Date(previousYear, previousMonth, 0, 23, 59, 59),
-          participants: winners,
-          isCompleted: true
-        });
-
-        // Broadcast race completion to all connected clients
-        broadcastLeaderboardUpdate({
-          type: "RACE_COMPLETED",
-          data: {
-            winners,
-            nextRaceStart: new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-          }
-        });
-      }
-    }
 
     const raceData = {
       id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
       status: now.getDate() === 1 && now.getHours() < 1 ? 'transition' : 'live',
       startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
       endDate: endOfMonth.toISOString(),
-      prizePool: 500, // Show full prize pool amount
+      prizePool: 500,
       participants: stats.data.monthly.data.map((participant: any, index: number) => ({
         uid: participant.uid,
         name: participant.name,
         wagered: participant.wagered.this_month,
         position: index + 1
-      })).slice(0, 10) // Top 10 participants
+      })).slice(0, 10)
     };
 
     res.json(raceData);
@@ -1017,3 +964,6 @@ webhookRoutes.post('/webhook', (req, res) => {
   console.log('Webhook event received:', req.body);
   res.json({ status: 'success' });
 });
+
+// Only export what's needed
+export { handleAffiliateStats, handleCurrentRace };

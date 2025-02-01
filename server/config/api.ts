@@ -24,28 +24,29 @@ export const API_CONFIG = {
   }
 };
 
-// Keep API token separate from session auth
-const API_TOKEN = process.env.API_TOKEN || API_CONFIG.token;
+// External API token - completely separate from auth
+const EXTERNAL_API_TOKEN = process.env.API_TOKEN || API_CONFIG.token;
 
-// Helper function to make API requests
 export async function makeAPIRequest(endpoint: string) {
-  const response = await fetch(
-    `${API_CONFIG.baseUrl}${endpoint}`,
-    {
-      headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
+  try {
+    const response = await fetch(
+      `${API_CONFIG.baseUrl}${endpoint}`,
+      {
+        headers: {
+          Authorization: `Bearer ${EXTERNAL_API_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      log("API Authentication failed - check API token");
-      throw new Error("API Authentication failed");
+    if (!response.ok) {
+      log(`External API request failed: ${response.status}`);
+      return API_CONFIG.fallbackData.leaderboard;
     }
-    throw new Error(`API request failed: ${response.status}`);
+
+    return response.json();
+  } catch (error) {
+    log(`External API error: ${error}`);
+    return API_CONFIG.fallbackData.leaderboard;
   }
-
-  return response.json();
 }

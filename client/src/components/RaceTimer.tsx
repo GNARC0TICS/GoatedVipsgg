@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, ChevronDown, ChevronUp, Clock, History } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
 
 // Types for race data
 interface RaceParticipant {
@@ -27,21 +26,23 @@ export function RaceTimer() {
   const [showPrevious, setShowPrevious] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
 
-  // Fetch current race data
-  const { data: currentRaceData, error: currentError } = useQuery<RaceData>({
+  // Fetch current race data without auth requirement
+  const { data: currentRaceData } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/current"],
     refetchInterval: 30000, // Refresh every 30 seconds
+    staleTime: 15000, // Consider data fresh for 15 seconds
+    retry: false // Don't retry on failure since we have fallback data
   });
 
-  // Fetch previous month's data
-  const { data: previousRaceData, error: previousError } = useQuery<RaceData>({
+  // Fetch previous month's data without auth requirement
+  const { data: previousRaceData } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/previous"],
     enabled: showPrevious, // Only fetch when viewing previous month
+    retry: false
   });
 
   // Use the appropriate data based on which view is active
   const raceData = showPrevious ? previousRaceData : currentRaceData;
-  const error = showPrevious ? previousError : currentError;
 
   // Calculate time left
   useEffect(() => {
@@ -77,8 +78,8 @@ export function RaceTimer() {
     });
   }, []);
 
-  // Error or loading state
-  if (error || !raceData) return null;
+  // Don't render if no data
+  if (!raceData) return null;
 
   return (
     <motion.div 
@@ -131,7 +132,7 @@ export function RaceTimer() {
 
         {/* Expandable Leaderboard */}
         <AnimatePresence>
-          {isExpanded && (
+          {isExpanded && raceData.participants && (
             <motion.div
               initial={{ height: 0 }}
               animate={{ height: "auto" }}
@@ -144,7 +145,7 @@ export function RaceTimer() {
                     Prize Pool: ${raceData.prizePool.toLocaleString()}
                   </span>
                 </div>
-                {raceData.participants?.map((participant, index) => (
+                {raceData.participants.map((participant, index) => (
                   <div 
                     key={participant.uid}
                     className="flex items-center justify-between py-2"
