@@ -16,80 +16,61 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
+import { useUser } from "@/hooks/use-user";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { insertUserSchema } from "@db/schema";
+import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { useLocation } from "wouter";
-import { useAuth } from "@/lib/auth";
-import { Loader2 } from "lucide-react";
-
-const authSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  email: z.string().email("Invalid email address").optional(),
-});
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
-  const { login, register, user } = useAuth();
-  const [, setLocation] = useLocation();
+  const { login, register } = useUser();
+  const { toast } = useToast();
 
   const form = useForm({
-    resolver: zodResolver(authSchema),
+    resolver: zodResolver(insertUserSchema),
     defaultValues: {
       username: "",
       password: "",
-      email: "",
     },
   });
 
-  // Redirect if already logged in
-  if (user) {
-    setLocation("/");
-    return null;
-  }
-
-  const onSubmit = async (values: z.infer<typeof authSchema>) => {
+  const onSubmit = async (values: any) => {
     try {
-      if (isLogin) {
-        await login({
-          username: values.username,
-          password: values.password,
-        });
-      } else {
-        if (!values.email) {
-          form.setError("email", { message: "Email is required for registration" });
-          return;
-        }
-        await register({
-          username: values.username,
-          password: values.password,
-          email: values.email,
+      const result = await (isLogin ? login(values) : register(values));
+      if (!result.ok) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.message,
         });
       }
-      setLocation("/");
-    } catch (error) {
-      console.error("Auth error:", error);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#14151A] p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <Card className="border-2 border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-[#D7FF00]">
-              {isLogin ? "Welcome Back!" : "Create Account"}
+            <CardTitle className="font-heading uppercase">
+              {isLogin ? "Sign In" : "Create Account"}
             </CardTitle>
-            <CardDescription className="text-[#8A8B91]">
+            <CardDescription className="font-sans">
               {isLogin
                 ? "Enter your credentials to access your account"
-                : "Sign up to start using our platform"}
+                : "Create a new account to get started"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -103,92 +84,41 @@ export default function AuthPage() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Username</FormLabel>
+                      <FormLabel className="font-sans">Username</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Enter your username" 
-                          {...field}
-                          className="bg-[#1A1B21] border-[#2A2B31]"
-                          autoComplete="username"
-                        />
+                        <Input {...field} />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="font-sans" />
                     </FormItem>
                   )}
                 />
-
-                {!isLogin && (
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="Enter your email"
-                            {...field}
-                            className="bg-[#1A1B21] border-[#2A2B31]"
-                            autoComplete="email"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
                 <FormField
                   control={form.control}
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel className="font-sans">Password</FormLabel>
                       <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Enter your password"
-                          {...field}
-                          className="bg-[#1A1B21] border-[#2A2B31]"
-                          autoComplete={isLogin ? "current-password" : "new-password"}
-                        />
+                        <Input type="password" {...field} />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="font-sans" />
                     </FormItem>
                   )}
                 />
-
-                <Button
-                  type="submit"
-                  className="w-full bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
-                  disabled={form.formState.isSubmitting}
-                >
-                  {form.formState.isSubmitting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : isLogin ? (
-                    "Sign In"
-                  ) : (
-                    "Create Account"
-                  )}
+                <Button type="submit" className="w-full uppercase font-heading">
+                  {isLogin ? "Sign In" : "Create Account"}
                 </Button>
               </form>
             </Form>
-
-            <div className="mt-4 text-center">
-              <Button
-                variant="link"
-                className="text-sm text-[#D7FF00] hover:text-[#D7FF00]/80"
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  form.reset();
-                }}
-              >
-                {isLogin
-                  ? "Need an account? Sign up"
-                  : "Already have an account? Sign in"}
-              </Button>
-            </div>
+            <Button
+              variant="link"
+              className="mt-4 w-full font-sans"
+              onClick={() => setIsLogin(!isLogin)}
+            >
+              {isLogin
+                ? "Need an account? Sign up"
+                : "Already have an account? Sign in"}
+            </Button>
           </CardContent>
         </Card>
       </motion.div>

@@ -1,71 +1,67 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { Trophy, ChevronDown, ChevronUp, Clock, AlertCircle, History } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
-// Types for API response
-interface WagerData {
-  today: number;
-  this_week: number;
-  this_month: number;
-  all_time: number;
-}
-
-interface Participant {
+// Types for race data
+interface RaceParticipant {
   uid: string;
   name: string;
-  wagered: WagerData;
+  wagered: number;
+  position: number;
 }
 
-interface LeaderboardData {
-  status: string;
-  metadata: {
-    totalUsers: number;
-    lastUpdated: string;
-  };
-  data: {
-    today: { data: Participant[] };
-    weekly: { data: Participant[] };
-    monthly: { data: Participant[] };
-    all_time: { data: Participant[] };
-  };
+interface RaceData {
+  id: string;
+  status: 'live';
+  startDate: string;
+  endDate: string;
+  prizePool: number;
+  participants: RaceParticipant[];
 }
-
-// Add default fallback data
-const fallbackData: LeaderboardData = {
-  status: "success",
-  metadata: {
-    totalUsers: 0,
-    lastUpdated: new Date().toISOString(),
-  },
-  data: {
-    today: { data: [] },
-    weekly: { data: [] },
-    monthly: { data: [] },
-    all_time: { data: [] },
-  },
-};
 
 export function RaceTimer() {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showPrevious, setShowPrevious] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
+  const { toast } = useToast();
 
-  // Use the same query as the monthly race page
-  const { data: leaderboardData, isLoading } = useQuery<LeaderboardData>({
-    queryKey: ["/api/affiliate/stats"],
-    refetchInterval: 30000,
-    refetchOnWindowFocus: false,
+  // Fetch current race data
+  const { data: currentRaceData, error: currentError } = useQuery<RaceData>({
+    queryKey: ["/api/wager-races/current"],
+    refetchInterval: 30000, // Refresh every 30 seconds
     retry: 3,
-    initialData: fallbackData,
   });
 
-  // Calculate time left
+  // Fetch previous month's data
+  const { data: previousRaceData, error: previousError } = useQuery<RaceData>({
+    queryKey: ["/api/wager-races/previous"],
+    enabled: showPrevious, // Only fetch when viewing previous month
+    select: (data) => {
+      if (!data) return null;
+      // Ensure dates are valid
+      return {
+        ...data,
+        startDate: data.startDate || new Date().toISOString(),
+        endDate: data.endDate || new Date().toISOString()
+      };
+    }
+  });
+
+  // Use the appropriate data based on which view is active
+  const raceData = showPrevious ? previousRaceData : currentRaceData;
+  const error = showPrevious ? previousError : currentError;
+
+  // Calculate and update time remaining until end of month
   useEffect(() => {
-    function updateTimer() {
+    if (!currentRaceData?.endDate) return;
+
+    const updateTimer = () => {
+      const end = new Date(currentRaceData.endDate);
       const now = new Date();
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-      const diff = endOfMonth.getTime() - now.getTime();
+      const diff = end.getTime() - now.getTime();
 
       if (diff <= 0) {
         setTimeLeft("Race Ended");
@@ -77,39 +73,41 @@ export function RaceTimer() {
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
       setTimeLeft(`${days}d ${hours}h ${minutes}m`);
-    }
+    };
 
     updateTimer();
     const interval = setInterval(updateTimer, 60000); // Update every minute
     return () => clearInterval(interval);
-  }, []);
+  }, [currentRaceData?.endDate]);
 
-  const formatDate = useCallback((date: Date) => {
+  // Error state
+  if (error) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="fixed bottom-4 right-4 z-50"
+      >
+        <div className="bg-destructive/90 backdrop-blur-sm border border-destructive/50 rounded-lg p-4 text-destructive-foreground">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
+            <span>Unable to load race data</span>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Loading or no race data
+  if (!raceData) return null;
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
       year: 'numeric',
       month: 'long'
     });
-  }, []);
-
-  // Add loading state
-  if (isLoading || !leaderboardData) {
-    return (
-      <div className="fixed bottom-4 right-4 z-50 w-80 bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg p-4">
-        <div className="flex items-center gap-2">
-          <Trophy className="h-5 w-5 text-[#D7FF00]" />
-          <span className="font-heading text-white">Loading race data...</span>
-        </div>
-      </div>
-    );
-  }
-
-  const startDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const participants = leaderboardData.data.monthly.data
-    .slice(0, 10)
-    .map((participant, index) => ({
-      ...participant,
-      position: index + 1,
-    }));
+  };
 
   return (
     <motion.div 
@@ -127,21 +125,32 @@ export function RaceTimer() {
             <div className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-[#D7FF00]" />
               <span className="font-heading text-white">
-                Monthly Race
+                {showPrevious ? 'Previous Race' : 'Monthly Race'}
               </span>
             </div>
-            {timeLeft && (
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-[#D7FF00]" />
-                <span className="text-white font-mono">{timeLeft}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {!showPrevious && (
+                <>
+                  <Clock className="h-4 w-4 text-[#D7FF00]" />
+                  <span className="text-white font-mono">{timeLeft}</span>
+                </>
+              )}
+            </div>
           </div>
           <div className="flex justify-between items-center mt-2">
             <span className="text-[#8A8B91] text-sm">
-              {formatDate(startDate)}
+              {formatDate(raceData.startDate)}
             </span>
             <div className="flex items-center gap-2">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPrevious(!showPrevious);
+                }}
+                className="p-1 rounded hover:bg-[#2A2B31] transition-colors"
+              >
+                <History className="h-4 w-4 text-[#8A8B91]" />
+              </button>
               {isExpanded ? (
                 <ChevronUp className="h-4 w-4 text-[#8A8B91]" />
               ) : (
@@ -163,10 +172,10 @@ export function RaceTimer() {
               <div className="p-4 border-t border-[#2A2B31]">
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-[#8A8B91] text-sm">
-                    Prize Pool: $500
+                    Prize Pool: ${raceData.prizePool.toLocaleString()}
                   </span>
                 </div>
-                {participants.map((participant, index) => (
+                {raceData.participants.map((participant, index) => (
                   <div 
                     key={participant.uid}
                     className="flex items-center justify-between py-2"
@@ -186,7 +195,7 @@ export function RaceTimer() {
                       </span>
                     </div>
                     <span className="text-[#D7FF00] font-mono">
-                      ${participant.wagered.this_month.toLocaleString()}
+                      ${participant.wagered.toLocaleString()}
                     </span>
                   </div>
                 ))}

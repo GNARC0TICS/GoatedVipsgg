@@ -1,20 +1,14 @@
-
 import React, { Suspense, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Switch, Route } from "wouter";
-import { AnimatePresence } from "framer-motion";
-import { QueryClientProvider } from "@tanstack/react-query";
-
-// Component imports
 import { PreLoader } from "@/components/PreLoader";
-import { Layout } from "@/components/Layout";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { PageTransition } from "@/components/PageTransition";
+import { Switch, Route } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/lib/auth";
+import { AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "react-error-boundary";
-
-// Page imports
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import VipTransfer from "@/pages/VipTransfer";
@@ -22,9 +16,19 @@ import ProvablyFair from "@/pages/ProvablyFair";
 import WagerRaces from "@/pages/WagerRaces";
 import BonusCodes from "@/pages/bonus-codes";
 import NotificationPreferences from "@/pages/notification-preferences";
+import WagerRaceManagement from "@/pages/admin/WagerRaceManagement";
+import UserManagement from "@/pages/admin/UserManagement";
+import NotificationManagement from "@/pages/admin/NotificationManagement";
+import BonusCodeManagement from "@/pages/admin/BonusCodeManagement";
+import SupportManagement from "@/pages/admin/SupportManagement";
 import Leaderboard from "@/pages/Leaderboard";
+import { Layout } from "@/components/Layout";
+import { PageTransition } from "@/components/PageTransition";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useUser } from "@/hooks/use-user";
 import Help from "./pages/Help";
 import UserProfile from "@/pages/UserProfile";
+import { Redirect } from "@/lib/navigation";
 import Telegram from "@/pages/Telegram";
 import HowItWorks from "@/pages/HowItWorks";
 import GoatedToken from "@/pages/GoatedToken";
@@ -34,20 +38,6 @@ import VipProgram from "./pages/VipProgram";
 import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 
-// Admin pages
-import WagerRaceManagement from "@/pages/admin/WagerRaceManagement";
-import UserManagement from "@/pages/admin/UserManagement";
-import NotificationManagement from "@/pages/admin/NotificationManagement";
-import BonusCodeManagement from "@/pages/admin/BonusCodeManagement";
-import SupportManagement from "@/pages/admin/SupportManagement";
-
-// Utilities and context
-import { queryClient } from "./lib/queryClient";
-import { AuthProvider } from "@/lib/auth";
-import { useUser } from "@/hooks/use-user";
-import { Redirect } from "@/lib/navigation";
-
-// Error handling component
 function ErrorFallback({ error }: { error: Error }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -69,7 +59,6 @@ function ErrorFallback({ error }: { error: Error }) {
   );
 }
 
-// Admin route protection component
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useUser();
 
@@ -84,14 +73,12 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Main router component
 function Router() {
   return (
     <Layout>
       <AnimatePresence mode="wait">
         <ErrorBoundary FallbackComponent={ErrorFallback}>
           <Switch>
-            {/* Public routes */}
             <Route path="/" component={Home} />
             <Route path="/vip-transfer" component={VipTransfer} />
             <Route path="/wager-races" component={WagerRaces} />
@@ -99,26 +86,12 @@ function Router() {
             <Route path="/leaderboard" component={Leaderboard} />
             <Route path="/tips-and-strategies" component={TipsAndStrategies} />
             <Route path="/promotions" component={Promotions} />
-            <Route path="/notification-preferences" component={NotificationPreferences} />
+            <Route
+              path="/notification-preferences"
+              component={NotificationPreferences}
+            />
             <Route path="/support" component={Support} />
             <Route path="/faq" component={FAQ} />
-            <Route path="/help" component={Help} />
-            <Route path="/provably-fair" component={ProvablyFair} />
-            <Route path="/telegram" component={Telegram} />
-            <Route path="/how-it-works" component={HowItWorks} />
-            <Route path="/goated-token" component={GoatedToken} />
-            <Route path="/vip-program" component={VipProgram} />
-
-            {/* Dynamic routes */}
-            <Route path="/user/:id">
-              {(params) => (
-                <PageTransition>
-                  <UserProfile userId={params.id} />
-                </PageTransition>
-              )}
-            </Route>
-
-            {/* Admin routes */}
             <Route path="/admin/wager-races">
               <AdminRoute>
                 <WagerRaceManagement />
@@ -139,13 +112,21 @@ function Router() {
                 <SupportManagement />
               </AdminRoute>
             </Route>
-            <Route path="/admin/bonus-codes">
-              <AdminRoute>
-                <BonusCodeManagement />
-              </AdminRoute>
+            <Route path="/user/:id">
+              {(params) => (
+                <PageTransition>
+                  <UserProfile userId={params.id} />
+                </PageTransition>
+              )}
             </Route>
-
-            {/* 404 route */}
+            <Route path="/help" component={Help} />
+            <Route path="/provably-fair" component={ProvablyFair} />
+            <Route path="/telegram" component={Telegram} />
+            <Route path="/how-it-works" component={HowItWorks} />
+            <Route path="/goated-token" component={GoatedToken} />
+            <Route path="/admin/user-management" component={UserManagement} />
+            <Route path="/admin/bonus-codes" component={BonusCodeManagement} />
+            <Route path="/vip-program" component={VipProgram} />
             <Route component={NotFound} />
           </Switch>
         </ErrorBoundary>
@@ -154,33 +135,38 @@ function Router() {
   );
 }
 
-// App content component
-function AppContent() {
-  // Initial load state management
-  const [isInitialLoad, setIsInitialLoad] = useState(() => !sessionStorage.getItem('hasVisited'));
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ErrorBoundary>
+    </QueryClientProvider>
+  );
+}
 
-  // Data fetching with React Query
-  const { 
-    data: leaderboardData, 
-    isLoading: leaderboardLoading 
-  } = useQuery({
+function AppContent() {
+  const [isInitialLoad, setIsInitialLoad] = useState(() => {
+    // Only show preloader on first visit of the session
+    return !sessionStorage.getItem('hasVisited');
+  });
+
+  const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
   });
 
-  const { 
-    data: mvpData, 
-    isLoading: mvpLoading 
-  } = useQuery({
+  const { data: mvpData, isLoading: mvpLoading } = useQuery({
     queryKey: ["/api/mvp-stats"],
     staleTime: 30000,
   });
 
-  // Handle initial load completion
   useEffect(() => {
-    const isDataLoaded = !leaderboardLoading && !mvpLoading && leaderboardData && mvpData;
-    
-    if (isInitialLoad && isDataLoaded) {
+    if (!isInitialLoad) return;
+
+    if (!leaderboardLoading && !mvpLoading && leaderboardData && mvpData) {
       sessionStorage.setItem('hasVisited', 'true');
       setIsInitialLoad(false);
     }
@@ -199,19 +185,6 @@ function AppContent() {
         </Suspense>
       )}
     </AnimatePresence>
-  );
-}
-
-// Main App component
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ErrorBoundary FallbackComponent={ErrorFallback}>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </ErrorBoundary>
-    </QueryClientProvider>
   );
 }
 

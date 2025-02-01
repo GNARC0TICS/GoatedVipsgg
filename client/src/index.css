@@ -131,8 +131,6 @@ html {
 
   html {
     -webkit-text-size-adjust: 100%;
-    background-color: #14151a;
-    min-height: 100%;
   }
 
   body {
@@ -140,42 +138,7 @@ html {
     background: linear-gradient(135deg, #14151a 0%, #1a1b21 50%, #14151a 100%);
     position: relative;
     max-width: 100vw;
-    min-height: 100vh;
   }
-
-  #root {
-    min-height: 100vh;
-    background-color: #14151a;
-  }
-
-@keyframes bellShake {
-  0%, 100% { transform: rotate(0); }
-  25% { transform: rotate(-10deg); }
-  75% { transform: rotate(10deg); }
-}
-
-.bell-shake {
-  animation: bellShake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-  transform-origin: top center;
-}
-
-/* Smooth page transitions */
-.dropdown-slide-in {
-  animation: slideIn 0.2s ease-out;
-  transform-origin: top;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 
   @keyframes pulse {
     0%,
@@ -254,33 +217,6 @@ html {
 }
 
 @layer components {
-  .glass-card {
-    @apply bg-white/5 backdrop-blur-lg border border-white/10 shadow-xl;
-    transition: all 0.3s ease-in-out;
-    background-image: linear-gradient(125deg, rgba(255,255,255,0.05), rgba(215,255,0,0.05), rgba(255,255,255,0.05));
-    background-size: 200% 200%;
-    animation: gradientMove 8s ease infinite;
-  }
-
-  @keyframes gradientMove {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-  }
-
-  .glass-card:hover {
-    @apply bg-white/10 border-[#D7FF00]/20 scale-[1.02];
-    box-shadow: 0 0 30px rgba(215, 255, 0, 0.1);
-  }
-
-  .glow-text {
-    text-shadow: 0 0 10px rgba(215, 255, 0, 0.5);
-  }
-
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-
   .header-text {
     @apply font-heading font-extrabold uppercase tracking-tight;
   }

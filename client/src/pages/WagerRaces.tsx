@@ -85,18 +85,18 @@ export default function WagerRaces() {
     };
   }, []);
 
-  const prizePool = 500; // Remove transition amount since we want to show full prize pool
+  const prizePool = 400;
   const prizeDistribution: Record<number, number> = {
-    1: 0.425, // $212.50
-    2: 0.2,   // $100.00
-    3: 0.15,  // $75.00
-    4: 0.075, // $37.50
-    5: 0.06,  // $30.00
-    6: 0.04,  // $20.00
-    7: 0.0275,// $13.75
-    8: 0.0225,// $11.25
-    9: 0.0175,// $8.75
-    10: 0.0175,// $8.75
+    1: 0.425, // $170
+    2: 0.2,   // $80
+    3: 0.15,  // $60
+    4: 0.075, // $30
+    5: 0.06,  // $24
+    6: 0.04,  // $16
+    7: 0.0275, // $11
+    8: 0.0225, // $9
+    9: 0.0175, // $7
+    10: 0.0175, // $7
   };
 
   const getTrophyIcon = (rank: number) => {
@@ -170,11 +170,9 @@ export default function WagerRaces() {
                   animate={{ opacity: 1, y: 0 }}
                   className="text-center"
                 >
-                  {leaderboardData?.status !== 'transition' && (
-                    <h1 className="text-6xl font-heading font-bold text-white mb-2">
-                      ${prizePool}
-                    </h1>
-                  )}
+                  <h1 className="text-6xl font-heading font-bold text-white mb-2">
+                    $200
+                  </h1>
                   <h2 className="text-5xl font-heading font-bold text-[#D7FF00] leading-tight">
                     MONTHLY
                     <br />
@@ -292,7 +290,7 @@ export default function WagerRaces() {
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
                 }}
-                className="relative glass-card p-3 md:p-6 rounded-2xl border-2 border-[#C0C0C0] w-[120px] md:w-[180px] h-[140px] md:h-[180px] transform -translate-y-4 animate-float"
+                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-3 md:p-6 rounded-2xl border-2 border-[#C0C0C0] w-[120px] md:w-[180px] h-[140px] md:h-[180px] transform -translate-y-4"
               >
                 <div className="absolute -top-12 left-1/2 -translate-x-1/2">
                   <span className="bg-[#C0C0C0] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">
@@ -306,7 +304,7 @@ export default function WagerRaces() {
                   <p className="text-base font-bold truncate text-white/90">
                     {top10Players[1]?.name || "-"}
                   </p>
-                  <p className="text-sm font-heading text-[#D7FF00] mt-2 animate-pulse-slow filter drop-shadow-[0_0_8px_rgba(215,255,0,0.5)]">
+                  <p className="text-sm font-heading text-[#D7FF00] mt-2">
                     ${getPrizeAmount(2).toLocaleString()}
                   </p>
                   <p className="text-xs text-white/60 mt-1">

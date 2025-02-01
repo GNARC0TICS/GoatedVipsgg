@@ -62,16 +62,31 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        {Array.from({ length: 10 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-4 p-4 bg-[#1A1B21]/50 animate-pulse rounded-lg">
-            <div className="w-8 h-8 bg-[#2A2B31] rounded-full" />
-            <div className="flex-1 space-y-2">
-              <div className="h-4 bg-[#2A2B31] rounded w-1/4" />
-              <div className="h-3 bg-[#2A2B31] rounded w-1/3" />
-            </div>
-          </div>
-        ))}
+      <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="w-20 font-heading text-[#D7FF00]">RANK</TableHead>
+              <TableHead className="font-heading text-[#D7FF00]">USERNAME</TableHead>
+              <TableHead className="text-right font-heading text-[#D7FF00]">WAGER</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {[...Array(10)].map((_, i) => (
+              <TableRow key={i} className="bg-[#1A1B21]/50 backdrop-blur-sm">
+                <TableCell>
+                  <div className="animate-pulse h-6 w-16 bg-muted rounded" />
+                </TableCell>
+                <TableCell>
+                  <div className="animate-pulse h-6 w-32 bg-muted rounded" />
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="animate-pulse h-6 w-24 bg-muted rounded ml-auto" />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     );
   }
@@ -111,12 +126,12 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
 
       <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
         <div className="overflow-x-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#2A2B31 #14151A' }}>
-          <Table className="w-full min-w-0">
+          <Table className="w-full">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[40px] md:w-20 font-heading text-[#D7FF00] px-1 md:px-4 text-[10px] md:text-base whitespace-nowrap">RANK</TableHead>
-                <TableHead className="font-heading text-[#D7FF00] px-1 md:px-4 text-[10px] md:text-base min-w-[80px]">USERNAME</TableHead>
-                <TableHead className="text-right font-heading text-[#D7FF00] px-1 md:px-4 text-[10px] md:text-base whitespace-nowrap">WAGER</TableHead>
+                <TableHead className="w-[50px] md:w-20 font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap">RANK</TableHead>
+                <TableHead className="font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base">USERNAME</TableHead>
+                <TableHead className="text-right font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap">WAGER</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -128,45 +143,45 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]/80 hover:scale-[1.02] transition-all duration-300 ease-out"
+                    className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] transition-colors"
                   >
                     <TableCell className="font-heading px-1 md:px-4">
                       <div className="flex items-center gap-1 md:gap-2">
-                        <div className="hidden sm:block">
+                        <div className="hidden md:block">
                           {getTrophyIcon(index + 1 + currentPage * ITEMS_PER_PAGE)}
                         </div>
-                        <span className="text-[#D7FF00] text-[11px] md:text-base">
+                        <span className="text-[#D7FF00] text-xs md:text-base">
                           {index + 1 + currentPage * ITEMS_PER_PAGE}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <QuickProfile userId={entry.uid} username={entry.name}>
-                        <div className="flex items-center gap-1 md:gap-2 cursor-pointer">
+                        <div className="flex items-center gap-2 cursor-pointer">
                           <img
                             src={getTierIcon(getTierFromWager(entry.wagered.all_time))}
                             alt="Tier"
-                            className="w-4 h-4 md:w-5 md:h-5"
+                            className="w-5 h-5"
                           />
-                          <span className="truncate text-white hover:text-[#D7FF00] transition-colors text-[11px] md:text-base max-w-[80px] md:max-w-full">
+                          <span className="truncate text-white hover:text-[#D7FF00] transition-colors">
                             {entry.name}
                           </span>
                         </div>
                       </QuickProfile>
                     </TableCell>
-                    <TableCell className="text-right px-1 md:px-4">
-                      <div className="flex items-center justify-end gap-1 md:gap-2">
-                        <span className="text-white font-semibold text-[11px] md:text-base whitespace-nowrap">
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="text-white font-semibold">
                           ${(getWagerAmount(entry) || 0).toLocaleString()}
                         </span>
                         {entry.isWagering && entry.wagerChange > 0 && (
                           <motion.div
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="text-green-500 flex items-center gap-0.5 md:gap-1"
+                            className="text-green-500 flex items-center gap-1"
                           >
-                            <TrendingUp className="h-3 w-3 md:h-4 md:w-4" />
-                            <span className="text-[10px] md:text-xs font-bold whitespace-nowrap">
+                            <TrendingUp className="h-4 w-4" />
+                            <span className="text-xs font-bold">
                               +${entry.wagerChange.toLocaleString()}
                             </span>
                           </motion.div>

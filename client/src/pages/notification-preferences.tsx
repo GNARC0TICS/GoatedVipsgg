@@ -1,8 +1,6 @@
-
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "@/hooks/use-toast";
 import {
   Card,
   CardContent,
@@ -11,11 +9,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bell, Mail, Trophy, Crown, CheckCircle } from "lucide-react";
+import { Bell, Mail, Trophy, Crown } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import type { SelectNotificationPreferences } from "@db/schema";
 
 export default function NotificationPreferences() {
-  const [preferences, setPreferences] = useState<SelectNotificationPreferences | null>(null);
+  const { toast } = useToast();
+  const [preferences, setPreferences] =
+    useState<SelectNotificationPreferences | null>(null);
 
   // Fetch current preferences
   const { data, isLoading } = useQuery<SelectNotificationPreferences>({
@@ -27,7 +28,9 @@ export default function NotificationPreferences() {
 
   // Update preferences mutation
   const updatePreferences = useMutation({
-    mutationFn: async (newPreferences: Partial<SelectNotificationPreferences>) => {
+    mutationFn: async (
+      newPreferences: Partial<SelectNotificationPreferences>,
+    ) => {
       const response = await fetch("/api/notification-preferences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -39,121 +42,126 @@ export default function NotificationPreferences() {
         throw new Error(await response.text());
       }
 
-      return await response.json();
+      return response.json();
     },
     onSuccess: () => {
       toast({
-        title: "Settings Updated",
-        description: "Your notification preferences have been saved.",
-        variant: "success",
-        duration: 3000,
+        title: "Preferences Updated",
+        description:
+          "Your notification preferences have been saved successfully.",
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to update preferences",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to update preferences",
         variant: "destructive",
-        duration: 5000,
       });
     },
   });
 
-  const togglePreference = (key: keyof SelectNotificationPreferences) => {
+  const handleToggle = (key: keyof SelectNotificationPreferences) => {
+    if (!preferences) return;
+
     const newPreferences = {
       ...preferences,
-      [key]: !preferences?.[key],
+      [key]: !preferences[key],
     };
     setPreferences(newPreferences);
-    updatePreferences.mutate({ [key]: !preferences?.[key] });
+    updatePreferences.mutate(newPreferences);
   };
 
   if (isLoading) {
     return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D7FF00]" />
       </div>
     );
   }
 
-  const notificationTypes = [
-    {
-      id: "emailNotifications",
-      title: "Email Notifications",
-      description: "Receive important updates via email",
-      icon: Mail,
-    },
-    {
-      id: "wagerRaceAlerts",
-      title: "Wager Race Alerts",
-      description: "Get notified about race starts and results",
-      icon: Trophy,
-    },
-    {
-      id: "vipUpdates",
-      title: "VIP Status Updates",
-      description: "Updates about your VIP level and benefits",
-      icon: Crown,
-    },
-    {
-      id: "systemNotifications",
-      title: "System Notifications",
-      description: "Important system announcements",
-      icon: Bell,
-    },
-  ];
-
   return (
-    <div className="container mx-auto max-w-4xl space-y-8 p-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold tracking-tight">Notification Settings</h1>
-        <p className="mt-2 text-muted-foreground">
-          Customize how you want to receive updates and alerts
-        </p>
-      </div>
+    <div className="container mx-auto px-4 py-16">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-4xl font-heading font-bold text-[#D7FF00] mb-8">
+          Notification Preferences
+        </h1>
 
-      <div className="grid gap-6">
-        {notificationTypes.map(({ id, title, description, icon: Icon }) => (
-          <Card key={id} className="overflow-hidden transition-all hover:shadow-lg">
-            <CardHeader className="border-b bg-muted/50 pb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-full bg-primary/10 p-2">
-                    <Icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <CardTitle className="text-xl">{title}</CardTitle>
+        <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
+          <CardHeader>
+            <CardTitle className="text-white">Email Notifications</CardTitle>
+            <CardDescription>
+              Choose which notifications you'd like to receive via email
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Trophy className="h-5 w-5 text-[#D7FF00]" />
+                <div>
+                  <p className="font-medium text-white">Wager Race Updates</p>
+                  <p className="text-sm text-gray-400">
+                    Get notified about your position in active wager races
+                  </p>
                 </div>
-                <Switch
-                  id={id}
-                  checked={preferences?.[id as keyof SelectNotificationPreferences] || false}
-                  onCheckedChange={() => togglePreference(id as keyof SelectNotificationPreferences)}
-                  className="data-[state=checked]:bg-primary"
-                />
               </div>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <CardDescription className="text-sm">{description}</CardDescription>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <Switch
+                checked={preferences?.wagerRaceUpdates}
+                onCheckedChange={() => handleToggle("wagerRaceUpdates")}
+              />
+            </div>
 
-      <div className="flex justify-end">
-        <Button 
-          variant="outline" 
-          className="group relative"
-          onClick={() => {
-            toast({
-              title: "Settings Saved",
-              description: "Your preferences are up to date",
-              variant: "success",
-            });
-          }}
-        >
-          <CheckCircle className="mr-2 h-4 w-4" />
-          Save Preferences
-          <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-primary transition-all group-hover:w-full"></span>
-        </Button>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Crown className="h-5 w-5 text-[#D7FF00]" />
+                <div>
+                  <p className="font-medium text-white">VIP Status Changes</p>
+                  <p className="text-sm text-gray-400">
+                    Receive updates when your VIP status changes
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={preferences?.vipStatusChanges}
+                onCheckedChange={() => handleToggle("vipStatusChanges")}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Bell className="h-5 w-5 text-[#D7FF00]" />
+                <div>
+                  <p className="font-medium text-white">Promotional Offers</p>
+                  <p className="text-sm text-gray-400">
+                    Stay updated with our latest promotions and bonuses
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={preferences?.promotionalOffers}
+                onCheckedChange={() => handleToggle("promotionalOffers")}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Mail className="h-5 w-5 text-[#D7FF00]" />
+                <div>
+                  <p className="font-medium text-white">Monthly Statements</p>
+                  <p className="text-sm text-gray-400">
+                    Receive monthly summaries of your activity
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={preferences?.monthlyStatements}
+                onCheckedChange={() => handleToggle("monthlyStatements")}
+              />
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
