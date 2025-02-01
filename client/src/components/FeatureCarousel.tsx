@@ -62,12 +62,13 @@ export const FeatureCarousel = () => {
     info: PanInfo,
   ) => {
     setIsDragging(false);
-    const threshold = 50;
+    const threshold = 20; // Lower threshold for easier swipes
     const velocity = info.velocity.x;
     const offset = info.offset.x;
 
-    if (Math.abs(velocity) > 100 || Math.abs(offset) > threshold) {
-      if (offset > 0 || velocity > 100) {
+    // Make swipe detection more sensitive
+    if (Math.abs(velocity) > 50 || Math.abs(offset) > threshold) {
+      if (offset > 0 || velocity > 50) {
         prevSlide();
       } else {
         nextSlide();
@@ -111,9 +112,10 @@ export const FeatureCarousel = () => {
             key={currentIndex}
             drag="x"
             dragConstraints={dragConstraints}
-            dragElastic={0.5}
+            dragElastic={1}
             dragMomentum={true}
-            dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
+            dragTransition={{ bounceStiffness: 400, bounceDamping: 40 }}
+            whileDrag={{ cursor: "grabbing" }}
             onDragStart={() => setIsDragging(true)}
             onDragEnd={handleDragEnd}
             initial={{ opacity: 0, x: 100 }}
