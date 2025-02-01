@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, ChevronDown, ChevronUp, Clock, AlertCircle, History } from "lucide-react";
+import { Trophy, ChevronDown, ChevronUp, Clock, History } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -15,7 +15,7 @@ interface RaceParticipant {
 
 interface RaceData {
   id: string;
-  status: 'live';
+  status: 'live' | 'transition';
   startDate: string;
   endDate: string;
   prizePool: number;
@@ -39,15 +39,6 @@ export function RaceTimer() {
   const { data: previousRaceData, error: previousError } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/previous"],
     enabled: showPrevious, // Only fetch when viewing previous month
-    select: (data) => {
-      if (!data) return null;
-      // Ensure dates are valid
-      return {
-        ...data,
-        startDate: data.startDate || new Date().toISOString(),
-        endDate: data.endDate || new Date().toISOString()
-      };
-    }
   });
 
   // Use the appropriate data based on which view is active
@@ -82,20 +73,12 @@ export function RaceTimer() {
 
   // Error state
   if (error) {
-    return (
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="fixed bottom-4 right-4 z-50"
-      >
-        <div className="bg-destructive/90 backdrop-blur-sm border border-destructive/50 rounded-lg p-4 text-destructive-foreground">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            <span>Unable to load race data</span>
-          </div>
-        </div>
-      </motion.div>
-    );
+    toast({
+      title: "Error",
+      description: "Unable to load race data",
+      variant: "destructive",
+    });
+    return null;
   }
 
   // Loading or no race data
@@ -129,7 +112,7 @@ export function RaceTimer() {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              {!showPrevious && (
+              {!showPrevious && timeLeft && (
                 <>
                   <Clock className="h-4 w-4 text-[#D7FF00]" />
                   <span className="text-white font-mono">{timeLeft}</span>
@@ -175,7 +158,7 @@ export function RaceTimer() {
                     Prize Pool: ${raceData.prizePool.toLocaleString()}
                   </span>
                 </div>
-                {raceData.participants.map((participant, index) => (
+                {raceData.participants?.map((participant, index) => (
                   <div 
                     key={participant.uid}
                     className="flex items-center justify-between py-2"

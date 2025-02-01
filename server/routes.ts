@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocket, WebSocketServer } from "ws";
 import { log } from "./vite";
 import { setupAuth } from "./auth";
-import { API_CONFIG } from "./config/api";
+import { API_CONFIG, makeAPIRequest } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import { db } from "@db";
@@ -319,27 +319,13 @@ async function handleProfileRequest(req: any, res: any) {
 async function handleAffiliateStats(req: any, res: any) {
   try {
     await rateLimiter.consume(req.ip || "unknown");
-
     const apiData = await makeAPIRequest(API_CONFIG.endpoints.leaderboard);
     const transformedData = transformLeaderboardData(apiData);
-
     res.json(transformedData);
   } catch (error) {
     log(`Error in /api/affiliate/stats: ${error}`);
     // Return empty data structure to prevent UI breaking
-    res.json({
-      status: "success",
-      metadata: {
-        totalUsers: 0,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: { data: [] },
-        weekly: { data: [] },
-        monthly: { data: [] },
-        all_time: { data: [] },
-      },
-    });
+    res.json(API_CONFIG.fallbackData.leaderboard);
   }
 }
 
@@ -517,7 +503,6 @@ async function handlePreviousRaces(_req: any, res: any) {
 async function handleCurrentRace(_req: any, res: any) {
   try {
     await rateLimiter.consume(_req.ip || "unknown");
-
     const rawData = await makeAPIRequest(API_CONFIG.endpoints.leaderboard);
     const stats = transformLeaderboardData(rawData);
 
@@ -977,7 +962,7 @@ async function handleChatConnection(ws: WebSocket) {
       };
 
       wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
+        if (client.readyState ===WebSocket.OPEN) {
           client.send(JSON.stringify(broadcastMessage));
         }
       });
