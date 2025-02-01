@@ -85,7 +85,7 @@ export default function WagerRaces() {
     };
   }, []);
 
-  const prizePool = leaderboardData?.status === 'transition' ? 200 : 400;
+  const prizePool = leaderboardData?.status === 'transition' ? 400 : 400;
   const prizeDistribution: Record<number, number> = {
     1: 0.425, // Calculated dynamically
     2: 0.2,   // Calculated dynamically
@@ -171,7 +171,7 @@ export default function WagerRaces() {
                   className="text-center"
                 >
                   <h1 className="text-6xl font-heading font-bold text-white mb-2">
-                    $200
+                    $400
                   </h1>
                   <h2 className="text-5xl font-heading font-bold text-[#D7FF00] leading-tight">
                     MONTHLY
