@@ -162,7 +162,7 @@ function MVPCard({
           </motion.div>
 
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="bg-[#1A1B21] border-[#2A2B31] max-w-[95vw] md:max-w-2xl w-full mx-auto animate-in zoom-in-90 duration-300 sm:mx-auto relative">
+        <DialogContent className="bg-[#1A1B21] border-[#2A2B31] max-w-[95vw] md:max-w-2xl w-full mx-4 md:mx-0 animate-in zoom-in-90 duration-300">
           <div className="relative p-6 rounded-xl bg-gradient-to-b from-[#1A1B21]/80 to-[#1A1B21]/50 backdrop-blur-sm">
             <div className="absolute inset-0 bg-gradient-to-b from-[#2A2B31]/20 to-transparent opacity-50 rounded-xl" />
             <div className="relative">
@@ -266,25 +266,19 @@ export function MVPCards() {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-5xl mx-auto perspective-1000 px-4 md:px-0 pb-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-5xl mx-auto perspective-1000 px-4 md:px-0">
       {timeframes.map((timeframe) => (
         <motion.div
           key={timeframe.period}
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           whileHover={{ 
-            scale: 1.02,
-            y: -5
-          }}
-          whileTap={{
-            scale: 0.98,
-            y: 0
+            scale: 1.02
           }}
           transition={{
             type: "spring",
             stiffness: 400,
-            damping: 30,
-            mass: 0.5
+            damping: 30
           }}
           className="group relative transform transition-all duration-300"
         >
