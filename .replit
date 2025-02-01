@@ -18,7 +18,6 @@ externalPort = 80
 localPort = 5001
 
 [workflows]
-runButton = "Start application"
 
 [[workflows.workflow]]
 name = "Project"
