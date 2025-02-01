@@ -257,7 +257,7 @@ function setupRESTRoutes(app: Express) {
           await db.insert(historicalRaces).values({
             month: previousMonth,
             year: previousYear,
-            prizePool: 200,
+            prizePool: 500,
             startDate: new Date(previousYear, previousMonth - 1, 1),
             endDate: new Date(previousYear, previousMonth, 0, 23, 59, 59),
             participants: winners,

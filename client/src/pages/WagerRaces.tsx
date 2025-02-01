@@ -64,15 +64,15 @@ export default function WagerRaces() {
     staleTime: Infinity,
     select: (data) => {
       if (!data) return null;
-      
+
       const transitionEnds = new Date(data.metadata?.transitionEnds);
       const now = new Date();
-      
+
       // Auto-hide completed race view after transition period
       if (transitionEnds < now && showCompletedRace) {
         setTimeout(() => setShowCompletedRace(false), 1000);
       }
-      
+
       return {
         ...data,
         participants: data.participants?.map((p: any) => ({
@@ -93,7 +93,7 @@ export default function WagerRaces() {
   useEffect(() => {
     const now = new Date();
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-    
+
     if (now >= endOfMonth && !showCompletedRace) {
       setShowCompletedRace(true);
     }
@@ -211,7 +211,7 @@ export default function WagerRaces() {
                   className="text-center"
                 >
                   <h1 className="text-6xl font-heading font-bold text-white mb-2">
-                    ${showCompletedRace ? '200' : '500'}
+                    $500
                   </h1>
                   <h2 className="text-5xl font-heading font-bold text-[#D7FF00] leading-tight">
                     MONTHLY
@@ -285,7 +285,7 @@ export default function WagerRaces() {
                   <div className="flex items-center justify-center gap-2">
                     <Trophy className="h-5 w-5 text-[#D7FF00]" />
                     <p className="text-xl font-bold">
-                      ${prizePool.toLocaleString()}
+                      $500
                     </p>
                   </div>
                 </div>
