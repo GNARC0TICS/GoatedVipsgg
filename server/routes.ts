@@ -220,8 +220,11 @@ function setupRESTRoutes(app: Express) {
         const prizeDistribution = [0.5, 0.3, 0.1, 0.05, 0.05, 0, 0, 0, 0, 0]; //Example distribution, needs to be defined elsewhere
 
         if (!existingEntry && stats.data.monthly.data.length > 0) {
+          const now = new Date();
+          const currentMonth = now.getMonth();
+          const currentYear = now.getFullYear();
+          
           // Store complete race results with detailed participant data
-          // Only store top 10 participants
           const winners = stats.data.monthly.data.slice(0, 10).map((participant: any, index: number) => ({
             uid: participant.uid,
             name: participant.name,
@@ -232,6 +235,24 @@ function setupRESTRoutes(app: Express) {
             position: index + 1,
             timestamp: new Date().toISOString()
           }));
+
+          // Store race completion data
+          await db.insert(historicalRaces).values({
+            month: currentMonth,
+            year: currentYear,
+            prizePool: prizePool,
+            startDate: new Date(currentYear, currentMonth, 1),
+            endDate: now,
+            participants: winners,
+            totalWagered: stats.data.monthly.data.reduce((sum: number, p: any) => sum + p.wagered.this_month, 0),
+            participantCount: stats.data.monthly.data.length,
+            status: 'completed',
+            metadata: {
+              transitionEnds: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+              nextRaceStarts: new Date(currentYear, currentMonth + 1, 1).toISOString(),
+              prizeDistribution: prizeDistribution
+            }
+          });
 
           await db.insert(historicalRaces).values({
             month: previousMonth,

@@ -61,20 +61,43 @@ export default function WagerRaces() {
   const { data: previousRace } = useQuery<any>({
     queryKey: ["/api/wager-races/previous"],
     enabled: showCompletedRace,
-    staleTime: Infinity,  // Prevent auto-refresh since historical data won't change
-    select: (data) => ({
-      ...data,
-      participants: data?.participants?.map((p: any) => ({
-        ...p,
-        wagered: {
-          this_month: p.wagered || 0,
-          today: 0,
-          this_week: 0,
-          all_time: 0
-        }
-      }))
-    })
+    staleTime: Infinity,
+    select: (data) => {
+      if (!data) return null;
+      
+      const transitionEnds = new Date(data.metadata?.transitionEnds);
+      const now = new Date();
+      
+      // Auto-hide completed race view after transition period
+      if (transitionEnds < now && showCompletedRace) {
+        setTimeout(() => setShowCompletedRace(false), 1000);
+      }
+      
+      return {
+        ...data,
+        participants: data.participants?.map((p: any) => ({
+          ...p,
+          wagered: {
+            this_month: p.wagered || 0,
+            today: 0,
+            this_week: 0,
+            all_time: p.allTimeWagered || 0
+          }
+        })),
+        isTransition: now < transitionEnds
+      };
+    }
   });
+
+  // Auto-show completed race when race ends
+  useEffect(() => {
+    const now = new Date();
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    
+    if (now >= endOfMonth && !showCompletedRace) {
+      setShowCompletedRace(true);
+    }
+  }, []);
 
   useEffect(() => {
     // Listen for race completion events
