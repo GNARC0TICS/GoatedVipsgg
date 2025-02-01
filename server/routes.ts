@@ -157,31 +157,10 @@ function setupRESTRoutes(app: Express) {
   // Add endpoint to fetch previous month's results
   app.get("/api/wager-races/previous", async (_req, res) => {
     try {
-      const now = new Date();
-      const previousMonth = now.getMonth() === 0 ? 12 : now.getMonth();
-      const previousYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-
-      const [previousRace] = await db
-        .select()
-        .from(historicalRaces)
-        .where(
-          and(
-            eq(historicalRaces.month, previousMonth),
-            eq(historicalRaces.year, previousYear)
-          )
-        )
-        .limit(1);
-
-      if (!previousRace) {
-        return res.status(404).json({
-          status: "error",
-          message: "No previous race data found",
-        });
-      }
-
-      res.json({
-        status: "success",
-        data: previousRace,
+      // Temporarily return empty data until next race
+      res.status(404).json({
+        status: "error",
+        message: "No previous race data found",
       });
     } catch (error) {
       log(`Error fetching previous race: ${error}`);

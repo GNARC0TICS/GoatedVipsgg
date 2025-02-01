@@ -171,13 +171,14 @@ export default function WagerRaces() {
                 >
                   This month
                 </Button>
-                <Button
+                {/* Previous month button will be enabled for next race */}
+                {/* <Button
                   variant="ghost"
                   className={`text-[#8A8B91] hover:text-white ${showCompletedRace ? 'text-white' : ''}`}
                   onClick={() => setShowCompletedRace(!showCompletedRace)}
                 >
                   {showCompletedRace ? "Current month" : "Previous month"}
-                </Button>
+                </Button> */}
               </div>
 
               <div className="space-y-4">
