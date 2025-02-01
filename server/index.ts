@@ -7,7 +7,7 @@ import { sql } from "drizzle-orm";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
-import { setupAuth } from "./auth"; // Import setupAuth
+import { setupAuth } from "./auth";
 import { initializeAdmin } from "./middleware/admin";
 
 const execAsync = promisify(exec);
@@ -19,6 +19,12 @@ async function setupMiddleware() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
+
+  // API middleware
+  app.use('/api', (req, res, next) => {
+    res.setHeader('Content-Type', 'application/json');
+    next();
+  });
 
   // Set up authentication
   setupAuth(app);
@@ -104,19 +110,24 @@ async function startServer() {
     await checkDatabase();
     await cleanupPort();
 
-    // Setup routes before auth middleware
+    // Create HTTP server first
     const server = createServer(app);
 
+    // Set up middleware before Vite
+    await setupMiddleware();
+
+    // Initialize admin user after middleware setup
+    await initializeAdmin().catch(console.error);
+
+    // Set up API routes
+    registerRoutes(app);
+
+    // Set up Vite last to prevent interference with API routes
     if (app.get("env") === "development") {
       await setupVite(app, server);
     } else {
       serveStatic(app);
     }
-
-    await setupMiddleware();
-
-    // Initialize admin user after middleware setup
-    initializeAdmin().catch(console.error);
 
     server
       .listen(PORT, "0.0.0.0")

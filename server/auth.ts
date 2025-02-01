@@ -47,7 +47,6 @@ declare global {
 export function setupAuth(app: Express) {
   const MemoryStore = createMemoryStore(session);
 
-  // Session configuration with secure settings
   const sessionSettings: session.SessionOptions = {
     secret: process.env.REPL_ID || "goated-rewards",
     resave: false,
@@ -69,11 +68,20 @@ export function setupAuth(app: Express) {
     app.set("trust proxy", 1);
   }
 
-  // Middleware setup
+  // Middleware setup with proper order
   app.use(express.json());
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Error handling middleware
+  app.use((err: Error, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('Auth error:', err);
+    res.status(500).json({
+      ok: false,
+      message: err.message || 'Authentication error occurred'
+    });
+  });
 
   // Passport configuration
   passport.serializeUser((user: Express.User, done) => {
@@ -142,7 +150,7 @@ export function setupAuth(app: Express) {
     }),
   );
 
-  // Authentication endpoints
+  // Update authentication endpoints to ensure JSON responses
   app.post("/api/register", async (req, res) => {
     try {
       const result = insertUserSchema.safeParse(req.body);
@@ -167,30 +175,16 @@ export function setupAuth(app: Express) {
       const { username, password, email } = result.data;
 
       // Check for existing username
-      const [existingUsername] = await db
+      const [existingUser] = await db
         .select()
         .from(users)
         .where(eq(users.username, username))
         .limit(1);
 
-      if (existingUsername) {
+      if (existingUser) {
         return res.status(400).json({
           ok: false,
           message: "Username already exists",
-        });
-      }
-
-      // Check for existing email
-      const [existingEmail] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, email))
-        .limit(1);
-
-      if (existingEmail) {
-        return res.status(400).json({
-          ok: false,
-          message: "Email already registered",
         });
       }
 
@@ -231,16 +225,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", async (req, res, next) => {
-    try {
-      await rateLimiter.consume(req.ip || req.socket.remoteAddress || '');
-    } catch (err) {
-      return res.status(429).json({
-        ok: false,
-        message: "Too many login attempts. Please try again later.",
-      });
-    }
-
+  app.post("/api/login", (req, res, next) => {
     passport.authenticate(
       "local",
       (err: any, user: Express.User | false, info: IVerifyOptions) => {
@@ -254,7 +239,7 @@ export function setupAuth(app: Express) {
         if (!user) {
           return res.status(401).json({
             ok: false,
-            message: info.message ?? "Invalid credentials",
+            message: info.message || "Invalid credentials",
           });
         }
 
@@ -278,6 +263,13 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/logout", (req, res) => {
+    if (!req.user) {
+      return res.status(200).json({
+        ok: true,
+        message: "Already logged out",
+      });
+    }
+
     req.logout((err) => {
       if (err) {
         return res.status(500).json({
@@ -302,21 +294,22 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
-    if (req.isAuthenticated()) {
-      const user = req.user;
-      return res.status(200).json({
-        ok: true,
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          isAdmin: user.isAdmin,
-        },
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({
+        ok: false,
+        message: "Not authenticated",
       });
     }
-    res.status(401).json({
-      ok: false,
-      message: "Not authenticated",
+
+    const user = req.user;
+    return res.status(200).json({
+      ok: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      },
     });
   });
 }

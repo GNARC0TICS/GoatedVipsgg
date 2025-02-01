@@ -11,6 +11,7 @@ import { wagerRaces, users, ticketMessages, bonusCodes } from "@db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { z } from "zod";
 import { historicalRaces } from "@db/schema";
+import express from 'express';
 
 // Constants and configurations
 const RATE_LIMIT_POINTS = 60;
@@ -151,9 +152,46 @@ function transformLeaderboardData(apiData: any) {
 // Main route registration
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
+
+  // Middleware for www to non-www redirect
+  app.use((req, res, next) => {
+    const host = req.hostname;
+    if (host.startsWith('www.')) {
+      const newHost = host.replace('www.', '');
+      return res.redirect(301, `${req.protocol}://${newHost}${req.originalUrl}`);
+    }
+    next();
+  });
+
+  // API middleware - ensure JSON responses
+  app.use('/api', (req, res, next) => {
+    res.setHeader('Content-Type', 'application/json');
+    next();
+  });
+
+  // Error handling middleware for API routes
+  app.use('/api', (err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error('API error:', err);
+    res.status(500).json({
+      ok: false,
+      message: err.message || 'Internal server error'
+    });
+  });
+
+  // Set up authentication first
   setupAuth(app);
-  setupRESTRoutes(app);
+
+  // API Routes after auth setup
+  setupWagerRaceRoutes(app);
+  setupSupportRoutes(app);
+  setupAdminRoutes(app);
+  setupBonusCodeRoutes(app);
+  setupChatRoutes(app);
+  setupProfileRoutes(app);
+
+  // Setup WebSocket after routes
   setupWebSocket(httpServer);
+
   return httpServer;
 }
 
@@ -925,8 +963,7 @@ async function handleChatConnection(ws: WebSocket) {
       const [savedMessage] = await db
         .insert(ticketMessages)
         .values({
-          message: messageText,
-          userId: userId || null,
+          message: messageText,          userId: userId || null,
           isStaffReply,
           createdAt: new Date(),
         })

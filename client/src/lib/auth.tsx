@@ -28,18 +28,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const response = await fetch("/api/user", {
           credentials: "include",
-          headers: { Accept: "application/json" },
+          headers: { 
+            Accept: "application/json",
+            "Content-Type": "application/json"
+          },
         });
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          console.error("Received non-JSON response:", await response.text());
+          return { ok: false, user: null };
+        }
+
+        const data = await response.json();
 
         if (!response.ok) {
           if (response.status === 401) {
             return { ok: false, user: null };
           }
-          const error = await response.json();
-          throw new Error(error.message || "Failed to fetch user data");
+          throw new Error(data.message || "Failed to fetch user data");
         }
 
-        return response.json();
+        return data;
       } catch (error) {
         console.error("Error fetching user:", error);
         return { ok: false, user: null };
@@ -68,12 +78,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         credentials: "include",
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Login failed");
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Received non-JSON response:", text);
+        throw new Error("Invalid server response");
       }
 
-      return response.json();
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      return data;
     },
     onSuccess: (data) => {
       if (data.ok && data.user) {
@@ -109,12 +126,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         credentials: "include",
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Registration failed");
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Received non-JSON response:", text);
+        throw new Error("Invalid server response");
       }
 
-      return response.json();
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Registration failed");
+      }
+
+      return data;
     },
     onSuccess: (data) => {
       if (data.ok && data.user) {
@@ -138,16 +162,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     mutationFn: async () => {
       const response = await fetch("/api/logout", {
         method: "POST",
-        headers: { Accept: "application/json" },
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json"
+        },
         credentials: "include",
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Logout failed");
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Received non-JSON response:", text);
+        throw new Error("Invalid server response");
       }
 
-      return response.json();
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Logout failed");
+      }
+
+      return data;
     },
     onSuccess: (data) => {
       if (data.ok) {
