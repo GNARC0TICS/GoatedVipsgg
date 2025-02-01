@@ -121,7 +121,7 @@ export default function WagerRaces() {
     };
   }, []);
 
-  const prizePool = showCompletedRace ? 200 : 500;
+  const prizePool = showCompletedRace ? 200 : 400;
   const prizeDistribution: Record<number, number> = {
     1: 0.425, // $170
     2: 0.2,   // $80
