@@ -1,37 +1,20 @@
-import { type Request, type Response, type NextFunction } from "express";
-import { verifyToken } from "../config/auth";
-import { db } from "@db";
-import { eq } from "drizzle-orm";
-import { users } from "@db/schema";
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { db } from '@db';
+import { users } from '@db/schema';
+import { eq } from 'drizzle-orm';
 
-// Extend Express Request type
-declare global {
-  namespace Express {
-    interface Request {
-      user?: typeof users.$inferSelect;
-    }
-  }
-}
+const JWT_SECRET = process.env.JWT_SECRET || 'your-jwt-secret';
 
-export const requireAuth = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    // Check for session token in cookie first
-    const sessionToken = req.cookies?.token;
-    // Fallback to Bearer token if no session
-    const authHeader = req.headers.authorization;
-    const token = sessionToken || (authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null);
+    const token = req.headers.authorization?.replace('Bearer ', '');
 
     if (!token) {
-      return res.status(401).json({ message: "Authentication required" });
+      return res.status(401).json({ message: 'Authentication required' });
     }
 
-    const decoded = verifyToken(token);
-
-    // Get user from database
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
     const [user] = await db
       .select()
       .from(users)
@@ -39,29 +22,12 @@ export const requireAuth = async (
       .limit(1);
 
     if (!user) {
-      return res.status(401).json({ message: "User not found" });
+      return res.status(401).json({ message: 'User not found' });
     }
 
     req.user = user;
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Invalid authentication token" });
+    return res.status(401).json({ message: 'Invalid token' });
   }
-};
-
-export const requireAdmin = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    await requireAuth(req, res, () => {
-      if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-      next();
-    });
-  } catch (error) {
-    return res.status(403).json({ message: "Admin access required" });
-  }
-};
+}
