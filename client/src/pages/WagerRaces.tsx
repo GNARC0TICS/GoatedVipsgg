@@ -85,18 +85,18 @@ export default function WagerRaces() {
     };
   }, []);
 
-  const prizePool = 400;
+  const prizePool = leaderboardData?.status === 'transition' ? 200 : 400;
   const prizeDistribution: Record<number, number> = {
-    1: 0.425, // $170
-    2: 0.2,   // $80
-    3: 0.15,  // $60
-    4: 0.075, // $30
-    5: 0.06,  // $24
-    6: 0.04,  // $16
-    7: 0.0275, // $11
-    8: 0.0225, // $9
-    9: 0.0175, // $7
-    10: 0.0175, // $7
+    1: 0.425, // Calculated dynamically
+    2: 0.2,   // Calculated dynamically
+    3: 0.15,  // Calculated dynamically
+    4: 0.075, // Calculated dynamically
+    5: 0.06,  // Calculated dynamically
+    6: 0.04,  // Calculated dynamically
+    7: 0.0275, // Calculated dynamically
+    8: 0.0225, // Calculated dynamically
+    9: 0.0175, // Calculated dynamically
+    10: 0.0175, // Calculated dynamically
   };
 
   const getTrophyIcon = (rank: number) => {
