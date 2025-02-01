@@ -32,8 +32,10 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
       className="fixed inset-0 bg-[#14151A] z-50 flex flex-col items-center justify-center"
     >
       <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
+        initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.2 }}
+        style={{ willChange: "transform" }}
         className="flex flex-col items-center gap-8"
       >
         <img

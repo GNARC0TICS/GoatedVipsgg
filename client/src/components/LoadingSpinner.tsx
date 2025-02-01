@@ -7,7 +7,9 @@ export function LoadingSpinner() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center"
+      transition={{ duration: 0.15 }}
+      className="fixed inset-0 bg-background/80 backdrop-blur-[4px] z-50 flex flex-col items-center justify-center"
+      style={{ willChange: "opacity" }}
     >
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
