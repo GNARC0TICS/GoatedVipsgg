@@ -1,4 +1,5 @@
 
+import React from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Gift, Users, Link as LinkIcon, Zap, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
