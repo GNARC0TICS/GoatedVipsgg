@@ -165,7 +165,7 @@ export function Layout({ children }: LayoutProps) {
                   <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                     <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                       <Link href="/how-it-works">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
@@ -175,7 +175,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       </Link>
                       <Link href="/vip-transfer">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
@@ -185,7 +185,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       </Link>
                       <Link href="/tips-and-strategies">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
@@ -195,7 +195,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       </Link>
                       <Link href="/vip-program">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
@@ -222,7 +222,7 @@ export function Layout({ children }: LayoutProps) {
                   <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                     <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                       <Link href="/promotions">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
@@ -232,7 +232,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       </Link>
                       <Link href="/goated-token">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
@@ -242,7 +242,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       </Link>
                       <Link href="/bonus-codes">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative flex items-center gap-2">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
@@ -255,21 +255,6 @@ export function Layout({ children }: LayoutProps) {
                     </div>
                   </div>
                 </div>
-
-                <NavLink
-                  href="/wager-races"
-                  label={
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold transition-colors duration-300 group-hover:text-[#D7FF00]">MONTHLY RACE</span>
-                      <div className="flex items-center gap-1">
-                        <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
-                        <span className="text-xs text-red-500 font-heading">
-                          LIVE
-                        </span>
-                      </div>
-                    </div>
-                  }
-                />
 
                 {/* Updated Leaderboard dropdown with hover functionality */}
                 <div className="relative group">
@@ -285,7 +270,7 @@ export function Layout({ children }: LayoutProps) {
                   <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                     <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                       <Link href="/leaderboard?period=daily">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
@@ -295,7 +280,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       </Link>
                       <Link href="/leaderboard?period=weekly">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
@@ -305,7 +290,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       </Link>
                       <Link href="/leaderboard?period=monthly">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
@@ -315,7 +300,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       </Link>
                       <Link href="/leaderboard?period=all_time">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
@@ -341,7 +326,7 @@ export function Layout({ children }: LayoutProps) {
                   <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                     <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                       <Link href="/telegram">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
@@ -368,7 +353,7 @@ export function Layout({ children }: LayoutProps) {
                   <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                     <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                       <Link href="/help">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
@@ -378,7 +363,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       </Link>
                       <Link href="/faq">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
@@ -388,7 +373,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       </Link>
                       <Link href="/support">
-                        <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
                           <span className="relative">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
@@ -413,27 +398,27 @@ export function Layout({ children }: LayoutProps) {
                     <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                       <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                         <Link href="/admin/user-management">
-                          <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                          <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
                             User Management
                           </div>
                         </Link>
                         <Link href="/admin/notifications">
-                          <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                          <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
                             Notification Management
                           </div>
                         </Link>
                         <Link href="/admin/support">
-                          <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                          <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
                             Support Management
                           </div>
                         </Link>
                         <Link href="/admin/wager-races">
-                          <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                          <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
                             Wager Race Management
                           </div>
                         </Link>
                         <Link href="/admin/bonus-codes">
-                          <div className="px-4 py-2.5 font-bold hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                          <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
                             Bonus Code Management
                           </div>
                         </Link>
@@ -588,7 +573,7 @@ export function Layout({ children }: LayoutProps) {
                       <DropdownMenuSeparator />
                       <div className="max-h-[300px] overflow-y-auto">
                         {/* Active notifications */}
-                        <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
+                        <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 text-white">
                           <div className="text-sm font-medium">
                             Monthly Wager Race Live!
                           </div>
@@ -600,7 +585,7 @@ export function Layout({ children }: LayoutProps) {
                           </div>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
+                        <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 text-white">
                           <div className="text-sm font-medium">
                             Welcome to GoatedVIPs!
                           </div>
@@ -629,15 +614,15 @@ export function Layout({ children }: LayoutProps) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="w-56 bg-[#1A1B21] border-[#2A2B31]">
-                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                        <DropdownMenuLabel className="text-white">My Account</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <Link href={`/user/${user.id}`}>
-                          <DropdownMenuItem className="cursor-pointer">
+                          <DropdownMenuItem className="cursor-pointer text-white">
                             Profile
                           </DropdownMenuItem>
                         </Link>
                         <Link href="/notification-preferences">
-                          <DropdownMenuItem className="cursor-pointer">
+                          <DropdownMenuItem className="cursor-pointer text-white">
                             Settings
                           </DropdownMenuItem>
                         </Link>
@@ -836,7 +821,7 @@ function NavLink({
         <Link href={href}>{linkContent}</Link>
       </TooltipTrigger>
       {tooltip && (
-        <TooltipContent sideOffset={5} className="bg-[#1A1B21] border-[#2A2B31]">
+        <TooltipContent sideOffset={5} className="bg-[#1A1B21] border-[#2A2B31] text-white">
           <p>{tooltip}</p>
         </TooltipContent>
       )}
