@@ -150,6 +150,18 @@ export function Layout({ children }: LayoutProps) {
 
               <div className="hidden md:flex items-center gap-8">
                 <NavLink href="/" label="HOME" />
+                <NavLink
+                  href="/wager-races"
+                  label={
+                    <div className="flex items-center gap-2">
+                      <span>MONTHLY RACE</span>
+                      <div className="flex items-center gap-1">
+                        <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                        <span className="text-xs text-red-500">LIVE</span>
+                      </div>
+                    </div>
+                  }
+                />
 
                 {/* GET STARTED dropdown */}
                 <div className="relative group">
