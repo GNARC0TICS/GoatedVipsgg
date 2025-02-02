@@ -48,8 +48,8 @@ export default function HowItWorks() {
 
           <motion.div variants={itemVariants} className="text-center mb-12">
             <h1 className="text-5xl font-heading mb-4">
-              <span className="text-5xl font-heading text-white">GET STARTED </span>
-              <span className="text-5xl font-heading text-[#D7FF00]">WITH GOATED VIPS</span>
+              <span className="text-5xl font-heading text-white glow-text-white">GET STARTED </span>
+              <span className="text-5xl font-heading text-[#D7FF00] glow-text-yellow">WITH GOATED VIPS</span>
             </h1>
             <p className="text-xl text-[#8A8B91]">
               Follow these simple steps to join our exclusive community
