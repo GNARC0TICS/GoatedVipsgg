@@ -213,7 +213,9 @@ export default function HowItWorks() {
               className="text-center bg-[#D7FF00] p-8 rounded-xl mt-12"
             >
               <div className="flex items-center justify-center gap-3 mb-4">
-                <img src="/images/Goated Emblems/diamond.ddf47a1e.svg" alt="Diamond tier" className="w-8 h-8" />
+                <div className="bg-[#14151A]/10 p-1.5 rounded-full border-2 border-[#14151A]/20">
+                  <img src="/images/Goated Emblems/diamond.ddf47a1e.svg" alt="Diamond tier" className="w-8 h-8 drop-shadow-md" />
+                </div>
                 <h2 className="text-[#14151A] text-2xl font-bold">Ready to join the elite?</h2>
               </div>
               <Button
