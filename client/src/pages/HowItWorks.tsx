@@ -5,6 +5,20 @@ import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 
 // Animation variants for staggered animations
+
+const ProgressIndicator = ({ step }: { step: number }) => (
+  <div className="fixed left-0 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-4 bg-[#1A1B21]/50 p-4 rounded-r-xl border-y border-r border-[#2A2B31]">
+    {[1, 2, 3, 4].map((num) => (
+      <div 
+        key={num}
+        className={`w-2 h-2 rounded-full transition-all duration-300 ${
+          num <= step ? 'bg-[#D7FF00]' : 'bg-[#2A2B31]'
+        }`}
+      />
+    ))}
+  </div>
+);
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -28,6 +42,14 @@ const itemVariants = {
 };
 
 export default function HowItWorks() {
+  // Preload assets
+  React.useEffect(() => {
+    const images = ['/images/Goated Logo - Yellow.png'];
+    images.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
   const [, setLocation] = useLocation();
 
   return (
@@ -60,8 +82,10 @@ export default function HowItWorks() {
             <motion.div className="space-y-6" variants={containerVariants}>
               {/* Step 1 */}
               <motion.section 
-                className="bg-[#1A1B21]/50 backdrop-blur-sm p-8 rounded-xl border border-[#2A2B31] transform hover:scale-[1.02] transition-transform duration-300"
+                className="bg-[#1A1B21]/50 backdrop-blur-sm p-8 rounded-xl border border-[#2A2B31] transform hover:scale-[1.02] transition-all duration-300 hover:border-[#D7FF00] group"
                 variants={itemVariants}
+                whileHover={{ y: -5 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <div className="flex items-start gap-6">
                   <div className="mt-1 bg-[#D7FF00]/10 p-3 rounded-lg">
@@ -182,7 +206,7 @@ export default function HowItWorks() {
                 </p>
                 <Button
                   onClick={() => window.open("https://www.goated.com/r/GOATEDVIPS", "_blank")}
-                  className="bg-[#14151A] text-white hover:bg-[#14151A]/90 text-lg px-8 py-6"
+                  className="bg-[#14151A] text-white hover:bg-[#14151A]/90 text-lg px-8 py-6 group-hover:scale-105 transition-all duration-300 hover:shadow-lg hover:shadow-[#D7FF00]/20"
                 >
                   Register with Goombas x Goated VIPs
                 </Button>
