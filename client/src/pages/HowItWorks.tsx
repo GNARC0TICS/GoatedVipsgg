@@ -53,8 +53,6 @@ export default function HowItWorks() {
             </h1>
             <p className="text-xl text-[#8A8B91]">
               Follow these simple steps to join our exclusive community
-            <p className="text-xl text-[#8A8B91]">
-              Follow these simple steps to join our exclusive community
             </p>
           </motion.div>
 
