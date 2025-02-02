@@ -39,14 +39,14 @@ export function RaceTimer() {
     queryKey: ["/api/wager-races/current"],
     refetchInterval: 30000, // Refresh every 30 seconds
     retry: 3,
-    // Default race data structure
-    initialData: {
-      id: "current",
-      status: "live",
-      startDate: new Date().toISOString(),
-      endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString(),
-      prizePool: showPrevious ? 200 : 500,
-      participants: []
+    enabled: !showPrevious, // Only fetch current race when not showing previous
+    staleTime: 60000, // Consider data fresh for 1 minute
+    onError: (error) => {
+      toast({
+        title: "Error loading race data",
+        description: "Please try again later",
+        variant: "destructive"
+      });
     }
   });
 
@@ -128,6 +128,23 @@ export function RaceTimer() {
   // Loading state render
   const isLoading = showPrevious ? isPreviousLoading : isCurrentLoading;
   if (isLoading) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="fixed bottom-4 right-4 z-50 w-80"
+      >
+        <div className="bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg p-4">
+          <div className="flex items-center justify-center gap-2">
+            <div className="animate-spin w-4 h-4 border-2 border-[#D7FF00] border-t-transparent rounded-full" />
+            <span className="text-[#8A8B91]">Loading race data...</span>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (!raceData && isCurrentLoading) {
     return (
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
