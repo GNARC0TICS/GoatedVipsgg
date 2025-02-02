@@ -109,11 +109,10 @@
 }
 
 .glow-text {
-  background: linear-gradient(to right, #FFFFFF 50%, #D7FF00 50%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  display: inline-block;
+  text-shadow:
+    0 0 10px rgba(215, 255, 0, 0.5),
+    0 0 20px rgba(215, 255, 0, 0.3),
+    0 0 30px rgba(215, 255, 0, 0.2);
 }
 
 html {

@@ -47,9 +47,8 @@ export default function HowItWorks() {
           </Button>
 
           <motion.div variants={itemVariants} className="text-center mb-12">
-            <h1 className="text-5xl font-heading mb-4 tracking-tight font-[800] [-webkit-text-stroke:0.5px] [font-stretch:75%]">
-              <span className="text-white">Get Started</span>{" "}
-              <span className="text-[#D7FF00]">with Goated VIPs</span>
+            <h1 className="text-5xl font-heading text-[#D7FF00] mb-4">
+              Get Started with Goated VIPs
             </h1>
             <p className="text-xl text-[#8A8B91]">
               Follow these simple steps to join our exclusive community

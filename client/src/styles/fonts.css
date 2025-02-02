@@ -1,10 +1,11 @@
+
 /* Import Mona Sans */
 @font-face {
-  font-family: "Mona Sans";
+  font-family: "MonaSansCondensed-ExtraBold";
   src: url("/fonts/MonaSansCondensed-ExtraBold.woff2") format("woff2");
   font-weight: 800;
   font-style: normal;
-  font-stretch: 75%;
+  font-stretch: condensed;
   font-display: swap;
 }
 
@@ -26,10 +27,8 @@ h1, h2, h3, h4, h5, h6,
 .font-heading {
   font-family: var(--font-heading);
   text-transform: uppercase;
-  font-weight: 800; /*Ensuring consistent font-weight*/
-  font-stretch: 75%;
-  letter-spacing: 0.02em; /*Improved letter spacing for better readability*/
-  -webkit-text-stroke: 0.5px #fff; /*Added text stroke for visibility*/
+  font-weight: 800;
+  font-stretch: condensed;
 }
 
 body {
@@ -51,8 +50,8 @@ p, span, a, div:not(.font-heading) {
 
 .play-now-button {
   font-family: var(--font-heading);
-  font-weight: 800; /*Removed !important, relying on cascading styles*/
-  font-stretch: 75%; /*Consistent with other headings*/
+  font-weight: 800 !important;
+  font-stretch: condensed;
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
