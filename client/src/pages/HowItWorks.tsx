@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Gift, Users, Link as LinkIcon, Zap, ArrowRight } from "lucide-react";
+import { ArrowLeft, Gift, Users, Link as LinkIcon, Zap, ArrowRight, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 
@@ -173,14 +173,49 @@ export default function HowItWorks() {
               </div>
             </motion.div>
 
-            {/* CTA Section */}
+            {/* Completion Summary */}
             <motion.div
               variants={itemVariants}
+              className="bg-[#1A1B21]/50 rounded-xl border border-[#2A2B31] p-8 mt-12 text-center"
+            >
+              <h2 className="text-2xl font-heading text-white mb-4">What's Next?</h2>
+              <p className="text-[#8A8B91] mb-6">
+                Now that you're signed up, you'll instantly gain access to:
+              </p>
+              <ul className="space-y-3 text-[#8A8B91] mb-8">
+                <li className="flex items-center gap-2 justify-center">
+                  <TrendingUp className="h-5 w-5 text-[#D7FF00]" />
+                  Real-time wager statistics tracking
+                </li>
+                <li className="flex items-center gap-2 justify-center">
+                  <Users className="h-5 w-5 text-[#D7FF00]" />
+                  <a href="https://t.me/goatedvips" target="_blank" rel="noopener noreferrer" className="text-[#D7FF00] hover:underline">
+                    Exclusive Telegram group
+                  </a>
+                </li>
+                <li className="flex items-center gap-2 justify-center">
+                  <Gift className="h-5 w-5 text-[#D7FF00]" />
+                  Exclusive bonus codes and promotions
+                </li>
+                <li className="flex items-center gap-2 justify-center">
+                  <Zap className="h-5 w-5 text-[#D7FF00]" />
+                  Access to challenges and wager races
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* CTA Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
               className="text-center bg-[#D7FF00] p-8 rounded-xl mt-12"
             >
-              <h2 className="text-[#14151A] text-2xl font-bold mb-4">
-                Ready to join the elite? Get started now!
-              </h2>
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <img src="/images/Goated Emblems/diamond.ddf47a1e.svg" alt="Diamond tier" className="w-8 h-8" />
+                <h2 className="text-[#14151A] text-2xl font-bold">Ready to join the elite?</h2>
+              </div>
               <Button
                 onClick={() => window.open("https://www.goated.com/r/GOATEDVIPS", "_blank")}
                 className="bg-[#14151A] text-white hover:bg-[#14151A]/90 text-lg px-8 py-6 group-hover:scale-105 transition-all duration-300"
