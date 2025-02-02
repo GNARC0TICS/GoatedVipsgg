@@ -85,8 +85,8 @@ export default function HowItWorks() {
                     </li>
                   </ul>
                 </div>
-                <div className="rounded-xl overflow-hidden border border-[#2A2B31]">
-                  <video autoPlay loop muted playsInline className="w-full">
+                <div className="rounded-xl overflow-hidden border border-[#2A2B31] max-w-[500px] mx-auto md:mx-0">
+                  <video autoPlay loop muted playsInline className="w-full h-auto md:max-h-[280px] object-contain">
                     <source src="/images/How/step1.mp4" type="video/mp4" />
                   </video>
                 </div>
@@ -122,8 +122,10 @@ export default function HowItWorks() {
                     </li>
                   </ul>
                 </div>
-                <div className="rounded-xl overflow-hidden border border-[#2A2B31]">
-                  <img src="/images/How/step2.svg" alt="Registration form" className="w-full" />
+                <div className="rounded-xl overflow-hidden border border-[#2A2B31] max-w-[500px] mx-auto md:mx-0">
+                  <video autoPlay loop muted playsInline className="w-full h-auto md:max-h-[280px] object-contain">
+                    <source src="/images/How/step2.mp4" type="video/mp4" />
+                  </video>
                 </div>
               </div>
             </motion.div>
@@ -163,9 +165,9 @@ export default function HowItWorks() {
                     </li>
                   </ul>
                 </div>
-                <div className="rounded-xl overflow-hidden border border-[#2A2B31]">
-                  <video autoPlay loop muted playsInline className="w-full">
-                    <source src="/images/How/step3.mp4" type="video/mp4" />
+                <div className="rounded-xl overflow-hidden border border-[#2A2B31] max-w-[500px] mx-auto md:mx-0">
+                  <video autoPlay loop muted playsInline className="w-full h-auto md:max-h-[280px] object-contain">
+                    <source src="/images/How/Step3.mp4" type="video/mp4" />
                   </video>
                 </div>
               </div>
