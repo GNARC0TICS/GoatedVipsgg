@@ -46,10 +46,10 @@ export default function HowItWorks() {
             Back to Home
           </Button>
 
-          <motion.div variants={itemVariants} className="text-center mb-12">
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-heading mb-8 tracking-tight leading-none">
+          <motion.div variants={itemVariants} className="text-center mb-16">
+            <h1 className="text-7xl sm:text-8xl md:text-9xl lg:text-[12rem] xl:text-[14rem] font-heading mb-12 tracking-tight leading-none">
               <span className="text-white font-[800]">GET STARTED</span>{" "}
-              <span className="text-[#D7FF00] font-[800] [text-shadow:0_0_20px_rgba(215,255,0,0.7)]">
+              <span className="text-[#D7FF00] font-[800] [text-shadow:0_0_30px_rgba(215,255,0,0.7)]">
                 WITH GOATED VIPS
               </span>
             </h1>
