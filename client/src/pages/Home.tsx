@@ -145,7 +145,7 @@ export default function Home() {
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                     <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
                     <div className="relative p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 card-hover">
-                      <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center gap-2 mb-4">
                         <h3 className="text-2xl font-heading uppercase text-white">
                           Wager Races
                         </h3>
