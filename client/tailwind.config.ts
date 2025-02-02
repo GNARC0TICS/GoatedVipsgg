@@ -5,7 +5,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        heading: ["Mona Sans", "system-ui", "sans-serif"],
+        heading: ["var(--font-heading)"],
+        body: ["var(--font-body)"],
         sans: ["system-ui", "sans-serif"],
       },
     },

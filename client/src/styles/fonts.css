@@ -1,11 +1,10 @@
-
 /* Import Mona Sans */
 @font-face {
-  font-family: "MonaSansCondensed-ExtraBold";
+  font-family: "Mona Sans";
   src: url("/fonts/MonaSansCondensed-ExtraBold.woff2") format("woff2");
   font-weight: 800;
   font-style: normal;
-  font-stretch: condensed;
+  font-stretch: 75%;
   font-display: swap;
 }
 
@@ -28,12 +27,13 @@ h1, h2, h3, h4, h5, h6,
   font-family: var(--font-heading);
   text-transform: uppercase;
   font-weight: 800;
-  font-stretch: condensed;
+  font-stretch: 75%;
+  letter-spacing: -0.02em;
+  -webkit-text-stroke: 0.5px;
 }
 
 body {
   font-family: var(--font-body);
-  text-transform: none;
 }
 
 p, span, a, div:not(.font-heading) {
