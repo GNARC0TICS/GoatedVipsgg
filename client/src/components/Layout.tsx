@@ -1,6 +1,6 @@
 import { ReactNode, useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, Bell, Settings, User, LogOut, ChevronDown, Gift } from "lucide-react";
+import { Menu, Bell, Settings, User, LogOut, ChevronDown, Gift, Lock } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
@@ -82,6 +82,8 @@ export function Layout({ children }: { children: ReactNode }) {
   const { data: user } = useQuery<SelectUser>({
     queryKey: ["/api/user"],
   });
+
+  const isAuthenticated = !!user;
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -236,7 +238,21 @@ export function Layout({ children }: { children: ReactNode }) {
                           <span className="relative flex items-center gap-2">
                             <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                             <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              Bonus Codes
+                              {isAuthenticated ? (
+                                "Bonus Codes"
+                              ) : (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger className="flex items-center gap-2 opacity-50 cursor-not-allowed">
+                                      <span>Bonus Codes</span>
+                                      <Lock className="h-4 w-4" />
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right">
+                                      <p>Sign in to access bonus codes and rewards</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
                             </span>
                             <Gift className="h-4 w-4" />
                           </span>
@@ -473,29 +489,46 @@ export function Layout({ children }: { children: ReactNode }) {
                       <MobileNavLink 
                         href="/leaderboard?period=weekly" 
                         label="Weekly Leaderboard" 
-                         onClose={() => setOpenMobile(false)}
+                        onClose={() => setOpenMobile(false)}
                       />
                       <MobileNavLink 
                         href="/leaderboard?period=monthly" 
                         label="Monthly Leaderboard" 
-                         onClose={() => setOpenMobile(false)}
+                        onClose={() => setOpenMobile(false)}
                       />
                       <MobileNavLink 
                         href="/leaderboard?period=all-time" 
                         label="All Time Leaderboard" 
-                         onClose={() => setOpenMobile(false)}
+                        onClose={() => setOpenMobile(false)}
                       />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">PROMOTIONS</div>
                       <MobileNavLink href="/promotions" label="News & Promotions" onClose={() => setOpenMobile(false)} />
                       <MobileNavLink href="/goated-token" label="Goated Airdrop" onClose={() => setOpenMobile(false)} />
-                      <MobileNavLink href="/bonus-codes" label={
-                        <div className="flex items-center gap-2">
-                          <span>Bonus Codes</span>
-                          <Gift className="h-4 w-4" />
-                        </div>
-                      } onClose={() => setOpenMobile(false)} />
-
+                      <MobileNavLink 
+                        href="/bonus-codes" 
+                        label={
+                          isAuthenticated ? (
+                            <div className="flex items-center gap-2">
+                              <span>Bonus Codes</span>
+                              <Gift className="h-4 w-4" />
+                            </div>
+                          ) : (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger className="flex items-center gap-2 opacity-50 cursor-not-allowed">
+                                  <span>Bonus Codes</span>
+                                  <Lock className="h-4 w-4" />
+                                </TooltipTrigger>
+                                <TooltipContent side="right">
+                                  <p>Sign in to access bonus codes and rewards</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )
+                        } 
+                        onClose={() => setOpenMobile(false)}
+                      />
 
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">SOCIALS</div>

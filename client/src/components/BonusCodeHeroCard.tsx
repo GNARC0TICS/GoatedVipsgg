@@ -23,7 +23,7 @@ export function BonusCodeHeroCard() {
   return (
     <Card className={cn(
       "relative overflow-hidden bg-[#1A1B21] border-[#2A2B31]",
-      !isAuthenticated && "opacity-75 hover:opacity-100 transition-opacity"
+      !isAuthenticated && "opacity-50 hover:opacity-75 transition-opacity"
     )}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-[#D7FF00]">
@@ -49,7 +49,7 @@ export function BonusCodeHeroCard() {
               <TooltipTrigger asChild>
                 <Button 
                   variant="secondary" 
-                  className="w-full bg-[#2A2B31] text-[#8A8B91] opacity-75 cursor-not-allowed"
+                  className="w-full bg-[#2A2B31] text-[#8A8B91] cursor-not-allowed"
                   disabled
                 >
                   <Lock className="h-4 w-4 mr-2" />
