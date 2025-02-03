@@ -1,14 +1,18 @@
-import React, { Suspense, useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { PreLoader } from "@/components/PreLoader";
-import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
+import React, { Suspense, useEffect } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/lib/auth";
+import { AuthProvider, useAuth, requiresAuth } from "@/lib/auth";
 import { AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "react-error-boundary";
+import { PreLoader } from "@/components/PreLoader";
+import { Layout } from "@/components/Layout";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Redirect } from "@/lib/navigation";
+
+// Import all pages
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import VipTransfer from "@/pages/VipTransfer";
@@ -22,13 +26,8 @@ import NotificationManagement from "@/pages/admin/NotificationManagement";
 import BonusCodeManagement from "@/pages/admin/BonusCodeManagement";
 import SupportManagement from "@/pages/admin/SupportManagement";
 import Leaderboard from "@/pages/Leaderboard";
-import { Layout } from "@/components/Layout";
-import { PageTransition } from "@/components/PageTransition";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { useUser } from "@/hooks/use-user";
 import Help from "./pages/Help";
 import UserProfile from "@/pages/UserProfile";
-import { Redirect } from "@/lib/navigation";
 import Telegram from "@/pages/Telegram";
 import HowItWorks from "@/pages/HowItWorks";
 import GoatedToken from "@/pages/GoatedToken";
@@ -59,14 +58,15 @@ function ErrorFallback({ error }: { error: Error }) {
   );
 }
 
-function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useUser();
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+  const [location] = useLocation();
 
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
-  if (!user?.isAdmin) {
+  if (!user && requiresAuth(location)) {
     return <Redirect to="/" />;
   }
 
@@ -79,54 +79,75 @@ function Router() {
       <AnimatePresence mode="wait">
         <ErrorBoundary FallbackComponent={ErrorFallback}>
           <Switch>
+            {/* Public Routes */}
             <Route path="/" component={Home} />
-            <Route path="/vip-transfer" component={VipTransfer} />
             <Route path="/wager-races" component={WagerRaces} />
-            <Route path="/bonus-codes" component={BonusCodes} />
             <Route path="/leaderboard" component={Leaderboard} />
             <Route path="/tips-and-strategies" component={TipsAndStrategies} />
             <Route path="/promotions" component={Promotions} />
-            <Route
-              path="/notification-preferences"
-              component={NotificationPreferences}
-            />
-            <Route path="/support" component={Support} />
-            <Route path="/faq" component={FAQ} />
-            <Route path="/admin/wager-races">
-              <AdminRoute>
-                <WagerRaceManagement />
-              </AdminRoute>
-            </Route>
-            <Route path="/admin/users">
-              <AdminRoute>
-                <UserManagement />
-              </AdminRoute>
-            </Route>
-            <Route path="/admin/notifications">
-              <AdminRoute>
-                <NotificationManagement />
-              </AdminRoute>
-            </Route>
-            <Route path="/admin/support">
-              <AdminRoute>
-                <SupportManagement />
-              </AdminRoute>
-            </Route>
-            <Route path="/user/:id">
-              {(params) => (
-                <PageTransition>
-                  <UserProfile userId={params.id} />
-                </PageTransition>
-              )}
-            </Route>
             <Route path="/help" component={Help} />
             <Route path="/provably-fair" component={ProvablyFair} />
             <Route path="/telegram" component={Telegram} />
             <Route path="/how-it-works" component={HowItWorks} />
             <Route path="/goated-token" component={GoatedToken} />
-            <Route path="/admin/user-management" component={UserManagement} />
-            <Route path="/admin/bonus-codes" component={BonusCodeManagement} />
+            <Route path="/faq" component={FAQ} />
             <Route path="/vip-program" component={VipProgram} />
+
+            {/* Protected Routes */}
+            <Route path="/bonus-codes">
+              <ProtectedRoute>
+                <BonusCodes />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/notification-preferences">
+              <ProtectedRoute>
+                <NotificationPreferences />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/vip-transfer">
+              <ProtectedRoute>
+                <VipTransfer />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/support">
+              <ProtectedRoute>
+                <Support />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/user/:id">
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            </Route>
+
+            {/* Admin Routes */}
+            <Route path="/admin/wager-races">
+              <ProtectedRoute>
+                <WagerRaceManagement />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/admin/users">
+              <ProtectedRoute>
+                <UserManagement />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/admin/notifications">
+              <ProtectedRoute>
+                <NotificationManagement />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/admin/bonus-codes">
+              <ProtectedRoute>
+                <BonusCodeManagement />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/admin/support">
+              <ProtectedRoute>
+                <SupportManagement />
+              </ProtectedRoute>
+            </Route>
+
+            {/* 404 Route */}
             <Route component={NotFound} />
           </Switch>
         </ErrorBoundary>
@@ -148,29 +169,15 @@ function App() {
 }
 
 function AppContent() {
-  const [isInitialLoad, setIsInitialLoad] = useState(() => {
-    // Only show preloader on first visit of the session
+  const [isInitialLoad, setIsInitialLoad] = React.useState(() => {
     return !sessionStorage.getItem('hasVisited');
-  });
-
-  const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery({
-    queryKey: ["/api/affiliate/stats"],
-    staleTime: 30000,
-  });
-
-  const { data: mvpData, isLoading: mvpLoading } = useQuery({
-    queryKey: ["/api/mvp-stats"],
-    staleTime: 30000,
   });
 
   useEffect(() => {
     if (!isInitialLoad) return;
-
-    if (!leaderboardLoading && !mvpLoading && leaderboardData && mvpData) {
-      sessionStorage.setItem('hasVisited', 'true');
-      setIsInitialLoad(false);
-    }
-  }, [leaderboardLoading, mvpLoading, leaderboardData, mvpData, isInitialLoad]);
+    sessionStorage.setItem('hasVisited', 'true');
+    setIsInitialLoad(false);
+  }, [isInitialLoad]);
 
   return (
     <AnimatePresence mode="wait">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -20,13 +20,12 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { insertUserSchema } from "@db/schema";
 import { useAuth } from "@/lib/auth";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const authSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters").max(50),
-  email: z.string().email().optional(),
+  email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
@@ -37,6 +36,7 @@ export default function AuthModal() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [isLoading, setIsLoading] = useState(false);
   const { login, register } = useAuth();
+  const { toast } = useToast();
 
   const form = useForm<AuthFormData>({
     resolver: zodResolver(authSchema),
@@ -53,7 +53,7 @@ export default function AuthModal() {
       const formData = {
         username: values.username.trim(),
         password: values.password.trim(),
-        ...(mode === "register" && values.email ? { email: values.email.trim() } : {}),
+        email: values.email.trim(),
       };
 
       const authFn = mode === "login" ? login : register;
@@ -62,7 +62,9 @@ export default function AuthModal() {
       if (result.ok) {
         toast({
           title: "Success",
-          description: mode === "login" ? "Welcome back!" : "Account created successfully!",
+          description: mode === "login" 
+            ? "Welcome back! You can now access your bonus codes and notifications." 
+            : "Account created successfully! You can now access bonus codes and receive notifications.",
         });
         setIsOpen(false);
         form.reset();
@@ -70,7 +72,7 @@ export default function AuthModal() {
         toast({
           variant: "destructive",
           title: mode === "login" ? "Login Failed" : "Registration Failed",
-          description: result.message || "Authentication failed",
+          description: result.message || "Please check your credentials and try again",
         });
       }
     } catch (error) {
@@ -98,10 +100,10 @@ export default function AuthModal() {
           <DialogTitle className="text-[#D7FF00]">
             {mode === "login" ? "Welcome Back!" : "Create an Account"}
           </DialogTitle>
-          <DialogDescription>
-            {mode === "login"
-              ? "Sign in to access your account"
-              : "Join us to start earning rewards"}
+          <DialogDescription className="text-[#8A8B91]">
+            {mode === "login" 
+              ? "Sign in to access bonus codes and manage your notification preferences"
+              : "Join us to get exclusive bonus codes and personalized notifications"}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -119,21 +121,19 @@ export default function AuthModal() {
                 </FormItem>
               )}
             />
-            {mode === "register" && (
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="email" className="bg-[#2A2B31]" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="email" className="bg-[#2A2B31]" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="password"
@@ -154,7 +154,7 @@ export default function AuthModal() {
             <div className="flex flex-col gap-2">
               <Button
                 type="submit"
-                className="w-full font-mona-sans-condensed font-extrabold uppercase tracking-tight text-black bg-[#D7FF00] hover:bg-[#b2d000]"
+                className="w-full font-heading uppercase tracking-tight text-black bg-[#D7FF00] hover:bg-[#b2d000]"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -169,7 +169,7 @@ export default function AuthModal() {
               <Button
                 type="button"
                 variant="ghost"
-                className="text-sm font-mona-sans-condensed font-extrabold uppercase tracking-tight text-white hover:text-[#b2d000]"
+                className="text-sm font-heading uppercase tracking-tight text-white hover:text-[#b2d000]"
                 onClick={() => {
                   setMode(mode === "login" ? "register" : "login");
                   form.reset();

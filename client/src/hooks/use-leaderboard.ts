@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
-import { useAuth } from "@/lib/auth";
 
 type WageredData = {
   today: number;
@@ -43,15 +42,12 @@ export function useLeaderboard(
 ) {
   const [ws, setWs] = React.useState<WebSocket | null>(null);
   const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
-  const { user } = useAuth();
 
   React.useEffect(() => {
     let reconnectTimer: NodeJS.Timeout;
     let ws: WebSocket;
 
     const connect = () => {
-      if (!user) return; // Only connect if user is authenticated
-
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       ws = new WebSocket(`${protocol}//${window.location.host}/ws/leaderboard`);
 
@@ -67,9 +63,7 @@ export function useLeaderboard(
       };
 
       ws.onclose = () => {
-        if (user) { // Only reconnect if still authenticated
-          reconnectTimer = setTimeout(connect, 3000);
-        }
+        reconnectTimer = setTimeout(connect, 3000);
       };
 
       ws.onerror = (error: Event) => {
@@ -80,15 +74,13 @@ export function useLeaderboard(
       setWs(ws);
     };
 
-    if (user) {
-      connect();
-    }
+    connect();
 
     return () => {
       clearTimeout(reconnectTimer);
       if (ws) ws.close();
     };
-  }, [user]); // Add user dependency
+  }, []);
 
   const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
     queryKey: ["/api/affiliate/stats", timePeriod, page],
@@ -103,7 +95,6 @@ export function useLeaderboard(
       }
 
       const response = await fetch(`/api/affiliate/stats?page=${page}&limit=10`, {
-        credentials: 'include', // Add credentials for auth
         headers: {
           'Accept': 'application/json'
         }
@@ -121,7 +112,6 @@ export function useLeaderboard(
 
       return freshData;
     },
-    enabled: !!user, // Only run query when user is authenticated
     refetchInterval: 30000,
     staleTime: 30000,
     gcTime: 5 * 60 * 1000,

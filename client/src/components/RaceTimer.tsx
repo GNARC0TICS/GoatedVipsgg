@@ -6,7 +6,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 
-// Type definitions for race data structures
 interface RaceParticipant {
   uid: string;
   name: string;
@@ -28,7 +27,6 @@ export function RaceTimer() {
   const [showPrevious, setShowPrevious] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
   const { toast } = useToast();
-  const { user } = useAuth();
 
   const { 
     data: currentRaceData, 
@@ -38,7 +36,6 @@ export function RaceTimer() {
     queryKey: ["/api/wager-races/current"],
     queryFn: async () => {
       const response = await fetch('/api/wager-races/current', {
-        credentials: 'include',
         headers: {
           'Accept': 'application/json'
         }
@@ -50,7 +47,7 @@ export function RaceTimer() {
     },
     refetchInterval: 30000,
     retry: 3,
-    enabled: !showPrevious && !!user,
+    enabled: !showPrevious,
     staleTime: 60000,
     onError: (error: Error) => {
       console.error('Race data fetch error:', error);
@@ -70,7 +67,6 @@ export function RaceTimer() {
     queryKey: ["/api/wager-races/previous"],
     queryFn: async () => {
       const response = await fetch('/api/wager-races/previous', {
-        credentials: 'include',
         headers: {
           'Accept': 'application/json'
         }
@@ -85,7 +81,7 @@ export function RaceTimer() {
         endDate: data.endDate || new Date().toISOString()
       } : null;
     },
-    enabled: showPrevious && !!user
+    enabled: showPrevious
   });
 
   const raceData = showPrevious ? previousRaceData : currentRaceData;
@@ -123,8 +119,6 @@ export function RaceTimer() {
       month: 'long'
     });
   };
-
-  if (!user) return null; // Don't show timer if user is not authenticated
 
   if (error) {
     return (
