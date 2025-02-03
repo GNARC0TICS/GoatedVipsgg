@@ -1,13 +1,12 @@
 import { ReactNode, useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu } from "lucide-react";
+import { Menu, Bell, Settings, User, LogOut, ChevronDown, Gift } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
 import { useQuery } from "@tanstack/react-query";
 import type { SelectUser } from "@db/schema";
 import { ScrollToTop } from "./ScrollToTop";
-import { Bell, Settings, User, LogOut, ChevronDown, Gift } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -26,32 +25,44 @@ import { FloatingSupport } from "./FloatingSupport";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from 'framer-motion';
 
-function MobileNavLink({ 
-  href, 
-  label,
-  onClose
-}: { 
-  href: string; 
-  label: string | React.ReactNode;
-  onClose: () => void;
-}) {
+// Improved header styling
+const headerClasses = {
+  container: "fixed top-0 left-0 right-0 z-50 bg-[#14151A]/80 backdrop-blur-xl border-b border-[#2A2B31]/50",
+  nav: "container mx-auto h-16 px-4 flex items-center justify-between",
+  logo: "h-8 w-auto relative transition-transform duration-300 hover:scale-105",
+  menuButton: "md:hidden relative overflow-hidden group",
+  desktopNav: "hidden md:flex items-center space-x-6",
+  userSection: "flex items-center space-x-4",
+};
+
+// Consolidated dropdown styling
+const dropdownClasses = {
+  content: "w-56 bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1",
+  item: "px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer",
+};
+
+// Footer styling
+const footerClasses = {
+  wrapper: "bg-[#D7FF00] relative mt-auto",
+  container: "container mx-auto px-4 py-16",
+  grid: "grid grid-cols-1 md:grid-cols-2 gap-12",
+  heading: "font-heading text-[#14151A] text-2xl font-bold",
+};
+
+function MobileNavLink({ href, label, onClose }: { href: string; label: string | React.ReactNode; onClose: () => void; }) {
   const [location] = useLocation();
   const isActive = location === href;
-
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    onClose();
-    window.location.href = href; // Use window.location for guaranteed navigation after close
-  };
 
   return (
     <motion.div
       whileTap={{ scale: 0.98 }}
-      onClick={handleClick}
+      onClick={(e) => {
+        e.preventDefault();
+        onClose();
+        window.location.href = href;
+      }}
       className={`px-4 py-2.5 rounded-lg transition-colors duration-200 cursor-pointer ${
-        isActive
-          ? "bg-[#D7FF00]/10 text-[#D7FF00]"
-          : "text-white hover:bg-[#2A2B31]"
+        isActive ? "bg-[#D7FF00]/10 text-[#D7FF00]" : "text-white hover:bg-[#2A2B31]"
       }`}
     >
       {label}
@@ -59,11 +70,8 @@ function MobileNavLink({
   );
 }
 
-interface LayoutProps {
-  children: ReactNode;
-}
-
-export function Layout({ children }: LayoutProps) {
+// Main Layout Component
+export function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const footerRef = useRef<HTMLElement>(null);
   const [isFooterVisible, setIsFooterVisible] = useState(false);
@@ -71,13 +79,25 @@ export function Layout({ children }: LayoutProps) {
   const { toast } = useToast();
   const [openMobile, setOpenMobile] = useState(false);
 
+  const { data: user } = useQuery<SelectUser>({
+    queryKey: ["/api/user"],
+  });
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location]);
 
-  const { data: user } = useQuery<SelectUser>({
-    queryKey: ["/api/user"],
-  });
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsFooterVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+
+    if (footerRef.current) {
+      observer.observe(footerRef.current);
+      return () => observer.unobserve(footerRef.current!);
+    }
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -85,11 +105,7 @@ export function Layout({ children }: LayoutProps) {
         method: "POST",
         credentials: "include",
       });
-
-      if (!response.ok) {
-        throw new Error("Logout failed");
-      }
-
+      if (!response.ok) throw new Error("Logout failed");
       window.location.reload();
     } catch (error) {
       toast({
@@ -100,56 +116,19 @@ export function Layout({ children }: LayoutProps) {
     }
   };
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsFooterVisible(true);
-        }
-      },
-      { threshold: 0.1 },
-    );
-
-    if (footerRef.current) {
-      observer.observe(footerRef.current);
-    }
-
-    return () => {
-      if (footerRef.current) {
-        observer.unobserve(footerRef.current);
-      }
-    };
-  }, []);
-
-  const handleCloseMenu = () => {
-    setOpenMobile(false);
-  };
-
   return (
-    <div className="min-h-screen bg-[#14151A] flex flex-col">
-      <header className="fixed top-0 left-0 right-0 z-50">
-        <div className="absolute inset-0 bg-[#14151A]/80 backdrop-blur-xl border-b border-[#2A2B31]/50" />
-        <nav className="container mx-auto px-4 relative">
-          <div className="h-16 flex items-center justify-between">
-            <div className="flex items-center gap-8">
-              <div className="relative group" id="logo-container">
-                <div className="absolute inset-0 rounded-full bg-[#D7FF00]/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <Link href="/">
-                  <img
-                    src="/images/logo-neon.png"
-                    alt="GOATED"
-                    className="h-6 md:h-8 w-auto relative z-10 transition-transform duration-300 hover:scale-105 wiggle"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.onerror = null;
-                      target.src = "https://placehold.co/120x32/14151A/D7FF00?text=GOATED";
-                    }}
-                  />
-                </Link>
-              </div>
+    <div className="min-h-screen flex flex-col bg-[#14151A]">
+      <header className={headerClasses.container}>
+        <nav className={headerClasses.nav}>
+          {/* Navigation content */}
+          <div className="flex items-center gap-8">
+            <Link href="/">
+              <img src="/images/logo-neon.png" alt="GOATED" className={headerClasses.logo} />
+            </Link>
 
-              <div className="hidden md:flex items-center gap-6">
-                <NavLink href="/" label="HOME" />
+            {/* Desktop Navigation */}
+            <div className={headerClasses.desktopNav}>
+              <NavLink href="/" label="HOME" />
                 <NavLink
                   href="/wager-races"
                   label={
@@ -437,11 +416,10 @@ export function Layout({ children }: LayoutProps) {
                     </div>
                   </div>
                 )}
-              </div>
-
-              {/* Enhanced mobile navigation */}
-              <div className="md:hidden">
-                <Sheet open={openMobile} onOpenChange={setOpenMobile}>
+            </div>
+            {/* Enhanced mobile navigation */}
+            <div className={headerClasses.menuButton}>
+              <Sheet open={openMobile} onOpenChange={setOpenMobile}>
                   <SheetTrigger asChild>
                     <Button
                       variant="ghost"
@@ -463,7 +441,7 @@ export function Layout({ children }: LayoutProps) {
                       className="flex flex-col gap-4 pt-8"
                     >
                       <div className="px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold">MENU</div>
-                      <MobileNavLink href="/" label="Home" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/" label="Home" onClose={() => setOpenMobile(false)} />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">EVENTS</div>
                       <MobileNavLink 
@@ -477,70 +455,70 @@ export function Layout({ children }: LayoutProps) {
                             </div>
                           </div>
                         }
-                        onClose={handleCloseMenu}
+                        onClose={() => setOpenMobile(false)}
                       />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">GET STARTED</div>
-                      <MobileNavLink href="/how-it-works" label="How It Works" onClose={handleCloseMenu} />
-                      <MobileNavLink href="/vip-transfer" label="VIP Transfer" onClose={handleCloseMenu} />
-                      <MobileNavLink href="/tips-and-strategies" label="Tips & Strategies" onClose={handleCloseMenu} />
-                      <MobileNavLink href="/vip-program" label="VIP Program" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/how-it-works" label="How It Works" onClose={() => setOpenMobile(false)} />
+                      <MobileNavLink href="/vip-transfer" label="VIP Transfer" onClose={() => setOpenMobile(false)} />
+                      <MobileNavLink href="/tips-and-strategies" label="Tips & Strategies" onClose={() => setOpenMobile(false)} />
+                      <MobileNavLink href="/vip-program" label="VIP Program" onClose={() => setOpenMobile(false)} />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">LEADERBOARDS</div>
                       <MobileNavLink 
                         href="/leaderboard?period=daily" 
                         label="Daily Leaderboard" 
-                        onClose={handleCloseMenu}
+                        onClose={() => setOpenMobile(false)}
                       />
                       <MobileNavLink 
                         href="/leaderboard?period=weekly" 
                         label="Weekly Leaderboard" 
-                        onClose={handleCloseMenu}
+                         onClose={() => setOpenMobile(false)}
                       />
                       <MobileNavLink 
                         href="/leaderboard?period=monthly" 
                         label="Monthly Leaderboard" 
-                        onClose={handleCloseMenu}
+                         onClose={() => setOpenMobile(false)}
                       />
                       <MobileNavLink 
                         href="/leaderboard?period=all-time" 
                         label="All Time Leaderboard" 
-                        onClose={handleCloseMenu}
+                         onClose={() => setOpenMobile(false)}
                       />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">PROMOTIONS</div>
-                      <MobileNavLink href="/promotions" label="News & Promotions" onClose={handleCloseMenu} />
-                      <MobileNavLink href="/goated-token" label="Goated Airdrop" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/promotions" label="News & Promotions" onClose={() => setOpenMobile(false)} />
+                      <MobileNavLink href="/goated-token" label="Goated Airdrop" onClose={() => setOpenMobile(false)} />
                       <MobileNavLink href="/bonus-codes" label={
                         <div className="flex items-center gap-2">
                           <span>Bonus Codes</span>
                           <Gift className="h-4 w-4" />
                         </div>
-                      } onClose={handleCloseMenu} />
+                      } onClose={() => setOpenMobile(false)} />
 
 
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">SOCIALS</div>
-                      <MobileNavLink href="/telegram" label="Telegram Community" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/telegram" label="Telegram Community" onClose={() => setOpenMobile(false)} />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">HELP & SUPPORT</div>
-                      <MobileNavLink href="/help" label="Help Center" onClose={handleCloseMenu} />
-                      <MobileNavLink href="/faq" label="FAQ" onClose={handleCloseMenu} />
-                      <MobileNavLink href="/support" label="Contact Support" onClose={handleCloseMenu} />
+                      <MobileNavLink href="/help" label="Help Center" onClose={() => setOpenMobile(false)} />
+                      <MobileNavLink href="/faq" label="FAQ" onClose={() => setOpenMobile(false)} />
+                      <MobileNavLink href="/support" label="Contact Support" onClose={() => setOpenMobile(false)} />
 
                       {user?.isAdmin && (
                         <>
                           <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">ADMIN</div>
-                          <MobileNavLink href="/admin/user-management" label="User Management" onClose={handleCloseMenu} />
-                          <MobileNavLink href="/admin/wager-races" label="Wager Race Management" onClose={handleCloseMenu} />
-                          <MobileNavLink href="/admin/bonus-codes" label="Bonus Code Management" onClose={handleCloseMenu} />
+                          <MobileNavLink href="/admin/user-management" label="User Management" onClose={() => setOpenMobile(false)} />
+                          <MobileNavLink href="/admin/wager-races" label="Wager Race Management" onClose={() => setOpenMobile(false)} />
+                          <MobileNavLink href="/admin/bonus-codes" label="Bonus Code Management" onClose={() => setOpenMobile(false)} />
                         </>
                       )}
 
                       <div className="mt-6 px-4 border-t border-[#2A2B31]/50 pt-6">
                         <Button
                           onClick={() => {
-                            handleCloseMenu();
+                            setOpenMobile(false);
                             window.open("https://www.goated.com/r/SPIN", "_blank");
                           }}
                           className="w-full bg-[#D7FF00] text-[#14151A] hover:bg-[#D7FF00]/90 transition-colors font-bold"
@@ -551,11 +529,12 @@ export function Layout({ children }: LayoutProps) {
                     </motion.div>
                   </SheetContent>
                 </Sheet>
-              </div>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2 md:gap-6">
-              <div>
+          {/* User section */}
+          <div className={headerClasses.userSection}>
+             <div>
                 {user && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -660,12 +639,13 @@ export function Layout({ children }: LayoutProps) {
                   </Button>
                 </div>
               </div>
-            </div>
           </div>
         </nav>
       </header>
 
-      <main className="flex-grow pt-16">{children}</main>
+      <main className="flex-grow pt-16">
+        {children}
+      </main>
 
       {showFloatingSupport && (
         <FloatingSupport onClose={() => setShowFloatingSupport(false)} />
@@ -673,16 +653,13 @@ export function Layout({ children }: LayoutProps) {
 
       <ScrollToTop />
 
-      <footer
-        ref={footerRef}
-        className={`${isFooterVisible ? "entrance-zoom" : "opacity-0"} bg-[#D7FF00] relative`}
-      >
+      <footer ref={footerRef} className={footerClasses.wrapper}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent pointer-events-none" />
-        <div className="container mx-auto px-4 py-16 relative">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div className={footerClasses.container}>
+          <div className={footerClasses.grid}>
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <h4 className="font-heading text-[#14151A] text-2xl font-bold">
+                <h4 className={footerClasses.heading}>
                   Ready to get Goated?
                 </h4>
                 <a 
@@ -713,7 +690,7 @@ export function Layout({ children }: LayoutProps) {
             </div>
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <h4 className="font-heading text-[#14151A] text-2xl font-bold">
+                <h4 className={footerClasses.heading}>
                   Stay Updated
                 </h4>
                 <a 
@@ -790,28 +767,19 @@ export function Layout({ children }: LayoutProps) {
   );
 }
 
-// Updated NavLink component with enhanced hover effects and underline animation
-function NavLink({
-  href,
-  label,
-  tooltip,
-}: {
-  href: string;
-  label: string | React.ReactNode;
-  tooltip?: string;
-}) {
+function NavLink({ href, label, tooltip }: { href: string; label: string | React.ReactNode; tooltip?: string; }) {
   const [location] = useLocation();
   const isActive = location === href;
 
   const linkContent = (
     <motion.div
-      className={`relative font-heading cursor-pointer group ${
+      className={`relative font-heading cursor-pointer ${
         isActive ? "text-[#D7FF00]" : "text-white"
-      } transition-all duration-300 ease-in-out hover:text-[#D7FF00]`}
+      } hover:text-[#D7FF00] transition-all duration-300`}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
-            {label}
+      {label}
       <motion.div
         className="absolute -bottom-1 left-0 h-0.5 bg-[#D7FF00] origin-left"
         initial={{ scaleX: isActive ? 1 : 0 }}

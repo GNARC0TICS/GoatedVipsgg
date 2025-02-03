@@ -137,6 +137,29 @@ html {
   * {
     @apply border-border;
   }
+  
+  /* Improved spacing utilities */
+  .layout-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .section-spacing {
+    @apply py-12 md:py-16 lg:py-24;
+  }
+  
+  .content-spacing {
+    @apply space-y-6 md:space-y-8;
+  }
+  
+  /* Enhanced responsive paddings */
+  .responsive-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Improved grid layouts */
+  .grid-layout {
+    @apply grid gap-6 md:gap-8 lg:gap-12;
+  }
 
   html {
     -webkit-text-size-adjust: 100%;
