@@ -11,6 +11,7 @@ import {
   Coins,
   Gift,
   Zap,
+  MessageSquare,
 } from "lucide-react";
 import { FeatureCarousel } from "@/components/FeatureCarousel";
 import { MVPCards } from "@/components/MVPCards";
@@ -272,6 +273,54 @@ export default function Home() {
                       </p>
                       <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
                         Learn About Airdrops <ArrowRight className="h-4 w-4" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/promotions" className="block">
+                  <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
+                    <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 card-hover h-full flex flex-col justify-between">
+                      <Gift className="h-8 w-8 text-[#D7FF00] mb-4" />
+                      <div className="flex items-center justify-center gap-2 mb-4">
+                        <h3 className="text-2xl font-heading uppercase text-white">
+                          PROMOTIONS
+                        </h3>
+                        <span className="text-xs font-heading text-[#D7FF00] px-2 py-1 bg-[#D7FF00]/10 rounded-full">
+                          DAILY
+                        </span>
+                      </div>
+                      <p className="text-[#8A8B91] mb-6 font-body">
+                        Discover daily promotions, bonuses, and special events. Take advantage
+                        of exclusive offers and boost your gaming experience.
+                      </p>
+                      <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
+                        View Promotions <ArrowRight className="h-4 w-4" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/telegram" className="block">
+                  <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
+                    <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 card-hover h-full flex flex-col justify-between">
+                      <MessageSquare className="h-8 w-8 text-[#D7FF00] mb-4" />
+                      <div className="flex items-center justify-center gap-2 mb-4">
+                        <h3 className="text-2xl font-heading uppercase text-white">
+                          TELEGRAM GROUP
+                        </h3>
+                        <span className="text-xs font-heading text-[#D7FF00] px-2 py-1 bg-[#D7FF00]/10 rounded-full">
+                          JOIN NOW
+                        </span>
+                      </div>
+                      <p className="text-[#8A8B91] mb-6 font-body">
+                        Join our Telegram community for exclusive updates, bonus codes,
+                        and instant support. Stay connected with fellow players.
+                      </p>
+                      <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
+                        Join Community <ArrowRight className="h-4 w-4" />
                       </span>
                     </div>
                   </div>
