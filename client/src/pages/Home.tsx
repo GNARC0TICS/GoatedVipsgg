@@ -182,9 +182,9 @@ export default function Home() {
                       <p className="text-[#8A8B91] mb-6 font-body">
                         Complete daily and weekly challenges to earn exclusive rewards and boost your earnings.
                       </p>
-                      <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
+                      <Link to="/challenges" className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
                         View Challenges <ArrowRight className="h-4 w-4" />
-                      </span>
+                      </Link>
                     </div>
                   </div>
                 </Link>
