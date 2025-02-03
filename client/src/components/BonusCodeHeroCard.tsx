@@ -1,5 +1,6 @@
 import { Lock } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -14,21 +15,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Link } from "wouter";
 
 export function BonusCodeHeroCard() {
   const { isAuthenticated } = useAuth();
 
   return (
     <Card className={cn(
-      "relative overflow-hidden",
+      "relative overflow-hidden bg-[#1A1B21] border-[#2A2B31]",
       !isAuthenticated && "opacity-75 hover:opacity-100 transition-opacity"
     )}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-[#D7FF00]">
           Bonus Codes
-          {!isAuthenticated && <Lock className="h-4 w-4 text-muted-foreground" />}
+          {!isAuthenticated && <Lock className="h-4 w-4 text-[#8A8B91]" />}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-[#8A8B91]">
           {isAuthenticated 
             ? "View and redeem your exclusive bonus codes"
             : "Sign in to access exclusive bonus codes"}
@@ -36,16 +38,18 @@ export function BonusCodeHeroCard() {
       </CardHeader>
       <CardContent>
         {isAuthenticated ? (
-          <Button variant="default" className="w-full">
-            View Bonus Codes
-          </Button>
+          <Link href="/bonus-codes">
+            <Button variant="default" className="w-full bg-[#D7FF00] text-black hover:bg-[#b2d000]">
+              View Bonus Codes
+            </Button>
+          </Link>
         ) : (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
                   variant="secondary" 
-                  className="w-full opacity-75"
+                  className="w-full bg-[#2A2B31] text-[#8A8B91] opacity-75 cursor-not-allowed"
                   disabled
                 >
                   <Lock className="h-4 w-4 mr-2" />
