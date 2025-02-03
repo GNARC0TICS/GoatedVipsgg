@@ -36,6 +36,7 @@ import FAQ from "@/pages/faq";
 import VipProgram from "./pages/VipProgram";
 import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
+import Challenges from "@/pages/Challenges";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -92,6 +93,7 @@ function Router() {
             <Route path="/goated-token" component={GoatedToken} />
             <Route path="/faq" component={FAQ} />
             <Route path="/vip-program" component={VipProgram} />
+            <Route path="/challenges" component={Challenges} />
 
             {/* Protected Routes */}
             <Route path="/bonus-codes">
