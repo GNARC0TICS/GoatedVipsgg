@@ -4,10 +4,12 @@ import type { InsertUser, SelectUser } from "@db/schema";
 type RequestResult =
   | {
       ok: true;
+      user?: SelectUser;
     }
   | {
       ok: false;
       message: string;
+      errors?: Record<string, string>;
     };
 
 async function handleRequest(
@@ -36,7 +38,11 @@ async function handleRequest(
       };
     }
 
-    return { ok: true };
+    const data = await response.json();
+    return { 
+      ok: true,
+      user: data
+    };
   } catch (e: any) {
     return { ok: false, message: e.toString() };
   }
@@ -60,8 +66,10 @@ export function useUser() {
 
   const loginMutation = useMutation<RequestResult, Error, InsertUser>({
     mutationFn: (userData) => handleRequest("/api/login", "POST", userData),
-    onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], testAdmin);
+    onSuccess: (data) => {
+      if (data.ok && data.user) {
+        queryClient.setQueryData(["/api/user"], data.user);
+      }
     },
   });
 
@@ -74,8 +82,10 @@ export function useUser() {
 
   const registerMutation = useMutation<RequestResult, Error, InsertUser>({
     mutationFn: (userData) => handleRequest("/api/register", "POST", userData),
-    onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], testAdmin);
+    onSuccess: (data) => {
+      if (data.ok && data.user) {
+        queryClient.setQueryData(["/api/user"], data.user);
+      }
     },
   });
 

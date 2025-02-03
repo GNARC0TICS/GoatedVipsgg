@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
+import { useAuth } from "@/lib/auth";
 
 type WageredData = {
   today: number;
@@ -41,16 +42,20 @@ export function useLeaderboard(
   page: number = 0,
 ) {
   const [ws, setWs] = React.useState<WebSocket | null>(null);
+  const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
+  const { user } = useAuth();
 
   React.useEffect(() => {
     let reconnectTimer: NodeJS.Timeout;
     let ws: WebSocket;
 
     const connect = () => {
+      if (!user) return; // Only connect if user is authenticated
+
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       ws = new WebSocket(`${protocol}//${window.location.host}/ws/leaderboard`);
-      
-      ws.onmessage = (event) => {
+
+      ws.onmessage = (event: MessageEvent) => {
         try {
           const update = JSON.parse(event.data);
           if (update.type === "LEADERBOARD_UPDATE") {
@@ -62,10 +67,12 @@ export function useLeaderboard(
       };
 
       ws.onclose = () => {
-        reconnectTimer = setTimeout(connect, 3000);
+        if (user) { // Only reconnect if still authenticated
+          reconnectTimer = setTimeout(connect, 3000);
+        }
       };
 
-      ws.onerror = (error) => {
+      ws.onerror = (error: Event) => {
         console.error('WebSocket error:', error);
         ws.close();
       };
@@ -73,35 +80,40 @@ export function useLeaderboard(
       setWs(ws);
     };
 
-    connect();
+    if (user) {
+      connect();
+    }
 
     return () => {
       clearTimeout(reconnectTimer);
       if (ws) ws.close();
     };
-  }, []);
+  }, [user]); // Add user dependency
 
-  const { data, isLoading, error, refetch } = useQuery<APIResponse>({
+  const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
     queryKey: ["/api/affiliate/stats", timePeriod, page],
     queryFn: async () => {
-      // Try to get cached data first
       const cachedData = sessionStorage.getItem(`leaderboard-${timePeriod}-${page}`);
       if (cachedData) {
         const parsed = JSON.parse(cachedData);
         const cacheTime = parsed.timestamp;
-        // Use cache if it's less than 30 seconds old
         if (Date.now() - cacheTime < 30000) {
-          return parsed.data;
+          return parsed.data as APIResponse;
         }
       }
 
-      const response = await fetch(`/api/affiliate/stats?page=${page}&limit=10`);
+      const response = await fetch(`/api/affiliate/stats?page=${page}&limit=10`, {
+        credentials: 'include', // Add credentials for auth
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const freshData = await response.json();
-      
-      // Cache the new data
+      const freshData = await response.json() as APIResponse;
+
       sessionStorage.setItem(`leaderboard-${timePeriod}-${page}`, JSON.stringify({
         data: freshData,
         timestamp: Date.now()
@@ -109,12 +121,11 @@ export function useLeaderboard(
 
       return freshData;
     },
-    refetchInterval: 30000, // Refetch every 30 seconds for live updates
-    staleTime: 30000, // Consider data fresh for 30 seconds
-    cacheTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes
+    enabled: !!user, // Only run query when user is authenticated
+    refetchInterval: 30000,
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000,
   });
-
-  const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
 
   const periodKey =
     timePeriod === "weekly"
@@ -125,8 +136,7 @@ export function useLeaderboard(
           ? "today"
           : "all_time";
 
-  // Compare current and previous wager amounts
-  const sortedData = data?.data[periodKey]?.data?.map((entry) => {
+  const sortedData = data?.data[periodKey]?.data.map((entry: LeaderboardEntry) => {
     const prevEntry = previousData.find((p) => p.uid === entry.uid);
     const currentWager = entry.wagered[
       timePeriod === "weekly"
@@ -154,9 +164,8 @@ export function useLeaderboard(
       isWagering: currentWager > previousWager,
       wagerChange: currentWager - previousWager,
     };
-  });
+  }) || [];
 
-  // Update previous data after successful fetch
   useEffect(() => {
     if (data?.data[periodKey]?.data) {
       setPreviousData(data.data[periodKey].data);
@@ -164,10 +173,10 @@ export function useLeaderboard(
   }, [data, periodKey]);
 
   return {
-    data: sortedData || [],
+    data: sortedData,
     metadata: data?.metadata,
     isLoading,
-    error: error as Error | null,
+    error,
     refetch,
   };
 }

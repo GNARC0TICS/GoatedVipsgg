@@ -24,47 +24,22 @@ import { insertUserSchema } from "@db/schema";
 import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
 
-const registerSchema = z.object({
-  username: z
-    .string()
-    .min(3)
-    .max(50)
-    .refine(async (username) => {
-      const userExists = await checkIfUsernameExists(username); // Assuming this function exists
-      if (userExists) {
-        throw new z.ZodError([
-          {
-            code: z.ZodIssueCode.custom,
-            message: "Username already exists",
-            path: ["username"],
-          },
-        ]);
-      }
-      return true;
-    }),
-  email: z.string().email(),
-  password: z.string().min(6),
+const authSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters").max(50),
+  email: z.string().email().optional(),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-async function checkIfUsernameExists(username: string) {
-  //Implement your logic to check if username exists in your database here.
-  // This is a placeholder, replace with your actual database query.
-  // Example using a hypothetical database client:
-  // const user = await db.user.findFirst({ where: { username } });
-  // return user !== null;
-  return false; // Placeholder return value
-}
+type AuthFormData = z.infer<typeof authSchema>;
 
 export default function AuthModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [isLoading, setIsLoading] = useState(false); // Added loading state
+  const [isLoading, setIsLoading] = useState(false);
   const { login, register } = useAuth();
 
-  const form = useForm({
-    resolver: zodResolver(
-      mode === "register" ? registerSchema : insertUserSchema,
-    ),
+  const form = useForm<AuthFormData>({
+    resolver: zodResolver(authSchema),
     defaultValues: {
       username: "",
       password: "",
@@ -72,87 +47,37 @@ export default function AuthModal() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof registerSchema>) => {
+  const onSubmit = async (values: AuthFormData) => {
+    setIsLoading(true);
     try {
-      // Add explicit type checking and validation
       const formData = {
-        username: values?.username?.trim(),
-        password: values?.password?.trim(),
-        email: mode === 'register' ? values?.email?.trim() : undefined
+        username: values.username.trim(),
+        password: values.password.trim(),
+        ...(mode === "register" && values.email ? { email: values.email.trim() } : {}),
       };
 
-      if (!formData.username || !formData.password) {
-        toast({
-          variant: "destructive",
-          title: "Validation Error",
-          description: "Username and password are required",
-        });
-        return;
-      }
+      const authFn = mode === "login" ? login : register;
+      const result = await authFn(formData);
 
-      const username = values.username?.trim();
-      const password = values.password?.trim();
-
-      if (!username || !password) {
-        toast({
-          variant: "destructive",
-          title: "Validation Error",
-          description: "Username and password are required",
-        });
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const result = await (mode === "login" ? login({
-          username: values.username,
-          password: values.password
-        }) : register(values));
-
-        if (!result.ok) {
-          // Handle validation errors
-          if (result.errors) {
-            const errorMessages = Object.entries(result.errors)
-              .map(([field, msg]) => `${field}: ${msg}`)
-              .join('\n');
-
-            toast({
-              variant: "destructive",
-              title: mode === "login" ? "Login Failed" : "Registration Failed",
-              description: errorMessages || result.message || "Validation failed",
-            });
-          } else {
-            toast({
-              variant: "destructive",
-              title: mode === "login" ? "Login Failed" : "Registration Failed",
-              description: result.message || "An error occurred. Please try again.",
-            });
-          }
-          return;
-        }
-
+      if (result.ok) {
         toast({
           title: "Success",
           description: mode === "login" ? "Welcome back!" : "Account created successfully!",
         });
-
         setIsOpen(false);
-      } catch (error: any) {
-        const errorMessage = error?.response?.data?.message || error.message || "An unexpected error occurred";
+        form.reset();
+      } else {
         toast({
           variant: "destructive",
-          title: "Error",
-          description: errorMessage,
+          title: mode === "login" ? "Login Failed" : "Registration Failed",
+          description: result.message || "Authentication failed",
         });
-      } finally {
-        setIsLoading(false);
       }
-    } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error.message || "An unexpected error occurred";
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: errorMessage,
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
       });
     } finally {
       setIsLoading(false);
@@ -230,9 +155,16 @@ export default function AuthModal() {
               <Button
                 type="submit"
                 className="w-full font-mona-sans-condensed font-extrabold uppercase tracking-tight text-black bg-[#D7FF00] hover:bg-[#b2d000]"
-                disabled={isLoading} // Added loading state to disable button
+                disabled={isLoading}
               >
-                {mode === "login" ? "Sign In" : "Create Account"}
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    {mode === "login" ? "Signing In..." : "Creating Account..."}
+                  </div>
+                ) : (
+                  mode === "login" ? "Sign In" : "Create Account"
+                )}
               </Button>
               <Button
                 type="button"
