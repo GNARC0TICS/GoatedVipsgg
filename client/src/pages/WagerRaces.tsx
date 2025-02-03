@@ -211,13 +211,17 @@ export default function WagerRaces() {
                   className="text-center"
                 >
                   <h1 className="text-6xl font-heading font-bold text-white mb-2 uppercase" style={{
-                    fontFamily: "MonaSansExpanded-ExtraBold",
+                    fontFamily: "Mona Sans",
+                    fontStretch: "75%",
+                    fontWeight: 800,
                     letterSpacing: "-0.02em"
                   }}>
                     $500
                   </h1>
                   <h2 className="text-5xl font-heading font-bold text-[#D7FF00] leading-tight uppercase" style={{
-                    fontFamily: "MonaSansExpanded-ExtraBold",
+                    fontFamily: "Mona Sans",
+                    fontStretch: "75%",
+                    fontWeight: 800,
                     letterSpacing: "-0.02em"
                   }}>
                     Monthly
