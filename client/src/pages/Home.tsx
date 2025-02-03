@@ -138,7 +138,7 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
                   <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 card-hover h-full w-full flex flex-col justify-between">
                     <Gift className="h-8 w-8 text-[#D7FF00] mb-4" />
-                    <h3 className="text-2xl font-heading uppercase mb-4 text-white flex items-center gap-2">
+                    <h3 className="text-2xl font-heading uppercase mb-4 text-white text-center flex items-center gap-2 justify-center">
                       Bonus Codes
                       {!isAuthenticated && <Lock className="h-4 w-4 text-[#8A8B91]" />}
                     </h3>
