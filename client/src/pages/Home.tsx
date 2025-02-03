@@ -16,6 +16,7 @@ import {
 import { FeatureCarousel } from "@/components/FeatureCarousel";
 import { MVPCards } from "@/components/MVPCards";
 import { RaceTimer } from "@/components/RaceTimer";
+import { BonusCodeHeroCard } from "@/components/BonusCodeHeroCard";
 
 export default function Home() {
   return (
@@ -124,6 +125,7 @@ export default function Home() {
                 transition={{ delay: 0.2 }}
                 className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12 max-w-7xl mx-auto px-4"
               >
+                 <BonusCodeHeroCard />
                 <Link href="/vip-transfer" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                     <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
@@ -190,9 +192,7 @@ export default function Home() {
                 </Link>
 
                 </motion.div>
-
-
-
+              
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

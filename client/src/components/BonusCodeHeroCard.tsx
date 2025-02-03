@@ -22,9 +22,10 @@ export function BonusCodeHeroCard() {
 
   return (
     <Card className={cn(
-      "relative overflow-hidden bg-[#1A1B21] border-[#2A2B31]",
-      !isAuthenticated && "opacity-50 hover:opacity-75 transition-opacity"
+      "relative overflow-hidden bg-[#1A1B21]/50 backdrop-blur-sm border border-[#2A2B31]",
+      !isAuthenticated && "opacity-50 hover:opacity-75 transition-opacity group"
     )}>
+      <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-[#D7FF00]">
           Bonus Codes
