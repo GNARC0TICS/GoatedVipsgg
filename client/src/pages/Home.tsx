@@ -122,7 +122,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-12 max-w-7xl mx-auto px-4 lg:px-6"
+                className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12 max-w-7xl mx-auto px-4"
               >
                 <Link href="/vip-transfer" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
