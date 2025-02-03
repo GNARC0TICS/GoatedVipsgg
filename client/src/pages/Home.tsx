@@ -190,7 +190,7 @@ export default function Home() {
                 </Link>
 
                 </motion.div>
-              
+
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
