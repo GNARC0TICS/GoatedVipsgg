@@ -10,51 +10,22 @@ const CHALLENGES = [
   {
     id: 1,
     title: "Daily High Roller",
-    description: "Reach $50,000 in daily wagers",
+    description: "Reach $50,000 in wagers",
     reward: "$45 Bonus",
-    category: "Daily",
+    category: "Achievement",
     isActive: true,
     isNew: true,
-    endTime: "24h",
   },
   {
     id: 2,
     title: "Limbo Master",
-    description: "First to hit 1000x multiplier on Limbo with min $0.10 bet",
+    description: "Hit 1000x multiplier on Limbo with min $0.10 bet",
     reward: "$20 Bonus",
-    category: "First Achievement",
+    category: "Achievement",
     isActive: true,
     isNew: true,
     requiresProof: true,
-  },
-  {
-    id: 3,
-    title: "Weekly Warrior",
-    description: "Place 1000 bets in a week",
-    reward: "$100 Bonus",
-    category: "Weekly",
-    isActive: true,
-    endTime: "7d",
-  },
-  {
-    id: 4,
-    title: "VIP Race Champion",
-    description: "Finish in top 3 of the monthly wager race",
-    reward: "$250 Bonus",
-    category: "Monthly",
-    isActive: true,
-    endTime: "30d",
-    isNew: true,
-  },
-  {
-    id: 5,
-    title: "Social Media Star",
-    description: "Share a big win on Twitter/X and get 100+ likes",
-    reward: "$50 Bonus",
-    category: "Social",
-    isActive: true,
-    requiresProof: true,
-    isNew: true,
+    proofInstructions: "Share your bet link in our Telegram group for verification"
   }
 ];
 
@@ -71,7 +42,7 @@ export default function Challenges() {
             {/* Header Section */}
             <div className="text-center mb-12">
               <h1 className="text-4xl md:text-5xl font-heading mb-4">
-                Daily Challenges
+                Challenges
               </h1>
               <p className="text-[#8A8B91] max-w-2xl mx-auto">
                 Complete challenges to earn bonus rewards. New challenges added regularly!
@@ -105,7 +76,7 @@ export default function Challenges() {
             </div>
 
             {/* Challenges Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {CHALLENGES.map((challenge) => (
                 <motion.div
                   key={challenge.id}
@@ -128,17 +99,11 @@ export default function Challenges() {
                       <p className="text-[#8A8B91] mb-4">{challenge.description}</p>
                       <div className="flex items-center justify-between">
                         <span className="text-[#D7FF00] font-heading">{challenge.reward}</span>
-                        {challenge.endTime && (
-                          <div className="flex items-center gap-2 text-sm text-[#8A8B91]">
-                            <Timer className="h-4 w-4" />
-                            <span>Ends in {challenge.endTime}</span>
-                          </div>
-                        )}
                       </div>
                       {challenge.requiresProof && (
                         <div className="mt-4 flex items-center gap-2 text-sm text-[#8A8B91]">
                           <AlertCircle className="h-4 w-4" />
-                          <span>Requires screenshot proof</span>
+                          <span>{challenge.proofInstructions}</span>
                         </div>
                       )}
                       <Button className="w-full mt-4 bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90">
