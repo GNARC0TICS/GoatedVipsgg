@@ -148,12 +148,23 @@ export function Layout({ children }: LayoutProps) {
                 </Link>
               </div>
 
-              <div className="hidden md:flex items-center gap-8">
+              <div className="hidden md:flex items-center gap-6">
                 <NavLink href="/" label="HOME" />
+                <div className="relative group">
+                  <NavLink
+                    href="/get-started"
+                    label={
+                      <div className="flex items-center gap-1">
+                        <span className="font-heading">GET STARTED</span>
+                        <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                      </div>
+                    }
+                  />
+                </div>
                 <NavLink
                   href="/wager-races"
                   label={
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 font-heading">
                       <span>MONTHLY RACE</span>
                       <div className="flex items-center gap-1">
                         <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
