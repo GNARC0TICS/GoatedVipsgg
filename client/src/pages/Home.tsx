@@ -12,13 +12,22 @@ import {
   Gift,
   Zap,
   MessageSquare,
+  Lock,
 } from "lucide-react";
 import { FeatureCarousel } from "@/components/FeatureCarousel";
 import { MVPCards } from "@/components/MVPCards";
 import { RaceTimer } from "@/components/RaceTimer";
 import { BonusCodeHeroCard } from "@/components/BonusCodeHeroCard";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useAuth } from "@/lib/auth";
 
 export default function Home() {
+    const { isAuthenticated } = useAuth();
   return (
     <div className="min-h-screen bg-[#14151A]">
       <main className="container mx-auto px-4 py-12">
@@ -125,7 +134,42 @@ export default function Home() {
                 transition={{ delay: 0.2 }}
                 className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12 max-w-7xl mx-auto px-4"
               >
-                 <BonusCodeHeroCard />
+                <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
+                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 card-hover h-full w-full flex flex-col justify-between">
+                    <Gift className="h-8 w-8 text-[#D7FF00] mb-4" />
+                    <h3 className="text-2xl font-heading uppercase mb-4 text-white flex items-center gap-2">
+                      Bonus Codes
+                      {!isAuthenticated && <Lock className="h-4 w-4 text-[#8A8B91]" />}
+                    </h3>
+                    <p className="text-[#8A8B91] mb-6 font-body">
+                      {isAuthenticated 
+                        ? "Exclusive bonus codes updated regularly. Claim special rewards and boost your gaming experience."
+                        : "Sign in to access exclusive bonus codes and rewards"}
+                    </p>
+                    {isAuthenticated ? (
+                      <Link href="/bonus-codes">
+                        <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
+                          View Codes <ArrowRight className="h-4 w-4" />
+                        </span>
+                      </Link>
+                    ) : (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger className="w-full">
+                            <span className="font-heading text-[#8A8B91] inline-flex items-center gap-2 opacity-50 cursor-not-allowed">
+                              <Lock className="h-4 w-4" />
+                              Locked
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Sign in to access bonus codes and rewards</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
+                </div>
                 <Link href="/vip-transfer" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                     <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
@@ -190,8 +234,7 @@ export default function Home() {
                     </div>
                   </div>
                 </Link>
-
-                </motion.div>
+              </motion.div>
               
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -219,24 +262,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
-                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 card-hover h-full w-full flex flex-col justify-between">
-                    <Gift className="h-8 w-8 text-[#D7FF00] mb-4" />
-                    <h3 className="text-2xl font-heading uppercase mb-4 text-white">
-                      Bonus Codes
-                    </h3>
-                    <p className="text-[#8A8B91] mb-6 font-body">
-                      Exclusive bonus codes updated regularly. Claim special rewards
-                      and boost your gaming experience.
-                    </p>
-                    <Link href="/bonus-codes">
-                      <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
-                        View Codes <ArrowRight className="h-4 w-4" />
-                      </span>
-                    </Link>
-                  </div>
-                </div>
 
                 <Link href="/goated-token" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
