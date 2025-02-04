@@ -230,4 +230,4 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
       </div>
     </div>
   );
-}););
+});
