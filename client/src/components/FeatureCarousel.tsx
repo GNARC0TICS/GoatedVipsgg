@@ -108,7 +108,9 @@ export const FeatureCarousel = () => {
       } else {
         nextSlide();
       }
-      return;
+    } else {
+      // Animate back to center if it's not a quick swipe or long drag
+      dragX.set(0);
     }
   };
 
