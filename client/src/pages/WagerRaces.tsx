@@ -190,6 +190,11 @@ export default function WagerRaces() {
                 muted
                 playsInline
                 poster="/images/preload.PNG"
+                ref={(el) => {
+                  if (el) {
+                    el.playbackRate = 0.75; // Slows down to 75% of original speed
+                  }
+                }}
               >
                 <source src="/images/RACEFLAG.MP4" type="video/mp4" />
               </video>
