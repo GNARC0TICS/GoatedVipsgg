@@ -114,6 +114,8 @@ export function useLeaderboard(
     },
     refetchInterval: 30000,
     staleTime: 30000,
+    cacheTime: 300000, // Added cacheTime
+    retry: 3, // Added retry attempts
     gcTime: 5 * 60 * 1000,
   });
 
