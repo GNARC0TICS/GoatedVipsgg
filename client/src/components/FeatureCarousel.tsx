@@ -48,10 +48,10 @@ export const FeatureCarousel = () => {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
 
-  const items = [
-    { text: `+${totalWager?.toLocaleString() || '0'} WAGERED`, link: "/leaderboard" },
+  const items = totalWager ? [
+    { text: `+${totalWager?.toLocaleString()} WAGERED`, link: "/leaderboard" },
     ...announcements
-  ];
+  ] : [];
 
   const wrap = (index: number) => {
     if (index < 0) return items.length - 1;
@@ -152,26 +152,28 @@ export const FeatureCarousel = () => {
         onMouseLeave={handleDragEnd}
       >
         <AnimatePresence initial={false} custom={direction} mode="wait">
-          <motion.div
-            key={currentIndex}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{
-              x: { type: "spring", stiffness: 300, damping: 30 },
-              opacity: { duration: 0.2 }
-            }}
-            className="absolute w-full flex justify-center items-center cursor-pointer"
-          >
-            <button
-              onClick={() => handleClick(items[currentIndex].link)}
-              className="text-3xl md:text-4xl font-heading font-extrabold bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent hover:from-[#D7FF00]/80 hover:to-[#D7FF00]/40 transition-all px-4"
+          {items.length > 0 && ( //Added conditional rendering
+            <motion.div
+              key={currentIndex}
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: "spring", stiffness: 300, damping: 30 },
+                opacity: { duration: 0.2 }
+              }}
+              className="absolute w-full flex justify-center items-center cursor-pointer"
             >
-              {items[currentIndex].text}
-            </button>
-          </motion.div>
+              <button
+                onClick={() => handleClick(items[currentIndex].link)}
+                className="text-3xl md:text-4xl font-heading font-extrabold bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent hover:from-[#D7FF00]/80 hover:to-[#D7FF00]/40 transition-all px-4"
+              >
+                {items[currentIndex].text}
+              </button>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
     </div>
