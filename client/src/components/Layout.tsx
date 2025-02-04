@@ -460,7 +460,7 @@ export function Layout({ children }: { children: ReactNode }) {
                       <div className="px-4 py-2 text-[#D7FF00] font-heading text-base font-bold">MENU</div>
                       <MobileNavLink href="/" label="HOME" onClose={() => setOpenMobile(false)} isTitle={true} />
 
-                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-lg font-bold border-t border-[#2A2B31]/50 pt-6">EVENTS</div>
+                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">EVENTS</div>
                       <MobileNavLink 
                         href="/wager-races" 
                         label={
