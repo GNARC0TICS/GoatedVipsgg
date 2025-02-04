@@ -20,6 +20,11 @@ interface UserStats {
     this_month: number;
     all_time: number;
   };
+  position?: {
+    daily?: number;
+    weekly?: number;
+    monthly?: number;
+  };
 }
 
 export function QuickProfile({
@@ -75,7 +80,7 @@ export function QuickProfile({
             className="space-y-6 pt-6"
           >
             <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full bg-[#2A2B31] flex items-center justify-center">
+              <div className={`h-16 w-16 rounded-full bg-[#2A2B31] flex items-center justify-center ${stats?.position?.monthly === 1 ? 'ring-4 ring-[#D7FF00] animate-pulse' : ''}`}>
                 <img
                   src={getTierIcon(
                     getTierFromWager(stats?.wagered.all_time || 0),
@@ -85,8 +90,31 @@ export function QuickProfile({
                 />
               </div>
               <div>
-                <h2 className="text-2xl font-heading text-white">{username}</h2>
+                <h2 className={`text-2xl font-heading ${stats?.position?.monthly === 1 ? 'text-[#D7FF00]' : 'text-white'}`}>
+                  {username}
+                  {stats?.position?.monthly === 1 && 
+                    <span className="ml-2 inline-flex items-center">
+                      <Crown className="h-5 w-5 text-[#D7FF00] animate-bounce" />
+                    </span>
+                  }
+                </h2>
                 <p className="text-[#8A8B91]">Profile Stats</p>
+                {stats?.position && (
+                  <div className="flex gap-2 mt-1">
+                    {stats.position.monthly && (
+                      <span className={`text-xs px-2 py-0.5 rounded ${
+                        stats.position.monthly === 1 ? 'bg-[#D7FF00] text-black font-bold' : 'bg-[#2A2B31] text-white'
+                      }`}>
+                        #{stats.position.monthly} Monthly
+                      </span>
+                    )}
+                    {stats.position.weekly && (
+                      <span className="text-xs px-2 py-0.5 rounded bg-[#2A2B31] text-white">
+                        #{stats.position.weekly} Weekly
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
