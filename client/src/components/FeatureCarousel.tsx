@@ -44,27 +44,19 @@ const useWagerTotal = () => {
 
 const announcements = [
   { text: "WAGER RACES", link: "/wager-races" },
+  { text: "LIVE LEADERBOARDS", link: "#leaderboard" },
   { text: "BONUS CODES", link: "/bonus-codes" },
   { text: "AFFILIATE REWARDS", link: "/vip-program" },
   { text: "TELEGRAM GROUP", link: "/telegram" },
   { text: "AIRDROP NEWS", link: "/goated-token" },
   { text: "PROVABLY FAIR", link: "/provably-fair" },
-  { text: "LIVE LEADERBOARDS", link: "#leaderboard" },
   { text: "LIVE SUPPORT", link: "/help" },
-  { text: "PROMOTIONS", link: "/bonus-codes" },
   { text: "WEEKLY LIVE STREAM", link: "/telegram" },
   { text: "CHALLENGES & GIVEAWAYS", link: "/wager-races" },
   { text: "BECOME AN AFFILIATE", link: "/vip-program" },
-  { text: "DAILY CODE DROPS", link: "/bonus-codes" },
   { text: "JOIN THE GOATS TODAY!", link: "/auth" },
-  { text: "1700+ ACTIVE MEMBERS", link: "/telegram" },
   { text: "$2231+ GIVEN TO OUR PLAYERS", link: "/wager-races" },
-  { text: "MULTIPLIER HUNTS", link: "/telegram" },
-  { text: "STRATEGIES AND DISCUSSION", link: "/telegram" },
-  { text: "NEWSLETTER SUBSCRIPTION", link: "/notification-preferences" },
-  { text: "PROMO CODES", link: "/bonus-codes" },
-  { text: "TERMS AND CONDITIONS", link: "/help" },
-  { text: "GOATED x GOOMBAS VIPS", link: "/vip-program" },
+  { text: "NEWSLETTER SUBSCRIPTION", link: "/notification-preferences" }
 ];
 
 export const FeatureCarousel = () => {
@@ -73,6 +65,7 @@ export const FeatureCarousel = () => {
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
   const [, setLocation] = useLocation();
   const [isDragging, setIsDragging] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const dragX = useMotionValue(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -131,12 +124,26 @@ export const FeatureCarousel = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!isDragging) {
+      if (!isDragging && !isPaused) {
         nextSlide();
       }
-    }, 3000);
+    }, 5000);
     return () => clearInterval(interval);
-  }, [isDragging]);
+  }, [isDragging, isPaused]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('mouseenter', () => setIsPaused(true));
+      container.addEventListener('mouseleave', () => setIsPaused(false));
+    }
+    return () => {
+      if (container) {
+        container.removeEventListener('mouseenter', () => setIsPaused(true));
+        container.removeEventListener('mouseleave', () => setIsPaused(false));
+      }
+    };
+  }, []);
 
   const handleClick = (link: string) => {
     if (!isDragging) {
