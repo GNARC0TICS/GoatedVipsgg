@@ -63,19 +63,9 @@ export const FeatureCarousel = () => {
     return () => clearInterval(interval);
   }, [isDragging, items.length]);
 
-  const [dragX, setDragX] = useState(0);
-  
   const handleDragStart = (event: React.TouchEvent | React.MouseEvent) => {
     setIsDragging(true);
     setDragStart('touches' in event ? event.touches[0].clientX : event.clientX);
-  };
-
-  const handleDrag = (event: React.TouchEvent | React.MouseEvent) => {
-    if (!isDragging) return;
-    
-    const currentX = 'touches' in event ? event.touches[0].clientX : event.clientX;
-    const diff = currentX - dragStart;
-    setDragX(diff);
   };
 
   const handleDragEnd = (event: React.TouchEvent | React.MouseEvent) => {
@@ -83,7 +73,7 @@ export const FeatureCarousel = () => {
 
     const endX = 'changedTouches' in event ? event.changedTouches[0].clientX : event.clientX;
     const diff = endX - dragStart;
-    const threshold = window.innerWidth * 0.25;
+    const threshold = window.innerWidth * 0.15;
 
     if (Math.abs(diff) > threshold) {
       if (diff > 0) {
@@ -95,7 +85,6 @@ export const FeatureCarousel = () => {
       }
     }
 
-    setDragX(0);
     setIsDragging(false);
   };
 
@@ -142,10 +131,8 @@ export const FeatureCarousel = () => {
       <div 
         className="flex justify-center items-center h-full relative"
         onTouchStart={handleDragStart}
-        onTouchMove={handleDrag}
         onTouchEnd={handleDragEnd}
         onMouseDown={handleDragStart}
-        onMouseMove={handleDrag}
         onMouseUp={handleDragEnd}
         onMouseLeave={handleDragEnd}
       >
@@ -162,7 +149,6 @@ export const FeatureCarousel = () => {
               opacity: { duration: 0.2 }
             }}
             className="absolute w-full flex justify-center items-center cursor-pointer"
-            style={{ transform: `translateX(${dragX}px)` }}
           >
             <button
               onClick={() => handleClick(items[currentIndex].link)}
