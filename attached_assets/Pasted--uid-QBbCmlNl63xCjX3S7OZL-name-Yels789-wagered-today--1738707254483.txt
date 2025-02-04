@@ -1,0 +1,1222 @@
+ {
+      "uid": "QBbCmlNl63xCjX3S7OZL",
+      "name": "Yels789",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "D7y3pUzCcbvlHoqTgNWp",
+      "name": "Khalifa",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "PXBnLQTpyVRYpLeurgdx",
+      "name": "Shadow077",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "7zg2eEjRdFtfNYXJVIvL",
+      "name": "Ayhat",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "Hf6N9RW0MIM4KCkBbxsE",
+      "name": "Sharky86",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 1773.7767198916313
+      }
+    },
+    {
+      "uid": "YrQ13OqV7GG69Ko1fwqV",
+      "name": "MATTEO",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "9E9TpFKCUOm5qmh37Thc",
+      "name": "Zanaentezar",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "XV1i7L12NQyV3nfvdDgO",
+      "name": "MajloRWA",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "0nKMgNTALyy6Cz4Nnwhq",
+      "name": "voev1",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "T2Hb63eUgBak3LDvbBYZ",
+      "name": "Ihab44",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "OkdQWCh560u3Lx4xjv0s",
+      "name": "Zeshun",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "SdpA5GO3STYalUGHM7YX",
+      "name": "Taki18",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "JBEPtXaA9zZj6oMc5QW9",
+      "name": "Soulless",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "nkQxpbsVN7ZWK8hC6jbI",
+      "name": "Nsquare",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "MSfL4lAxVomyyV2hq6Ge",
+      "name": "manants",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "4aszr8DyaWuoVMk1ZVzv",
+      "name": "zohab",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "g4Py9JkFlqn1y4Li4Ybb",
+      "name": "alex-",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "E33XFqVdREAi1EGouRnW",
+      "name": "pauliuszabiela",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "WxHLzY3jcriL37g7NuBH",
+      "name": "swiftly-shiny-parakeet",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 496.50298648914685
+      }
+    },
+    {
+      "uid": "6dTMbfSbf0ztvWCCXTJD",
+      "name": "8668c",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "h7fMeaqt28WFFNrxA3wJ",
+      "name": "salazar",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "NinLPd326vgDaLC0BBxI",
+      "name": "NARAYAN",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "KkMWY5r8A7AifIZjJKlC",
+      "name": "cccam771",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "MEjq7iI2SjG2jIRkQ7ZA",
+      "name": "rahmat239",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "6JDVMrUJrjHoOLioX76B",
+      "name": "Rohit",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "nnO9FGPtlfErmhKH4i3T",
+      "name": "sohambeloshe",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "upknWmISie4iYAe8rBv5",
+      "name": "Aizeeq",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "XQL1TdMpKdxmDATpOQEc",
+      "name": "Djano",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "h5mWfm420cH625xkqKbP",
+      "name": "Gintama",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 972.8634871555839
+      }
+    },
+    {
+      "uid": "Q195H4JnczdOYrznDM2A",
+      "name": "Binkey",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "tYlSEMaeFtwpp92OmVXO",
+      "name": "BNguyen61025",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "EW0S6qi7VieFSiyIVyiJ",
+      "name": "merve",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "rgKA1XCs6YC6PcUQg4nP",
+      "name": "asdasdasddfdsfgddf",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "qgkuwroyCVMoJxQjVvLx",
+      "name": "Angiie1994",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "V0JWr86bdbLMGCpzdTFG",
+      "name": "okzhangyubin",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "5Q5qCOo2eMLYhJ9NuJH2",
+      "name": "dat357911",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "ynlFvLzkBkZnRxmfcvPX",
+      "name": "Amine2bxl",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "rFwpRdK5GB15kcQJoBpP",
+      "name": "Mannu993",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "01m5Iqit3gSIUvZjldKE",
+      "name": "VAALGODNESS",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "idxbuqbd6oOOpPZN2EVc",
+      "name": "Laksti",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "CZ2uYLuK1nVsyYsjoYH9",
+      "name": "sevbalason",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "O8xWRiFntLz9J8UHWi8o",
+      "name": "jatiff",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "vGZhn5xE9VOznMJS8yTa",
+      "name": "Tdf1982",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 111.21605468036323
+      }
+    },
+    {
+      "uid": "wvbOf4CRkB2EixFRRVjC",
+      "name": "Hamza-7",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "sZzFGbgGVwQFBVsiwWhx",
+      "name": "Kareem306",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "oFIn3bdrC2ttE7IMFhS2",
+      "name": "JRLDN",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "BoCZqIGUbj05Y66kKyGn",
+      "name": "octow",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "Tjio7YJKwTcTFdoge7ne",
+      "name": "Henryhertz15",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "LXnAqGpE1IcKLWcPCwql",
+      "name": "ziqrey99",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "D9yf2Gh9PzNRNppbGRO9",
+      "name": "AyJames369",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "KR97oxlbnb4uKC0D5NJl",
+      "name": "Senadba",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "HDGqVwnBs6U7D9rVWx37",
+      "name": "jcayton",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "ne1zcp1aHXXQpu7mOZmq",
+      "name": "Geant",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "YdqvxdnrPmpwtzQkC26F",
+      "name": "anton0anton",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "s31nzk0LRf9xYs26fJMC",
+      "name": "solo1",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "PvzUKdwuGOSbQTYZe3yx",
+      "name": "Jeffersonmartins",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "xHZz3yEJFWjkkFkuusLF",
+      "name": "Kritik",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "4ezvkUOVJ6liF0pgcteS",
+      "name": "web33",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "eTSn2GWbeWCejyvdUm4I",
+      "name": "zolie",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "wgqbOxXq0tC0u2VXH1pA",
+      "name": "Pikas42",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "ptPGvJ8izboWYmP0pggi",
+      "name": "GoombsAff",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 450.97894881906063
+      }
+    },
+    {
+      "uid": "WJqJJfcHQsbzii5pzLAW",
+      "name": "DDLinn",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "TIEV9qxHqrEzBfFUiIav",
+      "name": "HogoFogo",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "1goeevd8QhJBcU4eWFUu",
+      "name": "zawwintun111",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "QRbGZ0Cj2U4BPOBC2TZc",
+      "name": "dannyvo2025",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "06eXiq7k2LgETzfIfFsN",
+      "name": "user-simple",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "T5Wi6CwOHvV0eklgZFfB",
+      "name": "michae",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "Drm9hxNEV4FFRNing78d",
+      "name": "Dready007",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "JPKYGiJ2bDzrkhK8Xyvu",
+      "name": "Manjula",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "NgSUvttqDVULWqM34bGk",
+      "name": "freemoney9999",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "vi0rTmTIOSVY48l27xQD",
+      "name": "onlycrypto88",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "kNoaJ7Op5GfdXQ8gP9lq",
+      "name": "choiandco",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "lrYwLRJtdd9BM8HQ19hf",
+      "name": "antonio",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "GQbGJt96TYoyF8RCISNX",
+      "name": "AIRDROP",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 20.45
+      }
+    },
+    {
+      "uid": "ujoxqpBWxsihGox9wOZg",
+      "name": "Sb999",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "1Kc6jVMNjPSTWSELfhsH",
+      "name": "GGGGG13",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "0aFqWt8U3Q0Vj2j31sFz",
+      "name": "kalen",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "gDwcugVIHFVDaddzE472",
+      "name": "Tinho",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "EwQ0ZUa3CmHC7Piff1Kj",
+      "name": "preicok",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 446.8201435826
+      }
+    },
+    {
+      "uid": "nSTytgIoZKHSvAtE3kN1",
+      "name": "Doleros",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "c9LnjUd70D7U7RB6RqWg",
+      "name": "Jayyadav",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "WGMQZtZ593Ny6kryETey",
+      "name": "Kaspersky",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "ygBIHfShlofywetLDPH7",
+      "name": "airdropboy",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "4tLAiJjktyk6bpeyEPFD",
+      "name": "bossplayer",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "ekeGXxZpHtZrWIRJvVjY",
+      "name": "0xDarkRider",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "qBMNm3CaZZgtkRwtL4SO",
+      "name": "amofaj22",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "ifYKLhpSln64M49eg2xk",
+      "name": "Yoyopo",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "bHdJynJXNB4StEOHBfJ9",
+      "name": "jackjin",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "jABa4va2uNmDo16JRP2j",
+      "name": "Mosesdaniel766",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "tKxI6oWUK6UWBuQRjq0V",
+      "name": "FARSI",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "YhDcrGyF9GlD3qYzblYS",
+      "name": "Lucilunaa",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "dAIgbZZT8x09m179LzWh",
+      "name": "Dalama45",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "M0JqSgS8KHECbipliHfz",
+      "name": "Muhammad",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "2JbrFmMPVfMwCyGPFtcS",
+      "name": "nbca63",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "VxBljTndLOu8Wg1TJDIR",
+      "name": "EastAtlErica",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 2863.9704715279163
+      }
+    },
+    {
+      "uid": "BBc6X8f8MXdHn04zQDxv",
+      "name": "sayooj",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "yap27bh8llfclp42sp9P",
+      "name": "seano",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "qD4VdGbK8blPEPvkvPFA",
+      "name": "ketho",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "Nap3dVW0vvlNMsJFVPHX",
+      "name": "00000",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "eY47QmY33PZUZeOeTAHZ",
+      "name": "hgany",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "9crUV0WcUMMVgfVl1WQU",
+      "name": "Nazarzzz",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "GzGe3OJdzTNgLsb5qkIM",
+      "name": "Mateuszo",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "Lb42m58pWw2MsDKG46to",
+      "name": "Andikr",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "4CiI9Vq798mhLcEJZ5Pm",
+      "name": "Tefairdrop",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "leFh8eeUmQidhmHUZH1j",
+      "name": "cryptoman430",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "9EuJni0uxPq6qPysIhQB",
+      "name": "rapidly-frightened-dromedary",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 2.67999999
+      }
+    },
+    {
+      "uid": "a76EKehjETscayA5iYGk",
+      "name": "GONFREECSS",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "yRlDDpO7r8smhb0Zaxzs",
+      "name": "koaung998877",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "Mamm3m1XWGHcBBl5jSwT",
+      "name": "Boko1",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "YjqmaMZLsxyNgzuyIKCk",
+      "name": "mpvlad5",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "39zbG3Yc1qnQrzV55ovl",
+      "name": "S33ERK",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "tWoVH86i07DIjt7LmMLd",
+      "name": "lb-g4",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "Akhc3M8IfGNlg0ZFT7Dj",
+      "name": "alpers",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "NKuF3x6EYGNrYoUXuHa3",
+      "name": "Nulse2810",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "uVk6kkugdY3GH966R3tM",
+      "name": "pisces07",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "R7KhLKSi9Cc9TbrEfYnz",
+      "name": "quy17",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "me3nQwrpI0CkCIe1UqG5",
+      "name": "DREAM989965",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "d4QwUJRlWQ7WdsmEtzU4",
+      "name": "Dumankaya52",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "UJdIswHS7XSU71uMwO0L",
+      "name": "Ashismandal",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "lalnqhFu3V8POB7lRPT4",
+      "name": "itssebs",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "h8KyuLQCtl13KNFKrANH",
+      "name": "JFCaceres",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 0
+      }
+    },
+    {
+      "uid": "U9DojfpplQqBk0dCTqJs",
+      "name": "Gucciyurc",
+      "wagered": {
+        "today": 0,
+        "this_week": 0,
+        "this_month": 0,
+        "all_time": 491.28654325751717
+      }
+    }
+  ]
+}
