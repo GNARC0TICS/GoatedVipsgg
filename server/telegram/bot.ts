@@ -648,10 +648,5 @@ bot.onText(/\/race/, handleRace);
 bot.onText(/\/leaderboard/, handleLeaderboard);
 bot.on('callback_query', handleCallbackQuery);
 
-// Initialize bot
-setupBotCommands().catch(error => {
-  console.error('Failed to initialize bot commands:', error);
-});
-
 // Export bot instance for use in main server
 export { bot, handleStart, handleVerify, handleStats, handleRace, handleLeaderboard, handleCallbackQuery };
