@@ -96,21 +96,24 @@ export const FeatureCarousel = () => {
     const offset = info.offset.x;
     const velocity = info.velocity.x;
     const width = window.innerWidth;
-    const dragThreshold = width * 0.15;
-    const velocityThreshold = 100;
+    const dragThreshold = width * 0.1; // More sensitive threshold
+    const velocityThreshold = 50; // Lower velocity threshold
 
-    const isQuickSwipe = Math.abs(velocity) > velocityThreshold;
-    const isLongDrag = Math.abs(offset) > dragThreshold;
-
-    if (isQuickSwipe || isLongDrag) {
-      if (offset > 0 || velocity > velocityThreshold) {
-        prevSlide();
+    if (Math.abs(velocity) > velocityThreshold || Math.abs(offset) > dragThreshold) {
+      if (offset > 0 || velocity > 0) {
+        setDirection('prev');
+        setCurrentIndex((prev) => wrap(prev - 1));
       } else {
-        nextSlide();
+        setDirection('next');
+        setCurrentIndex((prev) => wrap(prev + 1));
       }
     } else {
-      // Animate back to center if it's not a quick swipe or long drag
-      dragX.set(0);
+      // Spring back to center with physics
+      dragX.set(0, {
+        type: "spring",
+        stiffness: 400,
+        damping: 30
+      });
     }
   };
 
@@ -153,17 +156,25 @@ export const FeatureCarousel = () => {
   const variants = {
     enter: (direction: 'next' | 'prev') => ({
       x: direction === 'next' ? 1000 : -1000,
-      opacity: 0
+      opacity: 0,
     }),
     center: {
       zIndex: 1,
       x: 0,
-      opacity: 1
+      opacity: 1,
+      transition: {
+        x: { type: "spring", stiffness: 300, damping: 30 },
+        opacity: { duration: 0.2 }
+      }
     },
     exit: (direction: 'next' | 'prev') => ({
       zIndex: 0,
       x: direction === 'next' ? -1000 : 1000,
-      opacity: 0
+      opacity: 0,
+      transition: {
+        x: { type: "spring", stiffness: 300, damping: 30 },
+        opacity: { duration: 0.2 }
+      }
     })
   };
 
