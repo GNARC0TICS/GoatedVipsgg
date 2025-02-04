@@ -58,22 +58,28 @@ function isAdmin(telegramId: string): boolean {
 // Helper function to fetch leaderboard data from our platform
 async function fetchLeaderboardData() {
   try {
+    logDebug('Attempting to fetch leaderboard data');
+
+    // Make request to our internal API endpoint
     const response = await fetch(
-      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+      `http://0.0.0.0:5000/api/wager-races/current`,
       {
+        method: 'GET',
         headers: {
-          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json'
         },
       }
     );
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
+      const errorText = await response.text();
+      logDebug('API request failed', { status: response.status, error: errorText });
+      throw new Error(`API request failed: ${response.status} - ${errorText}`);
     }
 
-    const rawData = await response.json();
-    return rawData;
+    const data = await response.json();
+    logDebug('Successfully fetched leaderboard data', { participantsCount: data?.length });
+    return data;
   } catch (error) {
     logDebug('Error fetching leaderboard data', error);
     throw error;
@@ -82,7 +88,12 @@ async function fetchLeaderboardData() {
 
 // Helper function to transform raw data into period-specific stats
 function transformLeaderboardData(data: any) {
-  if (!data || !Array.isArray(data)) return null;
+  logDebug('Transforming leaderboard data', { rawData: data });
+
+  if (!data || !Array.isArray(data)) {
+    logDebug('Invalid leaderboard data format', { data });
+    return null;
+  }
 
   return data.map(entry => ({
     username: entry.name,
@@ -423,10 +434,15 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
 
   try {
     const leaderboardData = await fetchLeaderboardData();
+
+    if (!leaderboardData) {
+      return bot.sendMessage(chatId, 'The leaderboard is currently unavailable. Please try again in a few minutes.');
+    }
+
     const transformedData = transformLeaderboardData(leaderboardData);
 
-    if (!transformedData) {
-      return bot.sendMessage(chatId, 'Could not fetch leaderboard data. Please try again later.');
+    if (!transformedData || transformedData.length === 0) {
+      return bot.sendMessage(chatId, 'No race data available at the moment. Please try again later.');
     }
 
     // Sort by monthly wager and get top 10
@@ -459,7 +475,7 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
     return bot.sendMessage(chatId, message);
   } catch (error) {
     logDebug('Error in handleLeaderboard', error);
-    return bot.sendMessage(chatId, 'An error occurred while fetching leaderboard data. Please try again later.');
+    return bot.sendMessage(chatId, 'An error occurred while fetching leaderboard data. Please try again in a few minutes.');
   }
 }
 
