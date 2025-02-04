@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import {useAuth} from './authContext'; //Hypothetical auth context
+import {useToast} from './toastContext'; //Hypothetical toast context
+
 
 const useWagerTotal = () => {
   const { data } = useQuery({
@@ -41,6 +44,8 @@ export const FeatureCarousel = () => {
   const [, setLocation] = useLocation();
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState(0);
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
   const items = [
     { text: `+${totalWager?.toLocaleString() || '0'} WAGERED`, link: "/leaderboard" },
@@ -90,6 +95,15 @@ export const FeatureCarousel = () => {
 
   const handleClick = (link: string) => {
     if (!isDragging) {
+      if (link === '/bonus-codes' && !isAuthenticated) {
+        toast({
+          variant: "warning",
+          title: "Authentication Required",
+          description: "Please sign in to access bonus codes"
+        });
+        setLocation('/');
+        return;
+      }
       if (link.startsWith("#")) {
         const element = document.querySelector(link);
         element?.scrollIntoView({ behavior: "smooth" });
