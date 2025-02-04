@@ -111,6 +111,33 @@ function transformLeaderboardData(apiData: any) {
   }));
 }
 
+// Admin commands
+bot.onText(/\/makeadmin/, async (msg) => {
+  const chatId = msg.chat.id;
+  const username = msg.from?.username;
+
+  if (username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+
+  try {
+    const [user] = await db
+      .update(users)
+      .set({ isAdmin: true })
+      .where(eq(users.username, username))
+      .returning();
+
+    if (user) {
+      await bot.sendMessage(chatId, '✅ Admin privileges granted successfully!');
+    } else {
+      await bot.sendMessage(chatId, '❌ Failed to grant admin privileges. Please try again.');
+    }
+  } catch (error) {
+    console.error('Error granting admin privileges:', error);
+    await bot.sendMessage(chatId, '❌ An error occurred while granting admin privileges.');
+  }
+});
+
 // Add prize pool constants to match web interface
 const PRIZE_POOL = 500;
 const PRIZE_DISTRIBUTION: Record<number, number> = {
