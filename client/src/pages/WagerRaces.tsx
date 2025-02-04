@@ -372,13 +372,13 @@ const getTrophyIcon = (rank: number) => {
                     {getTrophyIcon(2)}
                   </div>
                   <div className="text-center">
-                    <p className="text-xs md:text-base font-bold truncate text-white/90">
+                    <p className="text-base md:text-lg font-bold truncate text-white/90">
                       {top10Players[1]?.name || "-"}
                     </p>
-                    <p className="text-sm font-heading text-[#D7FF00] mt-2">
+                    <p className="text-sm md:text-base font-heading text-[#D7FF00] mt-2">
                       ${getPrizeAmount(2).toLocaleString()}
                     </p>
-                    <p className="text-xs text-white/60 mt-1 flex items-center justify-center gap-1">
+                    <p className="text-sm text-white/60 mt-1 flex items-center justify-center gap-1">
                       <TrendingUp className="h-3 w-3" />
                       ${getWagerAmount(
                         top10Players[1] || { wagered: { this_month: 0 } },
@@ -453,19 +453,21 @@ const getTrophyIcon = (rank: number) => {
                     {getTrophyIcon(3)}
                   </div>
                   <div className="text-center">
-                  <p className="text-xs md:text-base font-bold truncate text-white/90">
-                    {top10Players[2]?.name || "-"}
-                  </p>
-                  <p className="text-sm font-heading text-[#D7FF00] mt-1">
-                    ${getPrizeAmount(3).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-white/60 mt-1">
-                    $
-                    {getWagerAmount(
-                      top10Players[2] || { wagered: { this_month: 0 } },
-                    ).toLocaleString()}{" "}
-                    wagered
-                  </p>
+                    <p className="text-base md:text-lg font-bold truncate text-white/90">
+                      {top10Players[2]?.name || "-"}
+                    </p>
+                    <p className="text-sm md:text-base font-heading text-[#D7FF00] mt-1">
+                      ${getPrizeAmount(3).toLocaleString()}
+                    </p>
+                    <p className="text-sm text-white/60 mt-1 flex items-center justify-center gap-1">
+                      <TrendingUp className="h-3 w-3" />
+                      ${getWagerAmount(
+                        top10Players[2] || { wagered: { this_month: 0 } },
+                      ).toLocaleString()}
+                    </p>
+                    <p className="text-[10px] text-white/40 mt-1">
+                      Updated {getLastUpdateTime(top10Players[2]?.lastUpdate)}
+                    </p>
                   </div>
                 </div>
               </motion.div>
