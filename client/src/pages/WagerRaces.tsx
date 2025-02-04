@@ -356,7 +356,7 @@ export default function WagerRaces() {
                   </span>
                 </div>
                 <div className="relative pt-4">
-                  <div className="mb-2">
+                  <div className="flex justify-center mb-2">
                     {getTrophyIcon(2)}
                   </div>
                   <div className="text-center">
@@ -394,7 +394,7 @@ export default function WagerRaces() {
                   </span>
                 </div>
                 <div className="relative pt-4">
-                  <div className="mb-2">
+                  <div className="flex justify-center mb-2">
                     {getTrophyIcon(1)}
                   </div>
                   <div className="text-center">
@@ -435,7 +435,7 @@ export default function WagerRaces() {
                   </span>
                 </div>
                 <div className="relative pt-4">
-                  <div className="mb-2">
+                  <div className="flex justify-center mb-2">
                     {getTrophyIcon(3)}
                   </div>
                   <div className="text-center">
