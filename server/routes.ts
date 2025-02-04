@@ -679,8 +679,14 @@ async function handleProfileRequest(req: any, res: any) {
 async function handleAffiliateStats(req: any, res: any) {
   try {
     await rateLimiter.consume(req.ip || "unknown");
-    const response = await fetch(
-      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+    const username = req.query.username;
+    let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
+    
+    if (username) {
+      url += `?username=${encodeURIComponent(username)}`;
+    }
+    
+    const response = await fetch(url,
       {
         headers: {
           Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,

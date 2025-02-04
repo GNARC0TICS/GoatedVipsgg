@@ -121,12 +121,20 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
       }
     }
 
-    // Try to find user by Goated username first
-    const leaderboardData = await fetchLeaderboardData();
-    const transformedData = transformLeaderboardData(leaderboardData);
-    let userStats = transformedData?.find(u => 
-      u.username.toLowerCase() === username.toLowerCase()
+    // Try to find user by Goated username
+    const response = await fetch(
+      `http://0.0.0.0:5000/api/affiliate/stats?username=${encodeURIComponent(username)}`,
+      {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+      }
     );
+
+    const data = await response.json();
+    const transformedData = transformLeaderboardData(data);
+    let userStats = transformedData?.[0];
 
     // If not found and admin requested, try finding by Telegram username
     if (!userStats && msg.from?.username === 'xGoombas' && username.startsWith('@')) {
