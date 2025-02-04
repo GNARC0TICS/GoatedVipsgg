@@ -97,22 +97,21 @@ export const FeatureCarousel = () => {
     const offset = info.offset.x;
     const velocity = info.velocity.x;
     const width = window.innerWidth;
-    const dragThreshold = width * 0.1;
-    const velocityThreshold = 50;
+    const dragThreshold = width * 0.2;
+    const velocityThreshold = 100;
 
     if (Math.abs(velocity) > velocityThreshold || Math.abs(offset) > dragThreshold) {
       const newDirection = (offset > 0 || velocity > 0) ? 'prev' : 'next';
       setDirection(newDirection);
       const newIndex = wrap(currentIndex + (newDirection === 'prev' ? -1 : 1));
       setCurrentIndex(newIndex);
-      dragX.set(0);
-    } else {
-      dragX.set(0, {
-        type: "spring",
-        stiffness: 400,
-        damping: 30
-      });
     }
+
+    dragX.set(0, {
+      type: "spring",
+      stiffness: 400,
+      damping: 30
+    });
   };
 
   useEffect(() => {
@@ -124,7 +123,7 @@ export const FeatureCarousel = () => {
     return () => clearInterval(interval);
   }, [isDragging, isPaused]);
 
-  
+
 
   const handleClick = (link: string) => {
     if (!isDragging) {
