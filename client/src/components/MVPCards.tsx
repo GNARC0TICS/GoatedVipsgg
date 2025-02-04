@@ -121,6 +121,7 @@ function MVPCard({
                   <div className="flex items-center gap-2">
                     {mvp.avatarUrl ? (
                       <img 
+                        loading="lazy"
                         src={mvp.avatarUrl} 
                         alt={mvp.username}
                         className="w-10 h-10 rounded-full border-2"
@@ -251,6 +252,7 @@ export function MVPCards() {
   if (isLoading || !mvps?.daily) {
     return (
       <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
+        {/* Placeholder loading state -  consider more sophisticated loading indicators */}
         {timeframes.map((timeframe) => (
           <motion.div
             key={timeframe.period}
@@ -288,7 +290,8 @@ export function MVPCards() {
               username: mvps[timeframe.period as keyof typeof mvps]?.name || '',
               uid: mvps[timeframe.period as keyof typeof mvps]?.uid || '',
               wagerAmount: mvps[timeframe.period as keyof typeof mvps]?.wagered[timeframe.period === 'daily' ? 'today' : timeframe.period === 'weekly' ? 'this_week' : 'this_month'] || 0,
-              wagered: mvps[timeframe.period as keyof typeof mvps]?.wagered || {today:0, this_week:0, this_month:0, all_time:0}
+              wagered: mvps[timeframe.period as keyof typeof mvps]?.wagered || {today:0, this_week:0, this_month:0, all_time:0},
+              avatarUrl: mvps[timeframe.period as keyof typeof mvps]?.avatarUrl
             } : undefined}
             isOpen={openCard === timeframe.period}
             onOpenChange={(open) => handleDialogChange(open, timeframe.period)}

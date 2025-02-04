@@ -72,7 +72,7 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {[...Array(10)].map((_, i) => (
+            {[...Array(5)].map((_, i) => ( // Reduced to 5 skeleton rows for faster rendering
               <TableRow key={i} className="bg-[#1A1B21]/50 backdrop-blur-sm">
                 <TableCell>
                   <div className="animate-pulse h-6 w-16 bg-muted rounded" />
