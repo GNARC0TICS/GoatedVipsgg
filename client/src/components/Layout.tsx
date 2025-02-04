@@ -474,9 +474,17 @@ export function Layout({ children }: { children: ReactNode }) {
                         }
                         onClose={() => setOpenMobile(false)}
                       />
-                      <MobileNavLink
-                        href="/challenges"
-                        label="Challenges"
+                      <MobileNavLink 
+                        href="/challenges" 
+                        label={
+                          <div className="flex items-center justify-between w-full">
+                            <span>Challenges</span>
+                            <div className="ml-2 flex items-center gap-1">
+                              <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+                              <span className="text-xs text-green-500">ONGOING</span>
+                            </div>
+                          </div>
+                        }
                         onClose={() => setOpenMobile(false)}
                       />
 
