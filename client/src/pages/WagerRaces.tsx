@@ -355,10 +355,11 @@ export default function WagerRaces() {
                     2ND PLACE
                   </span>
                 </div>
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 filter drop-shadow-lg">
-                  {getTrophyIcon(2)}
-                </div>
-                <div className="text-center mt-8">
+                <div className="relative pt-4">
+                  <div className="mb-2">
+                    {getTrophyIcon(2)}
+                  </div>
+                  <div className="text-center">
                   <p className="text-xs md:text-base font-bold truncate text-white/90">
                     {top10Players[1]?.name || "-"}
                   </p>
@@ -391,10 +392,11 @@ export default function WagerRaces() {
                     1ST PLACE
                   </span>
                 </div>
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 filter drop-shadow-lg">
-                  {getTrophyIcon(1)}
-                </div>
-                <div className="text-center mt-4">
+                <div className="relative pt-4">
+                  <div className="mb-2">
+                    {getTrophyIcon(1)}
+                  </div>
+                  <div className="text-center">
                   <p className="text-xl font-bold truncate text-white">
                     {top10Players[0]?.name || "-"}
                   </p>
@@ -430,10 +432,11 @@ export default function WagerRaces() {
                     3RD PLACE
                   </span>
                 </div>
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 filter drop-shadow-lg">
-                  {getTrophyIcon(3)}
-                </div>
-                <div className="text-center mt-4">
+                <div className="relative pt-4">
+                  <div className="mb-2">
+                    {getTrophyIcon(3)}
+                  </div>
+                  <div className="text-center">
                   <p className="text-xs md:text-base font-bold truncate text-white/90">
                     {top10Players[2]?.name || "-"}
                   </p>
