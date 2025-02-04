@@ -373,6 +373,7 @@ export default function WagerRaces() {
                     ).toLocaleString()}{" "}
                     wagered
                   </p>
+                  </div>
                 </div>
               </motion.div>
 
@@ -410,6 +411,7 @@ export default function WagerRaces() {
                     ).toLocaleString()}{" "}
                     wagered
                   </p>
+                  </div>
                 </div>
               </motion.div>
 
@@ -450,6 +452,7 @@ export default function WagerRaces() {
                     ).toLocaleString()}{" "}
                     wagered
                   </p>
+                  </div>
                 </div>
               </motion.div>
             </div>
