@@ -615,6 +615,7 @@ app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
 // Request handlers
 async function handleProfileRequest(req: any, res: any) {
   try {
+    // Fetch user data
     const [user] = await db
       .select({
         id: users.id,
@@ -635,9 +636,36 @@ async function handleProfileRequest(req: any, res: any) {
       });
     }
 
+    // Fetch current leaderboard data
+    const response = await fetch(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const leaderboardData = await response.json();
+    const data = leaderboardData.data || leaderboardData.results || leaderboardData;
+
+    // Find user positions
+    const position = {
+      weekly: data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined,
+      monthly: data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined
+    };
+
     res.json({
       status: "success",
-      data: user,
+      data: {
+        ...user,
+        position
+      },
     });
   } catch (error) {
     log(`Error fetching profile: ${error}`);
