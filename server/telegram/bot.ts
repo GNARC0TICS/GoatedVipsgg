@@ -64,6 +64,86 @@ function transformLeaderboardData(data: any) {
   }));
 }
 
+// Welcome message handler
+async function handleStart(msg: TelegramBot.Message) {
+  const chatId = msg.chat.id;
+  const telegramId = msg.from?.id.toString();
+
+  if (!telegramId) {
+    return bot.sendMessage(chatId, 'Could not identify user.');
+  }
+
+  // Check if user is already verified
+  const existingUser = await db.select()
+    .from(telegramUsers)
+    .where(eq(telegramUsers.telegramId, telegramId))
+    .execute();
+
+  if (existingUser?.[0]?.isVerified) {
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '📊 My Stats', callback_data: 'stats' }],
+        [{ text: '🏁 Race Position', callback_data: 'race' }],
+        [{ text: '🏆 Leaderboard', callback_data: 'leaderboard' }]
+      ]
+    };
+
+    return bot.sendMessage(
+      chatId,
+      `Welcome back! What would you like to check?`,
+      { reply_markup: keyboard }
+    );
+  }
+
+  // For new users, start verification process
+  const message = `👋 Welcome to the Goated Stats Bot!
+
+To get started, I'll need to verify your Goated account. 
+
+Please click the button below to begin verification:`;
+
+  const keyboard = {
+    inline_keyboard: [
+      [{ text: '🔐 Start Verification', callback_data: 'start_verify' }]
+    ]
+  };
+
+  return bot.sendMessage(chatId, message, { reply_markup: keyboard });
+}
+
+// Handle callback queries (button clicks)
+async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
+  const chatId = callbackQuery.message?.chat.id;
+  const messageId = callbackQuery.message?.message_id;
+  const telegramId = callbackQuery.from.id.toString();
+
+  if (!chatId || !messageId) return;
+
+  switch (callbackQuery.data) {
+    case 'start_verify':
+      await bot.editMessageText(
+        'Please enter your Goated username using the command:\n/verify YourUsername',
+        { chat_id: chatId, message_id: messageId }
+      );
+      break;
+
+    case 'stats':
+      await handleStats({ chat: { id: chatId }, from: { id: Number(telegramId) } } as TelegramBot.Message);
+      break;
+
+    case 'race':
+      await handleRace({ chat: { id: chatId }, from: { id: Number(telegramId) } } as TelegramBot.Message);
+      break;
+
+    case 'leaderboard':
+      await handleLeaderboard({ chat: { id: chatId } } as TelegramBot.Message);
+      break;
+  }
+
+  // Answer callback query to remove loading state
+  await bot.answerCallbackQuery(callbackQuery.id);
+}
+
 // Command handlers
 async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | null) {
   const chatId = msg.chat.id;
@@ -130,10 +210,30 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
       })
       .execute();
 
-    return bot.sendMessage(chatId,
+    // Notify admins about new verification request
+    for (const adminId of ADMIN_TELEGRAM_IDS) {
+      const keyboard = {
+        inline_keyboard: [
+          [
+            { text: '✅ Approve', callback_data: `verify_approve_${telegramId}` },
+            { text: '❌ Reject', callback_data: `verify_reject_${telegramId}` }
+          ]
+        ]
+      };
+
+      await bot.sendMessage(
+        adminId,
+        `New verification request:\nTelegram User: ${msg.from?.username || 'Unknown'}\nGoated Username: ${goatedUsername}`,
+        { reply_markup: keyboard }
+      );
+    }
+
+    return bot.sendMessage(
+      chatId,
       'Verification request submitted!\n' +
       'An admin will review your request and verify your account.\n' +
-      'You will be notified once your account is verified.');
+      'You will be notified once your account is verified.'
+    );
 
   } catch (error) {
     logDebug('Error in handleVerify', error);
@@ -141,76 +241,9 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
   }
 }
 
-async function handleAdminVerify(msg: TelegramBot.Message, match: RegExpExecArray | null) {
-  const chatId = msg.chat.id;
-  const adminId = msg.from?.id.toString();
-
-  if (!adminId || !isAdmin(adminId)) {
-    return bot.sendMessage(chatId, 'This command is only available to admins.');
-  }
-
-  const args = match?.[1]?.trim().split(' ');
-  if (!args || args.length < 2) {
-    return bot.sendMessage(chatId,
-      'Please provide telegram ID and action (approve/reject).\n' +
-      'Example: /admin_verify 123456789 approve');
-  }
-
-  const [targetTelegramId, action] = args;
-  const notes = args.slice(2).join(' ');
-
-  try {
-    const request = await db.select()
-      .from(verificationRequests)
-      .where(and(
-        eq(verificationRequests.telegramId, targetTelegramId),
-        eq(verificationRequests.status, 'pending')
-      ))
-      .execute();
-
-    if (!request?.[0]) {
-      return bot.sendMessage(chatId, 'No pending verification request found for this user.');
-    }
-
-    if (action === 'approve') {
-      // Update verification request
-      await db.update(verificationRequests)
-        .set({ status: 'approved', adminNotes: notes })
-        .where(eq(verificationRequests.telegramId, targetTelegramId))
-        .execute();
-
-      // Update user verification status
-      await db.update(telegramUsers)
-        .set({ isVerified: true })
-        .where(eq(telegramUsers.telegramId, targetTelegramId))
-        .execute();
-
-      // Notify user
-      await bot.sendMessage(targetTelegramId, 
-        'Your account has been verified! You can now use all bot commands.');
-
-      return bot.sendMessage(chatId, 'User has been verified successfully.');
-    } else if (action === 'reject') {
-      // Update verification request
-      await db.update(verificationRequests)
-        .set({ status: 'rejected', adminNotes: notes })
-        .where(eq(verificationRequests.telegramId, targetTelegramId))
-        .execute();
-
-      // Notify user
-      await bot.sendMessage(targetTelegramId,
-        'Your verification request has been rejected.\n' +
-        'Please ensure you provided the correct Goated username and try again.');
-
-      return bot.sendMessage(chatId, 'Verification request has been rejected.');
-    }
-
-    return bot.sendMessage(chatId, 'Invalid action. Use "approve" or "reject".');
-
-  } catch (error) {
-    logDebug('Error in handleAdminVerify', error);
-    return bot.sendMessage(chatId, 'An error occurred while processing the verification request.');
-  }
+// Group chat detection helper
+function isGroupChat(chatId: number): boolean {
+  return chatId < 0;
 }
 
 async function handleStats(msg: TelegramBot.Message) {
@@ -228,7 +261,11 @@ async function handleStats(msg: TelegramBot.Message) {
       .execute();
 
     if (!user?.[0]?.isVerified || !user[0].goatedUsername) {
-      return bot.sendMessage(chatId, 'Please verify your account first by using /verify command.');
+      return bot.sendMessage(
+        chatId,
+        'Please verify your account first by clicking the Start button or using /start',
+        { reply_markup: { inline_keyboard: [[{ text: '🔐 Start Verification', callback_data: 'start_verify' }]] } }
+      );
     }
 
     const leaderboardData = await fetchLeaderboardData();
@@ -241,11 +278,21 @@ async function handleStats(msg: TelegramBot.Message) {
       return bot.sendMessage(chatId, 'Could not find your stats. Please try again later.');
     }
 
-    const message = `📊 Your Wager Stats:
+    const message = `📊 ${isGroupChat(chatId) ? `Stats for ${userStats.username}:\n` : 'Your Wager Stats:\n'}
 Monthly: $${userStats.wagered.this_month.toLocaleString()}
 Weekly: $${userStats.wagered.this_week.toLocaleString()}
 Daily: $${userStats.wagered.today.toLocaleString()}
 All-time: $${userStats.wagered.all_time.toLocaleString()}`;
+
+    if (!isGroupChat(chatId)) {
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '🔄 Refresh Stats', callback_data: 'stats' }],
+          [{ text: '🏁 Check Race Position', callback_data: 'race' }]
+        ]
+      };
+      return bot.sendMessage(chatId, message, { reply_markup: keyboard });
+    }
 
     return bot.sendMessage(chatId, message);
   } catch (error) {
@@ -269,7 +316,11 @@ async function handleRace(msg: TelegramBot.Message) {
       .execute();
 
     if (!user?.[0]?.isVerified || !user[0].goatedUsername) {
-      return bot.sendMessage(chatId, 'Please verify your account first by using /verify command.');
+      return bot.sendMessage(
+        chatId,
+        'Please verify your account first by clicking the Start button or using /start',
+        { reply_markup: { inline_keyboard: [[{ text: '🔐 Start Verification', callback_data: 'start_verify' }]] } }
+      );
     }
 
     const leaderboardData = await fetchLeaderboardData();
@@ -296,11 +347,22 @@ async function handleRace(msg: TelegramBot.Message) {
     const userStats = sortedData[userIndex];
     const nextPositionUser = userIndex > 0 ? sortedData[userIndex - 1] : null;
 
-    const message = `🏁 Race Position: #${userPosition}
+    const message = `🏁 ${isGroupChat(chatId) ? `Race position for ${userStats.username}:\n` : 'Your Race Position:\n'}
+Position: #${userPosition}
 Monthly Wager: $${userStats.wagered.this_month.toLocaleString()}
 ${nextPositionUser 
   ? `Distance to #${userPosition - 1}: $${(nextPositionUser.wagered.this_month - userStats.wagered.this_month).toLocaleString()}`
   : 'You are in the lead! 🏆'}`;
+
+    if (!isGroupChat(chatId)) {
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '🔄 Refresh Position', callback_data: 'race' }],
+          [{ text: '🏆 View Leaderboard', callback_data: 'leaderboard' }]
+        ]
+      };
+      return bot.sendMessage(chatId, message, { reply_markup: keyboard });
+    }
 
     return bot.sendMessage(chatId, message);
   } catch (error) {
@@ -331,6 +393,17 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
       .join('\n');
 
     const message = `🏆 Monthly Race Leaderboard\n\n${leaderboard}`;
+
+    if (!isGroupChat(chatId)) {
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '🔄 Refresh Leaderboard', callback_data: 'leaderboard' }],
+          [{ text: '📊 My Stats', callback_data: 'stats' }]
+        ]
+      };
+      return bot.sendMessage(chatId, message, { reply_markup: keyboard });
+    }
+
     return bot.sendMessage(chatId, message);
   } catch (error) {
     logDebug('Error in handleLeaderboard', error);
@@ -338,12 +411,13 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
   }
 }
 
-// Register command handlers
+// Register event handlers
+bot.onText(/\/start/, handleStart);
+bot.onText(/\/verify(?:\s+(.+))?/, handleVerify);
 bot.onText(/\/stats/, handleStats);
 bot.onText(/\/race/, handleRace);
 bot.onText(/\/leaderboard/, handleLeaderboard);
-bot.onText(/\/verify(?:\s+(.+))?/, handleVerify);
-bot.onText(/\/admin_verify\s+(.+)/, handleAdminVerify);
+bot.on('callback_query', handleCallbackQuery);
 
 // Export bot instance for use in main server
 export { bot };
