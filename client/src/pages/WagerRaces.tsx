@@ -372,9 +372,11 @@ const getTrophyIcon = (rank: number) => {
                     {getTrophyIcon(2)}
                   </div>
                   <div className="text-center">
-                    <p className="text-base md:text-lg font-bold truncate text-white/90">
-                      {top10Players[1]?.name || "-"}
-                    </p>
+                    <QuickProfile userId={top10Players[1]?.uid} username={top10Players[1]?.name}>
+                      <p className="text-base md:text-lg font-bold truncate text-white/90 cursor-pointer hover:text-[#D7FF00] transition-colors">
+                        {top10Players[1]?.name || "-"}
+                      </p>
+                    </QuickProfile>
                     <p className="text-sm md:text-base font-heading text-[#D7FF00] mt-2">
                       ${getPrizeAmount(2).toLocaleString()}
                     </p>
@@ -412,9 +414,11 @@ const getTrophyIcon = (rank: number) => {
                     {getTrophyIcon(1)}
                   </div>
                   <div className="text-center">
-                  <p className="text-xl font-bold truncate text-white">
-                    {top10Players[0]?.name || "-"}
-                  </p>
+                  <QuickProfile userId={top10Players[0]?.uid} username={top10Players[0]?.name}>
+                    <p className="text-xl font-bold truncate text-white cursor-pointer hover:text-[#D7FF00] transition-colors">
+                      {top10Players[0]?.name || "-"}
+                    </p>
+                  </QuickProfile>
                   <p className="text-lg font-heading text-[#D7FF00] mt-2">
                     ${getPrizeAmount(1).toLocaleString()}
                   </p>
@@ -453,9 +457,11 @@ const getTrophyIcon = (rank: number) => {
                     {getTrophyIcon(3)}
                   </div>
                   <div className="text-center">
-                    <p className="text-base md:text-lg font-bold truncate text-white/90">
-                      {top10Players[2]?.name || "-"}
-                    </p>
+                    <QuickProfile userId={top10Players[2]?.uid} username={top10Players[2]?.name}>
+                      <p className="text-base md:text-lg font-bold truncate text-white/90 cursor-pointer hover:text-[#D7FF00] transition-colors">
+                        {top10Players[2]?.name || "-"}
+                      </p>
+                    </QuickProfile>
                     <p className="text-sm md:text-base font-heading text-[#D7FF00] mt-1">
                       ${getPrizeAmount(3).toLocaleString()}
                     </p>
