@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import {
   motion,
@@ -16,24 +15,24 @@ const useWagerTotal = () => {
       const lastUpdate = localStorage.getItem('lastWagerUpdate');
       const lastTotal = localStorage.getItem('lastWagerTotal');
       const now = new Date().getTime();
-      
+
       if (lastUpdate && lastTotal && (now - parseInt(lastUpdate)) < 86400000) {
         return parseInt(lastTotal);
       }
 
       const response = await fetch('/api/affiliate/stats');
       const data = await response.json();
-      
+
       const total = data?.data?.all_time?.data?.reduce((sum: number, entry: any) => {
         const wager = entry?.wagered?.all_time || 0;
         return sum + wager;
       }, 0) || 0;
 
       const roundedTotal = Math.floor(total);
-      
+
       localStorage.setItem('lastWagerUpdate', now.toString());
       localStorage.setItem('lastWagerTotal', roundedTotal.toString());
-      
+
       return roundedTotal;
     },
     refetchInterval: 86400000,
@@ -189,8 +188,8 @@ export const FeatureCarousel = () => {
             onDragStart={() => setIsDragging(true)}
             onDragEnd={handleDragEnd}
             transition={{
-              x: { type: "spring", stiffness: 300, damping: 30 },
-              opacity: { duration: 0.2 }
+              x: { type: "spring", stiffness: 200, damping: 25 },
+              opacity: { duration: 0.3 }
             }}
             style={{ x: dragX }}
             className="absolute w-full flex justify-center items-center touch-pan-y"
