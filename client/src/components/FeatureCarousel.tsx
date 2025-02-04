@@ -97,8 +97,8 @@ export const FeatureCarousel = () => {
     const offset = info.offset.x;
     const velocity = info.velocity.x;
     const width = window.innerWidth;
-    const dragThreshold = width * 0.2;
-    const velocityThreshold = 200;
+    const dragThreshold = width * 0.15;
+    const velocityThreshold = 100;
 
     const isQuickSwipe = Math.abs(velocity) > velocityThreshold;
     const isLongDrag = Math.abs(offset) > dragThreshold;
@@ -109,16 +109,7 @@ export const FeatureCarousel = () => {
       } else {
         nextSlide();
       }
-    }
-
-    if (Math.abs(offset) > width * 0.4) {
-      if (offset > 0) {
-        prevSlide();
-        setTimeout(prevSlide, 50);
-      } else {
-        nextSlide();
-        setTimeout(nextSlide, 50);
-      }
+      return;
     }
   };
 
