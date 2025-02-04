@@ -26,8 +26,7 @@ async function setupBotCommands() {
     // Clear existing commands
     await bot.deleteMyCommands();
 
-    // Set up new commands with friendly descriptions
-    const commands = [
+    const baseCommands = [
       { command: 'start', description: '🚀 Start using the bot' },
       { command: 'verify', description: '🔐 Link your Goated account' },
       { command: 'stats', description: '📊 Check your wager stats' },
@@ -36,7 +35,24 @@ async function setupBotCommands() {
       { command: 'help', description: '❓ Get help using the bot' }
     ];
 
-    await bot.setMyCommands(commands);
+    // Add admin commands for xGoombas
+    const adminCommands = [
+      ...baseCommands,
+      { command: 'pending', description: '📝 View pending verifications' },
+      { command: 'verify_user', description: '✅ Verify a user' },
+      { command: 'reject_user', description: '❌ Reject a user' },
+      { command: 'makeadmin', description: '👑 Grant admin privileges' }
+    ];
+
+    // Set commands based on user
+    await bot.setMyCommands(baseCommands, { scope: { type: 'default' } });
+    await bot.setMyCommands(adminCommands, { 
+      scope: { 
+        type: 'chat',
+        chat_id: (await bot.getChat('@xGoombas')).id 
+      }
+    });
+    
     logDebug('Bot commands set up successfully');
   } catch (error) {
     logDebug('Error setting up bot commands', error);
