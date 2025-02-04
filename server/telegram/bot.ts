@@ -434,22 +434,16 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
 
   try {
     const leaderboardData = await fetchLeaderboardData();
+    const transformedData = transformLeaderboardData(leaderboardData);
 
-    if (!leaderboardData) {
-      return bot.sendMessage(chatId, 'The leaderboard is currently unavailable. Please try again in a few minutes.');
-    }
-
-    const participants = transformLeaderboardData(leaderboardData);
-
-    if (!participants || participants.length === 0) {
+    if (!transformedData || !Array.isArray(transformedData) || transformedData.length === 0) {
       return bot.sendMessage(chatId, 'No race data available at the moment. Please try again later.');
     }
 
-    // Use participants directly since they already have the data structure we want
-    const leaderboard = participants
+    const leaderboard = transformedData
       .slice(0, 10)
-      .map((user) => {
-        return `${user.position}. ${user.name}\n   💰 $${user.wagered.toLocaleString()}`;
+      .map((user, index) => {
+        return `${index + 1}. ${user.username}\n   💰 $${user.wagered.this_month.toLocaleString()}`;
       })
       .join('\n\n');
 
