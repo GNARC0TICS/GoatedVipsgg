@@ -652,9 +652,11 @@ async function handleStart(msg: TelegramBot.Message) {
 
   // For new users, start verification process
   const message = `👋 Welcome to the Goated Stats Bot!
-To get started, I'll need to verify your Goated account. 
 
-Please click the button below to begin verification:`;
+⚠️ You must be an affiliate to use this Bot.
+To get started, I'll need to verify your Goated.com account username to proceed.
+
+Click the button below to begin verification:`;
 
   const keyboard = {
     inline_keyboard: [
