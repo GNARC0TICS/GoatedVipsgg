@@ -103,19 +103,31 @@ export const FeatureCarousel = () => {
     enter: (direction: 'next' | 'prev') => ({
       x: direction === 'next' ? 1000 : -1000,
       opacity: 0,
+      scale: 0.8,
+      rotateY: direction === 'next' ? 45 : -45,
     }),
     center: {
       x: 0,
       opacity: 1,
+      scale: 1,
+      rotateY: 0,
+      transition: {
+        x: { type: "spring", stiffness: 300, damping: 25 },
+        opacity: { duration: 0.2 },
+        scale: { type: "spring", stiffness: 200, damping: 20 },
+        rotateY: { type: "spring", stiffness: 250, damping: 25 }
+      }
     },
     exit: (direction: 'next' | 'prev') => ({
       x: direction === 'next' ? -1000 : 1000,
       opacity: 0,
+      scale: 0.8,
+      rotateY: direction === 'next' ? -45 : 45,
     }),
   };
 
   return (
-    <div className="relative h-24 overflow-hidden mb-8 select-none">
+    <div className="relative h-24 overflow-hidden mb-8 select-none" style={{ perspective: '1000px' }}>
       <div 
         className="flex justify-center items-center h-full relative"
         onTouchStart={handleDragStart}
