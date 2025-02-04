@@ -19,6 +19,25 @@ function logDebug(message: string, data?: any) {
   console.log(`[Telegram Bot] ${message}`, data ? JSON.stringify(data, null, 2) : '');
 }
 
+// Set up bot commands
+async function setupBotCommands() {
+  try {
+    await bot.setMyCommands([
+      { command: 'start', description: 'Start the bot and verify your account' },
+      { command: 'verify', description: 'Verify your Goated account' },
+      { command: 'stats', description: 'View your wager statistics' },
+      { command: 'race', description: 'Check your race position' },
+      { command: 'leaderboard', description: 'View the monthly race leaderboard' },
+    ]);
+    logDebug('Bot commands set up successfully');
+  } catch (error) {
+    logDebug('Error setting up bot commands', error);
+  }
+}
+
+// Initialize bot commands
+setupBotCommands();
+
 // Check if user is admin
 function isAdmin(telegramId: string): boolean {
   return ADMIN_TELEGRAM_IDS.includes(telegramId);
@@ -97,7 +116,6 @@ async function handleStart(msg: TelegramBot.Message) {
 
   // For new users, start verification process
   const message = `👋 Welcome to the Goated Stats Bot!
-
 To get started, I'll need to verify your Goated account. 
 
 Please click the button below to begin verification:`;
