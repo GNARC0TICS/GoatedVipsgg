@@ -218,8 +218,8 @@ export function RaceTimer() {
             >
               <div className="p-4 border-t border-[#2A2B31]">
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-[#8A8B91] text-sm">
-                    Prize Pool: ${raceData.prizePool.toLocaleString()}
+                  <span className="font-heading text-[#8A8B91] text-sm">
+                    Prize Pool: $<span className="font-heading text-white">${raceData.prizePool.toLocaleString()}</span>
                   </span>
                 </div>
                 {raceData.participants.map((participant: RaceParticipant, index: number) => (
@@ -237,17 +237,17 @@ export function RaceTimer() {
                       `}>
                         {index + 1}
                       </span>
-                      <span className="text-white truncate max-w-[120px]">
+                      <span className="text-white truncate max-w-[120px] font-heading">
                         {participant.name}
                       </span>
                     </div>
-                    <span className="text-[#D7FF00] font-mono">
+                    <span className="font-heading text-[#D7FF00] font-mono">
                       ${participant.wagered.toLocaleString()}
                     </span>
                   </div>
                 ))}
                 <Link href="/wager-races">
-                  <a className="block text-center text-[#D7FF00] mt-4 hover:underline">
+                  <a className="block text-center text-[#D7FF00] mt-4 hover:underline font-heading">
                     View Full Leaderboard
                   </a>
                 </Link>
