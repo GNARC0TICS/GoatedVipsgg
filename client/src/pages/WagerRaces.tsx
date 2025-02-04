@@ -348,7 +348,7 @@ export default function WagerRaces() {
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
                 }}
-                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-3 md:p-6 rounded-2xl border-2 border-[#C0C0C0] w-[120px] md:w-[180px] h-[140px] md:h-[180px] transform -translate-y-4"
+                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-3 md:p-6 rounded-2xl border-2 border-[#C0C0C0] w-[120px] md:w-[180px] h-[160px] md:h-[200px] transform -translate-y-4"
               >
                 <div className="absolute -top-12 left-1/2 -translate-x-1/2">
                   <span className="bg-[#C0C0C0] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">
@@ -386,7 +386,7 @@ export default function WagerRaces() {
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
                 }}
-                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-3 md:p-6 rounded-2xl border-2 border-[#FFD700] w-[140px] md:w-[220px] h-[160px] md:h-[200px] z-10 glow-gold"
+                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-3 md:p-6 rounded-2xl border-2 border-[#FFD700] w-[140px] md:w-[220px] h-[180px] md:h-[220px] z-10 glow-gold"
               >
                 <div className="absolute -top-12 left-1/2 -translate-x-1/2">
                   <span className="bg-[#FFD700] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">
@@ -427,7 +427,7 @@ export default function WagerRaces() {
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
                 }}
-                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-3 md:p-6 rounded-2xl border-2 border-[#CD7F32] w-[120px] md:w-[180px] h-[120px] md:h-[160px] transform -translate-y-8"
+                className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-3 md:p-6 rounded-2xl border-2 border-[#CD7F32] w-[120px] md:w-[180px] h-[140px] md:h-[180px] transform -translate-y-8"
               >
                 <div className="absolute -top-12 left-1/2 -translate-x-1/2">
                   <span className="bg-[#CD7F32] text-black font-heading px-6 py-2 rounded-full text-sm whitespace-nowrap">
