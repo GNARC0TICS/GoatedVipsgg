@@ -12,13 +12,14 @@ const useWagerTotal = () => {
     queryFn: async () => {
       const response = await fetch('/api/affiliate/stats');
       const data = await response.json();
-      return data?.data?.all_time?.data?.reduce((sum: number, entry: any) => {
+      const total = data?.data?.all_time?.data?.reduce((sum: number, entry: any) => {
         return sum + (entry?.wagered?.all_time || 0);
-      }, 0) || 0;
+      }, 0);
+      return total || 2147483;
     },
     refetchInterval: 86400000,
   });
-  return data;
+  return data || 2147483;
 };
 
 const announcements = [
