@@ -14,7 +14,7 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
       setProgress(prev => {
         if (prev >= 100) {
           clearInterval(timer);
-          setTimeout(onLoadComplete, 500); // Give a small delay before transition
+          setTimeout(onLoadComplete, 500);
           return 100;
         }
         return prev + 1;
@@ -35,14 +35,12 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.2 }}
-        style={{ willChange: "transform" }}
         className="flex flex-col items-center gap-8"
       >
         <img
           src="/images/preload.PNG"
           alt="Goated Preloader"
-          className="w-64 h-64 object-contain animate-pulse-subtle"
-          onError={(e) => console.error('Image failed to load:', e)}
+          className="w-64 h-64 object-contain animate-pulse"
         />
         <div className="w-64 h-1 bg-[#2A2B31] rounded-full overflow-hidden">
           <motion.div
