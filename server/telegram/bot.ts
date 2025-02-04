@@ -95,6 +95,26 @@ function transformLeaderboardData(data: any) {
   }));
 }
 
+// Add prize pool constants to match web interface
+const PRIZE_POOL = 500;
+const PRIZE_DISTRIBUTION: Record<number, number> = {
+  1: 0.425, // $212.50
+  2: 0.2,   // $100
+  3: 0.15,  // $60
+  4: 0.075, // $30
+  5: 0.06,  // $24
+  6: 0.04,  // $16
+  7: 0.0275, // $11
+  8: 0.0225, // $9
+  9: 0.0175, // $7
+  10: 0.0175, // $7
+};
+
+// Helper function to get prize amount
+function getPrizeAmount(rank: number): number {
+  return Math.round(PRIZE_POOL * (PRIZE_DISTRIBUTION[rank] || 0) * 100) / 100;
+}
+
 // Welcome message handler
 async function handleStart(msg: TelegramBot.Message) {
   const chatId = msg.chat.id;
@@ -185,7 +205,7 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
 
   // If no username provided, ask for it
   if (!match?.[1]) {
-    return bot.sendMessage(chatId, 
+    return bot.sendMessage(chatId,
       'Please provide your Goated username with the command.\n' +
       'Example: /verify YourGoatedUsername');
   }
@@ -201,7 +221,7 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
     // Then check leaderboard data as backup
     const leaderboardData = await fetchLeaderboardData();
     const transformedData = transformLeaderboardData(leaderboardData);
-    const leaderboardUser = transformedData?.some(user => 
+    const leaderboardUser = transformedData?.some(user =>
       user.username.toLowerCase() === goatedUsername.toLowerCase()
     );
 
@@ -258,7 +278,7 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
         'You will be notified once your account is verified.'
       );
     } else {
-      return bot.sendMessage(chatId, 
+      return bot.sendMessage(chatId,
         'Could not find your username in our system.\n' +
         'Please ensure you provided the correct Goated username and try again.');
     }
@@ -297,7 +317,7 @@ async function handleStats(msg: TelegramBot.Message) {
 
     const leaderboardData = await fetchLeaderboardData();
     const transformedData = transformLeaderboardData(leaderboardData);
-    const userStats = transformedData?.find(u => 
+    const userStats = transformedData?.find(u =>
       u.username.toLowerCase() === user[0].goatedUsername?.toLowerCase()
     );
 
@@ -358,11 +378,11 @@ async function handleRace(msg: TelegramBot.Message) {
     }
 
     // Sort by monthly wager
-    const sortedData = [...transformedData].sort((a, b) => 
+    const sortedData = [...transformedData].sort((a, b) =>
       b.wagered.this_month - a.wagered.this_month
     );
 
-    const userIndex = sortedData.findIndex(u => 
+    const userIndex = sortedData.findIndex(u =>
       u.username.toLowerCase() === user[0].goatedUsername?.toLowerCase()
     );
 
@@ -377,9 +397,9 @@ async function handleRace(msg: TelegramBot.Message) {
     const message = `🏁 ${isGroupChat(chatId) ? `Race position for ${userStats.username}:\n` : 'Your Race Position:\n'}
 Position: #${userPosition}
 Monthly Wager: $${userStats.wagered.this_month.toLocaleString()}
-${nextPositionUser 
-  ? `Distance to #${userPosition - 1}: $${(nextPositionUser.wagered.this_month - userStats.wagered.this_month).toLocaleString()}`
-  : 'You are in the lead! 🏆'}`;
+${nextPositionUser
+      ? `Distance to #${userPosition - 1}: $${(nextPositionUser.wagered.this_month - userStats.wagered.this_month).toLocaleString()}`
+      : 'You are in the lead! 🏆'}`;
 
     if (!isGroupChat(chatId)) {
       const keyboard = {
@@ -415,11 +435,16 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
       .slice(0, 10);
 
     const leaderboard = top10
-      .map((user, index) => 
-        `${index + 1}. ${user.username}: $${user.wagered.this_month.toLocaleString()}`)
-      .join('\n');
+      .map((user, index) => {
+        const position = index + 1;
+        const prize = getPrizeAmount(position);
+        return `${position}. ${user.username}\n   💰 $${user.wagered.this_month.toLocaleString()}\n   🏆 Prize: $${prize}`;
+      })
+      .join('\n\n');
 
-    const message = `🏆 Monthly Race Leaderboard\n\n${leaderboard}`;
+    const message = `🏆 Monthly Race Leaderboard\n` +
+      `💵 Prize Pool: $${PRIZE_POOL}\n` +
+      `🏁 Top 10 Racers:\n\n${leaderboard}`;
 
     if (!isGroupChat(chatId)) {
       const keyboard = {
