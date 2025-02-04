@@ -359,18 +359,9 @@ export default function WagerRaces() {
                   {getTrophyIcon(2)}
                 </div>
                 <div className="text-center mt-8">
-                  <div className="flex flex-col items-center gap-2">
-                    <img
-                      src={getTierIcon(
-                        getTierFromWager(top10Players[1]?.wagered.all_time || 0),
-                      )}
-                      alt="Tier"
-                      className="w-7 h-7"
-                    />
-                    <p className="text-xs md:text-base font-bold truncate text-white/90">
-                      {top10Players[1]?.name || "-"}
-                    </p>
-                  </div>
+                  <p className="text-xs md:text-base font-bold truncate text-white/90">
+                    {top10Players[1]?.name || "-"}
+                  </p>
                   <p className="text-sm font-heading text-[#D7FF00] mt-2">
                     ${getPrizeAmount(2).toLocaleString()}
                   </p>
@@ -404,18 +395,9 @@ export default function WagerRaces() {
                   {getTrophyIcon(1)}
                 </div>
                 <div className="text-center mt-4">
-                  <div className="flex flex-col items-center gap-2">
-                    <img
-                      src={getTierIcon(
-                        getTierFromWager(top10Players[0]?.wagered.all_time || 0),
-                      )}
-                      alt="Tier"
-                      className="w-8 h-8"
-                    />
-                    <p className="text-xl font-bold truncate text-white">
-                      {top10Players[0]?.name || "-"}
-                    </p>
-                  </div>
+                  <p className="text-xl font-bold truncate text-white">
+                    {top10Players[0]?.name || "-"}
+                  </p>
                   <p className="text-lg font-heading text-[#D7FF00] mt-2">
                     ${getPrizeAmount(1).toLocaleString()}
                   </p>
@@ -452,18 +434,9 @@ export default function WagerRaces() {
                   {getTrophyIcon(3)}
                 </div>
                 <div className="text-center mt-4">
-                  <div className="flex flex-col items-center gap-2">
-                    <img
-                      src={getTierIcon(
-                        getTierFromWager(top10Players[2]?.wagered.all_time || 0),
-                      )}
-                      alt="Tier"
-                      className="w-6 h-6"
-                    />
-                    <p className="text-xs md:text-base font-bold truncate text-white/90">
-                      {top10Players[2]?.name || "-"}
-                    </p>
-                  </div>
+                  <p className="text-xs md:text-base font-bold truncate text-white/90">
+                    {top10Players[2]?.name || "-"}
+                  </p>
                   <p className="text-sm font-heading text-[#D7FF00] mt-1">
                     ${getPrizeAmount(3).toLocaleString()}
                   </p>
