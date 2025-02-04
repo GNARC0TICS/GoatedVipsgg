@@ -87,16 +87,28 @@ async function fetchLeaderboardData() {
 }
 
 // Helper function to transform raw data into period-specific stats
-function transformLeaderboardData(data: any) {
-  logDebug('Transforming leaderboard data', { rawData: data });
-
-  if (!data?.data?.participants || !Array.isArray(data.data.participants)) {
-    logDebug('Invalid leaderboard data format', { data });
+function transformLeaderboardData(apiData: any) {
+  if (!apiData?.data?.participants && !apiData?.participants) {
+    logDebug('Invalid leaderboard data format', { data: apiData });
     return null;
   }
 
-  // Return array directly since we know participants exists and is an array
-  return data.data.participants;
+  const participants = apiData.data?.participants || apiData.participants;
+  if (!Array.isArray(participants)) {
+    logDebug('Participants is not an array', { participants });
+    return null;
+  }
+
+  return participants.map(user => ({
+    ...user,
+    username: user.name,
+    wagered: {
+      this_month: user.wagered,
+      today: 0,
+      this_week: 0,
+      all_time: 0
+    }
+  }));
 }
 
 // Add prize pool constants to match web interface
