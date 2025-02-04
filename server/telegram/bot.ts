@@ -46,7 +46,7 @@ async function setupBotCommands() {
 
     // Set default commands for all users
     await bot.setMyCommands(baseCommands);
-    
+
     // Admin commands will be set when you first interact with the bot
     bot.on('message', async (msg) => {
       if (msg.from?.username === 'xGoombas') {
@@ -62,7 +62,7 @@ async function setupBotCommands() {
         }
       }
     });
-    
+
     logDebug('Bot commands set up successfully');
   } catch (error) {
     logDebug('Error setting up bot commands', error);
@@ -133,8 +133,10 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
     );
 
     const data = await response.json();
-    const transformedData = transformLeaderboardData(data);
-    let userStats = transformedData?.[0];
+    const transformedData = data?.data?.monthly?.data;
+    let userStats = transformedData?.find(u => 
+      u.name.toLowerCase() === username.toLowerCase()
+    );
 
     // If not found and admin requested, try finding by Telegram username
     if (!userStats && msg.from?.username === 'xGoombas' && username.startsWith('@')) {
@@ -145,7 +147,7 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
 
       if (telegramUser?.[0]?.goatedUsername) {
         userStats = transformedData?.find(u => 
-          u.username.toLowerCase() === telegramUser[0].goatedUsername?.toLowerCase()
+          u.name.toLowerCase() === telegramUser[0].goatedUsername?.toLowerCase()
         );
       }
     }
@@ -154,11 +156,11 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
       return bot.sendMessage(chatId, 'User not found.');
     }
 
-    const message = `📊 Stats for ${userStats.username}:\n
-Monthly Wager: $${userStats.wagered.this_month.toLocaleString()}
-Weekly Wager: $${userStats.wagered.this_week.toLocaleString()}
-Daily Wager: $${userStats.wagered.today.toLocaleString()}
-All-time Wager: $${userStats.wagered.all_time.toLocaleString()}`;
+    const message = `📊 Stats for ${userStats.name}:\n
+Monthly Wager: $${userStats.wagered.toLocaleString()}
+Weekly Wager: $${userStats.wagered.toLocaleString()}
+Daily Wager: $${userStats.wagered.toLocaleString()}
+All-time Wager: $${userStats.wagered.toLocaleString()}`;
 
     return bot.sendMessage(chatId, message);
   } catch (error) {
