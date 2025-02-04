@@ -359,6 +359,13 @@ export default function WagerRaces() {
                   {getTrophyIcon(2)}
                 </div>
                 <div className="text-center mt-8">
+                  <img
+                    src={getTierIcon(
+                      getTierFromWager(top10Players[1]?.wagered.all_time || 0),
+                    )}
+                    alt="Tier"
+                    className="w-6 h-6 mx-auto mb-2"
+                  />
                   <p className="text-xs md:text-base font-bold truncate text-white/90">
                     {top10Players[1]?.name || "-"}
                   </p>
@@ -395,6 +402,13 @@ export default function WagerRaces() {
                   {getTrophyIcon(1)}
                 </div>
                 <div className="text-center mt-4">
+                  <img
+                    src={getTierIcon(
+                      getTierFromWager(top10Players[0]?.wagered.all_time || 0),
+                    )}
+                    alt="Tier"
+                    className="w-7 h-7 mx-auto mb-2"
+                  />
                   <p className="text-xl font-bold truncate text-white">
                     {top10Players[0]?.name || "-"}
                   </p>
@@ -434,6 +448,13 @@ export default function WagerRaces() {
                   {getTrophyIcon(3)}
                 </div>
                 <div className="text-center mt-4">
+                  <img
+                    src={getTierIcon(
+                      getTierFromWager(top10Players[2]?.wagered.all_time || 0),
+                    )}
+                    alt="Tier"
+                    className="w-5 h-5 mx-auto mb-2"
+                  />
                   <p className="text-xs md:text-base font-bold truncate text-white/90">
                     {top10Players[2]?.name || "-"}
                   </p>
