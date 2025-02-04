@@ -1066,5 +1066,62 @@ bot.onText(/\/website/, async (msg) => {
 
 bot.on('callback_query', handleCallbackQuery);
 
+// Handle inline queries for quick stats lookup
+bot.on('inline_query', async (query) => {
+  try {
+    // First check if user is verified
+    const user = await db.select()
+      .from(telegramUsers)
+      .where(eq(telegramUsers.telegramId, query.from.id.toString()))
+      .execute();
+
+    if (!user?.[0]?.isVerified) {
+      return bot.answerInlineQuery(query.id, [{
+        type: 'article',
+        id: 'not_verified',
+        title: '❌ Verification Required',
+        description: 'You need to verify your account to check stats',
+        input_message_content: {
+          message_text: 'You need to verify your account first. Start a private chat with @GoatedVIPsBot and use /start'
+        }
+      }]);
+    }
+
+    if (!query.query) {
+      return bot.answerInlineQuery(query.id, [{
+        type: 'article',
+        id: 'help',
+        title: 'Search for a user',
+        description: 'Type a Goated username to check their stats',
+        input_message_content: {
+          message_text: 'To check stats, type @GoatedVIPsBot followed by a username'
+        }
+      }]);
+    }
+
+    const leaderboardData = await fetchLeaderboardData();
+    const transformedData = transformLeaderboardData(leaderboardData);
+
+    const matchingUsers = transformedData
+      ?.filter(u => u.username.toLowerCase().includes(query.query.toLowerCase()))
+      .slice(0, 5)
+      .map(user => ({
+        type: 'article',
+        id: user.username,
+        title: user.username,
+        description: `Monthly: $${user.wagered.this_month.toLocaleString()}`,
+        input_message_content: {
+          message_text: `📊 Stats for ${user.username}:
+Monthly: $${user.wagered.this_month.toLocaleString()}
+All-time: $${user.wagered.all_time.toLocaleString()}`
+        }
+      }));
+
+    return bot.answerInlineQuery(query.id, matchingUsers || []);
+  } catch (error) {
+    console.error('Error handling inline query:', error);
+  }
+});
+
 // Export bot instance for use in main server
 export { bot, handleStart, handleVerify, handleStats, handleRace, handleLeaderboard, handleCallbackQuery };
