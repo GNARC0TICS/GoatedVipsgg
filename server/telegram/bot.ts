@@ -1,9 +1,9 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { db } from '@db';
 import { telegramUsers, verificationRequests } from '@db/schema/telegram';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { API_CONFIG } from '../config/api';
-import { users } from '@db/schema'; // Import users schema to check usernames
+import { users } from '@db/schema';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_TELEGRAM_IDS = process.env.ADMIN_TELEGRAM_IDS?.split(',') || [];
@@ -23,96 +23,50 @@ function logDebug(message: string, data?: any) {
 // Set up bot commands with proper descriptions
 async function setupBotCommands() {
   try {
-    // First, clear existing commands
+    // Clear existing commands
     await bot.deleteMyCommands();
 
-    // Set up new commands
+    // Set up new commands with friendly descriptions
     const commands = [
-      { command: 'start', description: '🚀 Start the bot and verify your account' },
-      { command: 'verify', description: '🔐 Verify your Goated account' },
-      { command: 'stats', description: '📊 View your wager statistics' },
-      { command: 'race', description: '🏁 Check your race position' },
-      { command: 'leaderboard', description: '🏆 View the monthly race leaderboard' },
-      { command: 'pending', description: '📝 View pending verification requests (Admin only)' },
-      { command: 'verify_user', description: '✅ Verify a user (Admin only)' },
-      { command: 'reject_user', description: '❌ Reject a verification request (Admin only)' },
+      { command: 'start', description: '🚀 Start using the bot' },
+      { command: 'verify', description: '🔐 Link your Goated account' },
+      { command: 'stats', description: '📊 Check your wager stats' },
+      { command: 'race', description: '🏁 View your race position' },
+      { command: 'leaderboard', description: '🏆 See top players' },
+      { command: 'help', description: '❓ Get help using the bot' }
     ];
 
     await bot.setMyCommands(commands);
-
-    // Log success and verify commands are set
-    const currentCommands = await bot.getMyCommands();
-    logDebug('Bot commands set up successfully', currentCommands);
+    logDebug('Bot commands set up successfully');
   } catch (error) {
     logDebug('Error setting up bot commands', error);
-    throw error; // Re-throw to ensure we know if setup fails
-  }
-}
-
-// Initialize bot commands
-setupBotCommands();
-
-
-// Check if user is admin
-function isAdmin(telegramId: string): boolean {
-  return ADMIN_TELEGRAM_IDS.includes(telegramId);
-}
-
-// Helper function to fetch leaderboard data from our platform
-async function fetchLeaderboardData() {
-  try {
-    logDebug('Attempting to fetch leaderboard data');
-
-    // Make request to our internal API endpoint
-    const response = await fetch(
-      `http://0.0.0.0:5000/api/wager-races/current`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      logDebug('API request failed', { status: response.status, error: errorText });
-      throw new Error(`API request failed: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    logDebug('Successfully fetched leaderboard data', { participantsCount: data?.length });
-    return data;
-  } catch (error) {
-    logDebug('Error fetching leaderboard data', error);
     throw error;
   }
 }
 
-// Helper function to transform raw data into period-specific stats
-function transformLeaderboardData(apiData: any) {
-  if (!apiData?.data?.participants && !apiData?.participants) {
-    logDebug('Invalid leaderboard data format', { data: apiData });
-    return null;
-  }
+// Initialize bot commands
+setupBotCommands().catch(error => {
+  console.error('Failed to initialize bot:', error);
+});
 
-  const participants = apiData.data?.participants || apiData.participants;
-  if (!Array.isArray(participants)) {
-    logDebug('Participants is not an array', { participants });
-    return null;
-  }
+// Add help command handler
+bot.onText(/\/help/, async (msg) => {
+  const chatId = msg.chat.id;
+  const helpMessage = `
+🤖 *Welcome to Goated Stats Bot!*
 
-  return participants.map(user => ({
-    ...user,
-    username: user.name,
-    wagered: {
-      this_month: user.wagered,
-      today: 0,
-      this_week: 0,
-      all_time: 0
-    }
-  }));
-}
+Here's what you can do:
+• /start - Get started with the bot
+• /verify - Link your Goated account
+• /stats - View your wager statistics
+• /race - Check your race position
+• /leaderboard - See top players
+
+Need help? Contact @xGoombas for support.
+`;
+
+  await bot.sendMessage(chatId, helpMessage, { parse_mode: 'Markdown' });
+});
 
 // Admin commands
 bot.onText(/\/makeadmin/, async (msg) => {
@@ -121,6 +75,22 @@ bot.onText(/\/makeadmin/, async (msg) => {
 
   if (username !== 'xGoombas') {
     return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+  try {
+    const [user] = await db
+      .update(users)
+      .set({ isAdmin: true })
+      .where(eq(users.username, username))
+      .returning();
+
+    if (user) {
+      await bot.sendMessage(chatId, '✅ Admin privileges granted successfully!');
+    } else {
+      await bot.sendMessage(chatId, '❌ Failed to grant admin privileges. Please try again.');
+    }
+  } catch (error) {
+    console.error('Error granting admin privileges:', error);
+    await bot.sendMessage(chatId, '❌ An error occurred while granting admin privileges.');
   }
 });
 
@@ -238,23 +208,6 @@ bot.onText(/\/reject_user (.+)/, async (msg, match) => {
   }
 });
 
-  try {
-    const [user] = await db
-      .update(users)
-      .set({ isAdmin: true })
-      .where(eq(users.username, username))
-      .returning();
-
-    if (user) {
-      await bot.sendMessage(chatId, '✅ Admin privileges granted successfully!');
-    } else {
-      await bot.sendMessage(chatId, '❌ Failed to grant admin privileges. Please try again.');
-    }
-  } catch (error) {
-    console.error('Error granting admin privileges:', error);
-    await bot.sendMessage(chatId, '❌ An error occurred while granting admin privileges.');
-  }
-});
 
 // Add prize pool constants to match web interface
 const PRIZE_POOL = 500;
@@ -625,6 +578,68 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
   }
 }
 
+// Helper function to fetch leaderboard data from our platform
+async function fetchLeaderboardData() {
+  try {
+    logDebug('Attempting to fetch leaderboard data');
+
+    // Make request to our internal API endpoint
+    const response = await fetch(
+      `http://0.0.0.0:5000/api/wager-races/current`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logDebug('API request failed', { status: response.status, error: errorText });
+      throw new Error(`API request failed: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    logDebug('Successfully fetched leaderboard data', { participantsCount: data?.length });
+    return data;
+  } catch (error) {
+    logDebug('Error fetching leaderboard data', error);
+    throw error;
+  }
+}
+
+// Helper function to transform raw data into period-specific stats
+function transformLeaderboardData(apiData: any) {
+  if (!apiData?.data?.participants && !apiData?.participants) {
+    logDebug('Invalid leaderboard data format', { data: apiData });
+    return null;
+  }
+
+  const participants = apiData.data?.participants || apiData.participants;
+  if (!Array.isArray(participants)) {
+    logDebug('Participants is not an array', { participants });
+    return null;
+  }
+
+  return participants.map(user => ({
+    ...user,
+    username: user.name,
+    wagered: {
+      this_month: user.wagered,
+      today: 0,
+      this_week: 0,
+      all_time: 0
+    }
+  }));
+}
+
+
+// Check if user is admin
+function isAdmin(telegramId: string): boolean {
+  return ADMIN_TELEGRAM_IDS.includes(telegramId);
+}
+
 // Register event handlers
 bot.onText(/\/start/, handleStart);
 bot.onText(/\/verify(?:\s+(.+))?/, handleVerify);
@@ -639,4 +654,4 @@ setupBotCommands().catch(error => {
 });
 
 // Export bot instance for use in main server
-export { bot };
+export { bot, handleStart, handleVerify, handleStats, handleRace, handleLeaderboard, handleCallbackQuery };
