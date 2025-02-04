@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import {useAuth} from './authContext'; //Hypothetical auth context
+import {useAuth} from '@/lib/auth'; //Hypothetical auth context
 import {useToast} from './toastContext'; //Hypothetical toast context
 
 
