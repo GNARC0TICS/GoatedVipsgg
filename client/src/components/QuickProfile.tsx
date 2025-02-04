@@ -43,16 +43,16 @@ export function QuickProfile({
     const userStats = {
       today:
         leaderboardData.data.today.data.find((p) => p.uid === userId)?.wagered
-          .today || 0,
+          ?.today || 0,
       this_week:
         leaderboardData.data.weekly.data.find((p) => p.uid === userId)?.wagered
-          .this_week || 0,
+          ?.this_week || 0,
       this_month:
         leaderboardData.data.monthly.data.find((p) => p.uid === userId)?.wagered
-          .this_month || 0,
+          ?.this_month || 0,
       all_time:
         leaderboardData.data.all_time.data.find((p) => p.uid === userId)
-          ?.wagered.all_time || 0,
+          ?.wagered?.all_time || 0,
     };
 
     const position = {
@@ -91,7 +91,7 @@ export function QuickProfile({
               <div className={`h-16 w-16 rounded-full bg-[#2A2B31] flex items-center justify-center ${stats?.position?.monthly === 1 ? 'ring-4 ring-[#D7FF00] animate-pulse' : ''}`}>
                 <img
                   src={getTierIcon(
-                    getTierFromWager(stats?.wagered.all_time || 0),
+                    getTierFromWager(stats?.wagered?.all_time || 0),
                   )}
                   alt="Tier"
                   className="h-12 w-12"
@@ -134,7 +134,7 @@ export function QuickProfile({
                     <span className="text-[#8A8B91] text-sm">Today</span>
                   </div>
                   <p className="text-xl font-bold text-white">
-                    ${stats?.wagered.today.toLocaleString() || "0"}
+                    ${stats?.wagered?.today.toLocaleString() || "0"}
                   </p>
                 </CardContent>
               </Card>
@@ -146,7 +146,7 @@ export function QuickProfile({
                     <span className="text-[#8A8B91] text-sm">Weekly</span>
                   </div>
                   <p className="text-xl font-bold text-white">
-                    ${stats?.wagered.this_week.toLocaleString() || "0"}
+                    ${stats?.wagered?.this_week.toLocaleString() || "0"}
                   </p>
                 </CardContent>
               </Card>
@@ -158,7 +158,7 @@ export function QuickProfile({
                     <span className="text-[#8A8B91] text-sm">Monthly</span>
                   </div>
                   <p className="text-xl font-bold text-white">
-                    ${stats?.wagered.this_month.toLocaleString() || "0"}
+                    ${stats?.wagered?.this_month.toLocaleString() || "0"}
                   </p>
                 </CardContent>
               </Card>
@@ -170,7 +170,7 @@ export function QuickProfile({
                     <span className="text-[#8A8B91] text-sm">All Time</span>
                   </div>
                   <p className="text-xl font-bold text-white">
-                    ${stats?.wagered.all_time.toLocaleString() || "0"}
+                    ${stats?.wagered?.all_time.toLocaleString() || "0"}
                   </p>
                 </CardContent>
               </Card>
