@@ -210,20 +210,10 @@ export default function WagerRaces() {
                   animate={{ opacity: 1, y: 0 }}
                   className="text-center"
                 >
-                  <h1 className="text-6xl font-heading font-bold text-white mb-2 uppercase" style={{
-                    fontFamily: "Mona Sans",
-                    fontStretch: "75%",
-                    fontWeight: 800,
-                    letterSpacing: "-0.02em"
-                  }}>
+                  <h1 className="text-6xl font-heading font-extrabold text-white mb-2 uppercase tracking-tighter font-mona-sans-expanded">
                     $500
                   </h1>
-                  <h2 className="text-5xl font-heading font-bold text-[#D7FF00] leading-tight uppercase" style={{
-                    fontFamily: "Mona Sans",
-                    fontStretch: "75%",
-                    fontWeight: 800,
-                    letterSpacing: "-0.02em"
-                  }}>
+                  <h2 className="text-5xl font-heading font-extrabold text-[#D7FF00] leading-tight uppercase tracking-tighter font-mona-sans-expanded">
                     Monthly
                     <br />
                     Race
