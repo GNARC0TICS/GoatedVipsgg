@@ -460,14 +460,13 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
     const leaderboard = top10
       .map((user, index) => {
         const position = index + 1;
-        const prize = getPrizeAmount(position);
-        return `${position}. ${user.username}\n   💰 $${user.wagered.this_month.toLocaleString()}\n   🏆 Prize: $${prize}`;
+        return `${position}. ${user.username}\n   💰 $${user.wagered.this_month.toLocaleString()}`;
       })
       .join('\n\n');
 
     const message = `🏆 Monthly Race Leaderboard\n` +
-      `💵 Prize Pool: $${PRIZE_POOL}\n` +
-      `🏁 Top 10 Racers:\n\n${leaderboard}`;
+      `💵 Prize Pool: $${PRIZE_POOL.toLocaleString()}\n` +
+      `🏁 Current Top 10:\n\n${leaderboard}`;
 
     if (!isGroupChat(chatId)) {
       const keyboard = {
