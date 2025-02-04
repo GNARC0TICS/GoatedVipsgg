@@ -326,6 +326,42 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
   }
 });
 
+// Admin command to broadcast to all groups
+bot.onText(/\/broadcast_groups (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const adminUsername = msg.from?.username;
+
+  if (adminUsername !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+
+  if (!match?.[1]) {
+    return bot.sendMessage(chatId, '❌ Please provide a message to broadcast.');
+  }
+
+  const message = match[1];
+  try {
+    // Get all chats where bot is member
+    const failedGroups = [];
+    let successCount = 0;
+
+    for (const groupId of ALLOWED_GROUP_IDS) {
+      try {
+        await bot.sendMessage(groupId, `📢 ${message}`);
+        successCount++;
+      } catch (error) {
+        failedGroups.push(groupId);
+      }
+    }
+
+    return bot.sendMessage(chatId, 
+      `✅ Group broadcast complete!\nDelivered to: ${successCount} groups\nFailed: ${failedGroups.length} groups`);
+  } catch (error) {
+    console.error('Error broadcasting to groups:', error);
+    return bot.sendMessage(chatId, '❌ Error sending broadcast to groups.');
+  }
+});
+
 // Admin command to send message to specific group
 bot.onText(/\/group_message (.+) (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
