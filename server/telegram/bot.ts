@@ -90,18 +90,19 @@ async function fetchLeaderboardData() {
 function transformLeaderboardData(data: any) {
   logDebug('Transforming leaderboard data', { rawData: data });
 
-  if (!data || !Array.isArray(data)) {
+  if (!data?.data?.participants || !Array.isArray(data.data.participants)) {
     logDebug('Invalid leaderboard data format', { data });
     return null;
   }
 
-  return data.map(entry => ({
+  return data.data.participants.map(entry => ({
     username: entry.name,
+    uid: entry.uid,
     wagered: {
-      today: entry.wagered?.today || 0,
-      this_week: entry.wagered?.this_week || 0,
-      this_month: entry.wagered?.this_month || 0,
-      all_time: entry.wagered?.all_time || 0
+      today: 0, // These values aren't provided in current race data
+      this_week: 0,
+      this_month: entry.wagered || 0,
+      all_time: entry.allTimeWagered || 0
     }
   }));
 }
@@ -183,7 +184,7 @@ async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
   switch (callbackQuery.data) {
     case 'start_verify':
       await bot.editMessageText(
-        'Please enter your Goated username using the command:\n/verify YourUsername',
+        'Please enter your Goated username and UID using the command:\n/verify YourUsername YourUID',
         { chat_id: chatId, message_id: messageId }
       );
       break;
@@ -214,30 +215,35 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
     return bot.sendMessage(chatId, 'Could not identify user.');
   }
 
-  // If no username provided, ask for it
+  // If no username and UID provided, ask for them
   if (!match?.[1]) {
     return bot.sendMessage(chatId,
-      'Please provide your Goated username with the command.\n' +
-      'Example: /verify YourGoatedUsername');
+      'Please provide your Goated username and UID with the command.\n' +
+      'Example: /verify YourUsername YourUID\n\n' +
+      'You can find your UID in the monthly race leaderboard.');
   }
 
-  const goatedUsername = match[1].trim();
+  const args = match[1].trim().split(/\s+/);
+  if (args.length < 2) {
+    return bot.sendMessage(chatId,
+      'Please provide both your username and UID.\n' +
+      'Example: /verify YourUsername YourUID');
+  }
+
+  const [goatedUsername, providedUid] = args;
 
   try {
-    // First check our database for the username
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.username, goatedUsername)
-    });
-
-    // Then check leaderboard data as backup
+    // Fetch leaderboard data to verify UID
     const leaderboardData = await fetchLeaderboardData();
     const transformedData = transformLeaderboardData(leaderboardData);
-    const leaderboardUser = transformedData?.some(user =>
-      user.username.toLowerCase() === goatedUsername.toLowerCase()
+
+    // Check if user exists and UID matches
+    const leaderboardUser = transformedData?.find(user =>
+      user.username.toLowerCase() === goatedUsername.toLowerCase() &&
+      user.uid === providedUid
     );
 
-    // If user exists in either source, proceed with verification
-    if (dbUser || leaderboardUser) {
+    if (leaderboardUser) {
       // Create or update verification request
       await db.insert(verificationRequests)
         .values({
@@ -277,7 +283,7 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
 
         await bot.sendMessage(
           adminId,
-          `New verification request:\nTelegram User: ${msg.from?.username || 'Unknown'}\nGoated Username: ${goatedUsername}`,
+          `New verification request:\nTelegram User: ${msg.from?.username || 'Unknown'}\nGoated Username: ${goatedUsername}\nUID: ${providedUid}`,
           { reply_markup: keyboard }
         );
       }
@@ -290,8 +296,9 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
       );
     } else {
       return bot.sendMessage(chatId,
-        'Could not find your username in our system.\n' +
-        'Please ensure you provided the correct Goated username and try again.');
+        'Could not verify your username and UID combination.\n' +
+        'Please ensure both are correct and try again.\n\n' +
+        'You can find your UID in the monthly race leaderboard using /leaderboard');
     }
   } catch (error) {
     logDebug('Error in handleVerify', error);
