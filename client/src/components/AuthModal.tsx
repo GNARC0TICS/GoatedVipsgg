@@ -89,10 +89,13 @@ export default function AuthModal() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="font-heading uppercase">
+        <Button 
+          variant="outline" 
+          className="font-heading uppercase bg-[#1A1B21] border-[#2A2B31] hover:bg-[#2A2B31] hover:border-[#D7FF00] transition-all duration-300"
+        >
           <span className="text-white">LOGIN</span>
           <span className="text-[#8A8B91]"> / </span>
-          <span className="text-[#D7FF00]">REGISTER</span>
+          <span className="text-[#D7FF00] group-hover:text-[#D7FF00]">REGISTER</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] bg-[#1A1B21] text-white border-[#2A2B31]">
