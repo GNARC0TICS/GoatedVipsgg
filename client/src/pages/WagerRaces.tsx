@@ -441,7 +441,7 @@ export default function WagerRaces() {
             className="bg-[#1A1B21]/50 backdrop-blur-sm rounded-xl border border-[#2A2B31] overflow-hidden mt-4"
           >
             <div className="bg-[#2A2B31] px-6 py-4">
-              <h3 className="text-xl font-heading font-bold text-[#D7FF00]">
+              <h3 className="text-xl font-heading font-bold text-[#D7FF00] text-center">
                 {`${raceType.charAt(0).toUpperCase() + raceType.slice(1)} Race Leaderboard`}
               </h3>
             </div>
