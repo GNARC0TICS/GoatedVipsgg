@@ -433,11 +433,11 @@ export default function WagerRaces() {
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 filter drop-shadow-lg">
                   {getTrophyIcon(3)}
                 </div>
-                <div className="text-center mt-8">
+                <div className="text-center mt-4">
                   <p className="text-xs md:text-base font-bold truncate text-white/90">
                     {top10Players[2]?.name || "-"}
                   </p>
-                  <p className="text-sm font-heading text-[#D7FF00] mt-2">
+                  <p className="text-sm font-heading text-[#D7FF00] mt-1">
                     ${getPrizeAmount(3).toLocaleString()}
                   </p>
                   <p className="text-xs text-white/60 mt-1">
