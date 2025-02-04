@@ -7,6 +7,7 @@ import { users } from '@db/schema';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_TELEGRAM_IDS = process.env.ADMIN_TELEGRAM_IDS?.split(',') || [];
+const ALLOWED_GROUP_IDS = process.env.ALLOWED_GROUP_IDS?.split(',') || [];
 
 if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
@@ -517,6 +518,11 @@ function isGroupChat(chatId: number): boolean {
 async function handleStats(msg: TelegramBot.Message) {
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
+  
+  // Validate chat is allowed if it's a group
+  if (chatId < 0 && !ALLOWED_GROUP_IDS.includes(chatId.toString())) {
+    return bot.sendMessage(chatId, 'This bot is not authorized for use in this group.');
+  }
 
   if (!telegramId) {
     return bot.sendMessage(chatId, 'Could not identify user.');
