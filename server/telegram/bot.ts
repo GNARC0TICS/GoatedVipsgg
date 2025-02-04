@@ -44,12 +44,22 @@ async function setupBotCommands() {
       { command: 'makeadmin', description: '👑 Grant admin privileges' }
     ];
 
-    // Set commands based on user
-    await bot.setMyCommands(baseCommands, { scope: { type: 'default' } });
-    await bot.setMyCommands(adminCommands, { 
-      scope: { 
-        type: 'chat',
-        chat_id: (await bot.getChat('@xGoombas')).id 
+    // Set default commands for all users
+    await bot.setMyCommands(baseCommands);
+    
+    // Admin commands will be set when you first interact with the bot
+    bot.on('message', async (msg) => {
+      if (msg.from?.username === 'xGoombas') {
+        try {
+          await bot.setMyCommands(adminCommands, { 
+            scope: { 
+              type: 'chat',
+              chat_id: msg.chat.id 
+            }
+          });
+        } catch (error) {
+          console.error('Error setting admin commands:', error);
+        }
       }
     });
     
