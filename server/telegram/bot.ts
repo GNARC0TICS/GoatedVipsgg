@@ -85,6 +85,7 @@ Here's what you can do:
 • /start - Get started with the bot
 • /verify - Link your Goated account
 • /stats - View your wager statistics
+• /check_stats [username] - Check stats for a username
 • /race - Check your race position
 • /leaderboard - See top players
 
@@ -92,6 +93,70 @@ Need help? Contact @xGoombas for support.
 `;
 
   await bot.sendMessage(chatId, helpMessage, { parse_mode: 'Markdown' });
+});
+
+// Check stats command with username parameter
+bot.onText(/\/check_stats (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const telegramId = msg.from?.id.toString();
+  const username = match?.[1]?.trim();
+
+  if (!telegramId) {
+    return bot.sendMessage(chatId, 'Could not identify user.');
+  }
+
+  try {
+    // Check if requester is admin or verified user
+    if (msg.from?.username !== 'xGoombas') {
+      const requester = await db.select()
+        .from(telegramUsers)
+        .where(eq(telegramUsers.telegramId, telegramId))
+        .execute();
+
+      // If not admin, verify it's their own username
+      if (!requester?.[0]?.isVerified || 
+          requester[0].goatedUsername?.toLowerCase() !== username.toLowerCase()) {
+        return bot.sendMessage(chatId, 
+          'You can only check your own stats after verification.');
+      }
+    }
+
+    // Try to find user by Goated username first
+    const leaderboardData = await fetchLeaderboardData();
+    const transformedData = transformLeaderboardData(leaderboardData);
+    let userStats = transformedData?.find(u => 
+      u.username.toLowerCase() === username.toLowerCase()
+    );
+
+    // If not found and admin requested, try finding by Telegram username
+    if (!userStats && msg.from?.username === 'xGoombas' && username.startsWith('@')) {
+      const telegramUser = await db.select()
+        .from(telegramUsers)
+        .where(eq(telegramUsers.telegramId, username.substring(1)))
+        .execute();
+
+      if (telegramUser?.[0]?.goatedUsername) {
+        userStats = transformedData?.find(u => 
+          u.username.toLowerCase() === telegramUser[0].goatedUsername?.toLowerCase()
+        );
+      }
+    }
+
+    if (!userStats) {
+      return bot.sendMessage(chatId, 'User not found.');
+    }
+
+    const message = `📊 Stats for ${userStats.username}:\n
+Monthly Wager: $${userStats.wagered.this_month.toLocaleString()}
+Weekly Wager: $${userStats.wagered.this_week.toLocaleString()}
+Daily Wager: $${userStats.wagered.today.toLocaleString()}
+All-time Wager: $${userStats.wagered.all_time.toLocaleString()}`;
+
+    return bot.sendMessage(chatId, message);
+  } catch (error) {
+    console.error('Error checking stats:', error);
+    return bot.sendMessage(chatId, 'An error occurred while fetching stats.');
+  }
 });
 
 // Admin commands
