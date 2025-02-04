@@ -387,6 +387,41 @@ bot.onText(/\/group_message (.+) (.+)/, async (msg, match) => {
   }
 });
 
+// Admin command to send personalized message
+bot.onText(/\/message_user (.+?) (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const adminUsername = msg.from?.username;
+
+  if (adminUsername !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+
+  const targetId = match?.[1];
+  const message = match?.[2];
+
+  if (!targetId || !message) {
+    return bot.sendMessage(chatId, '❌ Please provide both user ID and message.\nFormat: /message_user USER_ID Your message here');
+  }
+
+  try {
+    const user = await db
+      .select()
+      .from(telegramUsers)
+      .where(eq(telegramUsers.telegramId, targetId))
+      .execute();
+
+    if (!user?.[0]) {
+      return bot.sendMessage(chatId, '❌ User not found.');
+    }
+
+    await bot.sendMessage(targetId, `📨 Personal Message:\n${message}`);
+    return bot.sendMessage(chatId, `✅ Message sent to ${user[0].goatedUsername || 'user'} successfully!`);
+  } catch (error) {
+    console.error('Error sending personal message:', error);
+    return bot.sendMessage(chatId, '❌ Error sending message to user.');
+  }
+});
+
 // Admin command to get user info
 bot.onText(/\/user_info (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
