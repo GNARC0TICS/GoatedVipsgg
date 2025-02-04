@@ -1,7 +1,8 @@
 
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
-import { LoadingSpinner } from "./LoadingSpinner";
+import { PreLoader } from "./PreLoader";
+import { useState } from "react";
 
 interface PageTransitionProps {
   children: ReactNode;
@@ -9,8 +10,10 @@ interface PageTransitionProps {
 }
 
 export function PageTransition({ children, isLoading = false }: PageTransitionProps) {
+  const [showContent, setShowContent] = useState(!isLoading);
+
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <PreLoader onLoadComplete={() => setShowContent(true)} />;
   }
 
   return (
