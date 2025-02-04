@@ -341,7 +341,7 @@ export default function WagerRaces() {
                   {getTrophyIcon(2)}
                 </div>
                 <div className="text-center mt-8">
-                  <p className="text-base font-bold truncate text-white/90">
+                  <p className="text-xs md:text-base font-bold truncate text-white/90">
                     {top10Players[1]?.name || "-"}
                   </p>
                   <p className="text-sm font-heading text-[#D7FF00] mt-2">
@@ -416,7 +416,7 @@ export default function WagerRaces() {
                   {getTrophyIcon(3)}
                 </div>
                 <div className="text-center mt-8">
-                  <p className="text-base font-bold truncate text-white/90">
+                  <p className="text-xs md:text-base font-bold truncate text-white/90">
                     {top10Players[2]?.name || "-"}
                   </p>
                   <p className="text-sm font-heading text-[#D7FF00] mt-2">
