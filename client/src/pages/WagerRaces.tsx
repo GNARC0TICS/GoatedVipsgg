@@ -494,13 +494,13 @@ export default function WagerRaces() {
                     </TableCell>
                     <TableCell className="font-sans text-white">
                       <QuickProfile userId={player.uid} username={player.name}>
-                        <div className="flex items-center gap-2 cursor-pointer">
+                        <div className="flex items-center gap-2 cursor-pointer min-w-0">
                           <img
                             src={getTierIcon(
                               getTierFromWager(player.wagered.all_time),
                             )}
                             alt="Tier"
-                            className="w-5 h-5"
+                            className="w-5 h-5 object-contain flex-shrink-0"
                           />
                           <span className="truncate">{player.name}</span>
                         </div>
