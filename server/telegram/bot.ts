@@ -674,12 +674,12 @@ async function fetchLeaderboardData() {
   try {
     logDebug('Attempting to fetch leaderboard data');
 
+    // Make request to our internal API endpoint
     const response = await fetch(
-      `http://0.0.0.0:5000/api/affiliate/stats`,
+      `http://0.0.0.0:5000/api/wager-races/current`,
       {
         method: 'GET',
         headers: {
-          'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
       }
@@ -692,8 +692,8 @@ async function fetchLeaderboardData() {
     }
 
     const data = await response.json();
-    logDebug('Successfully fetched leaderboard data', { participantsCount: data?.data?.monthly?.data?.length });
-    return data?.data?.monthly?.data || [];
+    logDebug('Successfully fetched leaderboard data', { participantsCount: data?.length });
+    return data;
   } catch (error) {
     logDebug('Error fetching leaderboard data', error);
     throw error;
