@@ -17,7 +17,6 @@ const useWagerTotal = () => {
       const lastTotal = localStorage.getItem('lastWagerTotal');
       const now = new Date().getTime();
       
-      // Use cached value if less than 24 hours old
       if (lastUpdate && lastTotal && (now - parseInt(lastUpdate)) < 86400000) {
         return parseInt(lastTotal);
       }
@@ -25,34 +24,27 @@ const useWagerTotal = () => {
       const response = await fetch('/api/affiliate/stats');
       const data = await response.json();
       
-      // Calculate total from all_time leaderboard data
       const total = data?.data?.all_time?.data?.reduce((sum: number, entry: any) => {
         const wager = entry?.wagered?.all_time || 0;
         return sum + wager;
       }, 0) || 0;
 
-      // Round down to whole number
       const roundedTotal = Math.floor(total);
       
-      // Cache the result
       localStorage.setItem('lastWagerUpdate', now.toString());
       localStorage.setItem('lastWagerTotal', roundedTotal.toString());
       
       return roundedTotal;
     },
-    refetchInterval: 86400000, // Refetch every 24 hours
-    staleTime: 86400000 // Consider data fresh for 24 hours
+    refetchInterval: 86400000,
+    staleTime: 86400000
   });
   return data;
 };
 
-const FeatureCarousel = () => {
-  const totalWager = useWagerTotal();
-  
-  const announcements = [
-    { text: `+${totalWager?.toLocaleString() || '0'} WAGERED`, link: "/leaderboard" },
-    { text: "WAGER RACES", link: "/wager-races" },
-    { text: "BONUS CODES", link: "/bonus-codes" },
+const announcements = [
+  { text: "WAGER RACES", link: "/wager-races" },
+  { text: "BONUS CODES", link: "/bonus-codes" },
   { text: "AFFILIATE REWARDS", link: "/vip-program" },
   { text: "TELEGRAM GROUP", link: "/telegram" },
   { text: "AIRDROP NEWS", link: "/goated-token" },
@@ -76,6 +68,7 @@ const FeatureCarousel = () => {
 ];
 
 export const FeatureCarousel = () => {
+  const totalWager = useWagerTotal();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
   const [, setLocation] = useLocation();
@@ -125,7 +118,6 @@ export const FeatureCarousel = () => {
       }
     }
 
-    // Force transition for edge drags
     if (Math.abs(offset) > width * 0.4) {
       if (offset > 0) {
         prevSlide();
@@ -176,6 +168,11 @@ export const FeatureCarousel = () => {
     })
   };
 
+  const currentAnnouncements = [
+    { text: `+${totalWager?.toLocaleString() || '0'} WAGERED`, link: "/leaderboard" },
+    ...announcements
+  ];
+
   return (
     <div ref={containerRef} className="relative h-24 overflow-hidden mb-8 group touch-none">
       <div className="flex justify-center items-center h-full relative">
@@ -201,10 +198,10 @@ export const FeatureCarousel = () => {
             className="absolute w-full flex justify-center items-center touch-pan-y"
           >
             <button
-              onClick={() => handleClick(announcements[currentIndex].link)}
+              onClick={() => handleClick(currentAnnouncements[currentIndex].link)}
               className="text-3xl md:text-4xl font-heading font-extrabold bg-gradient-to-r from-[#D7FF00] via-[#D7FF00]/80 to-[#D7FF00]/60 bg-clip-text text-transparent hover:from-[#D7FF00]/80 hover:to-[#D7FF00]/40 transition-all pointer-events-auto px-4"
             >
-              {announcements[currentIndex].text}
+              {currentAnnouncements[currentIndex].text}
             </button>
           </motion.div>
         </AnimatePresence>
