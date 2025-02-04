@@ -189,10 +189,15 @@ export default function WagerRaces() {
                 loop
                 muted
                 playsInline
-                poster="/images/preload.PNG"
+                poster="/images/race.gif"
                 ref={(el) => {
                   if (el) {
-                    el.playbackRate = 0.75; // Slows down to 75% of original speed
+                    el.playbackRate = 0.5;
+                    el.addEventListener('ended', () => {
+                      setTimeout(() => {
+                        el.play();
+                      }, 1000); // 1 second pause before replay
+                    });
                   }
                 }}
               >
