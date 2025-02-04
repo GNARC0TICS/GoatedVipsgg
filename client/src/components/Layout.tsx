@@ -464,8 +464,8 @@ export function Layout({ children }: { children: ReactNode }) {
                         href="/wager-races" 
                         label={
                           <div className="flex items-center justify-between w-full">
-                            <span>Monthly Race</span>
-                            <div className="flex items-center gap-1">
+                            <span className="text-base">Monthly Race</span>
+                            <div className="ml-2 flex items-center gap-1">
                               <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
                               <span className="text-xs text-red-500">LIVE</span>
                             </div>
