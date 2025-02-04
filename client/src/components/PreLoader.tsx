@@ -42,6 +42,7 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
           src="/images/preload.PNG"
           alt="Goated Preloader"
           className="w-64 h-64 object-contain animate-pulse-subtle"
+          onError={(e) => console.error('Image failed to load:', e)}
         />
         <div className="w-64 h-1 bg-[#2A2B31] rounded-full overflow-hidden">
           <motion.div
