@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ import React, { useState, useMemo } from "react";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { QuickProfile } from "@/components/QuickProfile";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -28,6 +29,7 @@ interface LeaderboardTableProps {
 export const LeaderboardTable = React.memo(function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  
   const { data, isLoading, error, metadata, refetch } = useLeaderboard(timePeriod);
 
   const filteredData = useMemo(() => {
@@ -37,7 +39,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
     );
   }, [data, searchQuery]);
 
-  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil((filteredData?.length || 0) / ITEMS_PER_PAGE);
 
   const getTrophyIcon = (rank: number) => {
     switch (rank) {
@@ -60,6 +62,22 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
     setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1));
   };
 
+  const getWagerAmount = (entry: any) => {
+    if (!entry?.wagered) return 0;
+    switch (timePeriod) {
+      case "weekly":
+        return entry.wagered.this_week;
+      case "monthly":
+        return entry.wagered.this_month;
+      case "today":
+        return entry.wagered.today;
+      case "all_time":
+        return entry.wagered.all_time;
+      default:
+        return 0;
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
@@ -72,7 +90,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
             </TableRow>
           </TableHeader>
           <TableBody>
-            {[...Array(5)].map((_, i) => ( // Reduced to 5 skeleton rows for faster rendering
+            {[...Array(5)].map((_, i) => (
               <TableRow key={i} className="bg-[#1A1B21]/50 backdrop-blur-sm">
                 <TableCell>
                   <div className="animate-pulse h-6 w-16 bg-muted rounded" />
@@ -90,20 +108,6 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
       </div>
     );
   }
-
-  const getWagerAmount = (entry: any) => {
-    if (!entry?.wagered) return 0;
-    switch (timePeriod) {
-      case "weekly":
-        return entry.wagered.this_week;
-      case "monthly":
-        return entry.wagered.this_month;
-      case "today":
-        return entry.wagered.today;
-      case "all_time":
-        return entry.wagered.all_time;
-    }
-  };
 
   return (
     <div className="space-y-4">
@@ -135,62 +139,61 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
               </TableRow>
             </TableHeader>
             <TableBody>
-              {useMemo(() => 
-                filteredData
-                  .slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE)
-                  .map((entry, index) => (
-                    <motion.tr
-                      key={entry.uid}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                      className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] transition-colors"
-                    >
-                      <TableCell className="font-heading px-1 md:px-4">
-                        <div className="flex items-center gap-1 md:gap-2">
-                          <div className="hidden md:block">
-                            {getTrophyIcon(index + 1 + currentPage * ITEMS_PER_PAGE)}
-                          </div>
-                          <span className="text-[#D7FF00] text-xs md:text-base">
-                            {index + 1 + currentPage * ITEMS_PER_PAGE}
+              {filteredData
+                .slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE)
+                .map((entry, index) => (
+                  <motion.tr
+                    key={entry.uid}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21] transition-colors"
+                  >
+                    <TableCell className="font-heading px-1 md:px-4">
+                      <div className="flex items-center gap-1 md:gap-2">
+                        <div className="hidden md:block">
+                          {getTrophyIcon(index + 1 + currentPage * ITEMS_PER_PAGE)}
+                        </div>
+                        <span className="text-[#D7FF00] text-xs md:text-base">
+                          {index + 1 + currentPage * ITEMS_PER_PAGE}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <QuickProfile userId={entry.uid} username={entry.name}>
+                        <div className="flex items-center gap-2 cursor-pointer">
+                          <img
+                            src={getTierIcon(getTierFromWager(entry.wagered.all_time))}
+                            alt="Tier"
+                            className="w-5 h-5"
+                          />
+                          <span className="truncate text-white hover:text-[#D7FF00] transition-colors">
+                            {entry.name}
                           </span>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <QuickProfile userId={entry.uid} username={entry.name}>
-                          <div className="flex items-center gap-2 cursor-pointer">
-                            <img
-                              src={getTierIcon(getTierFromWager(entry.wagered.all_time))}
-                              alt="Tier"
-                              className="w-5 h-5"
-                            />
-                            <span className="truncate text-white hover:text-[#D7FF00] transition-colors">
-                              {entry.name}
+                      </QuickProfile>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="text-white font-semibold">
+                          ${(getWagerAmount(entry) || 0).toLocaleString()}
+                        </span>
+                        {entry.isWagering && entry.wagerChange > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="text-green-500 flex items-center gap-1"
+                          >
+                            <TrendingUp className="h-4 w-4" />
+                            <span className="text-xs font-bold">
+                              +${entry.wagerChange.toLocaleString()}
                             </span>
-                          </div>
-                        </QuickProfile>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <span className="text-white font-semibold">
-                            ${(getWagerAmount(entry) || 0).toLocaleString()}
-                          </span>
-                          {entry.isWagering && entry.wagerChange > 0 && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              className="text-green-500 flex items-center gap-1"
-                            >
-                              <TrendingUp className="h-4 w-4" />
-                              <span className="text-xs font-bold">
-                                +${entry.wagerChange.toLocaleString()}
-                              </span>
-                            </motion.div>
-                          )}
-                        </div>
-                      </TableCell>
-                    </motion.tr>
-                  )), [filteredData, currentPage])}
+                          </motion.div>
+                        )}
+                      </div>
+                    </TableCell>
+                  </motion.tr>
+                ))}
             </TableBody>
           </Table>
         </div>
@@ -214,7 +217,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-[#8A8B91] text-sm px-2">
-              Page {currentPage + 1} of {totalPages}
+              Page {currentPage + 1} of {totalPages || 1}
             </span>
             <Button
               variant="outline"
