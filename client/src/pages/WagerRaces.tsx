@@ -183,8 +183,17 @@ export default function WagerRaces() {
           {/* Header Section */}
           <div className="relative">
             <div
-              className="absolute inset-0 bg-[url('/images/race.gif')] bg-cover bg-center opacity-50"
-              style={{ animation: "loopBackground 20s infinite" }}
+              className="absolute inset-0 opacity-50"
+            >
+              <video
+                className="w-full h-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+              >
+                <source src="/images/RACEFLAG.MP4" type="video/mp4" />
+              </video>
             ></div>
             <div className="relative z-10 py-12 px-4 text-center">
               <div className="flex justify-center gap-4 mb-8">
