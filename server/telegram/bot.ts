@@ -419,32 +419,33 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
     return bot.sendMessage(chatId, 'Could not identify user.');
   }
 
-  // If no username and UID provided, ask for them
+  // If in group chat, direct to private chat
+  if (chatId < 0) {
+    return bot.sendMessage(
+      chatId,
+      'Please start a private chat with me to complete the verification process:\n' +
+      `https://t.me/${bot.options.username}?start=verify`
+    );
+  }
+
+  // If no username provided, ask for it
   if (!match?.[1]) {
     return bot.sendMessage(chatId,
-      'Please provide your Goated username and UID with the command.\n' +
-      'Example: /verify YourUsername YourUID\n\n' +
-      'You can find your UID in the monthly race leaderboard.');
+      'Please provide your Goated username with the command.\n' +
+      'Example: /verify YourUsername\n\n' +
+      'Make sure to use your exact username as shown on the platform.');
   }
 
-  const args = match[1].trim().split(/\s+/);
-  if (args.length < 2) {
-    return bot.sendMessage(chatId,
-      'Please provide both your username and UID.\n' +
-      'Example: /verify YourUsername YourUID');
-  }
-
-  const [goatedUsername, providedUid] = args;
+  const goatedUsername = match[1].trim();
 
   try {
     // Fetch leaderboard data to verify UID
     const leaderboardData = await fetchLeaderboardData();
     const transformedData = transformLeaderboardData(leaderboardData);
 
-    // Check if user exists and UID matches
+    // Check if user exists
     const leaderboardUser = transformedData?.find(user =>
-      user.username.toLowerCase() === goatedUsername.toLowerCase() &&
-      user.uid === providedUid
+      user.name.toLowerCase() === goatedUsername.toLowerCase()
     );
 
     if (leaderboardUser) {
@@ -494,15 +495,15 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
 
       return bot.sendMessage(
         chatId,
-        'Verification request submitted!\n' +
-        'An admin will review your request and verify your account.\n' +
-        'You will be notified once your account is verified.'
+        '✅ Account found! Verification request submitted.\n\n' +
+        'Please be patient while your account is awaiting verification.\n' +
+        'You will receive a notification once the process is complete.'
       );
     } else {
       return bot.sendMessage(chatId,
-        'Could not verify your username and UID combination.\n' +
-        'Please ensure both are correct and try again.\n\n' +
-        'You can find your UID in the monthly race leaderboard using /leaderboard');
+        '❌ Account not found!\n\n' +
+        'Please ensure you are using your exact username as shown on the platform.\n' +
+        'If the issue persists, contact @xGoombas for assistance.');
     }
   } catch (error) {
     logDebug('Error in handleVerify', error);
