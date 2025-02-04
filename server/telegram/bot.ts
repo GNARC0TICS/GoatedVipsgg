@@ -33,6 +33,9 @@ async function setupBotCommands() {
       { command: 'stats', description: '📊 View your wager statistics' },
       { command: 'race', description: '🏁 Check your race position' },
       { command: 'leaderboard', description: '🏆 View the monthly race leaderboard' },
+      { command: 'pending', description: '📝 View pending verification requests (Admin only)' },
+      { command: 'verify_user', description: '✅ Verify a user (Admin only)' },
+      { command: 'reject_user', description: '❌ Reject a verification request (Admin only)' },
     ];
 
     await bot.setMyCommands(commands);
@@ -119,6 +122,121 @@ bot.onText(/\/makeadmin/, async (msg) => {
   if (username !== 'xGoombas') {
     return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
   }
+});
+
+// Admin command to list pending verification requests
+bot.onText(/\/pending/, async (msg) => {
+  const chatId = msg.chat.id;
+  const username = msg.from?.username;
+
+  if (username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+
+  try {
+    const pendingRequests = await db
+      .select()
+      .from(verificationRequests)
+      .where(eq(verificationRequests.status, 'pending'))
+      .execute();
+
+    if (!pendingRequests.length) {
+      return bot.sendMessage(chatId, '📝 No pending verification requests.');
+    }
+
+    const message = pendingRequests.map((request, index) => {
+      return `Request #${index + 1}:\n` +
+        `📱 Telegram: @${request.telegramId}\n` +
+        `👤 Goated: ${request.goatedUsername}\n` +
+        `⏰ Requested: ${new Date(request.requestedAt).toLocaleString()}\n\n` +
+        `To verify: /verify_user ${request.telegramId}\n` +
+        `To reject: /reject_user ${request.telegramId}\n` +
+        `───────────────────`;
+    }).join('\n\n');
+
+    return bot.sendMessage(chatId, `🔍 Pending Verification Requests:\n\n${message}`);
+  } catch (error) {
+    console.error('Error fetching pending requests:', error);
+    return bot.sendMessage(chatId, '❌ Error fetching pending requests.');
+  }
+});
+
+// Admin command to verify a user
+bot.onText(/\/verify_user (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const adminUsername = msg.from?.username;
+
+  if (adminUsername !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+
+  if (!match?.[1]) {
+    return bot.sendMessage(chatId, '❌ Please provide a Telegram ID.');
+  }
+
+  const telegramId = match[1];
+
+  try {
+    // Update verification request status
+    const [request] = await db
+      .update(verificationRequests)
+      .set({ status: 'approved' })
+      .where(eq(verificationRequests.telegramId, telegramId))
+      .returning();
+
+    if (!request) {
+      return bot.sendMessage(chatId, '❌ Verification request not found.');
+    }
+
+    // Update telegram user verification status
+    await db
+      .update(telegramUsers)
+      .set({ isVerified: true })
+      .where(eq(telegramUsers.telegramId, telegramId));
+
+    // Notify the user
+    await bot.sendMessage(telegramId, '✅ Your account has been verified! You can now use all bot features.');
+    return bot.sendMessage(chatId, `✅ User ${request.goatedUsername} has been verified.`);
+  } catch (error) {
+    console.error('Error verifying user:', error);
+    return bot.sendMessage(chatId, '❌ Error verifying user.');
+  }
+});
+
+// Admin command to reject a user
+bot.onText(/\/reject_user (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const adminUsername = msg.from?.username;
+
+  if (adminUsername !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+
+  if (!match?.[1]) {
+    return bot.sendMessage(chatId, '❌ Please provide a Telegram ID.');
+  }
+
+  const telegramId = match[1];
+
+  try {
+    const [request] = await db
+      .update(verificationRequests)
+      .set({ status: 'rejected' })
+      .where(eq(verificationRequests.telegramId, telegramId))
+      .returning();
+
+    if (!request) {
+      return bot.sendMessage(chatId, '❌ Verification request not found.');
+    }
+
+    // Notify the user
+    await bot.sendMessage(telegramId, '❌ Your verification request has been rejected. Please ensure you provided the correct Goated username and try again.');
+    return bot.sendMessage(chatId, `❌ Rejected verification request for ${request.goatedUsername}.`);
+  } catch (error) {
+    console.error('Error rejecting user:', error);
+    return bot.sendMessage(chatId, '❌ Error rejecting user.');
+  }
+});
 
   try {
     const [user] = await db
