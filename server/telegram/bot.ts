@@ -33,6 +33,8 @@ async function setupBotCommands() {
       { command: 'stats', description: '📊 Check your wager stats' },
       { command: 'race', description: '🏁 View your race position' },
       { command: 'leaderboard', description: '🏆 See top players' },
+      { command: 'play', description: '🎮 Play on Goated with our affiliate link' },
+      { command: 'website', description: '🌐 Visit GoatedVIPs.gg' },
       { command: 'help', description: '❓ Get help using the bot' }
     ];
 
@@ -98,6 +100,8 @@ ${msg.from?.username === 'xGoombas' ? `
 • /check_stats [username] - Check stats for a username
 • /race - Check your race position
 • /leaderboard - See top players
+• /play - Play on Goated with our affiliate link
+• /website - Visit GoatedVIPs.gg
 
 Need help? Contact @xGoombas for support.
 `;
@@ -1046,6 +1050,20 @@ bot.onText(/\/verify(?:\s+(.+))?/, handleVerify);
 bot.onText(/\/stats/, handleStats);
 bot.onText(/\/race/, handleRace);
 bot.onText(/\/leaderboard/, handleLeaderboard);
+bot.onText(/\/play/, async (msg) => {
+  const chatId = msg.chat.id;
+  await bot.sendMessage(chatId, 
+    '🎮 Click here to play on Goated:\nhttps://www.goated.com/r/goatedvips\n\n' +
+    '💰 Make sure to use our link to get the best rakeback and rewards!');
+});
+
+bot.onText(/\/website/, async (msg) => {
+  const chatId = msg.chat.id;
+  await bot.sendMessage(chatId, 
+    '🌐 Visit our website:\nhttps://goatedvips.gg\n\n' +
+    '📊 Check leaderboards, tips, and latest promotions!');
+});
+
 bot.on('callback_query', handleCallbackQuery);
 
 // Export bot instance for use in main server
