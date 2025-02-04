@@ -103,7 +103,8 @@ function transformLeaderboardData(data: any) {
       this_week: 0,
       this_month: entry.wagered || 0,
       all_time: entry.allTimeWagered || 0
-    }
+    },
+    position: entry.position
   }));
 }
 
@@ -452,15 +453,12 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
       return bot.sendMessage(chatId, 'No race data available at the moment. Please try again later.');
     }
 
-    // Sort by monthly wager and get top 10
-    const top10 = [...transformedData]
-      .sort((a, b) => b.wagered.this_month - a.wagered.this_month)
-      .slice(0, 10);
+    // Sort by position since it's already provided in the data
+    const top10 = transformedData.slice(0, 10);
 
     const leaderboard = top10
-      .map((user, index) => {
-        const position = index + 1;
-        return `${position}. ${user.username}\n   💰 $${user.wagered.this_month.toLocaleString()}`;
+      .map((user) => {
+        return `${user.position}. ${user.username}\n   💰 $${user.wagered.this_month.toLocaleString()}`;
       })
       .join('\n\n');
 
