@@ -64,7 +64,7 @@ function MobileNavLink({ href, label, onClose, isTitle = false }: { href: string
       }}
       className={`px-4 py-2.5 rounded-lg transition-colors duration-200 cursor-pointer ${
         isActive ? "bg-[#D7FF00]/10 text-[#D7FF00]" : "text-white hover:bg-[#2A2B31]"
-      } ${isTitle || isHome ? "text-lg font-bold" : "text-base"}`}
+      } ${isTitle || isHome ? "text-base font-bold" : "text-sm"}`}
     >
       {label}
     </motion.div>
@@ -457,7 +457,7 @@ export function Layout({ children }: { children: ReactNode }) {
                       transition={{ duration: 0.3 }}
                       className="flex flex-col gap-4 pt-8"
                     >
-                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-lg font-bold">MENU</div>
+                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-base font-bold">MENU</div>
                       <MobileNavLink href="/" label="HOME" onClose={() => setOpenMobile(false)} isTitle={true} />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-lg font-bold border-t border-[#2A2B31]/50 pt-6">EVENTS</div>
