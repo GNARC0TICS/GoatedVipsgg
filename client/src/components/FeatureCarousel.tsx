@@ -13,13 +13,24 @@ const useWagerTotal = () => {
   const { data } = useQuery({
     queryKey: ['affiliate-stats'],
     queryFn: async () => {
+      const lastUpdate = localStorage.getItem('lastWagerUpdate');
+      const lastTotal = localStorage.getItem('lastWagerTotal');
+      const now = new Date().getTime();
+      
+      if (lastUpdate && lastTotal && (now - parseInt(lastUpdate)) < 86400000) {
+        return parseInt(lastTotal);
+      }
+
       const response = await fetch('/api/affiliate/stats');
       const data = await response.json();
-      const total = data?.data?.all_time?.data?.reduce((sum: number, entry: any) => 
-        sum + (entry.wagered?.all_time || 0), 0);
-      return Math.floor(total || 0);
+      const total = Math.floor(data?.data?.all_time?.data?.reduce((sum: number, entry: any) => 
+        sum + (entry.wagered?.all_time || 0), 0) || 0);
+      
+      localStorage.setItem('lastWagerUpdate', now.toString());
+      localStorage.setItem('lastWagerTotal', total.toString());
+      return total;
     },
-    refetchInterval: 30000 // Refetch every 30 seconds
+    refetchInterval: 86400000 // Refetch every 24 hours
   });
   return data;
 };
