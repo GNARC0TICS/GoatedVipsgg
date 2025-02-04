@@ -81,31 +81,32 @@ setupBotCommands().catch(error => {
 // Add help command handler
 bot.onText(/\/help/, async (msg) => {
   const chatId = msg.chat.id;
-  const helpMessage = `🤖 *Welcome to Goated Stats Bot!*\n\n`;
+  
+  let message = `🤖 *Welcome to Goated Stats Bot\\!*\n\n`;
 
-  const adminMessage = msg.from?.username === 'xGoombas' ? 
-    `*Admin Commands:*\n` +
-    `/broadcast - Send message to all verified users\n` +
-    `/group_message - Send message to specific group\n` +
-    `/user_info - Get user information\n` +
-    `/pending - View pending verification requests\n` +
-    `/verify_user - Verify a user\n` +
-    `/reject_user - Reject a user verification request\n\n` : '';
+  if (msg.from?.username === 'xGoombas') {
+    message += `*Admin Commands:*\n`;
+    message += `• /broadcast \\- Send message to all users\n`;
+    message += `• /group\\_message \\- Send message to group\n`;
+    message += `• /user\\_info \\- Get user information\n`;
+    message += `• /pending \\- View verification requests\n`;
+    message += `• /verify\\_user \\- Verify a user\n`;
+    message += `• /reject\\_user \\- Reject a verification\n\n`;
+  }
 
-  const userMessage = 
-    `*Available Commands:*\n` +
-    `/start - Get started with the bot\n` +
-    `/verify - Link your Goated account\n` +
-    `/stats - View your wager statistics\n` +
-    `/check_stats - Check stats for a username\n` +
-    `/race - Check your race position\n` +
-    `/leaderboard - See top players\n` +
-    `/play - Play on Goated with our affiliate link\n` +
-    `/website - Visit GoatedVIPs.gg\n\n` +
-    `Need help? Contact @xGoombas for support.`;
+  message += `*Available Commands:*\n`;
+  message += `• /start \\- Get started with the bot\n`;
+  message += `• /verify \\- Link your Goated account\n`;
+  message += `• /stats \\- View your wager statistics\n`;
+  message += `• /check\\_stats \\- Check stats for username\n`;
+  message += `• /race \\- Check your race position\n`;
+  message += `• /leaderboard \\- See top players\n`;
+  message += `• /play \\- Play on Goated with our link\n`;
+  message += `• /website \\- Visit GoatedVIPs\\.gg\n\n`;
+  message += `Need help? Contact @xGoombas for support\\.`;
 
-  await bot.sendMessage(chatId, helpMessage + adminMessage + userMessage, { 
-    parse_mode: 'Markdown'
+  await bot.sendMessage(chatId, message, {
+    parse_mode: 'MarkdownV2'
   });
 });
 
