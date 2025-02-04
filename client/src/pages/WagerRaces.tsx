@@ -135,7 +135,18 @@ export default function WagerRaces() {
     10: 0.0175, // $7
   };
 
-  const getTrophyIcon = (rank: number) => {
+  const getLastUpdateTime = (timestamp?: string) => {
+  if (!timestamp) return 'recently';
+  const diff = Date.now() - new Date(timestamp).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+};
+
+const getTrophyIcon = (rank: number) => {
     switch (rank) {
       case 1:
         return <Crown className="h-8 w-8 text-yellow-400 animate-pulse" />;
@@ -360,19 +371,29 @@ export default function WagerRaces() {
                     {getTrophyIcon(2)}
                   </div>
                   <div className="text-center">
-                  <p className="text-xs md:text-base font-bold truncate text-white/90">
-                    {top10Players[1]?.name || "-"}
-                  </p>
-                  <p className="text-sm font-heading text-[#D7FF00] mt-2">
-                    ${getPrizeAmount(2).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-white/60 mt-1">
-                    $
-                    {getWagerAmount(
-                      top10Players[1] || { wagered: { this_month: 0 } },
-                    ).toLocaleString()}{" "}
-                    wagered
-                  </p>
+                    <p className="text-xs md:text-base font-bold truncate text-white/90">
+                      {top10Players[1]?.name || "-"}
+                    </p>
+                    <p className="text-sm font-heading text-[#D7FF00] mt-2">
+                      ${getPrizeAmount(2).toLocaleString()}
+                    </p>
+                    <div className="mt-2 bg-black/20 rounded-full h-2 w-full">
+                      <div 
+                        className="bg-[#D7FF00] h-full rounded-full transition-all duration-500"
+                        style={{ 
+                          width: `${Math.min(100, (getWagerAmount(top10Players[1] || { wagered: { this_month: 0 } }) / 10000) * 100)}%` 
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-white/60 mt-1 flex items-center justify-center gap-1">
+                      <TrendingUp className="h-3 w-3" />
+                      ${getWagerAmount(
+                        top10Players[1] || { wagered: { this_month: 0 } },
+                      ).toLocaleString()}
+                    </p>
+                    <p className="text-[10px] text-white/40 mt-1">
+                      Updated {getLastUpdateTime(top10Players[1]?.lastUpdate)}
+                    </p>
                   </div>
                 </div>
               </motion.div>
