@@ -706,6 +706,7 @@ function isGroupChat(chatId: number): boolean {
 async function handleStats(msg: TelegramBot.Message) {
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
+  const isSilentCommand = msg.text?.startsWith('/.');
   
   // Validate chat is allowed if it's a group
   if (chatId < 0 && !ALLOWED_GROUP_IDS.includes(chatId.toString())) {
@@ -756,10 +757,17 @@ All-time: $${userStats.wagered.all_time.toLocaleString()}`;
       return bot.sendMessage(chatId, message, { reply_markup: keyboard });
     }
 
+    // If silent command, send response as private message
+    if (isSilentCommand && msg.from) {
+      return bot.sendMessage(msg.from.id, message);
+    }
     return bot.sendMessage(chatId, message);
   } catch (error) {
     logDebug('Error in handleStats', error);
-    return bot.sendMessage(chatId, 'An error occurred while fetching your stats. Please try again later.');
+    const errorMsg = 'An error occurred while fetching your stats. Please try again later.';
+    return isSilentCommand && msg.from 
+      ? bot.sendMessage(msg.from.id, errorMsg)
+      : bot.sendMessage(chatId, errorMsg);
   }
 }
 
