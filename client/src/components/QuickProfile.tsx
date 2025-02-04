@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "./LoadingSpinner";
-import { Crown } from "lucide-react";
 
 interface QuickProfileProps {
   userId: string;
