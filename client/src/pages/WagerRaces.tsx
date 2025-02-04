@@ -41,6 +41,7 @@ type LeaderboardEntry = {
   uid: string;
   name: string;
   wagered: WageredData;
+  lastUpdate?: string;
 };
 
 export default function WagerRaces() {
@@ -377,14 +378,6 @@ const getTrophyIcon = (rank: number) => {
                     <p className="text-sm font-heading text-[#D7FF00] mt-2">
                       ${getPrizeAmount(2).toLocaleString()}
                     </p>
-                    <div className="mt-2 bg-black/20 rounded-full h-2 w-full">
-                      <div 
-                        className="bg-[#D7FF00] h-full rounded-full transition-all duration-500"
-                        style={{ 
-                          width: `${Math.min(100, (getWagerAmount(top10Players[1] || { wagered: { this_month: 0 } }) / 10000) * 100)}%` 
-                        }}
-                      />
-                    </div>
                     <p className="text-xs text-white/60 mt-1 flex items-center justify-center gap-1">
                       <TrendingUp className="h-3 w-3" />
                       ${getWagerAmount(
