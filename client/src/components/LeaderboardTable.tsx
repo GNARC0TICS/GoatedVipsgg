@@ -25,7 +25,7 @@ interface LeaderboardTableProps {
   timePeriod: TimePeriod;
 }
 
-export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
+export const LeaderboardTable = React.memo(function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const { data, isLoading, error, metadata, refetch } = useLeaderboard(timePeriod);

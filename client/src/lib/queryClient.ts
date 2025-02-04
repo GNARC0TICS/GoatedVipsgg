@@ -7,11 +7,11 @@ export const queryClient = new QueryClient({
         try {
           const cacheKey = Array.isArray(queryKey) ? queryKey.join('-') : queryKey;
           const cachedData = sessionStorage.getItem(cacheKey);
-          
+
           if (cachedData) {
             const { data, timestamp } = JSON.parse(cachedData);
-            const isStale = Date.now() - timestamp > 30000; // 30 seconds
-            
+            const isStale = Date.now() - timestamp > 60000; // Increased to 60 seconds
+
             if (!isStale) {
               return data;
             }
@@ -44,9 +44,9 @@ export const queryClient = new QueryClient({
           throw error;
         }
       },
-      refetchInterval: 30000, // Refetch every 30 seconds
+      refetchInterval: 60000, // Increased refetch interval to 60 seconds
       refetchOnWindowFocus: true,
-      staleTime: 30000, // Consider data stale after 30 seconds
+      staleTime: 60000, // Increased stale time to 60 seconds
       cacheTime: 300000, // Keep unused data in cache for 5 minutes
       retry: (failureCount, error) => {
         return failureCount < 3 && !error.message.includes('401');
