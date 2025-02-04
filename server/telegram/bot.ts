@@ -89,7 +89,7 @@ ${msg.from?.username === 'xGoombas' ? `
 • /user_info [telegram_id] - Get user information
 • /pending - View pending verification requests
 • /verify_user [telegram_id] - Verify a user
-• /reject_user [telegram_id] - Reject a verification request
+• /reject_user [telegram_id] - Reject a user verification request
 
 ` : ''}Here's what you can do:
 • /start - Get started with the bot
@@ -675,7 +675,7 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
 
         await bot.sendMessage(
           adminId,
-          `New verification request:\nTelegram User: ${msg.from?.username || 'Unknown'}\nGoated Username: ${goatedUsername}\nUID: ${providedUid}`,
+          `New verification request:\nTelegram User: ${msg.from?.username || 'Unknown'}\nGoated Username: ${goatedUsername}`,
           { reply_markup: keyboard }
         );
       }
@@ -707,7 +707,7 @@ async function handleStats(msg: TelegramBot.Message) {
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
   const isSilentCommand = msg.text?.startsWith('/.');
-  
+
   // Validate chat is allowed if it's a group
   if (chatId < 0 && !ALLOWED_GROUP_IDS.includes(chatId.toString())) {
     return bot.sendMessage(chatId, 'This bot is not authorized for use in this group.');
