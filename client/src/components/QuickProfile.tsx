@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "./LoadingSpinner";
+import { Crown } from "lucide-react";
 
 interface QuickProfileProps {
   userId: string;
@@ -35,6 +36,16 @@ export function QuickProfile({
   const { data: leaderboardData, isLoading } = useQuery({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
+    retry: 3,
+    refetchOnWindowFocus: false,
+    initialData: {
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] }
+      }
+    }
   });
 
   const stats = React.useMemo(() => {
