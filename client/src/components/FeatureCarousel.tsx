@@ -69,8 +69,9 @@ export const FeatureCarousel = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const wrap = (index: number) => {
-    if (index < 0) return announcements.length - 1;
-    if (index >= announcements.length) return 0;
+    const total = currentAnnouncements.length;
+    if (index < 0) return total - 1;
+    if (index >= total) return 0;
     return index;
   };
 
@@ -96,19 +97,20 @@ export const FeatureCarousel = () => {
     const offset = info.offset.x;
     const velocity = info.velocity.x;
     const width = window.innerWidth;
-    const dragThreshold = width * 0.1; // More sensitive threshold
-    const velocityThreshold = 50; // Lower velocity threshold
+    const dragThreshold = width * 0.1;
+    const velocityThreshold = 50;
 
     if (Math.abs(velocity) > velocityThreshold || Math.abs(offset) > dragThreshold) {
+      setIsPaused(true);
       if (offset > 0 || velocity > 0) {
         setDirection('prev');
-        setCurrentIndex((prev) => wrap(prev - 1));
+        setCurrentIndex((prev) => (prev === 0 ? currentAnnouncements.length - 1 : prev - 1));
       } else {
         setDirection('next');
-        setCurrentIndex((prev) => wrap(prev + 1));
+        setCurrentIndex((prev) => (prev === currentAnnouncements.length - 1 ? 0 : prev + 1));
       }
+      setTimeout(() => setIsPaused(false), 3000);
     } else {
-      // Spring back to center with physics
       dragX.set(0, {
         type: "spring",
         stiffness: 400,
