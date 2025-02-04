@@ -10,10 +10,8 @@ interface PageTransitionProps {
 }
 
 export function PageTransition({ children, isLoading = false }: PageTransitionProps) {
-  const [showContent, setShowContent] = useState(!isLoading);
-
   if (isLoading) {
-    return <PreLoader onLoadComplete={() => setShowContent(true)} />;
+    return <PreLoader onLoadComplete={() => null} />;
   }
 
   return (
