@@ -473,6 +473,11 @@ export function Layout({ children }: { children: ReactNode }) {
                         }
                         onClose={() => setOpenMobile(false)}
                       />
+                      <MobileNavLink
+                        href="/challenges"
+                        label="Challenges"
+                        onClose={() => setOpenMobile(false)}
+                      />
 
                       <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">GET STARTED</div>
                       <MobileNavLink href="/how-it-works" label="How It Works" onClose={() => setOpenMobile(false)} />
