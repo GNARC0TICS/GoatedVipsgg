@@ -95,17 +95,13 @@ function transformLeaderboardData(data: any) {
     return null;
   }
 
-  return data.data.participants.map(entry => ({
+  const transformedData = data.data.participants.map(entry => ({
     username: entry.name,
-    uid: entry.uid,
-    wagered: {
-      today: 0, // These values aren't provided in current race data
-      this_week: 0,
-      this_month: entry.wagered || 0,
-      all_time: entry.allTimeWagered || 0
-    },
+    wagered: entry.wagered,
     position: entry.position
   }));
+
+  return transformedData;
 }
 
 // Add prize pool constants to match web interface
@@ -453,12 +449,12 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
       return bot.sendMessage(chatId, 'No race data available at the moment. Please try again later.');
     }
 
-    // Sort by position since it's already provided in the data
+    // Sort by position and get top 10
     const top10 = transformedData.slice(0, 10);
 
     const leaderboard = top10
       .map((user) => {
-        return `${user.position}. ${user.username}\n   💰 $${user.wagered.this_month.toLocaleString()}`;
+        return `${user.position}. ${user.username}\n   💰 $${user.wagered.toLocaleString()}`;
       })
       .join('\n\n');
 
