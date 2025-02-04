@@ -81,32 +81,32 @@ setupBotCommands().catch(error => {
 // Add help command handler
 bot.onText(/\/help/, async (msg) => {
   const chatId = msg.chat.id;
-  const helpMessage = `
-🤖 *Welcome to Goated Stats Bot!*
+  const helpMessage = `🤖 *Welcome to Goated Stats Bot!*\n\n`;
 
-${msg.from?.username === 'xGoombas' ? `
-👑 *Admin Commands:*
-• /broadcast [message] - Send message to all verified users
-• /group_message [group_id] [message] - Send message to specific group
-• /user_info [telegram_id] - Get user information
-• /pending - View pending verification requests
-• /verify_user [telegram_id] - Verify a user
-• /reject_user [telegram_id] - Reject a user verification request
+  const adminMessage = msg.from?.username === 'xGoombas' ? 
+    `*Admin Commands:*\n` +
+    `/broadcast - Send message to all verified users\n` +
+    `/group_message - Send message to specific group\n` +
+    `/user_info - Get user information\n` +
+    `/pending - View pending verification requests\n` +
+    `/verify_user - Verify a user\n` +
+    `/reject_user - Reject a user verification request\n\n` : '';
 
-` : ''}Here's what you can do:
-• /start - Get started with the bot
-• /verify - Link your Goated account
-• /stats - View your wager statistics
-• /check_stats [username] - Check stats for a username
-• /race - Check your race position
-• /leaderboard - See top players
-• /play - Play on Goated with our affiliate link
-• /website - Visit GoatedVIPs.gg
+  const userMessage = 
+    `*Available Commands:*\n` +
+    `/start - Get started with the bot\n` +
+    `/verify - Link your Goated account\n` +
+    `/stats - View your wager statistics\n` +
+    `/check_stats - Check stats for a username\n` +
+    `/race - Check your race position\n` +
+    `/leaderboard - See top players\n` +
+    `/play - Play on Goated with our affiliate link\n` +
+    `/website - Visit GoatedVIPs.gg\n\n` +
+    `Need help? Contact @xGoombas for support.`;
 
-Need help? Contact @xGoombas for support.
-`;
-
-  await bot.sendMessage(chatId, helpMessage, { parse_mode: 'Markdown' });
+  await bot.sendMessage(chatId, helpMessage + adminMessage + userMessage, { 
+    parse_mode: 'Markdown'
+  });
 });
 
 // Check stats command with username parameter
