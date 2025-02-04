@@ -134,7 +134,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 <NavLink
                   href="/wager-races"
                   label={
-                    <div className="flex items-center gap-2 font-heading">
+                    <div className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300">
                       <span>MONTHLY RACE</span>
                       <div className="flex items-center gap-1">
                         <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
