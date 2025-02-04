@@ -3,6 +3,7 @@ import { db } from '@db';
 import { telegramUsers, verificationRequests } from '@db/schema/telegram';
 import { eq, desc, and } from 'drizzle-orm';
 import { API_CONFIG } from '../config/api';
+import { users } from '@db/schema'; // Import users schema to check usernames
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_TELEGRAM_IDS = process.env.ADMIN_TELEGRAM_IDS?.split(',') || [];
@@ -19,24 +20,35 @@ function logDebug(message: string, data?: any) {
   console.log(`[Telegram Bot] ${message}`, data ? JSON.stringify(data, null, 2) : '');
 }
 
-// Set up bot commands
+// Set up bot commands with proper descriptions
 async function setupBotCommands() {
   try {
-    await bot.setMyCommands([
-      { command: 'start', description: 'Start the bot and verify your account' },
-      { command: 'verify', description: 'Verify your Goated account' },
-      { command: 'stats', description: 'View your wager statistics' },
-      { command: 'race', description: 'Check your race position' },
-      { command: 'leaderboard', description: 'View the monthly race leaderboard' },
-    ]);
-    logDebug('Bot commands set up successfully');
+    // First, clear existing commands
+    await bot.deleteMyCommands();
+
+    // Set up new commands
+    const commands = [
+      { command: 'start', description: '🚀 Start the bot and verify your account' },
+      { command: 'verify', description: '🔐 Verify your Goated account' },
+      { command: 'stats', description: '📊 View your wager statistics' },
+      { command: 'race', description: '🏁 Check your race position' },
+      { command: 'leaderboard', description: '🏆 View the monthly race leaderboard' },
+    ];
+
+    await bot.setMyCommands(commands);
+
+    // Log success and verify commands are set
+    const currentCommands = await bot.getMyCommands();
+    logDebug('Bot commands set up successfully', currentCommands);
   } catch (error) {
     logDebug('Error setting up bot commands', error);
+    throw error; // Re-throw to ensure we know if setup fails
   }
 }
 
 // Initialize bot commands
 setupBotCommands();
+
 
 // Check if user is admin
 function isAdmin(telegramId: string): boolean {
@@ -171,16 +183,6 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
     return bot.sendMessage(chatId, 'Could not identify user.');
   }
 
-  // Check if already verified
-  const existingUser = await db.select()
-    .from(telegramUsers)
-    .where(eq(telegramUsers.telegramId, telegramId))
-    .execute();
-
-  if (existingUser?.[0]?.isVerified) {
-    return bot.sendMessage(chatId, 'Your account is already verified.');
-  }
-
   // If no username provided, ask for it
   if (!match?.[1]) {
     return bot.sendMessage(chatId, 
@@ -191,68 +193,75 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
   const goatedUsername = match[1].trim();
 
   try {
-    // Verify the username exists in leaderboard data
+    // First check our database for the username
+    const dbUser = await db.query.users.findFirst({
+      where: eq(users.username, goatedUsername)
+    });
+
+    // Then check leaderboard data as backup
     const leaderboardData = await fetchLeaderboardData();
     const transformedData = transformLeaderboardData(leaderboardData);
-    const userExists = transformedData?.some(user => user.username.toLowerCase() === goatedUsername.toLowerCase());
-
-    if (!userExists) {
-      return bot.sendMessage(chatId, 
-        'Could not find your username in our system.\n' +
-        'Please ensure you provided the correct Goated username.');
-    }
-
-    // Create or update verification request
-    await db.insert(verificationRequests)
-      .values({
-        telegramId,
-        goatedUsername,
-        status: 'pending'
-      })
-      .onConflictDoUpdate({
-        target: [verificationRequests.telegramId],
-        set: { goatedUsername, status: 'pending' }
-      })
-      .execute();
-
-    // Create or update telegram user
-    await db.insert(telegramUsers)
-      .values({
-        telegramId,
-        goatedUsername,
-        isVerified: false
-      })
-      .onConflictDoUpdate({
-        target: [telegramUsers.telegramId],
-        set: { goatedUsername }
-      })
-      .execute();
-
-    // Notify admins about new verification request
-    for (const adminId of ADMIN_TELEGRAM_IDS) {
-      const keyboard = {
-        inline_keyboard: [
-          [
-            { text: '✅ Approve', callback_data: `verify_approve_${telegramId}` },
-            { text: '❌ Reject', callback_data: `verify_reject_${telegramId}` }
-          ]
-        ]
-      };
-
-      await bot.sendMessage(
-        adminId,
-        `New verification request:\nTelegram User: ${msg.from?.username || 'Unknown'}\nGoated Username: ${goatedUsername}`,
-        { reply_markup: keyboard }
-      );
-    }
-
-    return bot.sendMessage(
-      chatId,
-      'Verification request submitted!\n' +
-      'An admin will review your request and verify your account.\n' +
-      'You will be notified once your account is verified.'
+    const leaderboardUser = transformedData?.some(user => 
+      user.username.toLowerCase() === goatedUsername.toLowerCase()
     );
 
+    // If user exists in either source, proceed with verification
+    if (dbUser || leaderboardUser) {
+      // Create or update verification request
+      await db.insert(verificationRequests)
+        .values({
+          telegramId,
+          goatedUsername,
+          status: 'pending',
+          requestedAt: new Date()
+        })
+        .onConflictDoUpdate({
+          target: [verificationRequests.telegramId],
+          set: { goatedUsername, status: 'pending', requestedAt: new Date() }
+        });
+
+      // Create or update telegram user
+      await db.insert(telegramUsers)
+        .values({
+          telegramId,
+          goatedUsername,
+          isVerified: false,
+          createdAt: new Date()
+        })
+        .onConflictDoUpdate({
+          target: [telegramUsers.telegramId],
+          set: { goatedUsername }
+        });
+
+      // Notify admins about new verification request
+      for (const adminId of ADMIN_TELEGRAM_IDS) {
+        const keyboard = {
+          inline_keyboard: [
+            [
+              { text: '✅ Approve', callback_data: `verify_approve_${telegramId}` },
+              { text: '❌ Reject', callback_data: `verify_reject_${telegramId}` }
+            ]
+          ]
+        };
+
+        await bot.sendMessage(
+          adminId,
+          `New verification request:\nTelegram User: ${msg.from?.username || 'Unknown'}\nGoated Username: ${goatedUsername}`,
+          { reply_markup: keyboard }
+        );
+      }
+
+      return bot.sendMessage(
+        chatId,
+        'Verification request submitted!\n' +
+        'An admin will review your request and verify your account.\n' +
+        'You will be notified once your account is verified.'
+      );
+    } else {
+      return bot.sendMessage(chatId, 
+        'Could not find your username in our system.\n' +
+        'Please ensure you provided the correct Goated username and try again.');
+    }
   } catch (error) {
     logDebug('Error in handleVerify', error);
     return bot.sendMessage(chatId, 'An error occurred while processing your verification request. Please try again later.');
@@ -436,6 +445,11 @@ bot.onText(/\/stats/, handleStats);
 bot.onText(/\/race/, handleRace);
 bot.onText(/\/leaderboard/, handleLeaderboard);
 bot.on('callback_query', handleCallbackQuery);
+
+// Initialize bot
+setupBotCommands().catch(error => {
+  console.error('Failed to initialize bot commands:', error);
+});
 
 // Export bot instance for use in main server
 export { bot };
