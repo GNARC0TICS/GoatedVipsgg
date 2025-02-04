@@ -182,19 +182,18 @@ export default function WagerRaces() {
         <div className="flex flex-col gap-8">
           {/* Header Section */}
           <div className="relative">
-            <div
-              className="absolute inset-0 opacity-50"
-            >
+            <div className="absolute inset-0 opacity-50">
               <video
                 className="w-full h-full object-cover"
                 autoPlay
                 loop
                 muted
                 playsInline
+                poster="/images/preload.PNG"
               >
                 <source src="/images/RACEFLAG.MP4" type="video/mp4" />
               </video>
-            ></div>
+            </div>
             <div className="relative z-10 py-12 px-4 text-center">
               <div className="flex justify-center gap-4 mb-8">
                 <Button
