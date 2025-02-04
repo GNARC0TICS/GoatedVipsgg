@@ -8,6 +8,13 @@ import type { TimePeriod } from "@/hooks/use-leaderboard";
 export default function Leaderboard() {
   const [location] = useLocation();
   const [period, setPeriod] = useState<TimePeriod>("today");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading time for data fetch
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, [period]);
 
   // Update period based on URL parameters
   useEffect(() => {
@@ -39,7 +46,8 @@ export default function Leaderboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#14151A]">
+    <PageTransition isLoading={isLoading}>
+      <div className="min-h-screen bg-[#14151A]">
       <main className="container mx-auto px-4 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -95,5 +103,6 @@ export default function Leaderboard() {
         </motion.div>
       </main>
     </div>
+    </PageTransition>
   );
 }
