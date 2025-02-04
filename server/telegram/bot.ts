@@ -157,10 +157,10 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
     }
 
     const message = `📊 Stats for ${userStats.name}:\n
-Monthly Wager: $${userStats.wagered.toLocaleString()}
-Weekly Wager: $${userStats.wagered.toLocaleString()}
-Daily Wager: $${userStats.wagered.toLocaleString()}
-All-time Wager: $${userStats.wagered.toLocaleString()}`;
+Monthly Wager: $${(userStats.wagered?.this_month || 0).toLocaleString()}
+Weekly Wager: $${(userStats.wagered?.this_week || 0).toLocaleString()}
+Daily Wager: $${(userStats.wagered?.today || 0).toLocaleString()}
+All-time Wager: $${(userStats.wagered?.all_time || 0).toLocaleString()}`;
 
     return bot.sendMessage(chatId, message);
   } catch (error) {
