@@ -95,13 +95,8 @@ function transformLeaderboardData(data: any) {
     return null;
   }
 
-  const transformedData = data.data.participants.map(entry => ({
-    username: entry.name,
-    wagered: entry.wagered,
-    position: entry.position
-  }));
-
-  return transformedData;
+  // Return array directly since we know participants exists and is an array
+  return data.data.participants;
 }
 
 // Add prize pool constants to match web interface
@@ -433,6 +428,7 @@ ${nextPositionUser
   }
 }
 
+// Handle leaderboard command
 async function handleLeaderboard(msg: TelegramBot.Message) {
   const chatId = msg.chat.id;
 
@@ -443,18 +439,17 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
       return bot.sendMessage(chatId, 'The leaderboard is currently unavailable. Please try again in a few minutes.');
     }
 
-    const transformedData = transformLeaderboardData(leaderboardData);
+    const participants = transformLeaderboardData(leaderboardData);
 
-    if (!transformedData || transformedData.length === 0) {
+    if (!participants || participants.length === 0) {
       return bot.sendMessage(chatId, 'No race data available at the moment. Please try again later.');
     }
 
-    // Sort by position and get top 10
-    const top10 = transformedData.slice(0, 10);
-
-    const leaderboard = top10
+    // Use participants directly since they already have the data structure we want
+    const leaderboard = participants
+      .slice(0, 10)
       .map((user) => {
-        return `${user.position}. ${user.username}\n   💰 $${user.wagered.toLocaleString()}`;
+        return `${user.position}. ${user.name}\n   💰 $${user.wagered.toLocaleString()}`;
       })
       .join('\n\n');
 
