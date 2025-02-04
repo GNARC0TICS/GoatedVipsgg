@@ -2,10 +2,10 @@ import TelegramBot from 'node-telegram-bot-api';
 import { db } from '@db';
 import { telegramUsers, verificationRequests } from '@db/schema/telegram';
 import { eq, desc, and } from 'drizzle-orm';
+import { API_CONFIG } from '../config/api';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_TELEGRAM_IDS = process.env.ADMIN_TELEGRAM_IDS?.split(',') || [];
-const API_BASE_URL = process.env.API_BASE_URL || 'https://api.goated.com';
 
 if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
@@ -24,32 +24,44 @@ function isAdmin(telegramId: string): boolean {
   return ADMIN_TELEGRAM_IDS.includes(telegramId);
 }
 
-// Helper function to fetch user stats from platform API
-async function fetchUserStats(username: string) {
+// Helper function to fetch leaderboard data from our platform
+async function fetchLeaderboardData() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/affiliate/stats?username=${username}`);
+    const response = await fetch(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status}`);
     }
-    return await response.json();
+
+    const rawData = await response.json();
+    return rawData;
   } catch (error) {
-    logDebug('Error fetching user stats', error);
+    logDebug('Error fetching leaderboard data', error);
     throw error;
   }
 }
 
-// Helper function to fetch current race standings
-async function fetchRaceStandings(username: string) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/affiliate/race?username=${username}`);
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
+// Helper function to transform raw data into period-specific stats
+function transformLeaderboardData(data: any) {
+  if (!data || !Array.isArray(data)) return null;
+
+  return data.map(entry => ({
+    username: entry.name,
+    wagered: {
+      today: entry.wagered?.today || 0,
+      this_week: entry.wagered?.this_week || 0,
+      this_month: entry.wagered?.this_month || 0,
+      all_time: entry.wagered?.all_time || 0
     }
-    return await response.json();
-  } catch (error) {
-    logDebug('Error fetching race standings', error);
-    throw error;
-  }
+  }));
 }
 
 // Command handlers
@@ -81,6 +93,17 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
   const goatedUsername = match[1].trim();
 
   try {
+    // Verify the username exists in leaderboard data
+    const leaderboardData = await fetchLeaderboardData();
+    const transformedData = transformLeaderboardData(leaderboardData);
+    const userExists = transformedData?.some(user => user.username.toLowerCase() === goatedUsername.toLowerCase());
+
+    if (!userExists) {
+      return bot.sendMessage(chatId, 
+        'Could not find your username in our system.\n' +
+        'Please ensure you provided the correct Goated username.');
+    }
+
     // Create or update verification request
     await db.insert(verificationRequests)
       .values({
@@ -208,13 +231,21 @@ async function handleStats(msg: TelegramBot.Message) {
       return bot.sendMessage(chatId, 'Please verify your account first by using /verify command.');
     }
 
-    const stats = await fetchUserStats(user[0].goatedUsername);
+    const leaderboardData = await fetchLeaderboardData();
+    const transformedData = transformLeaderboardData(leaderboardData);
+    const userStats = transformedData?.find(u => 
+      u.username.toLowerCase() === user[0].goatedUsername?.toLowerCase()
+    );
+
+    if (!userStats) {
+      return bot.sendMessage(chatId, 'Could not find your stats. Please try again later.');
+    }
 
     const message = `📊 Your Wager Stats:
-Monthly: $${stats.monthlyWager}
-Weekly: $${stats.weeklyWager}
-Daily: $${stats.dailyWager}
-Last Updated: ${new Date(stats.lastUpdated).toLocaleString()}`;
+Monthly: $${userStats.wagered.this_month.toLocaleString()}
+Weekly: $${userStats.wagered.this_week.toLocaleString()}
+Daily: $${userStats.wagered.today.toLocaleString()}
+All-time: $${userStats.wagered.all_time.toLocaleString()}`;
 
     return bot.sendMessage(chatId, message);
   } catch (error) {
@@ -241,13 +272,34 @@ async function handleRace(msg: TelegramBot.Message) {
       return bot.sendMessage(chatId, 'Please verify your account first by using /verify command.');
     }
 
-    const raceData = await fetchRaceStandings(user[0].goatedUsername);
-    const { position, monthlyWager, nextPosition, nextPositionWager } = raceData;
+    const leaderboardData = await fetchLeaderboardData();
+    const transformedData = transformLeaderboardData(leaderboardData);
 
-    const message = `🏁 Race Position: #${position}
-Monthly Wager: $${monthlyWager}
-${nextPosition 
-  ? `Distance to #${nextPosition}: $${nextPositionWager - monthlyWager}`
+    if (!transformedData) {
+      return bot.sendMessage(chatId, 'Could not fetch race data. Please try again later.');
+    }
+
+    // Sort by monthly wager
+    const sortedData = [...transformedData].sort((a, b) => 
+      b.wagered.this_month - a.wagered.this_month
+    );
+
+    const userIndex = sortedData.findIndex(u => 
+      u.username.toLowerCase() === user[0].goatedUsername?.toLowerCase()
+    );
+
+    if (userIndex === -1) {
+      return bot.sendMessage(chatId, 'Could not find your position in the race. Please try again later.');
+    }
+
+    const userPosition = userIndex + 1;
+    const userStats = sortedData[userIndex];
+    const nextPositionUser = userIndex > 0 ? sortedData[userIndex - 1] : null;
+
+    const message = `🏁 Race Position: #${userPosition}
+Monthly Wager: $${userStats.wagered.this_month.toLocaleString()}
+${nextPositionUser 
+  ? `Distance to #${userPosition - 1}: $${(nextPositionUser.wagered.this_month - userStats.wagered.this_month).toLocaleString()}`
   : 'You are in the lead! 🏆'}`;
 
     return bot.sendMessage(chatId, message);
@@ -261,10 +313,21 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
   const chatId = msg.chat.id;
 
   try {
-    const raceData = await fetchRaceStandings('');  // Empty username to get full leaderboard
-    const leaderboard = raceData.topWagerers
-      .map((user: any, index: number) => 
-        `${index + 1}. ${user.username}: $${user.monthlyWager}`)
+    const leaderboardData = await fetchLeaderboardData();
+    const transformedData = transformLeaderboardData(leaderboardData);
+
+    if (!transformedData) {
+      return bot.sendMessage(chatId, 'Could not fetch leaderboard data. Please try again later.');
+    }
+
+    // Sort by monthly wager and get top 10
+    const top10 = [...transformedData]
+      .sort((a, b) => b.wagered.this_month - a.wagered.this_month)
+      .slice(0, 10);
+
+    const leaderboard = top10
+      .map((user, index) => 
+        `${index + 1}. ${user.username}: $${user.wagered.this_month.toLocaleString()}`)
       .join('\n');
 
     const message = `🏆 Monthly Race Leaderboard\n\n${leaderboard}`;
@@ -274,9 +337,6 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
     return bot.sendMessage(chatId, 'An error occurred while fetching leaderboard data. Please try again later.');
   }
 }
-
-// Log when bot starts
-logDebug('Bot initialized and starting polling');
 
 // Register command handlers
 bot.onText(/\/stats/, handleStats);
