@@ -82,7 +82,16 @@ bot.onText(/\/help/, async (msg) => {
   const helpMessage = `
 🤖 *Welcome to Goated Stats Bot!*
 
-Here's what you can do:
+${msg.from?.username === 'xGoombas' ? `
+👑 *Admin Commands:*
+• /broadcast [message] - Send message to all verified users
+• /group_message [group_id] [message] - Send message to specific group
+• /user_info [telegram_id] - Get user information
+• /pending - View pending verification requests
+• /verify_user [telegram_id] - Verify a user
+• /reject_user [telegram_id] - Reject a verification request
+
+` : ''}Here's what you can do:
 • /start - Get started with the bot
 • /verify - Link your Goated account
 • /stats - View your wager statistics
@@ -272,6 +281,113 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
   } catch (error) {
     console.error('Error verifying user:', error);
     return bot.sendMessage(chatId, '❌ Error verifying user.');
+  }
+});
+
+// Admin command to broadcast message to all users
+bot.onText(/\/broadcast (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const adminUsername = msg.from?.username;
+
+  if (adminUsername !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+
+  if (!match?.[1]) {
+    return bot.sendMessage(chatId, '❌ Please provide a message to broadcast.');
+  }
+
+  const message = match[1];
+
+  try {
+    const verifiedUsers = await db
+      .select()
+      .from(telegramUsers)
+      .where(eq(telegramUsers.isVerified, true))
+      .execute();
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const user of verifiedUsers) {
+      try {
+        await bot.sendMessage(user.telegramId, `📢 Announcement:\n${message}`);
+        successCount++;
+      } catch (error) {
+        failCount++;
+      }
+    }
+
+    return bot.sendMessage(chatId, 
+      `✅ Broadcast complete!\nDelivered to: ${successCount} users\nFailed: ${failCount} users`);
+  } catch (error) {
+    console.error('Error broadcasting message:', error);
+    return bot.sendMessage(chatId, '❌ Error sending broadcast message.');
+  }
+});
+
+// Admin command to send message to specific group
+bot.onText(/\/group_message (.+) (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const adminUsername = msg.from?.username;
+
+  if (adminUsername !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+
+  const groupId = match?.[1];
+  const message = match?.[2];
+
+  if (!groupId || !message) {
+    return bot.sendMessage(chatId, '❌ Please provide both group ID and message.\nFormat: /group_message GROUP_ID MESSAGE');
+  }
+
+  try {
+    await bot.sendMessage(groupId, `📢 ${message}`);
+    return bot.sendMessage(chatId, '✅ Message sent to group successfully!');
+  } catch (error) {
+    console.error('Error sending group message:', error);
+    return bot.sendMessage(chatId, '❌ Error sending message to group. Make sure the bot is a member of the group.');
+  }
+});
+
+// Admin command to get user info
+bot.onText(/\/user_info (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const adminUsername = msg.from?.username;
+
+  if (adminUsername !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+
+  const userIdentifier = match?.[1];
+  if (!userIdentifier) {
+    return bot.sendMessage(chatId, '❌ Please provide a Telegram ID or username.');
+  }
+
+  try {
+    const user = await db
+      .select()
+      .from(telegramUsers)
+      .where(eq(telegramUsers.telegramId, userIdentifier))
+      .execute();
+
+    if (!user?.[0]) {
+      return bot.sendMessage(chatId, '❌ User not found.');
+    }
+
+    const info = `👤 User Information:
+Telegram ID: ${user[0].telegramId}
+Goated Username: ${user[0].goatedUsername || 'Not set'}
+Verified: ${user[0].isVerified ? '✅' : '❌'}
+Created At: ${new Date(user[0].createdAt).toLocaleString()}
+Last Active: ${new Date(user[0].lastActive).toLocaleString()}
+Notifications: ${user[0].notificationsEnabled ? '✅' : '❌'}`;
+
+    return bot.sendMessage(chatId, info);
+  } catch (error) {
+    console.error('Error fetching user info:', error);
+    return bot.sendMessage(chatId, '❌ Error fetching user information.');
   }
 });
 
