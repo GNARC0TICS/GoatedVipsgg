@@ -326,6 +326,103 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
   }
 });
 
+// Helper function to reformat Goated links
+function reformatGoatedLinks(text: string): string {
+  // Match any Goated.com URL
+  const goatedUrlRegex = /https?:\/\/(www\.)?goated\.com\/[^\s]*/gi;
+  return text.replace(goatedUrlRegex, (match) => {
+    // Keep the original URL if it's already our affiliate link
+    if (match.includes('/r/goatedvips')) {
+      return match;
+    }
+    // Replace with our affiliate link
+    return 'https://www.goated.com/r/goatedvips';
+  });
+}
+
+// Admin command to set up channel forwarding
+bot.onText(/\/setup_forwarding (@?\w+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const adminUsername = msg.from?.username;
+  const channelUsername = match?.[1].replace('@', '');
+
+  if (adminUsername !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+
+  if (!channelUsername) {
+    return bot.sendMessage(chatId, 
+      '❌ Please provide the channel username.\n' +
+      'Example: /setup_forwarding @channelname');
+  }
+
+  try {
+    // Store the forwarding configuration
+    const forwardingConfig = {
+      sourceChannel: channelUsername,
+      targetGroups: ALLOWED_GROUP_IDS
+    };
+
+    // Set up message listener for the channel
+    bot.on('channel_post', async (post) => {
+      if (post.chat.username?.toLowerCase() === channelUsername.toLowerCase()) {
+        try {
+          // Process message text if present
+          let messageText = post.text || '';
+          if (messageText) {
+            messageText = reformatGoatedLinks(messageText);
+          }
+
+          // Forward to all allowed groups
+          for (const groupId of ALLOWED_GROUP_IDS) {
+            if (post.text) {
+              // If there's text, send reformatted message
+              await bot.sendMessage(groupId, messageText, {
+                parse_mode: 'HTML',
+                disable_web_page_preview: false
+              });
+            }
+            // Forward media content if present
+            if (post.photo || post.video || post.document || post.animation) {
+              await bot.forwardMessage(groupId, post.chat.id, post.message_id);
+            }
+          }
+        } catch (error) {
+          console.error('Error forwarding message:', error);
+          await bot.sendMessage(chatId, '❌ Failed to forward message to some groups.');
+        }
+      }
+    });
+
+    return bot.sendMessage(chatId, 
+      `✅ Successfully set up forwarding from @${channelUsername}\n` +
+      `Messages will be forwarded to ${ALLOWED_GROUP_IDS.length} group(s)\n` +
+      `All Goated.com links will be automatically reformatted with our affiliate link.`);
+  } catch (error) {
+    console.error('Error setting up channel forwarding:', error);
+    return bot.sendMessage(chatId, 
+      '❌ Error setting up forwarding. Please ensure:\n' +
+      '1. The channel username is correct\n' +
+      '2. The channel is public\n' +
+      '3. The bot has access to read messages');
+  }
+});
+
+// Admin command to list active forwardings
+bot.onText(/\/list_forwardings/, async (msg) => {
+  const chatId = msg.chat.id;
+  const adminUsername = msg.from?.username;
+
+  if (adminUsername !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+
+  return bot.sendMessage(chatId,
+    '📋 Active Forwarding Configuration:\n\n' +
+    `Target Groups: ${ALLOWED_GROUP_IDS.join(', ')}\n` +
+    'All messages are forwarded in real-time with affiliate links reformatted.');
+});
+
 // Admin command to broadcast to all groups
 bot.onText(/\/broadcast_groups (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
