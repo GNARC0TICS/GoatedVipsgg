@@ -7,7 +7,8 @@ import { sql } from "drizzle-orm";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
-import { initializeAdmin } from "./middleware/admin"; // Added import
+import { initializeAdmin } from "./middleware/admin";
+import { bot } from './telegram/bot'; // Import the Telegram bot
 
 const execAsync = promisify(exec);
 const app = express();
@@ -97,13 +98,16 @@ async function startServer() {
     await checkDatabase();
     await cleanupPort(); 
 
-    registerRoutes(app); //Assuming setupRoutes is registerRoutes
-
-    // Initialize admin user
+    registerRoutes(app);
     initializeAdmin().catch(console.error);
 
-    const server = createServer(app); //Changed to use createServer for consistency
+    // Initialize Telegram bot
+    log("Initializing Telegram bot...");
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+      throw new Error('TELEGRAM_BOT_TOKEN must be provided');
+    }
 
+    const server = createServer(app);
 
     if (app.get("env") === "development") {
       await setupVite(app, server);
@@ -127,6 +131,7 @@ async function startServer() {
       })
       .on("listening", () => {
         log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+        log('Telegram bot started successfully');
       });
 
   } catch (error) {
@@ -135,13 +140,16 @@ async function startServer() {
   }
 }
 
+// Add Telegram bot shutdown handling
 process.on('SIGTERM', () => {
   log('Received SIGTERM signal. Shutting down gracefully...');
+  bot.stopPolling(); // Stop the Telegram bot
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   log('Received SIGINT signal. Shutting down gracefully...');
+  bot.stopPolling(); // Stop the Telegram bot
   process.exit(0);
 });
 
