@@ -55,7 +55,15 @@ export function QuickProfile({
           ?.wagered.all_time || 0,
     };
 
-    return { wagered: userStats };
+    const position = {
+      weekly: leaderboardData.data.weekly.data.findIndex((p) => p.uid === userId) + 1 || undefined,
+      monthly: leaderboardData.data.monthly.data.findIndex((p) => p.uid === userId) + 1 || undefined
+    };
+
+    return { 
+      wagered: userStats,
+      position
+    };
   }, [leaderboardData, userId]);
 
   return (
