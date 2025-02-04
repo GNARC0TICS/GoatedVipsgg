@@ -7,8 +7,25 @@ import {
   PanInfo,
 } from "framer-motion";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+
+const useWagerTotal = () => {
+  const { data } = useQuery({
+    queryKey: ['affiliate-stats'],
+    queryFn: async () => {
+      const response = await fetch('/api/affiliate/stats');
+      const data = await response.json();
+      const total = data?.data?.all_time?.data?.reduce((sum: number, entry: any) => 
+        sum + (entry.wagered?.all_time || 0), 0);
+      return Math.floor(total || 0);
+    },
+    refetchInterval: 30000 // Refetch every 30 seconds
+  });
+  return data;
+};
 
 const announcements = [
+  { text: `+${useWagerTotal()?.toLocaleString() || '0'} WAGERED`, link: "/leaderboard" },
   { text: "WAGER RACES", link: "/wager-races" },
   { text: "BONUS CODES", link: "/bonus-codes" },
   { text: "AFFILIATE REWARDS", link: "/vip-program" },
