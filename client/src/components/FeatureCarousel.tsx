@@ -101,15 +101,13 @@ export const FeatureCarousel = () => {
     const velocityThreshold = 50;
 
     if (Math.abs(velocity) > velocityThreshold || Math.abs(offset) > dragThreshold) {
-      setIsPaused(true);
       if (offset > 0 || velocity > 0) {
         setDirection('prev');
-        setCurrentIndex((prev) => (prev === 0 ? currentAnnouncements.length - 1 : prev - 1));
+        setCurrentIndex((prev) => wrap(prev - 1));
       } else {
         setDirection('next');
-        setCurrentIndex((prev) => (prev === currentAnnouncements.length - 1 ? 0 : prev + 1));
+        setCurrentIndex((prev) => wrap(prev + 1));
       }
-      setTimeout(() => setIsPaused(false), 3000);
     } else {
       dragX.set(0, {
         type: "spring",
@@ -128,19 +126,7 @@ export const FeatureCarousel = () => {
     return () => clearInterval(interval);
   }, [isDragging, isPaused]);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener('mouseenter', () => setIsPaused(true));
-      container.addEventListener('mouseleave', () => setIsPaused(false));
-    }
-    return () => {
-      if (container) {
-        container.removeEventListener('mouseenter', () => setIsPaused(true));
-        container.removeEventListener('mouseleave', () => setIsPaused(false));
-      }
-    };
-  }, []);
+  
 
   const handleClick = (link: string) => {
     if (!isDragging) {
