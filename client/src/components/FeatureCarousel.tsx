@@ -46,10 +46,13 @@ const useWagerTotal = () => {
   return data;
 };
 
-const announcements = [
-  { text: `+${useWagerTotal()?.toLocaleString() || '0'} WAGERED`, link: "/leaderboard" },
-  { text: "WAGER RACES", link: "/wager-races" },
-  { text: "BONUS CODES", link: "/bonus-codes" },
+const FeatureCarousel = () => {
+  const totalWager = useWagerTotal();
+  
+  const announcements = [
+    { text: `+${totalWager?.toLocaleString() || '0'} WAGERED`, link: "/leaderboard" },
+    { text: "WAGER RACES", link: "/wager-races" },
+    { text: "BONUS CODES", link: "/bonus-codes" },
   { text: "AFFILIATE REWARDS", link: "/vip-program" },
   { text: "TELEGRAM GROUP", link: "/telegram" },
   { text: "AIRDROP NEWS", link: "/goated-token" },
