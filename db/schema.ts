@@ -10,6 +10,24 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
+import {
+  telegramUsers,
+  verificationRequests,
+  challenges,
+  challengeEntries,
+  bonusCodes,
+  bonusCodeClaims
+} from './schema/telegram';
+
+// Re-export telegram schemas
+export {
+  telegramUsers,
+  verificationRequests,
+  challenges,
+  challengeEntries,
+  bonusCodes,
+  bonusCodeClaims
+};
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
