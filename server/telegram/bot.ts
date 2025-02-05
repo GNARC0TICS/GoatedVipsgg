@@ -1,13 +1,13 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { db } from '@db';
-import { telegramUsers, verificationRequests, bonusCodes } from '@db/schema/telegram';
-import { eq, and } from 'drizzle-orm';
+import { telegramUsers, verificationRequests } from '@db/schema/telegram';
+import { eq } from 'drizzle-orm';
 import { API_CONFIG } from '../config/api';
 import { users } from '@db/schema';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_TELEGRAM_IDS = ['1689953605'];
-const ALLOWED_GROUP_IDS = ['-1002169964764'];
+const ALLOWED_GROUP_IDS = process.env.ALLOWED_GROUP_IDS?.split(',') || [];
 
 // State management for bonus code creation
 const bonusCodeState = new Map();
@@ -16,11 +16,8 @@ if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
 
-// Create a bot instance with polling and privacy mode
-const bot = new TelegramBot(token, { 
-  polling: false,
-  filepath: false // Disable file downloads for security
-});
+// Create a bot instance with polling
+const bot = new TelegramBot(token, { polling: false });
 
 // Cleanup function to stop polling
 async function stopBot() {
@@ -255,9 +252,6 @@ All-time Wager: $${(userStats.wagered?.all_time || 0).toLocaleString()}`;
   }
 });
 
-// Bonus code state cleanup timer (5 minutes)
-const BONUS_CODE_STATE_TIMEOUT = 5 * 60 * 1000;
-
 // Create bonus code command
 bot.onText(/\/createbonus/, async (msg) => {
   const chatId = msg.chat.id;
@@ -267,34 +261,10 @@ bot.onText(/\/createbonus/, async (msg) => {
     return bot.sendMessage(chatId, '❌ Only authorized users can create bonus codes.');
   }
 
-  // Clear any existing state
-  if (bonusCodeState.has(chatId)) {
-    clearTimeout(bonusCodeState.get(chatId).timeout);
-    bonusCodeState.delete(chatId);
-  }
+  const bonusCodeState = new Map();
+  bonusCodeState.set(chatId, { step: 'code' });
 
-  // Set state with timeout
-  const timeout = setTimeout(() => {
-    if (bonusCodeState.has(chatId)) {
-      bonusCodeState.delete(chatId);
-      bot.sendMessage(chatId, '⌛ Bonus code creation timed out. Please start again with /createbonus');
-    }
-  }, BONUS_CODE_STATE_TIMEOUT);
-
-  bonusCodeState.set(chatId, { 
-    step: 'code',
-    timeout
-  });
-
-  const message = '🎁 Let\'s create a bonus code!\n\n' +
-    'Enter the bonus code (e.g. VIPSG2EZ)\n' +
-    'Rules:\n' +
-    '- Use only letters and numbers\n' +
-    '- No spaces allowed\n' +
-    '- Keep it memorable\n' +
-    '- Code must be unique\n\n' +
-    '⌛ You have 5 minutes to complete this process';
-
+  const message = '🎁 Let\'s create a bonus code!\n\nEnter the bonus code (e.g. VIPSG2EZ):';
   return bot.sendMessage(chatId, message);
 });
 
@@ -308,132 +278,68 @@ bot.on('message', async (msg) => {
   const text = msg.text;
   if (!text) return;
 
-  try {
-    switch (state.step) {
-      case 'code':
-        if (!/^[A-Za-z0-9]{4,16}$/.test(text)) {
-          await bot.sendMessage(chatId, '❌ Invalid code format. Use 4-16 letters and numbers only.');
-          return;
-        }
+  switch (state.step) {
+    case 'code':
+      state.code = text;
+      state.step = 'wagerAmount';
+      await bot.sendMessage(chatId, '💰 Enter the required wager amount (in $):');
+      break;
 
-        // Check for duplicate code
-        const existingCode = await db
-          .select()
-          .from(bonusCodes)
-          .where(eq(bonusCodes.code, text.toUpperCase()))
-          .execute();
+    case 'wagerAmount':
+      state.wagerAmount = parseFloat(text);
+      state.step = 'wagerPeriod';
+      await bot.sendMessage(chatId, '⏳ Enter the wager period in days (1, 7, or 30):');
+      break;
 
-        if (existingCode.length > 0) {
-          await bot.sendMessage(chatId, '❌ This code already exists. Please choose a different code.');
-          return;
-        }
+    case 'wagerPeriod':
+      state.wagerPeriod = parseInt(text);
+      state.step = 'rewardAmount';
+      await bot.sendMessage(chatId, '🎯 Enter the reward amount (in $):');
+      break;
 
-        state.code = text.toUpperCase();
-        state.step = 'wagerAmount';
-        await bot.sendMessage(chatId, '💰 Enter the required wager amount (min: 100, max: 1000000):');
-        break;
+    case 'rewardAmount':
+      state.rewardAmount = text;
+      state.step = 'maxClaims';
+      await bot.sendMessage(chatId, '👥 Enter max number of claims:');
+      break;
 
-      case 'wagerAmount':
-        const wagerAmount = parseFloat(text);
-        if (isNaN(wagerAmount) || wagerAmount < 100 || wagerAmount > 1000000) {
-          await bot.sendMessage(chatId, '❌ Invalid wager amount. Enter a number between 100 and 1,000,000.');
-          return;
-        }
-        state.wagerAmount = wagerAmount;
-        state.step = 'wagerPeriod';
-        await bot.sendMessage(chatId, '⏳ Enter the wager period in days (1, 7, or 30):');
-        break;
+    case 'maxClaims':
+      state.maxClaims = parseInt(text);
+      
+      try {
+        // Create bonus code in database
+        const [bonusCode] = await db.insert(bonusCodes)
+          .values({
+            code: state.code,
+            wagerAmount: state.wagerAmount,
+            wagerPeriodDays: state.wagerPeriod,
+            rewardAmount: state.rewardAmount,
+            maxClaims: state.maxClaims,
+            createdBy: msg.from?.username || 'admin',
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+          })
+          .returning();
 
-      case 'wagerPeriod':
-        const period = parseInt(text);
-        if (![1, 7, 30].includes(period)) {
-          await bot.sendMessage(chatId, '❌ Invalid period. Choose 1, 7, or 30 days.');
-          return;
-        }
-        state.wagerPeriod = period;
-        state.step = 'rewardAmount';
-        await bot.sendMessage(chatId, '🎯 Enter the reward amount (min: 1, max: 1000):');
-        break;
+        const previewMessage = '✅ Bonus code created! Here\'s how it will look:\n\n' +
+          'Sup VIPS 🐐\nCode time!\n\n' +
+          `Wager amount: $${state.wagerAmount} wagered on Goated past ${state.wagerPeriod} days.\n\n` +
+          `$${state.rewardAmount} for the first ${state.maxClaims} in this group only!\n\n` +
+          `Here's the code:\n🎲 ||${state.code}|| 🎲\n\n` +
+          'Must be one of my Affiliates: goated.com/r/goatedvips\n\n' +
+          `$${state.rewardAmount} for first ${state.maxClaims} users!\n\n` +
+          'Good luck!\n\n' +
+          '*Codes are case sensitive*\n' +
+          '*Must be an affiliate to claim*';
 
-      case 'rewardAmount':
-        const rewardAmount = parseFloat(text);
-        if (isNaN(rewardAmount) || rewardAmount < 1 || rewardAmount > 1000) {
-          await bot.sendMessage(chatId, '❌ Invalid reward amount. Enter a number between 1 and 1000.');
-          return;
-        }
-        state.rewardAmount = rewardAmount;
-        state.step = 'maxClaims';
-        await bot.sendMessage(chatId, '👥 Enter max number of claims (1-100):');
-        break;
-
-      case 'maxClaims':
-        const maxClaims = parseInt(text);
-        if (isNaN(maxClaims) || maxClaims < 1 || maxClaims > 100) {
-          await bot.sendMessage(chatId, '❌ Invalid number of claims. Enter a number between 1 and 100.');
-          return;
-        }
-        state.maxClaims = maxClaims;
-        state.step = 'expiry';
-        await bot.sendMessage(chatId, '⏰ Enter expiry in hours (12-168):');
-        break;
-
-      case 'expiry':
-        const expiryHours = parseInt(text);
-        if (isNaN(expiryHours) || expiryHours < 12 || expiryHours > 168) {
-          await bot.sendMessage(chatId, '❌ Invalid expiry. Enter hours between 12 and 168 (1 week).');
-          return;
-        }
-
-        try {
-          const expiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
-
-          // Create bonus code in database
-          const [bonusCode] = await db.insert(bonusCodes)
-            .values({
-              code: state.code,
-              wagerAmount: state.wagerAmount,
-              wagerPeriodDays: state.wagerPeriod,
-              rewardAmount: state.rewardAmount.toString(),
-              maxClaims: state.maxClaims,
-              currentClaims: 0,
-              createdBy: msg.from?.username || 'admin',
-              expiresAt,
-              status: 'active'
-            })
-            .returning();
-
-          if (!bonusCode) {
-            throw new Error('Failed to create bonus code');
-          }
-
-          const previewMessage = `✅ Bonus code created\\!\n\n` +
-            `Code: ||${state.code}||\n` +
-            `Wager Requirement: $${state.wagerAmount.toLocaleString()}\n` +
-            `Time Period: ${state.wagerPeriod} days\n` +
-            `Reward: $${state.rewardAmount}\n` +
-            `Max Claims: ${state.maxClaims}\n` +
-            `Expires: ${expiresAt.toLocaleString()}\n\n` +
-            `Use /deploybonus ${state.code} to announce this code\\.`;
-
-          await bot.sendMessage(chatId, previewMessage, { parse_mode: 'MarkdownV2' });
-
-          // Clear state and timeout
-          clearTimeout(state.timeout);
-          bonusCodeState.delete(chatId);
-
-          logDebug('Bonus code created', bonusCode);
-        } catch (error) {
-          logDebug('Error creating bonus code', error);
-          await bot.sendMessage(chatId, '❌ Database error while creating bonus code. Please try again.');
-        }
-        break;
-    }
-  } catch (error) {
-    logDebug('Error in bonus code creation', error);
-    await bot.sendMessage(chatId, '❌ An error occurred. Please try again with /createbonus');
-    // Clear state and timeout on error
-    clearTimeout(state.timeout);
-    bonusCodeState.delete(chatId);
+        await bot.sendMessage(chatId, previewMessage, { parse_mode: 'MarkdownV2' });
+        await bot.sendMessage(chatId, 'Use /deploybonus CODE to deploy this bonus code to the group.');
+        
+        bonusCodeState.delete(chatId);
+      } catch (error) {
+        console.error('Error creating bonus code:', error);
+        await bot.sendMessage(chatId, '❌ Error creating bonus code. Please try again.');
+      }
+      break;
   }
 });
 
@@ -446,22 +352,9 @@ bot.onText(/\/deploybonus (.+)/, async (msg, match) => {
     return bot.sendMessage(chatId, '❌ Only authorized users can deploy bonus codes.');
   }
 
-  const code = match?.[1]?.toUpperCase();
+  const code = match?.[1];
   if (!code) {
     return bot.sendMessage(chatId, 'Usage: /deploybonus CODE');
-  }
-
-  // Verify the bonus code exists and is active
-  const [existingCode] = await db.select()
-    .from(bonusCodes)
-    .where(and(
-      eq(bonusCodes.code, code),
-      eq(bonusCodes.status, 'active')
-    ))
-    .execute();
-
-  if (!existingCode) {
-    return bot.sendMessage(chatId, '❌ Bonus code not found or not active.');
   }
 
   try {
@@ -481,7 +374,7 @@ bot.onText(/\/deploybonus (.+)/, async (msg, match) => {
       `$${bonusCode.rewardAmount} for the first ${bonusCode.maxClaims} in this group only\\!\n\n` +
       'Here\'s the code:\n' +
       `🎲 ||${bonusCode.code}|| 🎲\n\n` +
-      'Must be one of my Affiliates: [goated\\.com/r/goatedvips](https://goated.com/r/goatedvips)\n\n` +
+      'Must be one of my Affiliates: [goated\\.com/r/goatedvips](https://goated.com/r/goatedvips)\n\n' +
       `$${bonusCode.rewardAmount} for first ${bonusCode.maxClaims} users\\!\n\n` +
       'Good luck\\!\n\n' +
       '\\*Codes are case sensitive\\*\n' +
@@ -603,7 +496,7 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
       .from(telegramUsers)
       .where(eq(telegramUsers.telegramUsername, telegramId))
       .execute();
-
+    
     if (!user?.[0]) {
       return bot.sendMessage(chatId, '❌ User not found with that username.');
     }
@@ -614,11 +507,7 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
     // Update verification request status
     const [request] = await db
       .update(verificationRequests)
-      .set({ 
-        status: 'approved',
-        verifiedAt: new Date(),
-        verifiedBy: adminUsername
-      })
+      .set({ status: 'approved' })
       .where(eq(verificationRequests.telegramId, telegramId))
       .returning();
 
@@ -834,7 +723,8 @@ bot.onText(/\/setup_forwarding (@?\w+)/, async (msg, match) => {
     return bot.sendMessage(chatId, 
       `✅ Successfully set up forwarding from @${channelUsername}\n` +
       `Messages will be forwarded to ${ALLOWED_GROUP_IDS.length} group(s)\n` +
-      `All Goated.com links will be automatically reformatted with ouraffiliate link.`);} catch (error) {
+      `All Goated.com links will be automatically reformatted with our affiliate link.`);
+  } catch (error) {
     console.error('Error setting up channel forwarding:', error);
     return bot.sendMessage(chatId, 
       '❌ Error setting up forwarding. Please ensure:\n' +
@@ -1103,15 +993,9 @@ async function handleStart(msg: TelegramBot.Message) {
 
   // For new users, start verification process
   try {
-    // Using the node fs module to read the image file directly
-    const fs = require('fs');
-    const imagePath = `${process.cwd()}/server/telegram/BOTWELCOME.png`;
-    const imageStream = fs.createReadStream(imagePath);
-    await bot.sendPhoto(chatId, imageStream);
+    await bot.sendPhoto(chatId, './server/telegram/BOTWELCOME.png');
   } catch (error) {
     console.error('Error sending welcome image:', error);
-    // Fallback to text-only welcome if image fails
-    console.log('Continuing with text-only welcome message');
   }
 
   const message = `👋 Welcome to the Goated Stats Bot!
@@ -1232,39 +1116,12 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
   // If no username provided, ask for it
   if (!match?.[1]) {
     return bot.sendMessage(chatId,
-      '❌ Please provide your Goated username with the command.\n' +
+      'Please provide your Goated username with the command.\n' +
       'Example: /verify YourUsername\n\n' +
       'Make sure to use your exact username as shown on the platform.');
   }
 
   const goatedUsername = match[1].trim();
-
-  // Username validation
-  if (!/^[a-zA-Z0-9_]{3,20}$/.test(goatedUsername)) {
-    return bot.sendMessage(chatId,
-      '❌ Invalid username format.\n' +
-      'Username must:\n' +
-      '• Be 3-20 characters long\n' +
-      '• Contain only letters, numbers, and underscores');
-  }
-
-  // Check for pending request
-  const pendingRequest = await db
-    .select()
-    .from(verificationRequests)
-    .where(
-      and(
-        eq(verificationRequests.telegramId, telegramId),
-        eq(verificationRequests.status, 'pending')
-      )
-    )
-    .execute();
-
-  if (pendingRequest.length > 0) {
-    return bot.sendMessage(chatId,
-      '⚠️ You already have a pending verification request.\n' +
-      'Please wait for admin approval.');
-  }
 
   try {
     // Try to fetch user stats directly
@@ -1292,33 +1149,25 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
       await db.delete(verificationRequests)
         .where(eq(verificationRequests.telegramId, telegramId));
 
-      const [request] = await db.insert(verificationRequests)
+      await db.insert(verificationRequests)
         .values({
           telegramId,
-          telegramUsername: msg.from?.username || null,
           goatedUsername,
           status: 'pending',
           requestedAt: new Date()
-        })
-        .returning();
+        });
 
       // Create or update telegram user
       await db.insert(telegramUsers)
         .values({
           telegramId,
-          telegramUsername: msg.from?.username || null,
           goatedUsername,
           isVerified: false,
-          createdAt: new Date(),
-          lastActive: new Date()
+          createdAt: new Date()
         })
         .onConflictDoUpdate({
           target: [telegramUsers.telegramId],
-          set: { 
-            goatedUsername,
-            telegramUsername: msg.from?.username || null,
-            lastActive: new Date()
-          }
+          set: { goatedUsername }
         });
 
       // Notify admins about new verification request
@@ -1380,12 +1229,12 @@ function isGroupChat(chatId: number): boolean {
 
 function canProcessGroupCommand(chatId: number): boolean {
   if (!isGroupChat(chatId)) return true;
-
+  
   const now = Date.now();
   const lastCommand = groupLastCommand.get(chatId) || 0;
-
+  
   if (now - lastCommand < GROUP_COOLDOWN) return false;
-
+  
   groupLastCommand.set(chatId, now);
   return true;
 }
@@ -1734,7 +1583,8 @@ bot.onText(/\/createchallenge/, async (msg) => {
 1. Limbo
 2. Keno
 3. Dice
-4. Crash5. Mines
+4. Crash
+5. Mines
 
 Reply with the number or game name.`;
 
@@ -1790,7 +1640,7 @@ bot.on('message', async (msg) => {
 
     case 'description':
       state.description = text === 'none' ? '' : text;
-
+      
       // Create challenge in database
       try {
         const [challenge] = await db.insert(challenges)
@@ -1842,7 +1692,7 @@ Good luck, Goated VIPs! 🐐✨`;
 // View active challenges
 bot.onText(/\/challenges/, async (msg) => {
   const chatId = msg.chat.id;
-
+  
   try {
     const activeChalls = await db
       .select()
@@ -1876,7 +1726,7 @@ bot.onText(/#ChallengeComplete/, async (msg) => {
 
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
-
+  
   if (!telegramId) return;
 
   try {
@@ -1894,7 +1744,7 @@ bot.onText(/#ChallengeComplete/, async (msg) => {
 
     // Record entry for the latest challenge
     const challenge = activeChalls[0];
-
+    
     await db.insert(challengeEntries)
       .values({
         challengeId: challenge.id,

@@ -10,24 +10,6 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
-import {
-  telegramUsers,
-  verificationRequests,
-  challenges,
-  challengeEntries,
-  bonusCodes,
-  bonusCodeClaims
-} from './schema/telegram';
-
-// Re-export telegram schemas
-export {
-  telegramUsers,
-  verificationRequests,
-  challenges,
-  challengeEntries,
-  bonusCodes,
-  bonusCodeClaims
-};
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -117,6 +99,17 @@ export const ticketMessages = pgTable("ticket_messages", {
   message: text("message").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   isStaffReply: boolean("is_staff_reply").default(false).notNull(),
+});
+
+export const bonusCodes = pgTable("bonus_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").unique().notNull(),
+  description: text("description").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expired: boolean("expired").default(false).notNull(),
+  createdBy: integer("created_by").references(() => users.id),
 });
 
 export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
