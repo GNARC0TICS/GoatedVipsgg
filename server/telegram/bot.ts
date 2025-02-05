@@ -652,6 +652,12 @@ async function handleStart(msg: TelegramBot.Message) {
   }
 
   // For new users, start verification process
+  try {
+    await bot.sendPhoto(chatId, './server/telegram/BOTWELCOME.png');
+  } catch (error) {
+    console.error('Error sending welcome image:', error);
+  }
+
   const message = `👋 Welcome to the Goated Stats Bot!
 
 ⚠️ You must be an affiliate to use this Bot.
