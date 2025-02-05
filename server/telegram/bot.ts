@@ -6,7 +6,7 @@ import { API_CONFIG } from '../config/api';
 import { users } from '@db/schema';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const ADMIN_TELEGRAM_IDS = process.env.ADMIN_TELEGRAM_IDS?.split(',') || [];
+const ADMIN_TELEGRAM_IDS = ['1689953605'];
 const ALLOWED_GROUP_IDS = process.env.ALLOWED_GROUP_IDS?.split(',') || [];
 
 if (!token) {
