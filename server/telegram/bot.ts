@@ -1409,5 +1409,321 @@ All-time: $${user.wagered.all_time.toLocaleString()}`
   }
 });
 
+// Challenge creation state storage
+const challengeCreationState = new Map();
+
+// Create challenge command
+bot.onText(/\/createchallenge/, async (msg) => {
+  const chatId = msg.chat.id;
+  const username = msg.from?.username;
+
+  if (username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can create challenges.');
+  }
+
+  challengeCreationState.set(chatId, { step: 'game' });
+
+  const message = `🎮 Select the game for this challenge:
+1. Limbo
+2. Keno
+3. Dice
+4. Crash
+5. Mines
+
+Reply with the number or game name.`;
+
+  return bot.sendMessage(chatId, message);
+});
+
+// Handle challenge creation steps
+bot.on('message', async (msg) => {
+  const chatId = msg.chat.id;
+  const state = challengeCreationState.get(chatId);
+
+  if (!state) return;
+
+  const text = msg.text;
+  if (!text) return;
+
+  switch (state.step) {
+    case 'game':
+      state.game = text;
+      state.step = 'multiplier';
+      await bot.sendMessage(chatId, '🎯 Enter the target multiplier (e.g., 66.0):');
+      break;
+
+    case 'multiplier':
+      state.multiplier = text;
+      state.step = 'minBet';
+      await bot.sendMessage(chatId, '💰 Enter the minimum bet amount (e.g., 0.02):');
+      break;
+
+    case 'minBet':
+      state.minBet = text;
+      state.step = 'prize';
+      await bot.sendMessage(chatId, '🏆 Enter the prize amount per winner (e.g., 5):');
+      break;
+
+    case 'prize':
+      state.prize = text;
+      state.step = 'winners';
+      await bot.sendMessage(chatId, '👥 Enter the number of winners (e.g., 3):');
+      break;
+
+    case 'winners':
+      state.winners = parseInt(text);
+      state.step = 'timeframe';
+      await bot.sendMessage(chatId, '⏳ Enter the timeframe (or "until filled"):');
+      break;
+
+    case 'timeframe':
+      state.timeframe = text;
+      state.step = 'description';
+      await bot.sendMessage(chatId, '📝 Enter any additional description (or "none"):');
+      break;
+
+    case 'description':
+      state.description = text === 'none' ? '' : text;
+      
+      // Create challenge in database
+      try {
+        const [challenge] = await db.insert(challenges)
+          .values({
+            game: state.game,
+            multiplier: state.multiplier,
+            minBet: state.minBet,
+            prizeAmount: state.prize,
+            maxWinners: state.winners,
+            timeframe: state.timeframe,
+            description: state.description,
+            createdBy: msg.from?.username || 'admin'
+          })
+          .returning();
+
+        // Format announcement
+        const announcement = `🔥 **Goated Challenge Time!** 🔥
+
+🎮 **Game:** ${state.game}
+🎯 **Goal:** Hit a **${state.multiplier}x** multiplier
+💵 **Minimum Bet:** $${state.minBet}
+💰 **Prize:** $${state.prize} Bonus Code
+👥 **Winners:** ${state.winners}
+⏳ **Duration:** ${state.timeframe}
+${state.description ? `\n📌 **Note:** ${state.description}` : ''}
+
+**How to enter:**
+1️⃣ Post your winning Goated bet link
+2️⃣ Use #ChallengeComplete
+3️⃣ Tag @xGoombas
+
+Good luck, Goated VIPs! 🐐✨`;
+
+        // Send to all allowed groups
+        for (const groupId of ALLOWED_GROUP_IDS) {
+          await bot.sendMessage(groupId, announcement, { parse_mode: 'Markdown' });
+        }
+
+        challengeCreationState.delete(chatId);
+        await bot.sendMessage(chatId, '✅ Challenge created and announced successfully!');
+      } catch (error) {
+        console.error('Error creating challenge:', error);
+        await bot.sendMessage(chatId, '❌ Error creating challenge. Please try again.');
+      }
+      break;
+  }
+});
+
+// View active challenges
+bot.onText(/\/challenges/, async (msg) => {
+  const chatId = msg.chat.id;
+  
+  try {
+    const activeChalls = await db
+      .select()
+      .from(challenges)
+      .where(eq(challenges.status, 'active'))
+      .execute();
+
+    if (!activeChalls.length) {
+      return bot.sendMessage(chatId, 'No active challenges at the moment!');
+    }
+
+    const message = activeChalls.map((c, i) => `
+🎮 Challenge #${i + 1}:
+Game: ${c.game}
+Goal: ${c.multiplier}x multiplier
+Min Bet: $${c.minBet}
+Prize: $${c.prizeAmount}
+Remaining Winners: ${c.maxWinners}
+⏳ ${c.timeframe}`).join('\n\n');
+
+    return bot.sendMessage(chatId, `🏆 Active Challenges:\n${message}`);
+  } catch (error) {
+    console.error('Error fetching challenges:', error);
+    return bot.sendMessage(chatId, '❌ Error fetching challenges. Please try again.');
+  }
+});
+
+// Handle challenge submissions
+bot.onText(/#ChallengeComplete/, async (msg) => {
+  if (!msg.text?.includes('goated.com/')) return;
+
+  const chatId = msg.chat.id;
+  const telegramId = msg.from?.id.toString();
+  
+  if (!telegramId) return;
+
+  try {
+    const betLink = msg.text.match(/(https?:\/\/[^\s]+)/g)?.[0];
+    if (!betLink) return;
+
+    // Get active challenges
+    const activeChalls = await db
+      .select()
+      .from(challenges)
+      .where(eq(challenges.status, 'active'))
+      .execute();
+
+    if (!activeChalls.length) return;
+
+    // Record entry for the latest challenge
+    const challenge = activeChalls[0];
+    
+    await db.insert(challengeEntries)
+      .values({
+        challengeId: challenge.id,
+        telegramId,
+        betLink,
+        status: 'pending'
+      })
+      .execute();
+
+    await bot.sendMessage(chatId, 
+      `✅ Challenge entry recorded!\n` +
+      `@xGoombas will verify your entry soon.`);
+  } catch (error) {
+    console.error('Error recording challenge entry:', error);
+  }
+});
+
+// Admin command to view pending entries
+bot.onText(/\/pendingchallenges/, async (msg) => {
+  const chatId = msg.chat.id;
+  const username = msg.from?.username;
+
+  if (username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can view pending challenges.');
+  }
+
+  try {
+    const entries = await db
+      .select()
+      .from(challengeEntries)
+      .where(eq(challengeEntries.status, 'pending'))
+      .execute();
+
+    if (!entries.length) {
+      return bot.sendMessage(chatId, 'No pending challenge entries.');
+    }
+
+    const message = entries.map((e, i) => `
+Entry #${i + 1}:
+User: ${e.telegramId}
+Bet Link: ${e.betLink}
+Submitted: ${new Date(e.submittedAt).toLocaleString()}
+
+To verify: /verifychallenge ${e.id}
+To reject: /rejectchallenge ${e.id}`).join('\n\n');
+
+    return bot.sendMessage(chatId, message);
+  } catch (error) {
+    console.error('Error fetching pending entries:', error);
+    return bot.sendMessage(chatId, '❌ Error fetching pending entries.');
+  }
+});
+
+// Verify challenge command
+bot.onText(/\/verifychallenge (\d+) (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const username = msg.from?.username;
+
+  if (username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can verify challenges.');
+  }
+
+  const entryId = match?.[1];
+  const bonusCode = match?.[2];
+
+  if (!entryId || !bonusCode) {
+    return bot.sendMessage(chatId, 'Usage: /verifychallenge [entry_id] [bonus_code]');
+  }
+
+  try {
+    const [entry] = await db
+      .update(challengeEntries)
+      .set({ 
+        status: 'verified',
+        bonusCode,
+        verifiedAt: new Date(),
+        verifiedBy: username
+      })
+      .where(eq(challengeEntries.id, parseInt(entryId)))
+      .returning();
+
+    if (!entry) {
+      return bot.sendMessage(chatId, '❌ Entry not found.');
+    }
+
+    // Notify user
+    await bot.sendMessage(entry.telegramId,
+      '🎉 Your challenge entry has been verified!\n' +
+      'Use /claim in private chat with me to get your bonus code.');
+
+    return bot.sendMessage(chatId, '✅ Challenge verified and user notified.');
+  } catch (error) {
+    console.error('Error verifying challenge:', error);
+    return bot.sendMessage(chatId, '❌ Error verifying challenge.');
+  }
+});
+
+// Claim command (private chat only)
+bot.onText(/\/claim/, async (msg) => {
+  const chatId = msg.chat.id;
+  const telegramId = msg.from?.id.toString();
+
+  if (!telegramId) return;
+
+  // Must be in private chat
+  if (chatId < 0) {
+    return bot.sendMessage(chatId, 'Please use /claim in private chat with me.');
+  }
+
+  try {
+    const entries = await db
+      .select()
+      .from(challengeEntries)
+      .where(
+        and(
+          eq(challengeEntries.telegramId, telegramId),
+          eq(challengeEntries.status, 'verified')
+        )
+      )
+      .execute();
+
+    if (!entries.length) {
+      return bot.sendMessage(chatId, 'No verified challenges to claim.');
+    }
+
+    const message = entries.map(e => 
+      `🎁 Bonus Code: ||${e.bonusCode}||`
+    ).join('\n\n');
+
+    return bot.sendMessage(chatId, message, { parse_mode: 'MarkdownV2' });
+  } catch (error) {
+    console.error('Error claiming rewards:', error);
+    return bot.sendMessage(chatId, '❌ Error claiming rewards.');
+  }
+});
+
 // Export bot instance for use in main server
 export { bot, handleStart, handleVerify, handleStats, handleRace, handleLeaderboard, handleCallbackQuery };
