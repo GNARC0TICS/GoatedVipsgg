@@ -7,7 +7,7 @@ import { users } from '@db/schema';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_TELEGRAM_IDS = ['1689953605'];
-const ALLOWED_GROUP_IDS = ['1002169964764'];
+const ALLOWED_GROUP_IDS = ['-1002169964764'];
 
 // State management for bonus code creation
 const bonusCodeState = new Map();
