@@ -180,8 +180,9 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
     }
 
     // Try to find user by Goated username
+    const API_URL = process.env.API_URL || 'https://api.goatedvips.gg';
     const response = await fetch(
-      `http://0.0.0.0:5000/api/affiliate/stats?username=${encodeURIComponent(username)}`,
+      `${API_URL}/api/affiliate/stats?username=${encodeURIComponent(username)}`,
       {
         headers: {
           'Accept': 'application/json',
@@ -1142,8 +1143,9 @@ async function fetchLeaderboardData() {
     logDebug('Attempting to fetch leaderboard data');
 
     // Make request to our internal API endpoint
+    const API_URL = process.env.API_URL || 'https://api.goatedvips.gg';
     const response = await fetch(
-      `http://0.0.0.0:5000/api/wager-races/current`,
+      `${API_URL}/api/wager-races/current`,
       {
         method: 'GET',
         headers: {
