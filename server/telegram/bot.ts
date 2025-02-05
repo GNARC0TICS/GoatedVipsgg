@@ -252,6 +252,9 @@ All-time Wager: $${(userStats.wagered?.all_time || 0).toLocaleString()}`;
   }
 });
 
+// Global state for bonus code creation
+const bonusCodeState = new Map();
+
 // Create bonus code command
 bot.onText(/\/createbonus/, async (msg) => {
   const chatId = msg.chat.id;
@@ -261,10 +264,15 @@ bot.onText(/\/createbonus/, async (msg) => {
     return bot.sendMessage(chatId, '❌ Only authorized users can create bonus codes.');
   }
 
-  const bonusCodeState = new Map();
   bonusCodeState.set(chatId, { step: 'code' });
 
-  const message = '🎁 Let\'s create a bonus code!\n\nEnter the bonus code (e.g. VIPSG2EZ):';
+  const message = '🎁 Let\'s create a bonus code!\n\n' +
+    'Enter the bonus code (e.g. VIPSG2EZ)\n' +
+    'Rules:\n' +
+    '- Use only letters and numbers\n' +
+    '- No spaces allowed\n' +
+    '- Keep it memorable';
+    
   return bot.sendMessage(chatId, message);
 });
 
@@ -280,27 +288,46 @@ bot.on('message', async (msg) => {
 
   switch (state.step) {
     case 'code':
-      state.code = text;
+      if (!/^[A-Za-z0-9]+$/.test(text)) {
+        await bot.sendMessage(chatId, '❌ Invalid code format. Use only letters and numbers, no spaces.');
+        return;
+      }
+      state.code = text.toUpperCase();
       state.step = 'wagerAmount';
-      await bot.sendMessage(chatId, '💰 Enter the required wager amount (in $):');
+      await bot.sendMessage(chatId, '💰 Enter the required wager amount (numbers only, e.g. 1000):');
       break;
 
     case 'wagerAmount':
-      state.wagerAmount = parseFloat(text);
+      const wagerAmount = parseFloat(text);
+      if (isNaN(wagerAmount) || wagerAmount <= 0) {
+        await bot.sendMessage(chatId, '❌ Invalid wager amount. Please enter a positive number.');
+        return;
+      }
+      state.wagerAmount = wagerAmount;
       state.step = 'wagerPeriod';
       await bot.sendMessage(chatId, '⏳ Enter the wager period in days (1, 7, or 30):');
       break;
 
     case 'wagerPeriod':
-      state.wagerPeriod = parseInt(text);
+      const period = parseInt(text);
+      if (![1, 7, 30].includes(period)) {
+        await bot.sendMessage(chatId, '❌ Invalid period. Choose 1, 7, or 30 days.');
+        return;
+      }
+      state.wagerPeriod = period;
       state.step = 'rewardAmount';
-      await bot.sendMessage(chatId, '🎯 Enter the reward amount (in $):');
+      await bot.sendMessage(chatId, '🎯 Enter the reward amount (numbers only, e.g. 10):');
       break;
 
     case 'rewardAmount':
-      state.rewardAmount = text;
+      const rewardAmount = parseFloat(text);
+      if (isNaN(rewardAmount) || rewardAmount <= 0) {
+        await bot.sendMessage(chatId, '❌ Invalid reward amount. Please enter a positive number.');
+        return;
+      }
+      state.rewardAmount = rewardAmount;
       state.step = 'maxClaims';
-      await bot.sendMessage(chatId, '👥 Enter max number of claims:');
+      await bot.sendMessage(chatId, '👥 Enter max number of claims (1-100):');
       break;
 
     case 'maxClaims':
@@ -352,9 +379,22 @@ bot.onText(/\/deploybonus (.+)/, async (msg, match) => {
     return bot.sendMessage(chatId, '❌ Only authorized users can deploy bonus codes.');
   }
 
-  const code = match?.[1];
+  const code = match?.[1]?.toUpperCase();
   if (!code) {
     return bot.sendMessage(chatId, 'Usage: /deploybonus CODE');
+  }
+
+  // Verify the bonus code exists and is active
+  const [existingCode] = await db.select()
+    .from(bonusCodes)
+    .where(and(
+      eq(bonusCodes.code, code),
+      eq(bonusCodes.status, 'active')
+    ))
+    .execute();
+
+  if (!existingCode) {
+    return bot.sendMessage(chatId, '❌ Bonus code not found or not active.');
   }
 
   try {
