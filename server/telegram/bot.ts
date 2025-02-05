@@ -289,15 +289,28 @@ bot.onText(/\/pending/, async (msg) => {
       return bot.sendMessage(chatId, '📝 No pending verification requests.');
     }
 
-    const message = pendingRequests.map((request, index) => {
-      return `Request #${index + 1}:\n` +
-        `📱 Telegram: @${request.telegramId}\n` +
-        `👤 Goated: ${request.goatedUsername}\n` +
-        `⏰ Requested: ${new Date(request.requestedAt).toLocaleString()}\n\n` +
-        `To verify: /verify_user ${request.telegramId}\n` +
-        `To reject: /reject_user ${request.telegramId}\n` +
-        `───────────────────`;
-    }).join('\n\n');
+    const message = await Promise.all(pendingRequests.map(async (request, index) => {
+      try {
+        const chatMember = await bot.getChatMember(request.telegramId, Number(request.telegramId));
+        const username = chatMember.user.username || 'Unknown';
+        return `Request #${index + 1}:\n` +
+          `📱 Telegram: @${username}\n` +
+          `👤 Goated: ${request.goatedUsername}\n` +
+          `⏰ Requested: ${new Date(request.requestedAt).toLocaleString()}\n\n` +
+          `To verify: /verify_user ${request.telegramId}\n` +
+          `To reject: /reject_user ${request.telegramId}\n` +
+          `───────────────────`;
+      } catch (error) {
+        console.error('Error fetching username:', error);
+        return `Request #${index + 1}:\n` +
+          `📱 Telegram: @${request.telegramId}\n` +
+          `👤 Goated: ${request.goatedUsername}\n` +
+          `⏰ Requested: ${new Date(request.requestedAt).toLocaleString()}\n\n` +
+          `To verify: /verify_user ${request.telegramId}\n` +
+          `To reject: /reject_user ${request.telegramId}\n` +
+          `───────────────────`;
+      }
+    }));
 
     return bot.sendMessage(chatId, `🔍 Pending Verification Requests:\n\n${message}`);
   } catch (error) {
