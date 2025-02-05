@@ -835,7 +835,7 @@ bot.onText(/\/setup_forwarding (@?\w+)/, async (msg, match) => {
       `✅ Successfully set up forwarding from @${channelUsername}\n` +
       `Messages will be forwarded to ${ALLOWED_GROUP_IDS.length} group(s)\n` +
       `All Goated.com links will be automatically reformatted with our affiliate link.`);
-  } catch (error) {
+} catch (error) {
     consoleerror('Error setting up channel forwarding:', error);
     return bot.sendMessage(chatId, 
       '❌ Error setting up forwarding. Please ensure:\n' +
@@ -1738,6 +1738,9 @@ bot.onText(/\/createchallenge/, async (msg) => {
 4. Crash
 5. Mines
 
+The corrected code replaces a template literal string that was missing a closing quote, resulting in an unterminated string literal error.
+
+<replit_final_file>
 Reply with the number or game name.`;
 
   return bot.sendMessage(chatId, message);
