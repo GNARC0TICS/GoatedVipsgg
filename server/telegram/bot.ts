@@ -48,8 +48,8 @@ function logDebug(message: string, data?: any) {
 // Set up bot commands with proper descriptions
 async function setupBotCommands() {
   try {
-    // Clear existing commands
-    await bot.deleteMyCommands();
+    // Use setMyCommands instead of deleteMyCommands
+    await bot.setMyCommands([]);
 
     const baseCommands = [
       { command: 'start', description: '🚀 Start using the bot' },
@@ -73,11 +73,9 @@ async function setupBotCommands() {
       { command: 'setup_forwarding', description: '🔄 Start channel forwarding' },
       { command: 'list_forwardings', description: '📊 Show active forwardings' },
       { command: 'stop_forwarding', description: '⏹️ Stop all forwardings' },
-      // Bonus code commands
       { command: 'createbonus', description: '🎁 Create a new bonus code' },
       { command: 'deploybonus', description: '📢 Deploy a bonus code' },
       { command: 'listbonuses', description: '📋 List active bonus codes' },
-      // Challenge commands
       { command: 'createchallenge', description: '🎮 Create a new challenge' },
       { command: 'challenges', description: '🏆 View active challenges' },
       { command: 'pendingchallenges', description: '📝 View pending challenge entries' },
@@ -158,50 +156,40 @@ bot.onText(/\/help/, async (msg) => {
   message += `• /leaderboard - See top players\n`;
   message += `• /play - Play on Goated with our link\n`;
   message += `• /website - Visit GoatedVIPs.gg\n\n`;
-  message += `Need help? Contact @xGoombas for support.`;
+  message += `Need help\\? Contact @xGoombas for support\\.`;
 
   await bot.sendMessage(chatId, message, {
-    parse_mode: 'MarkdownV2'
+    parse_mode: 'MarkdownV2',
+    disable_web_page_preview: true
   });
 });
 
 // Command: /check_stats <username>
-// Purpose: Allow users to check wager statistics for themselves or (for admins) any user
-// Data Flow: Telegram -> Database -> Goated API -> Formatted Response
 bot.onText(/\/check_stats (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
-  const username = match?.[1]?.trim();
+  const username = match?.[1]?.trim() || '';
 
-  // Basic validation
   if (!telegramId) {
     return bot.sendMessage(chatId, 'Could not identify user.');
   }
 
   try {
-    // AUTHORIZATION CHECK
-    // Only xGoombas (admin) can check other users' stats
-    // Regular users can only check their own stats after verification
     if (msg.from?.username !== 'xGoombas') {
-      // Get requester's verification status from database
       const requester = await db.select()
         .from(telegramUsers)
         .where(eq(telegramUsers.telegramId, telegramId))
         .execute();
 
-      // Verify user is checking their own stats and is verified
       if (!requester?.[0]?.isVerified ||
-        requester[0].goatedUsername?.toLowerCase() !== username.toLowerCase()) {
+        (requester[0].goatedUsername?.toLowerCase() !== username.toLowerCase())) {
         return bot.sendMessage(chatId,
           'You can only check your own stats after verification.');
       }
     }
 
-    // DATA FETCHING
-    // 1. Connect to Goated's internal API endpoint for affiliate statistics
-    // This endpoint provides real-time wager data for all affiliates
     const response = await fetch(
-      `http://0.0.0.0:5000/api/affiliate/stats?username=${encodeURIComponent(username)}`,
+      `${API_CONFIG.BASE_URL}/affiliate/stats?username=${encodeURIComponent(username)}`,
       {
         headers: {
           'Accept': 'application/json',
@@ -210,38 +198,30 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
       }
     );
 
-    // 2. Parse and transform the API response
     const data = await response.json();
-    // Monthly data contains the primary stats we display
     const transformedData = data?.data?.monthly?.data;
-    // Find the specific user in the data array
-    let userStats = transformedData?.find(u =>
+
+    let userStats = transformedData?.find((u: { name: string; wagered: { this_month?: number; this_week?: number; today?: number; all_time?: number } }) =>
       u.name.toLowerCase() === username.toLowerCase()
     );
 
-    // ADMIN LOOKUP FEATURE
-    // If admin is checking by Telegram handle (@username), lookup their Goated username
     if (!userStats && msg.from?.username === 'xGoombas' && username.startsWith('@')) {
       const telegramUser = await db.select()
         .from(telegramUsers)
-        .where(eq(telegramUsers.telegramId, username.substring(1)))
+        .where(eq(telegramUsers.telegramUsername, username.substring(1)))
         .execute();
 
-      // If found, look up their stats using their Goated username
       if (telegramUser?.[0]?.goatedUsername) {
-        userStats = transformedData?.find(u =>
+        userStats = transformedData?.find((u: { name: string; wagered: { this_month?: number; this_week?: number; today?: number; all_time?: number } }) =>
           u.name.toLowerCase() === telegramUser[0].goatedUsername?.toLowerCase()
         );
       }
     }
 
-    // Handle case where user isn't found in stats
     if (!userStats) {
       return bot.sendMessage(chatId, 'User not found.');
     }
 
-    // FORMAT AND SEND RESPONSE
-    // Display all wager statistics with proper formatting
     const message = `📊 Stats for ${userStats.name}:\n
 Monthly Wager: $${(userStats.wagered?.this_month || 0).toLocaleString()}
 Weekly Wager: $${(userStats.wagered?.this_week || 0).toLocaleString()}
@@ -831,8 +811,9 @@ bot.onText(/\/setup_forwarding (@?\w+)/, async (msg, match) => {
     });
 
     return bot.sendMessage(chatId,
-      `✅ Successfully set up forwarding from @${channelUsername}\n` +            `Messages will be forwarded to ${ALLOWED_GROUP_IDS.length} group(s)\n` +
-      `All Goated.com links will be automatically reformatted with our affiliate link`.`);
+      `✅ Successfully set up forwarding from @${channelUsername}
+Messages will be forwarded to ${ALLOWED_GROUP_IDS.length} group(s)
+All Goated.com links will be automatically reformatted with our affiliate link`);
   } catch (error) {
     console.error('Error setting up channel forwarding:', error);
     return bot.sendMessage(chatId,
@@ -849,7 +830,7 @@ bot.onText(/\/stop_forwarding/, async (msg) => {
   const adminUsername = msg.from?.username;
 
   if (adminUsername !== 'xGoombas') {
-    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+    return bot.sendMessage(chatId, '❌ Only authorized users can use thiscommand.');
   }
 
   try {
@@ -1741,3 +1722,135 @@ bot.onText(/\/claim/, async (msg) => {
 
 // Export bot instance for use in main server
 export { bot };
+
+async function handleStats(msg: TelegramBot.Message) {
+  const chatId = msg.chat.id;
+  const telegramId = msg.from?.id.toString();
+  if (!telegramId) {
+    return bot.sendMessage(chatId, 'Could not identify user.');
+  }
+  try {
+    const user = await db.select().from(telegramUsers).where(eq(telegramUsers.telegramId, telegramId)).execute();
+    if (!user[0].isVerified) {
+      return bot.sendMessage(chatId, 'You need to verify your account first.');
+    }
+    const username = user[0].goatedUsername;
+    if (!username) {
+      return bot.sendMessage(chatId, 'Please set your Goated username.');
+    }
+    const response = await fetch(`${API_CONFIG.BASE_URL}/affiliate/stats?username=${encodeURIComponent(username)}`, { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' } });
+    const data = await response.json();
+    const transformedData = data.data.monthly.data.find(u => u.name.toLowerCase() === username.toLowerCase());
+    if (!transformedData) {
+      return bot.sendMessage(chatId, 'User not found.');
+    }
+    const message = `📊 Stats for ${transformedData.name}:
+Monthly Wager: $${(transformedData.wagered.this_month || 0).toLocaleString()}
+Weekly Wager: $${(transformedData.wagered.this_week || 0).toLocaleString()}
+Daily Wager: $${(transformedData.wagered.today || 0).toLocaleString()}
+All-time Wager: $${(transformedData.wagered.all_time || 0).toLocaleString()}`;
+    return bot.sendMessage(chatId, message);
+  } catch (error) {
+    console.error('Error checking stats:', error);
+    return bot.sendMessage(chatId, 'An error occurred while fetching stats.');
+  }
+}
+
+async function handleRace(msg: TelegramBot.Message) {
+  const chatId = msg.chat.id;
+  const telegramId = msg.from?.id.toString();
+  if (!telegramId) {
+    return bot.sendMessage(chatId, 'Could not identify user.');
+  }
+  try {
+    const user = await db.select().from(telegramUsers).where(eq(telegramUsers.telegramId, telegramId)).execute();
+    if (!user[0].isVerified) {
+      return bot.sendMessage(chatId, 'You need to verify your account first.');
+    }
+    const username = user[0].goatedUsername;
+    if (!username) {
+      return bot.sendMessage(chatId, 'Please set your Goated username.');
+    }
+    const response = await fetch(`${API_CONFIG.BASE_URL}/affiliate/race?username=${encodeURIComponent(username)}`, { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' } });
+    const data = await response.json();
+    const rank = data.data.rank;
+    const prize = getPrizeAmount(rank);
+    const message = `🏁 Your Race Position:
+Rank: #${rank}
+Prize: $${prize}`;
+    return bot.sendMessage(chatId, message);
+  } catch (error) {
+    console.error('Error checking race position:', error);
+    return bot.sendMessage(chatId, 'An error occurred while fetching race position.');
+  }
+}
+
+async function handleLeaderboard(msg: TelegramBot.Message) {
+  const chatId = msg.chat.id;
+  try {
+    const leaderboardData = await fetchLeaderboardData();
+    const transformedData = transformLeaderboardData(leaderboardData);
+    if (!transformedData) {
+      return bot.sendMessage(chatId, 'Could not fetch leaderboard data.');
+    }
+    const message = transformedData.map((user, index) => {
+      return `${index + 1}. ${user.username}: $${user.wagered.this_month.toLocaleString()}`;
+    }).join('\n');
+    return bot.sendMessage(chatId, message);
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    return bot.sendMessage(chatId, 'An error occurred while fetching leaderboard.');
+  }
+}
+
+async function fetchLeaderboardData() {
+  try {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/affiliate/leaderboard`, { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' } });
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error('Error fetching leaderboard data:', error);
+    return null;
+  }
+}
+
+function transformLeaderboardData(data: any): { username: string; wagered: { this_month: number; all_time: number } }[] | null {
+  if (!data || !data.length) {
+    return null;
+  }
+  return data.map((user: { name: string; wagered: { this_month: number; all_time: number } }) => ({
+    username: user.name,
+    wagered: {
+      this_month: user.wagered.this_month,
+      all_time: user.wagered.all_time
+    }
+  }));
+}
+
+bot.onText(/\/start/, handleStart);
+bot.on('message', async (msg) => {
+  const chatId = msg.chat.id;
+  const text = msg.text;
+  if (!text) return;
+  if (text.startsWith('/verify')) {
+    return; //Skip this message since we are using bot.onText(/\/verify (.+)/ already
+  }
+  if (text.startsWith('/createbonus')) {
+    return; //Skip this message since we are using bot.onText(/\/createbonus/ already
+  }
+  if (text.startsWith('/submit')) {
+    return; //Skip this message since we are using bot.onText(/\/submit (.+)/ already
+  }
+  if (text.startsWith('/claim')) {
+    return; //Skip this message since we are using bot.onText(/\/claim/ already
+  }
+  const state = challengeCreationState.get(chatId);
+  if (state) {
+    return; //Skip this message since we are using bot.onText(/\/createchallenge/ already
+  }
+
+  const state2 = bonusCodeState.get(chatId);
+  if (state2) {
+    return; //Skip this message since we are using bot.onText(/\/createbonus/ already
+  }
+});

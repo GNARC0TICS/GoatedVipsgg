@@ -10,6 +10,7 @@ export const telegramUsers = pgTable('telegram_users', {
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
   lastActive: timestamp('last_active').default(sql`CURRENT_TIMESTAMP`),
   notificationsEnabled: boolean('notifications_enabled').default(true),
+  verifiedAt: timestamp('verified_at')
 });
 
 export const verificationRequests = pgTable('verification_requests', {
@@ -25,7 +26,7 @@ export const verificationRequests = pgTable('verification_requests', {
 });
 
 export const challenges = pgTable('challenges', {
-  id: integer('id').primaryKey(),
+  id: serial('id').primaryKey(),
   game: text('game').notNull(),
   multiplier: text('multiplier'),
   minBet: text('min_bet').notNull(),
@@ -39,7 +40,7 @@ export const challenges = pgTable('challenges', {
 });
 
 export const challengeEntries = pgTable('challenge_entries', {
-  id: integer('id').primaryKey(),
+  id: serial('id').primaryKey(),
   challengeId: integer('challenge_id').notNull(),
   telegramId: text('telegram_id').notNull(),
   betLink: text('bet_link').notNull(),
@@ -51,7 +52,7 @@ export const challengeEntries = pgTable('challenge_entries', {
 });
 
 export const bonusCodes = pgTable('bonus_codes', {
-  id: integer('id').primaryKey(),
+  id: serial('id').primaryKey(),
   code: text('code').notNull().unique(),
   wagerAmount: integer('wager_amount').notNull(),
   wagerPeriodDays: integer('wager_period_days').notNull(),
@@ -65,7 +66,7 @@ export const bonusCodes = pgTable('bonus_codes', {
 });
 
 export const bonusCodeClaims = pgTable('bonus_code_claims', {
-  id: integer('id').primaryKey(),
+  id: serial('id').primaryKey(),
   bonusCodeId: integer('bonus_code_id').notNull(),
   telegramId: text('telegram_id').notNull(),
   claimedAt: timestamp('claimed_at').default(sql`CURRENT_TIMESTAMP`),
