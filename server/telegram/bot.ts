@@ -947,9 +947,10 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
       '🔄 Processing verification request...\n' +
       'You will receive a notification once complete.'
     );
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
+  } catch (error) {
+    console.error('Error in handleVerify:', error);
+    return bot.sendMessage(chatId, 'An error occurred while processing your verification request. Please try again later.');
+  }
         }
       );
 
