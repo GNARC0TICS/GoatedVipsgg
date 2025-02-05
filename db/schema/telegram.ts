@@ -1,3 +1,4 @@
+
 import { pgTable, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -11,14 +12,15 @@ export const telegramUsers = pgTable('telegram_users', {
   notificationsEnabled: boolean('notifications_enabled').default(true),
 });
 
-// Table to store pending verification requests
 export const verificationRequests = pgTable('verification_requests', {
   id: integer('id').primaryKey(),
   telegramId: text('telegram_id').notNull().unique(),
   goatedUsername: text('goated_username').notNull(),
   requestedAt: timestamp('requested_at').default(sql`CURRENT_TIMESTAMP`),
+  status: text('status').default('pending'), // pending, approved, rejected
+  adminNotes: text('admin_notes'),
+});
 
-// Challenge system tables
 export const challenges = pgTable('challenges', {
   id: integer('id').primaryKey(),
   game: text('game').notNull(),
@@ -43,10 +45,6 @@ export const challengeEntries = pgTable('challenge_entries', {
   submittedAt: timestamp('submitted_at').default(sql`CURRENT_TIMESTAMP`),
   verifiedAt: timestamp('verified_at'),
   verifiedBy: text('verified_by'),
-});
-
-  status: text('status').default('pending'), // pending, approved, rejected
-  adminNotes: text('admin_notes'),
 });
 
 export const bonusCodes = pgTable('bonus_codes', {
