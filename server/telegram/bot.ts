@@ -863,10 +863,8 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
   const goatedUsername = match[1].trim();
 
   try {
-    // Fetch leaderboard data to verify UID
-    try {
-      // Try to fetch user stats directly
-      const response = await fetch(
+    // Try to fetch user stats directly
+    const response = await fetch(
         `http://0.0.0.0:5000/api/affiliate/stats?username=${encodeURIComponent(goatedUsername)}`,
         {
           headers: {
