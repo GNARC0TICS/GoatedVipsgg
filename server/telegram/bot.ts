@@ -91,7 +91,7 @@ async function setupBotCommands() {
         await bot.setMyCommands(adminCommands, {
           scope: {
             type: 'chat',
-            chat_id: Number(adminId)
+            chat_id: adminId.toString()
           }
         });
         console.log(`[Telegram Bot] Admin commands set for ${adminId}`);
