@@ -16,8 +16,11 @@ if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
 
-// Create a bot instance with polling
-const bot = new TelegramBot(token, { polling: false });
+// Create a bot instance with polling and privacy mode
+const bot = new TelegramBot(token, { 
+  polling: false,
+  filepath: false // Disable file downloads for security
+});
 
 // Cleanup function to stop polling
 async function stopBot() {
