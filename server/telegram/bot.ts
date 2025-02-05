@@ -344,16 +344,16 @@ bot.on('message', async (msg) => {
           })
           .returning();
 
-        const previewMessage = '✅ Bonus code created! Here\'s how it will look:\n\n' +
-          'Sup VIPS 🐐\nCode time!\n\n' +
-          `Wager amount: $${state.wagerAmount} wagered on Goated past ${state.wagerPeriod} days.\n\n` +
-          `$${state.rewardAmount} for the first ${state.maxClaims} in this group only!\n\n` +
+        const previewMessage = '✅ Bonus code created\\! Here\'s how it will look:\n\n' +
+          'Sup VIPS 🐐\nCode time\\!\n\n' +
+          `Wager amount: $${state.wagerAmount} wagered on Goated past ${state.wagerPeriod} days\\.\n\n` +
+          `$${state.rewardAmount} for the first ${state.maxClaims} in this group only\\!\n\n` +
           `Here's the code:\n🎲 ||${state.code}|| 🎲\n\n` +
-          'Must be one of my Affiliates: goated.com/r/goatedvips\n\n' +
-          `$${state.rewardAmount} for first ${state.maxClaims} users!\n\n` +
-          'Good luck!\n\n' +
-          '*Codes are case sensitive*\n' +
-          '*Must be an affiliate to claim*';
+          'Must be one of my Affiliates: goated\\.com/r/goatedvips\n\n' +
+          `$${state.rewardAmount} for first ${state.maxClaims} users\\!\n\n` +
+          'Good luck\\!\n\n' +
+          '\\*Codes are case sensitive\\*\n' +
+          '\\*Must be an affiliate to claim\\*';
 
         await bot.sendMessage(chatId, previewMessage, { parse_mode: 'MarkdownV2' });
         await bot.sendMessage(chatId, 'Use /deploybonus CODE to deploy this bonus code to the group.');
