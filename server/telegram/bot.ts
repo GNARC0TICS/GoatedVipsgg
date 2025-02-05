@@ -67,15 +67,19 @@ async function setupBotCommands() {
       { command: 'makeadmin', description: '👑 Grant admin privileges' }
     ];
 
-    // Set commands for all chat types
-    await bot.setMyCommands(baseCommands, { scope: { type: 'default' } });
-    await bot.setMyCommands(baseCommands, { scope: { type: 'all_private_chats' } });
-    await bot.setMyCommands(baseCommands, { scope: { type: 'all_group_chats' } });
-    await bot.setMyCommands(baseCommands, { scope: { type: 'all_chat_administrators' } });
-
-    // Set admin commands for xGoombas in private chat
-    const adminScope = { type: 'chat', chat_id: Number(ADMIN_TELEGRAM_IDS[0]) };
-    await bot.setMyCommands(adminCommands, { scope: adminScope });
+    // Set base commands globally
+    await bot.setMyCommands(baseCommands);
+    
+    // Set admin commands for private chats with admins
+    for (const adminId of ADMIN_TELEGRAM_IDS) {
+      try {
+        await bot.setMyCommands(adminCommands, {
+          scope: { type: 'chat', chat_id: adminId }
+        });
+      } catch (error) {
+        console.error(`Error setting admin commands for ${adminId}:`, error);
+      }
+    }
 
     // Admin commands will be set when you first interact with the bot
     bot.on('message', async (msg) => {
@@ -384,8 +388,38 @@ bot.onText(/\/setup_guide/, async (msg) => {
   const setupGuide = `📱 *Channel Forwarding Setup Guide*
 
 1️⃣ *Preparation:*
-   • Make sure the bot is an admin in your channel
-   • Have your channel username ready \(e\.g\. @YourChannel\)
+   • Create your channel if you haven't already
+   • Add @GoatedVIPsBot as an admin to your channel
+   • Make sure your channel is public with a username
+
+2️⃣ *Step\-by\-Step Setup:*
+   1\. Add the bot as admin to your channel with these permissions:
+      • Post Messages
+      • Edit Messages
+      • Delete Messages
+   
+   2\. Get your channel's username \(e\.g\. @YourChannel\)
+   
+   3\. Use this command to start forwarding:
+      \`/setup_forwarding @YourChannel\`
+
+3️⃣ *Managing Forwards:*
+   • Check status: \`/list_forwardings\`
+   • Stop forwarding: \`/stop_forwarding\`
+   • Start new forward: \`/setup_forwarding @channel\`
+
+4️⃣ *Features:*
+   • Auto\-formats Goated links to affiliate links
+   • Forwards text & media content
+   • Maintains original formatting
+   • Real\-time forwarding to all configured groups
+
+5️⃣ *Tips:*
+   • Test with a small message first
+   • Check bot's admin rights if forwarding fails
+   • Contact @xGoombas if you need help
+
+*Need assistance? Use /help for all available commands*
 
 2️⃣ *Setup Steps:*
    1\. Add the bot as admin to your channel
