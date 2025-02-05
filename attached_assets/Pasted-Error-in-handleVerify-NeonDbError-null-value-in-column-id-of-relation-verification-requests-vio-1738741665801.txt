@@ -1,0 +1,47 @@
+Error in handleVerify NeonDbError: null value in column "id" of relation "verification_requests" violates not-null constraint
+    at execute (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1556:55)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async Object.handleVerify (/home/runner/workspace/server/telegram/bot.ts:1269:7) {
+  severity: 'ERROR',
+  code: '23502',
+  detail: 'Failing row contains (null, 5457146800, waka777waka, 2025-02-05 07:44:27.957, pending, null, S7ak7au7o, null, null, 2025-02-05 07:44:28.046407).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'verification_requests',
+  column: 'id',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'execMain.c',
+  line: '1987',
+  routine: 'ExecConstraints',
+  sourceError: undefined
+}
+Error sending welcome image: ReferenceError: require is not defined
+    at Object.handleStart (/home/runner/workspace/server/telegram/bot.ts:1108:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Continuing with text-only welcome message
+Error in handleVerify NeonDbError: null value in column "id" of relation "verification_requests" violates not-null constraint
+    at execute (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1556:55)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async Object.handleVerify (/home/runner/workspace/server/telegram/bot.ts:1269:7) {
+  severity: 'ERROR',
+  code: '23502',
+  detail: 'Failing row contains (null, 5457146800, Waka777waka, 2025-02-05 07:45:02.926, pending, null, S7ak7au7o, null, null, 2025-02-05 07:45:03.003175).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'verification_requests',
+  column: 'id',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'execMain.c',
+  line: '1987',
+  routine: 'ExecConstraints',
+  sourceError: undefined
