@@ -67,7 +67,7 @@ async function setupBotCommands() {
 
     // Set base commands globally
     await bot.setMyCommands(baseCommands);
-    
+
     // Set admin commands for private chats with admins
     for (const adminId of ADMIN_TELEGRAM_IDS) {
       try {
@@ -124,7 +124,7 @@ initializeBotWithRetry().catch(error => {
 // Add help command handler
 bot.onText(/\/help/, async (msg) => {
   const chatId = msg.chat.id;
-  
+
   let message = `🐐 *Welcome to Goated Stats Bot\\!*\n\n`;
 
   if (msg.from?.username === 'xGoombas') {
@@ -409,9 +409,9 @@ bot.onText(/\/setup_guide/, async (msg) => {
       • Post Messages
       • Edit Messages
       • Delete Messages
-   
+
    2\. Get your channel's username \(e\.g\. @YourChannel\)
-   
+
    3\. Use this command to start forwarding:
       \`/setup_forwarding @YourChannel\`
 
@@ -841,10 +841,10 @@ let isProcessingQueue = false;
 
 async function processVerificationQueue() {
   if (isProcessingQueue || verificationQueue.length === 0) return;
-  
+
   isProcessingQueue = true;
   const request = verificationQueue.shift();
-  
+
   if (!request) {
     isProcessingQueue = false;
     return;
@@ -892,7 +892,7 @@ async function processVerificationQueue() {
       await bot.sendMessage(
         request.chatId,
         '❌ Account not found!\n\nPlease check:\n' +
-        '1. Your username is exactly as shown on Goated.com\n' +
+        '1. Your usernameis exactly as shown on Goated.com\n' +
         '2. You have completed at least one wager\n' +
         '3. You are using our affiliate link: goated.com/r/goatedvips\n\n' +
         'If you need help, contact @xGoombas'
@@ -941,7 +941,7 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
     // Add to verification queue
     verificationQueue.push({ telegramId, goatedUsername, chatId });
     processVerificationQueue();
-    
+
     return bot.sendMessage(
       chatId,
       '🔄 Processing verification request...\n' +
@@ -949,81 +949,6 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
     );
   } catch (error) {
     console.error('Error in handleVerify:', error);
-    return bot.sendMessage(chatId, 'An error occurred while processing your verification request. Please try again later.');
-  }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to verify username');
-      }
-
-      const userData = await response.json();
-      const userExists = userData?.data?.monthly?.data?.some(
-        (u: any) => u.name.toLowerCase() === goatedUsername.toLowerCase()
-      );
-
-      if (userExists) {
-      // Create or update verification request
-      await db.delete(verificationRequests)
-        .where(eq(verificationRequests.telegramId, telegramId));
-        
-      await db.insert(verificationRequests)
-        .values({
-          telegramId,
-          goatedUsername,
-          status: 'pending',
-          requestedAt: new Date()
-        });
-
-      // Create or update telegram user
-      await db.insert(telegramUsers)
-        .values({
-          telegramId,
-          goatedUsername,
-          isVerified: false,
-          createdAt: new Date()
-        })
-        .onConflictDoUpdate({
-          target: [telegramUsers.telegramId],
-          set: { goatedUsername }
-        });
-
-      // Notify admins about new verification request
-      for (const adminId of ADMIN_TELEGRAM_IDS) {
-        const keyboard = {
-          inline_keyboard: [
-            [
-              { text: '✅ Approve', callback_data: `verify_approve_${telegramId}` },
-              { text: '❌ Reject', callback_data: `verify_reject_${telegramId}` }
-            ]
-          ]
-        };
-
-        await bot.sendMessage(
-          adminId,
-          `New verification request:\nTelegram User: ${msg.from?.username || 'Unknown'}\nGoated Username: ${goatedUsername}`,
-          { reply_markup: keyboard }
-        );
-      }
-
-      return bot.sendMessage(
-        chatId,
-        '✅ Account found! Verification request submitted.\n\n' +
-        'Please be patient while your account is awaiting verification.\n' +
-        'You will receive a notification once the process is complete.'
-      );
-    } else {
-      return bot.sendMessage(chatId,
-        '❌ Account not found!\n\n' +
-        'Please check:\n' +
-        '1. Your username is exactly as shown on Goated.com\n' +
-        '2. You have completed at least one wager\n' +
-        '3. You are using our affiliate link: goated.com/r/goatedvips\n\n' +
-        'If you need help, contact @xGoombas');
-    }
-  } catch (error) {
-    logDebug('Error in handleVerify', error);
     return bot.sendMessage(chatId, 'An error occurred while processing your verification request. Please try again later.');
   }
 }
