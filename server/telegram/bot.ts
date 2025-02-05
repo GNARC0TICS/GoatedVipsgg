@@ -72,30 +72,22 @@ async function setupBotCommands() {
     // Set base commands globally
     await bot.setMyCommands(baseCommands);
 
-    // Set admin commands for private chats with admins
-    for (const adminId of ADMIN_TELEGRAM_IDS) {
-      try {
-        await bot.setMyCommands(adminCommands, {
-          scope: { type: 'chat', chat_id: adminId }
-        });
-      } catch (error) {
-        console.error(`Error setting admin commands for ${adminId}:`, error);
-      }
-    }
-
-    // Admin commands will be set when you first interact with the bot
+    // Set admin commands globally first
+    await bot.setMyCommands(baseCommands);
+    
+    // Set admin commands for specific admins when they interact
     bot.on('message', async (msg) => {
-      if (msg.from?.username === 'xGoombas') {
+      const adminUsername = msg.from?.username;
+      const chatId = msg.chat?.id;
+      
+      if (adminUsername === 'xGoombas' && chatId) {
         try {
-          // Set admin commands for user's private chat
-          if (msg.from?.id) {
-            await bot.setMyCommands(adminCommands, { 
-              scope: { 
-                type: 'chat',
-                chat_id: msg.from.id 
-              }
-            });
-          }
+          await bot.setMyCommands(adminCommands, { 
+            scope: { 
+              type: 'chat',
+              chat_id: chatId.toString()
+            }
+          });
         } catch (error) {
           console.error('Error setting admin commands:', error);
         }
