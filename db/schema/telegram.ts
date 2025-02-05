@@ -17,7 +17,7 @@ export type TelegramUser = InferModel<typeof telegramUsers>;
 export type TelegramUserInsert = InferModel<typeof telegramUsers, "insert">;
 
 export const verificationRequests = pgTable('verification_requests', {
-  id: integer('id').primaryKey().notNull(),
+  id: integer('id').primaryKey().default(sql`gen_random_uuid()::text::integer`),
   telegramId: text('telegram_id').notNull(),
   telegramUsername: text('telegram_username'),
   goatedUsername: text('goated_username').notNull(),

@@ -1293,14 +1293,15 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
       await db.delete(verificationRequests)
         .where(eq(verificationRequests.telegramId, telegramId));
 
-      await db.insert(verificationRequests)
+      const [request] = await db.insert(verificationRequests)
         .values({
           telegramId,
           telegramUsername: msg.from?.username || null,
           goatedUsername,
           status: 'pending',
           requestedAt: new Date()
-        });
+        })
+        .returning();
 
       // Create or update telegram user
       await db.insert(telegramUsers)
