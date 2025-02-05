@@ -371,8 +371,7 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
       'You can now use:\n' +
       '/stats - Check your wager statistics\n' +
       '/race - View your monthly race position\n' +
-      '/leaderboard - See top players\n\n' +
-      '🌐 You can also use this verification to log into our platform at https://goatedvips.gg');
+      '/leaderboard - See top players');
 
     // Notify in allowed groups
     for (const groupId of ALLOWED_GROUP_IDS) {
