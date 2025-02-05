@@ -1153,10 +1153,17 @@ async function fetchLeaderboardData() {
       {
         method: 'GET',
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
+        timeout: 10000
       }
     );
+
+    if (!response.ok) {
+      logDebug('API request failed', { status: response.status });
+      throw new Error(`API request failed with status: ${response.status}`);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
