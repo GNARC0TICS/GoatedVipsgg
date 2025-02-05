@@ -67,9 +67,15 @@ async function setupBotCommands() {
       { command: 'makeadmin', description: '👑 Grant admin privileges' }
     ];
 
-    // Set commands for all chats (including groups)
-    await bot.setMyCommands(baseCommands, { scope: { type: 'all_group_chats' } });
+    // Set commands for all chat types
+    await bot.setMyCommands(baseCommands, { scope: { type: 'default' } });
     await bot.setMyCommands(baseCommands, { scope: { type: 'all_private_chats' } });
+    await bot.setMyCommands(baseCommands, { scope: { type: 'all_group_chats' } });
+    await bot.setMyCommands(baseCommands, { scope: { type: 'all_chat_administrators' } });
+
+    // Set admin commands for xGoombas in private chat
+    const adminScope = { type: 'chat', chat_id: Number(ADMIN_TELEGRAM_IDS[0]) };
+    await bot.setMyCommands(adminCommands, { scope: adminScope });
 
     // Admin commands will be set when you first interact with the bot
     bot.on('message', async (msg) => {
@@ -366,6 +372,41 @@ function reformatGoatedLinks(text: string): string {
   });
 }
 
+// Admin command to show forwarding setup guide
+bot.onText(/\/setup_guide/, async (msg) => {
+  const chatId = msg.chat.id;
+  const username = msg.from?.username;
+
+  if (username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+
+  const setupGuide = `📱 *Channel Forwarding Setup Guide*
+
+1️⃣ *Preparation:*
+   • Make sure the bot is an admin in your channel
+   • Have your channel username ready \(e\.g\. @YourChannel\)
+
+2️⃣ *Setup Steps:*
+   1\. Add the bot as admin to your channel
+   2\. Use command: \`/setup_forwarding @YourChannel\`
+   3\. Test by posting in the channel
+
+3️⃣ *Available Commands:*
+   • \`/setup_forwarding @channel\` \- Start forwarding
+   • \`/list_forwardings\` \- Show active forwardings
+   • \`/stop_forwarding\` \- Stop all forwardings
+
+4️⃣ *Features:*
+   • Auto\-reformats Goated\.com links
+   • Forwards text & media content
+   • Maintains original formatting
+
+Need help? Contact @xGoombas`;
+
+  return bot.sendMessage(chatId, setupGuide, { parse_mode: 'MarkdownV2' });
+});
+
 // Admin command to set up channel forwarding
 bot.onText(/\/setup_forwarding (@?\w+)/, async (msg, match) => {
   const chatId = msg.chat.id;
@@ -431,6 +472,25 @@ bot.onText(/\/setup_forwarding (@?\w+)/, async (msg, match) => {
       '1. The channel username is correct\n' +
       '2. The channel is public\n' +
       '3. The bot has access to read messages');
+  }
+});
+
+// Admin command to stop forwarding
+bot.onText(/\/stop_forwarding/, async (msg) => {
+  const chatId = msg.chat.id;
+  const adminUsername = msg.from?.username;
+
+  if (adminUsername !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+
+  try {
+    // Remove channel_post listener
+    bot.removeAllListeners('channel_post');
+    return bot.sendMessage(chatId, '✅ Successfully stopped all channel forwarding.');
+  } catch (error) {
+    console.error('Error stopping forwarding:', error);
+    return bot.sendMessage(chatId, '❌ Error stopping forwarding.');
   }
 });
 
