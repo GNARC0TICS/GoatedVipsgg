@@ -9,7 +9,7 @@ import { and } from 'drizzle-orm';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_TELEGRAM_IDS = ['1689953605'];
-const ALLOWED_GROUP_IDS = process.env.ALLOWED_GROUP_IDS?.split(',') || [];
+const ALLOWED_GROUP_IDS = ['1002169964764'];
 
 if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
