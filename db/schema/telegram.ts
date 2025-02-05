@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 export const telegramUsers = pgTable('telegram_users', {
   id: serial('id').primaryKey(),
   telegramId: text('telegram_id').notNull().unique(),
+  telegramUsername: text('telegram_username'),
   goatedUsername: text('goated_username'),
   isVerified: boolean('is_verified').default(false),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
@@ -14,10 +15,13 @@ export const telegramUsers = pgTable('telegram_users', {
 export const verificationRequests = pgTable('verification_requests', {
   id: serial('id').primaryKey().notNull(),
   telegramId: text('telegram_id').notNull(),
+  telegramUsername: text('telegram_username'),
   goatedUsername: text('goated_username').notNull(),
   requestedAt: timestamp('requested_at').default(sql`CURRENT_TIMESTAMP`),
   status: text('status').default('pending'), // pending, approved, rejected
   adminNotes: text('admin_notes'),
+  verifiedAt: timestamp('verified_at'),
+  verifiedBy: text('verified_by'),
 });
 
 export const challenges = pgTable('challenges', {

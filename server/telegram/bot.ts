@@ -614,7 +614,11 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
     // Update verification request status
     const [request] = await db
       .update(verificationRequests)
-      .set({ status: 'approved' })
+      .set({ 
+        status: 'approved',
+        verifiedAt: new Date(),
+        verifiedBy: adminUsername
+      })
       .where(eq(verificationRequests.telegramId, telegramId))
       .returning();
 
@@ -1259,6 +1263,7 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
       await db.insert(verificationRequests)
         .values({
           telegramId,
+          telegramUsername: msg.from?.username || null,
           goatedUsername,
           status: 'pending',
           requestedAt: new Date()
@@ -1268,13 +1273,19 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
       await db.insert(telegramUsers)
         .values({
           telegramId,
+          telegramUsername: msg.from?.username || null,
           goatedUsername,
           isVerified: false,
-          createdAt: new Date()
+          createdAt: new Date(),
+          lastActive: new Date()
         })
         .onConflictDoUpdate({
           target: [telegramUsers.telegramId],
-          set: { goatedUsername }
+          set: { 
+            goatedUsername,
+            telegramUsername: msg.from?.username || null,
+            lastActive: new Date()
+          }
         });
 
       // Notify admins about new verification request
