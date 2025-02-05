@@ -47,8 +47,9 @@ async function setupBotCommands() {
       { command: 'makeadmin', description: '👑 Grant admin privileges' }
     ];
 
-    // Set default commands for all users
-    await bot.setMyCommands(baseCommands);
+    // Set commands for all chats (including groups)
+    await bot.setMyCommands(baseCommands, { scope: { type: 'all_group_chats' } });
+    await bot.setMyCommands(baseCommands, { scope: { type: 'all_private_chats' } });
 
     // Admin commands will be set when you first interact with the bot
     bot.on('message', async (msg) => {
