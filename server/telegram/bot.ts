@@ -864,15 +864,28 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
 
   try {
     // Fetch leaderboard data to verify UID
-    const leaderboardData = await fetchLeaderboardData();
-    const transformedData = transformLeaderboardData(leaderboardData);
+    try {
+      // Try to fetch user stats directly
+      const response = await fetch(
+        `http://0.0.0.0:5000/api/affiliate/stats?username=${encodeURIComponent(goatedUsername)}`,
+        {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+        }
+      );
 
-    // Check if user exists
-    const leaderboardUser = transformedData?.find(user =>
-      user.name.toLowerCase() === goatedUsername.toLowerCase()
-    );
+      if (!response.ok) {
+        throw new Error('Failed to verify username');
+      }
 
-    if (leaderboardUser) {
+      const userData = await response.json();
+      const userExists = userData?.data?.monthly?.data?.some(
+        (u: any) => u.name.toLowerCase() === goatedUsername.toLowerCase()
+      );
+
+      if (userExists) {
       // Create or update verification request
       await db.insert(verificationRequests)
         .values({
@@ -926,8 +939,11 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
     } else {
       return bot.sendMessage(chatId,
         '❌ Account not found!\n\n' +
-        'Please ensure you are using your exact username as shown on the platform.\n' +
-        'If the issue persists, contact @xGoombas for assistance.');
+        'Please check:\n' +
+        '1. Your username is exactly as shown on Goated.com\n' +
+        '2. You have completed at least one wager\n' +
+        '3. You are using our affiliate link: goated.com/r/goatedvips\n\n' +
+        'If you need help, contact @xGoombas');
     }
   } catch (error) {
     logDebug('Error in handleVerify', error);
