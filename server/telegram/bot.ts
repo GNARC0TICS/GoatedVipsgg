@@ -13,11 +13,15 @@ if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
 
-// Create a bot instance with polling
-const bot = new TelegramBot(token, { polling: false });
+// Create a bot instance with polling if not in development
+const isDevelopment = process.env.NODE_ENV === 'development';
+const bot = isDevelopment ? 
+  null as unknown as TelegramBot : 
+  new TelegramBot(token, { polling: false });
 
 // Cleanup function to stop polling
 async function stopBot() {
+  if (isDevelopment) return;
   try {
     await bot.stopPolling();
     console.log('[Telegram Bot] Polling stopped');
