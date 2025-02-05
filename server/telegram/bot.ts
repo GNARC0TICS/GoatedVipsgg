@@ -3,7 +3,7 @@ import { db } from '@db';
 import { telegramUsers, verificationRequests, bonusCodes } from '@db/schema/telegram';
 import { eq, and } from 'drizzle-orm';
 import { API_CONFIG } from '../config/api';
-import { users, challenges, challengeEntries } from '@db/schema';
+import { users } from '@db/schema';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_TELEGRAM_IDS = ['1689953605'];
@@ -17,7 +17,7 @@ if (!token) {
 }
 
 // Create a bot instance with polling and privacy mode
-const bot = new TelegramBot(token, {
+const bot = new TelegramBot(token, { 
   polling: false,
   filepath: false // Disable file downloads for security
 });
@@ -190,9 +190,9 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
         .execute();
 
       // Verify user is checking their own stats and is verified
-      if (!requester?.[0]?.isVerified ||
-        requester[0].goatedUsername?.toLowerCase() !== username.toLowerCase()) {
-        return bot.sendMessage(chatId,
+      if (!requester?.[0]?.isVerified || 
+          requester[0].goatedUsername?.toLowerCase() !== username.toLowerCase()) {
+        return bot.sendMessage(chatId, 
           'You can only check your own stats after verification.');
       }
     }
@@ -215,7 +215,7 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
     // Monthly data contains the primary stats we display
     const transformedData = data?.data?.monthly?.data;
     // Find the specific user in the data array
-    let userStats = transformedData?.find(u =>
+    let userStats = transformedData?.find(u => 
       u.name.toLowerCase() === username.toLowerCase()
     );
 
@@ -229,7 +229,7 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
 
       // If found, look up their stats using their Goated username
       if (telegramUser?.[0]?.goatedUsername) {
-        userStats = transformedData?.find(u =>
+        userStats = transformedData?.find(u => 
           u.name.toLowerCase() === telegramUser[0].goatedUsername?.toLowerCase()
         );
       }
@@ -281,7 +281,7 @@ bot.onText(/\/createbonus/, async (msg) => {
     }
   }, BONUS_CODE_STATE_TIMEOUT);
 
-  bonusCodeState.set(chatId, {
+  bonusCodeState.set(chatId, { 
     step: 'code',
     timeout
   });
@@ -294,7 +294,7 @@ bot.onText(/\/createbonus/, async (msg) => {
     '- Keep it memorable\n' +
     '- Code must be unique\n\n' +
     '⌛ You have 5 minutes to complete this process';
-
+    
   return bot.sendMessage(chatId, message);
 });
 
@@ -386,7 +386,7 @@ bot.on('message', async (msg) => {
 
         try {
           const expiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
-
+          
           // Create bonus code in database
           const [bonusCode] = await db.insert(bonusCodes)
             .values({
@@ -416,11 +416,11 @@ bot.on('message', async (msg) => {
             `Use /deploybonus ${state.code} to announce this code\\.`;
 
           await bot.sendMessage(chatId, previewMessage, { parse_mode: 'MarkdownV2' });
-
+          
           // Clear state and timeout
           clearTimeout(state.timeout);
           bonusCodeState.delete(chatId);
-
+          
           logDebug('Bonus code created', bonusCode);
         } catch (error) {
           logDebug('Error creating bonus code', error);
@@ -475,7 +475,7 @@ bot.onText(/\/deploybonus (.+)/, async (msg, match) => {
       return bot.sendMessage(chatId, '❌ Bonus code not found.');
     }
 
-    const announcement =
+    const announcement = 
       'Sup VIPS 🐐\nCode time\\!\n\n' +
       `Wager amount: $${bonusCode.wagerAmount} wagered on Goated past ${bonusCode.wagerPeriodDays} days\\.\n\n` +
       `$${bonusCode.rewardAmount} for the first ${bonusCode.maxClaims} in this group only\\!\n\n` +
@@ -490,7 +490,7 @@ bot.onText(/\/deploybonus (.+)/, async (msg, match) => {
     // Send to all allowed groups
     for (const groupId of ALLOWED_GROUP_IDS) {
       try {
-        await bot.sendMessage(groupId, announcement, {
+        await bot.sendMessage(groupId, announcement, { 
           parse_mode: 'MarkdownV2',
           disable_web_page_preview: true
         });
@@ -603,7 +603,7 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
       .from(telegramUsers)
       .where(eq(telegramUsers.telegramUsername, telegramId))
       .execute();
-
+    
     if (!user?.[0]) {
       return bot.sendMessage(chatId, '❌ User not found with that username.');
     }
@@ -614,7 +614,7 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
     // Update verification request status
     const [request] = await db
       .update(verificationRequests)
-      .set({
+      .set({ 
         status: 'approved',
         verifiedAt: new Date(),
         verifiedBy: adminUsername
@@ -633,7 +633,7 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
       .where(eq(telegramUsers.telegramId, telegramId));
 
     // Notify user privately
-    await bot.sendMessage(telegramId,
+    await bot.sendMessage(telegramId, 
       '✅ Your account has been verified!\n\n' +
       'You can now use:\n' +
       '/stats - Check your wager statistics\n' +
@@ -690,7 +690,7 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
       }
     }
 
-    return bot.sendMessage(chatId,
+    return bot.sendMessage(chatId, 
       `✅ Broadcast complete!\nDelivered to: ${successCount} users\nFailed: ${failCount} users`);
   } catch (error) {
     console.error('Error broadcasting message:', error);
@@ -722,6 +722,7 @@ bot.onText(/\/setup_guide/, async (msg) => {
   }
 
   const setupGuide = `📱 *Channel Forwarding Setup Guide*
+
 1️⃣ *Preparation:*
    • Create your channel if you haven't already
    • Add @GoatedVIPsBot as an admin to your channel
@@ -787,7 +788,7 @@ bot.onText(/\/setup_forwarding (@?\w+)/, async (msg, match) => {
   }
 
   if (!channelUsername) {
-    return bot.sendMessage(chatId,
+    return bot.sendMessage(chatId, 
       '❌ Please provide the channel username.\n' +
       'Example: /setup_forwarding @channelname');
   }
@@ -830,13 +831,13 @@ bot.onText(/\/setup_forwarding (@?\w+)/, async (msg, match) => {
       }
     });
 
-    return bot.sendMessage(chatId,
+    return bot.sendMessage(chatId, 
       `✅ Successfully set up forwarding from @${channelUsername}\n` +
       `Messages will be forwarded to ${ALLOWED_GROUP_IDS.length} group(s)\n` +
       `All Goated.com links will be automatically reformatted with our affiliate link.`);
   } catch (error) {
     console.error('Error setting up channel forwarding:', error);
-    return bot.sendMessage(chatId,
+    return bot.sendMessage(chatId, 
       '❌ Error setting up forwarding. Please ensure:\n' +
       '1. The channel username is correct\n' +
       '2. The channel is public\n' +
@@ -906,7 +907,7 @@ bot.onText(/\/broadcast_groups (.+)/, async (msg, match) => {
       }
     }
 
-    return bot.sendMessage(chatId,
+    return bot.sendMessage(chatId, 
       `✅ Group broadcast complete!\nDelivered to: ${successCount} groups\nFailed: ${failedGroups.length} groups`);
   } catch (error) {
     console.error('Error broadcasting to groups:', error);
@@ -1191,99 +1192,151 @@ async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
 }
 
 // Command handlers
-bot.onText(/\/verify (.+)/, async (msg, match) => {
+async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | null) {
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
-  const telegramUsername = msg.from?.username;
-  const goatedUsername = match?.[1]?.trim();
 
-  if (!telegramId || !goatedUsername) {
-    return bot.sendMessage(chatId, '❌ Please provide your Goated username.\nFormat: /verify YourGoatedUsername');
+  if (!telegramId) {
+    return bot.sendMessage(chatId, 'Could not identify user.');
   }
 
+  // Check if user is already verified
+  const existingUser = await db.select()
+    .from(telegramUsers)
+    .where(eq(telegramUsers.telegramId, telegramId))
+    .execute();
+
+  if (existingUser?.[0]?.isVerified) {
+    return bot.sendMessage(chatId, 
+      '✅ Your account is already verified!\n\n' +
+      'Available commands:\n' +
+      '/stats - Check your wager statistics\n' +
+      '/race - View your monthly race position\n' +
+      '/leaderboard - See top players');
+  }
+
+  // If in group chat, direct to private chat
+  if (chatId < 0) {
+    return bot.sendMessage(
+      chatId,
+      'Please start a private chat with me to complete the verification process:\n' +
+      'https://t.me/GoatedVIPsBot?start=verify'
+    );
+  }
+
+  // If no username provided, ask for it
+  if (!match?.[1]) {
+    return bot.sendMessage(chatId,
+      'Please provide your Goated username with the command.\n' +
+      'Example: /verify YourUsername\n\n' +
+      'Make sure to use your exact username as shown on the platform.');
+  }
+
+  const goatedUsername = match[1].trim();
+
   try {
-    // Check if user is already verified
-    const existingUser = await db.select()
-      .from(telegramUsers)
-      .where(eq(telegramUsers.telegramId, telegramId))
-      .execute();
-
-    if (existingUser?.[0]?.isVerified) {
-      return bot.sendMessage(chatId, '❌ Your account is already verified.');
-    }
-
-    // Check for pending verification
-    const pendingRequest = await db.select()
-      .from(verificationRequests)
-      .where(
-        and(
-          eq(verificationRequests.telegramId, telegramId),
-          eq(verificationRequests.status, 'pending')
-        )
-      )
-      .execute();
-
-    if (pendingRequest?.[0]) {
-      return bot.sendMessage(chatId,
-        '⏳ You already have a pending verification request.\n' +
-        'Please wait for admin approval or contact @xGoombas.');
-    }
-
-    // Create/update telegram user entry
-    await db.insert(telegramUsers)
-      .values({
-        telegramId,
-        telegramUsername,
-        goatedUsername,
-        isVerified: false,
-        lastActive: new Date()
-      })
-      .onConflictDoUpdate({
-        target: telegramUsers.telegramId,
-        set: {
-          telegramUsername,
-          goatedUsername,
-          lastActive: new Date()
+    // Try to fetch user stats directly
+    const response = await fetch(
+        `http://0.0.0.0:5000/api/affiliate/stats?username=${encodeURIComponent(goatedUsername)}`,
+        {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
         }
-      });
+      );
 
-    // Create verification request
-    await db.insert(verificationRequests)
-      .values({
-        telegramId,
-        telegramUsername,
-        goatedUsername,
-        status: 'pending',
-        requestedAt: new Date()
-      });
-
-    // Notify admins about new verification request
-    for (const adminId of ADMIN_TELEGRAM_IDS) {
-      try {
-        await bot.sendMessage(adminId,
-          '🔔 New verification request!\n\n' +
-          `Telegram: ${telegramUsername ? '@' + telegramUsername : telegramId}\n` +
-          `Goated: ${goatedUsername}\n\n` +
-          `To verify: /verify_user ${telegramUsername ? '@' + telegramUsername : telegramId}\n` +
-          `To reject: /reject_user ${telegramUsername ? '@' + telegramUsername : telegramId}`
-        );
-      } catch (error) {
-        console.error('Error notifying admin:', error);
+      if (!response.ok) {
+        throw new Error('Failed to verify username');
       }
+
+      const userData = await response.json();
+      const userExists = userData?.data?.monthly?.data?.some(
+        (u: any) => u.name.toLowerCase() === goatedUsername.toLowerCase()
+      );
+
+      if (userExists) {
+      // Create or update verification request
+      await db.delete(verificationRequests)
+        .where(eq(verificationRequests.telegramId, telegramId));
+
+      await db.insert(verificationRequests)
+        .values({
+          telegramId,
+          telegramUsername: msg.from?.username || null,
+          goatedUsername,
+          status: 'pending',
+          requestedAt: new Date()
+        });
+
+      // Create or update telegram user
+      await db.insert(telegramUsers)
+        .values({
+          telegramId,
+          telegramUsername: msg.from?.username || null,
+          goatedUsername,
+          isVerified: false,
+          createdAt: new Date(),
+          lastActive: new Date()
+        })
+        .onConflictDoUpdate({
+          target: [telegramUsers.telegramId],
+          set: { 
+            goatedUsername,
+            telegramUsername: msg.from?.username || null,
+            lastActive: new Date()
+          }
+        });
+
+      // Notify admins about new verification request
+      for (const adminId of ADMIN_TELEGRAM_IDS) {
+        const keyboard = {
+          inline_keyboard: [
+            [
+              { text: '✅ Approve', callback_data: `verify_approve_${telegramId}` },
+              { text: '❌ Reject', callback_data: `verify_reject_${telegramId}` }
+            ]
+          ]
+        };
+
+        await bot.sendMessage(
+          adminId,
+          `New verification request:\nTelegram User: ${msg.from?.username || 'Unknown'}\nGoated Username: ${goatedUsername}`,
+          { reply_markup: keyboard }
+        );
+      }
+
+      return bot.sendMessage(
+        chatId,
+        '✅ Account found! Verification request submitted.\n\n' +
+        'Please be patient while your account is awaiting verification.\n' +
+        'You will receive a notification once the process is complete.'
+      );
+    } else {
+      return bot.sendMessage(chatId,
+        '❌ Account not found!\n\n' +
+        'Please check:\n' +
+        '1. Your username is exactly as shown on Goated.com\n' +
+        '2. You have completed at least one wager\n' +
+        '3. You are using our affiliate link: goated.com/r/goatedvips\n\n' +
+        'If you need help, contact @xGoombas');
     }
-
-    return bot.sendMessage(chatId,
-      '✅ Verification request submitted!\n\n' +
-      'Please wait for admin approval.\n' +
-      'You will be notified once your account is verified.');
-
   } catch (error) {
-    console.error('Verification error:', error);
-    return bot.sendMessage(chatId,
+    console.error('Error in handleVerify', error);
+    if (error.message === 'Failed to verify username') {
+      return bot.sendMessage(chatId, 
+        '❌ Unable to verify username at this time.\n' +
+        'Please ensure:\n' +
+        '1. Your username is exactly as shown on Goated\n' +
+        '2. You have completed at least one wager\n' +
+        '3. The API service is available\n\n' +
+        'Try again in a few minutes or contact @xGoombas for help.');
+    }
+    return bot.sendMessage(chatId, 
       '❌ An error occurred during verification.\n' +
       'Please try again or contact @xGoombas if the issue persists.');
   }
-});
+}
 
 // Group chat optimization
 const groupLastCommand = new Map<number, number>();
@@ -1294,12 +1347,12 @@ function isGroupChat(chatId: number): boolean {
 
 function canProcessGroupCommand(chatId: number): boolean {
   if (!isGroupChat(chatId)) return true;
-
+  
   const now = Date.now();
   const lastCommand = groupLastCommand.get(chatId) || 0;
-
+  
   if (now - lastCommand < GROUP_COOLDOWN) return false;
-
+  
   groupLastCommand.set(chatId, now);
   return true;
 }
@@ -1370,7 +1423,7 @@ All-time: $${userStats.wagered.all_time.toLocaleString()}`;
   } catch (error) {
     logDebug('Error in handleStats', error);
     const errorMsg = 'An error occurred while fetching your stats. Please try again later.';
-    return isSilentCommand && msg.from
+    return isSilentCommand && msg.from 
       ? bot.sendMessage(msg.from.id, errorMsg)
       : bot.sendMessage(chatId, errorMsg);
   }
@@ -1553,113 +1606,20 @@ function isAdmin(telegramId: string): boolean {
 
 // Register event handlers
 bot.onText(/\/start/, handleStart);
-bot.onText(/\/verify (.+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const telegramId = msg.from?.id.toString();
-  const telegramUsername = msg.from?.username;
-  const goatedUsername = match?.[1]?.trim();
-
-  if (!telegramId || !goatedUsername) {
-    return bot.sendMessage(chatId, '❌ Please provide your Goated username.\nFormat: /verify YourGoatedUsername');
-  }
-
-  try {
-    // Check if user is already verified
-    const existingUser = await db.select()
-      .from(telegramUsers)
-      .where(eq(telegramUsers.telegramId, telegramId))
-      .execute();
-
-    if (existingUser?.[0]?.isVerified) {
-      return bot.sendMessage(chatId, '❌ Your account is already verified.');
-    }
-
-    // Check for pending verification
-    const pendingRequest = await db.select()
-      .from(verificationRequests)
-      .where(
-        and(
-          eq(verificationRequests.telegramId, telegramId),
-          eq(verificationRequests.status, 'pending')
-        )
-      )
-      .execute();
-
-    if (pendingRequest?.[0]) {
-      return bot.sendMessage(chatId,
-        '⏳ You already have a pending verification request.\n' +
-        'Please wait for admin approval or contact @xGoombas.');
-    }
-
-    // Create/update telegram user entry
-    await db.insert(telegramUsers)
-      .values({
-        telegramId,
-        telegramUsername,
-        goatedUsername,
-        isVerified: false,
-        lastActive: new Date()
-      })
-      .onConflictDoUpdate({
-        target: telegramUsers.telegramId,
-        set: {
-          telegramUsername,
-          goatedUsername,
-          lastActive: new Date()
-        }
-      });
-
-    // Create verification request
-    await db.insert(verificationRequests)
-      .values({
-        telegramId,
-        telegramUsername,
-        goatedUsername,
-        status: 'pending',
-        requestedAt: new Date()
-      });
-
-    // Notify admins about new verification request
-    for (const adminId of ADMIN_TELEGRAM_IDS) {
-      try {
-        await bot.sendMessage(adminId,
-          '🔔 New verification request!\n\n' +
-          `Telegram: ${telegramUsername ? '@' + telegramUsername : telegramId}\n` +
-          `Goated: ${goatedUsername}\n\n` +
-          `To verify: /verify_user ${telegramUsername ? '@' + telegramUsername : telegramId}\n` +
-          `To reject: /reject_user ${telegramUsername ? '@' + telegramUsername : telegramId}`
-        );
-      } catch (error) {
-        console.error('Error notifying admin:', error);
-      }
-    }
-
-    return bot.sendMessage(chatId,
-      '✅ Verification request submitted!\n\n' +
-      'Please wait for admin approval.\n' +
-      'You will be notified once your account is verified.');
-
-  } catch (error) {
-    console.error('Verification error:', error);
-    return bot.sendMessage(chatId,
-      '❌ An error occurred during verification.\n' +
-      'Please try again or contact @xGoombas if the issue persists.');
-  }
-});
-
+bot.onText(/\/verify(?:\s+(.+))?/, handleVerify);
 bot.onText(/\/stats/, handleStats);
 bot.onText(/\/race/, handleRace);
 bot.onText(/\/leaderboard/, handleLeaderboard);
 bot.onText(/\/play/, async (msg) => {
   const chatId = msg.chat.id;
-  await bot.sendMessage(chatId,
+  await bot.sendMessage(chatId, 
     '🎮 Click here to play on Goated:\nhttps://www.goated.com/r/goatedvips\n\n' +
     '💰 Make sure to use our link to get the best rakeback and rewards!');
 });
 
 bot.onText(/\/website/, async (msg) => {
   const chatId = msg.chat.id;
-  await bot.sendMessage(chatId,
+  await bot.sendMessage(chatId, 
     '🌐 Visit our website:\nhttps://goatedvips.gg\n\n' +
     '📊 Check leaderboards, tips, and latest promotions!');
 });
@@ -1759,134 +1719,98 @@ bot.on('message', async (msg) => {
   const text = msg.text;
   if (!text) return;
 
-  try {
-    switch (state.step) {
-      case 'game':
-        state.game = text;
-        state.step = 'multiplier';
-        await bot.sendMessage(chatId, '🎯 Enter the target multiplier (e.g., 66.0):');
-        break;
+  switch (state.step) {
+    case 'game':
+      state.game = text;
+      state.step = 'multiplier';
+      await bot.sendMessage(chatId, '🎯 Enter the target multiplier (e.g., 66.0):');
+      break;
 
-      case 'multiplier':
-        const multiplier = parseFloat(text);
-        if (isNaN(multiplier) || multiplier <= 1) {
-          await bot.sendMessage(chatId, '❌ Please enter a valid multiplier greater than 1.');
-          return;
+    case 'multiplier':
+      state.multiplier = text;
+      state.step = 'minBet';
+      await bot.sendMessage(chatId, '💰 Enter the minimum bet amount (e.g., 0.02):');
+      break;
+
+    case 'minBet':
+      state.minBet = text;
+      state.step = 'prize';
+      await bot.sendMessage(chatId, '🏆 Enter the prize amount per winner (e.g., 5):');
+      break;
+
+    case 'prize':
+      state.prize = text;
+      state.step = 'winners';
+      await bot.sendMessage(chatId, '👥 Enter the number of winners (e.g., 3):');
+      break;
+
+    case 'winners':
+      state.winners = parseInt(text);
+      state.step = 'timeframe';
+      await bot.sendMessage(chatId, '⏳ Enter the timeframe (or "until filled"):');
+      break;
+
+    case 'timeframe':
+      state.timeframe = text;
+      state.step = 'description';
+      await bot.sendMessage(chatId, '📝 Enter any additional description (or "none"):');
+      break;
+
+    case 'description':
+      state.description = text === 'none' ? '' : text;
+      
+      // Create challenge in database
+      try {
+        const [challenge] = await db.insert(challenges)
+          .values({
+            game: state.game,
+            multiplier: state.multiplier,
+            minBet: state.minBet,
+            prizeAmount: state.prize,
+            maxWinners: state.winners,
+            timeframe: state.timeframe,
+            description: state.description,
+            createdBy: msg.from?.username || 'admin'
+          })
+          .returning();
+
+        // Format announcement
+        const announcement = `🔥 **Goated Challenge Time!** 🔥
+
+🎮 **Game:** ${state.game}
+🎯 **Goal:** Hit a **${state.multiplier}x** multiplier
+💵 **Minimum Bet:** $${state.minBet}
+💰 **Prize:** $${state.prize} Bonus Code
+👥 **Winners:** ${state.winners}
+⏳ **Duration:** ${state.timeframe}
+${state.description ? `\n📌 **Note:** ${state.description}` : ''}
+
+**How to enter:**
+1️⃣ Post your winning Goated bet link
+2️⃣ Use #ChallengeComplete
+3️⃣ Tag @xGoombas
+
+Good luck, Goated VIPs! 🐐✨`;
+
+        // Send to all allowed groups
+        for (const groupId of ALLOWED_GROUP_IDS) {
+          await bot.sendMessage(groupId, announcement, { parse_mode: 'Markdown' });
         }
-        state.multiplier = multiplier;
-        state.step = 'minBet';
-        await bot.sendMessage(chatId, '💰 Enter the minimum bet amount (e.g., 0.02):');
-        break;
 
-      case 'minBet':
-        const minBet = parseFloat(text);
-        if (isNaN(minBet) || minBet <= 0) {
-          await bot.sendMessage(chatId, '❌ Please enter a valid minimum bet amount.');
-          return;
-        }
-        state.minBet = minBet;
-        state.step = 'prize';
-        await bot.sendMessage(chatId, '🏆 Enter the prize amount per winner (e.g., 5):');
-        break;
-
-      case 'prize':
-        const prize = parseFloat(text);
-        if (isNaN(prize) || prize <= 0) {
-          await bot.sendMessage(chatId, '❌ Please enter a valid prize amount.');
-          return;
-        }
-        state.prize = prize;
-        state.step = 'winners';
-        await bot.sendMessage(chatId, '👥 Enter the number of winners (e.g., 3):');
-        break;
-
-      case 'winners':
-        const winners = parseInt(text);
-        if (isNaN(winners) || winners < 1 || winners > 100) {
-          await bot.sendMessage(chatId, '❌ Please enter a valid number of winners (1-100).');
-          return;
-        }
-        state.winners = winners;
-        state.step = 'timeframe';
-        await bot.sendMessage(chatId, '⏳ Enter the timeframe (or "until filled"):');
-        break;
-
-      case 'timeframe':
-        state.timeframe = text;
-        state.step = 'description';
-        await bot.sendMessage(chatId, '📝 Enter any additional description (or "none"):');
-        break;
-
-      case 'description':
-        state.description = text === 'none' ? '' : text;
-
-        // Create challenge in database
-        try {
-          const [challenge] = await db.insert(challenges)
-            .values({
-              game: state.game,
-              multiplier: state.multiplier,
-              minBet: state.minBet,
-              prizeAmount: state.prize,
-              maxWinners: state.winners,
-              timeframe: state.timeframe,
-              description: state.description,
-              createdBy: msg.from?.username || 'admin',
-              status: 'active'
-            })
-            .returning();
-
-          if (!challenge) {
-            throw new Error('Failed to create challenge');
-          }
-
-          // Format announcement
-          const announcement = `🔥 **New Goated Challenge!** 🔥\n\n` +
-            `🎮 **Game:** ${state.game}\n` +
-            `🎯 **Goal:** Hit a **${state.multiplier}x** multiplier\n` +
-            `💵 **Minimum Bet:** $${state.minBet}\n` +
-            `💰 **Prize:** $${state.prize} Bonus Code\n` +
-            `👥 **Winners:** ${state.winners}\n` +
-            `⏳ **Duration:** ${state.timeframe}\n` +
-            `${state.description ? `\n📌 **Note:** ${state.description}\n` : ''}\n` +
-            `**How to enter:**\n` +
-            `1️⃣ Post your winning Goated bet link\n` +
-            `2️⃣ Use #ChallengeComplete\n` +
-            `3️⃣ Tag @xGoombas\n\n` +
-            `Good luck, Goated VIPs! 🐐✨`;
-
-          // Send to all allowed groups
-          for (const groupId of ALLOWED_GROUP_IDS) {
-            try {
-              await bot.sendMessage(groupId, announcement, { 
-                parse_mode: 'Markdown',
-                disable_web_page_preview: true
-              });
-            } catch (error) {
-              console.error('Error sending to group:', error);
-            }
-          }
-
-          challengeCreationState.delete(chatId);
-          await bot.sendMessage(chatId, '✅ Challenge created and announced successfully!');
-        } catch (error) {
-          console.error('Error creating challenge:', error);
-          await bot.sendMessage(chatId, '❌ Error creating challenge. Please try again.');
-        }
-        break;
-    }
-  } catch (error) {
-    console.error('Error in challenge creation:', error);
-    await bot.sendMessage(chatId, '❌ An error occurred. Please start over with /createchallenge');
-    challengeCreationState.delete(chatId);
+        challengeCreationState.delete(chatId);
+        await bot.sendMessage(chatId, '✅ Challenge created and announced successfully!');
+      } catch (error) {
+        console.error('Error creating challenge:', error);
+        await bot.sendMessage(chatId, '❌ Error creating challenge. Please try again.');
+      }
+      break;
   }
-});
 });
 
 // View active challenges
 bot.onText(/\/challenges/, async (msg) => {
   const chatId = msg.chat.id;
-
+  
   try {
     const activeChalls = await db
       .select()
@@ -1920,7 +1844,7 @@ bot.onText(/#ChallengeComplete/, async (msg) => {
 
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
-
+  
   if (!telegramId) return;
 
   try {
@@ -1938,7 +1862,7 @@ bot.onText(/#ChallengeComplete/, async (msg) => {
 
     // Record entry for the latest challenge
     const challenge = activeChalls[0];
-
+    
     await db.insert(challengeEntries)
       .values({
         challengeId: challenge.id,
@@ -1948,7 +1872,7 @@ bot.onText(/#ChallengeComplete/, async (msg) => {
       })
       .execute();
 
-    await bot.sendMessage(chatId,
+    await bot.sendMessage(chatId, 
       `✅ Challenge entry recorded!\n` +
       `@xGoombas will verify your entry soon.`);
   } catch (error) {
@@ -2011,7 +1935,7 @@ bot.onText(/\/verifychallenge (\d+) (.+)/, async (msg, match) => {
   try {
     const [entry] = await db
       .update(challengeEntries)
-      .set({
+      .set({ 
         status: 'verified',
         bonusCode,
         verifiedAt: new Date(),
@@ -2064,7 +1988,7 @@ bot.onText(/\/claim/, async (msg) => {
       return bot.sendMessage(chatId, 'No verified challenges to claim.');
     }
 
-    const message = entries.map(e =>
+    const message = entries.map(e => 
       `🎁 Bonus Code: ||${e.bonusCode}||`
     ).join('\n\n');
 
