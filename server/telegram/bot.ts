@@ -13,13 +13,11 @@ if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
 
-// Create a bot instance with polling disabled by default
-const isDevelopment = process.env.NODE_ENV === 'development';
+// Create a bot instance with polling
 const bot = new TelegramBot(token, { polling: false });
 
 // Cleanup function to stop polling
 async function stopBot() {
-  if (isDevelopment) return;
   try {
     await bot.stopPolling();
     console.log('[Telegram Bot] Polling stopped');
@@ -32,13 +30,9 @@ async function stopBot() {
 process.on('SIGINT', stopBot);
 process.on('SIGTERM', stopBot);
 
-// Only start polling in development
-if (isDevelopment) {
-  bot.startPolling();
-  console.log('[Telegram Bot] Polling started (Development mode)');
-} else {
-  console.log('[Telegram Bot] Running in webhook mode (Production)');
-}
+// Start polling in all environments
+bot.startPolling();
+console.log('[Telegram Bot] Polling started');
 
 // Debug logging function
 function logDebug(message: string, data?: any) {
@@ -73,21 +67,26 @@ async function setupBotCommands() {
 
     // Set base commands globally
     await bot.setMyCommands(baseCommands);
-
-    // Set admin commands globally first
-    await bot.setMyCommands(baseCommands);
     
-    // Set admin commands for specific admins when they interact
+    // Set admin commands for private chats with admins
+    for (const adminId of ADMIN_TELEGRAM_IDS) {
+      try {
+        await bot.setMyCommands(adminCommands, {
+          scope: { type: 'chat', chat_id: adminId }
+        });
+      } catch (error) {
+        console.error(`Error setting admin commands for ${adminId}:`, error);
+      }
+    }
+
+    // Admin commands will be set when you first interact with the bot
     bot.on('message', async (msg) => {
-      const adminUsername = msg.from?.username;
-      const chatId = msg.chat?.id;
-      
-      if (adminUsername === 'xGoombas' && chatId) {
+      if (msg.from?.username === 'xGoombas') {
         try {
           await bot.setMyCommands(adminCommands, { 
             scope: { 
               type: 'chat',
-              chat_id: chatId.toString()
+              chat_id: msg.chat.id 
             }
           });
         } catch (error) {
@@ -125,7 +124,7 @@ initializeBotWithRetry().catch(error => {
 // Add help command handler
 bot.onText(/\/help/, async (msg) => {
   const chatId = msg.chat.id;
-
+  
   let message = `🐐 *Welcome to Goated Stats Bot\\!*\n\n`;
 
   if (msg.from?.username === 'xGoombas') {
@@ -181,9 +180,8 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
     }
 
     // Try to find user by Goated username
-    const API_URL = process.env.API_URL || 'https://api.goatedvips.gg';
     const response = await fetch(
-      `${API_URL}/api/affiliate/stats?username=${encodeURIComponent(username)}`,
+      `http://0.0.0.0:5000/api/affiliate/stats?username=${encodeURIComponent(username)}`,
       {
         headers: {
           'Accept': 'application/json',
@@ -411,9 +409,9 @@ bot.onText(/\/setup_guide/, async (msg) => {
       • Post Messages
       • Edit Messages
       • Delete Messages
-
+   
    2\. Get your channel's username \(e\.g\. @YourChannel\)
-
+   
    3\. Use this command to start forwarding:
       \`/setup_forwarding @YourChannel\`
 
@@ -837,81 +835,6 @@ async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
 }
 
 // Command handlers
-// Queue for handling verification requests
-const verificationQueue: { telegramId: string; goatedUsername: string; chatId: number }[] = [];
-let isProcessingQueue = false;
-
-async function processVerificationQueue() {
-  if (isProcessingQueue || verificationQueue.length === 0) return;
-
-  isProcessingQueue = true;
-  const request = verificationQueue.shift();
-
-  if (!request) {
-    isProcessingQueue = false;
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `http://0.0.0.0:5000/api/affiliate/stats?username=${encodeURIComponent(request.goatedUsername)}`,
-      {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-      }
-    );
-
-    if (response.ok) {
-      await db.insert(verificationRequests)
-        .values({
-          telegramId: request.telegramId,
-          goatedUsername: request.goatedUsername,
-          status: 'pending',
-          requestedAt: new Date()
-        })
-        .onConflictDoUpdate({
-          target: [verificationRequests.telegramId],
-          set: { goatedUsername: request.goatedUsername, status: 'pending' }
-        });
-
-      await bot.sendMessage(
-        request.chatId,
-        '✅ Account found! Verification request submitted.\n\n' +
-        'Please be patient while your account is awaiting verification.\n' +
-        'You will receivea notification once the process is complete.'
-      );
-
-      // Notify admins
-      for (const adminId of ADMIN_TELEGRAM_IDS) {
-        await bot.sendMessage(
-          adminId,
-          `New verification request:\nTelegram ID: ${request.telegramId}\nGoated Username: ${request.goatedUsername}`
-        );
-      }
-    } else {
-      await bot.sendMessage(
-        request.chatId,
-        '❌ Account not found!\n\nPlease check:\n' +
-        '1. Your usernameis exactly as shown on Goated.com\n' +
-        '2. You have completed at least one wager\n' +
-        '3. You are using our affiliate link: goated.com/r/goatedvips\n\n' +
-        'If you need help, contact @xGoombas'
-      );
-    }
-  } catch (error) {
-    console.error('Error processing verification:', error);
-    await bot.sendMessage(
-      request.chatId,
-      'An error occurred while processing your verification. Please try again later.'
-    );
-  }
-
-  isProcessingQueue = false;
-  processVerificationQueue(); // Process next request
-}
-
 async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | null) {
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
@@ -940,17 +863,87 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
   const goatedUsername = match[1].trim();
 
   try {
-    // Add to verification queue
-    verificationQueue.push({ telegramId, goatedUsername, chatId });
-    processVerificationQueue();
+    // Try to fetch user stats directly
+    const response = await fetch(
+        `http://0.0.0.0:5000/api/affiliate/stats?username=${encodeURIComponent(goatedUsername)}`,
+        {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+        }
+      );
 
-    return bot.sendMessage(
-      chatId,
-      '🔄 Processing verification request...\n' +
-      'You will receive a notification once complete.'
-    );
+      if (!response.ok) {
+        throw new Error('Failed to verify username');
+      }
+
+      const userData = await response.json();
+      const userExists = userData?.data?.monthly?.data?.some(
+        (u: any) => u.name.toLowerCase() === goatedUsername.toLowerCase()
+      );
+
+      if (userExists) {
+      // Create or update verification request
+      await db.delete(verificationRequests)
+        .where(eq(verificationRequests.telegramId, telegramId));
+        
+      await db.insert(verificationRequests)
+        .values({
+          telegramId,
+          goatedUsername,
+          status: 'pending',
+          requestedAt: new Date()
+        });
+
+      // Create or update telegram user
+      await db.insert(telegramUsers)
+        .values({
+          telegramId,
+          goatedUsername,
+          isVerified: false,
+          createdAt: new Date()
+        })
+        .onConflictDoUpdate({
+          target: [telegramUsers.telegramId],
+          set: { goatedUsername }
+        });
+
+      // Notify admins about new verification request
+      for (const adminId of ADMIN_TELEGRAM_IDS) {
+        const keyboard = {
+          inline_keyboard: [
+            [
+              { text: '✅ Approve', callback_data: `verify_approve_${telegramId}` },
+              { text: '❌ Reject', callback_data: `verify_reject_${telegramId}` }
+            ]
+          ]
+        };
+
+        await bot.sendMessage(
+          adminId,
+          `New verification request:\nTelegram User: ${msg.from?.username || 'Unknown'}\nGoated Username: ${goatedUsername}`,
+          { reply_markup: keyboard }
+        );
+      }
+
+      return bot.sendMessage(
+        chatId,
+        '✅ Account found! Verification request submitted.\n\n' +
+        'Please be patient while your account is awaiting verification.\n' +
+        'You will receive a notification once the process is complete.'
+      );
+    } else {
+      return bot.sendMessage(chatId,
+        '❌ Account not found!\n\n' +
+        'Please check:\n' +
+        '1. Your username is exactly as shown on Goated.com\n' +
+        '2. You have completed at least one wager\n' +
+        '3. You are using our affiliate link: goated.com/r/goatedvips\n\n' +
+        'If you need help, contact @xGoombas');
+    }
   } catch (error) {
-    console.error('Error in handleVerify:', error);
+    logDebug('Error in handleVerify', error);
     return bot.sendMessage(chatId, 'An error occurred while processing your verification request. Please try again later.');
   }
 }
@@ -1144,28 +1137,20 @@ async function fetchLeaderboardData() {
     logDebug('Attempting to fetch leaderboard data');
 
     // Make request to our internal API endpoint
-    const API_URL = process.env.API_URL || 'http://0.0.0.0:5000';
     const response = await fetch(
-      `${API_URL}/api/affiliate/stats`,
+      `http://0.0.0.0:5000/api/wager-races/current`,
       {
         method: 'GET',
         headers: {
-          'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
-        timeout: 10000
       }
     );
 
     if (!response.ok) {
-      logDebug('API request failed', { status: response.status });
-      throw new Error(`API request failed with status: ${response.status}`);
-    }
-
-    if (!response.ok) {
       const errorText = await response.text();
       logDebug('API request failed', { status: response.status, error: errorText });
-      throw new Error(`Failed to fetch leaderboard: ${response.status} - ${errorText}`);
+      throw new Error(`API request failed: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();

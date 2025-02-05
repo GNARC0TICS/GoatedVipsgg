@@ -101,8 +101,6 @@ async function startServer() {
     registerRoutes(app);
     initializeAdmin().catch(console.error);
 
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    
     // Initialize Telegram bot
     log("Initializing Telegram bot...");
     if (!process.env.TELEGRAM_BOT_TOKEN) {

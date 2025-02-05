@@ -1,8 +1,9 @@
+
 export const API_CONFIG = {
-  baseUrl: process.env.API_URL || "http://0.0.0.0:5000",
-  token: process.env.API_TOKEN,
+  baseUrl: "https://europe-west2-g3casino.cloudfunctions.net/user",
+  token: process.env.API_TOKEN || "",
   endpoints: {
-    leaderboard: "/api/affiliate/stats",
+    leaderboard: "/affiliate/referral-leaderboard/2RW440E",
     health: "/health"
   },
   fallbackData: {

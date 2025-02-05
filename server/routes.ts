@@ -175,33 +175,18 @@ function setupRESTRoutes(app: Express) {
   app.get("/api/wager-races/current", async (_req, res) => {
     try {
       await rateLimiter.consume(_req.ip || "unknown");
-      const API_TOKEN = process.env.API_TOKEN || API_CONFIG.token;
-      if (!API_TOKEN) {
-        throw new Error("API token not configured");
-      }
-
       const response = await fetch(
         `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
         {
           headers: {
-            Authorization: `Bearer ${API_TOKEN}`,
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
             "Content-Type": "application/json",
           },
         }
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        log("API request failed", { 
-          status: response.status, 
-          error: errorText,
-          endpoint: `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`
-        });
-
-        if (response.status === 401) {
-          throw new Error("API Authentication failed - check API token");
-        }
-        throw new Error(`API request failed: ${response.status} - ${errorText}`);
+        throw new Error(`API request failed: ${response.status}`);
       }
 
       const rawData = await response.json();
@@ -238,7 +223,7 @@ function setupRESTRoutes(app: Express) {
           const now = new Date();
           const currentMonth = now.getMonth();
           const currentYear = now.getFullYear();
-
+          
           // Store complete race results with detailed participant data
           const winners = stats.data.monthly.data.slice(0, 10).map((participant: any, index: number) => ({
             uid: participant.uid,
@@ -415,7 +400,7 @@ function setupRESTRoutes(app: Express) {
   app.post("/api/support/reply", requireAuth, async (req, res) => {
     try {
       const { ticketId, message } = req.body;
-
+      
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
         return res.status(400).json({
           status: "error",
@@ -578,33 +563,18 @@ app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
 
   app.get("/api/admin/analytics", requireAdmin, async (_req, res) => {
     try {
-      const API_TOKEN = process.env.API_TOKEN || API_CONFIG.token;
-      if (!API_TOKEN) {
-        throw new Error("API token not configured");
-      }
-
       const response = await fetch(
         `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
         {
           headers: {
-            Authorization: `Bearer ${API_TOKEN}`,
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
             "Content-Type": "application/json",
           },
         }
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        log("API request failed", { 
-          status: response.status, 
-          error: errorText,
-          endpoint: `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`
-        });
-
-        if (response.status === 401) {
-          throw new Error("API Authentication failed - check API token");
-        }
-        throw new Error(`API request failed: ${response.status} - ${errorText}`);
+        throw new Error(`API request failed: ${response.status}`);
       }
 
       const rawData = await response.json();
@@ -667,34 +637,19 @@ async function handleProfileRequest(req: any, res: any) {
     }
 
     // Fetch current leaderboard data
-    const API_TOKEN = process.env.API_TOKEN || API_CONFIG.token;
-      if (!API_TOKEN) {
-        throw new Error("API token not configured");
+    const response = await fetch(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+          "Content-Type": "application/json",
+        },
       }
+    );
 
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-        {
-          headers: {
-            Authorization: `Bearer ${API_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        log("API request failed", { 
-          status: response.status, 
-          error: errorText,
-          endpoint: `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`
-        });
-
-        if (response.status === 401) {
-          throw new Error("API Authentication failed - check API token");
-        }
-        throw new Error(`API request failed: ${response.status} - ${errorText}`);
-      }
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
 
     const leaderboardData = await response.json();
     const data = leaderboardData.data || leaderboardData.results || leaderboardData;
@@ -726,20 +681,15 @@ async function handleAffiliateStats(req: any, res: any) {
     await rateLimiter.consume(req.ip || "unknown");
     const username = req.query.username;
     let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
-
+    
     if (username) {
       url += `?username=${encodeURIComponent(username)}`;
     }
-
-    const API_TOKEN = process.env.API_TOKEN || API_CONFIG.token;
-      if (!API_TOKEN) {
-        throw new Error("API token not configured");
-      }
-
-      const response = await fetch(url,
+    
+    const response = await fetch(url,
       {
         headers: {
-          Authorization: `Bearer ${API_TOKEN}`,
+          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
           "Content-Type": "application/json",
         },
       }
