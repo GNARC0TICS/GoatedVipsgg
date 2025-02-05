@@ -685,7 +685,7 @@ async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
   switch (callbackQuery.data) {
     case 'start_verify':
       await bot.editMessageText(
-        'Please enter your Goated username and UID using the command:\n/verify YourUsername YourUID',
+        'Please enter your Goated username using the command:\n/verify YourUsername',
         { chat_id: chatId, message_id: messageId }
       );
       break;
