@@ -82,7 +82,7 @@ setupBotCommands().catch(error => {
 bot.onText(/\/help/, async (msg) => {
   const chatId = msg.chat.id;
   
-  let message = `🤖 *Welcome to Goated Stats Bot\\!*\n\n`;
+  let message = `🐐 *Welcome to Goated Stats Bot\\!*\n\n`;
 
   if (msg.from?.username === 'xGoombas') {
     message += `*Admin Commands:*\n`;
