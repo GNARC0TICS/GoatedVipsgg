@@ -2,7 +2,7 @@ import { pgTable, text, timestamp, integer, boolean } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm";
 
 export const telegramUsers = pgTable('telegram_users', {
-  id: integer('id').primaryKey(),
+  id: text('id').primaryKey(),
   telegramId: text('telegram_id').notNull().unique(),
   goatedUsername: text('goated_username'),
   isVerified: boolean('is_verified').default(false),
