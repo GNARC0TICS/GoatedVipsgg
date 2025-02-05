@@ -65,7 +65,11 @@ async function setupBotCommands() {
       { command: 'pending', description: '📝 View pending verifications' },
       { command: 'verify_user', description: '✅ Verify a user' },
       { command: 'reject_user', description: '❌ Reject a user' },
-      { command: 'makeadmin', description: '👑 Grant admin privileges' }
+      { command: 'makeadmin', description: '👑 Grant admin privileges' },
+      { command: 'setup_guide', description: '📋 Show forwarding setup guide' },
+      { command: 'setup_forwarding', description: '🔄 Start channel forwarding' },
+      { command: 'list_forwardings', description: '📊 Show active forwardings' },
+      { command: 'stop_forwarding', description: '⏹️ Stop all forwardings' }
     ];
 
     // Set base commands globally
@@ -137,7 +141,11 @@ bot.onText(/\/help/, async (msg) => {
     message += `• /user\\_info \\- Get user information\n`;
     message += `• /pending \\- View verification requests\n`;
     message += `• /verify\\_user \\- Verify a user\n`;
-    message += `• /reject\\_user \\- Reject a verification\n\n`;
+    message += `• /reject\\_user \\- Reject a verification\n`;
+    message += `• /setup\\_guide \\- Show forwarding setup guide\n`;
+    message += `• /setup\\_forwarding \\- Start channel forwarding\n`;
+    message += `• /list\\_forwardings \\- Show active forwardings\n`;
+    message += `• /stop\\_forwarding \\- Stop all forwardings\n\n`;
   }
 
   message += `*Available Commands:*\n`;
