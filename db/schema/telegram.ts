@@ -1,6 +1,7 @@
 
-import { pgTable, text, timestamp, integer, boolean, serial } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, boolean, serial, varchar, pgEnum } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { type InferModel } from "drizzle-orm";
 
 export const telegramUsers = pgTable('telegram_users', {
   id: serial('id').primaryKey(),
@@ -12,6 +13,9 @@ export const telegramUsers = pgTable('telegram_users', {
   lastActive: timestamp('last_active').default(sql`CURRENT_TIMESTAMP`),
   notificationsEnabled: boolean('notifications_enabled').default(true),
 });
+
+export type TelegramUser = InferModel<typeof telegramUsers>;
+export type TelegramUserInsert = InferModel<typeof telegramUsers, "insert">;
 
 export const verificationRequests = pgTable('verification_requests', {
   id: serial('id').primaryKey(),
