@@ -30,11 +30,9 @@ async function stopBot() {
 process.on('SIGINT', stopBot);
 process.on('SIGTERM', stopBot);
 
-// Only start polling in development environment
-if (process.env.NODE_ENV !== 'production') {
-  bot.startPolling();
-  console.log('[Telegram Bot] Polling started in development mode');
-}
+// Start polling in all environments
+bot.startPolling();
+console.log('[Telegram Bot] Polling started');
 
 // Debug logging function
 function logDebug(message: string, data?: any) {
@@ -104,9 +102,23 @@ async function setupBotCommands() {
   }
 }
 
-// Initialize bot commands
-setupBotCommands().catch(error => {
-  console.error('Failed to initialize bot:', error);
+// Initialize bot commands with retry
+async function initializeBotWithRetry(maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await setupBotCommands();
+      console.log('[Telegram Bot] Commands initialized successfully');
+      return;
+    } catch (error) {
+      console.error(`Failed to initialize bot (attempt ${i + 1}/${maxRetries}):`, error);
+      if (i === maxRetries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
+    }
+  }
+}
+
+initializeBotWithRetry().catch(error => {
+  console.error('Failed to initialize bot after all retries:', error);
 });
 
 // Add help command handler
