@@ -14,7 +14,7 @@ export const telegramUsers = pgTable('telegram_users', {
 // Table to store pending verification requests
 export const verificationRequests = pgTable('verification_requests', {
   id: integer('id').primaryKey(),
-  telegramId: text('telegram_id').notNull(),
+  telegramId: text('telegram_id').notNull().unique(),
   goatedUsername: text('goated_username').notNull(),
   requestedAt: timestamp('requested_at').default(sql`CURRENT_TIMESTAMP`),
   status: text('status').default('pending'), // pending, approved, rejected

@@ -885,16 +885,15 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
 
       if (userExists) {
       // Create or update verification request
+      await db.delete(verificationRequests)
+        .where(eq(verificationRequests.telegramId, telegramId));
+        
       await db.insert(verificationRequests)
         .values({
           telegramId,
           goatedUsername,
           status: 'pending',
           requestedAt: new Date()
-        })
-        .onConflictDoUpdate({
-          target: [verificationRequests.telegramId],
-          set: { goatedUsername, status: 'pending', requestedAt: new Date() }
         });
 
       // Create or update telegram user
