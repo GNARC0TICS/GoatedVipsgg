@@ -1,0 +1,77 @@
+Updated Challenge Feature Prompt for Your Telegram Bot
+
+Objective:
+
+Implement an admin-controlled challenge system where users complete challenges, submit entries in the group, and claim rewards in private chat with the bot. The bot will handle challenge announcements, user participation, entry tracking, verification, and reward distribution efficiently.
+
+🔹 Challenge Feature Breakdown
+
+1️⃣ Creating a Challenge (/createchallenge Command - Admin Only)
+	•	When an admin (e.g., @xGoombas) uses /createchallenge, an interactive menu will appear, prompting for:
+	•	Game (e.g., Limbo, Keno, Dice, etc.)
+	•	Target multiplier (if applicable)
+	•	Minimum bet amount
+	•	Prize amount
+	•	Number of winners
+	•	Time frame (if applicable)
+	•	Additional challenge description
+	•	Once submitted, the bot formats the challenge announcement into a clean, engaging message and sends it in the Telegram group chat.
+
+📢 Example Challenge Message:
+
+🔥 **Goated Challenge Time!** 🔥  
+
+🎯 **Goal:** Be the first **(up to 3 users)** to hit a **66.0x multiplier** on **LIMBO** with a **$0.02 base bet or higher**!  
+💰 **Prize:** $5 Bonus Code (3 available claims)  
+⏳ **Duration:** Until filled  
+
+📌 **How to claim:**  
+1️⃣ Post your winning **Goated bet link** in the group.  
+2️⃣ Use the hashtag **#ChallengeComplete** and tag @xGoombas.  
+3️⃣ Once verified, claim your reward privately with the bot using **/claim**.  
+
+Good luck, Goated VIPs! 🐐✨  
+
+2️⃣ Viewing Active Challenges (/challenges Command - Public)
+	•	Users can use /challenges to view all active challenges.
+	•	The bot will list ongoing challenges with key details:
+	•	Game
+	•	Goal
+	•	Bet requirement
+	•	Prize
+	•	Remaining winners
+
+3️⃣ Submitting a Challenge Entry (In the Group Chat)
+	•	When a user completes the challenge, they must:
+	1.	Post their winning bet link in the Telegram group.
+	2.	Use the hashtag #ChallengeComplete.
+	3.	Tag @xGoombas for verification.
+	•	The bot will automatically record the submission and store it for admin review.
+
+4️⃣ Admin Panel for Verifying Challenges (/pendingchallenges Command - Admin Only)
+	•	Admins (e.g., @xGoombas) can use /pendingchallenges to see a list of unverified challenge entries, including:
+	•	The user’s bet link
+	•	The challenge they attempted
+	•	The time submitted
+	•	Once an admin manually verifies an entry, they can approve it and assign a bonus code to the user.
+
+5️⃣ Claiming Rewards (/claim Command - Private Chat Only)
+	•	Once verified, users must claim their rewards in a private chat with the bot by using /claim.
+	•	The bot will send their bonus code as a spoiler (|| hidden bonus code ||) so that only they can see it.
+	•	If the user has multiple pending rewards, the bot will list all available bonus codes.
+
+🔹 Admin Commands Recap:
+	•	/createchallenge – Launch a new challenge via an interactive menu.
+	•	/pendingchallenges – View unverified challenge completions.
+	•	/verifychallenge [user] – Approve a user’s challenge completion and assign their reward.
+	•	/claim – Users claim their verified bonus codes privately.
+
+🔹 Additional Considerations:
+
+✅ All reward claims are handled in private chat with the bot.
+✅ Only verified users can see and claim their bonus codes.
+✅ Admins (@xGoombas) manage and verify challenge completions.
+✅ The bot ensures persistent data storage (so challenges don’t reset on restart).
+✅ All announcements are formatted for clarity and engagement.
+
+This ensures a seamless challenge system with private reward claims, efficient admin control, and structured challenge announcements. Let me know if you need any further tweaks! 🚀
