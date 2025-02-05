@@ -1749,7 +1749,8 @@ Reply with the number or game name.`;
   return bot.sendMessage(chatId, message);
 });
 
-// Handle challenge creation stepsbot.on('message', async (msg) => {
+// Handle challenge creation steps
+bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const state = challengeCreationState.get(chatId);
 
@@ -1758,92 +1759,128 @@ Reply with the number or game name.`;
   const text = msg.text;
   if (!text) return;
 
-  switch (state.step) {
-    case 'game':
-      state.game = text;
-      state.step = 'multiplier';
-      await bot.sendMessage(chatId, '🎯 Enter the target multiplier (e.g., 66.0):');
-      break;
+  try {
+    switch (state.step) {
+      case 'game':
+        state.game = text;
+        state.step = 'multiplier';
+        await bot.sendMessage(chatId, '🎯 Enter the target multiplier (e.g., 66.0):');
+        break;
 
-    case 'multiplier':
-      state.multiplier = text;
-      state.step = 'minBet';
-      await bot.sendMessage(chatId, '💰 Enter the minimum bet amount (e.g., 0.02):');
-      break;
-
-    case 'minBet':
-      state.minBet = text;
-      state.step = 'prize';
-      await bot.sendMessage(chatId, '🏆 Enter the prize amount per winner (e.g., 5):');
-      break;
-
-    case 'prize':
-      state.prize = text;
-      state.step = 'winners';
-      await bot.sendMessage(chatId, '👥 Enter the number of winners (e.g., 3):');
-      break;
-
-    case 'winners':
-      state.winners = parseInt(text);
-      state.step = 'timeframe';
-      await bot.sendMessage(chatId, '⏳ Enter the timeframe (or "until filled"):');
-      break;
-
-    case 'timeframe':
-      state.timeframe = text;
-      state.step = 'description';
-      await bot.sendMessage(chatId, '📝 Enter any additional description (or "none"):');
-      break;
-
-    case 'description':
-      state.description = text === 'none' ? '' : text;
-
-      // Create challenge in database
-      try {
-        const [challenge] = await db.insert(challenges)
-          .values({
-            game: state.game,
-            multiplier: state.multiplier,
-            minBet: state.minBet,
-            prizeAmount: state.prize,
-            maxWinners: state.winners,
-            timeframe: state.timeframe,
-            description: state.description,
-            createdBy: msg.from?.username || 'admin'
-          })
-          .returning();
-
-        // Format announcement
-        const announcement = `🔥 **Goated Challenge Time!** 🔥
-        
-🎮 **Game:** ${state.game}
-🎯 **Goal:** Hit a **${state.multiplier}x** multiplier
-💵 **Minimum Bet:** $${state.minBet}
-💰 **Prize:** $${state.prize} Bonus Code
-👥 **Winners:** ${state.winners}
-⏳ **Duration:** ${state.timeframe}
-${state.description ? `\n📌 **Note:** ${state.description}` : ''}
-
-**How to enter:**
-1️⃣ Post your winning Goated bet link
-2️⃣ Use #ChallengeComplete
-3️⃣ Tag @xGoombas
-
-Good luck, Goated VIPs! 🐐✨`;
-
-        // Send to all allowed groups
-        for (const groupId of ALLOWED_GROUP_IDS) {
-          await bot.sendMessage(groupId, announcement, { parse_mode: 'Markdown' });
+      case 'multiplier':
+        const multiplier = parseFloat(text);
+        if (isNaN(multiplier) || multiplier <= 1) {
+          await bot.sendMessage(chatId, '❌ Please enter a valid multiplier greater than 1.');
+          return;
         }
+        state.multiplier = multiplier;
+        state.step = 'minBet';
+        await bot.sendMessage(chatId, '💰 Enter the minimum bet amount (e.g., 0.02):');
+        break;
 
-        challengeCreationState.delete(chatId);
-        await bot.sendMessage(chatId, '✅ Challenge created and announced successfully!');
-      } catch (error) {
-        console.error('Error creating challenge:', error);
-        await bot.sendMessage(chatId, '❌ Error creating challenge. Please try again.');
-      }
-      break;
+      case 'minBet':
+        const minBet = parseFloat(text);
+        if (isNaN(minBet) || minBet <= 0) {
+          await bot.sendMessage(chatId, '❌ Please enter a valid minimum bet amount.');
+          return;
+        }
+        state.minBet = minBet;
+        state.step = 'prize';
+        await bot.sendMessage(chatId, '🏆 Enter the prize amount per winner (e.g., 5):');
+        break;
+
+      case 'prize':
+        const prize = parseFloat(text);
+        if (isNaN(prize) || prize <= 0) {
+          await bot.sendMessage(chatId, '❌ Please enter a valid prize amount.');
+          return;
+        }
+        state.prize = prize;
+        state.step = 'winners';
+        await bot.sendMessage(chatId, '👥 Enter the number of winners (e.g., 3):');
+        break;
+
+      case 'winners':
+        const winners = parseInt(text);
+        if (isNaN(winners) || winners < 1 || winners > 100) {
+          await bot.sendMessage(chatId, '❌ Please enter a valid number of winners (1-100).');
+          return;
+        }
+        state.winners = winners;
+        state.step = 'timeframe';
+        await bot.sendMessage(chatId, '⏳ Enter the timeframe (or "until filled"):');
+        break;
+
+      case 'timeframe':
+        state.timeframe = text;
+        state.step = 'description';
+        await bot.sendMessage(chatId, '📝 Enter any additional description (or "none"):');
+        break;
+
+      case 'description':
+        state.description = text === 'none' ? '' : text;
+
+        // Create challenge in database
+        try {
+          const [challenge] = await db.insert(challenges)
+            .values({
+              game: state.game,
+              multiplier: state.multiplier,
+              minBet: state.minBet,
+              prizeAmount: state.prize,
+              maxWinners: state.winners,
+              timeframe: state.timeframe,
+              description: state.description,
+              createdBy: msg.from?.username || 'admin',
+              status: 'active'
+            })
+            .returning();
+
+          if (!challenge) {
+            throw new Error('Failed to create challenge');
+          }
+
+          // Format announcement
+          const announcement = `🔥 **New Goated Challenge!** 🔥\n\n` +
+            `🎮 **Game:** ${state.game}\n` +
+            `🎯 **Goal:** Hit a **${state.multiplier}x** multiplier\n` +
+            `💵 **Minimum Bet:** $${state.minBet}\n` +
+            `💰 **Prize:** $${state.prize} Bonus Code\n` +
+            `👥 **Winners:** ${state.winners}\n` +
+            `⏳ **Duration:** ${state.timeframe}\n` +
+            `${state.description ? `\n📌 **Note:** ${state.description}\n` : ''}\n` +
+            `**How to enter:**\n` +
+            `1️⃣ Post your winning Goated bet link\n` +
+            `2️⃣ Use #ChallengeComplete\n` +
+            `3️⃣ Tag @xGoombas\n\n` +
+            `Good luck, Goated VIPs! 🐐✨`;
+
+          // Send to all allowed groups
+          for (const groupId of ALLOWED_GROUP_IDS) {
+            try {
+              await bot.sendMessage(groupId, announcement, { 
+                parse_mode: 'Markdown',
+                disable_web_page_preview: true
+              });
+            } catch (error) {
+              console.error('Error sending to group:', error);
+            }
+          }
+
+          challengeCreationState.delete(chatId);
+          await bot.sendMessage(chatId, '✅ Challenge created and announced successfully!');
+        } catch (error) {
+          console.error('Error creating challenge:', error);
+          await bot.sendMessage(chatId, '❌ Error creating challenge. Please try again.');
+        }
+        break;
+    }
+  } catch (error) {
+    console.error('Error in challenge creation:', error);
+    await bot.sendMessage(chatId, '❌ An error occurred. Please start over with /createchallenge');
+    challengeCreationState.delete(chatId);
   }
+});
 });
 
 // View active challenges
