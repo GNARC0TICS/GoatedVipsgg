@@ -991,4 +991,3 @@ function generateToken(payload: any): string {
   //Implementation for generateToken is missing in original code, but it's not relevant to the fix.  Leaving as is.
   return "";
 }
-}
