@@ -802,7 +802,7 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
     return bot.sendMessage(
       chatId,
       'Please start a private chat with me to complete the verification process:\n' +
-      `https://t.me/${bot.options.username}?start=verify`
+      'https://t.me/GoatedVIPsBot?start=verify'
     );
   }
 
