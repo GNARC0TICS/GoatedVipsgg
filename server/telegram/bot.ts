@@ -331,18 +331,6 @@ bot.on('message', async (msg) => {
       state.maxClaims = parseInt(text);
       
       try {
-        // Check if code already exists
-        const existingCode = await db.select()
-          .from(bonusCodes)
-          .where(eq(bonusCodes.code, state.code))
-          .execute();
-
-        if (existingCode.length > 0) {
-          await bot.sendMessage(chatId, '❌ This bonus code already exists. Please choose a different code.');
-          state.step = 'code';
-          return;
-        }
-
         // Create bonus code in database
         const [bonusCode] = await db.insert(bonusCodes)
           .values({
@@ -1149,49 +1137,6 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
       '✅ Your account is already verified!\n\n' +
       'Available commands:\n' +
       '/stats - Check your wager statistics\n' +
-      '/race - View your monthly race position\n' +
-      '/leaderboard - See top players');
-  }
-});
-
-// List active bonus codes command
-bot.onText(/\/listbonuses/, async (msg) => {
-  const chatId = msg.chat.id;
-  const username = msg.from?.username;
-
-  if (username !== 'xGoombas') {
-    return bot.sendMessage(chatId, '❌ Only authorized users can view bonus codes.');
-  }
-
-  try {
-    const activeCodes = await db
-      .select()
-      .from(bonusCodes)
-      .where(eq(bonusCodes.status, 'active'))
-      .execute();
-
-    if (!activeCodes.length) {
-      return bot.sendMessage(chatId, 'No active bonus codes found.');
-    }
-
-    const message = activeCodes.map((code, index) => `
-Code #${index + 1}:
-🎟️ Code: ${code.code}
-💰 Wager Required: $${code.wagerAmount}
-⏳ Period: ${code.wagerPeriodDays} days
-💵 Reward: $${code.rewardAmount}
-👥 Claims: ${code.currentClaims}/${code.maxClaims}
-⌛ Expires: ${new Date(code.expiresAt).toLocaleString()}
-`).join('\n───────────────────\n');
-
-    return bot.sendMessage(chatId, `📋 Active Bonus Codes:\n${message}`);
-  } catch (error) {
-    console.error('Error fetching bonus codes:', error);
-    return bot.sendMessage(chatId, '❌ Error fetching bonus codes.');
-  }
-});
-
-
       '/race - View your monthly race position\n' +
       '/leaderboard - See top players');
   }
