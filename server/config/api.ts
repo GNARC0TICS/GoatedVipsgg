@@ -1,4 +1,5 @@
 export const API_CONFIG = {
+  BASE_URL: 'https://api.goated.com',
   BASE_URL: "https://europe-west2-g3casino.cloudfunctions.net/user",
   token: process.env.API_TOKEN || "",
   endpoints: {
