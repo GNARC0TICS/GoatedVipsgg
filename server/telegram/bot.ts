@@ -1100,7 +1100,7 @@ async function handleStart(msg: TelegramBot.Message) {
 
   // For new users, start verification process
   try {
-    await bot.sendPhoto(chatId, './server/telegram/BOTWELCOME.png');
+    await bot.sendPhoto(chatId, `${process.cwd()}/server/telegram/BOTWELCOME.png`);
   } catch (error) {
     console.error('Error sending welcome image:', error);
   }
