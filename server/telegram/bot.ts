@@ -843,6 +843,30 @@ Click the button below to begin verification:`;
   return bot.sendMessage(chatId, message, { reply_markup: keyboard });
 }
 
+// Rate limiting setup
+const rateLimiter = new Map<string, { count: number; timestamp: number }>();
+const RATE_LIMIT = 5; // requests per user
+const TIME_WINDOW = 10000; // 10 seconds
+const GROUP_COOLDOWN = 2000; // 2 seconds between group commands
+
+// Rate limiting function
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const userLimit = rateLimiter.get(userId);
+
+  if (!userLimit || (now - userLimit.timestamp) > TIME_WINDOW) {
+    rateLimiter.set(userId, { count: 1, timestamp: now });
+    return true;
+  }
+
+  if (userLimit.count >= RATE_LIMIT) {
+    return false;
+  }
+
+  userLimit.count++;
+  return true;
+}
+
 // Handle callback queries (button clicks)
 async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
   const chatId = callbackQuery.message?.chat.id;
@@ -850,6 +874,15 @@ async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
   const telegramId = callbackQuery.from.id.toString();
 
   if (!chatId || !messageId) return;
+
+  // Apply rate limiting
+  if (!checkRateLimit(telegramId)) {
+    await bot.answerCallbackQuery(callbackQuery.id, {
+      text: '⚠️ Please wait a few seconds before making another request',
+      show_alert: true
+    });
+    return;
+  }
 
   switch (callbackQuery.data) {
     case 'start_verify':
@@ -1001,12 +1034,30 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
   }
 }
 
-// Group chat detection helper
+// Group chat optimization
+const groupLastCommand = new Map<number, number>();
+
 function isGroupChat(chatId: number): boolean {
   return chatId < 0;
 }
 
+function canProcessGroupCommand(chatId: number): boolean {
+  if (!isGroupChat(chatId)) return true;
+  
+  const now = Date.now();
+  const lastCommand = groupLastCommand.get(chatId) || 0;
+  
+  if (now - lastCommand < GROUP_COOLDOWN) return false;
+  
+  groupLastCommand.set(chatId, now);
+  return true;
+}
+
 async function handleStats(msg: TelegramBot.Message) {
+  // Add group command cooldown
+  if (!canProcessGroupCommand(msg.chat.id)) {
+    return;
+  }
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
   const isSilentCommand = msg.text?.startsWith('/.');
