@@ -1,4 +1,3 @@
-
 import { pgTable, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -12,15 +11,14 @@ export const telegramUsers = pgTable('telegram_users', {
   notificationsEnabled: boolean('notifications_enabled').default(true),
 });
 
+// Table to store pending verification requests
 export const verificationRequests = pgTable('verification_requests', {
   id: integer('id').primaryKey(),
   telegramId: text('telegram_id').notNull().unique(),
   goatedUsername: text('goated_username').notNull(),
   requestedAt: timestamp('requested_at').default(sql`CURRENT_TIMESTAMP`),
-  status: text('status').default('pending'), // pending, approved, rejected
-  adminNotes: text('admin_notes'),
-});
 
+// Challenge system tables
 export const challenges = pgTable('challenges', {
   id: integer('id').primaryKey(),
   game: text('game').notNull(),
@@ -47,23 +45,6 @@ export const challengeEntries = pgTable('challenge_entries', {
   verifiedBy: text('verified_by'),
 });
 
-export const bonusCodes = pgTable('bonus_codes', {
-  id: integer('id').primaryKey(),
-  code: text('code').notNull().unique(),
-  wagerAmount: integer('wager_amount').notNull(),
-  wagerPeriodDays: integer('wager_period_days').notNull(),
-  rewardAmount: text('reward_amount').notNull(),
-  maxClaims: integer('max_claims').notNull(),
-  currentClaims: integer('current_claims').default(0),
-  createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
-  createdBy: text('created_by').notNull(),
-  expiresAt: timestamp('expires_at'),
-  status: text('status').default('active'), // active, expired, depleted
-});
-
-export const bonusCodeClaims = pgTable('bonus_code_claims', {
-  id: integer('id').primaryKey(),
-  bonusCodeId: integer('bonus_code_id').notNull(),
-  telegramId: text('telegram_id').notNull(),
-  claimedAt: timestamp('claimed_at').default(sql`CURRENT_TIMESTAMP`),
+  status: text('status').default('pending'), // pending, approved, rejected
+  adminNotes: text('admin_notes'),
 });

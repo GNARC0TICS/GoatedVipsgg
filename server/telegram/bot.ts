@@ -6,11 +6,8 @@ import { API_CONFIG } from '../config/api';
 import { users } from '@db/schema';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const ADMIN_TELEGRAM_IDS = ['1689953605'];
+const ADMIN_TELEGRAM_IDS = process.env.ADMIN_TELEGRAM_IDS?.split(',') || [];
 const ALLOWED_GROUP_IDS = process.env.ALLOWED_GROUP_IDS?.split(',') || [];
-
-// State management for bonus code creation
-const bonusCodeState = new Map();
 
 if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
@@ -65,40 +62,38 @@ async function setupBotCommands() {
       { command: 'pending', description: '📝 View pending verifications' },
       { command: 'verify_user', description: '✅ Verify a user' },
       { command: 'reject_user', description: '❌ Reject a user' },
-      { command: 'makeadmin', description: '👑 Grant admin privileges' },
-      { command: 'setup_guide', description: '📋 Show forwarding setup guide' },
-      { command: 'setup_forwarding', description: '🔄 Start channel forwarding' },
-      { command: 'list_forwardings', description: '📊 Show active forwardings' },
-      { command: 'stop_forwarding', description: '⏹️ Stop all forwardings' },
-      // Bonus code commands
-      { command: 'createbonus', description: '🎁 Create a new bonus code' },
-      { command: 'deploybonus', description: '📢 Deploy a bonus code' },
-      { command: 'listbonuses', description: '📋 List active bonus codes' },
-      // Challenge commands
-      { command: 'createchallenge', description: '🎮 Create a new challenge' },
-      { command: 'challenges', description: '🏆 View active challenges' },
-      { command: 'pendingchallenges', description: '📝 View pending challenge entries' },
-      { command: 'verifychallenge', description: '✅ Verify a challenge entry' },
-      { command: 'rejectchallenge', description: '❌ Reject a challenge entry' }
+      { command: 'makeadmin', description: '👑 Grant admin privileges' }
     ];
 
     // Set base commands globally
     await bot.setMyCommands(baseCommands);
 
-    // Set admin commands for specific admin users
+    // Set admin commands for private chats with admins
     for (const adminId of ADMIN_TELEGRAM_IDS) {
       try {
         await bot.setMyCommands(adminCommands, {
-          scope: {
-            type: 'chat',
-            chat_id: adminId.toString()
-          }
+          scope: { type: 'chat', chat_id: adminId }
         });
-        console.log(`[Telegram Bot] Admin commands set for ${adminId}`);
       } catch (error) {
         console.error(`Error setting admin commands for ${adminId}:`, error);
       }
     }
+
+    // Admin commands will be set when you first interact with the bot
+    bot.on('message', async (msg) => {
+      if (msg.from?.username === 'xGoombas') {
+        try {
+          await bot.setMyCommands(adminCommands, { 
+            scope: { 
+              type: 'chat',
+              chat_id: msg.chat.id 
+            }
+          });
+        } catch (error) {
+          console.error('Error setting admin commands:', error);
+        }
+      }
+    });
 
     logDebug('Bot commands set up successfully');
   } catch (error) {
@@ -139,11 +134,7 @@ bot.onText(/\/help/, async (msg) => {
     message += `• /user\\_info \\- Get user information\n`;
     message += `• /pending \\- View verification requests\n`;
     message += `• /verify\\_user \\- Verify a user\n`;
-    message += `• /reject\\_user \\- Reject a verification\n`;
-    message += `• /setup\\_guide \\- Show forwarding setup guide\n`;
-    message += `• /setup\\_forwarding \\- Start channel forwarding\n`;
-    message += `• /list\\_forwardings \\- Show active forwardings\n`;
-    message += `• /stop\\_forwarding \\- Stop all forwardings\n\n`;
+    message += `• /reject\\_user \\- Reject a verification\n\n`;
   }
 
   message += `*Available Commands:*\n`;
@@ -252,153 +243,6 @@ All-time Wager: $${(userStats.wagered?.all_time || 0).toLocaleString()}`;
   }
 });
 
-// Create bonus code command
-bot.onText(/\/createbonus/, async (msg) => {
-  const chatId = msg.chat.id;
-  const username = msg.from?.username;
-
-  if (username !== 'xGoombas') {
-    return bot.sendMessage(chatId, '❌ Only authorized users can create bonus codes.');
-  }
-
-  const bonusCodeState = new Map();
-  bonusCodeState.set(chatId, { step: 'code' });
-
-  const message = '🎁 Let\'s create a bonus code!\n\nEnter the bonus code (e.g. VIPSG2EZ):';
-  return bot.sendMessage(chatId, message);
-});
-
-// Handle bonus code creation steps
-bot.on('message', async (msg) => {
-  const chatId = msg.chat.id;
-  const state = bonusCodeState.get(chatId);
-
-  if (!state) return;
-
-  const text = msg.text;
-  if (!text) return;
-
-  switch (state.step) {
-    case 'code':
-      state.code = text;
-      state.step = 'wagerAmount';
-      await bot.sendMessage(chatId, '💰 Enter the required wager amount (in $):');
-      break;
-
-    case 'wagerAmount':
-      state.wagerAmount = parseFloat(text);
-      state.step = 'wagerPeriod';
-      await bot.sendMessage(chatId, '⏳ Enter the wager period in days (1, 7, or 30):');
-      break;
-
-    case 'wagerPeriod':
-      state.wagerPeriod = parseInt(text);
-      state.step = 'rewardAmount';
-      await bot.sendMessage(chatId, '🎯 Enter the reward amount (in $):');
-      break;
-
-    case 'rewardAmount':
-      state.rewardAmount = text;
-      state.step = 'maxClaims';
-      await bot.sendMessage(chatId, '👥 Enter max number of claims:');
-      break;
-
-    case 'maxClaims':
-      state.maxClaims = parseInt(text);
-
-      try {
-        // Create bonus code in database
-        const [bonusCode] = await db.insert(bonusCodes)
-          .values({
-            code: state.code,
-            wagerAmount: state.wagerAmount,
-            wagerPeriodDays: state.wagerPeriod,
-            rewardAmount: state.rewardAmount,
-            maxClaims: state.maxClaims,
-            createdBy: msg.from?.username || 'admin',
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
-          })
-          .returning();
-
-        const previewMessage = '✅ Bonus code created! Here\'s how it will look:\n\n' +
-          'Sup VIPS 🐐\nCode time!\n\n' +
-          `Wager amount: $${state.wagerAmount} wagered on Goated past ${state.wagerPeriod} days.\n\n` +
-          `$${state.rewardAmount} for the first ${state.maxClaims} in this group only!\n\n` +
-          `Here's the code:\n🎲 ||${state.code}|| 🎲\n\n` +
-          'Must be one of my Affiliates: goated.com/r/goatedvips\n\n' +
-          `$${state.rewardAmount} for first ${state.maxClaims} users!\n\n` +
-          'Good luck!\n\n' +
-          '*Codes are case sensitive*\n' +
-          '*Must be an affiliate to claim*';
-
-        await bot.sendMessage(chatId, previewMessage, { parse_mode: 'MarkdownV2' });
-        await bot.sendMessage(chatId, 'Use /deploybonus CODE to deploy this bonus code to the group.');
-
-        bonusCodeState.delete(chatId);
-      } catch (error) {
-        console.error('Error creating bonus code:', error);
-        await bot.sendMessage(chatId, '❌ Error creating bonus code. Please try again.');
-      }
-      break;
-  }
-});
-
-// Deploy bonus code command
-bot.onText(/\/deploybonus (.+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const username = msg.from?.username;
-
-  if (username !== 'xGoombas') {
-    return bot.sendMessage(chatId, '❌ Only authorized users can deploy bonus codes.');
-  }
-
-  const code = match?.[1];
-  if (!code) {
-    return bot.sendMessage(chatId, 'Usage: /deploybonus CODE');
-  }
-
-  try {
-    const [bonusCode] = await db
-      .select()
-      .from(bonusCodes)
-      .where(eq(bonusCodes.code, code))
-      .execute();
-
-    if (!bonusCode) {
-      return bot.sendMessage(chatId, '❌ Bonus code not found.');
-    }
-
-    const announcement = 
-      'Sup VIPS 🐐\nCode time\\!\n\n' +
-      `Wager amount: $${bonusCode.wagerAmount} wagered on Goated past ${bonusCode.wagerPeriodDays} days\\.\n\n` +
-      `$${bonusCode.rewardAmount} for the first ${bonusCode.maxClaims} in this group only\\!\n\n` +
-      'Here\'s the code:\n' +
-      `🎲 ||${bonusCode.code}|| 🎲\n\n` +
-      'Must be one of my Affiliates: [goated\\.com/r/goatedvips](https://goated.com/r/goatedvips)\n\n` +
-      `$${bonusCode.rewardAmount} for first ${bonusCode.maxClaims} users\\!\n\n` +
-      'Good luck\\!\n\n' +
-      '\\*Codes are case sensitive\\*\n' +
-      '\\*Must be an affiliate to claim\\*';
-
-    // Send to all allowed groups
-    for (const groupId of ALLOWED_GROUP_IDS) {
-      try {
-        await bot.sendMessage(groupId, announcement, { 
-          parse_mode: 'MarkdownV2',
-          disable_web_page_preview: true
-        });
-      } catch (error) {
-        console.error('Error sending to group:', error);
-      }
-    }
-
-    return bot.sendMessage(chatId, '✅ Bonus code deployed successfully!');
-  } catch (error) {
-    console.error('Error deploying bonus code:', error);
-    return bot.sendMessage(chatId, '❌ Error deploying bonus code.');
-  }
-});
-
 // Admin commands
 bot.onText(/\/makeadmin/, async (msg) => {
   const chatId = msg.chat.id;
@@ -496,7 +340,7 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
       .from(telegramUsers)
       .where(eq(telegramUsers.telegramUsername, telegramId))
       .execute();
-
+    
     if (!user?.[0]) {
       return bot.sendMessage(chatId, '❌ User not found with that username.');
     }
@@ -834,7 +678,7 @@ bot.onText(/\/message_user (.+?) (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const adminUsername = msg.from?.username;
 
-  if (adminUsername !=='xGoombas') {
+  if (adminUsername !== 'xGoombas') {
     return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
   }
 
@@ -1151,15 +995,16 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
 
       await db.insert(verificationRequests)
         .values({
-          telegramId: telegramId.toString(),
+          telegramId,
           goatedUsername,
           status: 'pending',
           requestedAt: new Date()
         });
 
+      // Create or update telegram user
       await db.insert(telegramUsers)
         .values({
-          telegramId: telegramId.toString(),
+          telegramId,
           goatedUsername,
           isVerified: false,
           createdAt: new Date()
@@ -1228,12 +1073,12 @@ function isGroupChat(chatId: number): boolean {
 
 function canProcessGroupCommand(chatId: number): boolean {
   if (!isGroupChat(chatId)) return true;
-
+  
   const now = Date.now();
   const lastCommand = groupLastCommand.get(chatId) || 0;
-
+  
   if (now - lastCommand < GROUP_COOLDOWN) return false;
-
+  
   groupLastCommand.set(chatId, now);
   return true;
 }
@@ -1639,7 +1484,7 @@ bot.on('message', async (msg) => {
 
     case 'description':
       state.description = text === 'none' ? '' : text;
-
+      
       // Create challenge in database
       try {
         const [challenge] = await db.insert(challenges)
@@ -1691,7 +1536,7 @@ Good luck, Goated VIPs! 🐐✨`;
 // View active challenges
 bot.onText(/\/challenges/, async (msg) => {
   const chatId = msg.chat.id;
-
+  
   try {
     const activeChalls = await db
       .select()
@@ -1725,7 +1570,7 @@ bot.onText(/#ChallengeComplete/, async (msg) => {
 
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
-
+  
   if (!telegramId) return;
 
   try {
@@ -1743,7 +1588,7 @@ bot.onText(/#ChallengeComplete/, async (msg) => {
 
     // Record entry for the latest challenge
     const challenge = activeChalls[0];
-
+    
     await db.insert(challengeEntries)
       .values({
         challengeId: challenge.id,
@@ -1756,7 +1601,8 @@ bot.onText(/#ChallengeComplete/, async (msg) => {
     await bot.sendMessage(chatId, 
       `✅ Challenge entry recorded!\n` +
       `@xGoombas will verify your entry soon.`);
-  } catch (error) {console.error('Error recording challenge entry:', error);
+  } catch (error) {
+    console.error('Error recording challenge entry:', error);
   }
 });
 
