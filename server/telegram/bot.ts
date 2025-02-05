@@ -1104,9 +1104,15 @@ async function handleStart(msg: TelegramBot.Message) {
 
   // For new users, start verification process
   try {
-    await bot.sendPhoto(chatId, `${process.cwd()}/server/telegram/BOTWELCOME.png`);
+    // Using the node fs module to read the image file directly
+    const fs = require('fs');
+    const imagePath = `${process.cwd()}/server/telegram/BOTWELCOME.png`;
+    const imageStream = fs.createReadStream(imagePath);
+    await bot.sendPhoto(chatId, imageStream);
   } catch (error) {
     console.error('Error sending welcome image:', error);
+    // Fallback to text-only welcome if image fails
+    console.log('Continuing with text-only welcome message');
   }
 
   const message = `👋 Welcome to the Goated Stats Bot!
