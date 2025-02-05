@@ -1,6 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { db } from '@db';
-import { telegramUsers, verificationRequests } from '@db/schema/telegram';
+import { telegramUsers, verificationRequests, bonusCodes } from '@db/schema/telegram';
 import { eq } from 'drizzle-orm';
 import { API_CONFIG } from '../config/api';
 import { users } from '@db/schema';
