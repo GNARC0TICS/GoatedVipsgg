@@ -5,6 +5,7 @@ export const telegramUsers = pgTable('telegram_users', {
   id: serial('id').primaryKey(),
   telegramId: text('telegram_id').notNull().unique(),
   telegramUsername: text('telegram_username'),
+  telegram_username: text('telegram_username'),
   goatedUsername: text('goated_username'),
   isVerified: boolean('is_verified').default(false),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
