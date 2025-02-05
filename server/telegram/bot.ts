@@ -9,6 +9,9 @@ const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_TELEGRAM_IDS = process.env.ADMIN_TELEGRAM_IDS?.split(',') || [];
 const ALLOWED_GROUP_IDS = process.env.ALLOWED_GROUP_IDS?.split(',') || [];
 
+// State management for bonus code creation
+const bonusCodeState = new Map();
+
 if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
