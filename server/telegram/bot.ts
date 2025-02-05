@@ -1161,7 +1161,7 @@ async function fetchLeaderboardData() {
     if (!response.ok) {
       const errorText = await response.text();
       logDebug('API request failed', { status: response.status, error: errorText });
-      throw new Error(`Failed to fetch leaderboard: ${response.status} - ${errorText}`);w new Error(`API request failed: ${response.status} - ${errorText}`);
+      throw new Error(`Failed to fetch leaderboard: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
