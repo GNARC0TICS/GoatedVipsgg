@@ -1132,11 +1132,14 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
 }
 
 // Helper function to fetch leaderboard data from our platform
+// Fetches leaderboard data for Telegram bot display
+// This function connects to our internal API to get real-time wager data
 async function fetchLeaderboardData() {
   try {
     logDebug('Attempting to fetch leaderboard data');
 
-    // Make request to our internal API endpoint
+    // Connect to our internal API endpoint running on port 5000
+    // This is the same data source used by the web interface
     const response = await fetch(
       `http://0.0.0.0:5000/api/wager-races/current`,
       {

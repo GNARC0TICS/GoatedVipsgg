@@ -82,9 +82,13 @@ export function useLeaderboard(
     };
   }, []);
 
-  const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
+  // Primary data fetch hook using React Query
+// This is the main entry point for leaderboard data in the frontend
+const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
+    // Unique key for React Query cache - changes when time period or page changes
     queryKey: ["/api/affiliate/stats", timePeriod, page],
     queryFn: async () => {
+      // Check session storage first for cached data to prevent unnecessary API calls
       const cachedData = sessionStorage.getItem(`leaderboard-${timePeriod}-${page}`);
       if (cachedData) {
         const parsed = JSON.parse(cachedData);

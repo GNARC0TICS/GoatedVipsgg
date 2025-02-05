@@ -100,7 +100,10 @@ const transformMVPData = (mvpData: any) => {
   }, {});
 };
 
+// Transforms raw API data into our standardized leaderboard format
+// This is the central data transformation function used by both web and Telegram interfaces
 function transformLeaderboardData(apiData: any) {
+  // Extract data from various possible API response formats
   const responseData = apiData.data || apiData.results || apiData;
   if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
     return {
