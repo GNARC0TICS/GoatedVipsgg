@@ -305,7 +305,7 @@ bot.on('message', async (msg) => {
 
     case 'maxClaims':
       state.maxClaims = parseInt(text);
-      
+
       try {
         // Create bonus code in database
         const [bonusCode] = await db.insert(bonusCodes)
@@ -333,7 +333,7 @@ bot.on('message', async (msg) => {
 
         await bot.sendMessage(chatId, previewMessage, { parse_mode: 'MarkdownV2' });
         await bot.sendMessage(chatId, 'Use /deploybonus CODE to deploy this bonus code to the group.');
-        
+
         bonusCodeState.delete(chatId);
       } catch (error) {
         console.error('Error creating bonus code:', error);
@@ -374,7 +374,7 @@ bot.onText(/\/deploybonus (.+)/, async (msg, match) => {
       `$${bonusCode.rewardAmount} for the first ${bonusCode.maxClaims} in this group only\\!\n\n` +
       'Here\'s the code:\n' +
       `🎲 ||${bonusCode.code}|| 🎲\n\n` +
-      'Must be one of my Affiliates: [goated\\.com/r/goatedvips](https://goated.com/r/goatedvips)\n\n' +
+      'Must be one of my Affiliates: [goated\\.com/r/goatedvips](https://goated.com/r/goatedvips)\n\n` +
       `$${bonusCode.rewardAmount} for first ${bonusCode.maxClaims} users\\!\n\n` +
       'Good luck\\!\n\n' +
       '\\*Codes are case sensitive\\*\n' +
@@ -496,7 +496,7 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
       .from(telegramUsers)
       .where(eq(telegramUsers.telegramUsername, telegramId))
       .execute();
-    
+
     if (!user?.[0]) {
       return bot.sendMessage(chatId, '❌ User not found with that username.');
     }
@@ -834,7 +834,7 @@ bot.onText(/\/message_user (.+?) (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const adminUsername = msg.from?.username;
 
-  if (adminUsername !== 'xGoombas') {
+  if (adminUsername !=='xGoombas') {
     return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
   }
 
@@ -1151,16 +1151,15 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
 
       await db.insert(verificationRequests)
         .values({
-          telegramId,
+          telegramId: telegramId.toString(),
           goatedUsername,
           status: 'pending',
           requestedAt: new Date()
         });
 
-      // Create or update telegram user
       await db.insert(telegramUsers)
         .values({
-          telegramId,
+          telegramId: telegramId.toString(),
           goatedUsername,
           isVerified: false,
           createdAt: new Date()
@@ -1229,12 +1228,12 @@ function isGroupChat(chatId: number): boolean {
 
 function canProcessGroupCommand(chatId: number): boolean {
   if (!isGroupChat(chatId)) return true;
-  
+
   const now = Date.now();
   const lastCommand = groupLastCommand.get(chatId) || 0;
-  
+
   if (now - lastCommand < GROUP_COOLDOWN) return false;
-  
+
   groupLastCommand.set(chatId, now);
   return true;
 }
@@ -1640,7 +1639,7 @@ bot.on('message', async (msg) => {
 
     case 'description':
       state.description = text === 'none' ? '' : text;
-      
+
       // Create challenge in database
       try {
         const [challenge] = await db.insert(challenges)
@@ -1692,7 +1691,7 @@ Good luck, Goated VIPs! 🐐✨`;
 // View active challenges
 bot.onText(/\/challenges/, async (msg) => {
   const chatId = msg.chat.id;
-  
+
   try {
     const activeChalls = await db
       .select()
@@ -1726,7 +1725,7 @@ bot.onText(/#ChallengeComplete/, async (msg) => {
 
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
-  
+
   if (!telegramId) return;
 
   try {
@@ -1744,7 +1743,7 @@ bot.onText(/#ChallengeComplete/, async (msg) => {
 
     // Record entry for the latest challenge
     const challenge = activeChalls[0];
-    
+
     await db.insert(challengeEntries)
       .values({
         challengeId: challenge.id,
@@ -1757,8 +1756,7 @@ bot.onText(/#ChallengeComplete/, async (msg) => {
     await bot.sendMessage(chatId, 
       `✅ Challenge entry recorded!\n` +
       `@xGoombas will verify your entry soon.`);
-  } catch (error) {
-    console.error('Error recording challenge entry:', error);
+  } catch (error) {console.error('Error recording challenge entry:', error);
   }
 });
 
