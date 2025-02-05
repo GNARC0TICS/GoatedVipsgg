@@ -294,7 +294,7 @@ bot.onText(/\/createbonus/, async (msg) => {
     '- Keep it memorable\n' +
     '- Code must be unique\n\n' +
     '⌛ You have 5 minutes to complete this process';
-    
+
   return bot.sendMessage(chatId, message);
 });
 
@@ -386,7 +386,7 @@ bot.on('message', async (msg) => {
 
         try {
           const expiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
-          
+
           // Create bonus code in database
           const [bonusCode] = await db.insert(bonusCodes)
             .values({
@@ -416,11 +416,11 @@ bot.on('message', async (msg) => {
             `Use /deploybonus ${state.code} to announce this code\\.`;
 
           await bot.sendMessage(chatId, previewMessage, { parse_mode: 'MarkdownV2' });
-          
+
           // Clear state and timeout
           clearTimeout(state.timeout);
           bonusCodeState.delete(chatId);
-          
+
           logDebug('Bonus code created', bonusCode);
         } catch (error) {
           logDebug('Error creating bonus code', error);
@@ -481,7 +481,7 @@ bot.onText(/\/deploybonus (.+)/, async (msg, match) => {
       `$${bonusCode.rewardAmount} for the first ${bonusCode.maxClaims} in this group only\\!\n\n` +
       'Here\'s the code:\n' +
       `🎲 ||${bonusCode.code}|| 🎲\n\n` +
-      'Must be one of my Affiliates: [goated\\.com/r/goatedvips](https://goated.com/r/goatedvips)\n\n' +
+      'Must be one of my Affiliates: [goated\\.com/r/goatedvips](https://goated.com/r/goatedvips)\n\n` +
       `$${bonusCode.rewardAmount} for first ${bonusCode.maxClaims} users\\!\n\n` +
       'Good luck\\!\n\n' +
       '\\*Codes are case sensitive\\*\n' +
@@ -603,7 +603,7 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
       .from(telegramUsers)
       .where(eq(telegramUsers.telegramUsername, telegramId))
       .execute();
-    
+
     if (!user?.[0]) {
       return bot.sendMessage(chatId, '❌ User not found with that username.');
     }
@@ -836,7 +836,7 @@ bot.onText(/\/setup_forwarding (@?\w+)/, async (msg, match) => {
       `Messages will be forwarded to ${ALLOWED_GROUP_IDS.length} group(s)\n` +
       `All Goated.com links will be automatically reformatted with our affiliate link.`);
   } catch (error) {
-    console.error('Error setting up channel forwarding:', error);
+    consoleerror('Error setting up channel forwarding:', error);
     return bot.sendMessage(chatId, 
       '❌ Error setting up forwarding. Please ensure:\n' +
       '1. The channel username is correct\n' +
@@ -1233,12 +1233,39 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
   // If no username provided, ask for it
   if (!match?.[1]) {
     return bot.sendMessage(chatId,
-      'Please provide your Goated username with the command.\n' +
+      '❌ Please provide your Goated username with the command.\n' +
       'Example: /verify YourUsername\n\n' +
       'Make sure to use your exact username as shown on the platform.');
   }
 
   const goatedUsername = match[1].trim();
+
+  // Username validation
+  if (!/^[a-zA-Z0-9_]{3,20}$/.test(goatedUsername)) {
+    return bot.sendMessage(chatId,
+      '❌ Invalid username format.\n' +
+      'Username must:\n' +
+      '• Be 3-20 characters long\n' +
+      '• Contain only letters, numbers, and underscores');
+  }
+
+  // Check for pending request
+  const pendingRequest = await db
+    .select()
+    .from(verificationRequests)
+    .where(
+      and(
+        eq(verificationRequests.telegramId, telegramId),
+        eq(verificationRequests.status, 'pending')
+      )
+    )
+    .execute();
+
+  if (pendingRequest.length > 0) {
+    return bot.sendMessage(chatId,
+      '⚠️ You already have a pending verification request.\n' +
+      'Please wait for admin approval.');
+  }
 
   try {
     // Try to fetch user stats directly
@@ -1353,12 +1380,12 @@ function isGroupChat(chatId: number): boolean {
 
 function canProcessGroupCommand(chatId: number): boolean {
   if (!isGroupChat(chatId)) return true;
-  
+
   const now = Date.now();
   const lastCommand = groupLastCommand.get(chatId) || 0;
-  
+
   if (now - lastCommand < GROUP_COOLDOWN) return false;
-  
+
   groupLastCommand.set(chatId, now);
   return true;
 }
@@ -1764,7 +1791,7 @@ bot.on('message', async (msg) => {
 
     case 'description':
       state.description = text === 'none' ? '' : text;
-      
+
       // Create challenge in database
       try {
         const [challenge] = await db.insert(challenges)
@@ -1816,7 +1843,7 @@ Good luck, Goated VIPs! 🐐✨`;
 // View active challenges
 bot.onText(/\/challenges/, async (msg) => {
   const chatId = msg.chat.id;
-  
+
   try {
     const activeChalls = await db
       .select()
@@ -1850,7 +1877,7 @@ bot.onText(/#ChallengeComplete/, async (msg) => {
 
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
-  
+
   if (!telegramId) return;
 
   try {
@@ -1868,7 +1895,7 @@ bot.onText(/#ChallengeComplete/, async (msg) => {
 
     // Record entry for the latest challenge
     const challenge = activeChalls[0];
-    
+
     await db.insert(challengeEntries)
       .values({
         challengeId: challenge.id,
