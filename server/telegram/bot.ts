@@ -1147,9 +1147,9 @@ async function fetchLeaderboardData() {
     logDebug('Attempting to fetch leaderboard data');
 
     // Make request to our internal API endpoint
-    const API_URL = process.env.API_URL || 'https://api.goatedvips.gg';
+    const API_URL = process.env.API_URL || 'http://0.0.0.0:5000';
     const response = await fetch(
-      `${API_URL}/api/wager-races/current`,
+      `${API_URL}/api/affiliate/stats`,
       {
         method: 'GET',
         headers: {
@@ -1161,7 +1161,7 @@ async function fetchLeaderboardData() {
     if (!response.ok) {
       const errorText = await response.text();
       logDebug('API request failed', { status: response.status, error: errorText });
-      throw new Error(`API request failed: ${response.status} - ${errorText}`);
+      throw new Error(`Failed to fetch leaderboard: ${response.status} - ${errorText}`);w new Error(`API request failed: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
