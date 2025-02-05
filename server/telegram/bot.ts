@@ -67,7 +67,7 @@ async function setupBotCommands() {
 
     // Set base commands globally
     await bot.setMyCommands(baseCommands);
-    
+
     // Set admin commands for private chats with admins
     for (const adminId of ADMIN_TELEGRAM_IDS) {
       try {
@@ -124,7 +124,7 @@ initializeBotWithRetry().catch(error => {
 // Add help command handler
 bot.onText(/\/help/, async (msg) => {
   const chatId = msg.chat.id;
-  
+
   let message = `🐐 *Welcome to Goated Stats Bot\\!*\n\n`;
 
   if (msg.from?.username === 'xGoombas') {
@@ -425,9 +425,9 @@ bot.onText(/\/setup_guide/, async (msg) => {
       • Post Messages
       • Edit Messages
       • Delete Messages
-   
+
    2\. Get your channel's username \(e\.g\. @YourChannel\)
-   
+
    3\. Use this command to start forwarding:
       \`/setup_forwarding @YourChannel\`
 
@@ -903,7 +903,7 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
       // Create or update verification request
       await db.delete(verificationRequests)
         .where(eq(verificationRequests.telegramId, telegramId));
-        
+
       await db.insert(verificationRequests)
         .values({
           telegramId,
@@ -959,8 +959,19 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
         'If you need help, contact @xGoombas');
     }
   } catch (error) {
-    logDebug('Error in handleVerify', error);
-    return bot.sendMessage(chatId, 'An error occurred while processing your verification request. Please try again later.');
+    console.error('Error in handleVerify', error);
+    if (error.message === 'Failed to verify username') {
+      return bot.sendMessage(chatId, 
+        '❌ Unable to verify username at this time.\n' +
+        'Please ensure:\n' +
+        '1. Your username is exactly as shown on Goated\n' +
+        '2. You have completed at least one wager\n' +
+        '3. The API service is available\n\n' +
+        'Try again in a few minutes or contact @xGoombas for help.');
+    }
+    return bot.sendMessage(chatId, 
+      '❌ An error occurred during verification.\n' +
+      'Please try again or contact @xGoombas if the issue persists.');
   }
 }
 
