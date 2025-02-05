@@ -153,6 +153,38 @@ export function registerRoutes(app: Express): Server {
   return httpServer;
 }
 
+async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    if (!response.ok) {
+      if (response.status === 401) {
+          throw new Error("API Authentication failed");
+      }
+      if (retries > 0) {
+        console.log(`API request failed with status ${response.status}, retrying...`);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+        return await fetchWithRetry(url, retries - 1);
+      } else {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+    }
+    return response;
+  } catch (error) {
+    if (retries > 0) {
+      console.log(`API request failed, retrying... ${error}`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+      return await fetchWithRetry(url, retries - 1);
+    } else {
+      throw new Error(`API request failed after multiple retries: ${error}`);
+    }
+  }
+}
+
 function setupRESTRoutes(app: Express) {
   // Add endpoint to fetch previous month's results
   app.get("/api/wager-races/previous", async (_req, res) => {
@@ -175,14 +207,8 @@ function setupRESTRoutes(app: Express) {
   app.get("/api/wager-races/current", async (_req, res) => {
     try {
       await rateLimiter.consume(_req.ip || "unknown");
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-            "Content-Type": "application/json",
-          },
-        }
+      const response = await fetchWithRetry(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`
       );
 
       if (!response.ok) {
@@ -223,7 +249,7 @@ function setupRESTRoutes(app: Express) {
           const now = new Date();
           const currentMonth = now.getMonth();
           const currentYear = now.getFullYear();
-          
+
           // Store complete race results with detailed participant data
           const winners = stats.data.monthly.data.slice(0, 10).map((participant: any, index: number) => ({
             uid: participant.uid,
@@ -400,7 +426,7 @@ function setupRESTRoutes(app: Express) {
   app.post("/api/support/reply", requireAuth, async (req, res) => {
     try {
       const { ticketId, message } = req.body;
-      
+
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
         return res.status(400).json({
           status: "error",
@@ -563,14 +589,8 @@ app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
 
   app.get("/api/admin/analytics", requireAdmin, async (_req, res) => {
     try {
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-            "Content-Type": "application/json",
-          },
-        }
+      const response = await fetchWithRetry(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`
       );
 
       if (!response.ok) {
@@ -637,14 +657,8 @@ async function handleProfileRequest(req: any, res: any) {
     }
 
     // Fetch current leaderboard data
-    const response = await fetch(
-      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-          "Content-Type": "application/json",
-        },
-      }
+    const response = await fetchWithRetry(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`
     );
 
     if (!response.ok) {
@@ -681,19 +695,12 @@ async function handleAffiliateStats(req: any, res: any) {
     await rateLimiter.consume(req.ip || "unknown");
     const username = req.query.username;
     let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
-    
+
     if (username) {
       url += `?username=${encodeURIComponent(username)}`;
     }
-    
-    const response = await fetch(url,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+
+    const response = await fetchWithRetry(url);
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -983,4 +990,5 @@ const adminLoginSchema = z.object({
 function generateToken(payload: any): string {
   //Implementation for generateToken is missing in original code, but it's not relevant to the fix.  Leaving as is.
   return "";
+}
 }
