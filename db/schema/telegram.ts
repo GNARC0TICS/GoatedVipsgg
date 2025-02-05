@@ -1,27 +1,33 @@
-import { pgTable, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, serial, integer } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const telegramUsers = pgTable('telegram_users', {
-  id: text('id').primaryKey(),
-  telegramId: text('telegram_id').notNull().unique(),
+  telegramId: text('telegram_id').primaryKey(),
+  telegramUsername: text('telegram_username'),
   goatedUsername: text('goated_username'),
   isVerified: boolean('is_verified').default(false),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
   lastActive: timestamp('last_active').default(sql`CURRENT_TIMESTAMP`),
   notificationsEnabled: boolean('notifications_enabled').default(true),
+  verifiedAt: timestamp('verified_at'),
+  verifiedBy: text('verified_by'),
+  updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`)
 });
 
 export const verificationRequests = pgTable('verification_requests', {
-  id: text('id').primaryKey(),
-  telegramId: text('telegram_id').notNull().unique(),
+  telegramId: text('telegram_id').primaryKey(),
   goatedUsername: text('goated_username').notNull(),
   requestedAt: timestamp('requested_at').default(sql`CURRENT_TIMESTAMP`),
   status: text('status').default('pending'),
-  adminNotes: text('admin_notes')
+  adminNotes: text('admin_notes'),
+  telegramUsername: text('telegram_username'),
+  verifiedAt: timestamp('verified_at'),
+  verifiedBy: text('verified_by'),
+  updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`)
 });
 
 export const challenges = pgTable('challenges', {
-  id: integer('id').primaryKey(),
+  id: serial('id').primaryKey(),
   game: text('game').notNull(),
   multiplier: text('multiplier'),
   minBet: text('min_bet').notNull(),
@@ -32,10 +38,11 @@ export const challenges = pgTable('challenges', {
   status: text('status').default('active'),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
   createdBy: text('created_by').notNull(),
+  updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`)
 });
 
 export const challengeEntries = pgTable('challenge_entries', {
-  id: integer('id').primaryKey(),
+  id: serial('id').primaryKey(),
   challengeId: integer('challenge_id').notNull(),
   telegramId: text('telegram_id').notNull(),
   betLink: text('bet_link').notNull(),
@@ -44,4 +51,5 @@ export const challengeEntries = pgTable('challenge_entries', {
   submittedAt: timestamp('submitted_at').default(sql`CURRENT_TIMESTAMP`),
   verifiedAt: timestamp('verified_at'),
   verifiedBy: text('verified_by'),
+  updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`)
 });

@@ -3,7 +3,9 @@ import { db } from '@db';
 import { telegramUsers, verificationRequests } from '@db/schema/telegram';
 import { eq } from 'drizzle-orm';
 import { API_CONFIG } from '../config/api';
-import { users } from '@db/schema';
+import { users, challenges, challengeEntries } from '@db/schema';
+import crypto from 'crypto';
+import { and } from 'drizzle-orm';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_TELEGRAM_IDS = ['1689953605'];
@@ -83,10 +85,10 @@ async function setupBotCommands() {
     bot.on('message', async (msg) => {
       if (msg.from?.username === 'xGoombas') {
         try {
-          await bot.setMyCommands(adminCommands, { 
-            scope: { 
+          await bot.setMyCommands(adminCommands, {
+            scope: {
               type: 'chat',
-              chat_id: msg.chat.id 
+              chat_id: msg.chat.id
             }
           });
         } catch (error) {
@@ -178,9 +180,9 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
         .execute();
 
       // Verify user is checking their own stats and is verified
-      if (!requester?.[0]?.isVerified || 
-          requester[0].goatedUsername?.toLowerCase() !== username.toLowerCase()) {
-        return bot.sendMessage(chatId, 
+      if (!requester?.[0]?.isVerified ||
+        requester[0].goatedUsername?.toLowerCase() !== username.toLowerCase()) {
+        return bot.sendMessage(chatId,
           'You can only check your own stats after verification.');
       }
     }
@@ -203,7 +205,7 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
     // Monthly data contains the primary stats we display
     const transformedData = data?.data?.monthly?.data;
     // Find the specific user in the data array
-    let userStats = transformedData?.find(u => 
+    let userStats = transformedData?.find(u =>
       u.name.toLowerCase() === username.toLowerCase()
     );
 
@@ -217,7 +219,7 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
 
       // If found, look up their stats using their Goated username
       if (telegramUser?.[0]?.goatedUsername) {
-        userStats = transformedData?.find(u => 
+        userStats = transformedData?.find(u =>
           u.name.toLowerCase() === telegramUser[0].goatedUsername?.toLowerCase()
         );
       }
@@ -340,7 +342,7 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
       .from(telegramUsers)
       .where(eq(telegramUsers.telegramUsername, telegramId))
       .execute();
-    
+
     if (!user?.[0]) {
       return bot.sendMessage(chatId, '❌ User not found with that username.');
     }
@@ -351,7 +353,7 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
     // Update verification request status
     const [request] = await db
       .update(verificationRequests)
-      .set({ status: 'approved' })
+      .set({ status: 'approved', updatedAt: new Date() })
       .where(eq(verificationRequests.telegramId, telegramId))
       .returning();
 
@@ -362,11 +364,11 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
     // Update telegram user verification status
     await db
       .update(telegramUsers)
-      .set({ isVerified: true })
+      .set({ isVerified: true, updatedAt: new Date() })
       .where(eq(telegramUsers.telegramId, telegramId));
 
     // Notify user privately
-    await bot.sendMessage(telegramId, 
+    await bot.sendMessage(telegramId,
       '✅ Your account has been verified!\n\n' +
       'You can now use:\n' +
       '/stats - Check your wager statistics\n' +
@@ -423,7 +425,7 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
       }
     }
 
-    return bot.sendMessage(chatId, 
+    return bot.sendMessage(chatId,
       `✅ Broadcast complete!\nDelivered to: ${successCount} users\nFailed: ${failCount} users`);
   } catch (error) {
     console.error('Error broadcasting message:', error);
@@ -455,7 +457,6 @@ bot.onText(/\/setup_guide/, async (msg) => {
   }
 
   const setupGuide = `📱 *Channel Forwarding Setup Guide*
-
 1️⃣ *Preparation:*
    • Create your channel if you haven't already
    • Add @GoatedVIPsBot as an admin to your channel
@@ -467,7 +468,7 @@ bot.onText(/\/setup_guide/, async (msg) => {
       • Edit Messages
       • Delete Messages
 
-   2\. Get your channel's username \(e\.g\. @YourChannel\)
+   2\. Get your channel's username (e\.g\. @YourChannel)
 
    3\. Use this command to start forwarding:
       \`/setup_forwarding @YourChannel\`
@@ -521,7 +522,8 @@ bot.onText(/\/setup_forwarding (@?\w+)/, async (msg, match) => {
   }
 
   if (!channelUsername) {
-    return bot.sendMessage(chatId, 
+    return bot.sendMessage(
+      chatId,
       '❌ Please provide the channel username.\n' +
       'Example: /setup_forwarding @channelname');
   }
@@ -564,13 +566,13 @@ bot.onText(/\/setup_forwarding (@?\w+)/, async (msg, match) => {
       }
     });
 
-    return bot.sendMessage(chatId, 
+    return bot.sendMessage(chatId,
       `✅ Successfully set up forwarding from @${channelUsername}\n` +
       `Messages will be forwarded to ${ALLOWED_GROUP_IDS.length} group(s)\n` +
       `All Goated.com links will be automatically reformatted with our affiliate link.`);
   } catch (error) {
     console.error('Error setting up channel forwarding:', error);
-    return bot.sendMessage(chatId, 
+    return bot.sendMessage(chatId,
       '❌ Error setting up forwarding. Please ensure:\n' +
       '1. The channel username is correct\n' +
       '2. The channel is public\n' +
@@ -640,7 +642,7 @@ bot.onText(/\/broadcast_groups (.+)/, async (msg, match) => {
       }
     }
 
-    return bot.sendMessage(chatId, 
+    return bot.sendMessage(chatId,
       `✅ Group broadcast complete!\nDelivered to: ${successCount} groups\nFailed: ${failedGroups.length} groups`);
   } catch (error) {
     console.error('Error broadcasting to groups:', error);
@@ -766,7 +768,7 @@ bot.onText(/\/reject_user (.+)/, async (msg, match) => {
   try {
     const [request] = await db
       .update(verificationRequests)
-      .set({ status: 'rejected' })
+      .set({ status: 'rejected', updatedAt: new Date() })
       .where(eq(verificationRequests.telegramId, telegramId))
       .returning();
 
@@ -861,7 +863,7 @@ Click the button below to begin verification:`;
 // Rate limiting setup
 const rateLimiter = new Map<string, { count: number; timestamp: number }>();
 const RATE_LIMIT = 5; // requests per user
-const TIME_WINDOW = 10000; // 10 seconds
+const TIME_WINDOW = 10000; // 10 seconds between requests
 const GROUP_COOLDOWN = 2000; // 2 seconds between group commands
 
 // Rate limiting function
@@ -928,28 +930,14 @@ async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
 async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | null) {
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
+  const username = match?.[1]?.trim();
 
   if (!telegramId) {
     return bot.sendMessage(chatId, 'Could not identify user.');
   }
 
-  // Check if user is already verified
-  const existingUser = await db.select()
-    .from(telegramUsers)
-    .where(eq(telegramUsers.telegramId, telegramId))
-    .execute();
-
-  if (existingUser?.[0]?.isVerified) {
-    return bot.sendMessage(chatId, 
-      '✅ Your account is already verified!\n\n' +
-      'Available commands:\n' +
-      '/stats - Check your wager statistics\n' +
-      '/race - View your monthly race position\n' +
-      '/leaderboard - See top players');
-  }
-
   // If in group chat, direct to private chat
-  if (chatId < 0) {
+  if (msg.chat.type !== 'private') {
     return bot.sendMessage(
       chatId,
       'Please start a private chat with me to complete the verification process:\n' +
@@ -957,127 +945,115 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
     );
   }
 
-  // If no username provided, ask for it
-  if (!match?.[1]) {
+  if (!username) {
     return bot.sendMessage(chatId,
       'Please provide your Goated username with the command.\n' +
       'Example: /verify YourUsername\n\n' +
       'Make sure to use your exact username as shown on the platform.');
   }
 
-  const goatedUsername = match[1].trim();
-
   try {
-    console.log(`[Verification] Attempting to verify username: ${goatedUsername}`);
-    
-    // Try to fetch user stats directly
-    const response = await fetch(
-        `http://0.0.0.0:5000/api/affiliate/stats?username=${encodeURIComponent(goatedUsername)}`,
-        {
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-        }
-      );
+    console.log(`[Verification] Attempting to verify username: ${username}`);
 
-      if (!response.ok) {
-        console.error(`[Verification] API request failed for ${goatedUsername}: ${response.status}`);
-        return bot.sendMessage(chatId, 
-          '❌ Unable to verify at this moment. Please:\n\n' +
-          '1. Check your username spelling\n' +
-          '2. Wait a few minutes and try again\n' +
-          '3. Contact @xGoombas if issue persists');
-      }
+    // Check if user already has a pending verification
+    const existingRequest = await db.select()
+      .from(verificationRequests)
+      .where(eq(verificationRequests.telegramId, telegramId))
+      .execute();
 
-      const userData = await response.json();
-      console.log(`[Verification] Got response for ${goatedUsername}:`, userData?.data?.monthly?.data);
-      
-      if (!userData?.data?.monthly?.data) {
-        return bot.sendMessage(chatId,
-          '❌ No data found. Please ensure:\n\n' +
-          '1. You have wagered in the last 30 days\n' +
-          '2. You are using our affiliate link\n' +
-          '3. Your username is exactly as shown on Goated');
-      }
-
-      const userExists = userData.data.monthly.data.some(
-        (u: any) => u.name.toLowerCase() === goatedUsername.toLowerCase()
-      );
-
-      if (userExists) {
-      // Create or update verification request
-      await db.delete(verificationRequests)
-        .where(eq(verificationRequests.telegramId, telegramId));
-
-      await db.insert(verificationRequests)
-        .values({
-          telegramId,
-          goatedUsername,
-          status: 'pending',
-          requestedAt: new Date()
-        });
-
-      // Create or update telegram user
-      await db.insert(telegramUsers)
-        .values({
-          telegramId,
-          goatedUsername,
-          isVerified: false,
-          createdAt: new Date()
-        })
-        .onConflictDoUpdate({
-          target: [telegramUsers.telegramId],
-          set: { goatedUsername }
-        });
-
-      // Notify admins about new verification request
-      for (const adminId of ADMIN_TELEGRAM_IDS) {
-        const keyboard = {
-          inline_keyboard: [
-            [
-              { text: '✅ Approve', callback_data: `verify_approve_${telegramId}` },
-              { text: '❌ Reject', callback_data: `verify_reject_${telegramId}` }
-            ]
-          ]
-        };
-
-        await bot.sendMessage(
-          adminId,
-          `New verification request:\nTelegram User: ${msg.from?.username || 'Unknown'}\nGoated Username: ${goatedUsername}`,
-          { reply_markup: keyboard }
-        );
-      }
-
-      return bot.sendMessage(
-        chatId,
-        '✅ Account found! Verification request submitted.\n\n' +
-        'Please be patient while your account is awaiting verification.\n' +
-        'You will receive a notification once the process is complete.'
-      );
-    } else {
+    if (existingRequest?.[0]?.status === 'pending') {
       return bot.sendMessage(chatId,
-        '❌ Account not found!\n\n' +
-        'Please check:\n' +
-        '1. Your username is exactly as shown on Goated.com\n' +
-        '2. You have completed at least one wager\n' +
-        '3. You are using our affiliate link: goated.com/r/goatedvips\n\n' +
+        '⏳ You already have a pending verification request.\n\n' +
+        'Please wait for an admin to review your request.\n' +
         'If you need help, contact @xGoombas');
     }
-  } catch (error) {
-    console.error('Error in handleVerify', error);
-    if (error.message === 'Failed to verify username') {
-      return bot.sendMessage(chatId, 
-        '❌ Unable to verify username at this time.\n' +
-        'Please ensure:\n' +
-        '1. Your username is exactly as shown on Goated\n' +
-        '2. You have completed at least one wager\n' +
-        '3. The API service is available\n\n' +
-        'Try again in a few minutes or contact @xGoombas for help.');
+
+    // Check if user is already verified
+    const existingUser = await db.select()
+      .from(telegramUsers)
+      .where(eq(telegramUsers.telegramId, telegramId))
+      .execute();
+
+    if (existingUser?.[0]?.isVerified) {
+      return bot.sendMessage(chatId,
+        '✅ Your account is already verified!\n\n' +
+        'Available commands:\n' +
+        '/stats - Check your wager statistics\n' +
+        '/race - View your monthly race position\n' +
+        '/leaderboard - See top players');
     }
-    return bot.sendMessage(chatId, 
+
+    // Create or update telegram user record
+    await db.insert(telegramUsers)
+      .values({
+        telegramId: telegramId,
+        telegramUsername: msg.from?.username || null,
+        goatedUsername: username,
+        isVerified: false,
+        notificationsEnabled: true,
+        lastActive: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .onConflictDoUpdate({
+        target: [telegramUsers.telegramId],
+        set: {
+          telegramUsername: msg.from?.username || null,
+          goatedUsername: username,
+          lastActive: new Date(),
+          updatedAt: new Date()
+        }
+      })
+      .execute();
+
+    // Create verification request
+    await db.insert(verificationRequests)
+      .values({
+        telegramId: telegramId,
+        goatedUsername: username,
+        status: 'pending',
+        telegramUsername: msg.from?.username || null,
+        requestedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .onConflictDoUpdate({
+        target: [verificationRequests.telegramId],
+        set: {
+          goatedUsername: username,
+          status: 'pending',
+          telegramUsername: msg.from?.username || null,
+          requestedAt: new Date(),
+          updatedAt: new Date()
+        }
+      })
+      .execute();
+
+    await bot.sendMessage(chatId,
+      '✅ Verification request submitted!\n\n' +
+      'Please wait while an admin reviews your request.\n' +
+      'You will be notified once your account is verified.\n\n' +
+      'If you need help, contact @xGoombas');
+
+    // Notify admins about new verification request
+    for (const adminId of ADMIN_TELEGRAM_IDS) {
+      try {
+        await bot.sendMessage(adminId,
+          `🆕 New verification request:\n\n` +
+          `User: ${msg.from?.username ? '@' + msg.from.username : 'No username'}\n` +
+          `Goated: ${username}\n\n` +
+          `To verify: /verify_user ${telegramId}\n` +
+          `To reject: /reject_user ${telegramId}`);
+      } catch (error) {
+        console.error('Error notifying admin:', error);
+      }
+    }
+
+    return;
+  } catch (error) {
+    console.error('Error in verification process:', error);
+    return bot.sendMessage(chatId,
       '❌ An error occurred during verification.\n' +
-      'Please try again or contact @xGoombas if the issue persists.');
+      'Please try again later or contact @xGoombas for assistance.');
   }
 }
 
@@ -1090,12 +1066,12 @@ function isGroupChat(chatId: number): boolean {
 
 function canProcessGroupCommand(chatId: number): boolean {
   if (!isGroupChat(chatId)) return true;
-  
+
   const now = Date.now();
   const lastCommand = groupLastCommand.get(chatId) || 0;
-  
+
   if (now - lastCommand < GROUP_COOLDOWN) return false;
-  
+
   groupLastCommand.set(chatId, now);
   return true;
 }
@@ -1166,7 +1142,7 @@ All-time: $${userStats.wagered.all_time.toLocaleString()}`;
   } catch (error) {
     logDebug('Error in handleStats', error);
     const errorMsg = 'An error occurred while fetching your stats. Please try again later.';
-    return isSilentCommand && msg.from 
+    return isSilentCommand && msg.from
       ? bot.sendMessage(msg.from.id, errorMsg)
       : bot.sendMessage(chatId, errorMsg);
   }
@@ -1355,14 +1331,14 @@ bot.onText(/\/race/, handleRace);
 bot.onText(/\/leaderboard/, handleLeaderboard);
 bot.onText(/\/play/, async (msg) => {
   const chatId = msg.chat.id;
-  await bot.sendMessage(chatId, 
+  await bot.sendMessage(chatId,
     '🎮 Click here to play on Goated:\nhttps://www.goated.com/r/goatedvips\n\n' +
     '💰 Make sure to use our link to get the best rakeback and rewards!');
 });
 
 bot.onText(/\/website/, async (msg) => {
   const chatId = msg.chat.id;
-  await bot.sendMessage(chatId, 
+  await bot.sendMessage(chatId,
     '🌐 Visit our website:\nhttps://goatedvips.gg\n\n' +
     '📊 Check leaderboards, tips, and latest promotions!');
 });
@@ -1501,7 +1477,7 @@ bot.on('message', async (msg) => {
 
     case 'description':
       state.description = text === 'none' ? '' : text;
-      
+
       // Create challenge in database
       try {
         const [challenge] = await db.insert(challenges)
@@ -1513,7 +1489,10 @@ bot.on('message', async (msg) => {
             maxWinners: state.winners,
             timeframe: state.timeframe,
             description: state.description,
-            createdBy: msg.from?.username || 'admin'
+            createdBy: msg.from?.username || 'admin',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: 'active'
           })
           .returning();
 
@@ -1553,7 +1532,7 @@ Good luck, Goated VIPs! 🐐✨`;
 // View active challenges
 bot.onText(/\/challenges/, async (msg) => {
   const chatId = msg.chat.id;
-  
+
   try {
     const activeChalls = await db
       .select()
@@ -1587,7 +1566,7 @@ bot.onText(/#ChallengeComplete/, async (msg) => {
 
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
-  
+
   if (!telegramId) return;
 
   try {
@@ -1605,17 +1584,19 @@ bot.onText(/#ChallengeComplete/, async (msg) => {
 
     // Record entry for the latest challenge
     const challenge = activeChalls[0];
-    
+
     await db.insert(challengeEntries)
       .values({
         challengeId: challenge.id,
         telegramId,
         betLink,
-        status: 'pending'
+        status: 'pending',
+        submittedAt: new Date(),
+        updatedAt: new Date()
       })
       .execute();
 
-    await bot.sendMessage(chatId, 
+    await bot.sendMessage(chatId,
       `✅ Challenge entry recorded!\n` +
       `@xGoombas will verify your entry soon.`);
   } catch (error) {
@@ -1678,11 +1659,12 @@ bot.onText(/\/verifychallenge (\d+) (.+)/, async (msg, match) => {
   try {
     const [entry] = await db
       .update(challengeEntries)
-      .set({ 
+      .set({
         status: 'verified',
         bonusCode,
         verifiedAt: new Date(),
-        verifiedBy: username
+        verifiedBy: username,
+        updatedAt: new Date()
       })
       .where(eq(challengeEntries.id, parseInt(entryId)))
       .returning();
@@ -1731,7 +1713,7 @@ bot.onText(/\/claim/, async (msg) => {
       return bot.sendMessage(chatId, 'No verified challenges to claim.');
     }
 
-    const message = entries.map(e => 
+    const message = entries.map(e =>
       `🎁 Bonus Code: ||${e.bonusCode}||`
     ).join('\n\n');
 
