@@ -842,9 +842,6 @@ bot.onText(/\/setup_forwarding (@?\w+)/, async (msg, match) => {
       '1. The channel username is correct\n' +
       '2. The channel is public\n' +
       '3. The bot has access to read messages');
-      '1. The channel username is correct\n' +
-      '2. The channel is public\n' +
-      '3. The bot has access to read messages');
   }
 });
 
