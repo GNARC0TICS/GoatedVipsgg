@@ -834,7 +834,7 @@ bot.onText(/\/setup_forwarding (@?\w+)/, async (msg, match) => {
     return bot.sendMessage(chatId, 
       `✅ Successfully set up forwarding from @${channelUsername}\n` +
       `Messages will be forwarded to ${ALLOWED_GROUP_IDS.length} group(s)\n` +
-      `All Goated.com links will be automatically reformatted with our affiliate link.`);} catch (error) {
+      `All Goated.com links will be automatically reformatted with ouraffiliate link.`);} catch (error) {
     console.error('Error setting up channel forwarding:', error);
     return bot.sendMessage(chatId, 
       '❌ Error setting up forwarding. Please ensure:\n' +
@@ -1734,8 +1734,9 @@ bot.onText(/\/createchallenge/, async (msg) => {
 1. Limbo
 2. Keno
 3. Dice
-4. Crash
-5. Mines\n\nReply with the number or game name.`;
+4. Crash5. Mines
+
+Reply with the number or game name.`;
 
   return bot.sendMessage(chatId, message);
 });
