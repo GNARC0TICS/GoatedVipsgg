@@ -103,14 +103,10 @@ async function startServer() {
 
     const isDevelopment = process.env.NODE_ENV === 'development';
     
-    // Initialize Telegram bot only in production
-    if (!isDevelopment) {
-      log("Initializing Telegram bot...");
-      if (!process.env.TELEGRAM_BOT_TOKEN) {
-        throw new Error('TELEGRAM_BOT_TOKEN must be provided');
-      }
-    } else {
-      log("Development mode: Telegram bot disabled");
+    // Initialize Telegram bot
+    log("Initializing Telegram bot...");
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+      throw new Error('TELEGRAM_BOT_TOKEN must be provided');
     }
 
     const server = createServer(app);

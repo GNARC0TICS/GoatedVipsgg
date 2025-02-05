@@ -87,12 +87,15 @@ async function setupBotCommands() {
     bot.on('message', async (msg) => {
       if (msg.from?.username === 'xGoombas') {
         try {
-          await bot.setMyCommands(adminCommands, { 
-            scope: { 
-              type: 'chat',
-              chat_id: msg.chat.id 
-            }
-          });
+          // Set admin commands for user's private chat
+          if (msg.from?.id) {
+            await bot.setMyCommands(adminCommands, { 
+              scope: { 
+                type: 'chat',
+                chat_id: msg.from.id 
+              }
+            });
+          }
         } catch (error) {
           console.error('Error setting admin commands:', error);
         }
@@ -883,7 +886,7 @@ async function processVerificationQueue() {
         request.chatId,
         '✅ Account found! Verification request submitted.\n\n' +
         'Please be patient while your account is awaiting verification.\n' +
-        'You will receive a notification once the process is complete.'
+        'You will receivea notification once the process is complete.'
       );
 
       // Notify admins
