@@ -1,5 +1,5 @@
 
-import { pgTable, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, boolean, serial } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const telegramUsers = pgTable('telegram_users', {
