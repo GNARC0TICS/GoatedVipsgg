@@ -13,8 +13,25 @@ if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
 
-// Create a bot instance
-const bot = new TelegramBot(token, { polling: true });
+// Create a bot instance with polling
+const bot = new TelegramBot(token, { polling: false });
+
+// Cleanup function to stop polling
+async function stopBot() {
+  try {
+    await bot.stopPolling();
+    console.log('[Telegram Bot] Polling stopped');
+  } catch (error) {
+    console.error('[Telegram Bot] Error stopping polling:', error);
+  }
+}
+
+// Handle cleanup on server shutdown
+process.on('SIGINT', stopBot);
+process.on('SIGTERM', stopBot);
+
+// Start polling after setup
+bot.startPolling();
 
 // Debug logging function
 function logDebug(message: string, data?: any) {
