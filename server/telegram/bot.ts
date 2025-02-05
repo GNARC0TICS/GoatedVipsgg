@@ -297,8 +297,8 @@ bot.onText(/\/pending/, async (msg) => {
           `📱 Telegram: @${username}\n` +
           `👤 Goated: ${request.goatedUsername}\n` +
           `⏰ Requested: ${new Date(request.requestedAt).toLocaleString()}\n\n` +
-          `To verify: /verify_user ${request.telegramId}\n` +
-          `To reject: /reject_user ${request.telegramId}\n` +
+          `/verify_user @${username}\n` +
+          `/reject_user @${username}\n` +
           `───────────────────`;
       } catch (error) {
         console.error('Error fetching username:', error);
@@ -329,10 +329,23 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
   }
 
   if (!match?.[1]) {
-    return bot.sendMessage(chatId, '❌ Please provide a Telegram ID.');
+    return bot.sendMessage(chatId, '❌ Please provide a Telegram username or ID.');
   }
 
-  const telegramId = match[1];
+  let telegramId = match[1];
+  // If username format is provided (@username), remove @ and find the user's ID
+  if (telegramId.startsWith('@')) {
+    telegramId = telegramId.substring(1);
+    const user = await db.select()
+      .from(telegramUsers)
+      .where(eq(telegramUsers.telegramUsername, telegramId))
+      .execute();
+    
+    if (!user?.[0]) {
+      return bot.sendMessage(chatId, '❌ User not found with that username.');
+    }
+    telegramId = user[0].telegramId;
+  }
 
   try {
     // Update verification request status
