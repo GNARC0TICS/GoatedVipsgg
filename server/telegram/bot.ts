@@ -252,9 +252,6 @@ All-time Wager: $${(userStats.wagered?.all_time || 0).toLocaleString()}`;
   }
 });
 
-// Global state for bonus code creation
-const bonusCodeState = new Map();
-
 // Create bonus code command
 bot.onText(/\/createbonus/, async (msg) => {
   const chatId = msg.chat.id;
