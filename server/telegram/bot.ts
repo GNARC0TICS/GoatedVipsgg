@@ -835,6 +835,81 @@ async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
 }
 
 // Command handlers
+// Queue for handling verification requests
+const verificationQueue: { telegramId: string; goatedUsername: string; chatId: number }[] = [];
+let isProcessingQueue = false;
+
+async function processVerificationQueue() {
+  if (isProcessingQueue || verificationQueue.length === 0) return;
+  
+  isProcessingQueue = true;
+  const request = verificationQueue.shift();
+  
+  if (!request) {
+    isProcessingQueue = false;
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://0.0.0.0:5000/api/affiliate/stats?username=${encodeURIComponent(request.goatedUsername)}`,
+      {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+      }
+    );
+
+    if (response.ok) {
+      await db.insert(verificationRequests)
+        .values({
+          telegramId: request.telegramId,
+          goatedUsername: request.goatedUsername,
+          status: 'pending',
+          requestedAt: new Date()
+        })
+        .onConflictDoUpdate({
+          target: [verificationRequests.telegramId],
+          set: { goatedUsername: request.goatedUsername, status: 'pending' }
+        });
+
+      await bot.sendMessage(
+        request.chatId,
+        '✅ Account found! Verification request submitted.\n\n' +
+        'Please be patient while your account is awaiting verification.\n' +
+        'You will receive a notification once the process is complete.'
+      );
+
+      // Notify admins
+      for (const adminId of ADMIN_TELEGRAM_IDS) {
+        await bot.sendMessage(
+          adminId,
+          `New verification request:\nTelegram ID: ${request.telegramId}\nGoated Username: ${request.goatedUsername}`
+        );
+      }
+    } else {
+      await bot.sendMessage(
+        request.chatId,
+        '❌ Account not found!\n\nPlease check:\n' +
+        '1. Your username is exactly as shown on Goated.com\n' +
+        '2. You have completed at least one wager\n' +
+        '3. You are using our affiliate link: goated.com/r/goatedvips\n\n' +
+        'If you need help, contact @xGoombas'
+      );
+    }
+  } catch (error) {
+    console.error('Error processing verification:', error);
+    await bot.sendMessage(
+      request.chatId,
+      'An error occurred while processing your verification. Please try again later.'
+    );
+  }
+
+  isProcessingQueue = false;
+  processVerificationQueue(); // Process next request
+}
+
 async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | null) {
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
@@ -863,11 +938,15 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
   const goatedUsername = match[1].trim();
 
   try {
-    // Try to fetch user stats directly
-    const response = await fetch(
-        `http://0.0.0.0:5000/api/affiliate/stats?username=${encodeURIComponent(goatedUsername)}`,
-        {
-          headers: {
+    // Add to verification queue
+    verificationQueue.push({ telegramId, goatedUsername, chatId });
+    processVerificationQueue();
+    
+    return bot.sendMessage(
+      chatId,
+      '🔄 Processing verification request...\n' +
+      'You will receive a notification once complete.'
+    );
             'Accept': 'application/json',
             'Content-Type': 'application/json'
           },
