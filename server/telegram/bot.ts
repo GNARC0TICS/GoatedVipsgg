@@ -331,6 +331,18 @@ bot.on('message', async (msg) => {
       state.maxClaims = parseInt(text);
       
       try {
+        // Check if code already exists
+        const existingCode = await db.select()
+          .from(bonusCodes)
+          .where(eq(bonusCodes.code, state.code))
+          .execute();
+
+        if (existingCode.length > 0) {
+          await bot.sendMessage(chatId, '❌ This bonus code already exists. Please choose a different code.');
+          state.step = 'code';
+          return;
+        }
+
         // Create bonus code in database
         const [bonusCode] = await db.insert(bonusCodes)
           .values({
