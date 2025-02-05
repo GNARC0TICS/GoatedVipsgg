@@ -153,25 +153,31 @@ bot.onText(/\/help/, async (msg) => {
   });
 });
 
-// Check stats command with username parameter
+// Command: /check_stats <username>
+// Purpose: Allow users to check wager statistics for themselves or (for admins) any user
+// Data Flow: Telegram -> Database -> Goated API -> Formatted Response
 bot.onText(/\/check_stats (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
   const username = match?.[1]?.trim();
 
+  // Basic validation
   if (!telegramId) {
     return bot.sendMessage(chatId, 'Could not identify user.');
   }
 
   try {
-    // Check if requester is admin or verified user
+    // AUTHORIZATION CHECK
+    // Only xGoombas (admin) can check other users' stats
+    // Regular users can only check their own stats after verification
     if (msg.from?.username !== 'xGoombas') {
+      // Get requester's verification status from database
       const requester = await db.select()
         .from(telegramUsers)
         .where(eq(telegramUsers.telegramId, telegramId))
         .execute();
 
-      // If not admin, verify it's their own username
+      // Verify user is checking their own stats and is verified
       if (!requester?.[0]?.isVerified || 
           requester[0].goatedUsername?.toLowerCase() !== username.toLowerCase()) {
         return bot.sendMessage(chatId, 
@@ -179,7 +185,9 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
       }
     }
 
-    // Try to find user by Goated username
+    // DATA FETCHING
+    // 1. Connect to Goated's internal API endpoint for affiliate statistics
+    // This endpoint provides real-time wager data for all affiliates
     const response = await fetch(
       `http://0.0.0.0:5000/api/affiliate/stats?username=${encodeURIComponent(username)}`,
       {
@@ -190,19 +198,24 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
       }
     );
 
+    // 2. Parse and transform the API response
     const data = await response.json();
+    // Monthly data contains the primary stats we display
     const transformedData = data?.data?.monthly?.data;
+    // Find the specific user in the data array
     let userStats = transformedData?.find(u => 
       u.name.toLowerCase() === username.toLowerCase()
     );
 
-    // If not found and admin requested, try finding by Telegram username
+    // ADMIN LOOKUP FEATURE
+    // If admin is checking by Telegram handle (@username), lookup their Goated username
     if (!userStats && msg.from?.username === 'xGoombas' && username.startsWith('@')) {
       const telegramUser = await db.select()
         .from(telegramUsers)
         .where(eq(telegramUsers.telegramId, username.substring(1)))
         .execute();
 
+      // If found, look up their stats using their Goated username
       if (telegramUser?.[0]?.goatedUsername) {
         userStats = transformedData?.find(u => 
           u.name.toLowerCase() === telegramUser[0].goatedUsername?.toLowerCase()
@@ -210,10 +223,13 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
       }
     }
 
+    // Handle case where user isn't found in stats
     if (!userStats) {
       return bot.sendMessage(chatId, 'User not found.');
     }
 
+    // FORMAT AND SEND RESPONSE
+    // Display all wager statistics with proper formatting
     const message = `📊 Stats for ${userStats.name}:\n
 Monthly Wager: $${(userStats.wagered?.this_month || 0).toLocaleString()}
 Weekly Wager: $${(userStats.wagered?.this_week || 0).toLocaleString()}
