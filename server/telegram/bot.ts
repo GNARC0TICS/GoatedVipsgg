@@ -30,8 +30,11 @@ async function stopBot() {
 process.on('SIGINT', stopBot);
 process.on('SIGTERM', stopBot);
 
-// Start polling after setup
-bot.startPolling();
+// Only start polling in development environment
+if (process.env.NODE_ENV !== 'production') {
+  bot.startPolling();
+  console.log('[Telegram Bot] Polling started in development mode');
+}
 
 // Debug logging function
 function logDebug(message: string, data?: any) {
