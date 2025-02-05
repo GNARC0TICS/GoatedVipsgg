@@ -1,4 +1,3 @@
-
 import { pgTable, text, timestamp, integer, boolean, serial } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -13,8 +12,8 @@ export const telegramUsers = pgTable('telegram_users', {
 });
 
 export const verificationRequests = pgTable('verification_requests', {
-  id: serial('id').primaryKey(),
-  telegramId: text('telegram_id').notNull().unique(),
+  id: serial('id').primaryKey().notNull(),
+  telegramId: text('telegram_id').notNull(),
   goatedUsername: text('goated_username').notNull(),
   requestedAt: timestamp('requested_at').default(sql`CURRENT_TIMESTAMP`),
   status: text('status').default('pending'), // pending, approved, rejected
