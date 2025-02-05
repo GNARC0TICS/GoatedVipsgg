@@ -834,11 +834,14 @@ bot.onText(/\/setup_forwarding (@?\w+)/, async (msg, match) => {
     return bot.sendMessage(chatId, 
       `✅ Successfully set up forwarding from @${channelUsername}\n` +
       `Messages will be forwarded to ${ALLOWED_GROUP_IDS.length} group(s)\n` +
-      `All Goated.com links will be automatically reformatted with ouraffiliate link.`);
+      `All Goated.com links will be automatically reformatted with our affiliate link.`);
 } catch (error) {
     console.error('Error setting up channel forwarding:', error);
     return bot.sendMessage(chatId, 
       '❌ Error setting up forwarding. Please ensure:\n' +
+      '1. The channel username is correct\n' +
+      '2. The channel is public\n' +
+      '3. The bot has access to read messages');
       '1. The channel username is correct\n' +
       '2. The channel is public\n' +
       '3. The bot has access to read messages');
