@@ -1735,7 +1735,7 @@ bot.onText(/\/createchallenge/, async (msg) => {
 1. Limbo
 2. Keno
 3. Dice
-4.Crash
+4. Crash
 5. Mines
 
 Reply with the number or game name.`;
