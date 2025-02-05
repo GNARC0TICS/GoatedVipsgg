@@ -365,8 +365,24 @@ bot.onText(/\/verify_user (.+)/, async (msg, match) => {
       .set({ isVerified: true })
       .where(eq(telegramUsers.telegramId, telegramId));
 
-    // Notify the user
-    await bot.sendMessage(telegramId, '✅ Your account has been verified! You can now use all bot features.');
+    // Notify user privately
+    await bot.sendMessage(telegramId, 
+      '✅ Your account has been verified!\n\n' +
+      'You can now use:\n' +
+      '/stats - Check your wager statistics\n' +
+      '/race - View your monthly race position\n' +
+      '/leaderboard - See top players\n\n' +
+      '🌐 You can also use this verification to log into our platform at https://goatedvips.gg');
+
+    // Notify in allowed groups
+    for (const groupId of ALLOWED_GROUP_IDS) {
+      try {
+        await bot.sendMessage(groupId, `✅ Welcome ${request.goatedUsername} to GoatedVIPs! Account verified successfully.`);
+      } catch (error) {
+        console.error('Error sending group notification:', error);
+      }
+    }
+
     return bot.sendMessage(chatId, `✅ User ${request.goatedUsername} has been verified.`);
   } catch (error) {
     console.error('Error verifying user:', error);
@@ -916,6 +932,21 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
 
   if (!telegramId) {
     return bot.sendMessage(chatId, 'Could not identify user.');
+  }
+
+  // Check if user is already verified
+  const existingUser = await db.select()
+    .from(telegramUsers)
+    .where(eq(telegramUsers.telegramId, telegramId))
+    .execute();
+
+  if (existingUser?.[0]?.isVerified) {
+    return bot.sendMessage(chatId, 
+      '✅ Your account is already verified!\n\n' +
+      'Available commands:\n' +
+      '/stats - Check your wager statistics\n' +
+      '/race - View your monthly race position\n' +
+      '/leaderboard - See top players');
   }
 
   // If in group chat, direct to private chat
