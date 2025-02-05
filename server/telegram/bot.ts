@@ -85,16 +85,19 @@ async function setupBotCommands() {
     // Set base commands globally
     await bot.setMyCommands(baseCommands);
 
-    // Set admin commands for admins by username
-    try {
-      await bot.setMyCommands(adminCommands, {
-        scope: {
-          type: 'chat_administrators'
-        }
-      });
-      console.log('[Telegram Bot] Admin commands set successfully');
-    } catch (error) {
-      console.error('Error setting admin commands:', error);
+    // Set admin commands for specific admin users
+    for (const adminId of ADMIN_TELEGRAM_IDS) {
+      try {
+        await bot.setMyCommands(adminCommands, {
+          scope: {
+            type: 'chat',
+            chat_id: Number(adminId)
+          }
+        });
+        console.log(`[Telegram Bot] Admin commands set for ${adminId}`);
+      } catch (error) {
+        console.error(`Error setting admin commands for ${adminId}:`, error);
+      }
     }
 
     logDebug('Bot commands set up successfully');
