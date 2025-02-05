@@ -69,7 +69,17 @@ async function setupBotCommands() {
       { command: 'setup_guide', description: '📋 Show forwarding setup guide' },
       { command: 'setup_forwarding', description: '🔄 Start channel forwarding' },
       { command: 'list_forwardings', description: '📊 Show active forwardings' },
-      { command: 'stop_forwarding', description: '⏹️ Stop all forwardings' }
+      { command: 'stop_forwarding', description: '⏹️ Stop all forwardings' },
+      // Bonus code commands
+      { command: 'createbonus', description: '🎁 Create a new bonus code' },
+      { command: 'deploybonus', description: '📢 Deploy a bonus code' },
+      { command: 'listbonuses', description: '📋 List active bonus codes' },
+      // Challenge commands
+      { command: 'createchallenge', description: '🎮 Create a new challenge' },
+      { command: 'challenges', description: '🏆 View active challenges' },
+      { command: 'pendingchallenges', description: '📝 View pending challenge entries' },
+      { command: 'verifychallenge', description: '✅ Verify a challenge entry' },
+      { command: 'rejectchallenge', description: '❌ Reject a challenge entry' }
     ];
 
     // Set base commands globally
