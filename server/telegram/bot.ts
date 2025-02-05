@@ -13,11 +13,9 @@ if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
 
-// Create a bot instance with polling if not in development
+// Create a bot instance with polling disabled by default
 const isDevelopment = process.env.NODE_ENV === 'development';
-const bot = isDevelopment ? 
-  null as unknown as TelegramBot : 
-  new TelegramBot(token, { polling: false });
+const bot = new TelegramBot(token, { polling: false });
 
 // Cleanup function to stop polling
 async function stopBot() {
@@ -34,9 +32,13 @@ async function stopBot() {
 process.on('SIGINT', stopBot);
 process.on('SIGTERM', stopBot);
 
-// Start polling in all environments
-bot.startPolling();
-console.log('[Telegram Bot] Polling started');
+// Only start polling in development
+if (isDevelopment) {
+  bot.startPolling();
+  console.log('[Telegram Bot] Polling started (Development mode)');
+} else {
+  console.log('[Telegram Bot] Running in webhook mode (Production)');
+}
 
 // Debug logging function
 function logDebug(message: string, data?: any) {
