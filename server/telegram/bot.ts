@@ -1149,7 +1149,10 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
       '✅ Your account is already verified!\n\n' +
       'Available commands:\n' +
       '/stats - Check your wager statistics\n' +
-
+      '/race - View your monthly race position\n' +
+      '/leaderboard - See top players');
+  }
+});
 
 // List active bonus codes command
 bot.onText(/\/listbonuses/, async (msg) => {
