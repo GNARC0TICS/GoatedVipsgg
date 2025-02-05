@@ -968,6 +968,8 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
   const goatedUsername = match[1].trim();
 
   try {
+    console.log(`[Verification] Attempting to verify username: ${goatedUsername}`);
+    
     // Try to fetch user stats directly
     const response = await fetch(
         `http://0.0.0.0:5000/api/affiliate/stats?username=${encodeURIComponent(goatedUsername)}`,
@@ -980,11 +982,26 @@ async function handleVerify(msg: TelegramBot.Message, match: RegExpExecArray | n
       );
 
       if (!response.ok) {
-        throw new Error('Failed to verify username');
+        console.error(`[Verification] API request failed for ${goatedUsername}: ${response.status}`);
+        return bot.sendMessage(chatId, 
+          '❌ Unable to verify at this moment. Please:\n\n' +
+          '1. Check your username spelling\n' +
+          '2. Wait a few minutes and try again\n' +
+          '3. Contact @xGoombas if issue persists');
       }
 
       const userData = await response.json();
-      const userExists = userData?.data?.monthly?.data?.some(
+      console.log(`[Verification] Got response for ${goatedUsername}:`, userData?.data?.monthly?.data);
+      
+      if (!userData?.data?.monthly?.data) {
+        return bot.sendMessage(chatId,
+          '❌ No data found. Please ensure:\n\n' +
+          '1. You have wagered in the last 30 days\n' +
+          '2. You are using our affiliate link\n' +
+          '3. Your username is exactly as shown on Goated');
+      }
+
+      const userExists = userData.data.monthly.data.some(
         (u: any) => u.name.toLowerCase() === goatedUsername.toLowerCase()
       );
 
