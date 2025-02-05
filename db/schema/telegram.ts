@@ -1,10 +1,9 @@
-
-import { pgTable, text, timestamp, integer, boolean, serial, varchar, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, boolean, varchar, pgEnum } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { type InferModel } from "drizzle-orm";
 
 export const telegramUsers = pgTable('telegram_users', {
-  id: serial('id').primaryKey(),
+  id: integer('id').primaryKey().notNull(),
   telegramId: text('telegram_id').notNull().unique(),
   telegramUsername: text('telegram_username'),
   goatedUsername: text('goated_username'),
@@ -18,7 +17,7 @@ export type TelegramUser = InferModel<typeof telegramUsers>;
 export type TelegramUserInsert = InferModel<typeof telegramUsers, "insert">;
 
 export const verificationRequests = pgTable('verification_requests', {
-  id: serial('id').primaryKey(),
+  id: integer('id').primaryKey().notNull(),
   telegramId: text('telegram_id').notNull(),
   telegramUsername: text('telegram_username'),
   goatedUsername: text('goated_username').notNull(),
@@ -31,7 +30,7 @@ export const verificationRequests = pgTable('verification_requests', {
 });
 
 export const bonusCodes = pgTable('bonus_codes', {
-  id: serial('id').primaryKey(),
+  id: integer('id').primaryKey().notNull(),
   code: text('code').notNull().unique(),
   wagerAmount: integer('wager_amount').notNull(),
   wagerPeriodDays: integer('wager_period_days').notNull(),
@@ -45,14 +44,14 @@ export const bonusCodes = pgTable('bonus_codes', {
 });
 
 export const bonusCodeClaims = pgTable('bonus_code_claims', {
-  id: serial('id').primaryKey(),
+  id: integer('id').primaryKey().notNull(),
   bonusCodeId: integer('bonus_code_id').notNull(),
   telegramId: text('telegram_id').notNull(),
   claimedAt: timestamp('claimed_at').default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const challenges = pgTable('challenges', {
-  id: serial('id').primaryKey(),
+  id: integer('id').primaryKey().notNull(),
   game: text('game').notNull(),
   multiplier: text('multiplier'),
   minBet: text('min_bet').notNull(),
@@ -66,7 +65,7 @@ export const challenges = pgTable('challenges', {
 });
 
 export const challengeEntries = pgTable('challenge_entries', {
-  id: serial('id').primaryKey(),
+  id: integer('id').primaryKey().notNull(),
   challengeId: integer('challenge_id').notNull(),
   telegramId: text('telegram_id').notNull(),
   betLink: text('bet_link').notNull(),
