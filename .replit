@@ -21,10 +21,7 @@ run = ["npm", "run", "start"]
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 24678
-externalPort = 3000
-
+# Workflow configurations
 [workflows]
 runButton = "Start application"
 
@@ -40,7 +37,6 @@ args = "Start application"
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
-mode = "parallel"
 
 [workflows.workflow.metadata]
 agentRequireRestartOnSave = false

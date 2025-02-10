@@ -10,10 +10,9 @@ import { createServer } from "http";
 
 const execAsync = promisify(exec);
 const app = express();
+const PORT = process.env.PORT || 5000;
 
-const PORT = Number(process.env.PORT) || 5000;
-
-async function setupMiddleware(app: express.Application) {
+async function setupMiddleware() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
@@ -31,9 +30,9 @@ function requestLogger(
   let capturedResponse: Record<string, any> | undefined;
 
   const originalJson = res.json;
-  res.json = function (body: any) {
+  res.json = function (body, ...args) {
     capturedResponse = body;
-    return originalJson.call(res, body);
+    return originalJson.apply(res, [body, ...args]);
   };
 
   res.on("finish", () => {
@@ -75,67 +74,59 @@ async function checkDatabase() {
   }
 }
 
-async function cleanupPort(port: number) {
+async function cleanupPort() {
   try {
-    await execAsync(`lsof -ti:${port} | xargs kill -9`);
+    await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
     await new Promise(resolve => setTimeout(resolve, 1000));
   } catch (error) {
-    log("No existing process found on port " + port);
+    log("No existing process found on port " + PORT);
   }
 }
 
-async function startServer(app: express.Application, port: number) {
+async function startServer() {
   try {
-    await cleanupPort(port);
+    log("Starting server initialization...");
+    await checkDatabase();
+    await cleanupPort();
+
     const server = createServer(app);
+
+    // Setup middleware and routes
+    await setupMiddleware();
+    registerRoutes(app);
+
+    // Setup Vite or serve static files based on environment
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
 
     return new Promise((resolve, reject) => {
       server
-        .listen(port, "0.0.0.0")
+        .listen(PORT, "0.0.0.0")
         .on("error", async (err: NodeJS.ErrnoException) => {
           if (err.code === 'EADDRINUSE') {
-            log(`Port ${port} is in use, attempting to free it...`);
-            await cleanupPort(port);
-            server.listen(port, "0.0.0.0");
+            log(`Port ${PORT} is in use, attempting to free it...`);
+            await cleanupPort();
+            server.listen(PORT, "0.0.0.0");
           } else {
             console.error(`Failed to start server: ${err.message}`);
             reject(err);
           }
         })
         .on("listening", () => {
-          log(`Server running on port ${port} (http://0.0.0.0:${port})`);
+          log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
           resolve(server);
         });
-
-      registerRoutes(app, server);
     });
   } catch (error) {
-    console.error("Failed to start server:", error);
-    throw error;
-  }
-}
-
-async function initializeServer() {
-  try {
-    log("Starting server initialization...");
-    await checkDatabase();
-    await setupMiddleware(app);
-
-    // Setup Vite or serve static files based on environment
-    if (app.get("env") === "development") {
-      const server = await startServer(app, PORT);
-      await setupVite(app, server);
-    } else {
-      serveStatic(app);
-      await startServer(app, PORT);
-    }
-  } catch (error) {
-    console.error("Failed to initialize server:", error);
+    console.error("Failed to start application:", error);
     process.exit(1);
   }
 }
 
-initializeServer().catch((error) => {
+startServer().catch((error) => {
   console.error("Failed to start server:", error);
   process.exit(1);
 });
