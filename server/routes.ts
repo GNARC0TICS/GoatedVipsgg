@@ -7,20 +7,47 @@ import { RateLimiterMemory } from "rate-limiter-flexible";
 import { db } from "@db";
 import { wagerRaces } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
-import { z } from "zod";
+import compression from "express-compression";
 
-// Enhanced caching with TTL and key generation
+// Enhanced rate limiting configuration with batch support
+const rateLimits = {
+  HIGH: { points: 120, duration: 60 },   // 120 requests per minute for batch operations
+  MEDIUM: { points: 60, duration: 60 },  // 60 requests per minute for regular endpoints
+  LOW: { points: 20, duration: 60 }      // 20 requests per minute for analytics
+};
+
+// Cache times based on data volatility with shorter TTLs
+const CACHE_TIMES = {
+  AFFILIATE_STATS: 30000,   // 30 seconds
+  RACE_DATA: 30000,         // 30 seconds
+  ANALYTICS: 300000         // 5 minutes
+};
+
+// Enhanced cache manager with memory usage optimization
 class CacheManager {
-  private cache: Map<string, { data: any; timestamp: number }>;
+  private cache: Map<string, { data: any; timestamp: number; size: number }>;
   private readonly defaultTTL: number;
+  private readonly maxSize: number;
+  private currentSize: number;
 
-  constructor(defaultTTL = 30000) {
+  constructor(defaultTTL = 30000, maxSize = 100 * 1024 * 1024) { // 100MB max cache size
     this.cache = new Map();
     this.defaultTTL = defaultTTL;
+    this.maxSize = maxSize;
+    this.currentSize = 0;
   }
 
   generateKey(req: any): string {
-    return `${req.method}-${req.originalUrl}-${JSON.stringify(req.query)}`;
+    const relevantParams = ['username', 'limit', 'period'];
+    const queryString = req.query ? 
+      Object.keys(req.query)
+        .filter(key => relevantParams.includes(key))
+        .sort()
+        .map(key => `${key}=${req.query[key]}`)
+        .join('&')
+      : '';
+
+    return `${req.method}-${req.path}${queryString ? `?${queryString}` : ''}`;
   }
 
   get(key: string): any {
@@ -28,7 +55,7 @@ class CacheManager {
     if (!cached) return null;
 
     if (Date.now() - cached.timestamp > this.defaultTTL) {
-      this.cache.delete(key);
+      this.delete(key);
       return null;
     }
 
@@ -36,34 +63,57 @@ class CacheManager {
   }
 
   set(key: string, data: any): void {
+    const size = Buffer.from(JSON.stringify(data)).length;
+
+    // Check if adding this item would exceed max size
+    if (this.currentSize + size > this.maxSize) {
+      this.evictOldest();
+    }
+
+    const oldEntry = this.cache.get(key);
+    if (oldEntry) {
+      this.currentSize -= oldEntry.size;
+    }
+
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
+      size
     });
+    this.currentSize += size;
+  }
+
+  private delete(key: string): void {
+    const entry = this.cache.get(key);
+    if (entry) {
+      this.currentSize -= entry.size;
+      this.cache.delete(key);
+    }
+  }
+
+  private evictOldest(): void {
+    const entries = Array.from(this.cache.entries());
+    if (entries.length === 0) return;
+
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+
+    // Remove oldest entries until we're under maxSize
+    while (this.currentSize > this.maxSize && entries.length > 0) {
+      const [key] = entries.shift()!;
+      this.delete(key);
+    }
   }
 
   clear(): void {
     this.cache.clear();
+    this.currentSize = 0;
   }
 }
 
-// Enhanced rate limiting configuration with stricter limits
-const rateLimits = {
-  HIGH: { points: 30, duration: 60 }, // 30 requests per minute
-  MEDIUM: { points: 15, duration: 60 }, // 15 requests per minute
-  LOW: { points: 5, duration: 60 }, // 5 requests per minute
-};
-
-const rateLimiters = {
-  high: new RateLimiterMemory(rateLimits.HIGH),
-  medium: new RateLimiterMemory(rateLimits.MEDIUM),
-  low: new RateLimiterMemory(rateLimits.LOW),
-};
-
-// Initialize cache manager with different TTLs
+// Initialize cache manager
 const cacheManager = new CacheManager();
 
-// Enhanced cache middleware with proper headers and compression
+// Enhanced cache middleware with compression
 const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) => {
   const key = cacheManager.generateKey(req);
   const cachedResponse = cacheManager.get(key);
@@ -75,7 +125,6 @@ const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) =
   }
 
   res.setHeader('X-Cache', 'MISS');
-  res.setHeader('Cache-Control', 'no-cache');
   const originalJson = res.json;
   res.json = (body: any) => {
     cacheManager.set(key, body);
@@ -85,101 +134,65 @@ const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) =
   next();
 };
 
-// Enhanced rate limit middleware with proper headers and logging
-const createRateLimiter = (tier: 'high' | 'medium' | 'low') => {
-  const limiter = rateLimiters[tier];
-  return async (req: any, res: any, next: any) => {
-    try {
-      const rateLimitRes = await limiter.consume(req.ip);
-
-      // Set standard rate limit headers
-      res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase()].points);
-      res.setHeader('X-RateLimit-Remaining', rateLimitRes.remainingPoints);
-      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateLimitRes.msBeforeNext).toISOString());
-
-      log(`Rate limit - ${tier}: ${rateLimitRes.remainingPoints} requests remaining`);
-      next();
-    } catch (rejRes) {
-      log(`Rate limit exceeded - ${tier}: IP ${req.ip}`);
-
-      res.setHeader('Retry-After', Math.ceil(rejRes.msBeforeNext / 1000));
-      res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase()].points);
-      res.setHeader('X-RateLimit-Remaining', 0);
-      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rejRes.msBeforeNext).toISOString());
-
-      res.status(429).json({
-        status: 'error',
-        message: 'Too many requests',
-        retryAfter: Math.ceil(rejRes.msBeforeNext / 1000)
-      });
-    }
-  };
-};
-
-// Batch request handler with improved error handling
-const batchHandler = async (req: any, res: any) => {
-  try {
-    const { requests } = req.body;
-    if (!Array.isArray(requests)) {
-      return res.status(400).json({ error: 'Invalid batch request format' });
-    }
-
-    const results = await Promise.allSettled(
-      requests.map(async (request) => {
-        try {
-          const response = await fetch(
-            `${API_CONFIG.baseUrl}${request.endpoint}`,
-            {
-              headers: {
-                Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-                "Content-Type": "application/json",
-              },
-            }
-          );
-
-          if (!response.ok) {
-            throw new Error(`API Error: ${response.status}`);
-          }
-
-          return await response.json();
-        } catch (error) {
-          return { 
-            status: 'error',
-            error: error.message || 'Failed to process request',
-            endpoint: request.endpoint
-          };
-        }
-      })
-    );
-
-    res.json({
-      status: 'success',
-      results: results.map(result => 
-        result.status === 'fulfilled' ? result.value : result.reason
-      )
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Batch processing failed',
-      error: error.message 
-    });
-  }
+// Initialize rate limiters
+const rateLimiters = {
+  high: new RateLimiterMemory(rateLimits.HIGH),
+  medium: new RateLimiterMemory(rateLimits.MEDIUM),
+  low: new RateLimiterMemory(rateLimits.LOW),
 };
 
 function setupRESTRoutes(app: Express) {
-  // Health check - no cache/rate limit
+  // Enable compression for all routes
+  app.use(compression());
+
+  // Health check endpoint
   app.get("/api/health", (_req, res) => {
     res.json({ status: "healthy" });
   });
 
-  // Batch endpoint - medium rate limit
-  app.post("/api/batch", createRateLimiter('medium'), batchHandler);
+  // Optimized affiliate stats endpoint
+  app.get("/api/affiliate/stats",
+    createRateLimiter('medium'),
+    cacheMiddleware(CACHE_TIMES.AFFILIATE_STATS),
+    async (req, res) => {
+      try {
+        const username = req.query.username as string;
+        let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
 
-  // Current race data - medium cache, high rate limit
+        if (username) {
+          url += `?username=${encodeURIComponent(username)}`;
+        }
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+            "Accept-Encoding": "gzip, deflate"
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status}`);
+        }
+
+        const apiData = await response.json();
+        const transformedData = transformLeaderboardData(apiData, req.query.limit as string);
+
+        res.json(transformedData);
+      } catch (error) {
+        log(`Error in /api/affiliate/stats: ${error}`);
+        res.status(500).json({
+          status: "error",
+          message: "Failed to fetch affiliate stats"
+        });
+      }
+    }
+  );
+
+  // Current race data endpoint
   app.get("/api/wager-races/current",
     createRateLimiter('high'),
-    cacheMiddleware(15000),
+    cacheMiddleware(CACHE_TIMES.RACE_DATA),
     async (_req, res) => {
       try {
         const response = await fetch(
@@ -188,6 +201,7 @@ function setupRESTRoutes(app: Express) {
             headers: {
               Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
               "Content-Type": "application/json",
+              "Accept-Encoding": "gzip, deflate"
             },
           }
         );
@@ -209,13 +223,13 @@ function setupRESTRoutes(app: Express) {
           endDate: endOfMonth.toISOString(),
           prizePool: 500,
           participants: stats.data.monthly.data
+            .slice(0, 10)
             .map((participant: any, index: number) => ({
               uid: participant.uid,
               name: participant.name,
               wagered: participant.wagered.this_month,
               position: index + 1
             }))
-            .slice(0, 10)
         };
 
         res.json(raceData);
@@ -223,67 +237,16 @@ function setupRESTRoutes(app: Express) {
         log(`Error fetching current race: ${error}`);
         res.status(500).json({
           status: "error",
-          message: "Failed to fetch current race",
+          message: "Failed to fetch current race"
         });
       }
     }
   );
 
-  // Affiliate stats - longer cache, medium rate limit
-  app.get("/api/affiliate/stats",
-    createRateLimiter('medium'),
-    cacheMiddleware(60000),
-    async (req, res) => {
-      try {
-        const username = req.query.username;
-        let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
-
-        if (username) {
-          url += `?username=${encodeURIComponent(username)}`;
-        }
-
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            log("API Authentication failed - check API token");
-            throw new Error("API Authentication failed");
-          }
-          throw new Error(`API request failed: ${response.status}`);
-        }
-
-        const apiData = await response.json();
-        const transformedData = transformLeaderboardData(apiData);
-
-        res.json(transformedData);
-      } catch (error) {
-        log(`Error in /api/affiliate/stats: ${error}`);
-        res.json({
-          status: "success",
-          metadata: {
-            totalUsers: 0,
-            lastUpdated: new Date().toISOString(),
-          },
-          data: {
-            today: { data: [] },
-            weekly: { data: [] },
-            monthly: { data: [] },
-            all_time: { data: [] },
-          },
-        });
-      }
-    }
-  );
-
-  // Analytics - longer cache, low rate limit
+  // Analytics endpoint with aggressive caching
   app.get("/api/admin/analytics",
     createRateLimiter('low'),
-    cacheMiddleware(300000),
+    cacheMiddleware(CACHE_TIMES.ANALYTICS),
     async (_req, res) => {
       try {
         const response = await fetch(
@@ -292,6 +255,7 @@ function setupRESTRoutes(app: Express) {
             headers: {
               Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
               "Content-Type": "application/json",
+              "Accept-Encoding": "gzip, deflate"
             },
           }
         );
@@ -333,19 +297,71 @@ function setupRESTRoutes(app: Express) {
       }
     }
   );
+  // Add batch endpoint
+  app.post("/api/batch", 
+    createRateLimiter('high'),
+    async (req, res) => {
+      try {
+        const { requests } = req.body;
+        if (!Array.isArray(requests)) {
+          return res.status(400).json({ error: 'Invalid batch request format' });
+        }
+
+        const results = await Promise.allSettled(
+          requests.map(async (request) => {
+            try {
+              const response = await fetch(
+                `${API_CONFIG.baseUrl}${request.endpoint}`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+                    "Content-Type": "application/json",
+                  },
+                }
+              );
+
+              if (!response.ok) {
+                throw new Error(`API Error: ${response.status}`);
+              }
+
+              return await response.json();
+            } catch (error: any) {
+              return { 
+                status: 'error',
+                error: error.message || 'Failed to process request',
+                endpoint: request.endpoint
+              };
+            }
+          })
+        );
+
+        res.json({
+          status: 'success',
+          results: results.map(result => 
+            result.status === 'fulfilled' ? result.value : result.reason
+          )
+        });
+      } catch (error: any) {
+        res.status(500).json({ 
+          status: 'error',
+          message: 'Batch processing failed',
+          error: error.message 
+        });
+      }
+    }
+  );
 }
 
-let wss: WebSocketServer;
-
+// Helper functions
 function sortByWagered(data: any[], period: string) {
   return [...data].sort(
     (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
   );
 }
 
-function transformLeaderboardData(apiData: any) {
+function transformLeaderboardData(apiData: any, limit?: string) {
   const responseData = apiData.data || apiData.results || apiData;
-  if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
+  if (!responseData) {
     return {
       status: "success",
       metadata: {
@@ -362,16 +378,20 @@ function transformLeaderboardData(apiData: any) {
   }
 
   const dataArray = Array.isArray(responseData) ? responseData : [responseData];
-  const transformedData = dataArray.map((entry) => ({
-    uid: entry.uid || "",
-    name: entry.name || "",
-    wagered: {
-      today: entry.wagered?.today || 0,
-      this_week: entry.wagered?.this_week || 0,
-      this_month: entry.wagered?.this_month || 0,
-      all_time: entry.wagered?.all_time || 0,
-    },
-  }));
+  const maxEntries = limit ? parseInt(limit, 10) : dataArray.length;
+
+  const transformedData = dataArray
+    .slice(0, maxEntries)
+    .map((entry) => ({
+      uid: entry.uid || "",
+      name: entry.name || "",
+      wagered: {
+        today: entry.wagered?.today || 0,
+        this_week: entry.wagered?.this_week || 0,
+        this_month: entry.wagered?.this_month || 0,
+        all_time: entry.wagered?.all_time || 0,
+      },
+    }));
 
   return {
     status: "success",
@@ -388,12 +408,40 @@ function transformLeaderboardData(apiData: any) {
   };
 }
 
-export function registerRoutes(app: Express): Server {
-  const httpServer = createServer(app);
+// Helper function to create rate limiter middleware
+const createRateLimiter = (tier: keyof typeof rateLimiters) => {
+  const limiter = rateLimiters[tier];
+  return async (req: any, res: any, next: any) => {
+    try {
+      const rateLimitRes = await limiter.consume(req.ip);
+
+      res.setHeader('X-RateLimit-Limit', rateLimits[tier].points);
+      res.setHeader('X-RateLimit-Remaining', rateLimitRes.remainingPoints);
+      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateLimitRes.msBeforeNext).toISOString());
+
+      next();
+    } catch (rejRes: any) {
+      res.setHeader('Retry-After', Math.ceil(rejRes.msBeforeNext / 1000));
+      res.setHeader('X-RateLimit-Limit', rateLimits[tier].points);
+      res.setHeader('X-RateLimit-Remaining', 0);
+      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rejRes.msBeforeNext).toISOString());
+
+      res.status(429).json({
+        status: 'error',
+        message: 'Too many requests',
+        retryAfter: Math.ceil(rejRes.msBeforeNext / 1000)
+      });
+    }
+  };
+};
+
+export function registerRoutes(app: Express, httpServer: Server) {
   setupRESTRoutes(app);
   setupWebSocket(httpServer);
   return httpServer;
 }
+
+let wss: WebSocketServer;
 
 function setupWebSocket(httpServer: Server) {
   wss = new WebSocketServer({ noServer: true });
@@ -423,11 +471,11 @@ function handleLeaderboardConnection(ws: WebSocket) {
   }, 30000);
 
   ws.on("pong", () => {
-    ws.isAlive = true;
+    log(`Received pong from client ${clientId}`);
   });
 
-  ws.on("error", (error) => {
-    log(`WebSocket error (${clientId}):`, error);
+  ws.on("error", (error: Error) => {
+    log(`WebSocket error (${clientId}): ${error.message}`);
     clearInterval(pingInterval);
     ws.terminate();
   });

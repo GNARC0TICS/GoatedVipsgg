@@ -17,13 +17,13 @@ deploymentTarget = "cloudrun"
 build = ["npm", "run", "build"]
 run = ["npm", "run", "start"]
 
-# Networking settings
 [[ports]]
 localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 5001
+localPort = 24678
+externalPort = 3000
 
 # Workflow configurations
 [workflows]
