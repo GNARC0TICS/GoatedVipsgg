@@ -10,7 +10,6 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
-import { challenges, challengeEntries } from './schema/telegram';
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -220,5 +219,3 @@ export type SelectNewsletterSubscription =
 
 export type InsertHistoricalRace = typeof historicalRaces.$inferInsert;
 export type SelectHistoricalRace = typeof historicalRaces.$inferSelect;
-
-export { challenges, challengeEntries };
