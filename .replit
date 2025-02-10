@@ -9,29 +9,15 @@ channel = "stable-24_05"
 [deployment]
 deploymentTarget = "gce"
 build = ["npm", "run", "build"]
-run = ["sh", "-c", "npm run start"]
+run = "npm run start"
 ignorePorts = false
 
-[workflows]
-runButton = "Start application"
-
-[[workflows.workflow]]
+[[workflows]]
 name = "Project"
 mode = "parallel"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Start application"
-
-[[workflows.workflow]]
-name = "Start application"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
+[[workflows.tasks]]
 task = "shell.exec"
 args = "npm run dev"
 
