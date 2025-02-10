@@ -1,11 +1,10 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { db } from '@db';
 import { telegramUsers, verificationRequests } from '@db/schema/telegram';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { API_CONFIG } from '../config/api';
 import { users, challenges, challengeEntries } from '@db/schema';
 import crypto from 'crypto';
-import { and } from 'drizzle-orm';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_TELEGRAM_IDS = ['1689953605'];
@@ -15,17 +14,25 @@ if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
 
-// Export the bot instance with basic options
-export const bot = new TelegramBot(token, {
-  polling: false, // We'll start polling after checks
-  filepath: false // Disable file downloads to prevent memory issues
-});
+// Ensure we only have one instance globally
+if (global.botInstance) {
+  console.log('[Telegram Bot] Instance already running. Skipping new bot creation.');
+  export const bot = global.botInstance;
+} else {
+  console.log('[Telegram Bot] Creating new bot instance...');
+  export const bot = new TelegramBot(token, {
+    polling: false, // Polling will start only after verification
+    filepath: false // Disable file downloads to prevent memory issues
+  });
+
+  global.botInstance = bot;
+}
 
 let isShuttingDown = false;
 let pollingStarted = false;
 let isInitialized = false;
 
-// Enhanced cleanup function with proper shutdown flags
+/** Graceful shutdown function */
 async function stopBot() {
   if (isShuttingDown) return;
   isShuttingDown = true;
@@ -43,7 +50,7 @@ async function stopBot() {
   }
 }
 
-// Process handlers for graceful shutdown
+/** Handle process exit signals */
 process.on('SIGINT', async () => {
   console.log('[Telegram Bot] Received SIGINT signal');
   await stopBot();
@@ -56,7 +63,7 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-// Initialize bot with proper instance checking
+/** Function to initialize the bot */
 export async function initializeBot() {
   try {
     if (isInitialized) {
@@ -64,8 +71,14 @@ export async function initializeBot() {
       return;
     }
 
-    // First, try to delete webhook to ensure clean polling
-    await bot.deleteWebHook();
+    console.log('[Telegram Bot] Ensuring clean polling setup...');
+
+    // Delete existing webhook to prevent conflicts
+    const webhookInfo = await bot.getWebhookInfo();
+    if (webhookInfo.url) {
+      console.log('[Telegram Bot] Removing existing webhook...');
+      await bot.deleteWebHook();
+    }
 
     console.log('[Telegram Bot] Starting polling...');
     await bot.startPolling();
@@ -80,17 +93,19 @@ export async function initializeBot() {
     isInitialized = false;
     pollingStarted = false;
 
-    // If we get a conflict, it means another instance is running
     if (error.message?.includes('409')) {
       console.log('[Telegram Bot] Detected another running instance, attempting cleanup...');
       await stopBot();
-      // Try to initialize again after a short delay
+      console.log('[Telegram Bot] Retrying initialization in 5 seconds...');
       setTimeout(initializeBot, 5000);
     } else {
       throw error;
     }
   }
 }
+
+/** Ensure bot initializes on startup */
+initializeBot();
 
 // Set up bot commands with proper descriptions
 async function setupBotCommands() {
