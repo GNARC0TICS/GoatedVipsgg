@@ -61,7 +61,16 @@ export function FloatingSupport({ onClose }: { onClose: () => void }) {
                 <p className="text-[#8A8B91] mb-6">
                   Need help? Contact our VIP support team on Telegram:
                 </p>
-                <Link href="https://t.me/xGoombas" target="_blank" className="block">
+                <a 
+                  href="https://t.me/xGoombas" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="block"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.open('https://t.me/xGoombas', '_blank', 'noopener,noreferrer');
+                  }}
+                >
                   <Button
                     variant="default"
                     className="w-full bg-[#D7FF00] text-[#14151A] hover:bg-[#D7FF00]/90"
@@ -69,7 +78,7 @@ export function FloatingSupport({ onClose }: { onClose: () => void }) {
                     <MessageCircle className="h-4 w-4 mr-2" />
                     Message @xGoombas
                   </Button>
-                </Link>
+                </a>
                 <Link href="/faq" className="block mt-4">
                   <Button
                     variant="ghost"
