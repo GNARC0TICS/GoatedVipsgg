@@ -13,8 +13,14 @@ if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
 
-// Create a bot instance with polling
-const bot = new TelegramBot(token, { polling: false });
+// Create a bot instance with polling and error handling
+const bot = new TelegramBot(token, { 
+  polling: false,
+  request: {
+    timeout: 30000,
+    retry: 3
+  }
+});
 
 // Cleanup function to stop polling
 async function stopBot() {
@@ -25,6 +31,14 @@ async function stopBot() {
     console.error('[Telegram Bot] Error stopping polling:', error);
   }
 }
+
+// Add error event handler
+bot.on('error', (error) => {
+  console.error('[Telegram Bot] Error:', error.code);
+  if (error.code === 'ETELEGRAM') {
+    console.error('Please check if your TELEGRAM_BOT_TOKEN is valid');
+  }
+});
 
 // Handle cleanup on server shutdown
 process.on('SIGINT', stopBot);
