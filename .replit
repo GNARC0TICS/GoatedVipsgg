@@ -13,11 +13,14 @@ ignorePorts = true
 
 [[ports]]
 localPort = 3001
-externalPort = 3001
+externalPort = 5000
 
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 5001
 
 [workflows]
 runButton = "Start application"
@@ -39,8 +42,12 @@ author = "agent"
 agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
+waitForPort = 5000
 
 [auth]
 pageEnabled = false

@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 import {
   Table,
   TableBody,
@@ -49,35 +48,17 @@ export default function WagerRaces() {
   const [raceType] = useState<"weekly" | "monthly" | "weekend">("monthly");
   const [showCompletedRace, setShowCompletedRace] = useState(false);
   const ws = useRef<WebSocket | null>(null);
-  const { toast } = useToast();
   const { data: leaderboardData, isLoading } = useLeaderboard("monthly");
 
   useEffect(() => {
-    try {
-      ws.current = new WebSocket(`ws://${window.location.hostname}:3001/ws/leaderboard`);
+    ws.current = new WebSocket(`wss://${window.location.hostname}/ws`);
 
-      ws.current.onopen = () => {
-        console.log('WebSocket connection established');
-      };
-
-      ws.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        toast({
-          title: "Connection Error",
-          description: "Unable to establish real-time connection. Retrying...",
-          variant: "destructive"
-        });
-      };
-
-      return () => {
-        if (ws.current) {
-          ws.current.close();
-        }
-      };
-    } catch (error) {
-      console.error('WebSocket connection error:', error);
-    }
-  }, [toast]);
+    return () => {
+      if (ws.current) {
+        ws.current.close();
+      }
+    };
+  }, []);
   const { data: previousRace } = useQuery<any>({
     queryKey: ["/api/wager-races/previous"],
     enabled: showCompletedRace,
@@ -156,17 +137,17 @@ export default function WagerRaces() {
   };
 
   const getLastUpdateTime = (timestamp?: string) => {
-    if (!timestamp) return 'recently';
-    const diff = Date.now() - new Date(timestamp).getTime();
-    const minutes = Math.floor(diff / 60000);
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
-  };
+  if (!timestamp) return 'recently';
+  const diff = Date.now() - new Date(timestamp).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+};
 
-  const getTrophyIcon = (rank: number) => {
+const getTrophyIcon = (rank: number) => {
     switch (rank) {
       case 1:
         return <Crown className="h-8 w-8 text-yellow-400 animate-pulse" />;
@@ -202,7 +183,7 @@ export default function WagerRaces() {
     );
   }
 
-  const top10Players = showCompletedRace
+  const top10Players = showCompletedRace 
     ? (previousRace?.data?.participants || [])
     : (leaderboardData || []).slice(0, 10);
   const currentLeader = top10Players[0];
@@ -361,7 +342,7 @@ export default function WagerRaces() {
               </div>
             </motion.div>
 
-          </div>
+            </div>
 
           {/* Podium Section */}
           <motion.div
@@ -374,7 +355,7 @@ export default function WagerRaces() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{
+                whileHover={{ 
                   scale: 1.05,
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
@@ -416,7 +397,7 @@ export default function WagerRaces() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{
+                whileHover={{ 
                   scale: 1.05,
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
@@ -433,31 +414,33 @@ export default function WagerRaces() {
                     {getTrophyIcon(1)}
                   </div>
                   <div className="text-center">
-                    <QuickProfile userId={top10Players[0]?.uid} username={top10Players[0]?.name}>
-                      <p className="text-xl font-bold truncate text-white cursor-pointer hover:text-[#D7FF00] transition-colors">
-                        {top10Players[0]?.name || "-"}
-                      </p>
-                    </QuickProfile>
-                    <p className="text-lg font-heading text-[#D7FF00] mt-2">
-                      ${getPrizeAmount(1).toLocaleString()}
+                  <QuickProfile userId={top10Players[0]?.uid} username={top10Players[0]?.name}>
+                    <p className="text-xl font-bold truncate text-white cursor-pointer hover:text-[#D7FF00] transition-colors">
+                      {top10Players[0]?.name || "-"}
                     </p>
-                    <p className="text-sm text-white/60 mt-1">
-                      $
-                      {getWagerAmount(
-                        top10Players[0] || { wagered: { this_month: 0 } },
-                      ).toLocaleString()}{" "}
-                      wagered
-                    </p>
+                  </QuickProfile>
+                  <p className="text-lg font-heading text-[#D7FF00] mt-2">
+                    ${getPrizeAmount(1).toLocaleString()}
+                  </p>
+                  <p className="text-sm text-white/60 mt-1">
+                    $
+                    {getWagerAmount(
+                      top10Players[0] || { wagered: { this_month: 0 } },
+                    ).toLocaleString()}{" "}
+                    wagered
+                  </p>
                   </div>
                 </div>
               </motion.div>
+
+
 
 
               {/* 3rd Place */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{
+                whileHover={{ 
                   scale: 1.05,
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"

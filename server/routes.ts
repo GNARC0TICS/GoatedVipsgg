@@ -7,27 +7,11 @@ import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import { db } from "@db";
-import { wagerRaces, users, ticketMessages, bonusCodes, supportTickets } from "@db/schema";
-import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { wagerRaces, users, ticketMessages } from "@db/schema";
+import { eq, and, gte, lte } from "drizzle-orm";
 import { z } from "zod";
-import { historicalRaces } from "@db/schema";
+import { historicalRaces } from "@db/schema"; // Assuming historicalRaces schema exists
 
-// Add WebSocket type with isAlive property
-interface ExtendedWebSocket extends WebSocket {
-  isAlive: boolean;
-}
-
-// Helper function to calculate tier based on wager amount
-function getTierFromWager(wagerAmount: number): string {
-  if (wagerAmount >= 1000000) return 'diamond';
-  if (wagerAmount >= 500000) return 'platinum';
-  if (wagerAmount >= 100000) return 'gold';
-  if (wagerAmount >= 50000) return 'silver';
-  return 'bronze';
-}
-
-// Define prize pool constant
-const prizePool = 500; // Monthly race prize pool in USD
 
 // Rate limiting setup
 const rateLimiter = new RateLimiterMemory({
@@ -35,12 +19,144 @@ const rateLimiter = new RateLimiterMemory({
   duration: 1,
 });
 
-function setupRESTRoutes(app: Express) {
-  // Add health check endpoint first
-  app.get("/api/health", (_req, res) => {
-    res.json({ status: "healthy" });
+
+function handleLeaderboardConnection(ws: WebSocket) {
+  const clientId = Date.now().toString();
+  log(`Leaderboard WebSocket client connected (${clientId})`);
+
+  const pingInterval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.ping();
+    }
+  }, 30000);
+
+  ws.on("pong", () => {
+    ws.isAlive = true;
   });
 
+  ws.on("error", (error) => {
+    log(`WebSocket error (${clientId}):`, error);
+    clearInterval(pingInterval);
+    ws.terminate();
+  });
+
+  ws.on("close", () => {
+    log(`Leaderboard WebSocket client disconnected (${clientId})`);
+    clearInterval(pingInterval);
+  });
+
+  // Send initial data with rate limiting
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ 
+      type: "CONNECTED",
+      clientId,
+      timestamp: Date.now()
+    }));
+  }
+}
+
+// Broadcast leaderboard updates to all connected clients
+export function broadcastLeaderboardUpdate(data: any) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: "LEADERBOARD_UPDATE",
+        data
+      }));
+    }
+  });
+}
+
+let wss: WebSocketServer;
+
+// Helper functions
+function sortByWagered(data: any[], period: string) {
+  return [...data].sort(
+    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
+  );
+}
+
+const transformMVPData = (mvpData: any) => {
+  return Object.entries(mvpData).reduce((acc: Record<string, any>, [period, data]: [string, any]) => {
+    if (data) {
+      // Calculate if there was a wager change
+      const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'];
+      const previousWager = data.wagered?.previous || 0;
+      const hasIncrease = currentWager > previousWager;
+
+      acc[period] = {
+        username: data.name,
+        wagerAmount: currentWager,
+        rank: 1,
+        lastWagerChange: hasIncrease ? Date.now() : undefined,
+        stats: {
+          winRate: data.stats?.winRate || 0,
+          favoriteGame: data.stats?.favoriteGame || 'Unknown',
+          totalGames: data.stats?.totalGames || 0
+        }
+      };
+    }
+    return acc;
+  }, {});
+};
+
+// Transforms raw API data into our standardized leaderboard format
+// This is the central data transformation function used by both web and Telegram interfaces
+function transformLeaderboardData(apiData: any) {
+  // Extract data from various possible API response formats
+  const responseData = apiData.data || apiData.results || apiData;
+  if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
+    return {
+      status: "success",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    };
+  }
+
+  const dataArray = Array.isArray(responseData) ? responseData : [responseData];
+  const transformedData = dataArray.map((entry) => ({
+    uid: entry.uid || "",
+    name: entry.name || "",
+    wagered: {
+      today: entry.wagered?.today || 0,
+      this_week: entry.wagered?.this_week || 0,
+      this_month: entry.wagered?.this_month || 0,
+      all_time: entry.wagered?.all_time || 0,
+    },
+  }));
+
+  return {
+    status: "success",
+    metadata: {
+      totalUsers: transformedData.length,
+      lastUpdated: new Date().toISOString(),
+    },
+    data: {
+      today: { data: sortByWagered(transformedData, "today") },
+      weekly: { data: sortByWagered(transformedData, "this_week") },
+      monthly: { data: sortByWagered(transformedData, "this_month") },
+      all_time: { data: sortByWagered(transformedData, "all_time") },
+    },
+  };
+}
+
+export function registerRoutes(app: Express): Server {
+  const httpServer = createServer(app);
+  setupAuth(app);
+  setupRESTRoutes(app);
+  setupWebSocket(httpServer);
+  return httpServer;
+}
+
+function setupRESTRoutes(app: Express) {
   // Add endpoint to fetch previous month's results
   app.get("/api/wager-races/previous", async (_req, res) => {
     try {
@@ -110,7 +226,7 @@ function setupRESTRoutes(app: Express) {
           const now = new Date();
           const currentMonth = now.getMonth();
           const currentYear = now.getFullYear();
-
+          
           // Store complete race results with detailed participant data
           const winners = stats.data.monthly.data.slice(0, 10).map((participant: any, index: number) => ({
             uid: participant.uid,
@@ -287,7 +403,7 @@ function setupRESTRoutes(app: Express) {
   app.post("/api/support/reply", requireAuth, async (req, res) => {
     try {
       const { ticketId, message } = req.body;
-
+      
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
         return res.status(400).json({
           status: "error",
@@ -365,71 +481,71 @@ function setupRESTRoutes(app: Express) {
   });
 
   // Bonus code management routes
-  app.get("/api/admin/bonus-codes", requireAdmin, async (_req, res) => {
-    try {
-      const codes = await db.query.bonusCodes.findMany({
-        orderBy: (codes, { desc }) => [desc(codes.createdAt)],
-      });
-      res.json(codes);
-    } catch (error) {
-      log(`Error fetching bonus codes: ${error}`);
-      res.status(500).json({
-        status: "error",
-        message: "Failed to fetch bonus codes",
-      });
-    }
-  });
+app.get("/api/admin/bonus-codes", requireAdmin, async (_req, res) => {
+  try {
+    const codes = await db.query.bonusCodes.findMany({
+      orderBy: (codes, { desc }) => [desc(codes.createdAt)],
+    });
+    res.json(codes);
+  } catch (error) {
+    log(`Error fetching bonus codes: ${error}`);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to fetch bonus codes",
+    });
+  }
+});
 
-  app.post("/api/admin/bonus-codes", requireAdmin, async (req, res) => {
-    try {
-      const [code] = await db
-        .insert(bonusCodes)
-        .values({
-          ...req.body,
-          createdBy: req.user!.id,
-        })
-        .returning();
-      res.json(code);
-    } catch (error) {
-      log(`Error creating bonus code: ${error}`);
-      res.status(500).json({
-        status: "error",
-        message: "Failed to create bonus code",
-      });
-    }
-  });
+app.post("/api/admin/bonus-codes", requireAdmin, async (req, res) => {
+  try {
+    const [code] = await db
+      .insert(bonusCodes)
+      .values({
+        ...req.body,
+        createdBy: req.user!.id,
+      })
+      .returning();
+    res.json(code);
+  } catch (error) {
+    log(`Error creating bonus code: ${error}`);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to create bonus code",
+    });
+  }
+});
 
-  app.put("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
-    try {
-      const [code] = await db
-        .update(bonusCodes)
-        .set(req.body)
-        .where(eq(bonusCodes.id, parseInt(req.params.id)))
-        .returning();
-      res.json(code);
-    } catch (error) {
-      log(`Error updating bonus code: ${error}`);
-      res.status(500).json({
-        status: "error",
-        message: "Failed to update bonus code",
-      });
-    }
-  });
+app.put("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
+  try {
+    const [code] = await db
+      .update(bonusCodes)
+      .set(req.body)
+      .where(eq(bonusCodes.id, parseInt(req.params.id)))
+      .returning();
+    res.json(code);
+  } catch (error) {
+    log(`Error updating bonus code: ${error}`);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to update bonus code",
+    });
+  }
+});
 
-  app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
-    try {
-      await db
-        .delete(bonusCodes)
-        .where(eq(bonusCodes.id, parseInt(req.params.id)));
-      res.json({ status: "success" });
-    } catch (error) {
-      log(`Error deleting bonus code: ${error}`);
-      res.status(500).json({
-        status: "error",
-        message: "Failed to delete bonus code",
-      });
-    }
-  });
+app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
+  try {
+    await db
+      .delete(bonusCodes)
+      .where(eq(bonusCodes.id, parseInt(req.params.id)));
+    res.json({ status: "success" });
+  } catch (error) {
+    log(`Error deleting bonus code: ${error}`);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to delete bonus code",
+    });
+  }
+});
 
   // Chat history endpoint
   app.get("/api/chat/history", requireAuth, async (req, res) => {
@@ -568,11 +684,11 @@ async function handleAffiliateStats(req: any, res: any) {
     await rateLimiter.consume(req.ip || "unknown");
     const username = req.query.username;
     let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
-
+    
     if (username) {
       url += `?username=${encodeURIComponent(username)}`;
     }
-
+    
     const response = await fetch(url,
       {
         headers: {
@@ -754,15 +870,10 @@ function setupWebSocket(httpServer: Server) {
       return;
     }
 
-    // Log WebSocket connection attempts
-    console.log('WebSocket upgrade request:', request.url);
-
     if (request.url === "/ws/leaderboard") {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit("connection", ws, request);
-        const extendedWs = ws as ExtendedWebSocket;
-        extendedWs.isAlive = true;
-        handleLeaderboardConnection(extendedWs);
+        handleLeaderboardConnection(ws);
       });
     } else if (request.url === "/ws/chat") {
       wss.handleUpgrade(request, socket, head, (ws) => {
@@ -770,19 +881,6 @@ function setupWebSocket(httpServer: Server) {
         handleChatConnection(ws);
       });
     }
-  });
-
-  // Add connection logging
-  wss.on('connection', (ws, request) => {
-    console.log(`WebSocket connected: ${request.url}`);
-
-    ws.on('close', () => {
-      console.log(`WebSocket disconnected: ${request.url}`);
-    });
-
-    ws.on('error', (error) => {
-      console.error(`WebSocket error: ${error.message}`);
-    });
   });
 }
 
@@ -888,158 +986,4 @@ const adminLoginSchema = z.object({
 function generateToken(payload: any): string {
   //Implementation for generateToken is missing in original code, but it's not relevant to the fix.  Leaving as is.
   return "";
-}
-
-function handleLeaderboardConnection(ws: ExtendedWebSocket) {
-  const clientId = Date.now().toString();
-  log(`Leaderboard WebSocket client connected (${clientId})`);
-
-  const pingInterval = setInterval(() => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.ping();
-    }
-  }, 30000);
-
-  ws.on("pong", () => {
-    ws.isAlive = true;
-  });
-
-  ws.on("error", (error) => {
-    log(`WebSocket error (${clientId}):`, error);
-    clearInterval(pingInterval);
-    ws.terminate();
-  });
-
-  ws.on("close", () => {
-    log(`Leaderboard WebSocket client disconnected (${clientId})`);
-    clearInterval(pingInterval);
-  });
-
-  // Send initial data with rate limiting
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({
-      type: "CONNECTED",
-      clientId,
-      timestamp: Date.now()
-    }));
-  }
-}
-
-// Broadcast leaderboard updates to all connected clients
-export function broadcastLeaderboardUpdate(data: any) {
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({
-        type: "LEADERBOARD_UPDATE",
-        data
-      }));
-    }
-  });
-}
-
-let wss: WebSocketServer;
-
-export function registerRoutes(app: Express): Server {
-  const httpServer = createServer(app);
-
-  setupAuth(app);
-  setupRESTRoutes(app);
-  setupWebSocket(httpServer);
-
-  return httpServer;
-}
-
-function transformLeaderboardData(apiData: any) {
-  // Extract data from various possible API response formats
-  const responseData = apiData.data || apiData.results || apiData;
-  if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
-    return {
-      status: "success",
-      metadata: {
-        totalUsers: 0,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: { data: [] },
-        weekly: { data: [] },
-        monthly: { data: [] },
-        all_time: { data: [] },
-      },
-    };
-  }
-
-  const dataArray = Array.isArray(responseData) ? responseData : [responseData];
-  const transformedData = dataArray.map((entry) => ({
-    uid: entry.uid || "",
-    name: entry.name || "",
-    wagered: {
-      today: entry.wagered?.today || 0,
-      this_week: entry.wagered?.this_week || 0,
-      this_month: entry.wagered?.this_month || 0,
-      all_time: entry.wagered?.all_time || 0,
-    },
-  }));
-
-  return {
-    status: "success",
-    metadata: {
-      totalUsers: transformedData.length,
-      lastUpdated: new Date().toISOString(),
-    },
-    data: {
-      today: { data: sortByWagered(transformedData, "today") },
-      weekly: { data: sortByWagered(transformedData, "this_week") },
-      monthly: { data: sortByWagered(transformedData, "this_month") },
-      all_time: { data: sortByWagered(transformedData, "all_time") },
-    },
-  };
-}
-
-
-function sortByWagered(data: any[], period: string) {
-  return [...data].sort(
-    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
-  );
-}
-
-const transformMVPData = (mvpData: any) => {
-  return Object.entries(mvpData).reduce((acc: Record<string, any>, [period, data]: [string, any]) => {
-    if (data) {
-      // Calculate if there was a wager change
-      const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'];
-      const previousWager = data.wagered?.previous || 0;
-      const hasIncrease = currentWager > previousWager;
-
-      acc[period] = {
-        username: data.name,
-        wagerAmount: currentWager,
-        rank: 1,
-        lastWagerChange: hasIncrease ? Date.now() : undefined,
-        stats: {
-          winRate: data.stats?.winRate || 0,
-          favoriteGame: data.stats?.favoriteGame || 'Unknown',
-          totalGames: data.stats?.totalGames || 0
-        }
-      };
-    }
-    return acc;
-  }, {});
-};
-
-function getBotStatus() {
-  try {
-    // bot.isPolling() is not defined because bot is commented out
-    return {
-      isPolling: false,
-      status: "stopped",
-      timestamp: new Date().toISOString()
-    };
-  } catch (error) {
-    console.error('Error getting bot status:', error);
-    return {
-      status: "error",
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    };
-  }
 }
