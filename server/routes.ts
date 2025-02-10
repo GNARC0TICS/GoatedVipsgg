@@ -754,10 +754,15 @@ function setupWebSocket(httpServer: Server) {
       return;
     }
 
+    // Log WebSocket connection attempts
+    console.log('WebSocket upgrade request:', request.url);
+
     if (request.url === "/ws/leaderboard") {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit("connection", ws, request);
-        handleLeaderboardConnection(ws);
+        const extendedWs = ws as ExtendedWebSocket;
+        extendedWs.isAlive = true;
+        handleLeaderboardConnection(extendedWs);
       });
     } else if (request.url === "/ws/chat") {
       wss.handleUpgrade(request, socket, head, (ws) => {
@@ -765,6 +770,19 @@ function setupWebSocket(httpServer: Server) {
         handleChatConnection(ws);
       });
     }
+  });
+
+  // Add connection logging
+  wss.on('connection', (ws, request) => {
+    console.log(`WebSocket connected: ${request.url}`);
+
+    ws.on('close', () => {
+      console.log(`WebSocket disconnected: ${request.url}`);
+    });
+
+    ws.on('error', (error) => {
+      console.error(`WebSocket error: ${error.message}`);
+    });
   });
 }
 
@@ -989,7 +1007,7 @@ const transformMVPData = (mvpData: any) => {
     if (data) {
       // Calculate if there was a wager change
       const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'];
-            const previousWager = data.wagered?.previous || 0;
+      const previousWager = data.wagered?.previous || 0;
       const hasIncrease = currentWager > previousWager;
 
       acc[period] = {
