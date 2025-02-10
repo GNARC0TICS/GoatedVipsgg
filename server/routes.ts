@@ -409,7 +409,7 @@ function transformLeaderboardData(apiData: any, limit?: string) {
 }
 
 // Helper function to create rate limiter middleware
-const createRateLimiter = (tier: keyof typeof rateLimiters) => {
+const createRateLimiter = (tier: 'HIGH' | 'MEDIUM' | 'LOW') => {
   const limiter = rateLimiters[tier];
   return async (req: any, res: any, next: any) => {
     try {
