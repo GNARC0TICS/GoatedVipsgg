@@ -1767,7 +1767,7 @@ bot.onText(/\/claim/, async (msg) => {
 
 // Remove the duplicate getPrizeAmount function and keep only one instance
 // Export bot instance and handlers
-export { bot, handleVerify, handleStats, handleRace, handleLeaderboard, handleCallbackQuery, handleStart };
+module.exports = { bot, handleVerify, handleStats, handleRace, handleLeaderboard, handleCallbackQuery, handleStart };
 
 // Initialize the bot with proper error handling
 initializeBot().catch(error => {
