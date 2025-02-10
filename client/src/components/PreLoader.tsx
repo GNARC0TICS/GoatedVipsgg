@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
@@ -8,50 +7,26 @@ interface PreLoaderProps {
 
 export function PreLoader({ onLoadComplete }: PreLoaderProps) {
   const [progress, setProgress] = useState(0);
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
-    // Create artificial loading stages
-    const stages = [
-      { target: 30, duration: 500 },
-      { target: 60, duration: 800 },
-      { target: 85, duration: 500 },
-      { target: 100, duration: 700 }
-    ];
+    const duration = 2000; // 2 seconds total
+    const interval = 20; // Update every 20ms for smoother animation
+    const steps = duration / interval;
+    const increment = 100 / steps;
 
-    let currentStage = 0;
-    
-    // Preload the image
-    const img = new Image();
-    img.src = "/images/preload.PNG";
-    img.onload = () => setImageLoaded(true);
-
-    const animateStage = () => {
-      if (currentStage >= stages.length) return;
-      
-      const stage = stages[currentStage];
-      const startProgress = currentStage > 0 ? stages[currentStage - 1].target : 0;
-      const increment = (stage.target - startProgress) / (stage.duration / 50);
-      let currentProgress = startProgress;
-
-      const interval = setInterval(() => {
-        if (currentProgress >= stage.target) {
-          clearInterval(interval);
-          currentStage++;
-          if (currentStage < stages.length) {
-            setTimeout(animateStage, 200); // Add slight pause between stages
-          } else if (imageLoaded) {
-            setTimeout(onLoadComplete, 500);
-          }
-        } else {
-          currentProgress = Math.min(currentProgress + increment, stage.target);
-          setProgress(Math.floor(currentProgress));
+    const timer = setInterval(() => {
+      setProgress(prev => {
+        const next = Math.min(prev + increment, 100);
+        if (next >= 100) {
+          clearInterval(timer);
+          setTimeout(onLoadComplete, 500);
         }
-      }, 50);
-    };
+        return next;
+      });
+    }, interval);
 
-    animateStage();
-  }, [onLoadComplete, imageLoaded]);
+    return () => clearInterval(timer);
+  }, [onLoadComplete]);
 
   return (
     <motion.div
@@ -74,12 +49,11 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
         <div className="w-64 h-1 bg-[#2A2B31] rounded-full overflow-hidden">
           <motion.div
             className="h-full bg-[#D7FF00]"
-            style={{ width: `${progress}%` }}
-            transition={{ duration: 0.2 }}
+            style={{ width: `${Math.floor(progress)}%` }}
           />
         </div>
         <p className="text-[#D7FF00] font-heading text-xl">
-          {progress}%
+          {Math.floor(progress)}%
         </p>
       </motion.div>
     </motion.div>
