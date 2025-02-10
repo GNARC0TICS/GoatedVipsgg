@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
+import { useChatMessages, useSendChatMessage } from "@/hooks/useApi";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface FloatingSupportProps {
   onClose: () => void;
@@ -14,25 +16,28 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
   const [isMinimized, setIsMinimized] = useState(true);
   const [hasUnreadMessage, setHasUnreadMessage] = useState(true);
   const [replyText, setReplyText] = useState("");
-  const [messages, setMessages] = useState<any[]>([]);
+
+  const queryClient = useQueryClient();
+  const { data: messages = [] } = useChatMessages({
+    enabled: !isMinimized,
+  });
+
+  const { mutate: sendMessage } = useSendChatMessage();
 
   const handleSendMessage = async () => {
     if (!replyText.trim()) return;
 
     try {
-      const response = await fetch('/api/chat/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      await sendMessage(replyText, {
+        onSuccess: () => {
+          setReplyText("");
+          // Invalidate and refetch messages
+          queryClient.invalidateQueries({ queryKey: ['chat-messages'] });
         },
-        body: JSON.stringify({ message: replyText }),
+        onError: (error) => {
+          console.error('Error sending message:', error);
+        },
       });
-
-      if (response.ok) {
-        setReplyText("");
-        const newMessages = await fetch('/api/chat/messages').then(res => res.json());
-        setMessages(newMessages);
-      }
     } catch (err) {
       console.error('Error sending message:', err);
     }
@@ -99,7 +104,7 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
                   below:
                 </p>
                 <div className="h-[300px] overflow-y-auto space-y-3 mb-4">
-                  {messages.map((msg, i) => (
+                  {messages.map((msg: any, i: number) => (
                     <div key={i} className="p-3 rounded-lg bg-[#2A2B31]/50">
                       <div className="text-white">{msg.message}</div>
                       <div className="text-sm text-[#8A8B91] mt-1">
