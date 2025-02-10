@@ -7,7 +7,6 @@ import { sql } from "drizzle-orm";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
-import { initializeAdmin } from "./middleware/admin";
 
 const execAsync = promisify(exec);
 const app = express();
@@ -77,7 +76,6 @@ async function checkDatabase() {
 
 async function cleanupPort() {
   try {
-    // Try to kill existing process on port 5000
     await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
     await new Promise(resolve => setTimeout(resolve, 1000));
   } catch (error) {
@@ -95,7 +93,6 @@ async function startServer() {
 
     // Setup middleware and routes
     await setupMiddleware();
-    await initializeAdmin().catch(console.error);
     registerRoutes(app);
 
     // Setup Vite or serve static files based on environment
