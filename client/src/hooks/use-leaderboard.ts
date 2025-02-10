@@ -116,11 +116,12 @@ const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
 
       return freshData;
     },
-    refetchInterval: 30000,
-    staleTime: 30000,
-    cacheTime: 300000, // Added cacheTime
-    retry: 3, // Added retry attempts
+    refetchInterval: 60000, // Poll every minute instead of 30 seconds
+    staleTime: 45000, // Consider data fresh for 45 seconds
+    cacheTime: 300000,
+    retry: 3,
     gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false
   });
 
   const periodKey =

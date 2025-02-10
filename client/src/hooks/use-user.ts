@@ -62,6 +62,9 @@ export function useUser() {
       if (!response.ok) throw new Error('Not authenticated');
       return response.json();
     },
+    staleTime: 30000, // Data considered fresh for 30 seconds
+    cacheTime: 60000, // Keep in cache for 1 minute
+    refetchOnWindowFocus: false
   });
 
   const loginMutation = useMutation<RequestResult, Error, InsertUser>({
