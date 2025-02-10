@@ -136,9 +136,9 @@ const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) =
 
 // Initialize rate limiters
 const rateLimiters = {
-  high: new RateLimiterMemory(rateLimits.HIGH),
-  medium: new RateLimiterMemory(rateLimits.MEDIUM),
-  low: new RateLimiterMemory(rateLimits.LOW),
+  HIGH: new RateLimiterMemory(rateLimits.HIGH),
+  MEDIUM: new RateLimiterMemory(rateLimits.MEDIUM),
+  LOW: new RateLimiterMemory(rateLimits.LOW),
 };
 
 function setupRESTRoutes(app: Express) {
