@@ -16,6 +16,26 @@ import { Card, CardContent } from "@/components/ui/card";
 // Current active promotions
 const PROMOTIONS = [
   {
+    id: 0,
+    title: "Recruitment Challenge [$35 Instant Bonus]",
+    description: "Earn $35 instantly for each successful VIP referral! Contact us on Telegram to get started with your personal referral code.",
+    imageUrl: "/images/PROMOS/WEEKLYRACE.WEBP",
+    category: "VIP",
+    validUntil: "2025-03-01",
+    isNew: true,
+    details: {
+      overview: "Get rewarded for bringing new VIP players to our platform! Contact our VIP team on Telegram to receive your personal referral code and start earning.",
+      howToJoin: "1. Message @GoatedVIPsAdmin on Telegram with:\n- Your referred player's identity\n- Their highest VIP level on other platforms\n2. Receive your personal referral code\n3. Get $35 instantly when they complete their VIP transfer!",
+      requirements: {
+        contact: "Message @GoatedVIPsAdmin on Telegram",
+        info: "Provide referral's identity and VIP level",
+        completion: "Referral must complete VIP transfer"
+      },
+      reward: 35
+    },
+    link: "https://t.me/GoatedVIPsAdmin",
+  },
+  {
     id: 1,
     title: "$10,000 Weekly Race",
     description: "We've boosted our Weekly Race to $10,000 USD! Join now and compete for massive prizes with more chances to win. Top 10 players share the prize pool, with $5,000 for 1st place!",
