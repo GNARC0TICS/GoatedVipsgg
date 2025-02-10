@@ -5,43 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
-import { useChatMessages, useSendChatMessage } from "@/hooks/useApi";
-import { useQueryClient } from "@tanstack/react-query";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-interface FloatingSupportProps {
-  onClose: () => void;
-}
-
-export function FloatingSupport({ onClose }: FloatingSupportProps) {
+export function FloatingSupport({ onClose }: { onClose: () => void }) {
   const [isMinimized, setIsMinimized] = useState(true);
-  const [hasUnreadMessage, setHasUnreadMessage] = useState(true);
-  const [replyText, setReplyText] = useState("");
-
-  const queryClient = useQueryClient();
-  const { data: messages = [] } = useChatMessages({
-    enabled: !isMinimized,
-  });
-
-  const { mutate: sendMessage } = useSendChatMessage();
-
-  const handleSendMessage = async () => {
-    if (!replyText.trim()) return;
-
-    try {
-      await sendMessage(replyText, {
-        onSuccess: () => {
-          setReplyText("");
-          // Invalidate and refetch messages
-          queryClient.invalidateQueries({ queryKey: ['chat-messages'] });
-        },
-        onError: (error) => {
-          console.error('Error sending message:', error);
-        },
-      });
-    } catch (err) {
-      console.error('Error sending message:', err);
-    }
-  };
 
   return (
     <AnimatePresence>
@@ -54,17 +21,11 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
         {isMinimized ? (
           <div className="relative">
             <Button
-              onClick={() => {
-                setIsMinimized(false);
-                setHasUnreadMessage(false);
-              }}
+              onClick={() => setIsMinimized(false)}
               size="icon"
               className="h-14 w-14 rounded-full bg-[#D7FF00] hover:bg-[#D7FF00]/90 text-[#14151A] shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <MessageCircle className="h-7 w-7" />
-              {hasUnreadMessage && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full border-2 border-background animate-pulse" />
-              )}
             </Button>
           </div>
         ) : (
@@ -72,9 +33,7 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
             <div className="p-4 border-b border-[#2A2B31] flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 bg-[#D7FF00] rounded-full animate-pulse" />
-                <h3 className="font-heading text-lg text-white">
-                  Support Chat
-                </h3>
+                <h3 className="font-heading text-lg text-white">VIP Support</h3>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -100,35 +59,17 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
             <div className="p-6 space-y-4">
               <div className="space-y-3">
                 <p className="text-[#8A8B91] mb-6">
-                  Our support team is here to help you. Choose an option
-                  below:
+                  Need help? Contact our VIP support team on Telegram:
                 </p>
-                <div className="h-[300px] overflow-y-auto space-y-3 mb-4">
-                  {messages.map((msg: any, i: number) => (
-                    <div key={i} className="p-3 rounded-lg bg-[#2A2B31]/50">
-                      <div className="text-white">{msg.message}</div>
-                      <div className="text-sm text-[#8A8B91] mt-1">
-                        {new Date(msg.createdAt).toLocaleTimeString()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Type your message..."
-                    className="flex-1"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        handleSendMessage();
-                      }
-                    }}
-                  />
-                  <Button onClick={handleSendMessage}>
-                    <Send className="h-4 w-4" />
+                <Link href="https://t.me/xGoombas" target="_blank" className="block">
+                  <Button
+                    variant="default"
+                    className="w-full bg-[#D7FF00] text-[#14151A] hover:bg-[#D7FF00]/90"
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Message @xGoombas
                   </Button>
-                </div>
+                </Link>
                 <Link href="/faq" className="block mt-4">
                   <Button
                     variant="ghost"
