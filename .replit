@@ -12,12 +12,26 @@ build = ["npm", "run", "build"]
 run = "npm run start"
 ignorePorts = false
 
-[[workflows]]
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
 name = "Project"
 mode = "parallel"
 author = "agent"
 
-[[workflows.tasks]]
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
 
