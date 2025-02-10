@@ -20,18 +20,28 @@ import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { QuickProfile } from "@/components/QuickProfile";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Constants
 const ITEMS_PER_PAGE = 10;
 
+// Types
 interface LeaderboardTableProps {
   timePeriod: TimePeriod;
 }
 
+/**
+ * LeaderboardTable Component
+ * Displays a paginated table of users ranked by their wager amounts
+ * Includes search functionality and real-time updates
+ */
 export const LeaderboardTable = React.memo(function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
+  // State management
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   
+  // Fetch leaderboard data
   const { data, isLoading, error, metadata, refetch } = useLeaderboard(timePeriod);
 
+  // Filter data based on search query
   const filteredData = useMemo(() => {
     if (!data) return [];
     return data.filter((entry) =>
@@ -41,6 +51,9 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
 
   const totalPages = Math.ceil((filteredData?.length || 0) / ITEMS_PER_PAGE);
 
+  /**
+   * Returns the appropriate trophy icon based on rank
+   */
   const getTrophyIcon = (rank: number) => {
     switch (rank) {
       case 1:
@@ -54,6 +67,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
     }
   };
 
+  // Pagination handlers
   const handlePrevPage = () => {
     setCurrentPage((prev) => Math.max(0, prev - 1));
   };
@@ -62,6 +76,9 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
     setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1));
   };
 
+  /**
+   * Gets the wager amount based on the selected time period
+   */
   const getWagerAmount = (entry: any) => {
     if (!entry?.wagered) return 0;
     switch (timePeriod) {
@@ -78,6 +95,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
     }
   };
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
@@ -109,8 +127,10 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
     );
   }
 
+  // Main render
   return (
     <div className="space-y-4">
+      {/* Search and Live Status Bar */}
       <div className="flex items-center gap-2 max-w-md mx-auto w-full mb-4">
         <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -128,6 +148,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
         </div>
       </div>
 
+      {/* Leaderboard Table */}
       <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
         <div className="overflow-x-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#2A2B31 #14151A' }}>
           <Table className="w-full">
@@ -198,6 +219,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
           </Table>
         </div>
 
+        {/* Pagination Footer */}
         <div className="p-4 border-t border-[#2A2B31] flex items-center justify-between">
           <div className="flex items-center gap-2 text-[#8A8B91]">
             <Users className="h-4 w-4" />
