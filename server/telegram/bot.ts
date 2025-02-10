@@ -18,16 +18,21 @@ if (!token) {
 
 export let bot: TelegramBot;
 
-if (global.botInstance) {
-  console.log('[Telegram Bot] Instance already running. Skipping new bot creation.');
-  bot = global.botInstance;
-} else {
+try {
+  if (global.botInstance) {
+    console.log('[Telegram Bot] Stopping existing bot instance...');
+    await global.botInstance.stopPolling();
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
   console.log('[Telegram Bot] Creating new bot instance...');
   bot = new TelegramBot(token, {
     polling: false,
     filepath: false
   });
   global.botInstance = bot;
+} catch (error) {
+  console.error('[Telegram Bot] Error managing bot instance:', error);
+  throw error;
 }
 
 let isShuttingDown = false;
@@ -44,10 +49,15 @@ async function stopBot() {
       await bot.stopPolling();
       pollingStarted = false;
     }
+    if (global.botInstance) {
+      global.botInstance = undefined;
+    }
     isInitialized = false;
     console.log('[Telegram Bot] Polling stopped successfully');
   } catch (error) {
     console.error('[Telegram Bot] Error during shutdown:', error);
+  } finally {
+    isShuttingDown = false;
   }
 }
 
