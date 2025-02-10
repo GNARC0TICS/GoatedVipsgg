@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send } from "lucide-react";
@@ -24,7 +23,7 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
     queryKey: ["/api/user"],
   });
 
-  // Fetch support messages (implement API endpoint)
+  // Fetch support messages
   useEffect(() => {
     if (user?.isAdmin && !isMinimized) {
       fetch('/api/support/messages')
@@ -36,7 +35,7 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
 
   const handleSendReply = async () => {
     if (!replyText.trim()) return;
-    
+
     try {
       await fetch('/api/support/reply', {
         method: 'POST',
@@ -108,7 +107,7 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
                 </Button>
               </div>
             </div>
-            
+
             <div className="p-6 space-y-4">
               {user?.isAdmin ? (
                 // Admin Interface
@@ -157,25 +156,20 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
                       📚 Browse FAQ
                     </Button>
                   </Link>
-                  <a
-                    href="https://t.me/xGoombas"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
+                  <Link href="/discord" className="block">
                     <Button
                       variant="ghost"
                       className="w-full justify-start text-left hover:bg-[#2A2B31]/50"
                     >
-                      💬 Contact on Telegram
+                      💬 Join Discord Community
                     </Button>
-                  </a>
-                  <Link href="/telegram" className="block">
+                  </Link>
+                  <Link href="/twitter" className="block">
                     <Button
                       variant="ghost"
                       className="w-full justify-start text-left hover:bg-[#2A2B31]/50"
                     >
-                      👥 Join Telegram Community
+                      🐦 Follow on Twitter
                     </Button>
                   </Link>
                 </div>
