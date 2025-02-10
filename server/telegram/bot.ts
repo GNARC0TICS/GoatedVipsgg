@@ -15,10 +15,17 @@ if (!token) {
 
 // Create a bot instance with polling and error handling
 const bot = new TelegramBot(token, { 
-  polling: false,
+  polling: true,
   request: {
-    timeout: 30000,
-    retry: 3
+    timeout: 60000,
+    retry: 5
+  },
+  polling_options: {
+    interval: 1000,
+    autoStart: true,
+    params: {
+      timeout: 10
+    }
   }
 });
 
@@ -32,11 +39,21 @@ async function stopBot() {
   }
 }
 
-// Add error event handler
-bot.on('error', (error) => {
+// Add error event handler with reconnection logic
+bot.on('error', async (error) => {
   console.error('[Telegram Bot] Error:', error.code);
   if (error.code === 'ETELEGRAM') {
     console.error('Please check if your TELEGRAM_BOT_TOKEN is valid');
+  }
+  
+  // Try to reconnect after error
+  try {
+    await bot.stopPolling();
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    await bot.startPolling();
+    console.log('[Telegram Bot] Reconnected successfully');
+  } catch (reconnectError) {
+    console.error('[Telegram Bot] Reconnection failed:', reconnectError);
   }
 });
 
@@ -44,8 +61,6 @@ bot.on('error', (error) => {
 process.on('SIGINT', stopBot);
 process.on('SIGTERM', stopBot);
 
-// Start polling in all environments
-bot.startPolling();
 console.log('[Telegram Bot] Polling started');
 
 // Debug logging function
