@@ -15,37 +15,153 @@ if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
 
-// Create a bot instance with polling
-const bot = new TelegramBot(token, { polling: false });
+// Create a bot instance with proper options
+const bot = new TelegramBot(token, {
+  polling: false, // We'll start polling after checks
+  filepath: false // Disable file downloads to prevent memory issues
+});
 
-// Cleanup function to stop polling
+let isShuttingDown = false;
+let pollingStarted = false;
+
+// Enhanced cleanup function with proper shutdown flags
 async function stopBot() {
+  if (isShuttingDown) return; // Prevent multiple shutdown attempts
+  isShuttingDown = true;
+
   try {
-    await bot.stopPolling();
-    console.log('[Telegram Bot] Polling stopped');
+    console.log('[Telegram Bot] Shutting down gracefully...');
+    if (pollingStarted) {
+      await bot.stopPolling();
+      pollingStarted = false;
+    }
+    console.log('[Telegram Bot] Polling stopped successfully');
   } catch (error) {
-    console.error('[Telegram Bot] Error stopping polling:', error);
+    console.error('[Telegram Bot] Error during shutdown:', error);
   }
 }
 
-// Handle cleanup on server shutdown
-process.on('SIGINT', stopBot);
-process.on('SIGTERM', stopBot);
+// Enhanced process handlers for graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('[Telegram Bot] Received SIGINT signal');
+  await stopBot();
+  process.exit(0);
+});
 
-// Start polling in all environments
-bot.startPolling();
-console.log('[Telegram Bot] Polling started');
+process.on('SIGTERM', async () => {
+  console.log('[Telegram Bot] Received SIGTERM signal');
+  await stopBot();
+  process.exit(0);
+});
+
+// Uncaught exception handler
+process.on('uncaughtException', async (error) => {
+  console.error('[Telegram Bot] Uncaught Exception:', error);
+  await stopBot();
+  process.exit(1);
+});
 
 // Debug logging function
 function logDebug(message: string, data?: any) {
   console.log(`[Telegram Bot] ${message}`, data ? JSON.stringify(data, null, 2) : '');
 }
 
+// Helper function to format dates consistently
+function formatDate(date: Date | null): string {
+  if (!date) return 'N/A';
+  return new Date(date).toLocaleString();
+}
+
+// Initialize bot with proper instance checking
+async function initializeBot() {
+  try {
+    // First, try to delete webhook to ensure clean polling
+    await bot.deleteWebHook(); // Fixed method name
+
+    if (!pollingStarted) {
+      console.log('[Telegram Bot] Starting polling...');
+      await bot.startPolling();
+      pollingStarted = true;
+      console.log('[Telegram Bot] Polling started successfully');
+
+      // Set up commands after successful polling start
+      await setupBotCommands();
+    } else {
+      console.log('[Telegram Bot] Polling already active, skipping start');
+    }
+  } catch (error: any) { // Type annotation added
+    console.error('[Telegram Bot] Initialization error:', error);
+    // If we get a conflict, it means another instance is running
+    if (error.message?.includes('409')) {
+      console.log('[Telegram Bot] Detected another running instance, attempting cleanup...');
+      await stopBot();
+      // Try to initialize again after a short delay
+      setTimeout(initializeBot, 5000);
+    } else {
+      throw error;
+    }
+  }
+}
+
+// Welcome message handler
+async function handleStart(msg: TelegramBot.Message) {
+  const chatId = msg.chat.id;
+  const telegramId = msg.from?.id.toString();
+
+  if (!telegramId) {
+    return bot.sendMessage(chatId, 'Could not identify user.');
+  }
+
+  // Check if user is already verified
+  const existingUser = await db.select()
+    .from(telegramUsers)
+    .where(eq(telegramUsers.telegramId, telegramId))
+    .execute();
+
+  if (existingUser?.[0]?.isVerified) {
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '📊 My Stats', callback_data: 'stats' }],
+        [{ text: '🏁 Race Position', callback_data: 'race' }],
+        [{ text: '🏆 Leaderboard', callback_data: 'leaderboard' }]
+      ]
+    };
+
+    return bot.sendMessage(
+      chatId,
+      `Welcome back! What would you like to check?`,
+      { reply_markup: keyboard }
+    );
+  }
+
+  // For new users, start verification process
+  try {
+    await bot.sendPhoto(chatId, './server/telegram/BOTWELCOME.png');
+  } catch (error) {
+    console.error('Error sending welcome image:', error);
+  }
+
+  const message = `👋 Welcome to the Goated Stats Bot!
+
+⚠️ You must be an affiliate to use this Bot.
+To get started, I'll need to verify your Goated.com account username to proceed.
+
+Click the button below to begin verification:`;
+
+  const keyboard = {
+    inline_keyboard: [
+      [{ text: '🔐 Start Verification', callback_data: 'start_verify' }]
+    ]
+  };
+
+  return bot.sendMessage(chatId, message, { reply_markup: keyboard });
+}
+
 // Set up bot commands with proper descriptions
 async function setupBotCommands() {
   try {
-    // Clear existing commands
-    await bot.deleteMyCommands();
+    // Clear existing commands using correct method name
+    await bot.setMyCommands([]); // Reset commands instead of using deleteMyCommands
 
     const baseCommands = [
       { command: 'start', description: '🚀 Start using the bot' },
@@ -104,51 +220,32 @@ async function setupBotCommands() {
   }
 }
 
-// Initialize bot commands with retry
-async function initializeBotWithRetry(maxRetries = 3) {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      await setupBotCommands();
-      console.log('[Telegram Bot] Commands initialized successfully');
-      return;
-    } catch (error) {
-      console.error(`Failed to initialize bot (attempt ${i + 1}/${maxRetries}):`, error);
-      if (i === maxRetries - 1) throw error;
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
-    }
-  }
-}
-
-initializeBotWithRetry().catch(error => {
-  console.error('Failed to initialize bot after all retries:', error);
-});
-
 // Add help command handler
 bot.onText(/\/help/, async (msg) => {
   const chatId = msg.chat.id;
 
-  let message = `🐐 *Welcome to Goated Stats Bot\\!*\n\n`;
+  let message = `🐐 *Welcome to Goated Stats Bot!*\n\n`;
 
   if (msg.from?.username === 'xGoombas') {
     message += `*Admin Commands:*\n`;
-    message += `• /broadcast \\- Send message to all users\n`;
-    message += `• /group\\_message \\- Send message to group\n`;
-    message += `• /user\\_info \\- Get user information\n`;
-    message += `• /pending \\- View verification requests\n`;
-    message += `• /verify\\_user \\- Verify a user\n`;
-    message += `• /reject\\_user \\- Reject a verification\n\n`;
+    message += `• /broadcast - Send message to all users\n`;
+    message += `• /group_message - Send message to group\n`;
+    message += `• /user_info - Get user information\n`;
+    message += `• /pending - View verification requests\n`;
+    message += `• /verify_user - Verify a user\n`;
+    message += `• /reject_user - Reject a verification\n\n`;
   }
 
   message += `*Available Commands:*\n`;
-  message += `• /start \\- Get started with the bot\n`;
-  message += `• /verify \\- Link your Goated account\n`;
-  message += `• /stats \\- View your wager statistics\n`;
-  message += `• /check\\_stats \\- Check stats for username\n`;
-  message += `• /race \\- Check your race position\n`;
-  message += `• /leaderboard \\- See top players\n`;
-  message += `• /play \\- Play on Goated with our link\n`;
-  message += `• /website \\- Visit GoatedVIPs\\.gg\n\n`;
-  message += `Need help? Contact @xGoombas for support\\.`;
+  message += `• /start - Get started with the bot\n`;
+  message += `• /verify - Link your Goated account\n`;
+  message += `• /stats - View your wager statistics\n`;
+  message += `• /check_stats - Check stats for username\n`;
+  message += `• /race - Check your race position\n`;
+  message += `• /leaderboard - See top players\n`;
+  message += `• /play - Play on Goated with our link\n`;
+  message += `• /website - Visit GoatedVIPs.gg\n\n`;
+  message += `Need help? Contact @xGoombas for support.`;
 
   await bot.sendMessage(chatId, message, {
     parse_mode: 'MarkdownV2'
@@ -462,15 +559,15 @@ bot.onText(/\/setup_guide/, async (msg) => {
    • Add @GoatedVIPsBot as an admin to your channel
    • Make sure your channel is public with a username
 
-2️⃣ *Step\-by\-Step Setup:*
-   1\. Add the bot as admin to your channel with these permissions:
+2️⃣ *Step-by-Step Setup:*
+   1. Add the bot as admin to your channel with these permissions:
       • Post Messages
       • Edit Messages
       • Delete Messages
 
-   2\. Get your channel's username (e\.g\. @YourChannel)
+   2. Get your channel's username (e.g. @YourChannel)
 
-   3\. Use this command to start forwarding:
+   3. Use this command to start forwarding:
       \`/setup_forwarding @YourChannel\`
 
 3️⃣ *Managing Forwards:*
@@ -479,10 +576,10 @@ bot.onText(/\/setup_guide/, async (msg) => {
    • Start new forward: \`/setup_forwarding @channel\`
 
 4️⃣ *Features:*
-   • Auto\-formats Goated links to affiliate links
+   • Auto-formats Goated links to affiliate links
    • Forwards text & media content
    • Maintains original formatting
-   • Real\-time forwarding to all configured groups
+   • Real-time forwarding to all configured groups
 
 5️⃣ *Tips:*
    • Test with a small message first
@@ -492,17 +589,17 @@ bot.onText(/\/setup_guide/, async (msg) => {
 *Need assistance? Use /help for all available commands*
 
 2️⃣ *Setup Steps:*
-   1\. Add the bot as admin to your channel
-   2\. Use command: \`/setup_forwarding @YourChannel\`
-   3\. Test by posting in the channel
+   1. Add the bot as admin to your channel
+   2. Use command: \`/setup_forwarding @YourChannel\`
+   3. Test by posting in the channel
 
 3️⃣ *Available Commands:*
-   • \`/setup_forwarding @channel\` \- Start forwarding
-   • \`/list_forwardings\` \- Show active forwardings
-   • \`/stop_forwarding\` \- Stop all forwardings
+   • \`/setup_forwarding @channel\` - Start forwarding
+   • \`/list_forwardings\` - Show active forwardings
+   • \`/stop_forwarding\` - Stop all forwardings
 
 4️⃣ *Features:*
-   • Auto\-reformats Goated\.com links
+   • Auto-reformats Goated.com links
    • Forwards text & media content
    • Maintains original formatting
 
@@ -739,8 +836,8 @@ bot.onText(/\/user_info (.+)/, async (msg, match) => {
 Telegram ID: ${user[0].telegramId}
 Goated Username: ${user[0].goatedUsername || 'Not set'}
 Verified: ${user[0].isVerified ? '✅' : '❌'}
-Created At: ${new Date(user[0].createdAt).toLocaleString()}
-Last Active: ${new Date(user[0].lastActive).toLocaleString()}
+Created At: ${formatDate(user[0].createdAt)}
+Last Active: ${formatDate(user[0].lastActive)}
 Notifications: ${user[0].notificationsEnabled ? '✅' : '❌'}`;
 
     return bot.sendMessage(chatId, info);
@@ -778,13 +875,11 @@ bot.onText(/\/reject_user (.+)/, async (msg, match) => {
 
     // Notify the user
     await bot.sendMessage(telegramId, '❌ Your verification request has been rejected. Please ensure you provided the correct Goated username and try again.');
-    return bot.sendMessage(chatId, `❌ Rejected verification request for ${request.goatedUsername}.`);
+    return bot.sendMessage(chatId, `❌ Rejected verification request for ${request.gogoatedUsername}.`);
   } catch (error) {
     console.error('Error rejecting user:', error);
     return bot.sendMessage(chatId, '❌ Error rejecting user.');
-  }
-});
-
+}
 
 // Add prize pool constants to match web interface
 const PRIZE_POOL = 500;
@@ -804,60 +899,6 @@ const PRIZE_DISTRIBUTION: Record<number, number> = {
 // Helper function to get prize amount
 function getPrizeAmount(rank: number): number {
   return Math.round(PRIZE_POOL * (PRIZE_DISTRIBUTION[rank] || 0) * 100) / 100;
-}
-
-// Welcome message handler
-async function handleStart(msg: TelegramBot.Message) {
-  const chatId = msg.chat.id;
-  const telegramId = msg.from?.id.toString();
-
-  if (!telegramId) {
-    return bot.sendMessage(chatId, 'Could not identify user.');
-  }
-
-  // Check if user is already verified
-  const existingUser = await db.select()
-    .from(telegramUsers)
-    .where(eq(telegramUsers.telegramId, telegramId))
-    .execute();
-
-  if (existingUser?.[0]?.isVerified) {
-    const keyboard = {
-      inline_keyboard: [
-        [{ text: '📊 My Stats', callback_data: 'stats' }],
-        [{ text: '🏁 Race Position', callback_data: 'race' }],
-        [{ text: '🏆 Leaderboard', callback_data: 'leaderboard' }]
-      ]
-    };
-
-    return bot.sendMessage(
-      chatId,
-      `Welcome back! What would you like to check?`,
-      { reply_markup: keyboard }
-    );
-  }
-
-  // For new users, start verification process
-  try {
-    await bot.sendPhoto(chatId, './server/telegram/BOTWELCOME.png');
-  } catch (error) {
-    console.error('Error sending welcome image:', error);
-  }
-
-  const message = `👋 Welcome to the Goated Stats Bot!
-
-⚠️ You must be an affiliate to use this Bot.
-To get started, I'll need to verify your Goated.com account username to proceed.
-
-Click the button below to begin verification:`;
-
-  const keyboard = {
-    inline_keyboard: [
-      [{ text: '🔐 Start Verification', callback_data: 'start_verify' }]
-    ]
-  };
-
-  return bot.sendMessage(chatId, message, { reply_markup: keyboard });
 }
 
 // Rate limiting setup
@@ -1628,7 +1669,7 @@ bot.onText(/\/pendingchallenges/, async (msg) => {
 Entry #${i + 1}:
 User: ${e.telegramId}
 Bet Link: ${e.betLink}
-Submitted: ${new Date(e.submittedAt).toLocaleString()}
+Submitted: ${formatDate(e.submittedAt)}
 
 To verify: /verifychallenge ${e.id}
 To reject: /rejectchallenge ${e.id}`).join('\n\n');
@@ -1724,5 +1765,12 @@ bot.onText(/\/claim/, async (msg) => {
   }
 });
 
-// Export bot instance for use in main server
-export { bot, handleStart, handleVerify, handleStats, handleRace, handleLeaderboard, handleCallbackQuery };
+// Remove the duplicate getPrizeAmount function and keep only one instance
+// Export bot instance and handlers
+export { bot, handleVerify, handleStats, handleRace, handleLeaderboard, handleCallbackQuery, handleStart };
+
+// Initialize the bot with proper error handling
+initializeBot().catch(error => {
+  console.error('[Telegram Bot] Failed to initialize bot:', error);
+  process.exit(1);
+});
