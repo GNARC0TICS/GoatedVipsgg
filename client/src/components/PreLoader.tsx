@@ -10,28 +10,24 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const startTime = performance.now();
     const duration = 2000; // 2 seconds total animation
-
-    const updateProgress = () => {
-      const currentTime = performance.now();
-      const elapsed = currentTime - startTime;
-      const newProgress = Math.min((elapsed / duration) * 100, 100);
+    const interval = 50; // Update every 50ms
+    const steps = duration / interval;
+    const increment = 100 / steps;
+    
+    let currentProgress = 0;
+    const timer = setInterval(() => {
+      currentProgress = Math.min(currentProgress + increment, 100);
+      setProgress(Math.floor(currentProgress));
       
-      setProgress(Math.floor(newProgress));
-
-      if (newProgress < 100) {
-        requestAnimationFrame(updateProgress);
-      } else {
+      if (currentProgress >= 100) {
+        clearInterval(timer);
         setTimeout(onLoadComplete, 500);
       }
-    };
+    }, interval);
 
-    // Start the progress animation
-    requestAnimationFrame(updateProgress);
-
-    // Ensure cleanup
     return () => {
+      clearInterval(timer);
       setProgress(100);
     };
   }, [onLoadComplete]);
