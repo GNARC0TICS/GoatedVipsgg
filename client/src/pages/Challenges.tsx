@@ -10,13 +10,13 @@ const CHALLENGES = [
   {
     id: 0,
     title: "Recruitment Challenge",
-    description: "Refer a new VIP player and earn an instant $35 bonus",
-    reward: "$35 Bonus",
+    description: "Refer a new VIP player and earn an instant $50 bonus once they complete a VIP transfer",
+    reward: "$50 Bonus",
     category: "VIP",
     isActive: true,
     isNew: true,
     requiresProof: true,
-    proofInstructions: "Message @GoatedVIPsAdmin on Telegram with:\n- Referred player's identity\n- Their highest VIP level on other platforms"
+    proofInstructions: "Message @xGoombas on Telegram with:\n- Referred player's identity\n- Their highest VIP level on other platforms\n\nNOTE: Bonus will be credited after your referral completes their VIP transfer"
   },
   {
     id: 1,
