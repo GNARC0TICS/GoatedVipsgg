@@ -8,6 +8,17 @@ import { PageTransition } from "@/components/PageTransition";
 // Challenge data structure
 const CHALLENGES = [
   {
+    id: 0,
+    title: "Recruitment Challenge",
+    description: "Refer a new VIP player and earn an instant $35 bonus",
+    reward: "$35 Bonus",
+    category: "VIP",
+    isActive: true,
+    isNew: true,
+    requiresProof: true,
+    proofInstructions: "Message @GoatedVIPsAdmin on Telegram with:\n- Referred player's identity\n- Their highest VIP level on other platforms"
+  },
+  {
     id: 1,
     title: "Daily High Roller",
     description: "Reach $50,000 in wagers",
