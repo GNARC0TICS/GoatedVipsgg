@@ -252,14 +252,19 @@ function setupRESTRoutes(app: Express) {
 
         res.json(raceData);
       } catch (error) {
-        log(`Error fetching current race: ${error}`);
-        res.status(500).json({
-          status: "error",
-          message: "Failed to fetch current race",
-        });
+        handleApiError(res, "Failed to fetch current race", error);
       }
     }
   );
+
+function handleApiError(res: any, message: string, error: any) {
+  log(`Error: ${message} - ${error}`);
+  res.status(500).json({
+    status: "error",
+    message,
+    error: process.env.NODE_ENV === 'development' ? error.message : undefined
+  });
+}
 
   // Affiliate statistics endpoint
   app.get("/api/affiliate/stats",
