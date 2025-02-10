@@ -10,18 +10,30 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(timer);
-          setTimeout(onLoadComplete, 500);
-          return 100;
-        }
-        return prev + 1;
-      });
-    }, 20);
+    const startTime = performance.now();
+    const duration = 2000; // 2 seconds total animation
 
-    return () => clearInterval(timer);
+    const updateProgress = () => {
+      const currentTime = performance.now();
+      const elapsed = currentTime - startTime;
+      const newProgress = Math.min((elapsed / duration) * 100, 100);
+      
+      setProgress(Math.floor(newProgress));
+
+      if (newProgress < 100) {
+        requestAnimationFrame(updateProgress);
+      } else {
+        setTimeout(onLoadComplete, 500);
+      }
+    };
+
+    // Start the progress animation
+    requestAnimationFrame(updateProgress);
+
+    // Ensure cleanup
+    return () => {
+      setProgress(100);
+    };
   }, [onLoadComplete]);
 
   return (
@@ -45,7 +57,7 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
         <div className="w-64 h-1 bg-[#2A2B31] rounded-full overflow-hidden">
           <motion.div
             className="h-full bg-[#D7FF00]"
-            initial={{ width: 0 }}
+            initial={{ width: "0%" }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.2 }}
           />
