@@ -1,15 +1,57 @@
+
 import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface PreLoaderProps {
   onLoadComplete: () => void;
 }
 
 export function PreLoader({ onLoadComplete }: PreLoaderProps) {
+  const [progress, setProgress] = useState(0);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
   useEffect(() => {
-    const timer = setTimeout(onLoadComplete, 2000);
-    return () => clearTimeout(timer);
-  }, [onLoadComplete]);
+    // Create artificial loading stages
+    const stages = [
+      { target: 30, duration: 500 },
+      { target: 60, duration: 800 },
+      { target: 85, duration: 500 },
+      { target: 100, duration: 700 }
+    ];
+
+    let currentStage = 0;
+    
+    // Preload the image
+    const img = new Image();
+    img.src = "/images/preload.PNG";
+    img.onload = () => setImageLoaded(true);
+
+    const animateStage = () => {
+      if (currentStage >= stages.length) return;
+      
+      const stage = stages[currentStage];
+      const startProgress = currentStage > 0 ? stages[currentStage - 1].target : 0;
+      const increment = (stage.target - startProgress) / (stage.duration / 50);
+      let currentProgress = startProgress;
+
+      const interval = setInterval(() => {
+        if (currentProgress >= stage.target) {
+          clearInterval(interval);
+          currentStage++;
+          if (currentStage < stages.length) {
+            setTimeout(animateStage, 200); // Add slight pause between stages
+          } else if (imageLoaded) {
+            setTimeout(onLoadComplete, 500);
+          }
+        } else {
+          currentProgress = Math.min(currentProgress + increment, stage.target);
+          setProgress(Math.floor(currentProgress));
+        }
+      }, 50);
+    };
+
+    animateStage();
+  }, [onLoadComplete, imageLoaded]);
 
   return (
     <motion.div
@@ -29,24 +71,16 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
           alt="Goated Preloader"
           className="w-64 h-64 object-contain animate-pulse-subtle"
         />
-        <motion.div className="w-64 h-1 bg-[#2A2B31] rounded-full overflow-hidden">
+        <div className="w-64 h-1 bg-[#2A2B31] rounded-full overflow-hidden">
           <motion.div
             className="h-full bg-[#D7FF00]"
-            initial={{ width: 0 }}
-            animate={{ width: "100%" }}
-            transition={{ 
-              duration: 2,
-              ease: "linear"
-            }}
+            style={{ width: `${progress}%` }}
+            transition={{ duration: 0.2 }}
           />
-        </motion.div>
-        <motion.p 
-          className="text-[#D7FF00] font-heading text-xl"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          Loading...
-        </motion.p>
+        </div>
+        <p className="text-[#D7FF00] font-heading text-xl">
+          {progress}%
+        </p>
       </motion.div>
     </motion.div>
   );
