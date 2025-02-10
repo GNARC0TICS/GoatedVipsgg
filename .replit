@@ -1,3 +1,4 @@
+
 modules = ["nodejs-20", "web", "postgresql-16"]
 run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
@@ -19,11 +20,10 @@ buttonEnabled = false
 localPort = 5000
 externalPort = 3000
 
-[workflows.Project]
-name = "Project"
-mode = "parallel"
-author = "agent"
+[run]
+init = "npm install"
+command = "npm run dev"
 
-[[workflows.Project.tasks]]
-task = "shell.exec"
-args = "npm run dev"
+[[hints]]
+regex = "Error \\[ERR_REQUIRE_ESM\\]"
+message = "We see that you are using require(...) inside your code. We currently do not support this syntax. Please use 'import' instead when using external modules. (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import)"
