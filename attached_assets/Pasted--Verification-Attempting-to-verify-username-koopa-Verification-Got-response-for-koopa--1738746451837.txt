@@ -1,0 +1,291 @@
+[Verification] Attempting to verify username: koopa
+[Verification] Got response for koopa: [
+  {
+    uid: '3eGEe1FHIyJuVHA6dAcE',
+    name: 'sinsierraa',
+    wagered: {
+      today: 0,
+      this_week: 9107.406689175681,
+      this_month: 15751.251867392726,
+      all_time: 304515.5925818433
+    }
+  },
+  {
+    uid: '1Su4vqqqQi1TKdb7T4Lf',
+    name: 'Ruffrollr777',
+    wagered: {
+      today: 63.356149945664484,
+      this_week: 6748.94704434122,
+      this_month: 7853.854255353615,
+      all_time: 274813.85011294356
+    }
+  },
+  {
+    uid: 'ZZ50VbzgzfzdgcnLYJIe',
+    name: 'Godzilla',
+    wagered: {
+      today: 1416.1491628727272,
+      this_week: 1700.3699179992602,
+      this_month: 5370.26971501636,
+      all_time: 117256.98466559005
+    }
+  },
+  {
+    uid: 'RqtIVsobNNBEZoqX7IVL',
+    name: 'Veronicaftw',
+    wagered: {
+      today: 1.08919237,
+      this_week: 422.4295342060054,
+      this_month: 3509.9461594753607,
+      all_time: 35280.20384887102
+    }
+  },
+  {
+    uid: 'g02uAtqDkOzlYmZUaw60',
+    name: 'Wimmer',
+    wagered: {
+      today: 0,
+      this_week: 1476.0837471758584,
+      this_month: 2476.5864828489202,
+      all_time: 2476.5864828489202
+    }
+  },
+  {
+    uid: 'sR6bsuETP9CJMikPx2l4',
+    name: 'BI4NCAKES',
+    wagered: {
+      today: 108.82572207916706,
+      this_week: 778.1193657390884,
+      this_month: 1466.6224966899854,
+      all_time: 104848.66879725034
+    }
+  },
+  {
+    uid: 'dIhJG5Hb2ScqAMU9xV06',
+    name: 'ThePetro',
+    wagered: {
+      today: 655.5792253969333,
+      this_week: 705.4672313945484,
+      this_month: 1115.6129287985711,
+      all_time: 17847.356590014217
+    }
+  },
+  {
+    uid: 'vqYiwgn0Dn5RsFfsNcXM',
+    name: 'seboafc',
+    wagered: {
+      today: 0,
+      this_week: 151.23,
+      this_month: 858.0931511828455,
+      all_time: 4868.123752207478
+    }
+  },
+  {
+    uid: 'znZkr25aNmGplGlYVTHm',
+    name: 'ThE-End',
+    wagered: {
+      today: 455.26807887999996,
+      this_week: 827.8710867100002,
+      this_month: 833.23402338,
+      all_time: 455771.2676759837
+    }
+  },
+  {
+    uid: '9teujlXOecHaAywrpu07',
+    name: 'Urkimmie',
+    wagered: {
+      today: 0.85,
+      this_week: 35.550000000000004,
+      this_month: 751.2892655444225,
+      all_time: 11193.513663603539
+    }
+  },
+  {
+    uid: '5GiJWrJkfohGi6FPOpFF',
+    name: 'GoatedDevil911',
+    wagered: {
+      today: 1.6500000000000001,
+      this_week: 250.2599999999968,
+      this_month: 619.2946896569712,
+      all_time: 1080.5914265125803
+    }
+  },
+  {
+    uid: 'tdgNfCa9stgtOwtEtVwO',
+    name: 'Cjbjdj',
+    wagered: {
+      today: 0,
+      this_week: 9.783902000700117,
+      this_month: 541.7242490947,
+      all_time: 7160.181732905732
+    }
+  },
+  {
+    uid: '9BzpUUxJR2GzCSHajQXa',
+    name: 'FREEBANDZS',
+    wagered: {
+      today: 0,
+      this_week: 311.97203021206843,
+      this_month: 537.5169585720689,
+      all_time: 537.5169585720689
+    }
+  },
+  {
+    uid: 'yMAM8lxsAhEb8wyOvQnB',
+    name: 'Meccka',
+    wagered: {
+      today: 23.7295761,
+      this_week: 191.6533040109524,
+      this_month: 342.68869503240006,
+      all_time: 2084.841686273816
+    }
+  },
+  {
+    uid: 'kp8ldJUc6g8bLQhg02dQ',
+    name: 'FantasyStar',
+    wagered: {
+      today: 0,
+      this_week: 0,
+      this_month: 311.89999695214874,
+      all_time: 3105.989050409743
+    }
+  },
+  {
+    uid: '08A9cEBGqitcWUwiWjpf',
+    name: 'Waka777waka',
+    wagered: {
+      today: 4.7912998700000005,
+      this_week: 74.14675097139839,
+      this_month: 307.5750598334377,
+      all_time: 13357.8279436342
+    }
+  },
+  {
+    uid: 'w9iaePJFszaUqedVUnen',
+    name: 'ROOFIO',
+    wagered: {
+      today: 0,
+      this_week: 14.520000000000012,
+      this_month: 289.78,
+      all_time: 26892.206180167686
+    }
+  },
+  {
+    uid: 'KJvxRWJzFRuazpmV2ERJ',
+    name: 'Maxbets',
+    wagered: {
+      today: 0,
+      this_week: 0,
+      this_month: 240.80354387,
+      all_time: 1801.1306510165239
+    }
+  },
+  {
+    uid: 'aBV2JR26zllxJPDNgcjM',
+    name: 'DLC-Official',
+    wagered: {
+      today: 0,
+      this_week: 150.38416476579664,
+      this_month: 218.599385489,
+      all_time: 5532.8527314132325
+    }
+  },
+  {
+    uid: 'yQEksYQ38YsgpgFLE5A4',
+    name: 'nght1292',
+    wagered: {
+      today: 0,
+      this_week: 18.356759807976545,
+      this_month: 201.01713336045094,
+      all_time: 2505.1562495327435
+    }
+  },
+  {
+    uid: '2EIMs4FNSNHrthWgYxY1',
+    name: 'EssPeeZee81',
+    wagered: {
+      today: 0,
+      this_week: 0,
+      this_month: 137.3203118006,
+      all_time: 76560.8878652579
+    }
+  },
+  {
+    uid: '7ICmCw5iDeAMTbHLe7K5',
+    name: 'BlickieSmols',
+    wagered: {
+      today: 0,
+      this_week: 0.69,
+      this_month: 131.10687685133783,
+      all_time: 56349.08294587968
+    }
+  },
+  {
+    uid: 'FGhRlEACdEVT0GA0OVzn',
+    name: 'gzn1337',
+    wagered: {
+      today: 0,
+      this_week: 49.729506138131455,
+      this_month: 123.9492112200035,
+      all_time: 1713.7336783309752
+    }
+  },
+  {
+    uid: 'wId6PDVemGx3Kgrmdq4Q',
+    name: 'jatoja666',
+    wagered: {
+      today: 0.11,
+      this_week: 0.1158911984,
+      this_month: 117.12478594743625,
+      all_time: 249.2692866816739
+    }
+  },
+  {
+    uid: 'oHs7GfBSAoXBWHpBxyK5',
+    name: 'KINGFLIPPYNIPS',
+    wagered: {
+      today: 0,
+      this_week: 23.016107112938016,
+      this_month: 100.86285533859296,
+      all_time: 11176.929855155764
+    }
+  },
+  {
+    uid: 'nLGTRzbjLjRzi3gafiiF',
+    name: 'CryptoNic',
+    wagered: {
+      today: 0,
+      this_week: 63.13692150000008,
+      this_month: 91.7033595,
+      all_time: 914.5015583848024
+    }
+  },
+  {
+    uid: '6lPK59ImWeijUu1XjSPo',
+    name: 'BloudyS',
+    wagered: {
+      today: 0,
+      this_week: 68.6799999999999,
+      this_month: 68.68,
+      all_time: 68.68
+    }
+  },
+  {
+    uid: 'eBUSWtXPhNLLY8Q1Zzd3',
+    name: 'stronglikebear',
+    wagered: {
+      today: 0,
+      this_week: 0,
+      this_month: 63.82289934315789,
+      all_time: 17171.67557108317
+    }
+  },
+  {
+    uid: 'KghAj8o0kgqZ2TNnJ1rW',
+    name: 'Kamarad22',
+    wagered: {
+      today: 0,
+      this_week: 61.87568333951318,
+      this_month: 61.87583189550777,
+      all_time: 61.87583189550777
+    }
