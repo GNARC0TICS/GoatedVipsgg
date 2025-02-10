@@ -30,13 +30,17 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{
-        type: "tween",
-        duration: 0.2,
-        ease: "easeOut"
+        type: "spring",
+        stiffness: 260,
+        damping: 20,
+        duration: 0.3
       }}
       style={{ 
         willChange: "opacity, transform",
-        backfaceVisibility: "hidden"
+        backfaceVisibility: "hidden",
+        isolation: "isolate",
+        transform: "translateZ(0)",
+        perspective: 1000
       }}
     >
       {children}
