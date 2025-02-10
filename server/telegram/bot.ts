@@ -16,24 +16,18 @@ if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
 
-export let bot: TelegramBot;
-
-try {
-  if (global.botInstance) {
-    console.log('[Telegram Bot] Stopping existing bot instance...');
-    await global.botInstance.stopPolling();
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
+// Ensure only one bot instance exists globally
+if (!global.botInstance) {
   console.log('[Telegram Bot] Creating new bot instance...');
-  bot = new TelegramBot(token, {
-    polling: false,
+  global.botInstance = new TelegramBot(token, {
+    polling: false, // Polling starts later
     filepath: false
   });
-  global.botInstance = bot;
-} catch (error) {
-  console.error('[Telegram Bot] Error managing bot instance:', error);
-  throw error;
+} else {
+  console.log('[Telegram Bot] Instance already running. Skipping new bot creation.');
 }
+
+export const bot = global.botInstance;
 
 let isShuttingDown = false;
 let pollingStarted = false;
@@ -109,12 +103,13 @@ export async function initializeBot() {
     pollingStarted = false;
 
     if (error.message?.includes('409')) {
-      console.log('[Telegram Bot] Detected another running instance, attempting cleanup...');
-      await stopBot();
-      console.log('[Telegram Bot] Retrying initialization in 5 seconds...');
-      setTimeout(initializeBot, 5000);
-    } else {
-      throw error;
+      console.log('[Telegram Bot] 409 Conflict detected. Stopping existing bot instance...');
+
+      await stopBot(); // Ensure proper cleanup
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Add delay
+
+      console.log('[Telegram Bot] Retrying initialization...');
+      return initializeBot(); // Recursively retry
     }
   }
 }

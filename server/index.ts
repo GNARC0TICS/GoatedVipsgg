@@ -8,22 +8,31 @@ import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
 import { initializeAdmin } from "./middleware/admin";
-import { bot } from './telegram/bot'; // Import the Telegram bot
 
 const execAsync = promisify(exec);
 const app = express();
 const PORT = 5000;
 
+// Create a dedicated router for API endpoints
+const apiRouter = express.Router();
+
+// API health check endpoint
+apiRouter.get("/health", (_req, res) => {
+  res.json({ status: "healthy" });
+});
+
 async function setupMiddleware() {
+  // Basic middleware setup
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
-  app.use(requestLogger);
-  app.use(errorHandler);
 
-  app.get("/api/health", (_req, res) => {
-    res.json({ status: "healthy" });
-  });
+  // Mount API router for all /api routes before any other middleware
+  app.use("/api", (req, res, next) => {
+    // Set proper headers for API responses
+    res.setHeader('Content-Type', 'application/json');
+    next();
+  }, apiRouter);
 }
 
 function requestLogger(
@@ -82,12 +91,9 @@ async function checkDatabase() {
 
 async function cleanupPort() {
   try {
-    // Try to kill existing process on port 5000
     await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
-    // Wait a moment for the port to be released
     await new Promise(resolve => setTimeout(resolve, 1000));
   } catch (error) {
-    // If no process was found or killed, that's fine
     log("No existing process found on port " + PORT);
   }
 }
@@ -98,24 +104,28 @@ async function startServer() {
     await checkDatabase();
     await cleanupPort(); 
 
-    registerRoutes(app);
-    initializeAdmin().catch(console.error);
-
-    // Initialize Telegram bot
-    log("Initializing Telegram bot...");
-    if (!process.env.TELEGRAM_BOT_TOKEN) {
-      throw new Error('TELEGRAM_BOT_TOKEN must be provided');
-    }
-
+    // Create HTTP server first
     const server = createServer(app);
 
+    // Setup basic middleware and API router first
+    await setupMiddleware();
+
+    // Add logging and error handling for API routes
+    app.use(requestLogger);
+    app.use(errorHandler);
+
+    // Register all routes and WebSocket handlers
+    registerRoutes(app);
+
+    // Initialize admin after routes
+    initializeAdmin().catch(console.error);
+
+    // Setup Vite or static serving last
     if (app.get("env") === "development") {
       await setupVite(app, server);
     } else {
       serveStatic(app);
     }
-
-    await setupMiddleware();
 
     server
       .listen(PORT, "0.0.0.0")
@@ -131,7 +141,6 @@ async function startServer() {
       })
       .on("listening", () => {
         log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-        log('Telegram bot started successfully');
       });
 
   } catch (error) {
@@ -139,18 +148,5 @@ async function startServer() {
     process.exit(1);
   }
 }
-
-// Add Telegram bot shutdown handling
-process.on('SIGTERM', () => {
-  log('Received SIGTERM signal. Shutting down gracefully...');
-  bot.stopPolling(); // Stop the Telegram bot
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  log('Received SIGINT signal. Shutting down gracefully...');
-  bot.stopPolling(); // Stop the Telegram bot
-  process.exit(0);
-});
 
 startServer();

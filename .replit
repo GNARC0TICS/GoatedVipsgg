@@ -15,9 +15,6 @@ ignorePorts = true
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 5001
-
 [workflows]
 runButton = "Start application"
 
