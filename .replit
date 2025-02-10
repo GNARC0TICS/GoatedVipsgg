@@ -1,16 +1,23 @@
+# Specify the main entry point of your application
+entrypoint = "index.js"
+
+# Define the modules required for your project
 modules = ["nodejs-20", "web", "postgresql-16"]
-run = "npm run dev"
+
+# List of files and directories to hide in the file explorer
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
+# Nix package manager settings
 [nix]
 channel = "stable-24_05"
 
+# Deployment configuration
 [deployment]
-deploymentTarget = "gce"
+deploymentTarget = "cloudrun"
 build = ["npm", "run", "build"]
 run = ["npm", "run", "start"]
-ignorePorts = true
 
+# Networking settings
 [[ports]]
 localPort = 5000
 externalPort = 80
@@ -18,6 +25,7 @@ externalPort = 80
 [[ports]]
 localPort = 5001
 
+# Workflow configurations
 [workflows]
 runButton = "Start application"
 
@@ -41,6 +49,7 @@ agentRequireRestartOnSave = false
 task = "shell.exec"
 args = "npm run dev"
 
+# Authentication settings
 [auth]
 pageEnabled = false
 buttonEnabled = false
