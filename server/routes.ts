@@ -11,14 +11,13 @@ import { wagerRaces, users, ticketMessages } from "@db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { z } from "zod";
 import { historicalRaces } from "@db/schema"; // Assuming historicalRaces schema exists
-
+import { bot, getBotStatus, initializeBot } from './telegram/bot'; // Import bot directly
 
 // Rate limiting setup
 const rateLimiter = new RateLimiterMemory({
   points: 60,
   duration: 1,
 });
-
 
 function handleLeaderboardConnection(ws: WebSocket) {
   const clientId = Date.now().toString();
@@ -148,8 +147,33 @@ function transformLeaderboardData(apiData: any) {
   };
 }
 
+//New function to get bot status
+function getBotStatus() {
+  try {
+    return {
+      isPolling: bot.isPolling(),
+      status: bot.isPolling() ? "running" : "stopped",
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error getting bot status:', error);
+    return {
+      status: "error",
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    };
+  }
+}
+
+
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
+
+  // Initialize the bot when server starts
+  initializeBot().catch(error => {
+    console.error('Failed to initialize Telegram bot:', error);
+  });
+
   setupAuth(app);
   setupRESTRoutes(app);
   setupWebSocket(httpServer);
@@ -157,6 +181,21 @@ export function registerRoutes(app: Express): Server {
 }
 
 function setupRESTRoutes(app: Express) {
+  // Bot status endpoint
+  app.get("/api/bot-status", async (_req, res) => {
+    try {
+      const status = getBotStatus();
+      res.json(status);
+    } catch (error) {
+      console.error('Error checking bot status:', error);
+      res.status(500).json({ 
+        status: "error",
+        message: "Failed to check bot status",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Add endpoint to fetch previous month's results
   app.get("/api/wager-races/previous", async (_req, res) => {
     try {
@@ -481,71 +520,71 @@ function setupRESTRoutes(app: Express) {
   });
 
   // Bonus code management routes
-app.get("/api/admin/bonus-codes", requireAdmin, async (_req, res) => {
-  try {
-    const codes = await db.query.bonusCodes.findMany({
-      orderBy: (codes, { desc }) => [desc(codes.createdAt)],
-    });
-    res.json(codes);
-  } catch (error) {
-    log(`Error fetching bonus codes: ${error}`);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to fetch bonus codes",
-    });
-  }
-});
+  app.get("/api/admin/bonus-codes", requireAdmin, async (_req, res) => {
+    try {
+      const codes = await db.query.bonusCodes.findMany({
+        orderBy: (codes, { desc }) => [desc(codes.createdAt)],
+      });
+      res.json(codes);
+    } catch (error) {
+      log(`Error fetching bonus codes: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch bonus codes",
+      });
+    }
+  });
 
-app.post("/api/admin/bonus-codes", requireAdmin, async (req, res) => {
-  try {
-    const [code] = await db
-      .insert(bonusCodes)
-      .values({
-        ...req.body,
-        createdBy: req.user!.id,
-      })
-      .returning();
-    res.json(code);
-  } catch (error) {
-    log(`Error creating bonus code: ${error}`);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to create bonus code",
-    });
-  }
-});
+  app.post("/api/admin/bonus-codes", requireAdmin, async (req, res) => {
+    try {
+      const [code] = await db
+        .insert(bonusCodes)
+        .values({
+          ...req.body,
+          createdBy: req.user!.id,
+        })
+        .returning();
+      res.json(code);
+    } catch (error) {
+      log(`Error creating bonus code: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to create bonus code",
+      });
+    }
+  });
 
-app.put("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
-  try {
-    const [code] = await db
-      .update(bonusCodes)
-      .set(req.body)
-      .where(eq(bonusCodes.id, parseInt(req.params.id)))
-      .returning();
-    res.json(code);
-  } catch (error) {
-    log(`Error updating bonus code: ${error}`);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to update bonus code",
-    });
-  }
-});
+  app.put("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
+    try {
+      const [code] = await db
+        .update(bonusCodes)
+        .set(req.body)
+        .where(eq(bonusCodes.id, parseInt(req.params.id)))
+        .returning();
+      res.json(code);
+    } catch (error) {
+      log(`Error updating bonus code: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to update bonus code",
+      });
+    }
+  });
 
-app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
-  try {
-    await db
-      .delete(bonusCodes)
-      .where(eq(bonusCodes.id, parseInt(req.params.id)));
-    res.json({ status: "success" });
-  } catch (error) {
-    log(`Error deleting bonus code: ${error}`);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to delete bonus code",
-    });
-  }
-});
+  app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
+    try {
+      await db
+        .delete(bonusCodes)
+        .where(eq(bonusCodes.id, parseInt(req.params.id)));
+      res.json({ status: "success" });
+    } catch (error) {
+      log(`Error deleting bonus code: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to delete bonus code",
+      });
+    }
+  });
 
   // Chat history endpoint
   app.get("/api/chat/history", requireAuth, async (req, res) => {
@@ -956,8 +995,7 @@ async function handleChatConnection(ws: WebSocket) {
   });
 
   ws.on("close", () => {
-    log("Chat WebSocket client disconnected");
-    clearInterval(pingInterval);
+    log("Chat WebSocket client disconnected");    clearInterval(pingInterval);
   });
 
   ws.on("error", (error) => {

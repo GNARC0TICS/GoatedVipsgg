@@ -15,18 +15,19 @@ if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
 
-// Create a bot instance with proper options
-const bot = new TelegramBot(token, {
+// Export the bot instance with basic options
+export const bot = new TelegramBot(token, {
   polling: false, // We'll start polling after checks
   filepath: false // Disable file downloads to prevent memory issues
 });
 
 let isShuttingDown = false;
 let pollingStarted = false;
+let isInitialized = false;
 
 // Enhanced cleanup function with proper shutdown flags
 async function stopBot() {
-  if (isShuttingDown) return; // Prevent multiple shutdown attempts
+  if (isShuttingDown) return;
   isShuttingDown = true;
 
   try {
@@ -35,13 +36,14 @@ async function stopBot() {
       await bot.stopPolling();
       pollingStarted = false;
     }
+    isInitialized = false;
     console.log('[Telegram Bot] Polling stopped successfully');
   } catch (error) {
     console.error('[Telegram Bot] Error during shutdown:', error);
   }
 }
 
-// Enhanced process handlers for graceful shutdown
+// Process handlers for graceful shutdown
 process.on('SIGINT', async () => {
   console.log('[Telegram Bot] Received SIGINT signal');
   await stopBot();
@@ -54,43 +56,30 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-// Uncaught exception handler
-process.on('uncaughtException', async (error) => {
-  console.error('[Telegram Bot] Uncaught Exception:', error);
-  await stopBot();
-  process.exit(1);
-});
-
-// Debug logging function
-function logDebug(message: string, data?: any) {
-  console.log(`[Telegram Bot] ${message}`, data ? JSON.stringify(data, null, 2) : '');
-}
-
-// Helper function to format dates consistently
-function formatDate(date: Date | null): string {
-  if (!date) return 'N/A';
-  return new Date(date).toLocaleString();
-}
-
 // Initialize bot with proper instance checking
-async function initializeBot() {
+export async function initializeBot() {
   try {
-    // First, try to delete webhook to ensure clean polling
-    await bot.deleteWebHook(); // Fixed method name
-
-    if (!pollingStarted) {
-      console.log('[Telegram Bot] Starting polling...');
-      await bot.startPolling();
-      pollingStarted = true;
-      console.log('[Telegram Bot] Polling started successfully');
-
-      // Set up commands after successful polling start
-      await setupBotCommands();
-    } else {
-      console.log('[Telegram Bot] Polling already active, skipping start');
+    if (isInitialized) {
+      console.log('[Telegram Bot] Bot already initialized');
+      return;
     }
-  } catch (error: any) { // Type annotation added
+
+    // First, try to delete webhook to ensure clean polling
+    await bot.deleteWebHook();
+
+    console.log('[Telegram Bot] Starting polling...');
+    await bot.startPolling();
+    pollingStarted = true;
+    isInitialized = true;
+    console.log('[Telegram Bot] Polling started successfully');
+
+    // Set up commands after successful polling start
+    await setupBotCommands();
+  } catch (error: any) {
     console.error('[Telegram Bot] Initialization error:', error);
+    isInitialized = false;
+    pollingStarted = false;
+
     // If we get a conflict, it means another instance is running
     if (error.message?.includes('409')) {
       console.log('[Telegram Bot] Detected another running instance, attempting cleanup...');
@@ -101,60 +90,6 @@ async function initializeBot() {
       throw error;
     }
   }
-}
-
-// Welcome message handler
-async function handleStart(msg: TelegramBot.Message) {
-  const chatId = msg.chat.id;
-  const telegramId = msg.from?.id.toString();
-
-  if (!telegramId) {
-    return bot.sendMessage(chatId, 'Could not identify user.');
-  }
-
-  // Check if user is already verified
-  const existingUser = await db.select()
-    .from(telegramUsers)
-    .where(eq(telegramUsers.telegramId, telegramId))
-    .execute();
-
-  if (existingUser?.[0]?.isVerified) {
-    const keyboard = {
-      inline_keyboard: [
-        [{ text: '📊 My Stats', callback_data: 'stats' }],
-        [{ text: '🏁 Race Position', callback_data: 'race' }],
-        [{ text: '🏆 Leaderboard', callback_data: 'leaderboard' }]
-      ]
-    };
-
-    return bot.sendMessage(
-      chatId,
-      `Welcome back! What would you like to check?`,
-      { reply_markup: keyboard }
-    );
-  }
-
-  // For new users, start verification process
-  try {
-    await bot.sendPhoto(chatId, './server/telegram/BOTWELCOME.png');
-  } catch (error) {
-    console.error('Error sending welcome image:', error);
-  }
-
-  const message = `👋 Welcome to the Goated Stats Bot!
-
-⚠️ You must be an affiliate to use this Bot.
-To get started, I'll need to verify your Goated.com account username to proceed.
-
-Click the button below to begin verification:`;
-
-  const keyboard = {
-    inline_keyboard: [
-      [{ text: '🔐 Start Verification', callback_data: 'start_verify' }]
-    ]
-  };
-
-  return bot.sendMessage(chatId, message, { reply_markup: keyboard });
 }
 
 // Set up bot commands with proper descriptions
@@ -218,6 +153,73 @@ async function setupBotCommands() {
     logDebug('Error setting up bot commands', error);
     throw error;
   }
+}
+
+function logDebug(message: string, data?: any) {
+  console.log(`[Telegram Bot] ${message}`, data ? JSON.stringify(data, null, 2) : '');
+}
+
+// Helper function to format dates consistently
+function formatDate(date: Date | null): string {
+  if (!date) return 'N/A';
+  return new Date(date).toLocaleString();
+}
+
+// Helper function to get prize amount
+function getPrizeAmount(rank: number): number {
+  return Math.round(PRIZEPOOL * (PRIZE_DISTRIBUTION[rank] || 0) * 100) / 100;
+}
+
+// Welcome message handler
+async function handleStart(msg: TelegramBot.Message) {
+  const chatId = msg.chat.id;
+  const telegramId = msg.from?.id.toString();
+
+  if (!telegramId) {
+    return bot.sendMessage(chatId, 'Could not identify user.');
+  }
+
+  // Check if user is already verified
+  const existingUser = await db.select()
+    .from(telegramUsers)
+    .where(eq(telegramUsers.telegramId, telegramId))
+    .execute();
+
+  if (existingUser?.[0]?.isVerified) {
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '📊 My Stats', callback_data: 'stats' }],
+        [{ text: '🏁 Race Position', callback_data: 'race' }],
+        [{ text: '🏆 Leaderboard', callback_data: 'leaderboard' }]
+      ]
+    };
+
+    return bot.sendMessage(
+      chatId,
+      `Welcome back! What would you like to check?`,
+      { reply_markup: keyboard }
+    );
+  }
+
+  // For new users, start verification process
+  try {
+    await bot.sendPhoto(chatId, './server/telegram/BOTWELCOME.png');
+  } catch (error) {
+    console.error('Error sending welcome image:', error);
+  }
+
+  const message = `👋 Welcome to the Goated Stats Bot!
+⚠️ You must be an affiliate to use this Bot.
+To get started, I'll need to verify your Goated.com account username to proceed.
+Click the button below to begin verification:`;
+
+  const keyboard = {
+    inline_keyboard: [
+      [{ text: '🔐 Start Verification', callback_data: 'start_verify' }]
+    ]
+  };
+
+  return bot.sendMessage(chatId, message, { reply_markup: keyboard });
 }
 
 // Add help command handler
@@ -874,15 +876,15 @@ bot.onText(/\/reject_user (.+)/, async (msg, match) => {
     }
 
     // Notify the user
-    await bot.sendMessage(telegramId, '❌ Your verification request has been rejected. Please ensure you provided the correct Goated username and try again.');
+    await bot.sendMessage(telegramId, '❌ Your verification request has been rejected. Please ensure you provided the correct Goated usernameand try again.');
     return bot.sendMessage(chatId, `❌ Rejected verification request for ${request.gogoatedUsername}.`);
   } catch (error) {
     console.error('Error rejecting user:', error);
-    return bot.sendMessage(chatId, '❌ Error rejecting user.');
-}
+    return bot.sendMessage(chatId, '❌ Error rejecting user.');}
+});
 
 // Add prize pool constants to match web interface
-const PRIZE_POOL = 500;
+const PRIZEPOOL = 500;
 const PRIZE_DISTRIBUTION: Record<number, number> = {
   1: 0.425, // $212.50
   2: 0.2,   // $100
@@ -896,10 +898,6 @@ const PRIZE_DISTRIBUTION: Record<number, number> = {
   10: 0.0175, // $7
 };
 
-// Helper function to get prize amount
-function getPrizeAmount(rank: number): number {
-  return Math.round(PRIZE_POOL * (PRIZE_DISTRIBUTION[rank] || 0) * 100) / 100;
-}
 
 // Rate limiting setup
 const rateLimiter = new Map<string, { count: number; timestamp: number }>();
@@ -1279,7 +1277,7 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
       .join('\n\n');
 
     const message = `🏆 Monthly Race Leaderboard\n` +
-      `💵 Prize Pool: $${PRIZE_POOL.toLocaleString()}\n` +
+      `💵 Prize Pool: $${PRIZEPOOL.toLocaleString()}\n` +
       `🏁 Current Top 10:\n\n${leaderboard}`;
 
     if (!isGroupChat(chatId)) {
@@ -1765,12 +1763,42 @@ bot.onText(/\/claim/, async (msg) => {
   }
 });
 
-// Remove the duplicate getPrizeAmount function and keep only one instance
-// Export bot instance and handlers
-export { bot, handleVerify, handleStats, handleRace, handleLeaderboard, handleCallbackQuery, handleStart };
+// Export status check function
+export function getBotStatus() {
+  try {
+    console.log('[Telegram Bot] Checking status:', { isInitialized, pollingStarted });
+    return {
+      isInitialized,
+      isPolling: bot.isPolling(),
+      status: isInitialized && bot.isPolling() ? "running" : "stopped",
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('[Telegram Bot] Error getting status:', error);
+    return {
+      isInitialized,
+      isPolling: false,
+      status: "error",
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    };
+  }
+}
+
+// Export handlers using proper TypeScript syntax
+export {
+  handleVerify,
+  handleStats,
+  handleRace,
+  handleLeaderboard,
+  handleCallbackQuery,
+  handleStart,
+  stopBot,
+  setupBotCommands
+};
 
 // Initialize the bot with proper error handling
 initializeBot().catch(error => {
-  console.error('[Telegram Bot] Failed to initialize bot:', error);
+  console.error('[Telegram Bot] Failed to initialize:', error);
   process.exit(1);
 });
