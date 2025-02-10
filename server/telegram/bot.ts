@@ -16,7 +16,7 @@ if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
 
-let bot: TelegramBot;
+export let bot: TelegramBot;
 
 if (global.botInstance) {
   console.log('[Telegram Bot] Instance already running. Skipping new bot creation.');
