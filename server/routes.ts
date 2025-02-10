@@ -409,13 +409,14 @@ function transformLeaderboardData(apiData: any, limit?: string) {
 }
 
 // Helper function to create rate limiter middleware
-const createRateLimiter = (tier: keyof typeof rateLimits) => {
+const createRateLimiter = (tier: 'HIGH' | 'MEDIUM' | 'LOW') => {
   const limiter = rateLimiters[tier];
   return async (req: any, res: any, next: any) => {
     try {
       const rateLimitRes = await limiter.consume(req.ip);
+      const points = tier === 'HIGH' ? 120 : tier === 'MEDIUM' ? 60 : 20;
 
-      res.setHeader('X-RateLimit-Limit', rateLimits[tier].points);
+      res.setHeader('X-RateLimit-Limit', points);
       res.setHeader('X-RateLimit-Remaining', rateLimitRes.remainingPoints);
       res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateLimitRes.msBeforeNext).toISOString());
 
