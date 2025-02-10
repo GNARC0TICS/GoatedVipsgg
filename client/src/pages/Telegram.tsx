@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 
-export default function Telegram() {
+export default function Community() {
   return (
     <div className="min-h-screen bg-[#14151A]">
       <main className="container mx-auto px-4 py-12">
@@ -18,39 +18,52 @@ export default function Telegram() {
               className="h-20 w-32 mx-auto mb-4 object-contain"
             />
             <h1 className="text-4xl font-heading text-white mb-4">
-              Goombas x Goated VIPs
+              Join Our Community
             </h1>
             <p className="text-[#8A8B91] text-lg mb-8">
-              Join our exclusive Telegram community where VIP members share
-              insights, strategies, and connect with fellow players. Be part of
-              an engaging community that's passionate about gaming and success.
+              Connect with fellow players, share insights, and stay updated with
+              the latest gaming strategies and events. Join our community channels
+              to be part of the conversation.
             </p>
           </div>
 
           <div className="bg-[#1A1B21]/50 border border-[#2A2B31] rounded-xl p-8 mb-8">
             <h2 className="text-2xl font-heading text-white mb-4">
-              What to Expect
+              Community Benefits
             </h2>
             <ul className="text-[#8A8B91] text-left space-y-4">
-              <li>• Exclusive gaming strategies and tips</li>
-              <li>• Real-time updates on promotions and events</li>
-              <li>• Direct interaction with community members</li>
-              <li>• VIP-only announcements and opportunities</li>
-              <li>• Exclusive bonus code drops</li>
-              <li>• Regular challenges and giveaways</li>
+              <li>• Access to exclusive gaming strategies</li>
+              <li>• Real-time updates on promotions</li>
+              <li>• Connect with experienced players</li>
+              <li>• Early access to new features</li>
+              <li>• Special community events</li>
+              <li>• Regular giveaways and contests</li>
             </ul>
           </div>
 
-          <a
-            href="https://t.me/+iFlHl5V9VcszZTVh"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 font-heading text-lg px-8 py-6">
-              Join Our Telegram Group
-              <MessageCircle className="ml-2 h-5 w-5" />
-            </Button>
-          </a>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href="https://discord.gg/goated"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button className="w-full sm:w-auto bg-[#5865F2] hover:bg-[#5865F2]/90 font-heading text-lg px-8 py-6">
+                Join Discord
+                <MessageCircle className="ml-2 h-5 w-5" />
+              </Button>
+            </a>
+
+            <a
+              href="https://twitter.com/goatedgaming"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button className="w-full sm:w-auto bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 font-heading text-lg px-8 py-6">
+                Follow Twitter
+                <MessageCircle className="ml-2 h-5 w-5" />
+              </Button>
+            </a>
+          </div>
         </motion.div>
       </main>
     </div>
