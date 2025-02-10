@@ -108,6 +108,8 @@ const benefits = [
   { name: "Goated Event Invitations", startingTier: "EMERALD" },
 ];
 
+import { PageTransition } from "@/components/PageTransition";
+
 export default function VipProgram() {
   const [expandedTier, setExpandedTier] = useState<string | null>(null);
 

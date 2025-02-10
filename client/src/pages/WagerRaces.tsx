@@ -44,6 +44,8 @@ type LeaderboardEntry = {
   lastUpdate?: string;
 };
 
+import { PageTransition } from "@/components/PageTransition";
+
 export default function WagerRaces() {
   const [raceType] = useState<"weekly" | "monthly" | "weekend">("monthly");
   const [showCompletedRace, setShowCompletedRace] = useState(false);

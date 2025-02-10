@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { PreLoader } from "./PreLoader";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface PageTransitionProps {
   children: ReactNode;
@@ -15,7 +15,7 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
   useEffect(() => {
     let timeout: NodeJS.Timeout;
     if (isLoading) {
-      timeout = setTimeout(() => setShowLoading(true), 300); // Only show loader after 300ms
+      timeout = setTimeout(() => setShowLoading(true), 300);
     }
     return () => clearTimeout(timeout);
   }, [isLoading]);

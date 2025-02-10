@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { PageTransition } from "@/components/PageTransition";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
