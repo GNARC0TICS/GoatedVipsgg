@@ -1,0 +1,49 @@
+Here’s a detailed prompt for your Repl.it agent to build your Goated.com affiliate Telegram bot that interacts with your website, Goated’s API, and Telegram group to track stats, display wager races, and handle bonus claims.
+
+Prompt for Repl.it Agent: Goated Affiliate Telegram Bot
+
+I am building a Telegram bot using Repl.it that interacts with my affiliate website and Goated.com’s external API (if needed) to track and display affiliate statistics, wager races, leaderboards, and bonuses. The bot will be deployed in my Telegram group and should allow users to check their stats, claim bonuses, and see their leaderboard positions.
+
+🔹 Core Features of the Telegram Bot
+	1.	Affiliate User Tracking
+	•	Allow users to check their total wager amount, weekly, daily, and monthly stats.
+	•	Show leaderboard rankings for all-time, monthly, weekly, and daily wager amounts.
+	•	Fetch user-specific data from my website’s backend and Goated.com API (if necessary).
+	•	Track wager race standings and notify users of their current position.
+	2.	Leaderboard & Race Announcements
+	•	Post weekly/monthly leaderboard updates automatically.
+	•	Announce winners of the monthly race and notify users of upcoming competitions.
+	•	Allow users to manually check their placement in the wager race using /race.
+	•	Provide race statistics and progress reports.
+	3.	Bonus Code System
+	•	Allow eligible users to claim bonuses by verifying their wager amounts.
+	•	Limit bonus claims to one per user per period.
+	•	Track bonus redemptions and log them in the system.
+	•	If necessary, interact with Goated.com’s API to validate users before issuing bonuses.
+	4.	Live Updates & Notifications
+	•	Notify users when they move up or down in the leaderboard.
+	•	Send alerts for new promotions, special events, and race updates.
+	•	Integrate with Telegram to send push notifications for wager milestones.
+	5.	Admin Controls
+	•	Allow admin-only commands for managing bonuses and leaderboard adjustments.
+	•	Enable manual overrides for leaderboards if needed.
+	•	Provide an admin panel to view wager progress, active users, and logs.
+
+🔹 Technical Requirements
+	•	Built using Python & Telegram Bot API (or Node.js if preferred).
+	•	Fetch data from my website’s backend database.
+	•	Optional: Integrate with Goated.com’s API if required for real-time wager tracking.
+	•	Use a database (SQLite, PostgreSQL, or Firebase) to store user bonuses, leaderboard stats, and Telegram user IDs.
+	•	Deploy via Repl.it and ensure it runs persistently with a webhook or long polling.
+	•	Optimize API calls to reduce load while maintaining real-time accuracy.
+	•	Support Slash Commands & Inline Keyboard for User Interaction, including:
+	•	/stats – View personal wager stats (all-time, monthly, weekly, daily).
+	•	/race – Check the current wager race ranking.
+	•	/leaderboard – Display top wagerers.
+	•	/claimbonus – Claim an available bonus.
+	•	/bonuses – View past claimed bonuses and next available claim time.
+	•	/notifications – Toggle updates on/off.
+
+This prompt gives clear technical direction while ensuring the bot integrates fully with your website, Telegram, and Goated’s API for seamless affiliate tracking. It also ensures automation for leaderboards, race tracking, and bonuses.
+
+Let me know if you want to tweak anything!

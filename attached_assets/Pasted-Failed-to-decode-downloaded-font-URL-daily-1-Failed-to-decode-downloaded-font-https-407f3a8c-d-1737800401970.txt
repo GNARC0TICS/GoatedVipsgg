@@ -1,0 +1,38 @@
+Failed to decode downloaded font: <URL>
+daily:1 Failed to decode downloaded font: https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/fonts/MonaSans-ExtraBoldCondensed.woff2
+daily:1 Failed to decode downloaded font: https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/fonts/GeistMono-Regular.woff2
+chunk-HRCTDOCG.js?v=47e54207:124 Failed to decode downloaded font: https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/fonts/MonaSans-ExtraBoldCondensed.woff2
+getAnimationName @ chunk-HRCTDOCG.js?v=47e54207:124
+Show 1 more frame
+Show less
+chunk-HRCTDOCG.js?v=47e54207:124 Failed to decode downloaded font: https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/fonts/GeistMono-Regular.woff2
+getAnimationName @ chunk-HRCTDOCG.js?v=47e54207:124
+Show 1 more frame
+Show less
+daily:1 Failed to decode downloaded font: https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/fonts/MonaSans-ExtraBoldCondensed.woff2
+daily:1 Failed to decode downloaded font: https://407f3a8c-d267-495a-84e7-4faa964611ec-00-1mkc5z7ldehpv.picard.replit.dev/fonts/GeistMono-Regular.woff2
+6OTS parsing error: invalid sfntVersion: 1008821359
+@radix-ui_react-dialog.js?v=47e54207:327 `DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
+
+If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/dialog
+(anonymous) @ @radix-ui_react-dialog.js?v=47e54207:327
+Show 1 more frame
+Show less
+@radix-ui_react-dialog.js?v=47e54207:341 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+(anonymous) @ @radix-ui_react-dialog.js?v=47e54207:341
+Show 1 more frame
+Show less
+@radix-ui_react-dialog.js?v=47e54207:327 `DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
+
+If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/dialog
+(anonymous) @ @radix-ui_react-dialog.js?v=47e54207:327
+Show 1 more frame
+Show less
+@radix-ui_react-dialog.js?v=47e54207:341 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+(anonymous) @ @radix-ui_react-dialog.js?v=47e54207:341
+Show 1 more frame
+Show less

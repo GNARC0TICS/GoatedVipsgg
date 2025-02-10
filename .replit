@@ -1,4 +1,3 @@
-
 modules = ["nodejs-20", "web", "postgresql-16"]
 run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
@@ -9,21 +8,39 @@ channel = "stable-24_05"
 [deployment]
 deploymentTarget = "gce"
 build = ["npm", "run", "build"]
-run = "npm run start"
-ignorePorts = false
+run = ["npm", "run", "start"]
+ignorePorts = true
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 5001
+
+[workflows]
+runButton = "Start application"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
 
 [auth]
 pageEnabled = false
 buttonEnabled = false
-
-[[ports]]
-localPort = 5000
-externalPort = 3000
-
-[run]
-init = "npm install"
-command = "npm run dev"
-
-[[hints]]
-regex = "Error \\[ERR_REQUIRE_ESM\\]"
-message = "We see that you are using require(...) inside your code. We currently do not support this syntax. Please use 'import' instead when using external modules. (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import)"

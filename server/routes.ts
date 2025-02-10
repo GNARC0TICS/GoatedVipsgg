@@ -189,8 +189,7 @@ function setupRESTRoutes(app: Express) {
       );
 
       if (!response.ok) {
-        // Return fallback data structure when API fails
-        return res.json(API_CONFIG.fallbackData.leaderboard);
+        throw new Error(`API request failed: ${response.status}`);
       }
 
       const rawData = await response.json();
@@ -702,9 +701,9 @@ async function handleAffiliateStats(req: any, res: any) {
     if (!response.ok) {
       if (response.status === 401) {
         log("API Authentication failed - check API token");
-        return res.json(API_CONFIG.fallbackData.leaderboard);
+        throw new Error("API Authentication failed");
       }
-      return res.json(API_CONFIG.fallbackData.leaderboard);
+      throw new Error(`API request failed: ${response.status}`);
     }
 
     const apiData = await response.json();
