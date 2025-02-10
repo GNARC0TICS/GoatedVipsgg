@@ -25,7 +25,6 @@ externalPort = 80
 localPort = 24678
 externalPort = 3000
 
-# Workflow configurations
 [workflows]
 runButton = "Start application"
 
@@ -41,6 +40,7 @@ args = "Start application"
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
+mode = "parallel"
 
 [workflows.workflow.metadata]
 agentRequireRestartOnSave = false
