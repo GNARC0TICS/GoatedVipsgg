@@ -566,7 +566,14 @@ export function Layout({ children }: { children: ReactNode }) {
                     <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">HELP & SUPPORT</div>
                     <MobileNavLink href="/help" label="Help Center" onClose={() => setOpenMobile(false)} />
                     <MobileNavLink href="/faq" label="FAQ" onClose={() => setOpenMobile(false)} />
-                    <MobileNavLink href="/support" label="Contact Support" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink 
+                      href="https://t.me/xGoombas" 
+                      label="Contact Support" 
+                      onClose={() => {
+                        setOpenMobile(false);
+                        window.open("https://t.me/xGoombas", "_blank");
+                      }} 
+                    />
 
                     {user?.isAdmin && (
                       <>
