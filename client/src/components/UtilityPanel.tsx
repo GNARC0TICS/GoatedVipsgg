@@ -40,11 +40,11 @@ export const UtilityPanelButton = () => {
           align="end"
           className={`${
             isMobile 
-              ? "fixed top-16 left-0 right-0 mx-auto w-[95%] max-w-[400px] transform transition-all duration-300 ease-out border border-[#2A2B31]/50 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)]" 
+              ? "fixed top-16 left-0 right-0 w-full h-[calc(33vh)] transform transition-all duration-300 ease-out border-b border-[#2A2B31]/50 shadow-[0_8px_32px_rgba(0,0,0,0.4)]" 
               : "w-[320px] border border-[#2A2B31]"
-          } bg-[#1A1B21]/95 backdrop-blur-xl p-4 mt-2`}
+          } bg-[#1A1B21]/95 backdrop-blur-xl p-4 ${isMobile ? 'mt-0' : 'mt-2'}`}
         >
-          <div className="grid grid-cols-2 gap-3 relative">
+          <div className={`grid grid-cols-2 gap-3 relative ${isMobile ? 'h-full' : ''}`}>
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-1 bg-[#2A2B31] rounded-full opacity-50" />
             <motion.button
               onClick={() => {
