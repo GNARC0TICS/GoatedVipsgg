@@ -7,7 +7,6 @@ import AuthModal from "@/components/AuthModal";
 import { useQuery } from "@tanstack/react-query";
 import type { SelectUser } from "@db/schema";
 import { ScrollToTop } from "./ScrollToTop";
-import { WheelSpinIndicator } from "./WheelSpinIndicator";
 import {
   Tooltip,
   TooltipContent,
@@ -22,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FloatingSupport } from "./FloatingSupport";
+import { UtilityPanel } from "./UtilityPanel";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from 'framer-motion';
 
@@ -77,7 +76,6 @@ export function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const footerRef = useRef<HTMLElement>(null);
   const [isFooterVisible, setIsFooterVisible] = useState(false);
-  const [showFloatingSupport, setShowFloatingSupport] = useState(true);
   const { toast } = useToast();
   const [openMobile, setOpenMobile] = useState(false);
 
@@ -556,7 +554,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
                     <div className="mt-6 px-4 border-t border-[#2A2B31]/50 pt-6">
                       <Button
-                        onClick={() => {
+                                                onClick={() => {
                           setOpenMobile(false);
                           window.open("https://www.goated.com/r/SPIN", "_blank");
                         }}
@@ -682,8 +680,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {children}
       <ScrollToTop />
-      <WheelSpinIndicator />
-      {showFloatingSupport && !isFooterVisible && <FloatingSupport />}
+      <UtilityPanel />
       <footer ref={footerRef} className={footerClasses.wrapper}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent pointer-events-none" />
         <div className={footerClasses.container}>
