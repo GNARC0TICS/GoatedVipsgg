@@ -7,16 +7,25 @@ import { Gift, LucideLoader, Sparkles } from "lucide-react";
 
 // Updated segments with premium casino-style gradients and emblems
 const SEGMENTS = [
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 850 },
-  { text: "$0.10", type: "bonus", value: "BONUS010", gradient: ["CD7F32", "8B4513"], emblem: "copper", weight: 200 },
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 850 },
-  { text: "$1.00", type: "bonus", value: "BONUS100", gradient: ["C0C0C0", "A9A9A9"], emblem: "silver", weight: 100 },
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 850 },
-  { text: "$2.00", type: "bonus", value: "BONUS200", gradient: ["D7FF00", "BFDF00"], emblem: "gold", weight: 5 },
-  { text: "$25.00", type: "bonus", value: "BONUS2500", gradient: ["FFD700", "DAA520"], emblem: "platinum", weight: 1 },
-  { text: "$50.00", type: "bonus", value: "BONUS5000", gradient: ["E5E4E2", "B4C4D4"], emblem: "diamond", weight: 0.4 },
-  { text: "$100.00", type: "bonus", value: "BONUS10000", gradient: ["B9F2FF", "00BFFF"], emblem: "royal", weight: 0.2 },
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 850 }
+  { text: "", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 1000 },
+  { text: "", type: "bonus", value: "BONUS010", gradient: ["CD7F32", "8B4513"], emblem: "copper", weight: 250 },
+  { text: "", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 1000 },
+  { text: "", type: "bonus", value: "BONUS100", gradient: ["C0C0C0", "A9A9A9"], emblem: "silver", weight: 100 },
+  { text: "", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 1000 },
+  { text: "", type: "bonus", value: "BONUS200", gradient: ["D7FF00", "BFDF00"], emblem: "gold", weight: 15 },
+  { text: "", type: "bonus", value: "BONUS2500", gradient: ["FFD700", "DAA520"], emblem: "platinum", weight: 5 },
+  { text: "", type: "bonus", value: "BONUS5000", gradient: ["E5E4E2", "B4C4D4"], emblem: "diamond", weight: 2 },
+  { text: "", type: "bonus", value: "BONUS10000", gradient: ["B9F2FF", "00BFFF"], emblem: "royal", weight: 1 },
+  { text: "", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 1000 }
+] as const;
+
+const PRIZE_LEGEND = [
+  { prize: "$0.10", color: "#CD7F32", chance: "Common" },
+  { prize: "$1.00", color: "#C0C0C0", chance: "Uncommon" },
+  { prize: "$2.00", color: "#D7FF00", chance: "Rare" },
+  { prize: "$25.00", color: "#FFD700", chance: "Very Rare" },
+  { prize: "$50.00", color: "#E5E4E2", chance: "Epic" },
+  { prize: "$100.00", color: "#B9F2FF", chance: "Legendary" }
 ] as const;
 
 type SegmentType = typeof SEGMENTS[number];
@@ -282,9 +291,23 @@ export default function WheelChallenge() {
                 <div className="w-4 h-4 bg-[#D7FF00] rounded-full wheel-glow" />
               </div>
 
-              {/* Enhanced Pointer */}
-              <div className="absolute top-0 left-1/2 -ml-3 -mt-2 w-6 h-6 pointer-events-none">
-                <div className="w-0 h-0 border-l-[12px] border-r-[12px] border-b-[24px] border-l-transparent border-r-transparent border-b-[#D7FF00] filter wheel-glow" />
+              {/* Flipped Pointer */}
+              <div className="absolute bottom-0 left-1/2 -ml-3 -mb-2 w-6 h-6 pointer-events-none">
+                <div className="w-0 h-0 border-l-[12px] border-r-[12px] border-t-[24px] border-l-transparent border-r-transparent border-t-[#D7FF00] filter wheel-glow" />
+              </div>
+
+              {/* Prize Legend */}
+              <div className="absolute -right-48 top-1/2 -translate-y-1/2 bg-[#1A1B21] p-4 rounded-xl border border-[#2A2B31] shadow-lg">
+                <h3 className="text-[#D7FF00] font-bold mb-3 text-sm">Prize Legend</h3>
+                <div className="space-y-2">
+                  {PRIZE_LEGEND.map((prize, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: prize.color }} />
+                      <span className="text-white">{prize.prize}</span>
+                      <span className="text-[#8A8B91] ml-auto">{prize.chance}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </motion.div>
 
