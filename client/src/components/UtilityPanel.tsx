@@ -11,7 +11,7 @@ export function UtilityPanel() {
   const [isSupport, setIsSupport] = useState(false);
   const [, setLocation] = useLocation();
   const [timeLeft] = useState<string>("Available now!");
-  const isSpinAvailable = true;
+  const isSpinAvailable = true; // For testing purposes
 
   const togglePanel = () => setIsOpen(!isOpen);
   
@@ -24,7 +24,7 @@ export function UtilityPanel() {
     <>
       {isSupport && <FloatingSupport onClose={() => setIsSupport(false)} />}
       <motion.div 
-        className="fixed right-4 top-1/3 z-50"
+        className="fixed right-4 top-1/2 -translate-y-1/2 z-50"
         initial={{ x: 100 }}
         animate={{ x: 0 }}
         transition={{ type: "spring", duration: 0.8 }}
@@ -48,14 +48,14 @@ export function UtilityPanel() {
 
           {/* Panel */}
           <Card className="absolute top-0 left-full w-80 bg-[#1A1B21] border-[#2A2B31] rounded-l-xl overflow-hidden">
-            <div className="grid grid-cols-1 gap-2 p-4">
+            <div className="grid grid-cols-2 gap-2 p-4">
               {/* Daily Spin */}
               <button
                 onClick={() => setLocation("/wheel-challenge")}
-                className="p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors relative group flex items-center gap-3"
+                className="aspect-square p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors relative group"
               >
-                <Gift className={`w-6 h-6 ${isSpinAvailable ? 'text-[#D7FF00]' : 'text-[#8A8B91]'}`} />
-                <span className="text-sm text-white">Daily Spin</span>
+                <Gift className={`w-8 h-8 ${isSpinAvailable ? 'text-[#D7FF00]' : 'text-[#8A8B91]'}`} />
+                <span className="text-xs text-[#8A8B91] mt-2 block">Daily Spin</span>
                 {isSpinAvailable && (
                   <span className="absolute top-2 right-2 h-2 w-2 bg-[#D7FF00] rounded-full" />
                 )}
@@ -64,10 +64,10 @@ export function UtilityPanel() {
               {/* Bonus Codes */}
               <button
                 onClick={() => setLocation("/bonus-codes")}
-                className="p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors group flex items-center gap-3"
+                className="aspect-square p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors group"
               >
-                <Ticket className="w-6 h-6 text-[#D7FF00] group-hover:scale-110 transition-transform" />
-                <span className="text-sm text-white">Bonus Codes</span>
+                <Ticket className="w-8 h-8 text-[#D7FF00] group-hover:scale-110 transition-transform" />
+                <span className="text-xs text-[#8A8B91] mt-2 block">Bonus Codes</span>
               </button>
 
               {/* Telegram */}
@@ -75,19 +75,19 @@ export function UtilityPanel() {
                 href="https://t.me/xGoombas"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors group flex items-center gap-3"
+                className="aspect-square p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors group"
               >
-                <Send className="w-6 h-6 text-[#D7FF00] group-hover:scale-110 transition-transform" />
-                <span className="text-sm text-white">Telegram</span>
+                <Send className="w-8 h-8 text-[#D7FF00] group-hover:scale-110 transition-transform" />
+                <span className="text-xs text-[#8A8B91] mt-2 block">Telegram</span>
               </a>
 
               {/* Support */}
               <button
                 onClick={handleSupportClick}
-                className="p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors group flex items-center gap-3"
+                className="aspect-square p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors group"
               >
-                <MessageCircle className="w-6 h-6 text-[#D7FF00] group-hover:scale-110 transition-transform" />
-                <span className="text-sm text-white">Support</span>
+                <MessageCircle className="w-8 h-8 text-[#D7FF00] group-hover:scale-110 transition-transform" />
+                <span className="text-xs text-[#8A8B91] mt-2 block">Support</span>
               </button>
             </div>
           </Card>
