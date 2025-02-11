@@ -62,15 +62,17 @@ export function UtilityPanel() {
                 onClick={() => setLocation("/wheel-challenge")}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="aspect-square p-4 bg-[#2A2B31]/80 backdrop-blur-sm rounded-xl border border-[#2A2B31]/50 hover:bg-[#2A2B31]/90 transition-all relative group shadow-[0_0_15px_rgba(42,43,49,0.2)] hover:shadow-[0_0_20px_rgba(42,43,49,0.3)]"
+                className="aspect-square p-4 bg-[#2A2B31]/80 backdrop-blur-sm rounded-xl border border-[#2A2B31]/50 hover:bg-[#2A2B31]/90 transition-all relative group shadow-[0_0_15px_rgba(42,43,49,0.2)] hover:shadow-[0_0_20px_rgba(42,43,49,0.3)] flex flex-col items-center justify-between"
               >
-                <motion.div
-                  whileHover={{ y: -2 }}
-                  transition={{ type: "spring", stiffness: 400 }}
-                >
-                  <Gift className={`w-8 h-8 ${isSpinAvailable ? 'text-[#D7FF00] drop-shadow-[0_0_8px_rgba(215,255,0,0.3)]' : 'text-[#8A8B91]'}`} />
-                  <span className="text-xs text-[#8A8B91] mt-2 block font-medium">Daily Spin</span>
-                </motion.div>
+                <div className="flex-1 flex items-center justify-center">
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
+                    <Gift className={`w-10 h-10 ${isSpinAvailable ? 'text-[#D7FF00] drop-shadow-[0_0_8px_rgba(215,255,0,0.3)]' : 'text-[#8A8B91]'}`} />
+                  </motion.div>
+                </div>
+                <span className="text-xs text-[#8A8B91] font-medium text-center">Daily Spin</span>
                 {isSpinAvailable && (
                   <motion.span 
                     initial={{ scale: 0 }}
@@ -81,32 +83,59 @@ export function UtilityPanel() {
               </motion.button>
 
               {/* Bonus Codes */}
-              <button
+              <motion.button
                 onClick={() => setLocation("/bonus-codes")}
-                className="aspect-square p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors group"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="aspect-square p-4 bg-[#2A2B31]/80 backdrop-blur-sm rounded-xl border border-[#2A2B31]/50 hover:bg-[#2A2B31]/90 transition-all group flex flex-col items-center justify-between"
               >
-                <Ticket className="w-8 h-8 text-[#D7FF00] group-hover:scale-110 transition-transform" />
-                <span className="text-xs text-[#8A8B91] mt-2 block">Bonus Codes</span>
-              </button>
+                <div className="flex-1 flex items-center justify-center">
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: -5 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
+                    <Ticket className="w-10 h-10 text-[#D7FF00] drop-shadow-[0_0_8px_rgba(215,255,0,0.3)]" />
+                  </motion.div>
+                </div>
+                <span className="text-xs text-[#8A8B91] font-medium text-center">Bonus Codes</span>
+              </motion.button>
 
               {/* Telegram */}
-              <a
+              <motion.a
                 href="https://t.me/xGoombas"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="aspect-square p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors group"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="aspect-square p-4 bg-[#2A2B31]/80 backdrop-blur-sm rounded-xl border border-[#2A2B31]/50 hover:bg-[#2A2B31]/90 transition-all group flex flex-col items-center justify-between"
               >
-                <Send className="w-8 h-8 text-[#D7FF00] group-hover:scale-110 transition-transform" />
-                <span className="text-xs text-[#8A8B91] mt-2 block">Telegram</span>
-              </a>
+                <div className="flex-1 flex items-center justify-center">
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
+                    <Send className="w-10 h-10 text-[#D7FF00] drop-shadow-[0_0_8px_rgba(215,255,0,0.3)]" />
+                  </motion.div>
+                </div>
+                <span className="text-xs text-[#8A8B91] font-medium text-center">Telegram</span>
+              </motion.a>
 
               {/* Support */}
-              <button
+              <motion.button
                 onClick={handleSupportClick}
-                className="aspect-square p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors group"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="aspect-square p-4 bg-[#2A2B31]/80 backdrop-blur-sm rounded-xl border border-[#2A2B31]/50 hover:bg-[#2A2B31]/90 transition-all group flex flex-col items-center justify-between"
               >
-                <MessageCircle className="w-8 h-8 text-[#D7FF00] group-hover:scale-110 transition-transform" />
-                <span className="text-xs text-[#8A8B91] mt-2 block">Support</span>
+                <div className="flex-1 flex items-center justify-center">
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: -5 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
+                    <MessageCircle className="w-10 h-10 text-[#D7FF00] drop-shadow-[0_0_8px_rgba(215,255,0,0.3)]" />
+                  </motion.div>
+                </div>
+                <span className="text-xs text-[#8A8B91] font-medium text-center">Support</span>
               </button>
             </div>
           </Card>
