@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
@@ -19,7 +20,7 @@ export function UtilityPanel() {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (isMobile) return; // Disable scroll behavior on mobile
+      if (isMobile) return;
 
       setIsVisible(false);
       if (scrollTimeout) clearTimeout(scrollTimeout);
@@ -66,13 +67,6 @@ export function UtilityPanel() {
           animate={{ x: isOpen ? -320 : 0 }}
           transition={{ type: "spring", stiffness: 200, damping: 25 }}
         >
-          {/* Panel */}
-          <AnimatePresence>
-            {(isOpen || !isMobile) && (
-              <Card 
-                className={`${isMobile ? 'fixed top-24 right-4 w-[calc(100vw-32px)] max-w-[320px]' : 'w-80'} bg-[#1A1B21]/80 backdrop-blur-md border border-[#2A2B31]/50 overflow-hidden shadow-[0_0_25px_rgba(42,43,49,0.3)] hover:shadow-[0_0_30px_rgba(42,43,49,0.4)] transition-all rounded-xl`}
-              >
-                <div className="grid grid-cols-2 gap-3 p-4">
           {/* Toggle Button */}
           <motion.button
             onClick={togglePanel}
@@ -97,7 +91,7 @@ export function UtilityPanel() {
           <AnimatePresence>
             {(isOpen || !isMobile) && (
               <Card 
-                className={`${isMobile ? 'fixed top-24 right-4 w-[calc(100vw-32px)] max-w-[320px]' : 'absolute top-0 left-full w-80'} bg-[#1A1B21]/80 backdrop-blur-md border border-[#2A2B31]/50 overflow-hidden shadow-[0_0_25px_rgba(42,43,49,0.3)] hover:shadow-[0_0_30px_rgba(42,43,49,0.4)] transition-all rounded-xl`}
+                className={`${isMobile ? 'fixed top-24 right-4 w-[calc(100vw-32px)] max-w-[320px]' : 'w-80'} bg-[#1A1B21]/80 backdrop-blur-md border border-[#2A2B31]/50 overflow-hidden shadow-[0_0_25px_rgba(42,43,49,0.3)] hover:shadow-[0_0_30px_rgba(42,43,49,0.4)] transition-all rounded-xl`}
               >
                 <div className="grid grid-cols-2 gap-3 p-4">
                   {/* Daily Spin */}
