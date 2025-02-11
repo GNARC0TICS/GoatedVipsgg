@@ -5,20 +5,19 @@ import { PageTransition } from "@/components/PageTransition";
 import { Button } from "@/components/ui/button";
 import { Gift, LucideLoader, Sparkles } from "lucide-react";
 import confetti from "canvas-confetti";
-import type { CreateTypes } from 'canvas-confetti';
 
-// 🎰 Updated premium casino-style segments
+// 🎰 Premium Casino-Style Segments
 const SEGMENTS = [
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 900 },
-  { text: "$0.10 Bonus", type: "bonus", value: "BONUS010", gradient: ["CD7F32", "8B4513"], emblem: "bronze", weight: 200 },
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 900 },
-  { text: "$1 Bonus", type: "bonus", value: "BONUS100", gradient: ["C0C0C0", "A9A9A9"], emblem: "silver", weight: 100 },
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 900 },
-  { text: "$2 Bonus", type: "bonus", value: "BONUS200", gradient: ["D7FF00", "BFDF00"], emblem: "gold", weight: 15 },
-  { text: "$25 Bonus", type: "bonus", value: "BONUS2500", gradient: ["FFD700", "DAA520"], emblem: "platinum", weight: 5 },
-  { text: "$50 Bonus", type: "bonus", value: "BONUS5000", gradient: ["E5E4E2", "B4C4D4"], emblem: "diamond", weight: 2 },
-  { text: "$100 Bonus", type: "bonus", value: "BONUS10000", gradient: ["B9F2FF", "00BFFF"], emblem: "royal", weight: 1 },
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 900 }
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 900 },
+  { text: "$0.10 Bonus", type: "bonus", value: "BONUS010", gradient: ["CD7F32", "8B4513"], weight: 200 },
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 900 },
+  { text: "$1 Bonus", type: "bonus", value: "BONUS100", gradient: ["C0C0C0", "A9A9A9"], weight: 100 },
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 900 },
+  { text: "$2 Bonus", type: "bonus", value: "BONUS200", gradient: ["D7FF00", "BFDF00"], weight: 15 },
+  { text: "$25 Bonus", type: "bonus", value: "BONUS2500", gradient: ["FFD700", "DAA520"], weight: 5 },
+  { text: "$50 Bonus", type: "bonus", value: "BONUS5000", gradient: ["E5E4E2", "B4C4D4"], weight: 2 },
+  { text: "$100 Bonus", type: "bonus", value: "BONUS10000", gradient: ["B9F2FF", "00BFFF"], weight: 1 },
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 900 }
 ] as const;
 
 export default function WheelChallenge() {
@@ -47,36 +46,37 @@ export default function WheelChallenge() {
     setActiveSegment(null);
 
     try {
-      const randomSegment = weightedRandom();
-      const extraSpins = 5;
-      const targetRotation = 360 * extraSpins + (360 / SEGMENTS.length) * randomSegment;
+      const chosenSegment = weightedRandom();
+      const segmentAngle = 360 / SEGMENTS.length;
+      const offset = Math.random() * (segmentAngle / 2) - segmentAngle / 4; // Slight randomness for realism
+      const totalRotations = 5;
+      const targetRotation = 360 * totalRotations + segmentAngle * chosenSegment + offset;
 
-      // 🚀 Enhanced momentum-based spin physics
+      // 🚀 More Realistic Spin Animation
       await controls.start({
-        rotate: [0, targetRotation + 10, targetRotation],
+        rotate: [0, targetRotation + 10, targetRotation, targetRotation - 5, targetRotation],
         transition: {
           duration: 5,
-          ease: [0.12, 0, 0.39, 1], // Momentum-like feel
-          repeat: 0
+          ease: [0.17, 0.67, 0.83, 0.67], // Smooth momentum effect
         }
       });
 
-      setActiveSegment(randomSegment);
-      const reward = SEGMENTS[randomSegment];
+      setActiveSegment(chosenSegment);
+      const reward = SEGMENTS[chosenSegment];
 
       // 🎉 Confetti & Glow Effect on Win
       if (reward.type === "bonus") {
         confetti({
-          particleCount: 150,
+          particleCount: 100,
           spread: 80,
           origin: { y: 0.6 }
         });
 
         toast({
-          title: `🎉 ${reward.emblem?.toUpperCase()} WIN!`,
-          description: `You won ${reward.text} Bonus! Use code: ${reward.value}`,
+          title: `🎉 You Won!`,
+          description: `Bonus Code: ${reward.value}`,
           variant: "default",
-          className: "bg-[#D7FF00] text-black font-heading shadow-[0_0_20px_#D7FF00]"
+          className: "bg-[#D7FF00] text-black font-heading shadow-glow"
         });
       } else {
         toast({
@@ -102,7 +102,7 @@ export default function WheelChallenge() {
     <PageTransition>
       <div className="min-h-screen bg-[#14151A] text-white flex flex-col items-center justify-center">
         <h1 className="text-4xl font-bold text-center mb-6">Daily Bonus Wheel</h1>
-        <p className="text-[#8A8B91] mb-4">Spin the wheel for a chance to win bonus codes up to $100!</p>
+        <p className="text-[#8A8B91] mb-4">Spin for a chance to win bonus codes up to $100!</p>
 
         {/* Wheel Container */}
         <motion.div
@@ -117,21 +117,6 @@ export default function WheelChallenge() {
             style={{ transformOrigin: "center center" }}
           >
             <svg viewBox="0 0 300 300" className="w-full h-full">
-              <defs>
-                {SEGMENTS.map((segment, i) => (
-                  <linearGradient
-                    key={`gradient-${i}`}
-                    id={`segment-gradient-${i}`}
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="100%"
-                  >
-                    <stop offset="0%" stopColor={`#${segment.gradient[0]}`} />
-                    <stop offset="100%" stopColor={`#${segment.gradient[1]}`} />
-                  </linearGradient>
-                ))}
-              </defs>
               <g transform="translate(150,150)">
                 {SEGMENTS.map((segment, i) => {
                   const angle = (360 / SEGMENTS.length) * i;
@@ -147,52 +132,21 @@ export default function WheelChallenge() {
                     <g key={i} className="wheel-segment-hover">
                       <path
                         d={`M 0 0 L ${x1} ${y1} A 140 140 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
-                        fill={`url(#segment-gradient-${i})`}
-                        className="transition-all duration-300"
-                        filter={activeSegment === i ? "url(#glow)" : "none"}
+                        fill={`#${segment.gradient[0]}`}
                       />
                     </g>
                   );
                 })}
-                {/* Center decoration */}
-                <circle
-                  r="30"
-                  fill="#1A1B21"
-                  stroke="#D7FF00"
-                  strokeWidth="2"
-                  className="wheel-center"
-                />
-                <circle
-                  r="25"
-                  fill="none"
-                  stroke="#D7FF00"
-                  strokeWidth="0.5"
-                  className="wheel-ring"
-                />
+                <circle r="30" fill="#1A1B21" stroke="#D7FF00" strokeWidth="2" className="wheel-center"/>
               </g>
             </svg>
           </motion.div>
         </motion.div>
 
         {/* Spin Button */}
-        <Button
-          onClick={spinWheel}
-          disabled={isSpinning || !canSpin}
-          className={`bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 font-heading text-lg px-8 py-6 
-                ${isSpinning ? 'animate-pulse' : 'hover:scale-105 transform transition-transform'}
-                shadow-[0_0_15px_rgba(215,255,0,0.3)] hover:shadow-[0_0_20px_rgba(215,255,0,0.5)]`}
-        >
-          {isSpinning ? (
-            <>
-              <LucideLoader className="w-4 h-4 animate-spin mr-2" />
-              Spinning...
-            </>
-          ) : (
-            <>
-              <Gift className="w-4 h-4 mr-2" />
-              SPIN THE WHEEL
-            </>
-          )}
+        <Button onClick={spinWheel} disabled={isSpinning || !canSpin} className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 text-lg px-8 py-6">
+          {isSpinning ? <LucideLoader className="w-4 h-4 animate-spin mr-2" /> : <Gift className="w-4 h-4 mr-2" />}
+          {isSpinning ? "Spinning..." : "SPIN THE WHEEL"}
         </Button>
       </div>
     </PageTransition>
