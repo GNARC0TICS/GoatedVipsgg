@@ -136,7 +136,7 @@ export function UtilityPanel() {
                   </motion.div>
                 </div>
                 <span className="text-xs text-[#8A8B91] font-medium text-center">Support</span>
-              </button>
+              </motion.button>
             </div>
           </Card>
         </motion.div>
