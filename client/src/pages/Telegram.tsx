@@ -54,7 +54,7 @@ export default function Community() {
             </a>
 
             <a
-              href="https://twitter.com/goatedgaming"
+              href="https://twitter.com/Goatedcom"
               target="_blank"
               rel="noopener noreferrer"
             >
