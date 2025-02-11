@@ -219,7 +219,7 @@ export function RaceTimer() {
               <div className="p-4 border-t border-[#2A2B31]">
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-[#8A8B91] text-sm">
-                    Prize Pool: ${raceData.prizePool.toLocaleString()}
+                    Prize Pool: ${raceData?.prizePool?.toLocaleString() ?? '0'}
                   </span>
                 </div>
                 {raceData.participants.map((participant: RaceParticipant, index: number) => (
