@@ -5,6 +5,7 @@ import { PageTransition } from "@/components/PageTransition";
 import { Button } from "@/components/ui/button";
 import { Gift, LucideLoader, Sparkles } from "lucide-react";
 import confetti from "canvas-confetti";
+import type { CreateTypes } from 'canvas-confetti';
 
 // 🎰 Updated premium casino-style segments
 const SEGMENTS = [
