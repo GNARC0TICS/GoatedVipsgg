@@ -40,11 +40,12 @@ export const UtilityPanelButton = () => {
           align="end"
           className={`${
             isMobile 
-              ? "fixed top-16 left-0 right-0 w-full border-none shadow-none" 
+              ? "fixed top-16 left-0 right-0 mx-auto w-[95%] max-w-[400px] transform transition-all duration-300 ease-out border border-[#2A2B31]/50 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)]" 
               : "w-[320px] border border-[#2A2B31]"
-          } bg-[#1A1B21]/95 backdrop-blur-xl p-4 mt-0`}
+          } bg-[#1A1B21]/95 backdrop-blur-xl p-4 mt-2`}
         >
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 relative">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-1 bg-[#2A2B31] rounded-full opacity-50" />
             <motion.button
               onClick={() => {
                 setLocation("/wheel-challenge");
@@ -52,7 +53,7 @@ export const UtilityPanelButton = () => {
               }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="aspect-square p-4 bg-[#2A2B31]/80 backdrop-blur-sm rounded-xl border border-[#2A2B31]/50 hover:bg-[#2A2B31]/90 transition-all relative group flex flex-col items-center justify-between"
+              className={`aspect-square p-4 ${isMobile ? 'bg-[#2A2B31]/60' : 'bg-[#2A2B31]/80'} backdrop-blur-sm rounded-xl border border-[#2A2B31]/50 hover:bg-[#2A2B31]/90 transition-all relative group flex flex-col items-center justify-between ${isMobile ? 'active:scale-95' : ''}`}
             >
               <div className="flex-1 flex items-center justify-center">
                 <Gift className="w-10 h-10 text-[#D7FF00] drop-shadow-[0_0_8px_rgba(215,255,0,0.3)]" />
