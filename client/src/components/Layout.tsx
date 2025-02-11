@@ -543,7 +543,7 @@ export function Layout({ children }: { children: ReactNode }) {
                       label="Daily Leaderboard"
                       onClose={() => setOpenMobile(false)}
                     />
-                    <<MobileNavLink
+                    <MobileNavLink
                       href="/leaderboard?period=weekly"
                       label="Weekly Leaderboard"
                       onClose={() => setOpenMobile(false)}
