@@ -7,6 +7,7 @@ import AuthModal from "@/components/AuthModal";
 import { useQuery } from "@tanstack/react-query";
 import type { SelectUser } from "@db/schema";
 import { ScrollToTop } from "./ScrollToTop";
+import { WheelSpinIndicator } from "./WheelSpinIndicator";
 import {
   Tooltip,
   TooltipContent,
@@ -123,583 +124,566 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex flex-col bg-[#14151A]">
       <header className={headerClasses.container}>
         <nav className={headerClasses.nav}>
-          {/* Navigation content */}
           <div className="flex items-center gap-8">
             <Link href="/">
               <img src="/images/logo-neon.png" alt="GOATED" className={headerClasses.logo} />
             </Link>
 
-            {/* Desktop Navigation */}
             <div className={headerClasses.desktopNav}>
               <NavLink href="/" label="HOME" />
-                <NavLink
-                  href="/wager-races"
-                  label={
-                    <div className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300">
-                      <span>MONTHLY RACE</span>
-                      <div className="flex items-center gap-1">
-                        <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
-                        <span className="text-xs text-red-500">LIVE</span>
+              <NavLink
+                href="/wager-races"
+                label={
+                  <div className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300">
+                    <span>MONTHLY RACE</span>
+                    <div className="flex items-center gap-1">
+                      <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                      <span className="text-xs text-red-500">LIVE</span>
+                    </div>
+                  </div>
+                }
+              />
+              <div className="relative group">
+                <Link href="/how-it-works">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
+                  >
+                    <span className="font-bold">GET STARTED</span>
+                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                  </Button>
+                </Link>
+                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                    <Link href="/how-it-works">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                            How It Works
+                          </span>
+                        </span>
                       </div>
-                    </div>
-                  }
-                />
-                {/* GET STARTED dropdown */}
-                <div className="relative group">
-                  <Link href="/how-it-works">
-                    <Button
-                      variant="ghost"
-                      className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
-                    >
-                      <span className="font-bold">GET STARTED</span>
-                      <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                    </Button>
-                  </Link>
-                  <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
-                    <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
-                      <Link href="/how-it-works">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              How It Works
-                            </span>
+                    </Link>
+                    <Link href="/vip-transfer">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                            VIP Transfer
                           </span>
-                        </div>
-                      </Link>
-                      <Link href="/vip-transfer">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              VIP Transfer
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                      <Link href="/tips-and-strategies">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              Tips & Strategies
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                      <Link href="/vip-program">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              VIP Program
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Promotions dropdown */}
-                <div className="relative group">
-                  <Link href="/promotions">
-                    <Button
-                      variant="ghost"
-                      className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
-                    >
-                      <span className="font-bold">PROMOTIONS</span>
-                      <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                    </Button>
-                  </Link>
-                  <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
-                    <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
-                      <Link href="/promotions">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              News & Promotions
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                      <Link href="/goated-token">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              Goated Airdrop
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                      <Link href="/bonus-codes">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative flex items-center gap-2">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              {isAuthenticated ? (
-                                "Bonus Codes"
-                              ) : (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger className="flex items-center gap-2 opacity-50 cursor-not-allowed">
-                                      <span>Bonus Codes</span>
-                                      <Lock className="h-4 w-4" />
-                                    </TooltipTrigger>
-                                    <TooltipContent side="right">
-                                      <p>Sign in to access bonus codes and rewards</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
-                            </span>
-                            <Gift className="h-4 w-4" />
-                          </span>
-                        </div>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Updated Leaderboard dropdown with hover functionality */}
-                <div className="relative group">
-                  <Link href="/leaderboard?period=daily">
-                    <Button
-                      variant="ghost"
-                      className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
-                    >
-                      <span className="font-bold">LEADERBOARDS</span>
-                      <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                    </Button>
-                  </Link>
-                  <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
-                    <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
-                      <Link href="/leaderboard?period=daily">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              Daily
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                      <Link href="/leaderboard?period=weekly">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              Weekly
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                      <Link href="/leaderboard?period=monthly">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              Monthly
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                      <Link href="/leaderboard?period=all_time">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              All Time
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-                {/* Socials dropdown */}
-                <div className="relative group">
-                  <Link href="/socials">
-                    <Button
-                      variant="ghost"
-                      className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
-                    >
-                      <span className="font-bold">SOCIALS</span>
-                      <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                    </Button>
-                  </Link>
-                  <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
-                    <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
-                      <Link href="/telegram">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              Telegram Community
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Help/FAQ dropdown */}
-                <div className="relative group">
-                  <Link href="/help">
-                    <Button
-                      variant="ghost"
-                      className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
-                    >
-                      <span className="font-bold">HELP & FAQ</span>
-                      <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                    </Button>
-                  </Link>
-                  <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
-                    <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
-                      <Link href="/help">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              Help Center
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                      <Link href="/faq">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              FAQ
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                      <Link href="/support">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                            <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                              Contact Support
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-
-                {user?.isAdmin && (
-                  <div className="relative group">
-                    <Button
-                      variant="ghost"
-                      className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
-                    >
-                      <span className="font-bold">ADMIN</span>
-                      <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                    </Button>
-                    <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
-                      <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
-                        <Link href="/admin/user-management">
-                          <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
-                            User Management
-                          </div>
-                        </Link>
-                        <Link href="/admin/notifications">
-                          <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
-                            Notification Management
-                          </div>
-                        </Link>
-                        <Link href="/admin/support">
-                          <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
-                            Support Management
-                          </div>
-                        </Link>
-                        <Link href="/admin/wager-races">
-                          <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
-                            Wager Race Management
-                          </div>
-                        </Link>
-                        <Link href="/admin/bonus-codes">
-                          <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
-                            Bonus Code Management
-                          </div>
-                        </Link>
+                        </span>
                       </div>
+                    </Link>
+                    <Link href="/tips-and-strategies">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                            Tips & Strategies
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                    <Link href="/vip-program">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                            VIP Program
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+              <div className="relative group">
+                <Link href="/promotions">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
+                  >
+                    <span className="font-bold">PROMOTIONS</span>
+                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                  </Button>
+                </Link>
+                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                    <Link href="/promotions">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                            News & Promotions
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                    <Link href="/goated-token">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                            Goated Airdrop
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                    <Link href="/bonus-codes">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <span className="relative flex items-center gap-2">
+                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                            {isAuthenticated ? (
+                              "Bonus Codes"
+                            ) : (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger className="flex items-center gap-2 opacity-50 cursor-not-allowed">
+                                    <span>Bonus Codes</span>
+                                    <Lock className="h-4 w-4" />
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right">
+                                    <p>Sign in to access bonus codes and rewards</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </span>
+                          <Gift className="h-4 w-4" />
+                        </span>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative group">
+                <Link href="/leaderboard?period=daily">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
+                  >
+                    <span className="font-bold">LEADERBOARDS</span>
+                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                  </Button>
+                </Link>
+                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                    <Link href="/leaderboard?period=daily">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                            Daily
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                    <Link href="/leaderboard?period=weekly">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                            Weekly
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                    <Link href="/leaderboard?period=monthly">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                            Monthly
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                    <Link href="/leaderboard?period=all_time">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                            All Time
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+              <div className="relative group">
+                <Link href="/socials">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
+                  >
+                    <span className="font-bold">SOCIALS</span>
+                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                  </Button>
+                </Link>
+                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                    <Link href="/telegram">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                            Telegram Community
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative group">
+                <Link href="/help">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
+                  >
+                    <span className="font-bold">HELP & FAQ</span>
+                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                  </Button>
+                </Link>
+                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                    <Link href="/help">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                            Help Center
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                    <Link href="/faq">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                            FAQ
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                    <Link href="/support">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                            Contact Support
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              {user?.isAdmin && (
+                <div className="relative group">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
+                  >
+                    <span className="font-bold">ADMIN</span>
+                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                  </Button>
+                  <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                    <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                      <Link href="/admin/user-management">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                          User Management
+                        </div>
+                      </Link>
+                      <Link href="/admin/notifications">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                          Notification Management
+                        </div>
+                      </Link>
+                      <Link href="/admin/support">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                          Support Management
+                        </div>
+                      </Link>
+                      <Link href="/admin/wager-races">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                          Wager Race Management
+                        </div>
+                      </Link>
+                      <Link href="/admin/bonus-codes">
+                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                          Bonus Code Management
+                        </div>
+                      </Link>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
             </div>
-            {/* Enhanced mobile navigation */}
             <div className={headerClasses.menuButton}>
               <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="relative overflow-hidden group"
-                    >
-                      <div className="absolute inset-0 bg-[#D7FF00]/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-                      <Menu className="h-6 w-6 text-white relative z-10 group-hover:text-[#D7FF00] transition-colors duration-300" />
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent
-                    side="left"
-                    className="w-[300px] bg-[#14151A] border-r border-[#2A2B31] overflow-y-auto p-0"
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative overflow-hidden group"
                   >
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="flex flex-col gap-4 pt-8"
-                    >
-                      <div className="px-4 py-2 text-[#D7FF00] font-heading text-base font-bold">MENU</div>
-                      <MobileNavLink href="/" label="HOME" onClose={() => setOpenMobile(false)} isTitle={true} />
+                    <div className="absolute inset-0 bg-[#D7FF00]/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                    <Menu className="h-6 w-6 text-white relative z-10 group-hover:text-[#D7FF00] transition-colors duration-300" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent
+                  side="left"
+                  className="w-[300px] bg-[#14151A] border-r border-[#2A2B31] overflow-y-auto p-0"
+                >
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex flex-col gap-4 pt-8"
+                  >
+                    <div className="px-4 py-2 text-[#D7FF00] font-heading text-base font-bold">MENU</div>
+                    <MobileNavLink href="/" label="HOME" onClose={() => setOpenMobile(false)} isTitle={true} />
 
-                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">EVENTS</div>
-                      <MobileNavLink 
-                        href="/wager-races" 
-                        label={
-                          <div className="flex items-center justify-between w-full">
-                            <span>Monthly Race</span>
-                            <div className="ml-2 flex items-center gap-1">
-                              <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
-                              <span className="text-xs text-red-500">LIVE</span>
-                            </div>
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">EVENTS</div>
+                    <MobileNavLink
+                      href="/wager-races"
+                      label={
+                        <div className="flex items-center justify-between w-full">
+                          <span>Monthly Race</span>
+                          <div className="ml-2 flex items-center gap-1">
+                            <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                            <span className="text-xs text-red-500">LIVE</span>
                           </div>
-                        }
-                        onClose={() => setOpenMobile(false)}
-                      />
-                      <MobileNavLink 
-                        href="/challenges" 
-                        label={
-                          <div className="flex items-center justify-between w-full">
-                            <span>Challenges</span>
-                            <div className="ml-2 flex items-center gap-1">
-                              <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-                              <span className="text-xs text-green-500">ONGOING</span>
-                            </div>
+                        </div>
+                      }
+                      onClose={() => setOpenMobile(false)}
+                    />
+                    <MobileNavLink
+                      href="/challenges"
+                      label={
+                        <div className="flex items-center justify-between w-full">
+                          <span>Challenges</span>
+                          <div className="ml-2 flex items-center gap-1">
+                            <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+                            <span className="text-xs text-green-500">ONGOING</span>
                           </div>
-                        }
-                        onClose={() => setOpenMobile(false)}
-                      />
+                        </div>
+                      }
+                      onClose={() => setOpenMobile(false)}
+                    />
 
-                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">GET STARTED</div>
-                      <MobileNavLink href="/how-it-works" label="How It Works" onClose={() => setOpenMobile(false)} />
-                      <MobileNavLink href="/vip-transfer" label="VIP Transfer" onClose={() => setOpenMobile(false)} />
-                      <MobileNavLink href="/tips-and-strategies" label="Tips & Strategies" onClose={() => setOpenMobile(false)} />
-                      <MobileNavLink href="/vip-program" label="VIP Program" onClose={() => setOpenMobile(false)} />
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">GET STARTED</div>
+                    <MobileNavLink href="/how-it-works" label="How It Works" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink href="/vip-transfer" label="VIP Transfer" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink href="/tips-and-strategies" label="Tips & Strategies" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink href="/vip-program" label="VIP Program" onClose={() => setOpenMobile(false)} />
 
-                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">PROMOTIONS</div>
-                      <MobileNavLink href="/promotions" label="News & Promotions" onClose={() => setOpenMobile(false)} />
-                      <MobileNavLink href="/goated-token" label="Goated Airdrop" onClose={() => setOpenMobile(false)} />
-                      <MobileNavLink 
-                        href="/bonus-codes" 
-                        label={
-                          isAuthenticated ? (
-                            <div className="flex items-center gap-2">
-                              <span>Bonus Codes</span>
-                              <Gift className="h-4 w-4" />
-                            </div>
-                          ) : (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger className="flex items-center gap-2 opacity-50 cursor-not-allowed">
-                                  <span>Bonus Codes</span>
-                                  <Lock className="h-4 w-4" />
-                                </TooltipTrigger>
-                                <TooltipContent side="right">
-                                  <p>Sign in to access bonus codes and rewards</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )
-                        } 
-                        onClose={() => setOpenMobile(false)}
-                      />
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">PROMOTIONS</div>
+                    <MobileNavLink href="/promotions" label="News & Promotions" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink href="/goated-token" label="Goated Airdrop" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink
+                      href="/bonus-codes"
+                      label={
+                        isAuthenticated ? (
+                          <div className="flex items-center gap-2">
+                            <span>Bonus Codes</span>
+                            <Gift className="h-4 w-4" />
+                          </div>
+                        ) : (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger className="flex items-center gap-2 opacity-50 cursor-not-allowed">
+                                <span>Bonus Codes</span>
+                                <Lock className="h-4 w-4" />
+                              </TooltipTrigger>
+                              <TooltipContent side="right">
+                                <p>Sign in to access bonus codes and rewards</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )
+                      }
+                      onClose={() => setOpenMobile(false)}
+                    />
 
-                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">LEADERBOARDS</div>
-                      <MobileNavLink 
-                        href="/leaderboard?period=daily" 
-                        label="Daily Leaderboard" 
-                        onClose={() => setOpenMobile(false)}
-                      />
-                      <MobileNavLink 
-                        href="/leaderboard?period=weekly" 
-                        label="Weekly Leaderboard" 
-                        onClose={() => setOpenMobile(false)}
-                      />
-                      <MobileNavLink 
-                        href="/leaderboard?period=monthly" 
-                        label="Monthly Leaderboard" 
-                        onClose={() => setOpenMobile(false)}
-                      />
-                      <MobileNavLink 
-                        href="/leaderboard?period=all-time" 
-                        label="All Time Leaderboard" 
-                        onClose={() => setOpenMobile(false)}
-                      />
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">LEADERBOARDS</div>
+                    <MobileNavLink
+                      href="/leaderboard?period=daily"
+                      label="Daily Leaderboard"
+                      onClose={() => setOpenMobile(false)}
+                    />
+                    <MobileNavLink
+                      href="/leaderboard?period=weekly"
+                      label="Weekly Leaderboard"
+                      onClose={() => setOpenMobile(false)}
+                    />
+                    <MobileNavLink
+                      href="/leaderboard?period=monthly"
+                      label="Monthly Leaderboard"
+                      onClose={() => setOpenMobile(false)}
+                    />
+                    <MobileNavLink
+                      href="/leaderboard?period=all-time"
+                      label="All Time Leaderboard"
+                      onClose={() => setOpenMobile(false)}
+                    />
 
 
-                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">SOCIALS</div>
-                      <MobileNavLink href="/telegram" label="Telegram Community" onClose={() => setOpenMobile(false)} />
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">SOCIALS</div>
+                    <MobileNavLink href="/telegram" label="Telegram Community" onClose={() => setOpenMobile(false)} />
 
-                      <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">HELP & SUPPORT</div>
-                      <MobileNavLink href="/help" label="Help Center" onClose={() => setOpenMobile(false)} />
-                      <MobileNavLink href="/faq" label="FAQ" onClose={() => setOpenMobile(false)} />
-                      <MobileNavLink href="/support" label="Contact Support" onClose={() => setOpenMobile(false)} />
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">HELP & SUPPORT</div>
+                    <MobileNavLink href="/help" label="Help Center" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink href="/faq" label="FAQ" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink href="/support" label="Contact Support" onClose={() => setOpenMobile(false)} />
 
-                      {user?.isAdmin && (
-                        <>
-                          <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">ADMIN</div>
-                          <MobileNavLink href="/admin/user-management" label="User Management" onClose={() => setOpenMobile(false)} />
-                          <MobileNavLink href="/admin/wager-races" label="Wager Race Management" onClose={() => setOpenMobile(false)} />
-                          <MobileNavLink href="/admin/bonus-codes" label="Bonus Code Management" onClose={() => setOpenMobile(false)} />
-                        </>
-                      )}
+                    {user?.isAdmin && (
+                      <>
+                        <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">ADMIN</div>
+                        <MobileNavLink href="/admin/user-management" label="User Management" onClose={() => setOpenMobile(false)} />
+                        <MobileNavLink href="/admin/wager-races" label="Wager Race Management" onClose={() => setOpenMobile(false)} />
+                        <MobileNavLink href="/admin/bonus-codes" label="Bonus Code Management" onClose={() => setOpenMobile(false)} />
+                      </>
+                    )}
 
-                      <div className="mt-6 px-4 border-t border-[#2A2B31]/50 pt-6">
-                        <Button
-                          onClick={() => {
-                            setOpenMobile(false);
-                            window.open("https://www.goated.com/r/SPIN", "_blank");
-                          }}
-                          className="w-full bg-[#D7FF00] text-[#14151A] hover:bg-[#D7FF00]/90 transition-colors font-bold"
-                        >
-                          PLAY NOW →
-                        </Button>
-                      </div>
-                    </motion.div>
-                  </SheetContent>
-                </Sheet>
+                    <div className="mt-6 px-4 border-t border-[#2A2B31]/50 pt-6">
+                      <Button
+                        onClick={() => {
+                          setOpenMobile(false);
+                          window.open("https://www.goated.com/r/SPIN", "_blank");
+                        }}
+                        className="w-full bg-[#D7FF00] text-[#14151A] hover:bg-[#D7FF00]/90 transition-colors font-bold"
+                      >
+                        PLAY NOW →
+                      </Button>
+                    </div>
+                  </motion.div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
 
-          {/* User section */}
           <div className={headerClasses.userSection}>
-             <div>
-                {user && (
+            <div>
+              {user && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-[#8A8B91] hover:text-white relative h-8 w-8 md:h-10 md:w-10"
+                    >
+                      <Bell className="h-4 w-4 md:h-5 md:w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-80 bg-[#1A1B21] border-[#2A2B31]">
+                    <DropdownMenuLabel className="flex items-center justify-between">
+                      Notifications
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          window.open("/notification-preferences", "_self")
+                        }
+                        className="h-8 w-8"
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <div className="max-h-[300px] overflow-y-auto">
+                      <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 text-white">
+                        <div className="text-sm font-medium">
+                          Monthly Wager Race Live!
+                        </div>
+                        <div className="text-xs text-[#8A8B91]">
+                          Compete for a share of the $2000 prize pool - Join now!
+                        </div>
+                        <div className="text-xs text-[#8A8B91]">
+                          Just now
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 text-white">
+                        <div className="text-sm font-medium">
+                          Welcome to GoatedVIPs!
+                        </div>
+                        <div className="text-xs text-[#8A8B91]">
+                          Your #1 source for casino rewards and competitions
+                        </div>
+                        <div className="text-xs text-[#8A8B91]">2 days ago</div>
+                      </DropdownMenuItem>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              <div className="flex items-center gap-2 md:gap-4">
+                {user ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="icon"
-                        className="text-[#8A8B91] hover:text-white relative h-8 w-8 md:h-10 md:w-10"
+                        className="flex items-center gap-1 md:gap-2 text-white px-2 md:px-4 h-8 md:h-10"
                       >
-                        <Bell className="h-4 w-4 md:h-5 md:w-5" />
+                        <User className="h-5 w-5" />
+                        <span className="hidden md:inline">
+                          {user.username}
+                        </span>
+                        <ChevronDown className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-80 bg-[#1A1B21] border-[#2A2B31]">
-                      <DropdownMenuLabel className="flex items-center justify-between">
-                        Notifications
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            window.open("/notification-preferences", "_self")
-                          }
-                          className="h-8 w-8"
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuLabel>
+                    <DropdownMenuContent className="w-56 bg-[#1A1B21] border-[#2A2B31]">
+                      <DropdownMenuLabel className="text-white">My Account</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <div className="max-h-[300px] overflow-y-auto">
-                        {/* Active notifications */}
-                        <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 text-white">
-                          <div className="text-sm font-medium">
-                            Monthly Wager Race Live!
-                          </div>
-                          <div className="text-xs text-[#8A8B91]">
-                                                        Compete for a share of the $2000 prize pool - Join now!
-                          </div>
-                          <div className="text-xs text-[#8A8B91]">
-                            Just now
-                          </div>
+                      <Link href={`/user/${user.id}`}>
+                        <DropdownMenuItem className="cursor-pointer text-white">
+                          Profile
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 text-white">
-                          <div className="text-sm font-medium">
-                            Welcome to GoatedVIPs!
-                          </div>
-                          <div className="text-xs text-[#8A8B91]">
-                            Your #1 source for casino rewards and competitions
-                          </div>
-                          <div className="text-xs text-[#8A8B91]">2 days ago</div>
+                      </Link>
+                      <Link href="/notification-preferences">
+                        <DropdownMenuItem className="cursor-pointer text-white">
+                          Settings
                         </DropdownMenuItem>
-                      </div>
+                      </Link>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={handleLogout}
+                        className="text-red-500 cursor-pointer"
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Logout
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                ) : (
+                  <AuthModal />
                 )}
-                <div className="flex items-center gap-2 md:gap-4">
-                  {user ? (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="flex items-center gap-1 md:gap-2 text-white px-2 md:px-4 h-8 md:h-10"
-                        >
-                          <User className="h-5 w-5" />
-                          <span className="hidden md:inline">
-                            {user.username}
-                          </span>
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-56 bg-[#1A1B21] border-[#2A2B31]">
-                        <DropdownMenuLabel className="text-white">My Account</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <Link href={`/user/${user.id}`}>
-                          <DropdownMenuItem className="cursor-pointer text-white">
-                            Profile
-                          </DropdownMenuItem>
-                        </Link>
-                        <Link href="/notification-preferences">
-                          <DropdownMenuItem className="cursor-pointer text-white">
-                            Settings
-                          </DropdownMenuItem>
-                        </Link>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={handleLogout}
-                          className="text-red-500 cursor-pointer"
-                        >
-                          <LogOut className="h-4 w-4 mr-2" />
-                          Logout
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  ) : (
-                    <AuthModal />
-                  )}
-                  <Button
-                    onClick={() =>
-                      window.open("https://www.goated.com/r/SPIN", "_blank")
-                    }
-                    className="relative group overflow-hidden text-[#14151A] fill-animation hover:text-[#D7FF00] transition-all duration-3000 font-heading uppercase tracking-tight h-8 md:h-10 px-3 md:px-4 text-sm md:text-base"
-                  >
-                    <span className="relative z-10">PLAY →</span>
-                  </Button>
-                </div>
+                <Button
+                  onClick={() =>
+                    window.open("https://www.goated.com/r/SPIN", "_blank")
+                  }
+                  className="relative group overflow-hidden text-[#14151A] fill-animation hover:text-[#D7FF00] transition-all duration-3000 font-heading uppercase tracking-tight h-8 md:h-10 px-3 md:px-4 text-sm md:text-base"
+                >
+                  <span className="relative z-10">PLAY →</span>
+                </Button>
               </div>
+            </div>
           </div>
         </nav>
       </header>
 
-      <main className="flex-grow pt-16">
-        {children}
-      </main>
-
-      {showFloatingSupport && (
-        <FloatingSupport onClose={() => setShowFloatingSupport(false)} />
-      )}
-
+      {children}
       <ScrollToTop />
-
+      <WheelSpinIndicator />
+      {showFloatingSupport && !isFooterVisible && <FloatingSupport />}
       <footer ref={footerRef} className={footerClasses.wrapper}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent pointer-events-none" />
         <div className={footerClasses.container}>
@@ -709,9 +693,9 @@ export function Layout({ children }: { children: ReactNode }) {
                 <h4 className={footerClasses.heading}>
                   Ready to get Goated?
                 </h4>
-                <a 
-                  href="https://www.goated.com/r/VIPBOOST" 
-                  target="_blank" 
+                <a
+                  href="https://www.goated.com/r/VIPBOOST"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="transform transition-transform duration-300 hover:scale-110"
                 >
@@ -740,9 +724,9 @@ export function Layout({ children }: { children: ReactNode }) {
                 <h4 className={footerClasses.heading}>
                   Stay Updated
                 </h4>
-                <a 
-                  href="https://t.me/+iFlHl5V9VcszZTVh" 
-                  target="_blank" 
+                <a
+                  href="https://t.me/+iFlHl5V9VcszZTVh"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="transform transition-transform duration-300 hover:scale-110"
                 >
@@ -773,32 +757,32 @@ export function Layout({ children }: { children: ReactNode }) {
           <div className="container mx-auto px-4 text-center">
             <div className="flex flex-col items-center gap-4 mb-6">
               <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 px-4">
-                <a 
-                    href="https://www.goated.com/r/VIPBOOST" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="transform transition-transform duration-300 hover:scale-105"
-                  >
-                    <img
-                      src="/images/Goated logo with text.png"
-                      alt="Goated"
-                      className="h-10 md:h-12 w-auto object-contain max-w-[200px]"
-                    />
-                  </a>
-                  <a 
-                    href="https://t.me/+iFlHl5V9VcszZTVh" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="transform transition-transform duration-300 hover:scale-105"
-                  >
-                    <img
-                      src="/images/Goated logo with text1.png"
-                      alt="Goated Partner"
-                      className="h-10 md:h-12 w-auto object-contain max-w-[200px]"
-                    />
-                  </a>
-                </div>
+                <a
+                  href="https://www.goated.com/r/VIPBOOST"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transform transition-transform duration-300 hover:scale-105"
+                >
+                  <img
+                    src="/images/Goated logo with text.png"
+                    alt="Goated"
+                    className="h-10 md:h-12 w-auto object-contain max-w-[200px]"
+                  />
+                </a>
+                <a
+                  href="https://t.me/+iFlHl5V9VcszZTVh"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transform transition-transform duration-300 hover:scale-105"
+                >
+                  <img
+                    src="/images/Goated logo with text1.png"
+                    alt="Goated Partner"
+                    className="h-10 md:h-12 w-auto object-contain max-w-[200px]"
+                  />
+                </a>
               </div>
+            </div>
             <p className="mb-2">
               © 2024 GoatedVips.gg. All rights reserved.
             </p>
