@@ -1,7 +1,26 @@
-export function LoadingSpinner() {
+import { cn } from "@/lib/utils";
+
+interface SimpleLoadingSpinnerProps {
+  className?: string;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+export function LoadingSpinner({ className, size = 'md' }: SimpleLoadingSpinnerProps) {
+  const sizeClasses = {
+    sm: 'h-4 w-4',
+    md: 'h-8 w-8',
+    lg: 'h-12 w-12'
+  };
+
   return (
-    <div className="flex items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D7FF00]"></div>
+    <div className={cn("flex items-center justify-center", className)}>
+      <div 
+        className={cn(
+          "animate-spin rounded-full border-b-2 border-[#D7FF00]",
+          sizeClasses[size]
+        )}
+        style={{ willChange: "transform" }}
+      />
     </div>
   );
 }

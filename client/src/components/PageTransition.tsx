@@ -1,8 +1,8 @@
-
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { PreLoader } from "./PreLoader";
 import { useState, useEffect } from "react";
+import { LoadingSpinner } from "./LoadingSpinner";
 
 interface PageTransitionProps {
   children: ReactNode;
@@ -11,17 +11,25 @@ interface PageTransitionProps {
 
 export function PageTransition({ children, isLoading = false }: PageTransitionProps) {
   const [showLoading, setShowLoading] = useState(false);
+  const [transitionComplete, setTransitionComplete] = useState(false);
 
   useEffect(() => {
     let timeout: NodeJS.Timeout;
     if (isLoading) {
+      // Show loading spinner after a brief delay to prevent flashing
       timeout = setTimeout(() => setShowLoading(true), 300);
+    } else {
+      setShowLoading(false);
+      // Mark transition as complete after exit animation
+      setTimeout(() => setTransitionComplete(true), 500);
     }
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+    };
   }, [isLoading]);
 
   if (isLoading && showLoading) {
-    return <PreLoader onLoadComplete={() => setShowLoading(false)} />;
+    return <LoadingSpinner size="lg" />;
   }
 
   return (
@@ -35,6 +43,7 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
         damping: 20,
         duration: 0.3
       }}
+      onAnimationComplete={() => setTransitionComplete(true)}
       style={{ 
         willChange: "opacity, transform",
         backfaceVisibility: "hidden",

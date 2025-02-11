@@ -118,7 +118,9 @@ function Router() {
             </Route>
             <Route path="/user/:id">
               <ProtectedRoute>
-                <UserProfile />
+                {(params: { id: string }) => (
+                  <UserProfile userId={params.id} />
+                )}
               </ProtectedRoute>
             </Route>
 
@@ -177,8 +179,14 @@ function AppContent() {
 
   useEffect(() => {
     if (!isInitialLoad) return;
-    sessionStorage.setItem('hasVisited', 'true');
-    setIsInitialLoad(false);
+
+    // Wait for the DOM to be ready before setting hasVisited
+    const timeout = setTimeout(() => {
+      sessionStorage.setItem('hasVisited', 'true');
+      setIsInitialLoad(false);
+    }, 100);
+
+    return () => clearTimeout(timeout);
   }, [isInitialLoad]);
 
   return (
