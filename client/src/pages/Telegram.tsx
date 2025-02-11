@@ -43,12 +43,12 @@ export default function Community() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
-              href="https://discord.gg/goated"
+              href="https://t.me/+bnV67QwFmCFlMGFh"
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Button className="w-full sm:w-auto bg-[#5865F2] hover:bg-[#5865F2]/90 font-heading text-lg px-8 py-6">
-                Join Discord
+              <Button className="w-full sm:w-auto bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 font-heading text-lg px-8 py-6">
+                Join Telegram
                 <MessageCircle className="ml-2 h-5 w-5" />
               </Button>
             </a>

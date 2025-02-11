@@ -55,7 +55,7 @@ export function UtilityPanel() {
           </motion.button>
 
           {/* Panel */}
-          <Card className="absolute top-0 left-full w-80 bg-[#1A1B21]/80 backdrop-blur-md border border-[#2A2B31]/50 rounded-l-xl overflow-hidden shadow-[0_0_25px_rgba(42,43,49,0.3)] hover:shadow-[0_0_30px_rgba(42,43,49,0.4)] transition-all">
+          <Card className="absolute top-0 left-full w-80 bg-[#1A1B21]/80 backdrop-blur-md border border-[#2A2B31]/50 overflow-hidden shadow-[0_0_25px_rgba(42,43,49,0.3)] hover:shadow-[0_0_30px_rgba(42,43,49,0.4)] transition-all">
             <div className="grid grid-cols-2 gap-3 p-4">
               {/* Daily Spin */}
               <motion.button
@@ -102,7 +102,7 @@ export function UtilityPanel() {
 
               {/* Telegram */}
               <motion.a
-                href="https://t.me/xGoombas"
+                href="https://t.me/+bnV67QwFmCFlMGFh"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.05 }}
