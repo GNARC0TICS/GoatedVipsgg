@@ -491,7 +491,7 @@ function sortByWagered(data: any[], period: string) {
 /**
  * Transforms raw leaderboard data into standardized format
  */
-function transformLeaderboardData(apiData: any) {
+export function transformLeaderboardData(apiData: any) {
   const responseData = apiData.data || apiData.results || apiData;
   if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
     return {
