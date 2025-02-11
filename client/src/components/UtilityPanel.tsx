@@ -31,7 +31,7 @@ export const UtilityPanelButton = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="relative h-8 w-8 md:h-10 md:w-10 hover:bg-[#D7FF00]/10"
+            className="relative h-8 w-8 md:h-10 md:w-10 hover:bg-[#D7FF00]/10 focus:outline-none"
           >
             <Gift className="h-5 w-5 text-white hover:text-[#D7FF00]" />
           </Button>
@@ -39,8 +39,10 @@ export const UtilityPanelButton = () => {
         <DropdownMenuContent
           align="end"
           className={`${
-            isMobile ? "w-[calc(100vw-32px)]" : "w-[320px]"
-          } bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] p-4 mt-2`}
+            isMobile 
+              ? "fixed top-16 left-0 right-0 w-full border-none shadow-none" 
+              : "w-[320px] border border-[#2A2B31]"
+          } bg-[#1A1B21]/95 backdrop-blur-xl p-4 mt-0`}
         >
           <div className="grid grid-cols-2 gap-3">
             <motion.button
