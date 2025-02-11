@@ -1,0 +1,55 @@
+Plan for the Daily Bonus Wheel Spin Challenge
+
+We’re building a visually stunning, ultra-smooth daily spin challenge where users can win bonus codes for various amounts.
+
+🎯 Core Features
+
+✅ Daily Spin Per IP Address – Only one spin per day per IP.
+✅ Weighted RNG (Low Win Rate) – Most users get “Try Again,” while ~$1 wins happen ~1 in 10 spins.
+✅ Prize Pool (Bonus Codes Only):
+	•	🎉 $100 Bonus Code (Ultra Rare – ~1 in 5000)
+	•	🎉 $50 Bonus Code (Very Rare – ~1 in 2500)
+	•	🎉 $25 Bonus Code (Rare – ~1 in 1000)
+	•	🎉 $2 Bonus Code (~1 in 200)
+	•	🎉 $1 Bonus Code (~1 in 10)
+	•	🎉 $0.10 Bonus Code (~1 in 5)
+	•	❌ Try Again / No Prize (~80-90% of spins)
+
+✅ Premium Look & Feel – Inspired by casino-grade UI, smooth animations, and satisfying sounds.
+✅ No Crypto / Goated.com Integration – Just bonus codes displayed to the user.
+✅ Cooldown System – Each IP is locked out until the next reset (UTC Midnight).
+✅ Mobile-Optimized – Works flawlessly on iPhones & Android.
+
+🎨 UI / Animation Plan
+
+To make the experience casino-quality, we’ll use:
+	•	🎞️ GSAP (GreenSock) Animations – Smooth easing for realistic wheel spinning physics
+	•	💎 High-Res Visuals – Glossy, neon-glowing wheel with light reflections
+	•	📲 Mobile-Friendly Touch Controls – Works with swiping gestures
+	•	🔊 SFX & Feedback – Satisfying spin sound, clicking, and victory jingle
+
+⚙️ Backend Logic
+
+We’ll build a secure, fair, and engaging backend system to manage spins:
+1️⃣ User Clicks “Spin”
+2️⃣ Check IP Address – If they’ve already spun today, block them.
+3️⃣ Weighted RNG Prize Selection – Randomly determine the outcome based on probabilities.
+4️⃣ Bonus Code Display – If they win, display their unique bonus code immediately.
+5️⃣ Store Spin Data – Log IP & timestamp to prevent abuse.
+6️⃣ Reset at UTC Midnight – Users get a fresh spin each day.
+
+🛠️ Tech Stack
+	•	Frontend: React + GSAP + TailwindCSS
+	•	Backend: Node.js (Express)
+	•	Database: PostgreSQL (to store spin logs & bonus codes)
+	•	Authentication: IP-based tracking (no login needed for now)
+	•	Rate Limiting: Redis (to prevent spam/abuse)
+
+🚀 Next Steps
+
+💰 1. Set up the spin logic & UI
+🛠️ 2. Implement the backend (IP tracking & bonus codes)
+🎨 3. Polish animations, sounds, and mobile responsiveness
+🎯 4. Launch & Optimize the prize distribution
+
+🔥 This will be a retention-boosting, addictive mini-game that feels premium while keeping rewards controlled!
