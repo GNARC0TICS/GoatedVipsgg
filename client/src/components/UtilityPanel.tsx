@@ -11,7 +11,7 @@ export function UtilityPanel() {
   const [isSupport, setIsSupport] = useState(false);
   const [, setLocation] = useLocation();
   const [timeLeft] = useState<string>("Available now!");
-  const isSpinAvailable = true; // For testing purposes
+  const isSpinAvailable = true;
 
   const togglePanel = () => setIsOpen(!isOpen);
   
@@ -24,7 +24,7 @@ export function UtilityPanel() {
     <>
       {isSupport && <FloatingSupport onClose={() => setIsSupport(false)} />}
       <motion.div 
-        className="fixed right-4 top-24 z-50"
+        className="fixed right-4 top-1/3 z-50"
         initial={{ x: 100 }}
         animate={{ x: 0 }}
         transition={{ type: "spring", duration: 0.8 }}
@@ -47,14 +47,15 @@ export function UtilityPanel() {
           </button>
 
           {/* Panel */}
-          <Card className="absolute top-0 left-full w-16 bg-[#1A1B21] border-[#2A2B31] rounded-l-xl overflow-hidden">
-            <div className="flex flex-col gap-2 p-2">
+          <Card className="absolute top-0 left-full w-80 bg-[#1A1B21] border-[#2A2B31] rounded-l-xl overflow-hidden">
+            <div className="grid grid-cols-1 gap-2 p-4">
               {/* Daily Spin */}
               <button
                 onClick={() => setLocation("/wheel-challenge")}
-                className="p-2 bg-[#2A2B31] rounded-lg hover:bg-[#2A2B31]/80 transition-colors relative group"
+                className="p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors relative group flex items-center gap-3"
               >
                 <Gift className={`w-6 h-6 ${isSpinAvailable ? 'text-[#D7FF00]' : 'text-[#8A8B91]'}`} />
+                <span className="text-sm text-white">Daily Spin</span>
                 {isSpinAvailable && (
                   <span className="absolute top-2 right-2 h-2 w-2 bg-[#D7FF00] rounded-full" />
                 )}
@@ -63,9 +64,10 @@ export function UtilityPanel() {
               {/* Bonus Codes */}
               <button
                 onClick={() => setLocation("/bonus-codes")}
-                className="p-2 bg-[#2A2B31] rounded-lg hover:bg-[#2A2B31]/80 transition-colors group"
+                className="p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors group flex items-center gap-3"
               >
                 <Ticket className="w-6 h-6 text-[#D7FF00] group-hover:scale-110 transition-transform" />
+                <span className="text-sm text-white">Bonus Codes</span>
               </button>
 
               {/* Telegram */}
@@ -73,17 +75,19 @@ export function UtilityPanel() {
                 href="https://t.me/xGoombas"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 bg-[#2A2B31] rounded-lg hover:bg-[#2A2B31]/80 transition-colors group"
+                className="p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors group flex items-center gap-3"
               >
                 <Send className="w-6 h-6 text-[#D7FF00] group-hover:scale-110 transition-transform" />
+                <span className="text-sm text-white">Telegram</span>
               </a>
 
               {/* Support */}
               <button
                 onClick={handleSupportClick}
-                className="p-2 bg-[#2A2B31] rounded-lg hover:bg-[#2A2B31]/80 transition-colors group"
+                className="p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors group flex items-center gap-3"
               >
                 <MessageCircle className="w-6 h-6 text-[#D7FF00] group-hover:scale-110 transition-transform" />
+                <span className="text-sm text-white">Support</span>
               </button>
             </div>
           </Card>
