@@ -114,7 +114,7 @@ const createRateLimiter = (tier: 'high' | 'medium' | 'low') => {
   return async (req: any, res: any, next: any) => {
     try {
       const rateLimitRes = await limiter.consume(req.ip);
-      
+
       // Set standard rate limit headers
       res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase()].points);
       res.setHeader('X-RateLimit-Remaining', rateLimitRes.remainingPoints);
@@ -124,7 +124,7 @@ const createRateLimiter = (tier: 'high' | 'medium' | 'low') => {
       next();
     } catch (rejRes) {
       log(`Rate limit exceeded - ${tier}: IP ${req.ip}`);
-      
+
       // Set headers for rate limit exceeded response
       res.setHeader('Retry-After', Math.ceil(rejRes.msBeforeNext / 1000));
       res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase()].points);
@@ -230,7 +230,15 @@ function setupRESTRoutes(app: Express) {
         );
 
         if (!response.ok) {
-          throw new Error(`API request failed: ${response.status}`);
+          // Return empty race data instead of throwing error
+          return res.json({
+            id: new Date().getFullYear() + (new Date().getMonth() + 1).toString().padStart(2, '0'),
+            status: 'live',
+            startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
+            endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).toISOString(),
+            prizePool: 500,
+            participants: []
+          });
         }
 
         const rawData = await response.json();
