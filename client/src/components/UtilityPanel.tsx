@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
-import { Gift, MessageCircle, BrandTelegram, Ticket, Timer, X } from "lucide-react";
+import { Gift, MessageCircle, Send, Ticket, Timer, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { FloatingSupport } from "./FloatingSupport";
 
@@ -77,7 +77,7 @@ export function UtilityPanel() {
                 rel="noopener noreferrer"
                 className="aspect-square p-4 bg-[#2A2B31] rounded-xl hover:bg-[#2A2B31]/80 transition-colors group"
               >
-                <BrandTelegram className="w-8 h-8 text-[#D7FF00] group-hover:scale-110 transition-transform" />
+                <Send className="w-8 h-8 text-[#D7FF00] group-hover:scale-110 transition-transform" />
                 <span className="text-xs text-[#8A8B91] mt-2 block">Telegram</span>
               </a>
 
