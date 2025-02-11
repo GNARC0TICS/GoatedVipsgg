@@ -418,16 +418,11 @@ html {
 }
 
 
-/* Enhanced Wheel Animations */
-@keyframes glowPulse {
-  0%, 100% {
-    filter: drop-shadow(0 0 8px rgba(215, 255, 0, 0.4));
-  }
-  50% {
-    filter: drop-shadow(0 0 12px rgba(215, 255, 0, 0.6));
-  }
-}
+/* =================
+   WHEEL COMPONENTS 
+   ================= */
 
+/* 1. Core Wheel Styles */
 .wheel-segment-hover {
   transition: all 0.3s ease;
 }
@@ -435,10 +430,6 @@ html {
 .wheel-segment-hover:hover {
   filter: brightness(1.2);
   transform: scale(1.02);
-}
-
-.wheel-glow {
-  animation: glowPulse 2s infinite;
 }
 
 .wheel-text {
@@ -453,6 +444,15 @@ html {
     0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
+/* 2. Wheel Center Elements */
+.wheel-center {
+  filter: drop-shadow(0 0 5px rgba(215, 255, 0, 0.5));
+}
+
+.wheel-ring {
+  animation: ringPulse 2s infinite;
+}
+
 .wheel-emblem {
   transform-origin: center;
   paint-order: stroke;
@@ -465,27 +465,28 @@ html {
     0 0 8px rgba(255, 215, 0, 0.4);
 }
 
-/* Center decoration */
-.wheel-center {
-  filter: drop-shadow(0 0 5px rgba(215, 255, 0, 0.5));
-}
-
-.wheel-ring {
-  animation: ringPulse 2s infinite;
+/* 3. Wheel Animations */
+@keyframes glowPulse {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(215, 255, 0, 0.4)); }
+  50% { filter: drop-shadow(0 0 12px rgba(215, 255, 0, 0.6)); }
 }
 
 @keyframes ringPulse {
-  0%, 100% {
+  0%, 100% { 
     stroke-opacity: 0.4;
     stroke-width: 0.5;
   }
-  50% {
+  50% { 
     stroke-opacity: 0.8;
     stroke-width: 0.7;
   }
 }
 
-/* Sparkle Animation */
+@keyframes segmentPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.9; }
+}
+
 @keyframes sparkleFloat {
   0% {
     transform: translate(0, 0) rotate(0deg) scale(1);
@@ -497,20 +498,19 @@ html {
   }
 }
 
-.sparkle {
-  --float-x: random(-30px, 30px);
-  --float-y: random(-30px, 30px);
-  animation: sparkleFloat 1s ease-out forwards;
-}
-
-/* Enhanced wheel segment animation */
-@keyframes segmentPulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.9; }
+/* 4. Animation Classes */
+.wheel-glow {
+  animation: glowPulse 2s infinite;
 }
 
 .segment-pulse {
   animation: segmentPulse 1s ease-in-out infinite;
+}
+
+.sparkle {
+  --float-x: random(-30px, 30px);
+  --float-y: random(-30px, 30px);
+  animation: sparkleFloat 1s ease-out forwards;
 }
 
 /* Win effects */
