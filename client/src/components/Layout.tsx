@@ -183,7 +183,7 @@ export function Layout({ children }: { children: ReactNode }) {
                         <span className="relative">
                           <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
                           <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                            How It Works
+                            Become an Affiliate
                           </span>
                         </span>
                       </div>
@@ -504,7 +504,7 @@ export function Layout({ children }: { children: ReactNode }) {
                     />
 
                     <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">GET STARTED</div>
-                    <MobileNavLink href="/how-it-works" label="How It Works" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink href="/how-it-works" label="Become an Affiliate" onClose={() => setOpenMobile(false)} />
                     <MobileNavLink href="/vip-transfer" label="VIP Transfer" onClose={() => setOpenMobile(false)} />
                     <MobileNavLink href="/tips-and-strategies" label="Tips & Strategies" onClose={() => setOpenMobile(false)} />
                     <MobileNavLink href="/vip-program" label="VIP Program" onClose={() => setOpenMobile(false)} />
@@ -543,7 +543,7 @@ export function Layout({ children }: { children: ReactNode }) {
                       label="Daily Leaderboard"
                       onClose={() => setOpenMobile(false)}
                     />
-                    <MobileNavLink
+                    <<MobileNavLink
                       href="/leaderboard?period=weekly"
                       label="Weekly Leaderboard"
                       onClose={() => setOpenMobile(false)}
