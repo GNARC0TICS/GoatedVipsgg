@@ -10,6 +10,7 @@ export function UtilityPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSupport, setIsSupport] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
   const [scrollTimeout, setScrollTimeout] = useState<NodeJS.Timeout | null>(null);
   const [, setLocation] = useLocation();
   const [timeLeft] = useState<string>("Available now!");
@@ -21,8 +22,15 @@ export function UtilityPanel() {
       if (scrollTimeout) clearTimeout(scrollTimeout);
       
       const timeout = setTimeout(() => {
-        setIsVisible(true);
-      }, 150); // Delay before showing again after scroll stops
+        if (isHovered) {
+          setIsVisible(true);
+        } else {
+          const reappearTimeout = setTimeout(() => {
+            setIsVisible(true);
+          }, 1000); // Delay before showing after scroll stops
+          return () => clearTimeout(reappearTimeout);
+        }
+      }, 150);
       
       setScrollTimeout(timeout);
     };
@@ -32,7 +40,7 @@ export function UtilityPanel() {
       window.removeEventListener('scroll', handleScroll);
       if (scrollTimeout) clearTimeout(scrollTimeout);
     };
-  }, [scrollTimeout]);
+  }, [scrollTimeout, isHovered]);
 
   const togglePanel = () => setIsOpen(!isOpen);
   
@@ -46,9 +54,11 @@ export function UtilityPanel() {
       {isSupport && <FloatingSupport onClose={() => setIsSupport(false)} />}
       <motion.div 
         className="fixed right-4 top-20 z-50"
-        initial={{ x: 100, opacity: 0 }}
-        animate={{ x: 0, opacity: isVisible ? 1 : 0 }}
-        transition={{ type: "spring", duration: 0.8 }}
+        initial={{ x: 100 }}
+        animate={{ x: isVisible ? 0 : 100 }}
+        transition={{ type: "spring", stiffness: 200, damping: 25 }}
+        onHoverStart={() => setIsHovered(true)}
+        onHoverEnd={() => setIsHovered(false)}
       >
         <motion.div
           className="relative"
