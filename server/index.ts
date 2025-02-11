@@ -1,6 +1,7 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
+import { bot } from "./telegram/bot";
 import { setupVite, serveStatic, log } from "./vite";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
