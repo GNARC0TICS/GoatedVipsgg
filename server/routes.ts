@@ -1,4 +1,3 @@
-
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocket, WebSocketServer } from "ws";
@@ -9,6 +8,7 @@ import { db } from "@db";
 import { wagerRaces } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
+import { users, type SelectUser } from "@db/schema";
 
 /**
  * Cache Manager Class
@@ -194,6 +194,12 @@ const batchHandler = async (req: any, res: any) => {
   }
 };
 
+// Add new schema for wheel spin
+const wheelSpinSchema = z.object({
+  segmentIndex: z.number(),
+  reward: z.string().nullable(),
+});
+
 /**
  * Sets up REST API routes
  * Configures endpoints with appropriate middleware and handlers
@@ -364,6 +370,100 @@ function setupRESTRoutes(app: Express) {
         res.json(stats);
       } catch (error) {
         res.status(500).json({ error: "Failed to fetch analytics" });
+      }
+    }
+  );
+
+  // Wheel Challenge Routes
+  app.get("/api/wheel/check-eligibility",
+    createRateLimiter('high'),
+    async (req, res) => {
+      try {
+        if (!req.user) {
+          return res.status(401).json({ 
+            status: "error",
+            message: "Authentication required" 
+          });
+        }
+
+        // Check last spin time from database
+        const [lastSpin] = await db
+          .select({ timestamp: sql`MAX(timestamp)` })
+          .from(sql`wheel_spins`)
+          .where(sql`user_id = ${(req.user as SelectUser).id}`)
+          .limit(1);
+
+        const now = new Date();
+        const lastSpinDate = lastSpin?.timestamp ? new Date(lastSpin.timestamp) : null;
+
+        // Can spin if:
+        // 1. Never spun before OR
+        // 2. Last spin was before today (UTC midnight)
+        const canSpin = !lastSpinDate || 
+          (now.getUTCDate() !== lastSpinDate.getUTCDate() ||
+           now.getUTCMonth() !== lastSpinDate.getUTCMonth() ||
+           now.getUTCFullYear() !== lastSpinDate.getUTCFullYear());
+
+        res.json({
+          canSpin,
+          lastSpin: lastSpinDate?.toISOString() || null
+        });
+      } catch (error) {
+        console.error("Error checking wheel spin eligibility:", error);
+        res.status(500).json({ 
+          status: "error",
+          message: "Failed to check eligibility" 
+        });
+      }
+    }
+  );
+
+  app.post("/api/wheel/record-spin",
+    createRateLimiter('medium'),
+    async (req, res) => {
+      try {
+        if (!req.user) {
+          return res.status(401).json({ 
+            status: "error",
+            message: "Authentication required" 
+          });
+        }
+
+        const result = wheelSpinSchema.safeParse(req.body);
+        if (!result.success) {
+          return res.status(400).json({
+            status: "error",
+            message: "Invalid request data",
+            errors: result.error.issues
+          });
+        }
+
+        const { segmentIndex, reward } = result.data;
+
+        // Record the spin
+        await db.execute(
+          sql`INSERT INTO wheel_spins (user_id, segment_index, reward_code, timestamp)
+              VALUES (${(req.user as SelectUser).id}, ${segmentIndex}, ${reward}, NOW())`
+        );
+
+        // If there's a reward, create a bonus code record
+        if (reward) {
+          await db.execute(
+            sql`INSERT INTO bonus_codes (code, user_id, claimed_at, expires_at)
+                VALUES (${reward}, ${(req.user as SelectUser).id}, NOW(), NOW() + INTERVAL '24 hours')`
+          );
+        }
+
+        res.json({
+          status: "success",
+          message: "Spin recorded successfully"
+        });
+      } catch (error) {
+        console.error("Error recording wheel spin:", error);
+        res.status(500).json({ 
+          status: "error",
+          message: "Failed to record spin" 
+        });
       }
     }
   );

@@ -6,15 +6,18 @@ import { PageTransition } from "@/components/PageTransition";
 import { Button } from "@/components/ui/button";
 import { Gift, LucideLoader } from "lucide-react";
 
+// Updated segments based on the specified probabilities
 const SEGMENTS = [
-  { text: "Try Again", type: "none", color: "#1A1B21" },
-  { text: "50% Bonus", type: "bonus", value: "BONUS50", color: "#D7FF00" },
-  { text: "Try Again", type: "none", color: "#1A1B21" },
-  { text: "Free Spin", type: "retry", color: "#4CAF50" },
-  { text: "Try Again", type: "none", color: "#1A1B21" },
-  { text: "25% Bonus", type: "bonus", value: "BONUS25", color: "#D7FF00" },
-  { text: "Try Again", type: "none", color: "#1A1B21" },
-  { text: "10% Bonus", type: "bonus", value: "BONUS10", color: "#D7FF00" },
+  { text: "Try Again", type: "none", color: "#1A1B21", weight: 850 }, // ~85% chance
+  { text: "$0.10 Bonus", type: "bonus", value: "BONUS010", color: "#D7FF00", weight: 200 }, // ~1 in 5
+  { text: "Try Again", type: "none", color: "#1A1B21", weight: 850 },
+  { text: "$1 Bonus", type: "bonus", value: "BONUS100", color: "#4CAF50", weight: 100 }, // ~1 in 10
+  { text: "Try Again", type: "none", color: "#1A1B21", weight: 850 },
+  { text: "$2 Bonus", type: "bonus", value: "BONUS200", color: "#D7FF00", weight: 5 }, // ~1 in 200
+  { text: "$25 Bonus", type: "bonus", value: "BONUS2500", color: "#FFD700", weight: 1 }, // ~1 in 1000
+  { text: "$50 Bonus", type: "bonus", value: "BONUS5000", color: "#FFA500", weight: 0.4 }, // ~1 in 2500
+  { text: "$100 Bonus", type: "bonus", value: "BONUS10000", color: "#FF4500", weight: 0.2 }, // ~1 in 5000
+  { text: "Try Again", type: "none", color: "#1A1B21", weight: 850 },
 ] as const;
 
 type SegmentType = typeof SEGMENTS[number];
@@ -28,16 +31,34 @@ export default function WheelChallenge() {
   const controls = useAnimation();
 
   useEffect(() => {
-    // Check if user has spun today
-    const lastSpin = localStorage.getItem("lastWheelSpin");
-    setLastSpinDate(lastSpin);
+    const checkSpinEligibility = async () => {
+      try {
+        const response = await fetch("/api/wheel/check-eligibility");
+        const data = await response.json();
+        setCanSpin(data.canSpin);
+        setLastSpinDate(data.lastSpin);
+      } catch (error) {
+        console.error("Failed to check spin eligibility:", error);
+      }
+    };
 
-    if (lastSpin) {
-      const today = new Date().toDateString();
-      const lastSpinDay = new Date(lastSpin).toDateString();
-      setCanSpin(today !== lastSpinDay);
+    if (isAuthenticated) {
+      checkSpinEligibility();
     }
-  }, []);
+  }, [isAuthenticated]);
+
+  const weightedRandom = () => {
+    const totalWeight = SEGMENTS.reduce((acc, segment) => acc + segment.weight, 0);
+    let random = Math.random() * totalWeight;
+
+    for (let i = 0; i < SEGMENTS.length; i++) {
+      random -= SEGMENTS[i].weight;
+      if (random <= 0) {
+        return i;
+      }
+    }
+    return SEGMENTS.length - 1;
+  };
 
   const spinWheel = async () => {
     if (!isAuthenticated) {
@@ -59,52 +80,107 @@ export default function WheelChallenge() {
     }
 
     setIsSpinning(true);
-    const randomSegment = Math.floor(Math.random() * SEGMENTS.length);
-    const extraSpins = 5; // Number of full rotations before landing
-    const targetRotation = 360 * extraSpins + (360 / SEGMENTS.length) * randomSegment;
 
-    // Animate the wheel with spring physics for more natural motion
-    await controls.start({
-      rotate: targetRotation,
-      transition: {
-        type: "spring",
-        duration: 4,
-        bounce: 0.2,
-        damping: 20
-      },
-    });
+    try {
+      const randomSegment = weightedRandom();
+      const extraSpins = 5;
+      const targetRotation = 360 * extraSpins + (360 / SEGMENTS.length) * randomSegment;
 
-    // Handle reward
-    const reward = SEGMENTS[randomSegment];
-    if (reward.type === "bonus") {
-      toast({
-        title: "🎉 Congratulations!",
-        description: `You won a ${reward.text}!\nUse code: ${reward.value}`,
-        variant: "default",
-        className: "bg-[#D7FF00] text-black font-heading"
+      await controls.start({
+        rotate: targetRotation,
+        transition: {
+          type: "spring",
+          duration: 4,
+          bounce: 0.2,
+          damping: 20
+        },
       });
-    } else if (reward.type === "retry") {
-      toast({
-        description: "🎲 You won another spin! Try your luck again!",
-        variant: "default",
-        className: "bg-[#4CAF50] text-white"
+
+      const reward = SEGMENTS[randomSegment];
+
+      // Record the spin result
+      const response = await fetch("/api/wheel/record-spin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          segmentIndex: randomSegment,
+          reward: reward.type === "bonus" ? reward.value : null
+        }),
       });
-      setCanSpin(true);
+
+      if (!response.ok) throw new Error("Failed to record spin");
+
+      if (reward.type === "bonus") {
+        toast({
+          title: "🎉 Congratulations!",
+          description: `You won a ${reward.text}!\nUse code: ${reward.value}`,
+          variant: "default",
+          className: "bg-[#D7FF00] text-black font-heading"
+        });
+      } else {
+        toast({
+          description: "Better luck next time! Come back tomorrow for another chance!",
+          variant: "default"
+        });
+      }
+
+      setCanSpin(false);
+      const now = new Date().toISOString();
+      setLastSpinDate(now);
+    } catch (error) {
+      console.error("Spin error:", error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
       setIsSpinning(false);
-      return;
-    } else {
-      toast({
-        description: "Better luck next time! Come back tomorrow for another chance!",
-        variant: "default"
-      });
     }
+  };
 
-    // Update last spin date
-    const now = new Date().toISOString();
-    localStorage.setItem("lastWheelSpin", now);
-    setLastSpinDate(now);
-    setCanSpin(false);
-    setIsSpinning(false);
+  const renderWheel = () => {
+    return (
+      <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+        {SEGMENTS.map((segment, i) => {
+          const angle = (360 / SEGMENTS.length) * i;
+          const endAngle = (360 / SEGMENTS.length) * (i + 1);
+          const startCoord = {
+            x: 50 + 45 * Math.cos((angle * Math.PI) / 180),
+            y: 50 + 45 * Math.sin((angle * Math.PI) / 180),
+          };
+          const endCoord = {
+            x: 50 + 45 * Math.cos((endAngle * Math.PI) / 180),
+            y: 50 + 45 * Math.sin((endAngle * Math.PI) / 180),
+          };
+
+          return (
+            <g key={i}>
+              <path
+                d={`M 50 50 L ${startCoord.x} ${startCoord.y} A 45 45 0 0 1 ${endCoord.x} ${endCoord.y} Z`}
+                fill={segment.color}
+                stroke="#2A2B31"
+                strokeWidth="0.5"
+                className="transition-all duration-300 hover:brightness-110"
+              />
+              <text
+                x="50"
+                y="50"
+                dy="-25"
+                fill={segment.color === "#1A1B21" ? "#8A8B91" : "white"}
+                fontSize="4"
+                fontWeight="bold"
+                textAnchor="middle"
+                transform={`rotate(${angle + (360 / SEGMENTS.length) / 2} 50 50)`}
+                className="select-none pointer-events-none"
+              >
+                {segment.text}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    );
   };
 
   return (
@@ -125,61 +201,21 @@ export default function WheelChallenge() {
               transition={{ delay: 0.2 }}
               className="text-[#8A8B91] mb-8"
             >
-              Spin the wheel once daily for a chance to win bonus codes and special rewards!
+              Spin the wheel once daily for a chance to win bonus codes worth up to $100!
             </motion.p>
 
-            {/* Wheel Container */}
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
               className="relative w-[300px] h-[300px] mx-auto mb-8"
             >
-              {/* Wheel */}
               <motion.div
                 animate={controls}
                 className="absolute inset-0 w-full h-full"
                 style={{ transformOrigin: "center center" }}
               >
-                <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                  {SEGMENTS.map((segment, i) => {
-                    const angle = (360 / SEGMENTS.length) * i;
-                    const endAngle = (360 / SEGMENTS.length) * (i + 1);
-                    const startCoord = {
-                      x: 50 + 45 * Math.cos((angle * Math.PI) / 180),
-                      y: 50 + 45 * Math.sin((angle * Math.PI) / 180),
-                    };
-                    const endCoord = {
-                      x: 50 + 45 * Math.cos((endAngle * Math.PI) / 180),
-                      y: 50 + 45 * Math.sin((endAngle * Math.PI) / 180),
-                    };
-
-                    return (
-                      <g key={i}>
-                        <path
-                          d={`M 50 50 L ${startCoord.x} ${startCoord.y} A 45 45 0 0 1 ${endCoord.x} ${endCoord.y} Z`}
-                          fill={segment.color}
-                          stroke="#2A2B31"
-                          strokeWidth="0.5"
-                          className="transition-all duration-300 hover:brightness-110"
-                        />
-                        <text
-                          x="50"
-                          y="50"
-                          dy="-25"
-                          fill={segment.color === "#1A1B21" ? "#8A8B91" : "white"}
-                          fontSize="4"
-                          fontWeight="bold"
-                          textAnchor="middle"
-                          transform={`rotate(${angle + (360 / SEGMENTS.length) / 2} 50 50)`}
-                          className="select-none pointer-events-none"
-                        >
-                          {segment.text}
-                        </text>
-                      </g>
-                    );
-                  })}
-                </svg>
+                {renderWheel()}
               </motion.div>
 
               {/* Center Point with Glow */}
@@ -195,7 +231,7 @@ export default function WheelChallenge() {
 
             <Button
               onClick={spinWheel}
-              disabled={isSpinning || !canSpin}
+              disabled={isSpinning || !canSpin || !isAuthenticated}
               className={`bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 font-heading text-lg px-8 py-6 ${isSpinning ? 'animate-pulse' : ''}`}
             >
               {isSpinning ? (
@@ -206,7 +242,7 @@ export default function WheelChallenge() {
               ) : (
                 <>
                   <Gift className="w-4 h-4 mr-2" />
-                  SPIN THE WHEEL
+                  {isAuthenticated ? 'SPIN THE WHEEL' : 'LOGIN TO SPIN'}
                 </>
               )}
             </Button>

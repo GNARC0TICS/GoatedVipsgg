@@ -11,6 +11,35 @@ import {
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 
+// Users table
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  email: text("email").notNull().unique(),
+  isAdmin: boolean("is_admin").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Wheel spins table
+export const wheelSpins = pgTable("wheel_spins", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  segmentIndex: integer("segment_index").notNull(),
+  rewardCode: text("reward_code"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+// Bonus codes table
+export const bonusCodes = pgTable("bonus_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  userId: integer("user_id").references(() => users.id),
+  claimedAt: timestamp("claimed_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  isUsed: boolean("is_used").default(false).notNull(),
+});
+
 export const ticketMessages = pgTable("ticket_messages", {
   id: serial("id").primaryKey(),
   message: text("message").notNull(),
@@ -86,7 +115,6 @@ export const affiliateStats = pgTable("affiliate_stats", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
-
 export const supportTickets = pgTable("support_tickets", {
   id: serial("id").primaryKey(),
   subject: text("subject").notNull(),
@@ -120,6 +148,12 @@ export const insertSupportTicketSchema = createInsertSchema(supportTickets);
 export const selectSupportTicketSchema = createSelectSchema(supportTickets);
 export const insertAffiliateStatsSchema = createInsertSchema(affiliateStats);
 export const selectAffiliateStatsSchema = createSelectSchema(affiliateStats);
+export const insertWheelSpinSchema = createInsertSchema(wheelSpins);
+export const selectWheelSpinSchema = createSelectSchema(wheelSpins);
+export const insertBonusCodeSchema = createInsertSchema(bonusCodes);
+export const selectBonusCodeSchema = createSelectSchema(bonusCodes);
+export const insertUserSchema = createInsertSchema(users);
+export const selectUserSchema = createSelectSchema(users);
 
 
 // TypeScript type definitions
@@ -137,6 +171,12 @@ export type InsertSupportTicket = typeof supportTickets.$inferInsert;
 export type SelectSupportTicket = typeof supportTickets.$inferSelect;
 export type InsertAffiliateStats = typeof affiliateStats.$inferInsert;
 export type SelectAffiliateStats = typeof affiliateStats.$inferSelect;
+export type InsertWheelSpin = typeof wheelSpins.$inferInsert;
+export type SelectWheelSpin = typeof wheelSpins.$inferSelect;
+export type InsertBonusCode = typeof bonusCodes.$inferInsert;
+export type SelectBonusCode = typeof bonusCodes.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
+export type SelectUser = typeof users.$inferSelect;
 
 export const wagerRaceRelations = relations(wagerRaces, ({ many }) => ({
   participants: many(wagerRaceParticipants),
@@ -148,3 +188,17 @@ export const supportTicketRelations = relations(
     messages: many(ticketMessages),
   }),
 );
+
+export const wheelSpinRelations = relations(wheelSpins, ({ one }) => ({
+  user: one(users, {
+    fields: [wheelSpins.userId],
+    references: [users.id],
+  }),
+}));
+
+export const bonusCodeRelations = relations(bonusCodes, ({ one }) => ({
+  user: one(users, {
+    fields: [bonusCodes.userId],
+    references: [users.id],
+  }),
+}));
