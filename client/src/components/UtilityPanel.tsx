@@ -56,27 +56,29 @@ export function UtilityPanel() {
     <>
       {isSupport && <FloatingSupport onClose={() => setIsSupport(false)} />}
       <motion.div 
-        className={`fixed z-50 ${isMobile ? 'top-20 right-4' : 'top-20 -right-64'}`}
-        initial={{ x: isMobile ? 0 : 100, scale: 1 }}
-        animate={{ 
-          x: isVisible ? 0 : (isMobile ? 0 : 100),
-          scale: 1
-        }}
+        className={`fixed z-50 ${isMobile ? 'top-20 right-4' : 'top-20 right-0'}`}
+        initial={{ x: 0 }}
+        animate={{ x: 0 }}
         transition={{ type: "spring", stiffness: 200, damping: 25 }}
-        onHoverStart={() => !isMobile && setIsHovered(true)}
-        onHoverEnd={() => !isMobile && setIsHovered(false)}
       >
         <motion.div
-          className="relative"
-          animate={{ x: isOpen ? (isMobile ? 0 : -320) : 0 }}
+          className="relative flex items-start"
+          animate={{ x: isOpen ? -320 : 0 }}
           transition={{ type: "spring", stiffness: 200, damping: 25 }}
         >
+          {/* Panel */}
+          <AnimatePresence>
+            {(isOpen || !isMobile) && (
+              <Card 
+                className={`${isMobile ? 'fixed top-24 right-4 w-[calc(100vw-32px)] max-w-[320px]' : 'w-80'} bg-[#1A1B21]/80 backdrop-blur-md border border-[#2A2B31]/50 overflow-hidden shadow-[0_0_25px_rgba(42,43,49,0.3)] hover:shadow-[0_0_30px_rgba(42,43,49,0.4)] transition-all rounded-xl`}
+              >
+                <div className="grid grid-cols-2 gap-3 p-4">
           {/* Toggle Button */}
           <motion.button
             onClick={togglePanel}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={`${isMobile ? 'w-14 h-14 rounded-full' : 'w-12 h-12 rounded-l-xl'} bg-[#D7FF00] flex items-center justify-center hover:bg-[#D7FF00]/90 transition-all shadow-[0_0_15px_rgba(215,255,0,0.3)] hover:shadow-[0_0_20px_rgba(215,255,0,0.5)]`}
+            className={`${isMobile ? 'w-14 h-14 rounded-full' : 'w-12 h-12 rounded-xl ml-3'} bg-[#D7FF00] flex items-center justify-center hover:bg-[#D7FF00]/90 transition-all shadow-[0_0_15px_rgba(215,255,0,0.3)] hover:shadow-[0_0_20px_rgba(215,255,0,0.5)] z-10`}
           >
             <motion.div
               initial={{ rotate: 0 }}
