@@ -116,7 +116,61 @@ export default function WheelChallenge() {
             className="absolute inset-0 w-full h-full"
             style={{ transformOrigin: "center center" }}
           >
-            {/* 🚀 Render Wheel Here */}
+            <svg viewBox="0 0 300 300" className="w-full h-full">
+              <defs>
+                {SEGMENTS.map((segment, i) => (
+                  <linearGradient
+                    key={`gradient-${i}`}
+                    id={`segment-gradient-${i}`}
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%"
+                  >
+                    <stop offset="0%" stopColor={`#${segment.gradient[0]}`} />
+                    <stop offset="100%" stopColor={`#${segment.gradient[1]}`} />
+                  </linearGradient>
+                ))}
+              </defs>
+              <g transform="translate(150,150)">
+                {SEGMENTS.map((segment, i) => {
+                  const angle = (360 / SEGMENTS.length) * i;
+                  const nextAngle = (360 / SEGMENTS.length) * (i + 1);
+                  const rad = Math.PI / 180;
+                  const x1 = Math.cos(angle * rad) * 140;
+                  const y1 = Math.sin(angle * rad) * 140;
+                  const x2 = Math.cos(nextAngle * rad) * 140;
+                  const y2 = Math.sin(nextAngle * rad) * 140;
+                  const largeArcFlag = nextAngle - angle <= 180 ? "0" : "1";
+
+                  return (
+                    <g key={i} className="wheel-segment-hover">
+                      <path
+                        d={`M 0 0 L ${x1} ${y1} A 140 140 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                        fill={`url(#segment-gradient-${i})`}
+                        className="transition-all duration-300"
+                        filter={activeSegment === i ? "url(#glow)" : "none"}
+                      />
+                    </g>
+                  );
+                })}
+                {/* Center decoration */}
+                <circle
+                  r="30"
+                  fill="#1A1B21"
+                  stroke="#D7FF00"
+                  strokeWidth="2"
+                  className="wheel-center"
+                />
+                <circle
+                  r="25"
+                  fill="none"
+                  stroke="#D7FF00"
+                  strokeWidth="0.5"
+                  className="wheel-ring"
+                />
+              </g>
+            </svg>
           </motion.div>
         </motion.div>
 
