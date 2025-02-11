@@ -56,11 +56,11 @@ export function UtilityPanel() {
     <>
       {isSupport && <FloatingSupport onClose={() => setIsSupport(false)} />}
       <motion.div 
-        className={`fixed z-50 ${isMobile ? 'bottom-4 right-4' : 'top-20 -right-64'}`}
-        initial={{ x: isMobile ? 0 : 100, scale: isMobile ? 0.9 : 1 }}
+        className={`fixed z-50 ${isMobile ? 'top-20 right-4' : 'top-20 -right-64'}`}
+        initial={{ x: isMobile ? 0 : 100, scale: 1 }}
         animate={{ 
           x: isVisible ? 0 : (isMobile ? 0 : 100),
-          scale: isMobile ? 0.9 : 1
+          scale: 1
         }}
         transition={{ type: "spring", stiffness: 200, damping: 25 }}
         onHoverStart={() => !isMobile && setIsHovered(true)}
@@ -95,7 +95,7 @@ export function UtilityPanel() {
           <AnimatePresence>
             {(isOpen || !isMobile) && (
               <Card 
-                className={`${isMobile ? 'fixed bottom-20 right-0 left-0 mx-4' : 'absolute top-0 left-full w-80'} bg-[#1A1B21]/80 backdrop-blur-md border border-[#2A2B31]/50 overflow-hidden shadow-[0_0_25px_rgba(42,43,49,0.3)] hover:shadow-[0_0_30px_rgba(42,43,49,0.4)] transition-all rounded-xl`}
+                className={`${isMobile ? 'fixed top-24 right-4 w-[calc(100vw-32px)] max-w-[320px]' : 'absolute top-0 left-full w-80'} bg-[#1A1B21]/80 backdrop-blur-md border border-[#2A2B31]/50 overflow-hidden shadow-[0_0_25px_rgba(42,43,49,0.3)] hover:shadow-[0_0_30px_rgba(42,43,49,0.4)] transition-all rounded-xl`}
               >
                 <div className="grid grid-cols-2 gap-3 p-4">
                   {/* Daily Spin */}
