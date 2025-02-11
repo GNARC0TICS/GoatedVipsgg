@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 
 interface PreLoaderProps {
   onLoadComplete: () => void;
@@ -7,98 +7,41 @@ interface PreLoaderProps {
 
 export function PreLoader({ onLoadComplete }: PreLoaderProps) {
   const [progress, setProgress] = useState(0);
-  const [assetsLoaded, setAssetsLoaded] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(true);
-
-  // Track asset loading with improved error handling
-  const checkAssetsLoading = useCallback(async () => {
-    try {
-      // Critical assets that must be loaded before showing the app
-      const criticalAssets = [
-        '/images/preload.PNG',
-        '/images/FINAL.mp4',
-        '/images/RACEFLAG.MP4',
-        // Add other critical assets here
-      ];
-
-      const loadPromises = criticalAssets.map(src => {
-        if (src.endsWith('.mp4')) {
-          return new Promise((resolve) => {
-            const video = document.createElement('video');
-            video.onloadeddata = () => resolve(true);
-            video.onerror = () => {
-              console.error(`Failed to load video: ${src}`);
-              resolve(false);
-            };
-            video.src = src;
-          });
-        } else {
-          return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => resolve(true);
-            img.onerror = () => {
-              console.error(`Failed to load image: ${src}`);
-              resolve(false);
-            };
-            img.src = src;
-          });
-        }
-      });
-
-      // Track loading progress
-      let loaded = 0;
-      const total = loadPromises.length;
-
-      await Promise.all(
-        loadPromises.map(p => 
-          p.then(() => {
-            loaded++;
-            // Update progress based on actual asset loading
-            setProgress(prev => Math.max(prev, (loaded / total) * 100));
-          })
-        )
-      );
-
-      setAssetsLoaded(true);
-    } catch (error) {
-      console.error('Error loading assets:', error);
-      setAssetsLoaded(true); // Continue anyway to prevent blocking
-    }
-  }, []);
 
   useEffect(() => {
-    checkAssetsLoading();
+    const startTime = Date.now();
+    const minDisplayTime = 2000; // Minimum time to show loader (2 seconds)
 
-    const duration = 2500; // 2.5 seconds total
-    const interval = 16; // ~60fps for smooth animation
-    const steps = duration / interval;
-    const increment = 100 / steps;
-
-    let currentProgress = 0;
-    const timer = setInterval(() => {
-      if (currentProgress >= 100) {
-        clearInterval(timer);
-        if (assetsLoaded) {
-          setIsAnimating(false);
-          setTimeout(() => {
-            onLoadComplete();
-          }, 500);
+    // Simulate progress updates
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(progressInterval);
+          return 100;
         }
-        return;
+        // Accelerate progress as it gets closer to 100%
+        const increment = Math.max(1, Math.floor((100 - prev) / 10));
+        return Math.min(prev + increment, 100);
+      });
+    }, 50);
+
+    // Handle completion with minimum display time
+    const completionCheck = setInterval(() => {
+      const elapsedTime = Date.now() - startTime;
+      if (progress >= 100 && elapsedTime >= minDisplayTime) {
+        clearInterval(completionCheck);
+        clearInterval(progressInterval);
+        setTimeout(() => {
+          onLoadComplete();
+        }, 500); // Smooth exit transition
       }
-
-      // Smooth progress animation with easing
-      const remainingProgress = 100 - currentProgress;
-      const step = Math.min(increment, remainingProgress * 0.1);
-
-      currentProgress += step;
-      setProgress(prev => Math.max(prev, currentProgress));
-    }, interval);
+    }, 100);
 
     return () => {
-      clearInterval(timer);
+      clearInterval(progressInterval);
+      clearInterval(completionCheck);
     };
-  }, [onLoadComplete, assetsLoaded]);
+  }, [onLoadComplete, progress]);
 
   return (
     <motion.div
@@ -132,12 +75,15 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
 
         <div className="w-64 h-1 bg-[#2A2B31] rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-[#D7FF00]"
-            initial={{ width: "0%" }}
-            animate={{ 
-              width: `${Math.floor(progress)}%`,
-              transition: { duration: 0.3, ease: "easeOut" }
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: progress / 100 }}
+            transition={{ 
+              type: "spring",
+              damping: 20,
+              stiffness: 100
             }}
+            className="h-full bg-[#D7FF00] origin-left"
+            style={{ willChange: "transform" }}
           />
         </div>
 
@@ -152,7 +98,7 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
             ease: "easeInOut",
           }}
         >
-          {Math.floor(progress)}%
+          {progress}%
         </motion.p>
       </motion.div>
     </motion.div>
