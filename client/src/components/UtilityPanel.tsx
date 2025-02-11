@@ -53,7 +53,7 @@ export function UtilityPanel() {
     <>
       {isSupport && <FloatingSupport onClose={() => setIsSupport(false)} />}
       <motion.div 
-        className="fixed -right-72 top-20 z-50"
+        className="fixed -right-64 top-20 z-50"
         initial={{ x: 100 }}
         animate={{ x: isVisible ? 0 : 100 }}
         transition={{ type: "spring", stiffness: 200, damping: 25 }}
