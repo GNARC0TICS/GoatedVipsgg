@@ -11,9 +11,66 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 
+// Check if user is admin
+const isAdmin = async (chatId: number) => {
+  const [user] = await db
+    .select()
+    .from(telegramUsers)
+    .where(eq(telegramUsers.chatId, chatId.toString()))
+    .limit(1);
+  return user?.chatId === "1689953605"; // Goombas's ID
+};
+
+// Public commands
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
   await bot.sendMessage(chatId, 'Welcome to GoatedVIPs! Use /help to see available commands.');
+});
+
+bot.onText(/\/help/, async (msg) => {
+  const chatId = msg.chat.id;
+  const isAdminUser = await isAdmin(chatId);
+  
+  let commands = [
+    '/start - Start the bot',
+    '/help - Show available commands',
+    '/stats [username] - View stats for a user',
+    '/race - View current race standings'
+  ];
+  
+  if (isAdminUser) {
+    commands = commands.concat([
+      '',
+      'Admin Commands:',
+      '/broadcast - Send message to all users',
+      '/manage_users - Manage user access',
+      '/view_logs - View bot activity logs'
+    ]);
+  }
+  
+  await bot.sendMessage(chatId, commands.join('\n'));
+});
+
+// Admin commands - only accessible to admin
+bot.onText(/\/(broadcast|manage_users|view_logs)/, async (msg) => {
+  const chatId = msg.chat.id;
+  if (!await isAdmin(chatId)) {
+    await bot.sendMessage(chatId, 'This command is only available to administrators.');
+    return;
+  }
+  
+  // Process admin commands here
+  switch (msg.text?.split(' ')[0]) {
+    case '/broadcast':
+      // Admin broadcast logic
+      break;
+    case '/manage_users':
+      // User management logic
+      break;
+    case '/view_logs':
+      // Log viewing logic
+      break;
+  }
 });
 
 bot.onText(/\/stats(?:\s+(.+))?/, async (msg, match) => {
