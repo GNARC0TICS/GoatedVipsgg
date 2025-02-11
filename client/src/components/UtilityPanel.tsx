@@ -9,9 +9,30 @@ import { FloatingSupport } from "./FloatingSupport";
 export function UtilityPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSupport, setIsSupport] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [scrollTimeout, setScrollTimeout] = useState<NodeJS.Timeout | null>(null);
   const [, setLocation] = useLocation();
   const [timeLeft] = useState<string>("Available now!");
   const isSpinAvailable = true; // For testing purposes
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsVisible(false);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      
+      const timeout = setTimeout(() => {
+        setIsVisible(true);
+      }, 150); // Delay before showing again after scroll stops
+      
+      setScrollTimeout(timeout);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+    };
+  }, [scrollTimeout]);
 
   const togglePanel = () => setIsOpen(!isOpen);
   
@@ -25,8 +46,8 @@ export function UtilityPanel() {
       {isSupport && <FloatingSupport onClose={() => setIsSupport(false)} />}
       <motion.div 
         className="fixed right-4 top-20 z-50"
-        initial={{ x: 100 }}
-        animate={{ x: 0 }}
+        initial={{ x: 100, opacity: 0 }}
+        animate={{ x: 0, opacity: isVisible ? 1 : 0 }}
         transition={{ type: "spring", duration: 0.8 }}
       >
         <motion.div
