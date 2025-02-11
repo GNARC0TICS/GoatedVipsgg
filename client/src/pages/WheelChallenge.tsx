@@ -48,11 +48,9 @@ export default function WheelChallenge() {
     try {
       const chosenSegment = weightedRandom();
       const segmentAngle = 360 / SEGMENTS.length;
-      // Adjust offset to ensure pointer aligns with segment center
-      const offset = 0; // Remove randomness to ensure precise alignment
       const totalRotations = 5;
-      // Adjust rotation to align with pointer at top center
-      const targetRotation = 360 * totalRotations + (segmentAngle * chosenSegment) - (segmentAngle / 2);
+      // Calculate rotation to align segment center with pointer
+      const targetRotation = 360 * totalRotations + (segmentAngle * chosenSegment);
 
       // 🚀 More Realistic Spin Animation
       await controls.start({
