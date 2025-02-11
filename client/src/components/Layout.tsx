@@ -649,6 +649,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 </DropdownMenu>
               )}
               <div className="flex items-center gap-2 md:gap-4">
+                <UtilityPanelButton />
                 {user ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -705,7 +706,6 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {children}
       <ScrollToTop />
-      <UtilityPanel />
       <footer ref={footerRef} className={footerClasses.wrapper}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent pointer-events-none" />
         <div className={footerClasses.container}>
