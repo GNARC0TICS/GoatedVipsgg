@@ -292,8 +292,8 @@ export default function WheelChallenge() {
               </div>
 
               {/* Flipped Pointer */}
-              <div className="absolute bottom-0 left-1/2 -ml-3 -mb-2 w-6 h-6 pointer-events-none">
-                <div className="w-0 h-0 border-l-[12px] border-r-[12px] border-t-[24px] border-l-transparent border-r-transparent border-t-[#D7FF00] filter wheel-glow" />
+              <div className="absolute top-0 left-1/2 -ml-3 -mt-4 w-6 h-6 pointer-events-none">
+                <div className="w-6 h-6 relative transform rotate-45 bg-[#D7FF00] filter wheel-glow" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
               </div>
 
               {/* Prize Legend */}
