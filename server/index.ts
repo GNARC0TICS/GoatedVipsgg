@@ -103,6 +103,9 @@ async function startServer() {
       serveStatic(app);
     }
 
+    // Initialize and start the Telegram bot
+    await bot.start();
+
     return new Promise((resolve, reject) => {
       server
         .listen(PORT, "0.0.0.0")
