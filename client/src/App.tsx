@@ -37,6 +37,7 @@ import VipProgram from "./pages/VipProgram";
 import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
+import WheelChallenge from "@/pages/WheelChallenge";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -121,6 +122,11 @@ function Router() {
                 {(params: { id: string }) => (
                   <UserProfile userId={params.id} />
                 )}
+              </ProtectedRoute>
+            </Route>
+            <Route path="/wheel-challenge">
+              <ProtectedRoute>
+                <WheelChallenge />
               </ProtectedRoute>
             </Route>
 

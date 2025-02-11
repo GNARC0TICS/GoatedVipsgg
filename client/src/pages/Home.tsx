@@ -212,7 +212,7 @@ export default function Home() {
                   </div>
                 </Link>
                 
-                 <Link href="/challenges" className="block">
+                <Link href="/challenges" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                     <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
                     <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 card-hover h-full w-full flex flex-col justify-between">
@@ -234,8 +234,31 @@ export default function Home() {
                     </div>
                   </div>
                 </Link>
+                <Link href="/wheel-challenge" className="block">
+                  <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
+                    <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 card-hover h-full w-full flex flex-col justify-between">
+                      <Gift className="h-8 w-8 text-[#D7FF00] mb-4" />
+                      <div className="flex items-center justify-center gap-2 mb-4">
+                        <h3 className="text-2xl font-heading uppercase text-white">
+                          Daily Wheel Spin
+                        </h3>
+                        <span className="text-xs font-heading text-[#D7FF00] px-2 py-1 bg-[#D7FF00]/10 rounded-full">
+                          NEW
+                        </span>
+                      </div>
+                      <p className="text-[#8A8B91] mb-6 font-body">
+                        Spin the wheel daily for a chance to win exclusive bonus codes and rewards!
+                      </p>
+                      <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
+                        Try Your Luck <ArrowRight className="h-4 w-4" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
               </motion.div>
               
+
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

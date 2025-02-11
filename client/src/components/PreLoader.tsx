@@ -1,47 +1,19 @@
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 interface PreLoaderProps {
   onLoadComplete: () => void;
 }
 
 export function PreLoader({ onLoadComplete }: PreLoaderProps) {
-  const [progress, setProgress] = useState(0);
-
   useEffect(() => {
-    const startTime = Date.now();
-    const minDisplayTime = 2000; // Minimum time to show loader (2 seconds)
+    // Fixed duration for preloader display
+    const timer = setTimeout(() => {
+      onLoadComplete();
+    }, 2500); // 2.5 seconds total display time
 
-    // Simulate progress updates
-    const progressInterval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(progressInterval);
-          return 100;
-        }
-        // Accelerate progress as it gets closer to 100%
-        const increment = Math.max(1, Math.floor((100 - prev) / 10));
-        return Math.min(prev + increment, 100);
-      });
-    }, 50);
-
-    // Handle completion with minimum display time
-    const completionCheck = setInterval(() => {
-      const elapsedTime = Date.now() - startTime;
-      if (progress >= 100 && elapsedTime >= minDisplayTime) {
-        clearInterval(completionCheck);
-        clearInterval(progressInterval);
-        setTimeout(() => {
-          onLoadComplete();
-        }, 500); // Smooth exit transition
-      }
-    }, 100);
-
-    return () => {
-      clearInterval(progressInterval);
-      clearInterval(completionCheck);
-    };
-  }, [onLoadComplete, progress]);
+    return () => clearTimeout(timer);
+  }, [onLoadComplete]);
 
   return (
     <motion.div
@@ -75,14 +47,16 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
 
         <div className="w-64 h-1 bg-[#2A2B31] rounded-full overflow-hidden">
           <motion.div
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: progress / 100 }}
-            transition={{ 
-              type: "spring",
-              damping: 20,
-              stiffness: 100
+            initial={{ x: "-100%" }}
+            animate={{
+              x: ["0%", "100%"]
             }}
-            className="h-full bg-[#D7FF00] origin-left"
+            transition={{
+              duration: 1,
+              ease: "linear",
+              repeat: Infinity,
+            }}
+            className="h-full w-32 bg-gradient-to-r from-transparent via-[#D7FF00] to-transparent"
             style={{ willChange: "transform" }}
           />
         </div>
@@ -98,7 +72,7 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
             ease: "easeInOut",
           }}
         >
-          {progress}%
+          Loading...
         </motion.p>
       </motion.div>
     </motion.div>
