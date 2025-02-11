@@ -1,4 +1,3 @@
-
 html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
@@ -157,25 +156,25 @@ html {
   * {
     @apply border-border;
   }
-  
+
   /* Improved spacing utilities */
   .layout-container {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
-  
+
   .section-spacing {
     @apply py-12 md:py-16 lg:py-24;
   }
-  
+
   .content-spacing {
     @apply space-y-6 md:space-y-8;
   }
-  
+
   /* Enhanced responsive paddings */
   .responsive-padding {
     @apply px-4 sm:px-6 lg:px-8;
   }
-  
+
   /* Improved grid layouts */
   .grid-layout {
     @apply grid gap-6 md:gap-8 lg:gap-12;
@@ -251,7 +250,6 @@ html {
     @apply text-sm md:text-base;
   }
 }
-
 
 @keyframes fillAnimation {
   from {
@@ -417,4 +415,152 @@ html {
 
 .animate-scroll {
   animation: scroll 15s linear infinite;
+}
+
+
+/* Enhanced Wheel Animations */
+@keyframes glowPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(215, 255, 0, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(215, 255, 0, 0.6));
+  }
+}
+
+.wheel-segment-hover {
+  transition: all 0.3s ease;
+}
+
+.wheel-segment-hover:hover {
+  filter: brightness(1.2);
+  transform: scale(1.02);
+}
+
+.wheel-glow {
+  animation: glowPulse 2s infinite;
+}
+
+.wheel-text {
+  transform-origin: center;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.8);
+  stroke-width: 0.5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  text-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.wheel-emblem {
+  transform-origin: center;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.8);
+  stroke-width: 0.3px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  text-shadow: 
+    0 0 4px rgba(255, 215, 0, 0.6),
+    0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+/* Center decoration */
+.wheel-center {
+  filter: drop-shadow(0 0 5px rgba(215, 255, 0, 0.5));
+}
+
+.wheel-ring {
+  animation: ringPulse 2s infinite;
+}
+
+@keyframes ringPulse {
+  0%, 100% {
+    stroke-opacity: 0.4;
+    stroke-width: 0.5;
+  }
+  50% {
+    stroke-opacity: 0.8;
+    stroke-width: 0.7;
+  }
+}
+
+/* Sparkle Animation */
+@keyframes sparkleFloat {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--float-x, 20px), var(--float-y, -20px)) rotate(360deg) scale(0);
+    opacity: 0;
+  }
+}
+
+.sparkle {
+  --float-x: random(-30px, 30px);
+  --float-y: random(-30px, 30px);
+  animation: sparkleFloat 1s ease-out forwards;
+}
+
+/* Enhanced wheel segment animation */
+@keyframes segmentPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.9; }
+}
+
+.segment-pulse {
+  animation: segmentPulse 1s ease-in-out infinite;
+}
+
+/* Win effects */
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.animate-pop {
+  animation: pop 0.3s ease-in-out;
+}
+
+.shadow-glow {
+  box-shadow: 
+    0 0 20px rgba(215, 255, 0, 0.4),
+    0 0 40px rgba(215, 255, 0, 0.2);
+}
+
+/* Toast animations for wins */
+@keyframes winReveal {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.win-toast {
+  animation: winReveal 0.5s ease-out forwards;
+}
+
+@layer utilities {
+  .dropdown-content-enter {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  .dropdown-content-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 200ms, transform 200ms;
+  }
+
+  .mobile-nav-item-enter {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+
+  .mobile-nav-item-enter-active {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 200ms, transform 200ms;
+  }
 }

@@ -10,13 +10,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 export function FloatingSupport({ onClose }: { onClose: () => void }) {
   const [isMinimized, setIsMinimized] = useState(true);
 
+  const handleClose = () => {
+    onClose?.();
+    setIsMinimized(true);
+  };
+
   return (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
-        className="fixed bottom-20 right-4 z-50"
+        className="fixed bottom-36 right-4 z-40"
       >
         {isMinimized ? (
           <div className="relative">
@@ -32,7 +37,7 @@ export function FloatingSupport({ onClose }: { onClose: () => void }) {
           <Card className="w-[400px] bg-[#1A1B21] border-[#2A2B31]">
             <div className="p-4 border-b border-[#2A2B31] flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 bg-[#D7FF00] rounded-full animate-pulse" />
+                <div className="h-2 w-2 bg-[#D7FF00] rounded-full animate-pulse" />
                 <h3 className="font-heading text-lg text-white">VIP Support</h3>
               </div>
               <div className="flex gap-2">
@@ -49,7 +54,7 @@ export function FloatingSupport({ onClose }: { onClose: () => void }) {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={onClose}
+                  onClick={handleClose}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -66,10 +71,6 @@ export function FloatingSupport({ onClose }: { onClose: () => void }) {
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="block"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    window.open('https://t.me/xGoombas', '_blank', 'noopener,noreferrer');
-                  }}
                 >
                   <Button
                     variant="default"
