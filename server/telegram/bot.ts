@@ -18,6 +18,26 @@ const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
   baseApiUrl: "https://api.telegram.org",
 });
 
+// Set bot commands
+bot.setMyCommands([
+  { command: '/start', description: 'Start the bot' },
+  { command: '/help', description: 'Show available commands' },
+  { command: '/stats', description: 'View your stats' },
+  { command: '/race', description: 'View current race standings' }
+]).catch(error => {
+  console.error('Error setting bot commands:', error);
+});
+
+// Error handling for polling errors
+bot.on('polling_error', (error) => {
+  console.error('Polling error:', error);
+});
+
+// Debug incoming messages
+bot.on('message', (msg) => {
+  console.log('Received message:', msg);
+});
+
 // Check if user is admin
 const isAdmin = async (chatId: number) => {
   const [user] = await db
