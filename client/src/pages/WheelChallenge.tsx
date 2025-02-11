@@ -8,16 +8,16 @@ import confetti from "canvas-confetti";
 
 // 🎰 Premium Casino-Style Segments
 const SEGMENTS = [
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 900 },
-  { text: "$0.10 Bonus", type: "bonus", value: "BONUS010", gradient: ["CD7F32", "8B4513"], weight: 200 },
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 900 },
-  { text: "$1 Bonus", type: "bonus", value: "BONUS100", gradient: ["C0C0C0", "A9A9A9"], weight: 100 },
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 900 },
-  { text: "$2 Bonus", type: "bonus", value: "BONUS200", gradient: ["D7FF00", "BFDF00"], weight: 15 },
-  { text: "$25 Bonus", type: "bonus", value: "BONUS2500", gradient: ["FFD700", "DAA520"], weight: 5 },
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 2500 },
+  { text: "$0.10 Bonus", type: "bonus", value: "BONUS010", gradient: ["CD7F32", "8B4513"], weight: 100 },
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 2500 },
+  { text: "$1 Bonus", type: "bonus", value: "BONUS100", gradient: ["C0C0C0", "A9A9A9"], weight: 50 },
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 2500 },
+  { text: "$2 Bonus", type: "bonus", value: "BONUS200", gradient: ["D7FF00", "BFDF00"], weight: 10 },
+  { text: "$25 Bonus", type: "bonus", value: "BONUS2500", gradient: ["FFD700", "DAA520"], weight: 3 },
   { text: "$50 Bonus", type: "bonus", value: "BONUS5000", gradient: ["E5E4E2", "B4C4D4"], weight: 2 },
   { text: "$100 Bonus", type: "bonus", value: "BONUS10000", gradient: ["B9F2FF", "00BFFF"], weight: 1 },
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 900 }
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 2500 }
 ] as const;
 
 export default function WheelChallenge() {
@@ -140,12 +140,12 @@ export default function WheelChallenge() {
                 <circle r="30" fill="#1A1B21" stroke="#D7FF00" strokeWidth="2" className="wheel-center"/>
               </g>
             </svg>
-
-            {/* Pointer Arrow */}
-            <div className="absolute top-0 left-1/2 -ml-3 -mt-4 w-6 h-6 pointer-events-none">
-              <div className="w-6 h-6 bg-[#D7FF00] transform rotate-45 filter wheel-glow" />
-            </div>
           </motion.div>
+          
+          {/* Fixed Pointer Arrow */}
+          <div className="absolute top-0 left-1/2 -ml-3 -mt-4 w-6 h-6 pointer-events-none z-10">
+            <div className="w-6 h-6 bg-[#D7FF00] transform rotate-45 filter wheel-glow" />
+          </div>
         </motion.div>
 
         {/* Spin Button */}
