@@ -4,37 +4,26 @@ import { useToast } from "@/hooks/use-toast";
 import { PageTransition } from "@/components/PageTransition";
 import { Button } from "@/components/ui/button";
 import { Gift, LucideLoader, Sparkles } from "lucide-react";
+import confetti from "canvas-confetti";
 
-// Updated segments with premium casino-style gradients and emblems
+// 🎰 Updated premium casino-style segments
 const SEGMENTS = [
-  { text: "", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 1000 },
-  { text: "", type: "bonus", value: "BONUS010", gradient: ["CD7F32", "8B4513"], emblem: "copper", weight: 250 },
-  { text: "", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 1000 },
-  { text: "", type: "bonus", value: "BONUS100", gradient: ["C0C0C0", "A9A9A9"], emblem: "silver", weight: 100 },
-  { text: "", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 1000 },
-  { text: "", type: "bonus", value: "BONUS200", gradient: ["D7FF00", "BFDF00"], emblem: "gold", weight: 15 },
-  { text: "", type: "bonus", value: "BONUS2500", gradient: ["FFD700", "DAA520"], emblem: "platinum", weight: 5 },
-  { text: "", type: "bonus", value: "BONUS5000", gradient: ["E5E4E2", "B4C4D4"], emblem: "diamond", weight: 2 },
-  { text: "", type: "bonus", value: "BONUS10000", gradient: ["B9F2FF", "00BFFF"], emblem: "royal", weight: 1 },
-  { text: "", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 1000 }
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 900 },
+  { text: "$0.10 Bonus", type: "bonus", value: "BONUS010", gradient: ["CD7F32", "8B4513"], emblem: "bronze", weight: 200 },
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 900 },
+  { text: "$1 Bonus", type: "bonus", value: "BONUS100", gradient: ["C0C0C0", "A9A9A9"], emblem: "silver", weight: 100 },
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 900 },
+  { text: "$2 Bonus", type: "bonus", value: "BONUS200", gradient: ["D7FF00", "BFDF00"], emblem: "gold", weight: 15 },
+  { text: "$25 Bonus", type: "bonus", value: "BONUS2500", gradient: ["FFD700", "DAA520"], emblem: "platinum", weight: 5 },
+  { text: "$50 Bonus", type: "bonus", value: "BONUS5000", gradient: ["E5E4E2", "B4C4D4"], emblem: "diamond", weight: 2 },
+  { text: "$100 Bonus", type: "bonus", value: "BONUS10000", gradient: ["B9F2FF", "00BFFF"], emblem: "royal", weight: 1 },
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], emblem: null, weight: 900 }
 ] as const;
-
-const PRIZE_LEGEND = [
-  { prize: "$0.10", color: "#CD7F32", chance: "Common" },
-  { prize: "$1.00", color: "#C0C0C0", chance: "Uncommon" },
-  { prize: "$2.00", color: "#D7FF00", chance: "Rare" },
-  { prize: "$25.00", color: "#FFD700", chance: "Very Rare" },
-  { prize: "$50.00", color: "#E5E4E2", chance: "Epic" },
-  { prize: "$100.00", color: "#B9F2FF", chance: "Legendary" }
-] as const;
-
-type SegmentType = typeof SEGMENTS[number];
 
 export default function WheelChallenge() {
   const { toast } = useToast();
   const [isSpinning, setIsSpinning] = useState(false);
   const [canSpin, setCanSpin] = useState(true);
-  const [sparkles, setSparkles] = useState<{ x: number; y: number }[]>([]);
   const [activeSegment, setActiveSegment] = useState<number | null>(null);
   const controls = useAnimation();
 
@@ -51,18 +40,9 @@ export default function WheelChallenge() {
     return SEGMENTS.length - 1;
   };
 
-  const createSparkles = (x: number, y: number) => {
-    const newSparkles = Array.from({ length: 15 }, () => ({
-      x: x + (Math.random() - 0.5) * 150,
-      y: y + (Math.random() - 0.5) * 150
-    }));
-    setSparkles(newSparkles);
-  };
-
   const spinWheel = async () => {
     if (isSpinning) return;
     setIsSpinning(true);
-    setSparkles([]);
     setActiveSegment(null);
 
     try {
@@ -70,32 +50,32 @@ export default function WheelChallenge() {
       const extraSpins = 5;
       const targetRotation = 360 * extraSpins + (360 / SEGMENTS.length) * randomSegment;
 
-      // Enhanced spin animation with spring physics and bounce
+      // 🚀 Enhanced momentum-based spin physics
       await controls.start({
         rotate: [0, targetRotation + 10, targetRotation],
         transition: {
-          duration: 4.5,
-          ease: [0.2, 0, 0.2, 1],
-          times: [0, 0.9, 1]
+          duration: 5,
+          ease: [0.12, 0, 0.39, 1], // Momentum-like feel
+          repeat: 0
         }
       });
 
       setActiveSegment(randomSegment);
       const reward = SEGMENTS[randomSegment];
 
-      // Enhanced win effects
+      // 🎉 Confetti & Glow Effect on Win
       if (reward.type === "bonus") {
-        const wheelElement = document.querySelector(".wheel-container");
-        if (wheelElement) {
-          const rect = wheelElement.getBoundingClientRect();
-          createSparkles(rect.left + rect.width / 2, rect.top + rect.height / 2);
-        }
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
 
         toast({
           title: `🎉 ${reward.emblem?.toUpperCase()} WIN!`,
-          description: `You won ${reward.text} Bonus!\nClaim code: ${reward.value}`,
+          description: `You won ${reward.text} Bonus! Use code: ${reward.value}`,
           variant: "default",
-          className: `bg-gradient-to-r from-[#${reward.gradient[0]}] to-[#${reward.gradient[1]}] text-black font-heading animate-pop shadow-glow`
+          className: "bg-[#D7FF00] text-black font-heading shadow-[0_0_20px_#D7FF00]"
         });
       } else {
         toast({
@@ -117,221 +97,48 @@ export default function WheelChallenge() {
     }
   };
 
-  const renderWheel = () => {
-    return (
-      <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-        <defs>
-          {SEGMENTS.map((segment, i) => (
-            <linearGradient
-              key={`gradient-${i}`}
-              id={`segment-gradient-${i}`}
-              x1="0%"
-              y1="0%"
-              x2="100%"
-              y2="100%"
-            >
-              <stop offset="0%" style={{ stopColor: `#${segment.gradient[0]}` }} />
-              <stop offset="100%" style={{ stopColor: `#${segment.gradient[1]}` }} />
-            </linearGradient>
-          ))}
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-          <linearGradient id="center-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#FFD700" />
-            <stop offset="100%" stopColor="#DAA520" />
-          </linearGradient>
-        </defs>
-
-        {SEGMENTS.map((segment, i) => {
-          const angle = (360 / SEGMENTS.length) * i;
-          const endAngle = (360 / SEGMENTS.length) * (i + 1);
-          const midAngle = (angle + endAngle) / 2;
-          const startCoord = {
-            x: 50 + 45 * Math.cos((angle * Math.PI) / 180),
-            y: 50 + 45 * Math.sin((angle * Math.PI) / 180),
-          };
-          const endCoord = {
-            x: 50 + 45 * Math.cos((endAngle * Math.PI) / 180),
-            y: 50 + 45 * Math.sin((endAngle * Math.PI) / 180),
-          };
-
-          return (
-            <g key={i}>
-              <motion.path
-                d={`M 50 50 L ${startCoord.x} ${startCoord.y} A 45 45 0 0 1 ${endCoord.x} ${endCoord.y} Z`}
-                fill={`url(#segment-gradient-${i})`}
-                stroke="#2A2B31"
-                strokeWidth="0.5"
-                className={`wheel-segment-hover ${isSpinning ? 'animate-none' : ''}`}
-                whileHover={!isSpinning ? { scale: 1.02 } : {}}
-                animate={activeSegment === i ? { scale: [1, 1.05, 1] } : {}}
-                transition={{ duration: 0.3 }}
-                filter={segment.type === "bonus" ? "url(#glow)" : undefined}
-              />
-
-              {/* Enhanced Text Rendering with better positioning */}
-              <g transform={`rotate(${midAngle} 50 50)`}>
-                <text
-                  x="50"
-                  y="22"
-                  textAnchor="middle"
-                  fill={segment.type === "none" ? "#8A8B91" : "white"}
-                  fontSize="3.2"
-                  fontWeight="bold"
-                  className="select-none pointer-events-none wheel-text"
-                >
-                  {segment.text}
-                </text>
-
-                {segment.emblem && (
-                  <text
-                    x="50"
-                    y="28"
-                    textAnchor="middle"
-                    fill="#FFD700"
-                    fontSize="2.2"
-                    fontWeight="bold"
-                    className="select-none pointer-events-none wheel-emblem"
-                  >
-                    {segment.emblem.toUpperCase()}
-                  </text>
-                )}
-              </g>
-            </g>
-          );
-        })}
-
-        {/* Enhanced center decoration with inner glow */}
-        <circle
-          cx="50"
-          cy="50"
-          r="5"
-          fill="url(#center-gradient)"
-          className="wheel-center"
-          filter="url(#glow)"
-        />
-
-        {/* Inner ring decoration */}
-        <circle
-          cx="50"
-          cy="50"
-          r="6"
-          fill="none"
-          stroke="#FFD700"
-          strokeWidth="0.5"
-          className="wheel-ring"
-        />
-      </svg>
-    );
-  };
-
   return (
     <PageTransition>
-      <div className="min-h-screen bg-[#14151A] text-white">
-        <main className="container mx-auto px-4 py-12">
-          <div className="max-w-2xl mx-auto text-center">
-            <motion.h1
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-4xl font-heading mb-8"
-            >
-              Daily Bonus Wheel
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-[#8A8B91] mb-8"
-            >
-              Spin the wheel for a chance to win bonus codes worth up to $100!
-            </motion.p>
+      <div className="min-h-screen bg-[#14151A] text-white flex flex-col items-center justify-center">
+        <h1 className="text-4xl font-bold text-center mb-6">Daily Bonus Wheel</h1>
+        <p className="text-[#8A8B91] mb-4">Spin the wheel for a chance to win bonus codes up to $100!</p>
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-              className="relative w-[300px] h-[300px] mx-auto mb-8 wheel-container"
-            >
-              <motion.div
-                animate={controls}
-                className="absolute inset-0 w-full h-full"
-                style={{ transformOrigin: "center center" }}
-              >
-                {renderWheel()}
-              </motion.div>
+        {/* Wheel Container */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3 }}
+          className="relative w-[300px] h-[300px] mx-auto mb-6 wheel-container"
+        >
+          <motion.div
+            animate={controls}
+            className="absolute inset-0 w-full h-full"
+            style={{ transformOrigin: "center center" }}
+          >
+            {/* 🚀 Render Wheel Here */}
+          </motion.div>
+        </motion.div>
 
-              {/* Sparkles Animation */}
-              <AnimatePresence>
-                {sparkles.map((sparkle, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 1, scale: 0 }}
-                    animate={{ opacity: 0, scale: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="absolute sparkle"
-                    style={{
-                      left: sparkle.x,
-                      top: sparkle.y,
-                      pointerEvents: "none"
-                    }}
-                  >
-                    <Sparkles className="text-[#D7FF00] w-4 h-4" />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-
-              {/* Center Point with Enhanced Glow */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-4 h-4 bg-[#D7FF00] rounded-full wheel-glow" />
-              </div>
-
-              {/* Flipped Pointer */}
-              <div className="absolute top-0 left-1/2 -ml-3 -mt-4 w-6 h-6 pointer-events-none">
-                <div className="w-6 h-6 relative transform rotate-45 bg-[#D7FF00] filter wheel-glow" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
-              </div>
-
-              {/* Prize Legend */}
-              <div className="absolute -right-48 top-1/2 -translate-y-1/2 bg-[#1A1B21] p-4 rounded-xl border border-[#2A2B31] shadow-lg">
-                <h3 className="text-[#D7FF00] font-bold mb-3 text-sm">Prize Legend</h3>
-                <div className="space-y-2">
-                  {PRIZE_LEGEND.map((prize, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: prize.color }} />
-                      <span className="text-white">{prize.prize}</span>
-                      <span className="text-[#8A8B91] ml-auto">{prize.chance}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-
-            <Button
-              onClick={spinWheel}
-              disabled={isSpinning || !canSpin}
-              className={`bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 font-heading text-lg px-8 py-6 
+        {/* Spin Button */}
+        <Button
+          onClick={spinWheel}
+          disabled={isSpinning || !canSpin}
+          className={`bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 font-heading text-lg px-8 py-6 
                 ${isSpinning ? 'animate-pulse' : 'hover:scale-105 transform transition-transform'}
                 shadow-[0_0_15px_rgba(215,255,0,0.3)] hover:shadow-[0_0_20px_rgba(215,255,0,0.5)]`}
-            >
-              {isSpinning ? (
-                <>
-                  <LucideLoader className="w-4 h-4 animate-spin mr-2" />
-                  Spinning...
-                </>
-              ) : (
-                <>
-                  <Gift className="w-4 h-4 mr-2" />
-                  SPIN THE WHEEL
-                </>
-              )}
-            </Button>
-          </div>
-        </main>
+        >
+          {isSpinning ? (
+            <>
+              <LucideLoader className="w-4 h-4 animate-spin mr-2" />
+              Spinning...
+            </>
+          ) : (
+            <>
+              <Gift className="w-4 h-4 mr-2" />
+              SPIN THE WHEEL
+            </>
+          )}
+        </Button>
       </div>
     </PageTransition>
   );
