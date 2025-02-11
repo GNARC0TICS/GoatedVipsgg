@@ -8,16 +8,16 @@ import confetti from "canvas-confetti";
 
 // 🎰 Premium Casino-Style Segments
 const SEGMENTS = [
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 5000 },
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 6000 },
   { text: "$0.10 Bonus", type: "bonus", value: "BONUS010", gradient: ["CD7F32", "8B4513"], weight: 100 },
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 5000 },
-  { text: "$0 Bonus", type: "bonus", value: "BONUS000", gradient: ["1A1B21", "2A2B31"], weight: 50 },
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 5000 },
-  { text: "$2 Bonus", type: "bonus", value: "BONUS200", gradient: ["D7FF00", "BFDF00"], weight: 10 },
-  { text: "$25 Bonus", type: "bonus", value: "BONUS2500", gradient: ["FFD700", "DAA520"], weight: 3 },
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 5000 },
-  { text: "$100 Bonus", type: "bonus", value: "BONUS10000", gradient: ["B9F2FF", "00BFFF"], weight: 1 },
-  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 5000 }
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 6000 },
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 6000 },
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 6000 },
+  { text: "$2 Bonus", type: "bonus", value: "BONUS200", gradient: ["D7FF00", "BFDF00"], weight: 5 },
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 6000 },
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 6000 },
+  { text: "$100 Bonus", type: "bonus", value: "BONUS10000", gradient: ["B9F2FF", "00BFFF"], weight: 0.5 },
+  { text: "Try Again", type: "none", gradient: ["1A1B21", "2A2B31"], weight: 6000 }
 ] as const;
 
 export default function WheelChallenge() {
@@ -162,10 +162,7 @@ export default function WheelChallenge() {
             <div className="w-3 h-3" style={{backgroundColor: '#B9F2FF'}}></div>
             <span>Diamond - $100 Bonus</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3" style={{backgroundColor: '#FFD700'}}></div>
-            <span>Gold - $25 Bonus</span>
-          </div>
+          
           <div className="flex items-center gap-2">
             <div className="w-3 h-3" style={{backgroundColor: '#D7FF00'}}></div>
             <span>Emerald - $2 Bonus</span>
