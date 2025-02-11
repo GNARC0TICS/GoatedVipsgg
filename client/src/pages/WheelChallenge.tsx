@@ -140,6 +140,11 @@ export default function WheelChallenge() {
                 <circle r="30" fill="#1A1B21" stroke="#D7FF00" strokeWidth="2" className="wheel-center"/>
               </g>
             </svg>
+
+            {/* Pointer Arrow */}
+            <div className="absolute top-0 left-1/2 -ml-3 -mt-4 w-6 h-6 pointer-events-none">
+              <div className="w-6 h-6 bg-[#D7FF00] transform rotate-45 filter wheel-glow" />
+            </div>
           </motion.div>
         </motion.div>
 
