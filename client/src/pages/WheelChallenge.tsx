@@ -48,9 +48,11 @@ export default function WheelChallenge() {
     try {
       const chosenSegment = weightedRandom();
       const segmentAngle = 360 / SEGMENTS.length;
-      const offset = Math.random() * (segmentAngle / 2) - segmentAngle / 4; // Slight randomness for realism
+      // Adjust offset to ensure pointer aligns with segment center
+      const offset = 0; // Remove randomness to ensure precise alignment
       const totalRotations = 5;
-      const targetRotation = 360 * totalRotations + segmentAngle * chosenSegment + offset;
+      // Adjust rotation to align with pointer at top center
+      const targetRotation = 360 * totalRotations + (segmentAngle * chosenSegment) - (segmentAngle / 2);
 
       // 🚀 More Realistic Spin Animation
       await controls.start({
@@ -100,9 +102,9 @@ export default function WheelChallenge() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-[#14151A] text-white flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-[#14151A] text-white flex flex-col items-center pt-20">
         <h1 className="text-4xl font-bold text-center mb-6">Daily Bonus Wheel</h1>
-        <p className="text-[#8A8B91] mb-4">Spin for a chance to win bonus codes up to $100!</p>
+        <p className="text-[#8A8B91] mb-12">Spin for a chance to win bonus codes up to $100!</p>
 
         {/* Wheel Container */}
         <motion.div
@@ -149,10 +151,38 @@ export default function WheelChallenge() {
         </motion.div>
 
         {/* Spin Button */}
-        <Button onClick={spinWheel} disabled={isSpinning || !canSpin} className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 text-lg px-8 py-6">
+        <Button onClick={spinWheel} disabled={isSpinning || !canSpin} className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 text-lg px-8 py-6 mb-8">
           {isSpinning ? <LucideLoader className="w-4 h-4 animate-spin mr-2" /> : <Gift className="w-4 h-4 mr-2" />}
           {isSpinning ? "Spinning..." : "SPIN THE WHEEL"}
         </Button>
+
+        {/* Prize Legend */}
+        <div className="grid grid-cols-2 gap-4 max-w-xl mx-auto text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3" style={{backgroundColor: '#B9F2FF'}}></div>
+            <span>Diamond - $100 Bonus</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3" style={{backgroundColor: '#E5E4E2'}}></div>
+            <span>Platinum - $50 Bonus</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3" style={{backgroundColor: '#FFD700'}}></div>
+            <span>Gold - $25 Bonus</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3" style={{backgroundColor: '#D7FF00'}}></div>
+            <span>Silver - $2 Bonus</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3" style={{backgroundColor: '#C0C0C0'}}></div>
+            <span>Bronze - $1 Bonus</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3" style={{backgroundColor: '#CD7F32'}}></div>
+            <span>Copper - $0.10 Bonus</span>
+          </div>
+        </div>
       </div>
     </PageTransition>
   );
