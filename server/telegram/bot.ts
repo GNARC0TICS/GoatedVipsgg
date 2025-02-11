@@ -9,7 +9,14 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
   throw new Error('TELEGRAM_BOT_TOKEN is required');
 }
 
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
+if (!process.env.TELEGRAM_BOT_TOKEN) {
+  throw new Error('TELEGRAM_BOT_TOKEN is required');
+}
+
+const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
+  polling: true,
+  baseApiUrl: "https://api.telegram.org",
+});
 
 // Check if user is admin
 const isAdmin = async (chatId: number) => {

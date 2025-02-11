@@ -103,8 +103,8 @@ async function startServer() {
       serveStatic(app);
     }
 
-    // Initialize and start the Telegram bot
-    await bot.start();
+    // Bot is automatically started when instantiated with polling
+    log("Telegram bot initialized with polling");
 
     return new Promise((resolve, reject) => {
       server
