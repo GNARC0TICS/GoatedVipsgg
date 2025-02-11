@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
@@ -68,14 +67,17 @@ export const UtilityPanelButton = () => {
           <span className="text-xs text-[#8A8B91]">Telegram</span>
         </motion.a>
 
-        <motion.button
-          onClick={handleSupportClick}
+        <motion.a
+          href="https://t.me/xGoombas"
+          target="_blank"
+          rel="noopener noreferrer"
           whileTap={{ scale: 0.95 }}
           className="flex flex-col items-center justify-center gap-2 p-4 bg-[#2A2B31]/60 rounded-xl"
+          onClick={() => setIsOpen(false)}
         >
           <MessageCircle className="w-8 h-8 text-[#D7FF00]" />
           <span className="text-xs text-[#8A8B91]">Support</span>
-        </motion.button>
+        </motion.a>
       </div>
     </motion.div>
   );
@@ -131,17 +133,20 @@ export const UtilityPanelButton = () => {
           <span className="text-xs text-[#8A8B91] font-medium text-center">Telegram</span>
         </motion.a>
 
-        <motion.button
-          onClick={handleSupportClick}
+        <motion.a
+          href="https://t.me/xGoombas"
+          target="_blank"
+          rel="noopener noreferrer"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="aspect-square p-4 bg-[#2A2B31]/80 backdrop-blur-sm rounded-xl border border-[#2A2B31]/50 hover:bg-[#2A2B31]/90 transition-all group flex flex-col items-center justify-between"
+          onClick={() => setIsOpen(false)}
         >
           <div className="flex-1 flex items-center justify-center">
             <MessageCircle className="w-10 h-10 text-[#D7FF00] drop-shadow-[0_0_8px_rgba(215,255,0,0.3)]" />
           </div>
           <span className="text-xs text-[#8A8B91] font-medium text-center">Support</span>
-        </motion.button>
+        </motion.a>
       </div>
     </DropdownMenuContent>
   );
