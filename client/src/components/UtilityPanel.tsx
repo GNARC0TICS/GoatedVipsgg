@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function UtilityPanelButton() {
+export const UtilityPanelButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSupport, setIsSupport] = useState(false);
   const [, setLocation] = useLocation();
