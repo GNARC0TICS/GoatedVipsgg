@@ -427,17 +427,17 @@ Available commands:
         return safeSendMessage(chatId, "❌ No leaderboard data available.");
       }
 
-      const PRIZE_POOL = 500;
+      const PRIZE_POOL = 500; // Updated prize pool
       const formatCurrency = (amount: number): string => {
         if (amount >= 1000) {
           return (amount / 1000).toLocaleString('en-US', {
-            minimumFractionDigits: 3,
-            maximumFractionDigits: 3
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
           }) + 'k';
         }
         return amount.toLocaleString('en-US', {
-          minimumFractionDigits: 3,
-          maximumFractionDigits: 3
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
         });
       };
 
@@ -461,37 +461,53 @@ Available commands:
         verifiedUsers = new Map();
       }
 
-      const calculatePrizeAmount = (position: number, totalPrizePool: number): number => {
+      const calculatePrizeAmount = (position: number): number => {
         const prizeDistribution: Record<number, number> = {
-          1: 0.35, // 35% for 1st place ($175)
-          2: 0.25, // 25% for 2nd place ($125)
-          3: 0.15, // 15% for 3rd place ($75)
-          4: 0.10, // 10% for 4th place ($50)
-          5: 0.07, // 7% for 5th place ($35)
-          6: 0.05, // 5% for 6th place ($25)
-          7: 0.03, // 3% for 7th place ($15)
-          8: 0.00, // No prize
-          9: 0.00, // No prize
-          10: 0.00 // No prize
+          1: 212.50,  // $212.50 for 1st place
+          2: 100.00,  // $100.00 for 2nd place
+          3: 75.00,   // $75.00 for 3rd place
+          4: 37.50,   // $37.50 for 4th place
+          5: 30.00,   // $30.00 for 5th place
+          6: 20.00,   // $20.00 for 6th place
+          7: 13.75,   // $13.75 for 7th place
+          8: 11.25,   // $11.25 for 8th place
+          9: 8.75,    // $8.75 for 9th place
+          10: 8.75    // $8.75 for 10th place
         };
 
-        return totalPrizePool * (prizeDistribution[position] || 0);
+        return prizeDistribution[position] || 0;
       };
 
       const formatLeaderboardEntry = (player: any, position: number): string => {
         const telegramTag = verifiedUsers?.get(player.name.toLowerCase());
-        const displayName = telegramTag ? `@${telegramTag}` : player.name;
-        const wagered = formatCurrency(player.wagered.this_month);
-        const prizeAmount = calculatePrizeAmount(position, PRIZE_POOL);
+        let displayName = telegramTag ? `@${telegramTag}` : player.name;
+        // Truncate displayName if longer than 14 characters
+        if (displayName.length > 14) {
+          displayName = displayName.slice(0, 14);
+        }
 
-        // Pad the position and name to create even spacing
+        // Format wager amount (using 'k' for thousands)
+        const wagered = player.wagered.this_month;
+        const formattedWager = wagered >= 1000
+          ? `${Math.floor(wagered / 1000)}k`
+          : Math.floor(wagered).toString();
+
+        const prizeAmount = calculatePrizeAmount(position);
+
+        // Pad position to 2 chars, name to 14 chars, wager and prize sections aligned
         const paddedPosition = position.toString().padStart(2, ' ');
-        const nameSection = displayName.padEnd(20, ' ');
-        const wageredSection = `💰 $${wagered}`;
+        const nameSection = displayName.padEnd(14, ' ');
+        const wagerSection = `💰 $${formattedWager}`.padStart(20 - nameSection.length, ' ');
         const prizeSection = prizeAmount > 0 ? `🏆 $${prizeAmount.toFixed(2)}` : '';
 
-        // Ensure consistent spacing between sections
-        return `${paddedPosition}. ${nameSection}${wageredSection.padEnd(25, ' ')}${prizeSection}`;
+        // Log the formatted entry for debugging
+        debugLog(`Formatted entry [${position}]:
+          Position: "${paddedPosition}"
+          Name: "${nameSection}"
+          Wager: "${wagerSection}"
+          Prize: "${prizeSection}"`);
+
+        return `${paddedPosition}. ${nameSection}${wagerSection}${prizeSection}`;
       };
 
       // Format leaderboard entries with proper spacing
@@ -504,13 +520,13 @@ Available commands:
 
       const message = `🏆 Monthly Race Leaderboard
 💵 Prize Pool: $${PRIZE_POOL}
-🏁 Current Top 10:
 
+                                 Wager                Prize
 ${top10}
 
 📊 Updated: ${new Date().toLocaleString()}`;
 
-      debugLog("Formatted leaderboard message:", message);
+      debugLog("Final formatted message:\n" + message);
 
       // Create inline keyboard with buttons
       const inlineKeyboard = {
