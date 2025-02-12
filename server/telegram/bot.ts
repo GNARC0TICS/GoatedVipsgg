@@ -144,21 +144,32 @@ const initializeBot = async () => {
   }
 
   try {
+    // First, check if a bot instance is already running
+    if (bot) {
+      console.log("🤖 Bot instance already exists, stopping previous instance...");
+      await bot.stopPolling();
+      bot = null;
+    }
+
     debugLog("Initializing bot...");
     const WEBHOOK_DOMAIN = process.env.WEBHOOK_URL || 'https://goatedvips.gg';
 
+    // Always use webhook mode in production
     if (process.env.NODE_ENV === "development") {
       console.log("🔄 Running bot in POLLING mode...");
       bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
-        polling: {
-          interval: 300,
-          autoStart: true,
-          params: {
-            timeout: 10,
-            allowed_updates: ["message", "callback_query", "chat_member", "my_chat_member"],
-          }
-        },
-        filepath: false
+        polling: false // Start with polling disabled
+      });
+      
+      // Clear any existing webhooks before starting polling
+      await bot.deleteWebHook();
+      await bot.startPolling({
+        interval: 300,
+        autoStart: true,
+        params: {
+          timeout: 10,
+          allowed_updates: ["message", "callback_query", "chat_member", "my_chat_member"],
+        }
       });
     } else {
       console.log(`🌍 Running bot in WEBHOOK mode at ${WEBHOOK_DOMAIN}`);
