@@ -144,11 +144,17 @@ const initializeBot = async () => {
   }
 
   try {
-    // First, check if a bot instance is already running
+    // If bot instance exists, clean it up properly
     if (bot) {
-      console.log("🤖 Bot instance already exists, stopping previous instance...");
-      await bot.stopPolling();
-      bot = null;
+      try {
+        await bot.deleteWebHook();
+        await bot.stopPolling();
+        bot = null;
+        // Wait for cleanup
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } catch (error) {
+        console.error("Error cleaning up previous bot instance:", error);
+      }
     }
 
     debugLog("Initializing bot...");
@@ -157,20 +163,28 @@ const initializeBot = async () => {
     // Always use webhook mode in production
     if (process.env.NODE_ENV === "development") {
       console.log("🔄 Running bot in POLLING mode...");
-      bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
-        polling: false // Start with polling disabled
-      });
-      
-      // Clear any existing webhooks before starting polling
-      await bot.deleteWebHook();
-      await bot.startPolling({
-        interval: 300,
-        autoStart: true,
-        params: {
-          timeout: 10,
-          allowed_updates: ["message", "callback_query", "chat_member", "my_chat_member"],
-        }
-      });
+      try {
+        bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
+          polling: false
+        });
+        
+        // Ensure webhook is cleared
+        await bot.deleteWebHook();
+        // Wait for webhook cleanup
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        await bot.startPolling({
+          interval: 300,
+          autoStart: true,
+          params: {
+            timeout: 10,
+            allowed_updates: ["message", "callback_query", "chat_member", "my_chat_member"],
+          }
+        });
+      } catch (error) {
+        console.error("Failed to start polling:", error);
+        return null;
+      }
     } else {
       console.log(`🌍 Running bot in WEBHOOK mode at ${WEBHOOK_DOMAIN}`);
       const webhookPath = '/telegram-webhook';
