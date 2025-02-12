@@ -107,7 +107,7 @@ let healthCheckFailures = 0;
 const MAX_HEALTH_CHECK_FAILURES = 3;
 
 // Initialize bot instance
-const initializeBot = async () => {
+async function initializeBot() {
   if (!process.env.TELEGRAM_BOT_TOKEN) {
     console.error("❌ TELEGRAM_BOT_TOKEN is not set!");
     return null;
@@ -116,40 +116,57 @@ const initializeBot = async () => {
   try {
     debugLog("Initializing bot...");
 
-    // Create bot instance with optimized polling configuration
-    bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
-      polling: {
-        interval: 300,        // Polling interval in ms
-        autoStart: true,
-        params: {
-          timeout: 10,        // Long-polling timeout
-          allowed_updates: [   // Only get updates we need
-            "message",
-            "callback_query",
-            "chat_member",
-            "my_chat_member"
-          ],
-        }
-      },
-      filepath: false,        // Don't save downloaded files
+    // Initialize with a timeout to prevent hanging
+    const initPromise = new Promise(async (resolve, reject) => {
+      try {
+        // Create bot instance with optimized polling configuration
+        bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
+          polling: false // Start polling after command registration
+        });
+
+        // Get bot info first
+        const botInfo = await bot.getMe();
+        bot.botInfo = botInfo;
+        debugLog("Bot info retrieved:", botInfo);
+
+        // Register all command handlers before starting polling
+        setupCommandHandlers();
+        setupBotEventHandlers();
+
+        // Start polling with optimized configuration
+        await bot.startPolling({
+          interval: 300,
+          autoStart: true,
+          params: {
+            timeout: 10,
+            allowed_updates: [
+              "message",
+              "callback_query",
+              "chat_member",
+              "my_chat_member"
+            ],
+          }
+        });
+
+        startHealthCheck();
+        debugLog("Bot initialized successfully");
+        resolve(bot);
+      } catch (error) {
+        reject(error);
+      }
     });
 
-    // Get bot info
-    const botInfo = await bot.getMe();
-    bot.botInfo = botInfo;
-    debugLog("Bot info retrieved:", botInfo);
+    // Add timeout to prevent hanging during initialization
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Bot initialization timed out")), 30000);
+    });
 
-    setupBotEventHandlers();
-    setupCommandHandlers();
-    startHealthCheck();
-
-    debugLog("Bot initialized successfully");
-    return bot;
+    return await Promise.race([initPromise, timeoutPromise]);
   } catch (error) {
     console.error("❌ Bot initialization failed:", error);
     return null;
   }
-};
+}
 
 // Bot event handlers setup
 const setupBotEventHandlers = () => {
@@ -214,22 +231,24 @@ const handleMessage = async (msg: TelegramBot.Message) => {
 
     debugLog(`Message received from ${msg.from?.username || 'Unknown'} in ${msg.chat.type}`);
 
-    // Handle commands
+    // Handle commands - optimized to process immediately
     if (msg.text?.startsWith('/')) {
-      const command = msg.text.split(' ')[0].split('@')[0];
-      const args = msg.text.split(' ').slice(1);
+      const [fullCommand, ...args] = msg.text.split(' ');
+      const command = fullCommand.split('@')[0].substring(1); // Remove '/' and any bot username
+
+      debugLog(`Processing command: ${command} with args:`, args);
 
       // Check if command should be in private
-      if (isGroupChat && ['verify', 'stats', 'profile'].includes(command.substring(1))) {
-        const privateLink = `https://t.me/${bot.botInfo?.username}?start=${command.substring(1)}`;
+      if (isGroupChat && ['verify', 'stats', 'profile'].includes(command)) {
         await safeSendMessage(chatId,
-          `🔒 For security, please use this command in private:\n${privateLink}`,
+          `🔒 For security, please use this command in private:\nhttps://t.me/${bot.botInfo?.username}?start=${command}`,
           {},
           'high'
         );
         return;
       }
 
+      // Process command immediately
       await handleCommand(command, msg, args);
       return;
     }
@@ -247,6 +266,7 @@ const handleMessage = async (msg: TelegramBot.Message) => {
     }
   } catch (error) {
     console.error('Error handling message:', error);
+    debugLog(`Error processing message: ${error}`);
   }
 };
 
@@ -254,168 +274,46 @@ const handleMessage = async (msg: TelegramBot.Message) => {
 const setupCommandHandlers = () => {
   if (!bot) return;
 
-  bot.onText(/\/(start|help|verify|stats|leaderboard)(?:@[\w]+)? (.+)/, async (msg, match) => {
-    if (!match) return;
-    const command = match[1];
-    const args = match[2].split(" ");
-    handleCommand(command, msg, args);
+  // Register command patterns before starting polling
+  const commands = [
+    { command: 'start', description: 'Start the bot' },
+    { command: 'help', description: 'Show help information' },
+    { command: 'verify', description: 'Verify your account' },
+    { command: 'stats', description: 'View your statistics' },
+    { command: 'leaderboard', description: 'View the leaderboard' }
+  ];
+
+  // Set commands list for better user experience
+  bot.setMyCommands(commands).catch(error => {
+    console.error("Failed to set commands:", error);
   });
 
-  bot.onText(/\/(start|help|verify|stats|leaderboard)(?:@[\w]+)?/, async (msg, match) => {
-    if (!match) return;
-    const command = match[1];
-    handleCommand(command, msg, []);
+  // Register command handlers synchronously to prevent race conditions
+  bot.onText(/^\/start(?:@[\w]+)?$/, msg => handleCommand('start', msg, []));
+  bot.onText(/^\/help(?:@[\w]+)?$/, msg => handleCommand('help', msg, []));
+  bot.onText(/^\/verify(?:@[\w]+)?\s*(.*)$/, (msg, match) => {
+    const args = match?.[1] ? match[1].split(' ') : [];
+    handleCommand('verify', msg, args);
+  });
+  bot.onText(/^\/stats(?:@[\w]+)?\s*(.*)$/, (msg, match) => {
+    const args = match?.[1] ? match[1].split(' ') : [];
+    handleCommand('stats', msg, args);
+  });
+  bot.onText(/^\/leaderboard(?:@[\w]+)?$/, msg => handleCommand('leaderboard', msg, []));
+
+  // Admin commands
+  bot.onText(/^\/approve(?:@[\w]+)?\s+(.+)$/, (msg, match) => {
+    if (msg.chat.id !== BOT_ADMIN_ID) return;
+    const args = match?.[1] ? [match[1].trim()] : [];
+    handleCommand('approve', msg, args);
   });
 
-  // Handle admin verification commands
-  bot.onText(/\/approve (.+)/, async (msg, match) => {
-    if (msg.chat.id !== BOT_ADMIN_ID) { // Admin-only command
-      return safeSendMessage(msg.chat.id, "❌ This command is only available to administrators.");
-    }
-
-    const telegramUsername = match?.[1]?.trim().replace('@', '');
-    if (!telegramUsername) return safeSendMessage(msg.chat.id, "Usage: /approve @username");
-
-    try {
-      const [request] = await db
-        .select()
-        .from(verificationRequests)
-        .where(eq(verificationRequests.telegramUsername, telegramUsername))
-        .limit(1);
-
-      if (!request) {
-        return safeSendMessage(msg.chat.id, "❌ No pending verification request found for this user.");
-      }
-
-      // Update verification request status
-      await db
-        .update(verificationRequests)
-        .set({ status: "approved" })
-        .where(eq(verificationRequests.telegramUsername, telegramUsername));
-
-      // Create or update telegram user record
-      await db.insert(telegramUsers).values({
-        telegramId: request.telegramId,
-        telegramUsername: telegramUsername,
-        userId: request.userId,
-        isVerified: true,
-      }).onConflictDoUpdate({
-        target: [telegramUsers.telegramId],
-        set: {
-          telegramUsername: telegramUsername,
-          userId: request.userId,
-          isVerified: true,
-        }
-      });
-
-      // Get user info for confirmation message
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, request.userId))
-        .limit(1);
-
-      await safeSendMessage(msg.chat.id, `✅ Verified @${telegramUsername} as ${user.username}`);
-      await safeSendMessage(parseInt(request.telegramId), "✅ Your account has been verified! You can now use /stats to check your statistics.");
-    } catch (error) {
-      console.error("Approval error:", error);
-      await safeSendMessage(msg.chat.id, "❌ Error processing approval.");
-    }
-  });
-
-  // Admin command to view pending verification requests
-  bot.onText(/\/pending/, async (msg) => {
-    const chatId = msg.chat.id;
-    if (chatId !== BOT_ADMIN_ID) {
-      return safeSendMessage(chatId, "❌ This command is only available to administrators.");
-    }
-
-    try {
-      const pendingRequests = await db
-        .select({
-          id: verificationRequests.id,
-          telegramUsername: verificationRequests.telegramUsername,
-          userId: verificationRequests.userId,
-          requestedAt: verificationRequests.requestedAt,
-          username: users.username
-        })
-        .from(verificationRequests)
-        .innerJoin(users, eq(users.id, verificationRequests.userId))
-        .where(eq(verificationRequests.status, 'pending'));
-
-      if (pendingRequests.length === 0) {
-        return safeSendMessage(chatId, "✅ No pending verification requests.");
-      }
-
-      for (const request of pendingRequests) {
-        const message = `🔍 Verification Request #${request.id}
-👤 Telegram: @${request.telegramUsername || 'N/A'}
-🎮 Goated: ${request.username}
-⏰ Requested: ${new Date(request.requestedAt).toLocaleString()}`;
-
-        const inlineKeyboard = {
-          reply_markup: {
-            inline_keyboard: [
-              [
-                { text: "✅ Approve", callback_data: `approve_${request.id}` },
-                { text: "❌ Reject", callback_data: `reject_${request.id}` }
-              ]
-            ]
-          }
-        };
-
-        await safeSendMessage(chatId, message, inlineKeyboard, 'high');
-      }
-    } catch (error) {
-      console.error("Error fetching pending requests:", error);
-      await safeSendMessage(chatId, "❌ Error fetching pending requests.");
-    }
-  });
-
-
-  // Handle callback queries from inline buttons
-  bot.on('callback_query', async (callbackQuery) => {
-    const chatId = callbackQuery.message?.chat.id;
-    if (!chatId) return;
-
-    try {
-      switch (callbackQuery.data) {
-        case 'my_stats':
-          // Simulate /stats command
-          await bot.emit('message', {
-            ...callbackQuery.message,
-            text: '/stats',
-            entities: [{ offset: 0, length: 6, type: 'bot_command' }]
-          });
-          break;
-        case 'refresh_leaderboard':
-          // Simulate /leaderboard command
-          await bot.emit('message', {
-            ...callbackQuery.message,
-            text: '/leaderboard',
-            entities: [{ offset: 0, length: 11, type: 'bot_command' }]
-          });
-          break;
-        default:
-          // Handle Approve/Reject actions
-          if (chatId !== BOT_ADMIN_ID || !callbackQuery.data) return;
-          const [action, requestId] = callbackQuery.data.split('_');
-          if (!['approve', 'reject'].includes(action)) return;
-
-          await handleVerificationAction(action, parseInt(requestId), chatId);
-          break;
-      }
-      // Answer callback query to remove loading state
-      await bot.answerCallbackQuery(callbackQuery.id);
-    } catch (error) {
-      console.error('Callback query error:', error);
-      await bot.answerCallbackQuery(callbackQuery.id, {
-        text: '❌ Error processing request',
-        show_alert: true
-      });
-    }
+  bot.onText(/^\/pending(?:@[\w]+)?$/, msg => {
+    if (msg.chat.id !== BOT_ADMIN_ID) return;
+    handleCommand('pending', msg, []);
   });
 };
+
 
 // Handle bot reconnection
 const handleReconnection = async () => {
@@ -475,7 +373,7 @@ const startHealthCheck = () => {
 };
 
 
-// Command handler function
+// Handle command handler function
 const handleCommand = async (command: string, msg: TelegramBot.Message, args: string[]) => {
   if (!bot) return;
 
@@ -483,6 +381,8 @@ const handleCommand = async (command: string, msg: TelegramBot.Message, args: st
   const isGroupChat = GROUP_MESSAGE_TYPES.includes(msg.chat.type);
 
   try {
+    debugLog(`Executing command: ${command} with args:`, args);
+
     switch (command) {
       case 'start':
         const welcomeMessage = `🎮 Welcome to Goated Vips Stats Tracking Bot!
@@ -492,7 +392,7 @@ To get started:
 3️⃣ Once verified, you can use /stats to check your statistics
 
 Need help? Use /help for a list of commands.`;
-        await safeSendMessage(chatId, welcomeMessage);
+        await safeSendMessage(chatId, welcomeMessage, {}, 'high');
         break;
 
       case 'help':
@@ -517,7 +417,7 @@ Need help? Use /help for a list of commands.`;
 
 Need to verify? Click here: https://t.me/${bot.botInfo?.username}?start=verify
 `.trim();
-        await safeSendMessage(chatId, helpText);
+        await safeSendMessage(chatId, helpText, {}, 'high');
         break;
       case 'verify':
         await handleVerifyCommand(msg, args);
@@ -529,6 +429,12 @@ Need to verify? Click here: https://t.me/${bot.botInfo?.username}?start=verify
         await handleLeaderboardCommand(msg);
         break;
       // Add other command handlers as needed
+      case 'approve':
+        await handleApproveCommand(msg, args);
+        break;
+      case 'pending':
+        await handlePendingCommand(msg);
+        break;
       default:
         if (isGroupChat && ['verify', 'stats', 'profile'].includes(command)) {
           const privateLink = `https://t.me/${bot.botInfo?.username}?start=${command}`;
@@ -539,6 +445,7 @@ Need to verify? Click here: https://t.me/${bot.botInfo?.username}?start=verify
             'high'
           );
         } else {
+          debugLog(`Unknown command received: ${command}`);
           await safeSendMessage(chatId, `Unknown command: ${command}. Use /help for a list of commands.`);
         }
         break;
@@ -942,6 +849,111 @@ const handleLeaderboardCommand = async (msg: TelegramBot.Message) => {
 };
 
 
+// Helper function to handle admin approval command
+const handleApproveCommand = async (msg: TelegramBot.Message, args: string[]) => {
+  if (msg.chat.id !== BOT_ADMIN_ID) { // Admin-only command
+    return safeSendMessage(msg.chat.id, "❌ This command is only available to administrators.");
+  }
+
+  const telegramUsername = args[0]?.trim().replace('@', '');
+  if (!telegramUsername) return safeSendMessage(msg.chat.id, "Usage: /approve @username");
+
+  try {
+    const [request] = await db
+      .select()
+      .from(verificationRequests)
+      .where(eq(verificationRequests.telegramUsername, telegramUsername))
+      .limit(1);
+
+    if (!request) {
+      return safeSendMessage(msg.chat.id, "❌ No pending verification request found for this user.");
+    }
+
+    // Update verification request status
+    await db
+      .update(verificationRequests)
+      .set({ status: "approved" })
+      .where(eq(verificationRequests.telegramUsername, telegramUsername));
+
+    // Create or update telegram user record
+    await db.insert(telegramUsers).values({
+      telegramId: request.telegramId,
+      telegramUsername: telegramUsername,
+      userId: request.userId,
+      isVerified: true,
+    }).onConflictDoUpdate({
+      target: [telegramUsers.telegramId],
+      set: {
+        telegramUsername: telegramUsername,
+        userId: request.userId,
+        isVerified: true,
+      }
+    });
+
+    // Get user info for confirmation message
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, request.userId))
+      .limit(1);
+
+    await safeSendMessage(msg.chat.id, `✅ Verified @${telegramUsername} as ${user.username}`);
+    await safeSendMessage(parseInt(request.telegramId), "✅ Your account has been verified! You can now use /stats to check your statistics.");
+  } catch (error) {
+    console.error("Approval error:", error);
+    await safeSendMessage(msg.chat.id, "❌ Error processing approval.");
+  }
+};
+
+// Helper function to handle admin pending command
+const handlePendingCommand = async (msg: TelegramBot.Message) => {
+  const chatId = msg.chat.id;
+  if (chatId !== BOT_ADMIN_ID) {
+    return safeSendMessage(chatId, "❌ This command is only available to administrators.");
+  }
+
+  try {
+    const pendingRequests = await db
+      .select({
+        id: verificationRequests.id,
+        telegramUsername: verificationRequests.telegramUsername,
+        userId: verificationRequests.userId,
+        requestedAt: verificationRequests.requestedAt,
+        username: users.username
+      })
+      .from(verificationRequests)
+      .innerJoin(users, eq(users.id, verificationRequests.userId))
+      .where(eq(verificationRequests.status, 'pending'));
+
+    if (pendingRequests.length === 0) {
+      return safeSendMessage(chatId, "✅ No pending verification requests.");
+    }
+
+    for (const request of pendingRequests) {
+      const message = `🔍 Verification Request #${request.id}
+👤 Telegram: @${request.telegramUsername || 'N/A'}
+🎮 Goated: ${request.username}
+⏰ Requested: ${new Date(request.requestedAt).toLocaleString()}`;
+
+      const inlineKeyboard = {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "✅ Approve", callback_data: `approve_${request.id}` },
+              { text: "❌ Reject", callback_data: `reject_${request.id}` }
+            ]
+          ]
+        }
+      };
+
+      await safeSendMessage(chatId, message, inlineKeyboard, 'high');
+    }
+  } catch (error) {
+    console.error("Error fetching pending requests:", error);
+    await safeSendMessage(chatId, "❌ Error fetching pending requests.");
+  }
+};
+
 // Helper function to format currency
 const formatCurrency = (amount: number): string => {
   return amount.toLocaleString('en-US', {
@@ -1032,16 +1044,22 @@ const safeSendMessage = async (
   await messageQueue.add(chatId, sendTask, priority);
 };
 
-// Export necessary functions and bot instance
+// Export the necessary functions and bot instance
 export {
   bot,
   initializeBot,
-  safeSendMessage,
-  handleMessage,
+  // Command handlers
   handleCommand,
-  handleCallbackQuery,
   handleVerifyCommand,
   handleStatsCommand,
   handleLeaderboardCommand,
-  handleVerificationAction
+  // Admin handlers
+  handleVerificationAction,
+  handleApproveCommand,
+  handlePendingCommand,
+  // Core handlers
+  handleMessage,
+  handleCallbackQuery,
+  // Utilities
+  safeSendMessage
 };

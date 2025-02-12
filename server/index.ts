@@ -30,7 +30,7 @@ async function setupMiddleware() {
   // API rate limiting middleware
   app.use('/api/', async (req, res, next) => {
     try {
-      await apiLimiter.consume(req.ip);
+      await apiLimiter.consume(req.ip || 'anonymous');
       next();
     } catch (error) {
       res.status(429).json({
@@ -109,10 +109,10 @@ async function cleanupPort() {
 
 async function cleanupBot() {
   try {
-    // Clear any existing bot sessions
+    // Clear any existing bot sessions and webhooks
     if (process.env.TELEGRAM_BOT_TOKEN) {
       await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteWebhook?drop_pending_updates=true`);
-      log("Cleared existing webhook configuration");
+      log("Cleared existing webhook configuration and pending updates");
     }
   } catch (error) {
     console.error("Error cleaning up bot:", error);
@@ -122,9 +122,11 @@ async function cleanupBot() {
 async function startServer() {
   try {
     log("Starting server initialization...");
-    await checkDatabase();
+
+    // Ensure clean state before starting
     await cleanupBot();
     await cleanupPort();
+    await checkDatabase();
 
     const server = createServer(app);
 
