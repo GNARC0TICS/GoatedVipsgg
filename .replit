@@ -13,9 +13,10 @@ channel = "stable-24_05"
 
 # Deployment configuration
 [deployment]
-deploymentTarget = "cloudrun"
+deploymentTarget = "gce"
 build = ["npm", "run", "build"]
-run = ["npm", "run", "start"]
+run = ["sh", "-c", "tsx server/index.ts"]
+ignorePorts = true
 
 [[ports]]
 localPort = 5000
