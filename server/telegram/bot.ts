@@ -397,7 +397,7 @@ Available commands:
     }
   });
 
-  // Enhanced leaderboard command with proper formatting and buttons
+  // Leaderboard command
   bot.onText(/\/leaderboard/, async (msg) => {
     const chatId = msg.chat.id;
     debugLog("📝 Leaderboard command received from:", chatId);
@@ -415,118 +415,47 @@ Available commands:
       );
 
       if (!response.ok) {
-        debugLog(`API request failed: ${response.status} ${response.statusText}`);
         throw new Error(`Failed to fetch leaderboard: ${response.status} ${response.statusText}`);
       }
 
       const rawData = await response.json();
-      debugLog("Raw leaderboard data received:", JSON.stringify(rawData).slice(0, 200) + "...");
       const transformedData = transformLeaderboardData(rawData);
 
       if (!transformedData.data.monthly.data.length) {
         return safeSendMessage(chatId, "❌ No leaderboard data available.");
       }
 
-      const PRIZE_POOL = 500; // Updated prize pool
+      const PRIZE_POOL = 500; // We can make this dynamic later if needed
       const formatCurrency = (amount: number): string => {
-        if (amount >= 1000) {
-          return (amount / 1000).toLocaleString('en-US', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-          }) + 'k';
-        }
         return amount.toLocaleString('en-US', {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0
+          minimumFractionDigits: 3,
+          maximumFractionDigits: 3
         });
       };
-
-      let verifiedUsers;
-      try {
-        debugLog("Fetching verified users...");
-        const verifiedUsersData = await db
+      const formatLeaderboardEntry = (player: any, position: number, verifiedUsers?: Map<string, string>): string => {
+        const telegramTag = verifiedUsers?.get(player.name.toLowerCase());
+        const displayName = telegramTag ? `@${telegramTag}` : player.name;
+        const wagered = formatCurrency(player.wagered.this_month);
+        return `${position}. ${displayName}\n   💰 $${wagered}`;
+      };
+      // Get verified users for tagging
+      const verifiedUsers = new Map(
+        (await db
           .select()
           .from(telegramUsers)
-          .where(eq(telegramUsers.isVerified, true));
+          .where(eq(telegramUsers.isVerified, true)))
+          .map(user => [user.goatedUsername.toLowerCase(), user.telegramUsername])
+      );
 
-        verifiedUsers = new Map(
-          verifiedUsersData.map(user => [
-            user.goatedUsername?.toLowerCase() ?? '',
-            user.telegramUsername
-          ])
-        );
-        debugLog(`Found ${verifiedUsers.size} verified users`);
-      } catch (dbError) {
-        console.error("Database error fetching verified users:", dbError);
-        verifiedUsers = new Map();
-      }
-
-      const calculatePrizeAmount = (position: number): number => {
-        const prizeDistribution: Record<number, number> = {
-          1: 212.50,  // $212.50 for 1st place
-          2: 100.00,  // $100.00 for 2nd place
-          3: 75.00,   // $75.00 for 3rd place
-          4: 37.50,   // $37.50 for 4th place
-          5: 30.00,   // $30.00 for 5th place
-          6: 20.00,   // $20.00 for 6th place
-          7: 13.75,   // $13.75 for 7th place
-          8: 11.25,   // $11.25 for 8th place
-          9: 8.75,    // $8.75 for 9th place
-          10: 8.75    // $8.75 for 10th place
-        };
-
-        return prizeDistribution[position] || 0;
-      };
-
-      const formatLeaderboardEntry = (player: any, position: number): string => {
-        const telegramTag = verifiedUsers?.get(player.name.toLowerCase());
-        let displayName = telegramTag ? `@${telegramTag}` : player.name;
-        // Truncate displayName if longer than 14 characters
-        if (displayName.length > 14) {
-          displayName = displayName.slice(0, 14);
-        }
-
-        // Format wager amount (using 'k' for thousands)
-        const wagered = player.wagered.this_month;
-        const formattedWager = wagered >= 1000
-          ? `${Math.floor(wagered / 1000)}k`
-          : Math.floor(wagered).toString();
-
-        const prizeAmount = calculatePrizeAmount(position);
-
-        // Pad position to 2 chars, name to 14 chars, wager and prize sections aligned
-        const paddedPosition = position.toString().padStart(2, ' ');
-        const nameSection = displayName.padEnd(14, ' ');
-        const wagerSection = `💰 $${formattedWager}`.padStart(20 - nameSection.length, ' ');
-        const prizeSection = prizeAmount > 0 ? `🏆 $${prizeAmount.toFixed(2)}` : '';
-
-        // Log the formatted entry for debugging
-        debugLog(`Formatted entry [${position}]:
-          Position: "${paddedPosition}"
-          Name: "${nameSection}"
-          Wager: "${wagerSection}"
-          Prize: "${prizeSection}"`);
-
-        return `${paddedPosition}. ${nameSection}${wagerSection}${prizeSection}`;
-      };
-
-      // Format leaderboard entries with proper spacing
+      // Format leaderboard entries
       const top10 = transformedData.data.monthly.data
         .slice(0, 10)
         .map((player: any, index: number) =>
-          formatLeaderboardEntry(player, index + 1)
+          formatLeaderboardEntry(player, index + 1, verifiedUsers)
         )
-        .join("\n");
+        .join("\n\n");
 
-      const message = `🏆 Monthly Race Leaderboard
-💵 Prize Pool: $${PRIZE_POOL}
-
-                                 Wager                Prize
-${top10}
-
-📊 Updated: ${new Date().toLocaleString()}`;
-
-      debugLog("Final formatted message:\n" + message);
+      const message = `🏆 Monthly Race Leaderboard\n💵 Prize Pool: $${PRIZE_POOL}\n🏁 Current Top 10:\n\n${top10}\n\n📊 Updated: ${new Date().toLocaleString()}`;
 
       // Create inline keyboard with buttons
       const inlineKeyboard = {
@@ -543,7 +472,6 @@ ${top10}
       await safeSendMessage(chatId, message, inlineKeyboard);
     } catch (error) {
       console.error("Leaderboard error:", error);
-      debugLog("Full error details:", error);
       await safeSendMessage(chatId, "❌ Error fetching leaderboard. Try again later.");
     }
   });
