@@ -1,14 +1,15 @@
 import TelegramBot from "node-telegram-bot-api";
 import { db } from "@db";
 import { telegramUsers, verificationRequests } from "@db/schema/telegram";
+import { users } from "@db/schema";
 import { API_CONFIG } from "../config/api";
 import { eq } from "drizzle-orm";
 import fetch from "node-fetch";
-import { transformLeaderboardData } from "../routes";
+import { transformLeaderboardData } from "../utils/leaderboard";
 
 // Enhanced debugging
 const DEBUG = true;
-const BOT_ADMIN_ID = 1689953605; // Your admin chat ID
+const BOT_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID ? parseInt(process.env.TELEGRAM_ADMIN_ID) : 1689953605;
 
 const debugLog = (...args: any[]) => {
   if (DEBUG) {
@@ -19,6 +20,14 @@ const debugLog = (...args: any[]) => {
 // Rate limiting setup
 const messageRateLimiter = new Map<number, number>();
 const RATE_LIMIT_WINDOW = 1000; // 1 second
+
+// Format helpers
+const formatCurrency = (amount: number): string => {
+  return amount.toLocaleString('en-US', {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3
+  });
+};
 
 // Bot configuration
 let bot: TelegramBot | null = null;
@@ -35,7 +44,6 @@ const HEALTH_CHECK_TIMEOUT = 10000; // 10 seconds
 
 // Bot health monitoring
 let lastPingTime = Date.now();
-
 
 // Initialize bot with enhanced error handling
 const initializeBot = () => {
@@ -272,7 +280,7 @@ Available commands:
     await safeSendMessage(msg.chat.id, "🌐 Visit: https://goatedvips.gg");
   });
 
-  // Verify command with enhanced admin approval flow
+  // Verify command with enhanced error handling and proper API validation
   bot.onText(/\/verify (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
     debugLog("📝 Verify command received from:", chatId);
@@ -280,23 +288,77 @@ Available commands:
     if (!username) return safeSendMessage(chatId, "Usage: /verify your_platform_username");
 
     try {
-      const existingUser = await db.select().from(telegramUsers).where(eq(telegramUsers.telegramId, chatId.toString())).limit(1);
+      const existingUser = await db
+        .select()
+        .from(telegramUsers)
+        .where(eq(telegramUsers.telegramId, chatId.toString()))
+        .limit(1);
+
       if (existingUser.length > 0 && existingUser[0].isVerified) {
         return safeSendMessage(chatId, "✅ Already verified!");
       }
 
+      // Validate username against external API
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        return safeSendMessage(chatId, "❌ Error verifying username. Please try again later.");
+      }
+
+      const apiData = await response.json();
+      const transformedData = transformLeaderboardData(apiData);
+      const userExists = transformedData.data.monthly.data.some(
+        (p: any) => p.name.toLowerCase() === username.toLowerCase()
+      );
+
+      if (!userExists) {
+        return safeSendMessage(chatId, "❌ Username not found. Please check the username and try again.");
+      }
+
+      // Find or create user in our database
+      let [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, username))
+        .limit(1);
+
+      if (!user) {
+        const [insertedUser] = await db
+          .insert(users)
+          .values({
+            username: username,
+            email: `${username}@placeholder.com`,
+            password: 'placeholder',
+            isAdmin: false
+          })
+          .returning();
+        user = insertedUser;
+      }
+
+      // Create verification request
       await db.insert(verificationRequests).values({
         telegramId: chatId.toString(),
-        goatedUsername: username,
+        userId: user.id,
         status: "pending",
         telegramUsername: msg.from?.username || null,
       });
 
       await safeSendMessage(chatId, "✅ Verification request submitted. An admin will review it shortly.");
-      await safeSendMessage(BOT_ADMIN_ID, `🔔 Verification Request:\nUser: ${username}\nTelegram: @${msg.from?.username}`);
+      await safeSendMessage(BOT_ADMIN_ID, `🔔 New Verification Request:
+Username: ${username}
+Telegram: @${msg.from?.username || 'N/A'}
+Chat ID: ${chatId}`);
     } catch (error) {
       console.error("Verification error:", error);
-      await safeSendMessage(chatId, "❌ Error processing verification. Try again later.");
+      await safeSendMessage(chatId, "❌ Error processing verification. Please try again later.");
     }
   });
 
@@ -330,18 +392,25 @@ Available commands:
       await db.insert(telegramUsers).values({
         telegramId: request.telegramId,
         telegramUsername: telegramUsername,
-        goatedUsername: request.goatedUsername,
+        userId: request.userId,
         isVerified: true,
       }).onConflictDoUpdate({
         target: [telegramUsers.telegramId],
         set: {
           telegramUsername: telegramUsername,
-          goatedUsername: request.goatedUsername,
+          userId: request.userId,
           isVerified: true,
         }
       });
 
-      await safeSendMessage(msg.chat.id, `✅ Verified @${telegramUsername} as ${request.goatedUsername}`);
+      // Get user info for confirmation message
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, request.userId))
+        .limit(1);
+
+      await safeSendMessage(msg.chat.id, `✅ Verified @${telegramUsername} as ${user.username}`);
       await safeSendMessage(parseInt(request.telegramId), "✅ Your account has been verified! You can now use /stats to check your statistics.");
     } catch (error) {
       console.error("Approval error:", error);
@@ -354,8 +423,21 @@ Available commands:
     const chatId = msg.chat.id;
     debugLog("📝 Stats command received from:", chatId);
     try {
-      const [user] = await db.select().from(telegramUsers).where(eq(telegramUsers.telegramId, chatId.toString())).limit(1);
-      if (!user?.isVerified) return safeSendMessage(chatId, "❌ Please verify your account using /verify");
+      const [telegramUser] = await db
+        .select()
+        .from(telegramUsers)
+        .where(eq(telegramUsers.telegramId, chatId.toString()))
+        .limit(1);
+
+      if (!telegramUser?.isVerified) {
+        return safeSendMessage(chatId, "❌ Please verify your account using /verify");
+      }
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, telegramUser.userId))
+        .limit(1);
 
       const response = await fetch(
         `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
@@ -371,19 +453,20 @@ Available commands:
 
       const rawData = await response.json();
       const transformedData = transformLeaderboardData(rawData);
-      const userStats = transformedData.data.monthly.data.find((p: any) => p.name.toLowerCase() === user.goatedUsername?.toLowerCase());
+      const userStats = transformedData.data.monthly.data.find(
+        (p: any) => p.name.toLowerCase() === user.username.toLowerCase()
+      );
 
-      if (!userStats) return safeSendMessage(chatId, "❌ No stats found for your account this period.");
+      if (!userStats) {
+        return safeSendMessage(chatId, "❌ No stats found for your account this period.");
+      }
 
-      const position = transformedData.data.monthly.data.findIndex((p: any) => p.name.toLowerCase() === user.goatedUsername?.toLowerCase()) + 1;
-      const formatCurrency = (amount: number): string => {
-        return amount.toLocaleString('en-US', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        });
-      };
+      const position = transformedData.data.monthly.data.findIndex(
+        (p: any) => p.name.toLowerCase() === user.username.toLowerCase()
+      ) + 1;
 
-      const statsMessage = `📊 Stats for ${user.goatedUsername}:
+
+      const statsMessage = `📊 Stats for ${user.username}:
 💰 Today: $${formatCurrency(userStats.wagered.today)}
 📅 This Week: $${formatCurrency(userStats.wagered.this_week)}
 📆 This Month: $${formatCurrency(userStats.wagered.this_month)}
@@ -397,7 +480,7 @@ Available commands:
     }
   });
 
-  // Leaderboard command
+  // Enhanced leaderboard command with proper formatting
   bot.onText(/\/leaderboard/, async (msg) => {
     const chatId = msg.chat.id;
     debugLog("📝 Leaderboard command received from:", chatId);
@@ -415,7 +498,7 @@ Available commands:
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch leaderboard: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to fetch leaderboard: ${response.status}`);
       }
 
       const rawData = await response.json();
@@ -425,37 +508,45 @@ Available commands:
         return safeSendMessage(chatId, "❌ No leaderboard data available.");
       }
 
-      const PRIZE_POOL = 500; // We can make this dynamic later if needed
-      const formatCurrency = (amount: number): string => {
-        return amount.toLocaleString('en-US', {
-          minimumFractionDigits: 3,
-          maximumFractionDigits: 3
-        });
-      };
-      const formatLeaderboardEntry = (player: any, position: number, verifiedUsers?: Map<string, string>): string => {
-        const telegramTag = verifiedUsers?.get(player.name.toLowerCase());
-        const displayName = telegramTag ? `@${telegramTag}` : player.name;
-        const wagered = formatCurrency(player.wagered.this_month);
-        return `${position}. ${displayName}\n   💰 $${wagered}`;
-      };
+      const PRIZE_POOL = 500;
+
       // Get verified users for tagging
+      const verifiedUsersQuery = await db
+        .select({
+          username: users.username,
+          telegramUsername: telegramUsers.telegramUsername
+        })
+        .from(users)
+        .innerJoin(telegramUsers, eq(users.id, telegramUsers.userId))
+        .where(eq(telegramUsers.isVerified, true));
+
       const verifiedUsers = new Map(
-        (await db
-          .select()
-          .from(telegramUsers)
-          .where(eq(telegramUsers.isVerified, true)))
-          .map(user => [user.goatedUsername.toLowerCase(), user.telegramUsername])
+        verifiedUsersQuery.map(user => [
+          user.username.toLowerCase(),
+          user.telegramUsername
+        ])
       );
 
-      // Format leaderboard entries
+      debugLog(`Found ${verifiedUsers.size} verified users`);
+
+      // Format leaderboard entries with proper spacing
+      const formatLeaderboardEntry = (player: any, position: number): string => {
+        const telegramTag = verifiedUsers.get(player.name.toLowerCase());
+        const displayName = telegramTag ? `@${telegramTag}` : player.name;
+        const wagered = formatCurrency(player.wagered.this_month);
+        const paddedPosition = position.toString().padStart(2, ' ');
+        const paddedWagered = wagered.padStart(12, ' ');
+        return `${paddedPosition}. ${displayName}\n    💰 $${paddedWagered}`;
+      };
+
       const top10 = transformedData.data.monthly.data
         .slice(0, 10)
-        .map((player: any, index: number) =>
-          formatLeaderboardEntry(player, index + 1, verifiedUsers)
-        )
+        .map((player: any, index: number) => formatLeaderboardEntry(player, index + 1))
         .join("\n\n");
 
-      const message = `🏆 Monthly Race Leaderboard\n💵 Prize Pool: $${PRIZE_POOL}\n🏁 Current Top 10:\n\n${top10}\n\n📊 Updated: ${new Date().toLocaleString()}`;
+      const message = `🏆 Monthly Race Leaderboard
+💵 Prize Pool: $${PRIZE_POOL}
+🏁 Current Top 10:\n\n${top10}\n\n📊 Updated: ${new Date().toLocaleString()}`;
 
       // Create inline keyboard with buttons
       const inlineKeyboard = {
@@ -472,7 +563,7 @@ Available commands:
       await safeSendMessage(chatId, message, inlineKeyboard);
     } catch (error) {
       console.error("Leaderboard error:", error);
-      await safeSendMessage(chatId, "❌ Error fetching leaderboard. Try again later.");
+      await safeSendMessage(chatId, "❌ Error fetching leaderboard. Please try again later.");
     }
   });
 
@@ -516,4 +607,4 @@ Available commands:
 const botInstance = initializeBot();
 
 // Export the bot instance and helper functions
-export { botInstance as bot, safeSendMessage };
+export { botInstance as bot, safeSendMessage, initializeBot };

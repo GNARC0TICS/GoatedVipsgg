@@ -40,37 +40,7 @@ export const bonusCodes = pgTable("bonus_codes", {
   isUsed: boolean("is_used").default(false).notNull(),
 });
 
-export const ticketMessages = pgTable("ticket_messages", {
-  id: serial("id").primaryKey(),
-  message: text("message").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  isStaffReply: boolean("is_staff_reply").default(false).notNull(),
-});
-
-export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
-  id: serial("id").primaryKey(),
-  email: text("email").unique().notNull(),
-  isSubscribed: boolean("is_subscribed").default(true).notNull(),
-  subscribedAt: timestamp("subscribed_at").defaultNow().notNull(),
-  unsubscribedAt: timestamp("unsubscribed_at"),
-  source: text("source"),
-});
-
-export const historicalRaces = pgTable("historical_races", {
-  id: serial("id").primaryKey(),
-  month: text("month").notNull(),
-  year: text("year").notNull(),
-  prizePool: decimal("prize_pool", { precision: 10, scale: 2 }).notNull(),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
-  participants: jsonb("participants").notNull(),
-  totalWagered: decimal("total_wagered", { precision: 18, scale: 2 }).notNull(),
-  participantCount: text("participant_count").notNull(),
-  status: text("status").notNull().default('completed'),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  metadata: jsonb("metadata").default({}).notNull()
-});
-
+// Wager races and related tables
 export const wagerRaces = pgTable("wager_races", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -90,11 +60,151 @@ export const wagerRaces = pgTable("wager_races", {
 export const wagerRaceParticipants = pgTable("wager_race_participants", {
   id: serial("id").primaryKey(),
   raceId: integer("race_id").references(() => wagerRaces.id),
+  userId: integer("user_id").references(() => users.id),
   totalWager: decimal("total_wager", { precision: 18, scale: 2 }).notNull(),
   rank: integer("rank"),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   wagerHistory: jsonb("wager_history"), // Track wager progress over time
+});
+
+// Support System tables
+export const supportTickets = pgTable("support_tickets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  subject: text("subject").notNull(),
+  description: text("description").notNull(),
+  status: text("status").notNull().default("open"), // 'open' | 'in_progress' | 'closed'
+  priority: text("priority").notNull().default("medium"), // 'low' | 'medium' | 'high'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const ticketMessages = pgTable("ticket_messages", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").references(() => supportTickets.id),
+  userId: integer("user_id").references(() => users.id),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isStaffReply: boolean("is_staff_reply").default(false).notNull(),
+});
+
+// Relations
+export const wheelSpinRelations = relations(wheelSpins, ({ one }) => ({
+  user: one(users, {
+    fields: [wheelSpins.userId],
+    references: [users.id],
+  }),
+}));
+
+export const bonusCodeRelations = relations(bonusCodes, ({ one }) => ({
+  user: one(users, {
+    fields: [bonusCodes.userId],
+    references: [users.id],
+  }),
+}));
+
+export const wagerRaceRelations = relations(wagerRaces, ({ many }) => ({
+  participants: many(wagerRaceParticipants),
+}));
+
+export const wagerRaceParticipantRelations = relations(wagerRaceParticipants, ({ one }) => ({
+  race: one(wagerRaces, {
+    fields: [wagerRaceParticipants.raceId],
+    references: [wagerRaces.id],
+  }),
+  user: one(users, {
+    fields: [wagerRaceParticipants.userId],
+    references: [users.id],
+  }),
+}));
+
+export const supportTicketRelations = relations(supportTickets, ({ one, many }) => ({
+  user: one(users, {
+    fields: [supportTickets.userId],
+    references: [users.id],
+  }),
+  messages: many(ticketMessages),
+}));
+
+export const ticketMessageRelations = relations(ticketMessages, ({ one }) => ({
+  ticket: one(supportTickets, {
+    fields: [ticketMessages.ticketId],
+    references: [supportTickets.id],
+  }),
+  user: one(users, {
+    fields: [ticketMessages.userId],
+    references: [users.id],
+  }),
+}));
+
+// Schema validation with Zod
+export const insertWheelSpinSchema = createInsertSchema(wheelSpins);
+export const selectWheelSpinSchema = createSelectSchema(wheelSpins);
+export const insertBonusCodeSchema = createInsertSchema(bonusCodes);
+export const selectBonusCodeSchema = createSelectSchema(bonusCodes);
+export const insertUserSchema = createInsertSchema(users);
+export const selectUserSchema = createSelectSchema(users);
+export const insertWagerRaceSchema = createInsertSchema(wagerRaces);
+export const selectWagerRaceSchema = createSelectSchema(wagerRaces);
+export const insertWagerRaceParticipantSchema = createInsertSchema(wagerRaceParticipants);
+export const selectWagerRaceParticipantSchema = createSelectSchema(wagerRaceParticipants);
+export const insertSupportTicketSchema = createInsertSchema(supportTickets);
+export const selectSupportTicketSchema = createSelectSchema(supportTickets);
+export const insertTicketMessageSchema = createInsertSchema(ticketMessages);
+export const selectTicketMessageSchema = createSelectSchema(ticketMessages);
+
+// TypeScript type definitions
+export type InsertWheelSpin = typeof wheelSpins.$inferInsert;
+export type SelectWheelSpin = typeof wheelSpins.$inferSelect;
+export type InsertBonusCode = typeof bonusCodes.$inferInsert;
+export type SelectBonusCode = typeof bonusCodes.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
+export type SelectUser = typeof users.$inferSelect;
+export type InsertWagerRace = typeof wagerRaces.$inferInsert;
+export type SelectWagerRace = typeof wagerRaces.$inferSelect;
+export type InsertWagerRaceParticipant = typeof wagerRaceParticipants.$inferInsert;
+export type SelectWagerRaceParticipant = typeof wagerRaceParticipants.$inferSelect;
+export type InsertSupportTicket = typeof supportTickets.$inferInsert;
+export type SelectSupportTicket = typeof supportTickets.$inferSelect;
+export type InsertTicketMessage = typeof ticketMessages.$inferInsert;
+export type SelectTicketMessage = typeof ticketMessages.$inferSelect;
+
+// Export all tables and schemas
+export {
+  challenges,
+  challengeEntries,
+} from "./schema/challenges";
+
+export {
+  telegramUsers,
+  verificationRequests,
+  telegramUserRelations,
+  verificationRequestRelations,
+} from "./schema/telegram";
+
+export const historicalRaces = pgTable("historical_races", {
+  id: serial("id").primaryKey(),
+  month: text("month").notNull(),
+  year: text("year").notNull(),
+  prizePool: decimal("prize_pool", { precision: 10, scale: 2 }).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  participants: jsonb("participants").notNull(),
+  totalWagered: decimal("total_wagered", { precision: 18, scale: 2 }).notNull(),
+  participantCount: text("participant_count").notNull(),
+  status: text("status").notNull().default('completed'),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  metadata: jsonb("metadata").default({}).notNull()
+});
+
+export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
+  id: serial("id").primaryKey(),
+  email: text("email").unique().notNull(),
+  isSubscribed: boolean("is_subscribed").default(true).notNull(),
+  subscribedAt: timestamp("subscribed_at").defaultNow().notNull(),
+  unsubscribedAt: timestamp("unsubscribed_at"),
+  source: text("source"),
 });
 
 export const notificationPreferences = pgTable("notification_preferences", {
@@ -115,19 +225,6 @@ export const affiliateStats = pgTable("affiliate_stats", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
-export const supportTickets = pgTable("support_tickets", {
-  id: serial("id").primaryKey(),
-  subject: text("subject").notNull(),
-  description: text("description").notNull(),
-  status: text("status").notNull().default("open"), // 'open' | 'in_progress' | 'closed'
-  priority: text("priority").notNull().default("medium"), // 'low' | 'medium' | 'high'
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// Schema type definitions
-export const insertTicketMessageSchema = createInsertSchema(ticketMessages);
-export const selectTicketMessageSchema = createSelectSchema(ticketMessages);
 export const insertNewsletterSubscriptionSchema = createInsertSchema(
   newsletterSubscriptions,
 );
@@ -136,69 +233,13 @@ export const selectNewsletterSubscriptionSchema = createSelectSchema(
 );
 export const insertHistoricalRaceSchema = createInsertSchema(historicalRaces);
 export const selectHistoricalRaceSchema = createSelectSchema(historicalRaces);
-export const insertWagerRaceSchema = createInsertSchema(wagerRaces);
-export const selectWagerRaceSchema = createSelectSchema(wagerRaces);
-export const insertWagerRaceParticipantSchema = createInsertSchema(
-  wagerRaceParticipants,
-);
-export const selectWagerRaceParticipantSchema = createSelectSchema(
-  wagerRaceParticipants,
-);
-export const insertSupportTicketSchema = createInsertSchema(supportTickets);
-export const selectSupportTicketSchema = createSelectSchema(supportTickets);
 export const insertAffiliateStatsSchema = createInsertSchema(affiliateStats);
 export const selectAffiliateStatsSchema = createSelectSchema(affiliateStats);
-export const insertWheelSpinSchema = createInsertSchema(wheelSpins);
-export const selectWheelSpinSchema = createSelectSchema(wheelSpins);
-export const insertBonusCodeSchema = createInsertSchema(bonusCodes);
-export const selectBonusCodeSchema = createSelectSchema(bonusCodes);
-export const insertUserSchema = createInsertSchema(users);
-export const selectUserSchema = createSelectSchema(users);
 
 
-// TypeScript type definitions
-export type InsertTicketMessage = typeof ticketMessages.$inferInsert;
-export type SelectTicketMessage = typeof ticketMessages.$inferSelect;
 export type InsertNewsletterSubscription = typeof newsletterSubscriptions.$inferInsert;
 export type SelectNewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
 export type InsertHistoricalRace = typeof historicalRaces.$inferInsert;
 export type SelectHistoricalRace = typeof historicalRaces.$inferSelect;
-export type InsertWagerRace = typeof wagerRaces.$inferInsert;
-export type SelectWagerRace = typeof wagerRaces.$inferSelect;
-export type InsertWagerRaceParticipant = typeof wagerRaceParticipants.$inferInsert;
-export type SelectWagerRaceParticipant = typeof wagerRaceParticipants.$inferSelect;
-export type InsertSupportTicket = typeof supportTickets.$inferInsert;
-export type SelectSupportTicket = typeof supportTickets.$inferSelect;
 export type InsertAffiliateStats = typeof affiliateStats.$inferInsert;
 export type SelectAffiliateStats = typeof affiliateStats.$inferSelect;
-export type InsertWheelSpin = typeof wheelSpins.$inferInsert;
-export type SelectWheelSpin = typeof wheelSpins.$inferSelect;
-export type InsertBonusCode = typeof bonusCodes.$inferInsert;
-export type SelectBonusCode = typeof bonusCodes.$inferSelect;
-export type InsertUser = typeof users.$inferInsert;
-export type SelectUser = typeof users.$inferSelect;
-
-export const wagerRaceRelations = relations(wagerRaces, ({ many }) => ({
-  participants: many(wagerRaceParticipants),
-}));
-
-export const supportTicketRelations = relations(
-  supportTickets,
-  ({ one, many }) => ({
-    messages: many(ticketMessages),
-  }),
-);
-
-export const wheelSpinRelations = relations(wheelSpins, ({ one }) => ({
-  user: one(users, {
-    fields: [wheelSpins.userId],
-    references: [users.id],
-  }),
-}));
-
-export const bonusCodeRelations = relations(bonusCodes, ({ one }) => ({
-  user: one(users, {
-    fields: [bonusCodes.userId],
-    references: [users.id],
-  }),
-}));

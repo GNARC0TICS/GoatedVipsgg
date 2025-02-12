@@ -9,6 +9,8 @@ import { wagerRaces } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { users, type SelectUser } from "@db/schema";
+import { transformLeaderboardData } from "./utils/leaderboard";
+import { initializeBot } from "./telegram/bot";
 
 /**
  * Cache Manager Class
@@ -385,11 +387,16 @@ function setupRESTRoutes(app: Express) {
   // Telegram webhook route
   app.post("/api/telegram/webhook", async (req, res) => {
     try {
+      const bot = await initializeBot();
+      if (!bot) {
+        console.error("Bot instance not initialized");
+        return res.status(500).json({ error: "Bot not initialized" });
+      }
       await bot.handleUpdate(req.body);
       res.sendStatus(200);
     } catch (error) {
       console.error("Telegram webhook error:", error);
-      res.sendStatus(500);
+      res.status(500).json({ error: "Failed to process webhook" });
     }
   });
 
