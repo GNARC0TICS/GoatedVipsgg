@@ -372,12 +372,13 @@ const setupCommandHandlers = () => {
   // Admin command to view pending verification requests
   botInstance.onText(/\/pending/, async (msg) => {
     const chatId = msg.chat.id;
-    debugLog(`Pending command received from chat ID: ${chatId}, Admin ID: ${BOT_ADMIN_ID}`);
+    debugLog(`Pending command received from chat ID: ${chatId}, Admin ID: ${BOT_ADMIN_ID}, Types: ${typeof chatId} and ${typeof BOT_ADMIN_ID}`);
     
     if (chatId.toString() !== BOT_ADMIN_ID.toString()) {
       debugLog(`Unauthorized pending command attempt from ${chatId}`);
       return safeSendMessage(chatId, "❌ This command is only available to administrators.");
     }
+    debugLog('Admin check passed, proceeding with pending requests fetch');
 
     try {
       const pendingRequests = await db
