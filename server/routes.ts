@@ -382,6 +382,17 @@ function setupRESTRoutes(app: Express) {
     }
   );
 
+  // Telegram webhook route
+  app.post("/api/telegram/webhook", async (req, res) => {
+    try {
+      await bot.handleUpdate(req.body);
+      res.sendStatus(200);
+    } catch (error) {
+      console.error("Telegram webhook error:", error);
+      res.sendStatus(500);
+    }
+  });
+
   // Wheel Challenge Routes
   app.get("/api/wheel/check-eligibility",
     createRateLimiter('high'),
@@ -550,16 +561,6 @@ export function registerRoutes(app: Express): Server {
  * Configures WebSocket server
  */
 // Webhook endpoint for Telegram bot
-app.post("/api/telegram/webhook", async (req, res) => {
-  try {
-    await bot.handleUpdate(req.body);
-    res.sendStatus(200);
-  } catch (error) {
-    console.error("Telegram webhook error:", error);
-    res.sendStatus(500);
-  }
-});
-
 function setupWebSocket(httpServer: Server) {
   wss = new WebSocketServer({ noServer: true });
 
