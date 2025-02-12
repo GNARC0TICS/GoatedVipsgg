@@ -172,6 +172,18 @@ const initializeBot = async () => {
     setupCommandHandlers();
     startHealthCheck();
 
+    // Set up bot commands menu
+    await bot.setMyCommands([
+      { command: 'start', description: 'Get started with the bot' },
+      { command: 'verify', description: 'Link your Goated account' },
+      { command: 'stats', description: 'View your wager statistics' },
+      { command: 'check_stats', description: 'Check stats for username' },
+      { command: 'race', description: 'Check your race position' },
+      { command: 'leaderboard', description: 'See top players' },
+      { command: 'play', description: 'Play on Goated with our link' },
+      { command: 'website', description: 'Visit GoatedVIPs.gg' }
+    ]);
+
     debugLog("Bot initialized successfully");
     return bot;
   } catch (error) {
@@ -249,7 +261,7 @@ const handleMessage = async (msg: TelegramBot.Message) => {
       const args = msg.text.split(' ').slice(1);
 
       // Check if command should be in private
-      if (isGroupChat && ['verify', 'stats', 'profile'].includes(command.substring(1))) {
+      if (isGroupChat && ['verify', 'stats', 'profile', 'check_stats'].includes(command.substring(1))) {
         const privateLink = `https://t.me/${bot.botInfo?.username}?start=${command.substring(1)}`;
         await safeSendMessage(chatId,
           `🔒 For security, please use this command in private:\n${privateLink}`,
@@ -283,14 +295,14 @@ const handleMessage = async (msg: TelegramBot.Message) => {
 const setupCommandHandlers = () => {
   if (!bot) return;
 
-  bot.onText(/\/(start|help|verify|stats|leaderboard)(?:@[\w]+)? (.+)/, async (msg, match) => {
+  bot.onText(/\/(start|help|verify|stats|leaderboard|race|play|website|check_stats)(?:@[\w]+)? (.+)/, async (msg, match) => {
     if (!match) return;
     const command = match[1];
     const args = match[2].split(" ");
     handleCommand(command, msg, args);
   });
 
-  bot.onText(/\/(start|help|verify|stats|leaderboard)(?:@[\w]+)?/, async (msg, match) => {
+  bot.onText(/\/(start|help|verify|stats|leaderboard|race|play|website|check_stats)(?:@[\w]+)?/, async (msg, match) => {
     if (!match) return;
     const command = match[1];
     handleCommand(command, msg, []);
@@ -526,7 +538,7 @@ Available Commands:
 • /start - Get started with the bot
 • /verify - Link your Goated account
 • /stats - View your wager statistics
-• /stats <username> - Check stats for username
+• /check_stats - Check stats for username
 • /race - Check your race position
 • /leaderboard - See top players
 • /play - Play on Goated with our link
@@ -547,7 +559,7 @@ Need help? Contact @xGoombas for support.`;
         const helpText = telegramUser?.isVerified ? 
           `📋 Available Commands:
 • /stats - View your wager statistics
-• /stats <username> - Check stats for username
+• /check_stats - Check stats for username
 • /race - Check your race position
 • /leaderboard - See top players
 • /play - Play on Goated
@@ -569,12 +581,15 @@ Need help? Contact @xGoombas for support.`.trim();
       case 'stats':
         await handleStatsCommand(msg, args);
         break;
+      case 'check_stats':
+        await handleStatsCommand(msg, args);
+        break;
       case 'leaderboard':
         await handleLeaderboardCommand(msg);
         break;
       // Add other command handlers as needed
       default:
-        if (isGroupChat && ['verify', 'stats', 'profile'].includes(command)) {
+        if (isGroupChat && ['verify', 'stats', 'profile', 'check_stats'].includes(command)) {
           const privateLink = `https://t.me/${bot.botInfo?.username}?start=${command}`;
           await safeSendMessage(
             chatId,
