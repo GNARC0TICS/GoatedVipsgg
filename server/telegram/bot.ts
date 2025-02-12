@@ -371,7 +371,10 @@ const setupCommandHandlers = () => {
   // Admin command to view pending verification requests
   botInstance.onText(/\/pending/, async (msg) => {
     const chatId = msg.chat.id;
+    debugLog(`Pending command received from chat ID: ${chatId}, Admin ID: ${BOT_ADMIN_ID}`);
+    
     if (chatId !== BOT_ADMIN_ID) {
+      debugLog(`Unauthorized pending command attempt from ${chatId}`);
       return safeSendMessage(chatId, "❌ This command is only available to administrators.");
     }
 
@@ -388,8 +391,9 @@ const setupCommandHandlers = () => {
         .innerJoin(users, eq(users.id, verificationRequests.userId))
         .where(eq(verificationRequests.status, 'pending'));
 
+      debugLog(`Found ${pendingRequests.length} pending requests`);
       if (pendingRequests.length === 0) {
-        return safeSendMessage(chatId, "✅ No pending verification requests.");
+        return safeSendMessage(chatId, "✅ No pending verification requests.", {}, 'high');
       }
 
       for (const request of pendingRequests) {
