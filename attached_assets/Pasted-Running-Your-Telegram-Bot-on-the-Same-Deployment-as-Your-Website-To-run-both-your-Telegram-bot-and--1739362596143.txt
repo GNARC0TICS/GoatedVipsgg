@@ -1,0 +1,145 @@
+Running Your Telegram Bot on the Same Deployment as Your Website
+
+To run both your Telegram bot and your website on the same deployment, follow these steps to properly structure and manage both processes.
+
+1️⃣ Organizing the Project Structure
+
+Make sure your project is structured like this:
+
+/your-project
+  ├── /server
+  │     ├── index.ts  (Express app entry point)
+  │     ├── bot.ts  (Telegram bot script)
+  │     ├── config.ts  (API and env config)
+  │     ├── routes.ts  (API routes)
+  │     ├── db.ts  (Database connection)
+  ├── /client
+  │     ├── src/
+  │     ├── public/
+  │     ├── index.html
+  ├── package.json
+  ├── tsconfig.json
+  ├── .env
+  ├── pm2.config.js
+  ├── replit.nix  (if using Replit)
+
+	•	Your website is served using an Express server (index.ts)
+	•	Your Telegram bot runs as a separate process in bot.ts
+
+2️⃣ Updating index.ts to Handle Both the Bot and API
+
+Modify your server/index.ts file to run both your Express app and Telegram bot in the same process:
+
+import express from "express";
+import { bot } from "./bot"; // Import the Telegram bot
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(express.json());
+
+// Example API route
+app.get("/", (req, res) => {
+  res.send("Website and Telegram bot are running!");
+});
+
+// Start the Express server
+const server = app.listen(PORT, () => {
+  console.log(`🌍 Server running on http://localhost:${PORT}`);
+});
+
+// Handle Telegram bot as a background service
+(async () => {
+  try {
+    console.log("🚀 Starting Telegram Bot...");
+    await bot;
+  } catch (error) {
+    console.error("⚠️ Telegram bot failed to start:", error);
+  }
+})();
+
+// Graceful shutdown
+process.on("SIGINT", async () => {
+  console.log("🛑 Shutting down server and bot...");
+  server.close(() => {
+    console.log("✅ Server shut down.");
+  });
+});
+
+✅ This ensures both the Express API and Telegram bot run in the same process.
+
+3️⃣ Running in Development Mode (npm run dev)
+
+For development, modify your package.json:
+
+"scripts": {
+  "dev": "concurrently \"tsx server/index.ts\" \"tsx server/bot.ts\""
+}
+
+Then run:
+
+npm run dev
+
+✅ This will start both the website and the Telegram bot locally.
+
+4️⃣ Running Both on Replit Deployment
+
+🔹 Option 1: Using PM2 for Stability
+
+If using PM2, create a pm2.config.js file:
+
+module.exports = {
+  apps: [
+    {
+      name: "website",
+      script: "./server/index.ts",
+      interpreter: "tsx",
+      watch: true,
+    },
+    {
+      name: "telegram-bot",
+      script: "./server/bot.ts",
+      interpreter: "tsx",
+      watch: true,
+    }
+  ]
+};
+
+Then, start both processes:
+
+pm2 start pm2.config.js
+pm2 save
+
+✅ This runs both the website and Telegram bot persistently, even after crashes.
+
+🔹 Option 2: Running on Replit Without PM2
+
+If running on Replit, modify your replit.nix:
+
+{ pkgs }: {
+  deps = [
+    pkgs.nodejs-18_x
+    pkgs.pm2
+  ];
+}
+
+Then in Replit’s “Run Command”, set:
+
+npm run dev
+
+✅ This runs both the website and bot within the same deployment.
+
+5️⃣ Final Checklist Before Deployment
+
+✔ Does /start work in Telegram?
+✔ Can you access the site at http://localhost:5000?
+✔ Is everything running persistently (pm2 logs or Replit Deploy panel)?
+✔ Did you restart the app to verify the bot starts with the website?
+
+🚀 You’re Now Running Both on the Same Deployment!
+
+Once confirmed, your website and bot will be deployed together, and the bot will restart alongside the site.

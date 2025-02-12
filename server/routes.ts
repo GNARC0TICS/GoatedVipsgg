@@ -383,66 +383,31 @@ function setupRESTRoutes(app: Express) {
     }
   );
 
-  // Telegram webhook route
-  // Add type for webhook request body
-  interface TelegramWebhookRequest {
-    update_id: number;
-    message?: TelegramBot.Message;
-    callback_query?: TelegramBot.CallbackQuery;
-    [key: string]: any;
-  }
-
-  // Update the webhook route with better error handling
-  app.post<{}, {}, TelegramWebhookRequest>(
-    "/api/telegram/webhook",
-    createRateLimiter('high'),
-    async (req, res) => {
+  // Status endpoint for Telegram bot
+  app.get("/api/telegram/status",
+    createRateLimiter('medium'),
+    async (_req, res) => {
       try {
         const bot = await initializeBot();
         if (!bot) {
-          log("Bot instance not initialized");
           return res.status(500).json({
             status: "error",
             message: "Bot not initialized"
           });
         }
 
-        const update = req.body;
-        log(`Received webhook update type: ${
-          update.message ? 'message' :
-          update.callback_query ? 'callback_query' :
-          'other'
-        }`);
-        log(`Update details: ${JSON.stringify(update, null, 2).substring(0, 500)}`);
-
-        try {
-          await handleUpdate(update);
-          res.sendStatus(200);
-        } catch (error: any) {
-          const errorDetails = {
-            message: error.message,
-            stack: error.stack,
-            code: error.code,
-            type: error.constructor.name
-          };
-          log(`Telegram webhook error details: ${JSON.stringify(errorDetails, null, 2)}`);
-          res.status(500).json({
-            status: "error",
-            message: "Failed to process webhook",
-            details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
-          });
-        }
-      } catch (error: any) {
-        const errorDetails = {
-          message: error.message,
-          stack: error.stack,
-          type: error.constructor.name
-        };
-        log(`Error in webhook endpoint: ${JSON.stringify(errorDetails, null, 2)}`);
+        const botInfo = await bot.getMe();
+        res.json({
+          status: "healthy",
+          username: botInfo.username,
+          timestamp: new Date().toISOString(),
+          mode: "polling"
+        });
+      } catch (error) {
+        log(`Error checking bot status: ${error}`);
         res.status(500).json({
           status: "error",
-          message: "Internal server error",
-          details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+          message: "Failed to check bot status"
         });
       }
     }
