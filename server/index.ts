@@ -75,7 +75,7 @@ function requestLogger(
 }
 
 function errorHandler(
-  err: Error,
+  err: Error | any,
   _req: express.Request,
   res: express.Response,
   _next: express.NextFunction,
