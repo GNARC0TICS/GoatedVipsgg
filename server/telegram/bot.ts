@@ -121,7 +121,7 @@ const initializeBot = async () => {
     
     bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
       webHook: {
-        port: 5000,
+        port: 5001,
         host: '0.0.0.0'
       },
       filepath: false
