@@ -16,7 +16,7 @@ channel = "stable-24_05"
 deploymentTarget = "gce"
 build = ["sh", "-c", "npm run build"]
 run = ["sh", "-c", "tsx server/index.ts"]
-ignorePorts = true
+ignorePorts = false
 
 [[ports]]
 localPort = 5000
