@@ -77,8 +77,19 @@ try {
     console.error("❌ Failed to connect bot:", error.message);
   });
 
-  bot.on("polling_error", (error) => console.error("⚠️ Polling Error:", error.message));
-  bot.on("error", (error) => console.error("⚠️ Telegram Bot Error:", error.message));
+  bot.on("polling_error", (error) => {
+    console.error("⚠️ Polling Error:", error.message);
+    if (error.code === 401) {
+      console.error("❌ Authentication failed. Please check your TELEGRAM_BOT_TOKEN");
+    } else if (error.code === 409) {
+      console.error("❌ Conflict: Another bot instance is running");
+    }
+  });
+  
+  bot.on("error", (error) => {
+    console.error("⚠️ Telegram Bot Error:", error.message, error.code);
+    console.error("Full error details:", error);
+  });
 } catch (error) {
   console.error("🚨 Failed to create bot instance:", error);
   throw error;
