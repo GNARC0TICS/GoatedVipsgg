@@ -1,6 +1,7 @@
 let isReconnecting = false;
-const RECONNECT_DELAY = 5000;
-const MAX_RECONNECT_ATTEMPTS = 5;
+const RECONNECT_DELAY = 3000;
+const MAX_RECONNECT_ATTEMPTS = 8;
+const RECONNECT_BACKOFF_MULTIPLIER = 1.5;
 let reconnectAttempts = 0;
 
 import TelegramBot from "node-telegram-bot-api";
@@ -115,9 +116,9 @@ class PriorityMessageQueue {
   private queue: Map<number, QueueItem[]> = new Map();
   private processing: Map<number, boolean> = new Map();
   private readonly RATE_LIMITS: Record<Priority, number> = {
-    high: 500,    // 2 messages per second
-    medium: 1000, // 1 message per second
-    low: 2000,    // 1 message per 2 seconds
+    high: 300,    // ~3 messages per second
+    medium: 600,  // ~2 messages per second
+    low: 1000,    // 1 message per second
   };
 
   async add(chatId: number, task: () => Promise<void>, priority: Priority = 'medium') {
@@ -191,10 +192,10 @@ const rateLimiter = new RateLimiter();
 
 
 // Health monitoring
-const HEALTH_CHECK_INTERVAL = 30000; // 30 seconds
-const HEALTH_CHECK_TIMEOUT = 10000;  // 10 seconds
+const HEALTH_CHECK_INTERVAL = 15000; // 15 seconds
+const HEALTH_CHECK_TIMEOUT = 5000;   // 5 seconds
 let healthCheckFailures = 0;
-const MAX_HEALTH_CHECK_FAILURES = 3;
+const MAX_HEALTH_CHECK_FAILURES = 5;
 
 // Bot event handlers setup
 const setupBotEventHandlers = () => {
