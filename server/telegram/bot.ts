@@ -778,13 +778,19 @@ Need help? Contact @xGoombas for support.`;
 • /website - Visit our website
 
 Need help? Contact @xGoombas for support.`.trim() :
-          `📋 Available Commands:
-• /verify <username> - Link your Goated account
-• /help - Show this help message
+          `🔐 Verification Required
 
-💡 Not verified yet? [Click here to verify](https://t.me/${bot.botInfo?.username}?start=verify)
+To access all features, please verify your Goated account:
 
-Need help? Contact @xGoombas for support.`.trim();
+1️⃣ Click the button below to start verification
+2️⃣ Enter your Goated username
+3️⃣ Wait for admin approval (usually within minutes)
+
+Available Commands:
+• /verify <username> - Link your account
+• /help - Show all commands
+
+Need assistance? Contact @xGoombas`.trim();
 
         // For verified users, add an inline keyboard for quick navigation
         const helpInlineKeyboard = telegramUser?.isVerified ? {
@@ -1064,7 +1070,7 @@ const handleStatsCommand = async (msg: TelegramBot.Message, args: string[]) => {
 
     // If non-admin tries to check other user's stats
     if (targetUsername && !isAdmin) {
-      return safeSendMessage(chatId, "❌ You can only check your own stats. Use /stats without parameters.");
+      return safeSendMessage(chatId, "❌ You can only check your own stats. Use /stats without parameters.", {}, 'medium', true);
     }
 
     if (!targetUsername) {
@@ -1249,17 +1255,29 @@ const safeSendMessage = async (
   chatId: number,
   text: string,
   options: TelegramBot.SendMessageOptions = {},
-  priority: Priority = 'medium'
+  priority: Priority = 'medium',
+  autoDelete: boolean = false
 ): Promise<void> => {
   if (!bot) return;
 
   const sendTask = async (): Promise<void> => {
     try {
-      await bot!.sendMessage(chatId, text, {
+      const msg = await bot!.sendMessage(chatId, text, {
         ...options,
         disable_web_page_preview: true,
         parse_mode: 'HTML'
       });
+      
+      // Auto-delete non-important group messages after 5 minutes
+      if (autoDelete && GROUP_MESSAGE_TYPES.includes(msg.chat.type)) {
+        setTimeout(async () => {
+          try {
+            await bot!.deleteMessage(chatId, msg.message_id.toString());
+          } catch (error) {
+            debugLog('Error deleting message:', error);
+          }
+        }, 5 * 60 * 1000); // 5 minutes
+      }
     } catch (error: any) {
       if (error.code === 403) {
         debugLog(`Bot blocked by user ${chatId}`);
