@@ -8,6 +8,8 @@ import { sql } from "drizzle-orm";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
+import fetch from "node-fetch";
+
 
 const execAsync = promisify(exec);
 const app = express();
@@ -84,10 +86,23 @@ async function cleanupPort() {
   }
 }
 
+async function cleanupBot() {
+  try {
+    // Remove any existing webhooks
+    if (process.env.TELEGRAM_BOT_TOKEN) {
+      await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteWebhook`);
+      log("Cleared existing webhook configuration");
+    }
+  } catch (error) {
+    console.error("Error cleaning up bot:", error);
+  }
+}
+
 async function startServer() {
   try {
     log("Starting server initialization...");
     await checkDatabase();
+    await cleanupBot();
     await cleanupPort();
 
     const server = createServer(app);
