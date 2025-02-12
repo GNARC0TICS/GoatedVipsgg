@@ -512,6 +512,22 @@ const handleCallbackQuery = async (query: TelegramBot.CallbackQuery): Promise<vo
         if (chatId !== BOT_ADMIN_ID || !query.data) return;
         const [action, requestId] = query.data.split('_');
         if (!['approve', 'reject'].includes(action)) return;
+        
+        // Check if request has already been processed
+        const [request] = await db
+          .select()
+          .from(verificationRequests)
+          .where(eq(verificationRequests.id, parseInt(requestId)))
+          .limit(1);
+
+        if (!request || request.status !== 'pending') {
+          await botInstance.answerCallbackQuery(query.id, {
+            text: '⚠️ This request has already been processed',
+            show_alert: true
+          });
+          return;
+        }
+
         await handleVerificationAction(action as 'approve' | 'reject', parseInt(requestId), chatId);
         break;
     }
@@ -822,6 +838,8 @@ const handleVerificationAction = async (
   adminChatId: number
 ): Promise<void> => {
   if (!botInstance) return;
+  
+  debugLog(`Processing ${action} action for request #${requestId}`);
 
   try {
     const [request] = await db
@@ -902,6 +920,18 @@ const handleVerificationAction = async (
 const handleVerifyCommand = async (msg: TelegramBot.Message, args: string[]) => {
   const chatId = msg.chat.id;
   debugLog("📝 Verify command received from:", chatId);
+
+  // Check for existing verification request
+  const [existingRequest] = await db
+    .select()
+    .from(verificationRequests)
+    .where(eq(verificationRequests.telegramId, chatId.toString()))
+    .where(eq(verificationRequests.status, "pending"))
+    .limit(1);
+
+  if (existingRequest) {
+    return safeSendMessage(chatId, "⚠️ You already have a pending verification request. Please wait for admin approval.");
+  }
 
   // If in group chat, direct to private
   if (msg.chat.type !== 'private') {
