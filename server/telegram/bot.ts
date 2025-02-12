@@ -185,7 +185,6 @@ const initializeBot = async () => {
       { command: 'adminpanel', description: 'Access the admin panel' }, // Added adminpanel command
       { command: 'broadcast', description: 'Broadcast a message (admin only)' }, // Added broadcast command
       { command: 'message', description: 'Send a direct message (admin only)' } // Added message command
-
     ]);
 
     debugLog("Bot initialized successfully");
@@ -417,70 +416,115 @@ const setupCommandHandlers = () => {
     }
   });
 
+  // NOTE: The duplicate callback_query listener below has been merged into a single, unified handler.
+  // (Any previous extra registration of callback_query has been removed for clarity.)
+};
 
-  // Handle callback queries from inline buttons
-  bot.on('callback_query', async (callbackQuery) => {
-    const chatId = callbackQuery.message?.chat.id;
-    if (!chatId) return;
+// Unified callback query handler with additional inline button cases
+const handleCallbackQuery = async (query: TelegramBot.CallbackQuery): Promise<void> => {
+  if (!bot || !query.message) return;
+  const chatId = query.message.chat.id;
 
-    try {
-      switch (callbackQuery.data) {
-        case 'my_stats':
-          // Simulate /stats command
-          await bot.emit('message', {
-            ...callbackQuery.message,
-            text: '/stats',
-            entities: [{ offset: 0, length: 6, type: 'bot_command' }]
-          });
-          break;
-        case 'refresh_leaderboard':
-          // Simulate /leaderboard command
-          await bot.emit('message', {
-            ...callbackQuery.message,
-            text: '/leaderboard',
-            entities: [{ offset: 0, length: 11, type: 'bot_command' }]
-          });
-          break;
-        case 'admin_broadcast':
-          await bot.emit('message', {
-            ...callbackQuery.message,
-            text: '/broadcast',
-            entities: [{ offset: 0, length: 10, type: 'bot_command' }]
-          });
-          break;
-        case 'admin_message':
-          await bot.emit('message', {
-            ...callbackQuery.message,
-            text: '/message',
-            entities: [{ offset: 0, length: 8, type: 'bot_command' }]
-          });
-          break;
-        case 'admin_pending':
-          await bot.emit('message', {
-            ...callbackQuery.message,
-            text: '/pending',
-            entities: [{ offset: 0, length: 8, type: 'bot_command' }]
-          });
-          break;
-        default:
-          // Handle Approve/Reject actions
-          if (chatId !== BOT_ADMIN_ID || !callbackQuery.data) return;
-          const [action, requestId] = callbackQuery.data.split('_');
-          if (!['approve', 'reject'].includes(action)) return;
-
-          await handleVerificationAction(action, parseInt(requestId), chatId);
-          break;
-      }
-      // Answer callback query to remove loading state
-      await bot.answerCallbackQuery(callbackQuery.id);
-    } catch (error) {
-      console.error('Callback query error:', error);
-      await bot.answerCallbackQuery(callbackQuery.id, {
-        text: '❌ Error processing request',
-        show_alert: true
+  try {
+    // Handle refresh stats inline button with data like "stats_username"
+    if (query.data && query.data.startsWith("stats_")) {
+      const refreshUsername = query.data.split("_")[1];
+      await bot.emit('message', {
+        ...query.message,
+        text: `/stats ${refreshUsername}`,
+        entities: [{ offset: 0, length: 6 + refreshUsername.length + 1, type: 'bot_command' }]
       });
+      await bot.answerCallbackQuery(query.id);
+      return;
     }
-  });
+
+    switch (query.data) {
+      case 'my_stats':
+        await bot.emit('message', {
+          ...query.message,
+          text: '/stats',
+          entities: [{ offset: 0, length: 6, type: 'bot_command' }]
+        });
+        break;
+      case 'refresh_leaderboard':
+        await bot.emit('message', {
+          ...query.message,
+          text: '/leaderboard',
+          entities: [{ offset: 0, length: 11, type: 'bot_command' }]
+        });
+        break;
+      case 'verify':
+        await bot.emit('message', {
+          ...query.message,
+          text: '/verify',
+          entities: [{ offset: 0, length: 7, type: 'bot_command' }]
+        });
+        break;
+      case 'stats':
+        await bot.emit('message', {
+          ...query.message,
+          text: '/stats',
+          entities: [{ offset: 0, length: 6, type: 'bot_command' }]
+        });
+        break;
+      case 'leaderboard':
+        await bot.emit('message', {
+          ...query.message,
+          text: '/leaderboard',
+          entities: [{ offset: 0, length: 11, type: 'bot_command' }]
+        });
+        break;
+      case 'help':
+        await bot.emit('message', {
+          ...query.message,
+          text: '/help',
+          entities: [{ offset: 0, length: 5, type: 'bot_command' }]
+        });
+        break;
+      case 'play':
+        await bot.emit('message', {
+          ...query.message,
+          text: '/play',
+          entities: [{ offset: 0, length: 5, type: 'bot_command' }]
+        });
+        break;
+      case 'admin_broadcast':
+        await bot.emit('message', {
+          ...query.message,
+          text: '/broadcast',
+          entities: [{ offset: 0, length: 10, type: 'bot_command' }]
+        });
+        break;
+      case 'admin_message':
+        await bot.emit('message', {
+          ...query.message,
+          text: '/message',
+          entities: [{ offset: 0, length: 8, type: 'bot_command' }]
+        });
+        break;
+      case 'admin_pending':
+        await bot.emit('message', {
+          ...query.message,
+          text: '/pending',
+          entities: [{ offset: 0, length: 8, type: 'bot_command' }]
+        });
+        break;
+      default:
+        // Handle Approve/Reject actions for inline buttons (e.g. "approve_123" or "reject_123")
+        if (chatId !== BOT_ADMIN_ID || !query.data) return;
+        const [action, requestId] = query.data.split('_');
+        if (!['approve', 'reject'].includes(action)) return;
+        await handleVerificationAction(action as 'approve' | 'reject', parseInt(requestId), chatId);
+        break;
+    }
+    await bot.answerCallbackQuery(query.id);
+  } catch (error) {
+    debugLog('Error handling callback query:', error);
+    await bot.answerCallbackQuery(query.id, {
+      text: '❌ Error processing request',
+      show_alert: true
+    });
+  }
 };
 
 // Handle bot reconnection
@@ -537,7 +581,6 @@ const startHealthCheck = () => {
     }
   }, HEALTH_CHECK_INTERVAL);
 };
-
 
 // Command handler function
 const handleCommand = async (command: string, msg: TelegramBot.Message, args: string[]) => {
@@ -630,7 +673,7 @@ const handleCommand = async (command: string, msg: TelegramBot.Message, args: st
           }
         });
         break;
-      case 'start':
+      case '/start': {
         const welcomeMessage = `🐐 Welcome to Goated Stats Bot!
 
 Admin Commands:
@@ -654,12 +697,31 @@ Available Commands:
 • /broadcast - Broadcast a message (admin only)
 • /message - Send a direct message (admin only)
 
-
 Need help? Contact @xGoombas for support.`;
-        await safeSendMessage(chatId, welcomeMessage);
-        break;
 
-      case 'help':
+        const startInlineKeyboard = {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: "🔐 Verify Account", callback_data: "verify" },
+                { text: "📊 My Stats", callback_data: "stats" }
+              ],
+              [
+                { text: "🏆 Leaderboard", callback_data: "leaderboard" },
+                { text: "🎮 Play", callback_data: "play" }
+              ],
+              [
+                { text: "🌐 Website", url: "https://GoatedVIPs.gg" },
+                { text: "👤 Contact Support", url: "https://t.me/xGoombas" }
+              ]
+            ]
+          }
+        };
+
+        await safeSendMessage(chatId, welcomeMessage, startInlineKeyboard);
+        break;
+      }
+      case '/help': {
         // Check if user is verified
         const [telegramUser] = await db
           .select()
@@ -684,19 +746,39 @@ Need help? Contact @xGoombas for support.`.trim() :
 💡 Not verified yet? [Click here to verify](https://t.me/${bot.botInfo?.username}?start=verify)
 
 Need help? Contact @xGoombas for support.`.trim();
-        await safeSendMessage(chatId, helpText);
+
+        // For verified users, add an inline keyboard for quick navigation
+        const helpInlineKeyboard = telegramUser?.isVerified ? {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: "📊 My Stats", callback_data: "stats" },
+                { text: "🏆 Leaderboard", callback_data: "leaderboard" }
+              ],
+              [
+                { text: "🌐 Website", url: "https://GoatedVIPs.gg" },
+                { text: "👤 Contact Support", url: "https://t.me/xGoombas" }
+              ]
+            ]
+          }
+        } : {};
+
+        await safeSendMessage(chatId, helpText, helpInlineKeyboard);
         break;
-      case 'verify':
+      }
+      case '/verify':
         await handleVerifyCommand(msg, args);
         break;
-      case 'stats':
+      case '/stats':
+      case '/check_stats':
         await handleStatsCommand(msg, args);
         break;
-      case 'check_stats':
-        await handleStatsCommand(msg, args);
-        break;
-      case 'leaderboard':
+      case '/leaderboard':
         await handleLeaderboardCommand(msg);
+        break;
+      case '/play':
+        // Refactored play command with affiliate link
+        await safeSendMessage(chatId, "🎮 Enjoy playing on Goated! Get started: <a href='https://www.Goated.com/r/GOATEDVIPS'>here</a>");
         break;
       // Add other command handlers as needed
       default:
@@ -719,74 +801,7 @@ Need help? Contact @xGoombas for support.`.trim();
   }
 };
 
-// Callback query handler function
-const handleCallbackQuery = async (query: TelegramBot.CallbackQuery): Promise<void> => {
-  if (!bot || !query.message) return;
-
-  const chatId = query.message.chat.id;
-
-  try {
-    switch (query.data) {
-      case 'my_stats':
-        // Simulate /stats command
-        await handleMessage({
-          ...query.message,
-          text: '/stats',
-          entities: [{ offset: 0, length: 6, type: 'bot_command' }]
-        });
-        break;
-
-      case 'refresh_leaderboard':
-        // Simulate /leaderboard command
-        await handleMessage({
-          ...query.message,
-          text: '/leaderboard',
-          entities: [{ offset: 0, length: 11, type: 'bot_command' }]
-        });
-        break;
-
-      case 'admin_broadcast':
-          await bot.emit('message', {
-            ...query.message,
-            text: '/broadcast',
-            entities: [{ offset: 0, length: 10, type: 'bot_command' }]
-          });
-          break;
-      case 'admin_message':
-          await bot.emit('message', {
-            ...query.message,
-            text: '/message',
-            entities: [{ offset: 0, length: 8, type: 'bot_command' }]
-          });
-          break;
-      case 'admin_pending':
-          await bot.emit('message', {
-            ...query.message,
-            text: '/pending',
-            entities: [{ offset: 0, length: 8, type: 'bot_command' }]
-          });
-          break;
-      default:
-        // Handle verification approvals/rejections
-        if (chatId !== BOT_ADMIN_ID || !query.data) return;
-        const [action, requestId] = query.data.split('_');
-
-        if (!['approve', 'reject'].includes(action)) return;
-
-        await handleVerificationAction(action, parseInt(requestId), chatId);
-    }
-
-    // Answer callback query to remove loading state
-    await bot.answerCallbackQuery(query.id);
-  } catch (error) {
-    debugLog('Error handling callback query:', error);
-    await bot.answerCallbackQuery(query.id, {
-      text: '❌ Error processing request',
-      show_alert: true
-    });
-  }
-};
-
+// Callback query handler for inline button actions is defined above
 
 // Helper function to handle verification actions
 const handleVerificationAction = async (
@@ -946,7 +961,7 @@ Ready? Type /verify followed by your username!
       return safeSendMessage(chatId, "❌ Username not found. Please check the username and try again.");
     }
 
-    //    // Find or create user in our database
+    // Find or create user in our database
     let [user] = await db
       .select()
       .from(users)
@@ -1094,7 +1109,6 @@ const handleLeaderboardCommand = async (msg: TelegramBot.Message) => {
 
     debugLog(`Found ${verifiedUsers.size} verified users`);
 
-    // Fix for the formatLeaderboardEntry function
     const formatLeaderboardEntry = (player: any, position: number): string => {
       const telegramTag = verifiedUsers.get(player.name.toLowerCase());
       const displayName = telegramTag ? `@${telegramTag}` : player.name;
@@ -1132,7 +1146,6 @@ const handleLeaderboardCommand = async (msg: TelegramBot.Message) => {
   }
 };
 
-
 // Helper function to format currency
 const formatCurrency = (amount: number): string => {
   return amount.toLocaleString('en-US', {
@@ -1141,7 +1154,7 @@ const formatCurrency = (amount: number): string => {
   });
 };
 
-// Helper function to fetch and send stats
+// Helper function to fetch and send stats (now with a refresh inline button)
 async function fetchAndSendStats(chatId: number, username: string) {
   try {
     const response = await fetch(
@@ -1160,7 +1173,14 @@ async function fetchAndSendStats(chatId: number, username: string) {
 
     const data = await response.json();
     const message = formatStatsMessage(data, username);
-    await safeSendMessage(chatId, message);
+    const inlineKeyboard = {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "🔄 Refresh Stats", callback_data: `stats_${username}` }]
+        ]
+      }
+    };
+    await safeSendMessage(chatId, message, inlineKeyboard);
   } catch (error) {
     console.error("Error fetching stats:", error);
     await safeSendMessage(chatId, "❌ Error fetching stats. Please try again later.");
