@@ -10,7 +10,7 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { users, type SelectUser } from "@db/schema";
 import { transformLeaderboardData as transformData } from "./utils/leaderboard";
-import { initializeBot } from "./telegram/bot";
+import { initializeBot, handleUpdate } from "./telegram/bot";
 
 /**
  * Cache Manager Class
@@ -171,7 +171,7 @@ const batchHandler = async (req: any, res: any) => {
 
           return await response.json();
         } catch (error) {
-          return { 
+          return {
             status: 'error',
             error: error.message || 'Failed to process request',
             endpoint: request.endpoint
@@ -182,15 +182,15 @@ const batchHandler = async (req: any, res: any) => {
 
     res.json({
       status: 'success',
-      results: results.map(result => 
+      results: results.map(result =>
         result.status === 'fulfilled' ? result.value : result.reason
       )
     });
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       status: 'error',
       message: 'Batch processing failed',
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -384,20 +384,70 @@ function setupRESTRoutes(app: Express) {
   );
 
   // Telegram webhook route
-  app.post("/api/telegram/webhook", async (req, res) => {
-    try {
-      const bot = await initializeBot();
-      if (!bot) {
-        console.error("Bot instance not initialized");
-        return res.status(500).json({ error: "Bot not initialized" });
+  // Add type for webhook request body
+  interface TelegramWebhookRequest {
+    update_id: number;
+    message?: TelegramBot.Message;
+    callback_query?: TelegramBot.CallbackQuery;
+    [key: string]: any;
+  }
+
+  // Update the webhook route with better error handling
+  app.post<{}, {}, TelegramWebhookRequest>(
+    "/api/telegram/webhook",
+    createRateLimiter('high'),
+    async (req, res) => {
+      try {
+        const bot = await initializeBot();
+        if (!bot) {
+          log("Bot instance not initialized");
+          return res.status(500).json({
+            status: "error",
+            message: "Bot not initialized"
+          });
+        }
+
+        const update = req.body;
+        log(`Received webhook update type: ${
+          update.message ? 'message' :
+          update.callback_query ? 'callback_query' :
+          'other'
+        }`);
+        log(`Update details: ${JSON.stringify(update, null, 2).substring(0, 500)}`);
+
+        try {
+          await handleUpdate(update);
+          res.sendStatus(200);
+        } catch (error: any) {
+          const errorDetails = {
+            message: error.message,
+            stack: error.stack,
+            code: error.code,
+            type: error.constructor.name
+          };
+          log(`Telegram webhook error details: ${JSON.stringify(errorDetails, null, 2)}`);
+          res.status(500).json({
+            status: "error",
+            message: "Failed to process webhook",
+            details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+          });
+        }
+      } catch (error: any) {
+        const errorDetails = {
+          message: error.message,
+          stack: error.stack,
+          type: error.constructor.name
+        };
+        log(`Error in webhook endpoint: ${JSON.stringify(errorDetails, null, 2)}`);
+        res.status(500).json({
+          status: "error",
+          message: "Internal server error",
+          details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+        });
       }
-      await bot.handleUpdate(req.body);
-      res.sendStatus(200);
-    } catch (error) {
-      console.error("Telegram webhook error:", error);
-      res.status(500).json({ error: "Failed to process webhook" });
     }
-  });
+  );
+
 
   // Wheel Challenge Routes
   app.get("/api/wheel/check-eligibility",
@@ -405,9 +455,9 @@ function setupRESTRoutes(app: Express) {
     async (req, res) => {
       try {
         if (!req.user) {
-          return res.status(401).json({ 
+          return res.status(401).json({
             status: "error",
-            message: "Authentication required" 
+            message: "Authentication required"
           });
         }
 
@@ -424,10 +474,10 @@ function setupRESTRoutes(app: Express) {
         // Can spin if:
         // 1. Never spun before OR
         // 2. Last spin was before today (UTC midnight)
-        const canSpin = !lastSpinDate || 
+        const canSpin = !lastSpinDate ||
           (now.getUTCDate() !== lastSpinDate.getUTCDate() ||
-           now.getUTCMonth() !== lastSpinDate.getUTCMonth() ||
-           now.getUTCFullYear() !== lastSpinDate.getUTCFullYear());
+            now.getUTCMonth() !== lastSpinDate.getUTCMonth() ||
+            now.getUTCFullYear() !== lastSpinDate.getUTCFullYear());
 
         res.json({
           canSpin,
@@ -435,9 +485,9 @@ function setupRESTRoutes(app: Express) {
         });
       } catch (error) {
         console.error("Error checking wheel spin eligibility:", error);
-        res.status(500).json({ 
+        res.status(500).json({
           status: "error",
-          message: "Failed to check eligibility" 
+          message: "Failed to check eligibility"
         });
       }
     }
@@ -448,9 +498,9 @@ function setupRESTRoutes(app: Express) {
     async (req, res) => {
       try {
         if (!req.user) {
-          return res.status(401).json({ 
+          return res.status(401).json({
             status: "error",
-            message: "Authentication required" 
+            message: "Authentication required"
           });
         }
 
@@ -485,9 +535,9 @@ function setupRESTRoutes(app: Express) {
         });
       } catch (error) {
         console.error("Error recording wheel spin:", error);
-        res.status(500).json({ 
+        res.status(500).json({
           status: "error",
-          message: "Failed to record spin" 
+          message: "Failed to record spin"
         });
       }
     }
