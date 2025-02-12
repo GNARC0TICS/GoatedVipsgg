@@ -99,7 +99,29 @@ interface QueueItem {
   timestamp: number;
 }
 
+// Enhanced rate limiting and throttling
+class RateLimiter {
+  private limits: Map<number, number> = new Map();
+  private readonly WINDOW = 60000; // 1 minute window
+  private readonly MAX_MESSAGES = 30; // Max messages per window
+
+  async checkLimit(chatId: number): Promise<boolean> {
+    const now = Date.now();
+    const userCount = this.limits.get(chatId) || 0;
+    
+    if (userCount >= this.MAX_MESSAGES) {
+      return false;
+    }
+    
+    this.limits.set(chatId, userCount + 1);
+    setTimeout(() => this.limits.set(chatId, (this.limits.get(chatId) || 1) - 1), this.WINDOW);
+    
+    return true;
+  }
+}
+
 const messageQueue = new PriorityMessageQueue();
+const rateLimiter = new RateLimiter();
 
 // Bot instance and configuration
 let bot: TelegramBot | null = null;
@@ -557,9 +579,13 @@ const handleReconnection = async () => {
   }
 };
 
-// Health check implementation for webhook mode
+// Enhanced health check with error recovery
 const startHealthCheck = () => {
   if (!bot) return;
+  
+  let consecutiveFailures = 0;
+  const MAX_CONSECUTIVE_FAILURES = 5;
+  const RECOVERY_DELAY = 5000;
 
   setInterval(async () => {
     try {
@@ -585,6 +611,11 @@ const startHealthCheck = () => {
 // Command handler function
 const handleCommand = async (command: string, msg: TelegramBot.Message, args: string[]) => {
   if (!bot) return;
+  
+  const chatId = msg.chat.id;
+  if (!await rateLimiter.checkLimit(chatId)) {
+    return safeSendMessage(chatId, "⚠️ Rate limit exceeded. Please wait a moment before trying again.");
+  }
 
   const chatId = msg.chat.id;
   const isGroupChat = GROUP_MESSAGE_TYPES.includes(msg.chat.type);
@@ -597,6 +628,8 @@ const handleCommand = async (command: string, msg: TelegramBot.Message, args: st
         }
         await safeSendMessage(chatId, "📢 Enter the message you want to broadcast:");
         bot.once("message", async (response) => {
+          const BATCH_SIZE = 30;
+          const BATCH_DELAY = 1000; // 1 second between batches
           if (!response.text) return;
 
           const [users] = await db
