@@ -512,38 +512,55 @@ const handleCommand = async (command: string, msg: TelegramBot.Message, args: st
   try {
     switch (command) {
       case 'start':
-        const welcomeMessage = `🎮 Welcome to Goated Vips Stats Tracking Bot!
-To get started:
-1️⃣ Use /verify followed by your Goated username
-2️⃣ Wait for admin approval
-3️⃣ Once verified, you can use /stats to check your statistics
+        const welcomeMessage = `🐐 Welcome to Goated Stats Bot!
 
-Need help? Use /help for a list of commands.`;
+Admin Commands:
+• /broadcast - Send message to all users
+• /group_message - Send message to group
+• /user_info - Get user information
+• /pending - View verification requests
+• /verify - Verify a user
+• /reject - Reject a verification
+
+Available Commands:
+• /start - Get started with the bot
+• /verify - Link your Goated account
+• /stats - View your wager statistics
+• /stats <username> - Check stats for username
+• /race - Check your race position
+• /leaderboard - See top players
+• /play - Play on Goated with our link
+• /website - Visit GoatedVIPs.gg
+
+Need help? Contact @xGoombas for support.`;
         await safeSendMessage(chatId, welcomeMessage);
         break;
 
       case 'help':
-        const helpText = `
-🎮 GoatedVIPs Bot Commands:
+        // Check if user is verified
+        const [telegramUser] = await db
+          .select()
+          .from(telegramUsers)
+          .where(eq(telegramUsers.telegramId, chatId.toString()))
+          .limit(1);
 
-📋 Basic Commands:
-/verify <username> - Link your Goated account
-/stats - View your statistics
-/leaderboard - View top players
-/play - Get game link
-/website - Get website link
+        const helpText = telegramUser?.isVerified ? 
+          `📋 Available Commands:
+• /stats - View your wager statistics
+• /stats <username> - Check stats for username
+• /race - Check your race position
+• /leaderboard - See top players
+• /play - Play on Goated
+• /website - Visit our website
 
-💡 Usage Tips:
-• Use /verify in private chat for security
-• Stats are updated in real-time
-• Leaderboard shows top 10 players
+Need help? Contact @xGoombas for support.`.trim() :
+          `📋 Available Commands:
+• /verify <username> - Link your Goated account
+• /help - Show this help message
 
-🔒 Admin Commands:
-/approve @username - Approve verification
-/pending - View verification requests
+💡 Not verified yet? [Click here to verify](https://t.me/${bot.botInfo?.username}?start=verify)
 
-Need to verify? Click here: https://t.me/${bot.botInfo?.username}?start=verify
-`.trim();
+Need help? Contact @xGoombas for support.`.trim();
         await safeSendMessage(chatId, helpText);
         break;
       case 'verify':
