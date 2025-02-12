@@ -181,7 +181,11 @@ const initializeBot = async () => {
       { command: 'race', description: 'Check your race position' },
       { command: 'leaderboard', description: 'See top players' },
       { command: 'play', description: 'Play on Goated with our link' },
-      { command: 'website', description: 'Visit GoatedVIPs.gg' }
+      { command: 'website', description: 'Visit GoatedVIPs.gg' },
+      { command: 'adminpanel', description: 'Access the admin panel' }, // Added adminpanel command
+      { command: 'broadcast', description: 'Broadcast a message (admin only)' }, // Added broadcast command
+      { command: 'message', description: 'Send a direct message (admin only)' } // Added message command
+
     ]);
 
     debugLog("Bot initialized successfully");
@@ -295,14 +299,14 @@ const handleMessage = async (msg: TelegramBot.Message) => {
 const setupCommandHandlers = () => {
   if (!bot) return;
 
-  bot.onText(/\/(start|help|verify|stats|leaderboard|race|play|website|check_stats)(?:@[\w]+)? (.+)/, async (msg, match) => {
+  bot.onText(/\/(start|help|verify|stats|leaderboard|race|play|website|check_stats|adminpanel|broadcast|message)(?:@[\w]+)? (.+)/, async (msg, match) => {
     if (!match) return;
     const command = match[1];
     const args = match[2].split(" ");
     handleCommand(command, msg, args);
   });
 
-  bot.onText(/\/(start|help|verify|stats|leaderboard|race|play|website|check_stats)(?:@[\w]+)?/, async (msg, match) => {
+  bot.onText(/\/(start|help|verify|stats|leaderboard|race|play|website|check_stats|adminpanel|broadcast|message)(?:@[\w]+)?/, async (msg, match) => {
     if (!match) return;
     const command = match[1];
     handleCommand(command, msg, []);
@@ -437,6 +441,27 @@ const setupCommandHandlers = () => {
             entities: [{ offset: 0, length: 11, type: 'bot_command' }]
           });
           break;
+        case 'admin_broadcast':
+          await bot.emit('message', {
+            ...callbackQuery.message,
+            text: '/broadcast',
+            entities: [{ offset: 0, length: 10, type: 'bot_command' }]
+          });
+          break;
+        case 'admin_message':
+          await bot.emit('message', {
+            ...callbackQuery.message,
+            text: '/message',
+            entities: [{ offset: 0, length: 8, type: 'bot_command' }]
+          });
+          break;
+        case 'admin_pending':
+          await bot.emit('message', {
+            ...callbackQuery.message,
+            text: '/pending',
+            entities: [{ offset: 0, length: 8, type: 'bot_command' }]
+          });
+          break;
         default:
           // Handle Approve/Reject actions
           if (chatId !== BOT_ADMIN_ID || !callbackQuery.data) return;
@@ -523,6 +548,88 @@ const handleCommand = async (command: string, msg: TelegramBot.Message, args: st
 
   try {
     switch (command) {
+      case '/broadcast':
+        if (chatId !== BOT_ADMIN_ID) {
+          return safeSendMessage(chatId, "❌ This command is only available to administrators.");
+        }
+        await safeSendMessage(chatId, "📢 Enter the message you want to broadcast:");
+        bot.once("message", async (response) => {
+          if (!response.text) return;
+
+          const [users] = await db
+            .select()
+            .from(telegramUsers);
+
+          let successCount = 0;
+          let failureCount = 0;
+
+          for (const user of users) {
+            try {
+              await safeSendMessage(parseInt(user.telegramId), 
+                `📢 Announcement:\n\n${response.text}`, {}, 'high');
+              successCount++;
+            } catch (error) {
+              console.error(`Failed to send to ${user.telegramId}:`, error);
+              failureCount++;
+            }
+          }
+
+          await safeSendMessage(chatId, 
+            `✅ Broadcast complete!\n📤 Delivered: ${successCount}\n❌ Failed: ${failureCount}`);
+        });
+        break;
+
+      case '/message':
+        if (chatId !== BOT_ADMIN_ID) {
+          return safeSendMessage(chatId, "❌ This command is only available to administrators.");
+        }
+
+        const username = args[0]?.replace('@', '');
+        const message = args.slice(1).join(' ');
+
+        if (!username || !message) {
+          return safeSendMessage(chatId, 
+            "❌ Usage: /message @username or goatedUsername message");
+        }
+
+        const [targetUser] = await db
+          .select()
+          .from(telegramUsers)
+          .where(
+            eq(telegramUsers.telegramUsername, username)
+          )
+          .limit(1);
+
+        if (!targetUser) {
+          return safeSendMessage(chatId, "❌ User not found or not verified.");
+        }
+
+        try {
+          await safeSendMessage(parseInt(targetUser.telegramId), 
+            `✉️ Message from Admin:\n\n${message}`, {}, 'high');
+          await safeSendMessage(chatId, `✅ Message sent to @${username} successfully!`);
+        } catch (error) {
+          console.error(`Failed to message ${username}:`, error);
+          await safeSendMessage(chatId, 
+            `❌ Failed to send message to @${username}. They may have blocked the bot.`);
+        }
+        break;
+
+      case '/adminpanel':
+        if (chatId !== BOT_ADMIN_ID) {
+          return safeSendMessage(chatId, "❌ This command is only available to administrators.");
+        }
+
+        await safeSendMessage(chatId, "👑 Admin Panel:", {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: "📢 Broadcast Message", callback_data: "admin_broadcast" }],
+              [{ text: "✉️ Direct Message User", callback_data: "admin_message" }],
+              [{ text: "👥 Pending Verifications", callback_data: "admin_pending" }]
+            ]
+          }
+        });
+        break;
       case 'start':
         const welcomeMessage = `🐐 Welcome to Goated Stats Bot!
 
@@ -543,6 +650,10 @@ Available Commands:
 • /leaderboard - See top players
 • /play - Play on Goated with our link
 • /website - Visit GoatedVIPs.gg
+• /adminpanel - Access the admin panel (admin only)
+• /broadcast - Broadcast a message (admin only)
+• /message - Send a direct message (admin only)
+
 
 Need help? Contact @xGoombas for support.`;
         await safeSendMessage(chatId, welcomeMessage);
@@ -634,6 +745,27 @@ const handleCallbackQuery = async (query: TelegramBot.CallbackQuery): Promise<vo
         });
         break;
 
+      case 'admin_broadcast':
+          await bot.emit('message', {
+            ...query.message,
+            text: '/broadcast',
+            entities: [{ offset: 0, length: 10, type: 'bot_command' }]
+          });
+          break;
+      case 'admin_message':
+          await bot.emit('message', {
+            ...query.message,
+            text: '/message',
+            entities: [{ offset: 0, length: 8, type: 'bot_command' }]
+          });
+          break;
+      case 'admin_pending':
+          await bot.emit('message', {
+            ...query.message,
+            text: '/pending',
+            entities: [{ offset: 0, length: 8, type: 'bot_command' }]
+          });
+          break;
       default:
         // Handle verification approvals/rejections
         if (chatId !== BOT_ADMIN_ID || !query.data) return;
@@ -814,7 +946,7 @@ Ready? Type /verify followed by your username!
       return safeSendMessage(chatId, "❌ Username not found. Please check the username and try again.");
     }
 
-    // Find or create user in our database
+    //    // Find or create user in our database
     let [user] = await db
       .select()
       .from(users)
