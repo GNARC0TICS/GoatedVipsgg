@@ -116,22 +116,34 @@ const initializeBot = async () => {
   try {
     debugLog("Initializing bot...");
 
-    // Create bot instance with optimized polling configuration
+    const WEBHOOK_DOMAIN = process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://your-domain.com';
+    const webhookPath = '/telegram-webhook';
+    
     bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
-      polling: {
-        interval: 300,        // Polling interval in ms
-        autoStart: true,
-        params: {
-          timeout: 10,        // Long-polling timeout
-          allowed_updates: [   // Only get updates we need
-            "message",
-            "callback_query",
-            "chat_member",
-            "my_chat_member"
-          ],
-        }
+      webHook: {
+        port: 5000,
+        host: '0.0.0.0'
       },
-      filepath: false,        // Don't save downloaded files
+      filepath: false
+    });
+
+    // Set webhook
+    await bot.setWebHook(`${WEBHOOK_DOMAIN}${webhookPath}`, {
+      allowed_updates: [
+        "message",
+        "callback_query", 
+        "chat_member",
+        "my_chat_member"
+      ]
+    });
+
+    // Add webhook endpoint to express
+    const app = require('express')();
+    app.use(require('body-parser').json());
+    
+    app.post(webhookPath, (req, res) => {
+      bot.handleUpdate(req.body);
+      res.sendStatus(200);
     });
 
     // Get bot info
@@ -447,28 +459,26 @@ const handleReconnection = async () => {
   }
 };
 
-// Health check implementation
+// Health check implementation for webhook mode
 const startHealthCheck = () => {
   if (!bot) return;
 
   setInterval(async () => {
     try {
-      const startTime = Date.now();
-      const botInfo = await bot.getMe();
-      if (botInfo) {
+      const webhookInfo = await bot.getWebHookInfo();
+      if (webhookInfo.url) {
         healthCheckFailures = 0;
-        debugLog("Health check passed");
-      }
-      if (Date.now() - startTime > HEALTH_CHECK_TIMEOUT) {
-        throw new Error("Health check timeout");
+        debugLog("Webhook health check passed");
+      } else {
+        throw new Error("Webhook not set");
       }
     } catch (error) {
-      console.error("Health check error:", error);
+      console.error("Webhook health check error:", error);
       healthCheckFailures++;
       debugLog(`Health check failed (${healthCheckFailures}/${MAX_HEALTH_CHECK_FAILURES})`);
       if (healthCheckFailures >= MAX_HEALTH_CHECK_FAILURES) {
-        debugLog("Maximum health check failures reached - Attempting reconnection");
-        await handleReconnection();
+        debugLog("Maximum health check failures reached - Attempting webhook reset");
+        await initializeBot();
       }
     }
   }, HEALTH_CHECK_INTERVAL);
