@@ -373,7 +373,7 @@ const setupCommandHandlers = () => {
     const chatId = msg.chat.id;
     debugLog(`Pending command received from chat ID: ${chatId}, Admin ID: ${BOT_ADMIN_ID}`);
     
-    if (chatId !== BOT_ADMIN_ID) {
+    if (chatId.toString() !== BOT_ADMIN_ID.toString()) {
       debugLog(`Unauthorized pending command attempt from ${chatId}`);
       return safeSendMessage(chatId, "❌ This command is only available to administrators.");
     }
