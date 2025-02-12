@@ -3,9 +3,12 @@ import { db } from "@db";
 import { telegramUsers, verificationRequests } from "@db/schema/telegram";
 import { API_CONFIG } from "../config/api";
 import { eq } from "drizzle-orm";
+import fetch from "node-fetch";
+import { transformLeaderboardData } from "../routes";
 
 // Enhanced debugging
 const DEBUG = true;
+const BOT_ADMIN_ID = 1689953605; // Your admin chat ID
 
 const debugLog = (...args: any[]) => {
   if (DEBUG) {
@@ -13,18 +16,32 @@ const debugLog = (...args: any[]) => {
   }
 };
 
-// Bot instance
-let bot: TelegramBot;
+// Rate limiting setup
+const messageRateLimiter = new Map<number, number>();
+const RATE_LIMIT_WINDOW = 1000; // 1 second
+
+// Bot configuration
+let bot: TelegramBot | null = null;
 let isReconnecting = false;
 const RECONNECT_DELAY = 5000;
 const MAX_RECONNECT_ATTEMPTS = 5;
 let reconnectAttempts = 0;
 
+// Enhanced bot health monitoring
+const MAX_HEALTH_CHECK_FAILURES = 3;
+let healthCheckFailures = 0;
+const HEALTH_CHECK_INTERVAL = 30000; // 30 seconds
+const HEALTH_CHECK_TIMEOUT = 10000; // 10 seconds
+
+// Bot health monitoring
+let lastPingTime = Date.now();
+
+
 // Initialize bot with enhanced error handling
 const initializeBot = () => {
   if (!process.env.TELEGRAM_BOT_TOKEN) {
     console.error("❌ TELEGRAM_BOT_TOKEN is not set in environment variables!");
-    throw new Error("TELEGRAM_BOT_TOKEN is required!");
+    return null;
   }
 
   try {
@@ -44,20 +61,55 @@ const initializeBot = () => {
 
     setupBotEventHandlers();
     setupCommandHandlers();
+    startHealthCheck();
 
     return bot;
   } catch (error) {
     console.error("Failed to initialize bot:", error);
-    throw error;
+    return null;
   }
 };
 
+const startHealthCheck = () => {
+  if (!bot) return;
+
+  setInterval(async () => {
+    try {
+      const startTime = Date.now();
+      const response = await bot.getMe();
+      lastPingTime = Date.now();
+
+      if (response) {
+        healthCheckFailures = 0;
+        debugLog("Health check passed");
+      }
+
+      // Check for timeout
+      if (Date.now() - startTime > HEALTH_CHECK_TIMEOUT) {
+        throw new Error("Health check timeout");
+      }
+    } catch (error) {
+      console.error("Health check error:", error);
+      healthCheckFailures++;
+      debugLog(`Health check failed (${healthCheckFailures}/${MAX_HEALTH_CHECK_FAILURES})`);
+
+      if (healthCheckFailures >= MAX_HEALTH_CHECK_FAILURES) {
+        debugLog("Maximum health check failures reached - Attempting reconnection");
+        await handleReconnection();
+      }
+    }
+  }, HEALTH_CHECK_INTERVAL);
+};
+
 const setupBotEventHandlers = () => {
+  if (!bot) return;
+
   // Connection verification
   bot.getMe().then((botInfo) => {
     console.log(`✅ Bot connected successfully as @${botInfo.username}`);
     debugLog("Full bot info:", JSON.stringify(botInfo, null, 2));
-    reconnectAttempts = 0; // Reset reconnection counter on successful connection
+    reconnectAttempts = 0;
+    lastPingTime = Date.now();
   }).catch((error) => {
     console.error("❌ Failed to connect bot:", error.message);
     handleReconnection();
@@ -90,8 +142,9 @@ const setupBotEventHandlers = () => {
     handleReconnection();
   });
 
-  // Health monitoring
+  // Message monitoring
   bot.on("message", (msg) => {
+    lastPingTime = Date.now();
     debugLog("📨 Received message:", {
       chatId: msg.chat.id,
       text: msg.text,
@@ -102,7 +155,7 @@ const setupBotEventHandlers = () => {
 };
 
 const handleReconnection = async () => {
-  if (isReconnecting || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return;
+  if (!bot || isReconnecting || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return;
 
   isReconnecting = true;
   reconnectAttempts++;
@@ -110,26 +163,51 @@ const handleReconnection = async () => {
   console.log(`🔄 Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
 
   try {
+    // Stop current polling
     await bot.stopPolling();
+
+    // Clear any existing webhooks
+    if (process.env.TELEGRAM_BOT_TOKEN) {
+      await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteWebhook`);
+      debugLog("Cleared existing webhook configuration");
+    }
+
+    // Wait before attempting reconnection
     await new Promise(resolve => setTimeout(resolve, RECONNECT_DELAY));
-    await bot.startPolling();
+
+    // Start new polling session
+    await bot.startPolling({
+      polling: {
+        interval: 300,
+        autoStart: true,
+        params: {
+          timeout: 10,
+          allowed_updates: ["message", "callback_query"],
+        }
+      }
+    });
 
     isReconnecting = false;
+    healthCheckFailures = 0;
     console.log("✅ Reconnection successful");
   } catch (error) {
     console.error("❌ Reconnection failed:", error);
     isReconnecting = false;
 
     if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-      handleReconnection();
+      setTimeout(() => handleReconnection(), RECONNECT_DELAY);
     } else {
       console.error("❌ Max reconnection attempts reached. Manual intervention required.");
+      // Notify admin about the failure
+      safeSendMessage(BOT_ADMIN_ID, "⚠️ Bot reconnection failed after maximum attempts. Please check the logs.");
     }
   }
 };
 
 // Safe message sending with rate limiting and error handling
 const safeSendMessage = async (chatId: number, text: string, options = {}) => {
+  if (!bot) return;
+
   try {
     const now = Date.now();
     const lastMessageTime = messageRateLimiter.get(chatId) || 0;
@@ -142,7 +220,7 @@ const safeSendMessage = async (chatId: number, text: string, options = {}) => {
     messageRateLimiter.set(chatId, now);
     return await bot.sendMessage(chatId, text, { ...options, disable_web_page_preview: true });
   } catch (error: any) {
-    console.error(`Error sending message to ${chatId}:`, error.message);
+    console.error("Error sending message to", chatId, ":", error.message);
     try {
       return await bot.sendMessage(chatId, text.replace(/[<>]/g, "").trim(), {
         ...options,
@@ -157,27 +235,47 @@ const safeSendMessage = async (chatId: number, text: string, options = {}) => {
 
 // Setup command handlers
 const setupCommandHandlers = () => {
+  if (!bot) return;
+
   // Start command
   bot.onText(/\/start/, async (msg) => {
-    console.log("📝 Start command received from:", msg.chat.id);
+    debugLog("📝 Start command received from:", msg.chat.id);
     await safeSendMessage(msg.chat.id, "🎮 Welcome to GoatedVIPs Affiliate Bot!\nUse /verify to link your account.");
+  });
+
+  // Help command
+  bot.onText(/\/help/, async (msg) => {
+    debugLog("📝 Help command received from:", msg.chat.id);
+    const helpText = `
+Available commands:
+/start - Start the bot
+/help - Show this help message
+/verify <username> - Link your platform account
+/stats - View your statistics
+/leaderboard - View top players
+/play - Get game link
+/website - Get website link
+/approve @username - Approve verification request (Admin only)
+`.trim();
+    await safeSendMessage(msg.chat.id, helpText);
   });
 
   // Play command
   bot.onText(/\/play/, async (msg) => {
-    console.log("📝 Play command received from:", msg.chat.id);
+    debugLog("📝 Play command received from:", msg.chat.id);
     await safeSendMessage(msg.chat.id, "🎮 Play on Goated: https://goatedvips.gg/?ref=telegram");
   });
 
   // Website command
   bot.onText(/\/website/, async (msg) => {
-    console.log("📝 Website command received from:", msg.chat.id);
+    debugLog("📝 Website command received from:", msg.chat.id);
     await safeSendMessage(msg.chat.id, "🌐 Visit: https://goatedvips.gg");
   });
 
-  // Verify command
+  // Verify command with enhanced admin approval flow
   bot.onText(/\/verify (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
+    debugLog("📝 Verify command received from:", chatId);
     const username = match?.[1]?.trim();
     if (!username) return safeSendMessage(chatId, "Usage: /verify your_platform_username");
 
@@ -195,80 +293,227 @@ const setupCommandHandlers = () => {
       });
 
       await safeSendMessage(chatId, "✅ Verification request submitted. An admin will review it shortly.");
-      await safeSendMessage(1689953605, `🔔 Verification Request:\nUser: ${username}\nTelegram: @${msg.from?.username}`);
+      await safeSendMessage(BOT_ADMIN_ID, `🔔 Verification Request:\nUser: ${username}\nTelegram: @${msg.from?.username}`);
     } catch (error) {
       console.error("Verification error:", error);
       await safeSendMessage(chatId, "❌ Error processing verification. Try again later.");
     }
   });
 
-  // Stats command
+  // Handle admin verification commands
+  bot.onText(/\/approve (.+)/, async (msg, match) => {
+    if (msg.chat.id !== BOT_ADMIN_ID) { // Admin-only command
+      return safeSendMessage(msg.chat.id, "❌ This command is only available to administrators.");
+    }
+
+    const telegramUsername = match?.[1]?.trim().replace('@', '');
+    if (!telegramUsername) return safeSendMessage(msg.chat.id, "Usage: /approve @username");
+
+    try {
+      const [request] = await db
+        .select()
+        .from(verificationRequests)
+        .where(eq(verificationRequests.telegramUsername, telegramUsername))
+        .limit(1);
+
+      if (!request) {
+        return safeSendMessage(msg.chat.id, "❌ No pending verification request found for this user.");
+      }
+
+      // Update verification request status
+      await db
+        .update(verificationRequests)
+        .set({ status: "approved" })
+        .where(eq(verificationRequests.telegramUsername, telegramUsername));
+
+      // Create or update telegram user record
+      await db.insert(telegramUsers).values({
+        telegramId: request.telegramId,
+        telegramUsername: telegramUsername,
+        goatedUsername: request.goatedUsername,
+        isVerified: true,
+      }).onConflictDoUpdate({
+        target: [telegramUsers.telegramId],
+        set: {
+          telegramUsername: telegramUsername,
+          goatedUsername: request.goatedUsername,
+          isVerified: true,
+        }
+      });
+
+      await safeSendMessage(msg.chat.id, `✅ Verified @${telegramUsername} as ${request.goatedUsername}`);
+      await safeSendMessage(parseInt(request.telegramId), "✅ Your account has been verified! You can now use /stats to check your statistics.");
+    } catch (error) {
+      console.error("Approval error:", error);
+      await safeSendMessage(msg.chat.id, "❌ Error processing approval.");
+    }
+  });
+
+  // Enhanced stats command with all time periods
   bot.onText(/\/stats/, async (msg) => {
     const chatId = msg.chat.id;
+    debugLog("📝 Stats command received from:", chatId);
     try {
       const [user] = await db.select().from(telegramUsers).where(eq(telegramUsers.telegramId, chatId.toString())).limit(1);
       if (!user?.isVerified) return safeSendMessage(chatId, "❌ Please verify your account using /verify");
 
-      const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`, {
-        headers: { Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}` },
-      });
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (!response.ok) throw new Error("Failed to fetch stats");
 
-      const data = await response.json();
-      const userStats = data.data.monthly.data.find((p: any) => p.name.toLowerCase() === user.goatedUsername?.toLowerCase());
+      const rawData = await response.json();
+      const transformedData = transformLeaderboardData(rawData);
+      const userStats = transformedData.data.monthly.data.find((p: any) => p.name.toLowerCase() === user.goatedUsername?.toLowerCase());
 
       if (!userStats) return safeSendMessage(chatId, "❌ No stats found for your account this period.");
 
-      const position = data.data.monthly.data.findIndex((p: any) => p.name.toLowerCase() === user.goatedUsername?.toLowerCase()) + 1;
-      await safeSendMessage(chatId, `📊 Stats for ${user.goatedUsername}:\n💰 Wagered: $${userStats.wagered.this_month.toFixed(2)}\n📍 Position: #${position}`);
+      const position = transformedData.data.monthly.data.findIndex((p: any) => p.name.toLowerCase() === user.goatedUsername?.toLowerCase()) + 1;
+      const formatCurrency = (amount: number): string => {
+        return amount.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      };
+
+      const statsMessage = `📊 Stats for ${user.goatedUsername}:
+💰 Today: $${formatCurrency(userStats.wagered.today)}
+📅 This Week: $${formatCurrency(userStats.wagered.this_week)}
+📆 This Month: $${formatCurrency(userStats.wagered.this_month)}
+🏆 All Time: $${formatCurrency(userStats.wagered.all_time)}
+📍 Monthly Race Position: #${position}`;
+
+      await safeSendMessage(chatId, statsMessage);
     } catch (error) {
       console.error("Stats error:", error);
       await safeSendMessage(chatId, "❌ Error fetching stats. Try again later.");
     }
   });
 
-
   // Leaderboard command
   bot.onText(/\/leaderboard/, async (msg) => {
     const chatId = msg.chat.id;
-    console.log("📝 Leaderboard command received from:", chatId);
+    debugLog("📝 Leaderboard command received from:", chatId);
 
     try {
-      console.log("Fetching leaderboard data...");
-      const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`, {
-        headers: { Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}` },
-      });
+      debugLog("Fetching leaderboard data...");
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch leaderboard: ${response.status} ${response.statusText}`);
       }
 
-      const data = (await response.json()) as LeaderboardResponse;
-      console.log("Leaderboard data received:", {
-        totalUsers: data.metadata.totalUsers,
-        lastUpdated: data.metadata.lastUpdated
-      });
+      const rawData = await response.json();
+      const transformedData = transformLeaderboardData(rawData);
 
-      const top10 = data.data.monthly.data.slice(0, 10);
-      if (!top10.length) return safeSendMessage(chatId, "❌ No leaderboard data available.");
+      if (!transformedData.data.monthly.data.length) {
+        return safeSendMessage(chatId, "❌ No leaderboard data available.");
+      }
 
-      const leaderboardMessage = top10
-        .map((player, i) => `#${i + 1} ${player.name} - 💰 $${player.wagered.this_month.toFixed(2)}`)
-        .join("\n");
-      await safeSendMessage(chatId, `🏆 Monthly Leaderboard:\n\n${leaderboardMessage}`);
+      const PRIZE_POOL = 500; // We can make this dynamic later if needed
+      const formatCurrency = (amount: number): string => {
+        return amount.toLocaleString('en-US', {
+          minimumFractionDigits: 3,
+          maximumFractionDigits: 3
+        });
+      };
+      const formatLeaderboardEntry = (player: any, position: number, verifiedUsers?: Map<string, string>): string => {
+        const telegramTag = verifiedUsers?.get(player.name.toLowerCase());
+        const displayName = telegramTag ? `@${telegramTag}` : player.name;
+        const wagered = formatCurrency(player.wagered.this_month);
+        return `${position}. ${displayName}\n   💰 $${wagered}`;
+      };
+      // Get verified users for tagging
+      const verifiedUsers = new Map(
+        (await db
+          .select()
+          .from(telegramUsers)
+          .where(eq(telegramUsers.isVerified, true)))
+          .map(user => [user.goatedUsername.toLowerCase(), user.telegramUsername])
+      );
+
+      // Format leaderboard entries
+      const top10 = transformedData.data.monthly.data
+        .slice(0, 10)
+        .map((player: any, index: number) =>
+          formatLeaderboardEntry(player, index + 1, verifiedUsers)
+        )
+        .join("\n\n");
+
+      const message = `🏆 Monthly Race Leaderboard\n💵 Prize Pool: $${PRIZE_POOL}\n🏁 Current Top 10:\n\n${top10}\n\n📊 Updated: ${new Date().toLocaleString()}`;
+
+      // Create inline keyboard with buttons
+      const inlineKeyboard = {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "📊 My Stats", callback_data: "my_stats" },
+              { text: "🔄 Refresh", callback_data: "refresh_leaderboard" }
+            ]
+          ]
+        }
+      };
+
+      await safeSendMessage(chatId, message, inlineKeyboard);
     } catch (error) {
       console.error("Leaderboard error:", error);
       await safeSendMessage(chatId, "❌ Error fetching leaderboard. Try again later.");
     }
   });
+
+  // Handle callback queries from inline buttons
+  bot.on('callback_query', async (callbackQuery) => {
+    const chatId = callbackQuery.message?.chat.id;
+    if (!chatId) return;
+
+    try {
+      switch (callbackQuery.data) {
+        case 'my_stats':
+          // Simulate /stats command
+          await bot.emit('message', {
+            ...callbackQuery.message,
+            text: '/stats',
+            entities: [{ offset: 0, length: 6, type: 'bot_command' }]
+          });
+          break;
+        case 'refresh_leaderboard':
+          // Simulate /leaderboard command
+          await bot.emit('message', {
+            ...callbackQuery.message,
+            text: '/leaderboard',
+            entities: [{ offset: 0, length: 11, type: 'bot_command' }]
+          });
+          break;
+      }
+      // Answer callback query to remove loading state
+      await bot.answerCallbackQuery(callbackQuery.id);
+    } catch (error) {
+      console.error('Callback query error:', error);
+      await bot.answerCallbackQuery(callbackQuery.id, {
+        text: '❌ Error processing request',
+        show_alert: true
+      });
+    }
+  });
 };
 
-// Rate limiting setup
-const messageRateLimiter = new Map<number, number>();
-const RATE_LIMIT_WINDOW = 1000; // 1 second
+// Initialize and export the bot instance
+const botInstance = initializeBot();
 
-// Initialize the bot
-const bot = initializeBot();
-
-export { bot };
+// Export the bot instance and helper functions
+export { botInstance as bot, safeSendMessage };
