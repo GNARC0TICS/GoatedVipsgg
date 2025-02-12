@@ -1,0 +1,121 @@
+9:32:13 PM [express] ✅ Telegram bot initialized successfully
+2025-02-12 13:32:13.28
+f3e1c78a
+User
+9:32:13 PM [express] ✅ Server startup complete
+2025-02-12 13:32:40.14
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:32:40.141Z] Message received from xGoombas in private
+2025-02-12 13:32:48.74
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:32:48.747Z] Message received from xGoombas in private
+2025-02-12 13:33:14.40
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:33:14.409Z] Message received from xGoombas in private
+2025-02-12 13:33:35.75
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:33:35.754Z] Message received from xGoombas in private
+2025-02-12 13:33:35.75
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:33:35.755Z] 📝 Leaderboard command received from: 1689953605
+2025-02-12 13:33:35.75
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:33:35.756Z] Fetching leaderboard data...
+2025-02-12 13:33:47.19
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:33:47.193Z] Found 1 verified users
+2025-02-12 13:33:56.66
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:33:56.668Z] Message received from xGoombas in private
+2025-02-12 13:34:01.70
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:34:01.705Z] Message received from xGoombas in private
+2025-02-12 13:34:41.24
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:34:41.244Z] Message received from xGoombas in supergroup
+2025-02-12 13:34:41.24
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:34:41.244Z] 📝 Leaderboard command received from: -1002169964764
+2025-02-12 13:34:41.24
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:34:41.244Z] Fetching leaderboard data...
+2025-02-12 13:34:54.30
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:34:54.301Z] Found 1 verified users
+2025-02-12 13:35:17.90
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:35:17.908Z] Message received from xGoombas in supergroup
+2025-02-12 13:35:41.50
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:35:41.506Z] Message received from SMDmywok in private
+2025-02-12 13:35:42.36
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:35:42.369Z] Message received from xGoombas in supergroup
+2025-02-12 13:35:48.63
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:35:48.637Z] Message received from SMDmywok in private
+2025-02-12 13:35:48.63
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:35:48.637Z] 📝 Verify command received from: 7164394514
+2025-02-12 13:35:55.50
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:35:55.507Z] Message received from KotkA1 in supergroup
+2025-02-12 13:35:55.54
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:35:55.547Z] Message received from SMDmywok in private
+2025-02-12 13:35:55.54
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:35:55.547Z] 📝 Verify command received from: 7164394514
+2025-02-12 13:36:10.41
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:36:10.410Z] Message received from SMDmywok in private
+2025-02-12 13:36:10.41
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:36:10.410Z] 📝 Verify command received from: 7164394514
+2025-02-12 13:36:12.82
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:36:12.823Z] Message received from BI4NCAKES in supergroup
+2025-02-12 13:36:17.98
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:36:17.984Z] Message received from BI4NCAKES in private
+2025-02-12 13:36:20.44
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:36:20.445Z] Message received from GoatedVipsBot in private
+2025-02-12 13:36:20.44
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:36:20.446Z] 📝 Verify command received from: 759761410
+2025-02-12 13:36:40.11
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:36:40.117Z] Message received from BI4NCAKES in private
+2025-02-12 13:36:50.00
+f3e1c78a
+User
+[Telegram Bot Debug 2025-02-12T21:36:50.007Z] Message received from xGoombas in private
