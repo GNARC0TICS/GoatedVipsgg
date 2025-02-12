@@ -629,7 +629,7 @@ const handleCommand = async (command: string, msg: TelegramBot.Message, args: st
           const BATCH_DELAY = 1000; // 1 second between batches
           if (!response.text) return;
 
-          const [users] = await db
+          const users = await db
             .select()
             .from(telegramUsers);
 
