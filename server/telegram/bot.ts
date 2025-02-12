@@ -617,7 +617,6 @@ const handleCommand = async (command: string, msg: TelegramBot.Message, args: st
     return safeSendMessage(chatId, "⚠️ Rate limit exceeded. Please wait a moment before trying again.");
   }
 
-  const chatId = msg.chat.id;
   const isGroupChat = GROUP_MESSAGE_TYPES.includes(msg.chat.type);
 
   try {
