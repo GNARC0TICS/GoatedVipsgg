@@ -934,7 +934,7 @@ const handleVerifyCommand = async (msg: TelegramBot.Message, args: string[]) => 
 Ready? Type /verify followed by your username!
 `.trim();
     return safeSendMessage(chatId, verifyInstructions);
-  }  }
+  }
 
   try {
     const existingUser = await db
