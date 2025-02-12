@@ -397,7 +397,7 @@ Available commands:
     }
   });
 
-  // Leaderboard command
+  // Enhanced leaderboard command with proper formatting and buttons
   bot.onText(/\/leaderboard/, async (msg) => {
     const chatId = msg.chat.id;
     debugLog("📝 Leaderboard command received from:", chatId);
@@ -415,47 +415,102 @@ Available commands:
       );
 
       if (!response.ok) {
+        debugLog(`API request failed: ${response.status} ${response.statusText}`);
         throw new Error(`Failed to fetch leaderboard: ${response.status} ${response.statusText}`);
       }
 
       const rawData = await response.json();
+      debugLog("Raw leaderboard data received:", JSON.stringify(rawData).slice(0, 200) + "...");
       const transformedData = transformLeaderboardData(rawData);
 
       if (!transformedData.data.monthly.data.length) {
         return safeSendMessage(chatId, "❌ No leaderboard data available.");
       }
 
-      const PRIZE_POOL = 500; // We can make this dynamic later if needed
+      const PRIZE_POOL = 500;
       const formatCurrency = (amount: number): string => {
+        if (amount >= 1000) {
+          return (amount / 1000).toLocaleString('en-US', {
+            minimumFractionDigits: 3,
+            maximumFractionDigits: 3
+          }) + 'k';
+        }
         return amount.toLocaleString('en-US', {
           minimumFractionDigits: 3,
           maximumFractionDigits: 3
         });
       };
-      const formatLeaderboardEntry = (player: any, position: number, verifiedUsers?: Map<string, string>): string => {
+
+      let verifiedUsers;
+      try {
+        debugLog("Fetching verified users...");
+        const verifiedUsersData = await db
+          .select()
+          .from(telegramUsers)
+          .where(eq(telegramUsers.isVerified, true));
+
+        verifiedUsers = new Map(
+          verifiedUsersData.map(user => [
+            user.goatedUsername?.toLowerCase() ?? '',
+            user.telegramUsername
+          ])
+        );
+        debugLog(`Found ${verifiedUsers.size} verified users`);
+      } catch (dbError) {
+        console.error("Database error fetching verified users:", dbError);
+        verifiedUsers = new Map();
+      }
+
+      const calculatePrizeAmount = (position: number, totalPrizePool: number): number => {
+        const prizeDistribution: Record<number, number> = {
+          1: 0.35, // 35% for 1st place ($175)
+          2: 0.25, // 25% for 2nd place ($125)
+          3: 0.15, // 15% for 3rd place ($75)
+          4: 0.10, // 10% for 4th place ($50)
+          5: 0.07, // 7% for 5th place ($35)
+          6: 0.05, // 5% for 6th place ($25)
+          7: 0.03, // 3% for 7th place ($15)
+          8: 0.00, // No prize
+          9: 0.00, // No prize
+          10: 0.00 // No prize
+        };
+
+        return totalPrizePool * (prizeDistribution[position] || 0);
+      };
+
+      const formatLeaderboardEntry = (player: any, position: number): string => {
         const telegramTag = verifiedUsers?.get(player.name.toLowerCase());
         const displayName = telegramTag ? `@${telegramTag}` : player.name;
         const wagered = formatCurrency(player.wagered.this_month);
-        return `${position}. ${displayName}\n   💰 $${wagered}`;
-      };
-      // Get verified users for tagging
-      const verifiedUsers = new Map(
-        (await db
-          .select()
-          .from(telegramUsers)
-          .where(eq(telegramUsers.isVerified, true)))
-          .map(user => [user.goatedUsername.toLowerCase(), user.telegramUsername])
-      );
+        const prizeAmount = calculatePrizeAmount(position, PRIZE_POOL);
 
-      // Format leaderboard entries
+        // Pad the position and name to create even spacing
+        const paddedPosition = position.toString().padStart(2, ' ');
+        const nameSection = displayName.padEnd(20, ' ');
+        const wageredSection = `💰 $${wagered}`;
+        const prizeSection = prizeAmount > 0 ? `🏆 $${prizeAmount.toFixed(2)}` : '';
+
+        // Ensure consistent spacing between sections
+        return `${paddedPosition}. ${nameSection}${wageredSection.padEnd(25, ' ')}${prizeSection}`;
+      };
+
+      // Format leaderboard entries with proper spacing
       const top10 = transformedData.data.monthly.data
         .slice(0, 10)
         .map((player: any, index: number) =>
-          formatLeaderboardEntry(player, index + 1, verifiedUsers)
+          formatLeaderboardEntry(player, index + 1)
         )
-        .join("\n\n");
+        .join("\n");
 
-      const message = `🏆 Monthly Race Leaderboard\n💵 Prize Pool: $${PRIZE_POOL}\n🏁 Current Top 10:\n\n${top10}\n\n📊 Updated: ${new Date().toLocaleString()}`;
+      const message = `🏆 Monthly Race Leaderboard
+💵 Prize Pool: $${PRIZE_POOL}
+🏁 Current Top 10:
+
+${top10}
+
+📊 Updated: ${new Date().toLocaleString()}`;
+
+      debugLog("Formatted leaderboard message:", message);
 
       // Create inline keyboard with buttons
       const inlineKeyboard = {
@@ -472,6 +527,7 @@ Available commands:
       await safeSendMessage(chatId, message, inlineKeyboard);
     } catch (error) {
       console.error("Leaderboard error:", error);
+      debugLog("Full error details:", error);
       await safeSendMessage(chatId, "❌ Error fetching leaderboard. Try again later.");
     }
   });
