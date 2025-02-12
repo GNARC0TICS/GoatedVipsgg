@@ -1,15 +1,16 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
-import { bot, initializeBot } from "./telegram/bot";
+import { getBot, initializeBot } from "./telegram/bot";
 import { setupVite, serveStatic, log } from "./vite";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
 import { promisify } from "util";
 import { exec } from "child_process";
-import { createServer } from "http";
+import { createServer, Server } from "http";
 import fetch from "node-fetch";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
+import * as fs from 'fs';
 
 const execAsync = promisify(exec);
 const app = express();
@@ -100,7 +101,20 @@ async function checkDatabase() {
 
 async function cleanupPort() {
   try {
-    await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
+    // Find processes using the port
+    const { stdout } = await execAsync(`lsof -t -i:${PORT}`);
+    if (stdout) {
+      const pids = stdout.split('\n').filter(Boolean);
+      // Kill each process
+      for (const pid of pids) {
+        try {
+          process.kill(parseInt(pid), 'SIGTERM');
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (e) {
+          log(`Failed to kill process ${pid}`);
+        }
+      }
+    }
     await new Promise(resolve => setTimeout(resolve, 1000));
   } catch (error) {
     log("No existing process found on port " + PORT);
@@ -109,15 +123,61 @@ async function cleanupPort() {
 
 async function cleanupBot() {
   try {
-    // Clear any existing bot sessions and webhooks
-    if (process.env.TELEGRAM_BOT_TOKEN) {
-      await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteWebhook?drop_pending_updates=true`);
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+      log("No Telegram bot token found, skipping bot cleanup");
+      return;
+    }
+
+    // Create a cleanup lock file
+    const lockFile = '.bot-cleanup.lock';
+    if (await fs.promises.access(lockFile).catch(() => false)) {
+      log("Bot cleanup already in progress");
+      return;
+    }
+
+    try {
+      await fs.promises.writeFile(lockFile, Date.now().toString());
+
+      // Stop existing bot instance if running
+      const currentBot = getBot();
+      if (currentBot) {
+        try {
+          await currentBot.stopPolling();
+          log("Stopped existing bot polling");
+        } catch (e) {
+          log("Error stopping existing bot:", e);
+        }
+      }
+
+      // Clear webhook and pending updates
+      const response = await fetch(
+        `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteWebhook`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ drop_pending_updates: true })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete webhook: ${response.status}`);
+      }
+
       log("Cleared existing webhook configuration and pending updates");
+
+      // Wait for cleanup to take effect
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } finally {
+      // Remove lock file
+      await fs.promises.unlink(lockFile).catch(() => {});
     }
   } catch (error) {
     console.error("Error cleaning up bot:", error);
+    throw error;
   }
 }
+
+let server: Server | null = null;
 
 async function startServer() {
   try {
@@ -128,7 +188,7 @@ async function startServer() {
     await cleanupPort();
     await checkDatabase();
 
-    const server = createServer(app);
+    server = createServer(app);
 
     // Setup middleware and routes
     await setupMiddleware();
@@ -142,32 +202,35 @@ async function startServer() {
     }
 
     return new Promise((resolve, reject) => {
-      server
-        .listen(PORT, "0.0.0.0")
+      server!.listen(PORT)
         .on("error", async (err: NodeJS.ErrnoException) => {
           if (err.code === 'EADDRINUSE') {
             log(`Port ${PORT} is in use, attempting to free it...`);
             await cleanupPort();
-            server.listen(PORT, "0.0.0.0");
+            server!.listen(PORT);
           } else {
             console.error(`Failed to start server: ${err.message}`);
             reject(err);
           }
         })
         .on("listening", async () => {
-          log(`🌍 Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+          log(`🌍 Server running on port ${PORT}`);
 
           // Initialize Telegram bot after server is ready
-          try {
-            log("🚀 Starting Telegram Bot...");
-            const botInstance = await initializeBot();
-            if (!botInstance) {
-              throw new Error("Failed to initialize bot");
+          if (process.env.TELEGRAM_BOT_TOKEN) {
+            try {
+              log("🚀 Starting Telegram Bot...");
+              const botInstance = await initializeBot();
+              if (!botInstance) {
+                throw new Error("Failed to initialize bot");
+              }
+              log("✅ Telegram bot initialized successfully");
+            } catch (error) {
+              console.error("⚠️ Telegram bot failed to start:", error);
+              // Continue server startup even if bot fails
             }
-            log("✅ Telegram bot initialized successfully");
-          } catch (error) {
-            console.error("⚠️ Telegram bot failed to start:", error);
-            // Continue server startup even if bot fails
+          } else {
+            log("⚠️ No Telegram bot token found, skipping bot initialization");
           }
 
           resolve(server);
@@ -180,18 +243,40 @@ async function startServer() {
 }
 
 // Graceful shutdown handler
-process.on("SIGINT", async () => {
+async function shutdown() {
   log("🛑 Shutting down server and bot...");
-  if (bot) {
+
+  // Stop the bot first
+  const currentBot = getBot();
+  if (currentBot) {
     try {
-      await bot.stopPolling();
+      await currentBot.stopPolling();
       log("✅ Bot polling stopped");
     } catch (error) {
       console.error("Error stopping bot:", error);
     }
   }
+
+  // Close server connections
+  if (server) {
+    try {
+      await new Promise((resolve) => {
+        server!.close(() => {
+          log("✅ Server connections closed");
+          resolve(true);
+        });
+      });
+    } catch (error) {
+      console.error("Error closing server:", error);
+    }
+  }
+
   process.exit(0);
-});
+}
+
+// Register shutdown handlers
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
 
 // Initialize application
 startServer().catch((error) => {
