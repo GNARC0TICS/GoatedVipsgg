@@ -1,3 +1,4 @@
+
 import TelegramBot from "node-telegram-bot-api";
 import { db } from "@db";
 import { telegramUsers, verificationRequests } from "@db/schema/telegram";
@@ -5,12 +6,39 @@ import { API_CONFIG } from "../config/api";
 import { transformLeaderboardData } from "../routes";
 import { eq } from "drizzle-orm";
 
-// 🌐 Rate limiting setup to prevent spam
+// Type definitions for API responses
+interface WagerStats {
+  today: number;
+  this_week: number;
+  this_month: number;
+  all_time: number;
+}
+
+interface UserData {
+  uid: string;
+  name: string;
+  wagered: WagerStats;
+}
+
+interface LeaderboardResponse {
+  status: string;
+  metadata: {
+    totalUsers: number;
+    lastUpdated: string;
+  };
+  data: {
+    today: { data: UserData[] };
+    weekly: { data: UserData[] };
+    monthly: { data: UserData[] };
+    all_time: { data: UserData[] };
+  };
+}
+
+// Rate limiting setup
 const messageRateLimiter = new Map<number, number>();
-const RATE_LIMIT_WINDOW = 1000; // 1 second
+const RATE_LIMIT_WINDOW = 1000;
 const MAX_MESSAGES_PER_WINDOW = 3;
 
-// 🛡️ Safe Message Sending with Rate Limiting
 const safeSendMessage = async (chatId: number, text: string, options = {}) => {
   try {
     const now = Date.now();
@@ -42,10 +70,8 @@ const safeSendMessage = async (chatId: number, text: string, options = {}) => {
   }
 };
 
-// 🌟 Ensure environment variables are set
 if (!process.env.TELEGRAM_BOT_TOKEN) throw new Error("❌ TELEGRAM_BOT_TOKEN is required!");
 
-// 🤖 Bot Initialization
 let bot: TelegramBot;
 try {
   console.log("🔹 Initializing Telegram bot...");
@@ -54,16 +80,13 @@ try {
     filepath: false,
   });
 
-  // 🔍 Error Handling
   bot.on("polling_error", (error) => console.error("⚠️ Polling Error:", error.message));
   bot.on("error", (error) => console.error("⚠️ Telegram Bot Error:", error.message));
 
-  // 🔄 Logging Messages
   bot.on("message", (msg) => {
     console.log(`📩 Message from @${msg.from?.username}:`, msg.text);
   });
 
-  // 🛠️ Setup Commands
   const setupCommands = async () => {
     console.log("📌 Setting up bot commands...");
     await bot.setMyCommands([
@@ -78,7 +101,6 @@ try {
     console.log("✅ Bot commands initialized.");
   };
 
-  // 🚀 Initialize Bot
   const initializeBot = async () => {
     const botInfo = await bot.getMe();
     console.log(`🤖 Bot Ready: ${botInfo.username}`);
@@ -95,10 +117,9 @@ try {
   throw error;
 }
 
-// 🛡️ Admin Check Utility
 const isAdmin = async (chatId: number) => chatId.toString() === "1689953605";
 
-// 🌟 Command Handlers
+// Command Handlers
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
   await safeSendMessage(chatId, "🎮 Welcome to GoatedVIPs Affiliate Bot!\nUse /verify to link your account.");
@@ -114,7 +135,6 @@ bot.onText(/\/website/, async (msg) => {
   await safeSendMessage(chatId, "🌐 Visit: https://goatedvips.gg");
 });
 
-// 🏆 Leaderboard Command
 bot.onText(/\/leaderboard/, async (msg) => {
   const chatId = msg.chat.id;
   try {
@@ -122,11 +142,19 @@ bot.onText(/\/leaderboard/, async (msg) => {
       headers: { Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}` },
     });
 
-    if (!response.ok) throw new Error("Failed to fetch leaderboard");
+    if (!response.ok) {
+      console.error(`API Error: ${response.status}`);
+      throw new Error("Failed to fetch leaderboard");
+    }
 
     const data = await response.json();
-    const stats = transformLeaderboardData(data);
+    const stats = transformLeaderboardData(data) as LeaderboardResponse;
     const top10 = stats.data.monthly.data.slice(0, 10);
+
+    if (!top10.length) {
+      await safeSendMessage(chatId, "❌ No leaderboard data available at the moment.");
+      return;
+    }
 
     const leaderboardMessage = top10.map((player, i) => `#${i + 1} ${player.name} - 💰 $${player.wagered.this_month.toFixed(2)}`).join("\n");
     await safeSendMessage(chatId, `🏆 Monthly Leaderboard:\n\n${leaderboardMessage}`);
@@ -136,7 +164,6 @@ bot.onText(/\/leaderboard/, async (msg) => {
   }
 });
 
-// 🔐 Verification Command
 bot.onText(/\/verify (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const username = match?.[1]?.trim();
@@ -144,9 +171,18 @@ bot.onText(/\/verify (.+)/, async (msg, match) => {
 
   try {
     const existingUser = await db.select().from(telegramUsers).where(eq(telegramUsers.telegramId, chatId.toString())).limit(1);
-    if (existingUser.length > 0 && existingUser[0].isVerified) return safeSendMessage(chatId, "✅ Already verified!");
+    if (existingUser.length > 0) {
+      if (existingUser[0].isVerified) {
+        return safeSendMessage(chatId, "✅ Already verified!");
+      }
+    }
 
-    await db.insert(verificationRequests).values({ telegramId: chatId.toString(), goatedUsername: username, status: "pending" });
+    await db.insert(verificationRequests).values({
+      telegramId: chatId.toString(),
+      goatedUsername: username,
+      status: "pending",
+      telegramUsername: msg.from?.username || null
+    });
 
     await safeSendMessage(chatId, "✅ Verification request submitted. An admin will review it shortly.");
     await safeSendMessage(1689953605, `🔔 Verification Request:\nUser: ${username}\nTelegram: @${msg.from?.username}`);
@@ -156,26 +192,34 @@ bot.onText(/\/verify (.+)/, async (msg, match) => {
   }
 });
 
-// 📊 Stats Command
 bot.onText(/\/stats/, async (msg) => {
   const chatId = msg.chat.id;
   try {
     const [user] = await db.select().from(telegramUsers).where(eq(telegramUsers.telegramId, chatId.toString())).limit(1);
-    if (!user?.isVerified) return safeSendMessage(chatId, "❌ Please verify your account using /verify");
+    if (!user?.isVerified) {
+      return safeSendMessage(chatId, "❌ Please verify your account using /verify");
+    }
 
     const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`, {
       headers: { Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}` },
     });
 
-    if (!response.ok) throw new Error("Failed to fetch stats");
+    if (!response.ok) {
+      console.error(`API Error: ${response.status}`);
+      throw new Error("Failed to fetch stats");
+    }
 
     const data = await response.json();
-    const stats = transformLeaderboardData(data);
-    const monthlyStats = stats.data.monthly.data[0];
+    const stats = transformLeaderboardData(data) as LeaderboardResponse;
+    const userStats = stats.data.monthly.data.find(p => p.name.toLowerCase() === user.goatedUsername?.toLowerCase());
 
-    if (!monthlyStats) return safeSendMessage(chatId, "❌ No stats found for this period.");
+    if (!userStats) {
+      await safeSendMessage(chatId, "❌ No stats found for your account this period.");
+      return;
+    }
 
-    await safeSendMessage(chatId, `📊 Stats:\n💰 Wagered: $${monthlyStats.wagered.this_month.toFixed(2)}\n📍 Position: #${stats.data.monthly.data.findIndex((p) => p.name === monthlyStats.name) + 1}`);
+    const position = stats.data.monthly.data.findIndex((p) => p.name.toLowerCase() === user.goatedUsername?.toLowerCase()) + 1;
+    await safeSendMessage(chatId, `📊 Stats for ${user.goatedUsername}:\n💰 Wagered: $${userStats.wagered.this_month.toFixed(2)}\n📍 Position: #${position}`);
   } catch (error) {
     console.error("Stats error:", error);
     await safeSendMessage(chatId, "❌ Error fetching stats. Try again later.");
