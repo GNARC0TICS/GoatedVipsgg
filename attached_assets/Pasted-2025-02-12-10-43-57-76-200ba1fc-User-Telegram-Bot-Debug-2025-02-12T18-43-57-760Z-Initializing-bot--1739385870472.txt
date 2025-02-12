@@ -1,0 +1,132 @@
+2025-02-12 10:43:57.76
+200ba1fc
+User
+[Telegram Bot Debug 2025-02-12T18:43:57.760Z] Initializing bot...
+2025-02-12 10:43:57.76
+200ba1fc
+User
+🔄 Running bot in POLLING mode...
+2025-02-12 10:43:57.87
+200ba1fc
+User
+[Telegram Bot Debug 2025-02-12T18:43:57.874Z] Bot info retrieved: {
+2025-02-12 10:43:57.87
+200ba1fc
+User
+id: 8134884952,
+2025-02-12 10:43:57.87
+200ba1fc
+User
+is_bot: true,
+2025-02-12 10:43:57.87
+200ba1fc
+User
+first_name: 'GoatedVipsBot',
+2025-02-12 10:43:57.87
+200ba1fc
+User
+username: 'GoatedVipsBot',
+2025-02-12 10:43:57.87
+200ba1fc
+User
+can_join_groups: true,
+2025-02-12 10:43:57.87
+200ba1fc
+User
+can_read_all_group_messages: false,
+2025-02-12 10:43:57.87
+200ba1fc
+User
+supports_inline_queries: true,
+2025-02-12 10:43:57.87
+200ba1fc
+User
+can_connect_to_business: false,
+2025-02-12 10:43:57.87
+200ba1fc
+User
+has_main_web_app: false
+2025-02-12 10:43:57.87
+200ba1fc
+User
+}
+2025-02-12 10:43:58.09
+200ba1fc
+User
+[Telegram Bot Debug 2025-02-12T18:43:58.099Z] Bot initialized successfully
+2025-02-12 10:44:08.10
+200ba1fc
+User
+[Telegram Bot Debug 2025-02-12T18:44:08.107Z] Bot info retrieved: {
+2025-02-12 10:44:08.10
+200ba1fc
+User
+id: 8134884952,
+2025-02-12 10:44:08.10
+200ba1fc
+User
+is_bot: true,
+2025-02-12 10:44:08.10
+200ba1fc
+User
+first_name: 'GoatedVipsBot',
+2025-02-12 10:44:08.10
+200ba1fc
+User
+username: 'GoatedVipsBot',
+2025-02-12 10:44:08.10
+200ba1fc
+User
+can_join_groups: true,
+2025-02-12 10:44:08.10
+200ba1fc
+User
+can_read_all_group_messages: false,
+2025-02-12 10:44:08.10
+200ba1fc
+User
+supports_inline_queries: true,
+2025-02-12 10:44:08.10
+200ba1fc
+User
+can_connect_to_business: false,
+2025-02-12 10:44:08.10
+200ba1fc
+User
+has_main_web_app: false
+2025-02-12 10:44:08.10
+200ba1fc
+User
+}
+2025-02-12 10:44:08.33
+200ba1fc
+User
+[Telegram Bot Debug 2025-02-12T18:44:08.330Z] Bot initialized successfully
+2025-02-12 10:44:12.73
+200ba1fc
+User
+Webhook health check error: Error: Webhook not set
+2025-02-12 10:44:12.73
+200ba1fc
+User
+at Timeout._onTimeout (/home/runner/workspace/server/telegram/bot.ts:604:15)
+2025-02-12 10:44:12.73
+200ba1fc
+User
+[Telegram Bot Debug 2025-02-12T18:44:12.733Z] Health check failed (6/3)
+2025-02-12 10:44:12.73
+200ba1fc
+User
+[Telegram Bot Debug 2025-02-12T18:44:12.733Z] Maximum health check failures reached - Attempting webhook reset
+2025-02-12 10:44:12.73
+200ba1fc
+User
+🤖 Bot instance already exists, stopping previous instance...
+2025-02-12 10:44:18.41
+200ba1fc
+User
+[Telegram Bot Debug 2025-02-12T18:44:18.409Z] Initializing bot...
+2025-02-12 10:44:18.41
+200ba1fc
+User
+🔄 Running bot in POLLING mode...
