@@ -118,8 +118,15 @@ async function startServer() {
       serveStatic(app);
     }
 
-    // Bot is automatically started when instantiated with polling
-    log("Telegram bot initialized with polling");
+    // Initialize bot with proper error handling
+    try {
+      log("Initializing Telegram bot...");
+      await import("./telegram/bot");
+      log("Telegram bot initialized successfully");
+    } catch (error) {
+      console.error("Failed to initialize Telegram bot:", error);
+      // Continue server startup even if bot fails
+    }
 
     return new Promise((resolve, reject) => {
       server
