@@ -549,6 +549,17 @@ export function registerRoutes(app: Express): Server {
 /**
  * Configures WebSocket server
  */
+// Webhook endpoint for Telegram bot
+app.post("/api/telegram/webhook", async (req, res) => {
+  try {
+    await bot.handleUpdate(req.body);
+    res.sendStatus(200);
+  } catch (error) {
+    console.error("Telegram webhook error:", error);
+    res.sendStatus(500);
+  }
+});
+
 function setupWebSocket(httpServer: Server) {
   wss = new WebSocketServer({ noServer: true });
 
