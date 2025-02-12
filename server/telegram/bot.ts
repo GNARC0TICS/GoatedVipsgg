@@ -158,7 +158,7 @@ const initializeBot = async () => {
     }
 
     debugLog("Initializing bot...");
-    const WEBHOOK_DOMAIN = process.env.WEBHOOK_URL || 'https://goatedvips.gg';
+    const WEBHOOK_DOMAIN = process.env.WEBHOOK_URL || 'https://goatedvips.replit.app';
 
     // Always use webhook mode in production
     if (process.env.NODE_ENV === "development") {
