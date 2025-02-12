@@ -264,6 +264,7 @@ Available commands:
 /play - Get game link
 /website - Get website link
 /approve @username - Approve verification request (Admin only)
+/pending - View pending verification requests (Admin only)
 `.trim();
     await safeSendMessage(msg.chat.id, helpText);
   });
@@ -344,18 +345,33 @@ Available commands:
       }
 
       // Create verification request
-      await db.insert(verificationRequests).values({
+      const [request] = await db.insert(verificationRequests).values({
         telegramId: chatId.toString(),
         userId: user.id,
         status: "pending",
         telegramUsername: msg.from?.username || null,
-      });
+      }).returning();
 
       await safeSendMessage(chatId, "✅ Verification request submitted. An admin will review it shortly.");
-      await safeSendMessage(BOT_ADMIN_ID, `🔔 New Verification Request:
-Username: ${username}
-Telegram: @${msg.from?.username || 'N/A'}
-Chat ID: ${chatId}`);
+
+      // Send admin notification with inline buttons
+      const adminMessage = `🔍 New Verification Request #${request.id}
+👤 Telegram: @${msg.from?.username || 'N/A'}
+🎮 Goated: ${username}
+💬 Chat ID: ${chatId}`;
+
+      const inlineKeyboard = {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "✅ Approve", callback_data: `approve_${request.id}` },
+              { text: "❌ Reject", callback_data: `reject_${request.id}` }
+            ]
+          ]
+        }
+      };
+
+      await safeSendMessage(BOT_ADMIN_ID, adminMessage, inlineKeyboard);
     } catch (error) {
       console.error("Verification error:", error);
       await safeSendMessage(chatId, "❌ Error processing verification. Please try again later.");
@@ -418,67 +434,134 @@ Chat ID: ${chatId}`);
     }
   });
 
-  // Enhanced stats command with all time periods
-  bot.onText(/\/stats/, async (msg) => {
+  // Admin command to view pending verification requests
+  bot.onText(/\/pending/, async (msg) => {
+    const chatId = msg.chat.id;
+    if (chatId !== BOT_ADMIN_ID) {
+      return safeSendMessage(chatId, "❌ This command is only available to administrators.");
+    }
+
+    try {
+      const pendingRequests = await db
+        .select({
+          id: verificationRequests.id,
+          telegramUsername: verificationRequests.telegramUsername,
+          userId: verificationRequests.userId,
+          requestedAt: verificationRequests.requestedAt,
+          username: users.username
+        })
+        .from(verificationRequests)
+        .innerJoin(users, eq(users.id, verificationRequests.userId))
+        .where(eq(verificationRequests.status, 'pending'));
+
+      if (pendingRequests.length === 0) {
+        return safeSendMessage(chatId, "✅ No pending verification requests.");
+      }
+
+      for (const request of pendingRequests) {
+        const message = `🔍 Verification Request #${request.id}
+👤 Telegram: @${request.telegramUsername || 'N/A'}
+🎮 Goated: ${request.username}
+⏰ Requested: ${new Date(request.requestedAt).toLocaleString()}`;
+
+        const inlineKeyboard = {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: "✅ Approve", callback_data: `approve_${request.id}` },
+                { text: "❌ Reject", callback_data: `reject_${request.id}` }
+              ]
+            ]
+          }
+        };
+
+        await safeSendMessage(chatId, message, inlineKeyboard);
+      }
+    } catch (error) {
+      console.error("Error fetching pending requests:", error);
+      await safeSendMessage(chatId, "❌ Error fetching pending requests.");
+    }
+  });
+
+  // Enhanced stats command with admin override
+  bot.onText(/\/stats(?:\s+(.+))?/, async (msg, match) => {
     const chatId = msg.chat.id;
     debugLog("📝 Stats command received from:", chatId);
     try {
-      const [telegramUser] = await db
-        .select()
-        .from(telegramUsers)
-        .where(eq(telegramUsers.telegramId, chatId.toString()))
-        .limit(1);
+      const targetUsername = match?.[1]?.trim();
+      const isAdmin = chatId === BOT_ADMIN_ID;
 
-      if (!telegramUser?.isVerified) {
-        return safeSendMessage(chatId, "❌ Please verify your account using /verify");
+      // If non-admin tries to check other user's stats
+      if (targetUsername && !isAdmin) {
+        return safeSendMessage(chatId, "❌ You can only check your own stats. Use /stats without parameters.");
       }
 
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, telegramUser.userId))
-        .limit(1);
+      if (!targetUsername) {
+        // Regular user checking their own stats
+        const [telegramUser] = await db
+          .select()
+          .from(telegramUsers)
+          .where(eq(telegramUsers.telegramId, chatId.toString()))
+          .limit(1);
 
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-            "Content-Type": "application/json",
-          },
+        if (!telegramUser?.isVerified) {
+          return safeSendMessage(chatId, "❌ Please verify your account using /verify");
         }
-      );
 
-      if (!response.ok) throw new Error("Failed to fetch stats");
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, telegramUser.userId))
+          .limit(1);
 
-      const rawData = await response.json();
-      const transformedData = transformLeaderboardData(rawData);
-      const userStats = transformedData.data.monthly.data.find(
-        (p: any) => p.name.toLowerCase() === user.username.toLowerCase()
-      );
-
-      if (!userStats) {
-        return safeSendMessage(chatId, "❌ No stats found for your account this period.");
+        return await fetchAndSendStats(chatId, user.username);
+      } else {
+        // Admin checking another user's stats
+        return await fetchAndSendStats(chatId, targetUsername);
       }
+    } catch (error) {
+      console.error("Stats error:", error);
+      await safeSendMessage(chatId, "❌ Error fetching stats. Try again later.");
+    }
+  });
 
-      const position = transformedData.data.monthly.data.findIndex(
-        (p: any) => p.name.toLowerCase() === user.username.toLowerCase()
-      ) + 1;
+  // Helper function to fetch and send stats
+  async function fetchAndSendStats(chatId: number, username: string) {
+    const response = await fetch(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
+    if (!response.ok) throw new Error("Failed to fetch stats");
 
-      const statsMessage = `📊 Stats for ${user.username}:
+    const rawData = await response.json();
+    const transformedData = transformLeaderboardData(rawData);
+    const userStats = transformedData.data.monthly.data.find(
+      (p: any) => p.name.toLowerCase() === username.toLowerCase()
+    );
+
+    if (!userStats) {
+      return safeSendMessage(chatId, `❌ No stats found for user: ${username}`);
+    }
+
+    const position = transformedData.data.monthly.data.findIndex(
+      (p: any) => p.name.toLowerCase() === username.toLowerCase()
+    ) + 1;
+
+    const statsMessage = `📊 Stats for ${username}:
 💰 Today: $${formatCurrency(userStats.wagered.today)}
 📅 This Week: $${formatCurrency(userStats.wagered.this_week)}
 📆 This Month: $${formatCurrency(userStats.wagered.this_month)}
 🏆 All Time: $${formatCurrency(userStats.wagered.all_time)}
 📍 Monthly Race Position: #${position}`;
 
-      await safeSendMessage(chatId, statsMessage);
-    } catch (error) {
-      console.error("Stats error:", error);
-      await safeSendMessage(chatId, "❌ Error fetching stats. Try again later.");
-    }
-  });
+    await safeSendMessage(chatId, statsMessage);
+  }
 
   // Enhanced leaderboard command with proper formatting
   bot.onText(/\/leaderboard/, async (msg) => {
@@ -589,6 +672,101 @@ Chat ID: ${chatId}`);
             text: '/leaderboard',
             entities: [{ offset: 0, length: 11, type: 'bot_command' }]
           });
+          break;
+        default:
+          // Handle Approve/Reject actions
+          if (chatId !== BOT_ADMIN_ID || !callbackQuery.data) return;
+          const [action, requestId] = callbackQuery.data.split('_');
+          if (!['approve', 'reject'].includes(action)) return;
+
+          const [request] = await db
+            .select()
+            .from(verificationRequests)
+            .where(eq(verificationRequests.id, parseInt(requestId)))
+            .limit(1);
+
+          if (!request) {
+            await bot.answerCallbackQuery(callbackQuery.id, {
+              text: "Request not found",
+              show_alert: true
+            });
+            return;
+          }
+
+          if (action === 'approve') {
+            // Update verification request status
+            await db
+              .update(verificationRequests)
+              .set({
+                status: "approved",
+                verifiedAt: new Date(),
+                verifiedBy: chatId.toString()
+              })
+              .where(eq(verificationRequests.id, parseInt(requestId)));
+
+            // Create or update telegram user record
+            await db.insert(telegramUsers).values({
+              telegramId: request.telegramId,
+              telegramUsername: request.telegramUsername,
+              userId: request.userId,
+              isVerified: true,
+              verifiedAt: new Date(),
+              verifiedBy: chatId.toString()
+            }).onConflictDoUpdate({
+              target: [telegramUsers.telegramId],
+              set: {
+                telegramUsername: request.telegramUsername,
+                userId: request.userId,
+                isVerified: true,
+                verifiedAt: new Date(),
+                verifiedBy: chatId.toString()
+              }
+            });
+
+            // Get user info for confirmation
+            const [user] = await db
+              .select()
+              .from(users)
+              .where(eq(users.id, request.userId))
+              .limit(1);
+
+            // Update message to show approved status
+            await bot.editMessageText(
+              `✅ Approved: @${request.telegramUsername} as ${user.username}`,
+              {
+                chat_id: chatId,
+                message_id: callbackQuery.message?.message_id
+              }
+            );
+
+            // Notify user
+            await safeSendMessage(parseInt(request.telegramId),
+              "✅ Your account has been verified! You can now use /stats to check your statistics.");
+
+          } else {
+            // Reject the request
+            await db
+              .update(verificationRequests)
+              .set({
+                status: "rejected",
+                verifiedAt: new Date(),
+                verifiedBy: chatId.toString()
+              })
+              .where(eq(verificationRequests.id, parseInt(requestId)));
+
+            // Update message to show rejected status
+            await bot.editMessageText(
+              `❌ Rejected: @${request.telegramUsername}`,
+              {
+                chat_id: chatId,
+                message_id: callbackQuery.message?.message_id
+              }
+            );
+
+            // Notify user
+            await safeSendMessage(parseInt(request.telegramId),
+              "❌ Your verification request has been rejected. Please ensure you provided the correct Goated username and try again.");
+          }
           break;
       }
       // Answer callback query to remove loading state
