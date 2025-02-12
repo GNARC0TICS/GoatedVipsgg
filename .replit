@@ -14,7 +14,7 @@ channel = "stable-24_05"
 # Deployment configuration
 [deployment]
 deploymentTarget = "gce"
-build = ["npm", "run", "build"]
+build = ["sh", "-c", "npm run build"]
 run = ["sh", "-c", "tsx server/index.ts"]
 ignorePorts = true
 
@@ -41,6 +41,7 @@ args = "Start application"
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
+mode = "parallel"
 
 [workflows.workflow.metadata]
 agentRequireRestartOnSave = false
