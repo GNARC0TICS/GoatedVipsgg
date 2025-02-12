@@ -119,18 +119,20 @@ async function cleanupBot() {
   }
 }
 
-async function startMainServer() {
+// Combined server setup
+async function startServer() {
   try {
-    log("Starting main server initialization...");
+    log("Starting server initialization...");
     await checkDatabase();
     await cleanupBot();
     await cleanupPort();
 
-    // Setup middleware and routes for main app
     await setupMiddleware();
     registerRoutes(app);
 
-    // Setup Vite or serve static files based on environment
+    // Add webhook route to main app on a different path
+    app.use("/webhook", webhookRouter);
+
     if (app.get("env") === "development") {
       await setupVite(app, createServer(app));
     } else {
@@ -138,23 +140,23 @@ async function startMainServer() {
     }
 
     return new Promise((resolve, reject) => {
-      app.listen(PORT, "0.0.0.0")
+      const server = app.listen(PORT, "0.0.0.0")
         .on("error", async (err: NodeJS.ErrnoException) => {
           if (err.code === 'EADDRINUSE') {
             log(`Port ${PORT} is in use, attempting to free it...`);
             await cleanupPort();
             app.listen(PORT, "0.0.0.0");
           } else {
-            console.error(`Failed to start main server: ${err.message}`);
+            console.error(`Failed to start server: ${err.message}`);
             reject(err);
           }
         })
         .on("listening", async () => {
-          log(`🌍 Main server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+          log(`🚀 Server running on port ${PORT}`);
 
           // Initialize Telegram bot after server is ready
           try {
-            log("🚀 Starting Telegram Bot...");
+            log("Starting Telegram Bot...");
             const botInstance = await initializeBot();
             if (!botInstance) {
               throw new Error("Failed to initialize bot");
@@ -166,52 +168,33 @@ async function startMainServer() {
 
           resolve(true);
         });
+
+      // Graceful shutdown handler
+      process.on("SIGINT", async () => {
+        log("🛑 Shutting down server and bot...");
+        if (bot) {
+          try {
+            await bot.deleteWebHook();
+            log("✅ Bot webhook removed");
+          } catch (error) {
+            console.error("Error cleaning up bot:", error);
+          }
+        }
+        server.close(() => {
+          process.exit(0);
+        });
+      });
     });
   } catch (error) {
-    console.error("Failed to start main server:", error);
+    console.error("Failed to start server:", error);
     process.exit(1);
   }
 }
 
-async function startWebhookServer() {
-  // Create a new Express instance for the webhook
-  const webhookApp = express();
-
-  // Use JSON middleware. (If you need raw body for signature verification, consider adding a verify function.)
-  webhookApp.use(express.json());
-
-  // Register only the webhook route
-  webhookApp.use("/webhook", webhookRouter);
-
-  return new Promise((resolve, reject) => {
-    webhookApp.listen(5001, "0.0.0.0", () => {
-      log("🚀 Webhook server running on port 5001 (accessible externally on port 3000)");
-      resolve(true);
-    }).on("error", (err) => {
-      console.error("Error starting webhook server:", err);
-      reject(err);
-    })
-  });
-}
-
-// Initialize both servers concurrently
-Promise.all([startMainServer(), startWebhookServer()])
-  .then(() => log("Both main and webhook servers are running"))
+// Start the server
+startServer()
+  .then(() => log("✅ Server startup complete"))
   .catch((error) => {
-    console.error("Error starting servers:", error);
+    console.error("Error during startup:", error);
     process.exit(1);
   });
-
-// Graceful shutdown handler remains the same
-process.on("SIGINT", async () => {
-  log("🛑 Shutting down servers and bot...");
-  if (bot) {
-    try {
-      await bot.stopPolling();
-      log("✅ Bot polling stopped");
-    } catch (error) {
-      console.error("Error stopping bot:", error);
-    }
-  }
-  process.exit(0);
-});

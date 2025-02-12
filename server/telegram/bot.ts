@@ -1,3 +1,8 @@
+let isReconnecting = false;
+const RECONNECT_DELAY = 5000;
+const MAX_RECONNECT_ATTEMPTS = 5;
+let reconnectAttempts = 0;
+
 import TelegramBot from "node-telegram-bot-api";
 import { db } from "@db";
 import { telegramUsers, verificationRequests } from "@db/schema/telegram";
@@ -7,15 +12,7 @@ import { eq } from "drizzle-orm";
 import fetch from "node-fetch";
 import { transformLeaderboardData } from "../utils/leaderboard";
 
-// Prevent multiple instances when deployed
-if (process.env.NODE_ENV === "production" && process.env.BOT_ALREADY_RUNNING) {
-  console.log("🚨 Bot is already running! Exiting...");
-  process.exit(1);
-}
-
-process.env.BOT_ALREADY_RUNNING = "true";
-
-// Add proper type for event emission
+// Enhanced type definition for TelegramBot
 declare module 'node-telegram-bot-api' {
   interface TelegramBot {
     botInfo?: {
@@ -33,6 +30,71 @@ declare module 'node-telegram-bot-api' {
   }
 }
 
+// Singleton pattern for bot instance
+let botInstance: TelegramBot | null = null;
+let isInitializing = false;
+const WEBHOOK_URL = 'https://goatedvips.replit.app/webhook';
+
+const initializeBot = async () => {
+  if (!process.env.TELEGRAM_BOT_TOKEN) {
+    console.error("❌ TELEGRAM_BOT_TOKEN is not set!");
+    return null;
+  }
+
+  // Prevent multiple simultaneous initializations
+  if (isInitializing) {
+    console.log("Bot initialization already in progress...");
+    return botInstance;
+  }
+
+  // Return existing instance if already initialized
+  if (botInstance) {
+    return botInstance;
+  }
+
+  isInitializing = true;
+
+  try {
+    debugLog("Initializing bot...");
+
+    // Clean up any existing webhooks
+    const tempBot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
+    const webhookInfo = await tempBot.getWebHookInfo();
+
+    if (webhookInfo.url) {
+      await tempBot.deleteWebHook();
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
+    // Create new bot instance
+    botInstance = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
+
+    // Set new webhook with improved options
+    await botInstance.setWebHook(WEBHOOK_URL, {
+      allowed_updates: ["message", "callback_query", "chat_member", "my_chat_member"],
+      max_connections: 100
+    });
+
+    console.log("✅ Webhook set successfully to:", WEBHOOK_URL);
+
+    // Get and store bot info
+    const botInfo = await botInstance.getMe();
+    botInstance.botInfo = botInfo;
+
+    setupBotEventHandlers();
+    setupCommandHandlers();
+
+    debugLog("Bot initialized successfully");
+    isInitializing = false;
+    return botInstance;
+  } catch (error) {
+    console.error("❌ Bot initialization failed:", error);
+    isInitializing = false;
+    botInstance = null;
+    return null;
+  }
+};
+
 const DEBUG = process.env.NODE_ENV !== 'production';
 const BOT_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID ? parseInt(process.env.TELEGRAM_ADMIN_ID) : 1689953605;
 const GROUP_MESSAGE_TYPES = ['group', 'supergroup'];
@@ -46,6 +108,7 @@ const debugLog = (...args: any[]) => {
     console.error(`[Telegram Bot Error ${timestamp}]`, ...args);
   }
 };
+
 
 // Improved rate limiting with priority queue
 class PriorityMessageQueue {
@@ -126,12 +189,6 @@ class RateLimiter {
 const messageQueue = new PriorityMessageQueue();
 const rateLimiter = new RateLimiter();
 
-// Bot instance and configuration
-let bot: TelegramBot | null = null;
-let isReconnecting = false;
-const RECONNECT_DELAY = 5000;
-const MAX_RECONNECT_ATTEMPTS = 5;
-let reconnectAttempts = 0;
 
 // Health monitoring
 const HEALTH_CHECK_INTERVAL = 30000; // 30 seconds
@@ -139,115 +196,13 @@ const HEALTH_CHECK_TIMEOUT = 10000;  // 10 seconds
 let healthCheckFailures = 0;
 const MAX_HEALTH_CHECK_FAILURES = 3;
 
-// Initialize bot instance
-const initializeBot = async () => {
-  if (!process.env.TELEGRAM_BOT_TOKEN) {
-    console.error("❌ TELEGRAM_BOT_TOKEN is not set!");
-    return null;
-  }
-
-  try {
-    // If bot instance exists, clean it up properly
-    if (bot) {
-      try {
-        await bot.deleteWebHook();
-        await bot.stopPolling();
-        bot = null;
-        // Wait for cleanup
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      } catch (error) {
-        console.error("Error cleaning up previous bot instance:", error);
-      }
-    }
-
-    debugLog("Initializing bot...");
-    const WEBHOOK_DOMAIN = process.env.NODE_ENV === 'production' ? 'https://goatedvips.gg' : 'http://localhost:3000';
-
-    // Always use webhook mode in production
-    if (process.env.NODE_ENV === "development") {
-      console.log("🔄 Running bot in POLLING mode...");
-      try {
-        bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
-          polling: false
-        });
-
-        // Ensure webhook is cleared
-        await bot.deleteWebHook();
-        // Wait for webhook cleanup
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        await bot.startPolling({
-          interval: 300,
-          autoStart: true,
-          params: {
-            timeout: 10,
-            allowed_updates: ["message", "callback_query", "chat_member", "my_chat_member"],
-          }
-        });
-      } catch (error) {
-        console.error("Failed to start polling:", error);
-        return null;
-      }
-    } else {
-      console.log(`🌍 Running bot in WEBHOOK mode at ${WEBHOOK_DOMAIN}`);
-      const webhookPath = '/webhook';
-
-      bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
-        webHook: {
-          port: 5001,
-          host: '0.0.0.0'
-        }
-      });
-
-      // Clear any existing webhook and set new one
-      await bot.deleteWebHook();
-      await bot.setWebHook(`${WEBHOOK_DOMAIN}${webhookPath}`, {
-        allowed_updates: ["message", "callback_query", "chat_member", "my_chat_member"]
-      });
-
-      const webhookInfo = await bot.getWebHookInfo();
-      console.log("Webhook Info:", webhookInfo);
-    }
-
-    // Get bot info
-    const botInfo = await bot.getMe();
-    bot.botInfo = botInfo;
-    debugLog("Bot info retrieved:", botInfo);
-
-    setupBotEventHandlers();
-    setupCommandHandlers();
-    startHealthCheck();
-
-    // Set up bot commands menu
-    await bot.setMyCommands([
-      { command: 'start', description: 'Get started with the bot' },
-      { command: 'verify', description: 'Link your Goated account' },
-      { command: 'stats', description: 'View your wager statistics' },
-      { command: 'check_stats', description: 'Check stats for username' },
-      { command: 'race', description: 'Check your race position' },
-      { command: 'leaderboard', description: 'See top players' },
-      { command: 'play', description: 'Play on Goated with our link' },
-      { command: 'website', description: 'Visit GoatedVIPs.gg' },
-      { command: 'adminpanel', description: 'Access the admin panel (admin only)' },
-      { command: 'broadcast', description: 'Broadcast a message (admin only)' },
-      { command: 'message', description: 'Send a direct message (admin only)' }
-    ]);
-
-    debugLog("Bot initialized successfully");
-    return bot;
-  } catch (error) {
-    console.error("❌ Bot initialization failed:", error);
-    return null;
-  }
-};
-
 // Bot event handlers setup
 const setupBotEventHandlers = () => {
-  if (!bot) return;
+  if (!botInstance) return;
 
-  bot.on('message', handleMessage);
-  bot.on('callback_query', handleCallbackQuery);
-  bot.on("my_chat_member", async (chatMember) => {
+  botInstance.on('message', handleMessage);
+  botInstance.on('callback_query', handleCallbackQuery);
+  botInstance.on("my_chat_member", async (chatMember) => {
     const chat = chatMember.chat;
     const newStatus = chatMember.new_chat_member.status;
 
@@ -277,7 +232,7 @@ const setupBotEventHandlers = () => {
   });
 
   // Enhanced error handling
-  bot.on('polling_error', (error) => {
+  botInstance.on('polling_error', (error) => {
     console.error('Polling error:', error);
     healthCheckFailures++;
     if (healthCheckFailures >= MAX_HEALTH_CHECK_FAILURES) {
@@ -285,7 +240,7 @@ const setupBotEventHandlers = () => {
     }
   });
 
-  bot.on('error', (error) => {
+  botInstance.on('error', (error) => {
     console.error('Bot error:', error);
     healthCheckFailures++;
     if (healthCheckFailures >= MAX_HEALTH_CHECK_FAILURES) {
@@ -296,7 +251,7 @@ const setupBotEventHandlers = () => {
 
 // Message handler
 const handleMessage = async (msg: TelegramBot.Message) => {
-  if (!bot) return;
+  if (!botInstance) return;
 
   try {
     const chatId = msg.chat.id;
@@ -311,7 +266,7 @@ const handleMessage = async (msg: TelegramBot.Message) => {
 
       // Check if command should be in private
       if (isGroupChat && ['verify', 'stats', 'profile', 'check_stats'].includes(command.substring(1))) {
-        const privateLink = `https://t.me/${bot.botInfo?.username}?start=${command.substring(1)}`;
+        const privateLink = `https://t.me/${botInstance.botInfo?.username}?start=${command.substring(1)}`;
         await safeSendMessage(chatId,
           `🔒 For security, please use this command in private:\n${privateLink}`,
           {},
@@ -326,7 +281,7 @@ const handleMessage = async (msg: TelegramBot.Message) => {
 
     // Handle group-specific behaviors
     if (isGroupChat) {
-      if (msg.new_chat_members?.some(member => member.id === bot.botInfo?.id)) {
+      if (msg.new_chat_members?.some(member => member.id === botInstance.botInfo?.id)) {
         await safeSendMessage(
           chatId,
           `👋 Thanks for adding me! Please make me an admin to ensure proper functionality.\n\nUse /help to see available commands.`,
@@ -342,23 +297,23 @@ const handleMessage = async (msg: TelegramBot.Message) => {
 
 // Setup command handlers
 const setupCommandHandlers = () => {
-  if (!bot) return;
+  if (!botInstance) return;
 
-  bot.onText(/\/(start|help|verify|stats|leaderboard|race|play|website|check_stats|adminpanel|broadcast|message)(?:@[\w]+)? (.+)/, async (msg, match) => {
+  botInstance.onText(/\/(start|help|verify|stats|leaderboard|race|play|website|check_stats|adminpanel|broadcast|message)(?:@[\w]+)? (.+)/, async (msg, match) => {
     if (!match) return;
     const command = match[1];
     const args = match[2].split(" ");
     handleCommand(command, msg, args);
   });
 
-  bot.onText(/\/(start|help|verify|stats|leaderboard|race|play|website|check_stats|adminpanel|broadcast|message)(?:@[\w]+)?/, async (msg, match) => {
+  botInstance.onText(/\/(start|help|verify|stats|leaderboard|race|play|website|check_stats|adminpanel|broadcast|message)(?:@[\w]+)?/, async (msg, match) => {
     if (!match) return;
     const command = match[1];
     handleCommand(command, msg, []);
   });
 
   // Handle admin verification commands
-  bot.onText(/\/approve (.+)/, async (msg, match) => {
+  botInstance.onText(/\/approve (.+)/, async (msg, match) => {
     if (msg.chat.id !== BOT_ADMIN_ID) { // Admin-only command
       return safeSendMessage(msg.chat.id, "❌ This command is only available to administrators.");
     }
@@ -414,7 +369,7 @@ const setupCommandHandlers = () => {
   });
 
   // Admin command to view pending verification requests
-  bot.onText(/\/pending/, async (msg) => {
+  botInstance.onText(/\/pending/, async (msg) => {
     const chatId = msg.chat.id;
     if (chatId !== BOT_ADMIN_ID) {
       return safeSendMessage(chatId, "❌ This command is only available to administrators.");
@@ -439,9 +394,9 @@ const setupCommandHandlers = () => {
 
       for (const request of pendingRequests) {
         const message = `🔍 Verification Request #${request.id}
-👤 Telegram: @${request.telegramUsername || 'N/A'}
-🎮 Goated: ${request.username}
-⏰ Requested: ${new Date(request.requestedAt).toLocaleString()}`;
+          👤 Telegram: @${request.telegramUsername || 'N/A'}
+          🎮 Goated: ${request.username}
+          ⏰ Requested: ${new Date(request.requestedAt).toLocaleString()}`;
 
         const inlineKeyboard = {
           reply_markup: {
@@ -461,95 +416,92 @@ const setupCommandHandlers = () => {
       await safeSendMessage(chatId, "❌ Error fetching pending requests.");
     }
   });
-
-  // NOTE: The duplicate callback_query listener below has been merged into a single, unified handler.
-  // (Any previous extra registration of callback_query has been removed for clarity.)
 };
 
 // Unified callback query handler with additional inline button cases
 const handleCallbackQuery = async (query: TelegramBot.CallbackQuery): Promise<void> => {
-  if (!bot || !query.message) return;
+  if (!botInstance || !query.message) return;
   const chatId = query.message.chat.id;
 
   try {
     // Handle refresh stats inline button with data like "stats_username"
     if (query.data && query.data.startsWith("stats_")) {
       const refreshUsername = query.data.split("_")[1];
-      await bot.emit('message', {
+      await botInstance.emit('message', {
         ...query.message,
         text: `/stats ${refreshUsername}`,
         entities: [{ offset: 0, length: 6 + refreshUsername.length + 1, type: 'bot_command' }]
       });
-      await bot.answerCallbackQuery(query.id);
+      await botInstance.answerCallbackQuery(query.id);
       return;
     }
 
     switch (query.data) {
       case 'my_stats':
-        await bot.emit('message', {
+        await botInstance.emit('message', {
           ...query.message,
           text: '/stats',
           entities: [{ offset: 0, length: 6, type: 'bot_command' }]
         });
         break;
       case 'refresh_leaderboard':
-        await bot.emit('message', {
+        await botInstance.emit('message', {
           ...query.message,
           text: '/leaderboard',
           entities: [{ offset: 0, length: 11, type: 'bot_command' }]
         });
         break;
       case 'verify':
-        await bot.emit('message', {
+        await botInstance.emit('message', {
           ...query.message,
           text: '/verify',
           entities: [{ offset: 0, length: 7, type: 'bot_command' }]
         });
         break;
       case 'stats':
-        await bot.emit('message', {
+        await botInstance.emit('message', {
           ...query.message,
           text: '/stats',
           entities: [{ offset: 0, length: 6, type: 'bot_command' }]
         });
         break;
       case 'leaderboard':
-        await bot.emit('message', {
+        await botInstance.emit('message', {
           ...query.message,
           text: '/leaderboard',
           entities: [{ offset: 0, length: 11, type: 'bot_command' }]
         });
         break;
       case 'help':
-        await bot.emit('message', {
+        await botInstance.emit('message', {
           ...query.message,
           text: '/help',
           entities: [{ offset: 0, length: 5, type: 'bot_command' }]
         });
         break;
       case 'play':
-        await bot.emit('message', {
+        await botInstance.emit('message', {
           ...query.message,
           text: '/play',
           entities: [{ offset: 0, length: 5, type: 'bot_command' }]
         });
         break;
       case 'admin_broadcast':
-        await bot.emit('message', {
+        await botInstance.emit('message', {
           ...query.message,
           text: '/broadcast',
           entities: [{ offset: 0, length: 10, type: 'bot_command' }]
         });
         break;
       case 'admin_message':
-        await bot.emit('message', {
+        await botInstance.emit('message', {
           ...query.message,
           text: '/message',
           entities: [{ offset: 0, length: 8, type: 'bot_command' }]
         });
         break;
       case 'admin_pending':
-        await bot.emit('message', {
+        await botInstance.emit('message', {
           ...query.message,
           text: '/pending',
           entities: [{ offset: 0, length: 8, type: 'bot_command' }]
@@ -563,10 +515,10 @@ const handleCallbackQuery = async (query: TelegramBot.CallbackQuery): Promise<vo
         await handleVerificationAction(action as 'approve' | 'reject', parseInt(requestId), chatId);
         break;
     }
-    await bot.answerCallbackQuery(query.id);
+    await botInstance.answerCallbackQuery(query.id);
   } catch (error) {
     debugLog('Error handling callback query:', error);
-    await bot.answerCallbackQuery(query.id, {
+    await botInstance.answerCallbackQuery(query.id, {
       text: '❌ Error processing request',
       show_alert: true
     });
@@ -575,7 +527,7 @@ const handleCallbackQuery = async (query: TelegramBot.CallbackQuery): Promise<vo
 
 // Handle bot reconnection
 const handleReconnection = async () => {
-  if (!bot || isReconnecting || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return;
+  if (!botInstance || isReconnecting || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return;
 
   isReconnecting = true;
   reconnectAttempts++;
@@ -584,8 +536,8 @@ const handleReconnection = async () => {
 
   try {
     await new Promise(resolve => setTimeout(resolve, RECONNECT_DELAY));
-    const botInfo = await bot.getMe();
-    bot.botInfo = botInfo;
+    const botInfo = await botInstance.getMe();
+    botInstance.botInfo = botInfo;
 
     isReconnecting = false;
     healthCheckFailures = 0;
@@ -605,7 +557,7 @@ const handleReconnection = async () => {
 
 // Enhanced health check with error recovery
 const startHealthCheck = () => {
-  if (!bot) return;
+  if (!botInstance) return;
 
   let consecutiveFailures = 0;
   const MAX_CONSECUTIVE_FAILURES = 5;
@@ -613,7 +565,7 @@ const startHealthCheck = () => {
 
   setInterval(async () => {
     try {
-      const webhookInfo = await bot.getWebHookInfo();
+      const webhookInfo = await botInstance.getWebHookInfo();
       if (webhookInfo.url) {
         healthCheckFailures = 0;
         debugLog("Webhook health check passed");
@@ -634,7 +586,7 @@ const startHealthCheck = () => {
 
 // Command handler function
 const handleCommand = async (command: string, msg: TelegramBot.Message, args: string[]) => {
-  if (!bot) return;
+  if (!botInstance) return;
 
   const chatId = msg.chat.id;
   if (!await rateLimiter.checkLimit(chatId)) {
@@ -650,7 +602,7 @@ const handleCommand = async (command: string, msg: TelegramBot.Message, args: st
           return safeSendMessage(chatId, "❌ This command is only available to administrators.");
         }
         await safeSendMessage(chatId, "📢 Enter the message you want to broadcast:");
-        bot.once("message", async (response) => {
+        botInstance.once("message", async (response) => {
           const BATCH_SIZE = 30;
           const BATCH_DELAY = 1000; // 1 second between batches
           if (!response.text) return;
@@ -845,7 +797,7 @@ Need assistance? Contact @xGoombas`.trim();
       default:
         // Only handle specific redirects, ignore other unknown commands
         if (isGroupChat && ['verify', 'stats', 'profile', 'check_stats'].includes(command)) {
-          const privateLink = `https://t.me/${bot.botInfo?.username}?start=${command}`;
+          const privateLink = `https://t.me/${botInstance.botInfo?.username}?start=${command}`;
           await safeSendMessage(
             chatId,
             `🔒 For security, please use this command in private:\n${privateLink}`,
@@ -861,7 +813,7 @@ Need assistance? Contact @xGoombas`.trim();
   }
 };
 
-// Callback query handler for inline button actions is defined above
+
 
 // Helper function to handle verification actions
 const handleVerificationAction = async (
@@ -869,7 +821,7 @@ const handleVerificationAction = async (
   requestId: number,
   adminChatId: number
 ): Promise<void> => {
-  if (!bot) return;
+  if (!botInstance) return;
 
   try {
     const [request] = await db
@@ -928,7 +880,7 @@ const handleVerificationAction = async (
     } else {
       await db
         .update(verificationRequests)
-        .set({          status: "rejected",
+        .set({ status: "rejected",
           verifiedAt: new Date(),
           verifiedBy: adminChatId.toString()
         })
@@ -953,14 +905,14 @@ const handleVerifyCommand = async (msg: TelegramBot.Message, args: string[]) => 
 
   // If in group chat, direct to private
   if (msg.chat.type !== 'private') {
-    const privateLink = `https://t.me/${bot!.botInfo?.username}?start=verify`;
+    const privateLink = `https://t.me/${botInstance!.botInfo?.username}?start=verify`;
     return safeSendMessage(chatId, `🔒 For security reasons, please verify in private chat:\n${privateLink}`, {}, 'high');
   }
 
   const username = args[0]?.trim();
   if (!username) {
     const verifyInstructions = `
-🔐 Verification Process:
+  🔐 Verification Process:
 
 1️⃣ Type: /verify YOUR_GOATED_USERNAME
    Example: /verify JohnDoe123
@@ -982,7 +934,7 @@ const handleVerifyCommand = async (msg: TelegramBot.Message, args: string[]) => 
 Ready? Type /verify followed by your username!
 `.trim();
     return safeSendMessage(chatId, verifyInstructions);
-  }
+  }  }
 
   try {
     const existingUser = await db
@@ -1052,9 +1004,9 @@ Ready? Type /verify followed by your username!
 
     // Send admin notification with inline buttons
     const adminMessage = `🔍 New Verification Request #${request.id}
-👤 Telegram: @${msg.from?.username || 'N/A'}
-🎮 Goated: ${username}
-💬 Chat ID: ${chatId}`;
+      👤 Telegram: @${msg.from?.username || 'N/A'}
+      🎮 Goated: ${username}
+      💬 Chat ID: ${chatId}`;
 
     const inlineKeyboard = {
       reply_markup: {
@@ -1183,8 +1135,8 @@ const handleLeaderboardCommand = async (msg: TelegramBot.Message) => {
       .join("\n\n");
 
     const message = `🏆 Monthly Race Leaderboard
-💵 Prize Pool: $${PRIZE_POOL}
-🏁 Current Top 10:\n\n${top10}\n\n📊 Updated: ${new Date().toLocaleString()}`;
+      💵 Prize Pool: $${PRIZE_POOL}
+      🏁 Current Top 10:\n\n${top10}\n\n📊 Updated: ${new Date().toLocaleString()}`;
 
     // Create inline keyboard with buttons
     const inlineKeyboard = {
@@ -1272,11 +1224,11 @@ const safeSendMessage = async (
   priority: Priority = 'medium',
   autoDelete: boolean = false
 ): Promise<void> => {
-  if (!bot) return;
+  if (!botInstance) return;
 
   const sendTask = async (): Promise<void> => {
     try {
-      const msg = await bot!.sendMessage(chatId, text, {
+      const msg = await botInstance!.sendMessage(chatId, text, {
         ...options,
         disable_web_page_preview: true,
         parse_mode: 'HTML'
@@ -1286,7 +1238,7 @@ const safeSendMessage = async (
       if (autoDelete && GROUP_MESSAGE_TYPES.includes(msg.chat.type)) {
         setTimeout(async () => {
           try {
-            await bot!.deleteMessage(chatId, msg.message_id.toString());
+            await botInstance!.deleteMessage(chatId, msg.message_id.toString());
           } catch (error) {
             debugLog('Error deleting message:', error);
           }
@@ -1300,7 +1252,7 @@ const safeSendMessage = async (
 
       // Retry with simplified message if HTML parsing fails
       try {
-        await bot!.sendMessage(chatId, text.replace(/[<>]/g, ""), {
+        await botInstance!.sendMessage(chatId, text.replace(/[<>]/g, ""), {
           ...options,
           parse_mode: undefined,
           disable_web_page_preview: true,
@@ -1316,22 +1268,18 @@ const safeSendMessage = async (
 
 // Define handleUpdate function (single definition)
 export function handleUpdate(update: TelegramBot.Update) {
-  if (!bot) return;
+  if (!botInstance) return;
 
-  try {
-    if (update.message) {
-      handleMessage(update.message);
-    } else if (update.callback_query) {
-      handleCallbackQuery(update.callback_query);
-    }
-  } catch (error) {
-    console.error('Error handling update:', error);
+  if (update.message) {
+    botInstance.emit('message', update.message);
+  } else if (update.callback_query) {
+    botInstance.emit('callback_query', update.callback_query);
   }
 }
 
-// Export only necessary functions and bot instance
+// Export only necessary items
 export {
-  bot,
+  botInstance as bot,
   initializeBot,
   handleVerifyCommand,
   handleStatsCommand,
