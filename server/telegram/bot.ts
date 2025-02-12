@@ -69,6 +69,13 @@ try {
     polling: { interval: 300, autoStart: true, params: { timeout: 10 } },
     filepath: false,
   });
+  
+  // Verify bot connection
+  bot.getMe().then((botInfo) => {
+    console.log(`✅ Bot connected successfully as @${botInfo.username}`);
+  }).catch((error) => {
+    console.error("❌ Failed to connect bot:", error.message);
+  });
 
   bot.on("polling_error", (error) => console.error("⚠️ Polling Error:", error.message));
   bot.on("error", (error) => console.error("⚠️ Telegram Bot Error:", error.message));
