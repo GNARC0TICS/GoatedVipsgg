@@ -7,19 +7,24 @@ import { eq } from "drizzle-orm";
 import fetch from "node-fetch";
 import { transformLeaderboardData } from "../utils/leaderboard";
 
-// Enhanced debugging
-const DEBUG = true;
+// Enhanced debug logging configuration
+const DEBUG = process.env.NODE_ENV !== 'production';
 const BOT_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID ? parseInt(process.env.TELEGRAM_ADMIN_ID) : 1689953605;
 
+// Improved debug logging with environment awareness
 const debugLog = (...args: any[]) => {
   if (DEBUG) {
     console.log("[Telegram Bot Debug]", ...args);
+  } else if (args[0]?.includes('Error') || args[0]?.includes('❌')) {
+    console.error("[Telegram Bot Error]", ...args);
   }
 };
 
-// Rate limiting setup
+// Rate limiting setup with enhanced queue management
 const messageRateLimiter = new Map<number, number>();
 const RATE_LIMIT_WINDOW = 1000; // 1 second
+const MESSAGE_QUEUE = new Map<number, Array<() => Promise<void>>>();
+const MAX_QUEUE_SIZE = 100;
 
 // Format helpers
 const formatCurrency = (amount: number): string => {
@@ -29,7 +34,7 @@ const formatCurrency = (amount: number): string => {
   });
 };
 
-// Bot configuration
+// Enhanced bot configuration
 let bot: TelegramBot | null = null;
 let isReconnecting = false;
 const RECONNECT_DELAY = 5000;
@@ -45,7 +50,24 @@ const HEALTH_CHECK_TIMEOUT = 10000; // 10 seconds
 // Bot health monitoring
 let lastPingTime = Date.now();
 
-// Initialize bot with enhanced error handling
+// Add type declarations to fix TypeScript errors
+declare module 'node-telegram-bot-api' {
+  interface TelegramBot {
+    handleUpdate(update: Update): Promise<void>;
+  }
+}
+
+// Update error handling type
+interface BotError extends Error {
+  code?: number;
+  response?: {
+    statusCode: number;
+    body: any;
+  };
+}
+
+
+// Initialize bot with enhanced error handling and production mode settings
 const initializeBot = () => {
   if (!process.env.TELEGRAM_BOT_TOKEN) {
     console.error("❌ TELEGRAM_BOT_TOKEN is not set in environment variables!");
@@ -61,7 +83,7 @@ const initializeBot = () => {
         autoStart: true,
         params: {
           timeout: 10,
-          allowed_updates: ["message", "callback_query"],
+          allowed_updates: ["message", "callback_query", "chat_member"],
         }
       },
       filepath: false,
@@ -75,6 +97,76 @@ const initializeBot = () => {
   } catch (error) {
     console.error("Failed to initialize bot:", error);
     return null;
+  }
+};
+
+// Enhanced message queue processing
+const processMessageQueue = async (chatId: number) => {
+  const queue = MESSAGE_QUEUE.get(chatId) || [];
+  if (queue.length === 0) return;
+
+  try {
+    const task = queue.shift();
+    if (task) {
+      await task();
+    }
+    if (queue.length > 0) {
+      setTimeout(() => processMessageQueue(chatId), RATE_LIMIT_WINDOW);
+    } else {
+      MESSAGE_QUEUE.delete(chatId);
+    }
+  } catch (error) {
+    console.error(`Error processing message queue for ${chatId}:`, error);
+    // Remove failed task and continue with queue
+    setTimeout(() => processMessageQueue(chatId), RATE_LIMIT_WINDOW);
+  }
+};
+
+// Safe message sending with enhanced queue management
+const safeSendMessage = async (chatId: number, text: string, options = {}) => {
+  if (!bot) return;
+
+  const sendTask = async () => {
+    try {
+      const now = Date.now();
+      const lastMessageTime = messageRateLimiter.get(chatId) || 0;
+
+      if (now - lastMessageTime < RATE_LIMIT_WINDOW) {
+        await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_WINDOW));
+      }
+
+      messageRateLimiter.set(chatId, now);
+      return await bot.sendMessage(chatId, text, { ...options, disable_web_page_preview: true });
+    } catch (error: any) {
+      console.error("Error sending message to", chatId, ":", error.message);
+      if (error.code === 403) {
+        // User has blocked or deleted the bot
+        MESSAGE_QUEUE.delete(chatId);
+        return;
+      }
+      try {
+        return await bot.sendMessage(chatId, text.replace(/[<>]/g, "").trim(), {
+          ...options,
+          parse_mode: undefined,
+          disable_web_page_preview: true,
+        });
+      } catch (secondError: any) {
+        console.error(`Failed to send even a simplified message to ${chatId}:`, secondError.message);
+      }
+    }
+  };
+
+  const queue = MESSAGE_QUEUE.get(chatId) || [];
+  if (queue.length >= MAX_QUEUE_SIZE) {
+    console.warn(`Message queue full for chat ${chatId}, dropping message`);
+    return;
+  }
+
+  queue.push(sendTask);
+  MESSAGE_QUEUE.set(chatId, queue);
+
+  if (queue.length === 1) {
+    processMessageQueue(chatId);
   }
 };
 
@@ -123,11 +215,12 @@ const setupBotEventHandlers = () => {
     handleReconnection();
   });
 
-  // Enhanced error handling for polling
-  bot.on("polling_error", (error: any) => {
+  // Update the error handling in the existing handlers
+  bot.on("polling_error", (error: BotError) => {
     console.error("⚠️ Polling Error:", {
       message: error.message,
       code: error.code,
+      response: error.response,
       timestamp: new Date().toISOString()
     });
 
@@ -141,24 +234,51 @@ const setupBotEventHandlers = () => {
   });
 
   // Enhanced general error handling
-  bot.on("error", (error: Error) => {
+  bot.on("error", (error: BotError) => {
     console.error("⚠️ Telegram Bot Error:", {
       message: error.message,
+      code: error.code,
+      response: error.response,
       stack: error.stack,
       time: new Date().toISOString()
     });
     handleReconnection();
   });
 
-  // Message monitoring
+  // Enhanced group chat message handling
   bot.on("message", (msg) => {
     lastPingTime = Date.now();
+    const chatType = msg.chat.type;
+    const isGroupChat = chatType === 'group' || chatType === 'supergroup';
+
     debugLog("📨 Received message:", {
       chatId: msg.chat.id,
       text: msg.text,
       from: msg.from?.username,
+      chatType,
       timestamp: new Date().toISOString()
     });
+
+    // Handle group-specific behaviors
+    if (isGroupChat && msg.text?.startsWith('/')) {
+      const command = msg.text.split(' ')[0].split('@')[0];
+      switch (command) {
+        case '/stats':
+        case '/verify':
+          // These commands should be handled in private
+          const privateLink = `https://t.me/GoatedVipsBot?start=${command.substring(1)}`;
+          safeSendMessage(msg.chat.id,
+            `🔒 For security reasons, please use this command in private chat:\n${privateLink}`);
+          break;
+        // Public commands that can be used in groups
+        case '/leaderboard':
+        case '/help':
+        case '/play':
+        case '/website':
+          // These commands are already properly handled
+          break;
+      }
+    }
   });
 };
 
@@ -190,7 +310,7 @@ const handleReconnection = async () => {
         autoStart: true,
         params: {
           timeout: 10,
-          allowed_updates: ["message", "callback_query"],
+          allowed_updates: ["message", "callback_query", "chat_member"],
         }
       }
     });
@@ -212,81 +332,89 @@ const handleReconnection = async () => {
   }
 };
 
-// Safe message sending with rate limiting and error handling
-const safeSendMessage = async (chatId: number, text: string, options = {}) => {
-  if (!bot) return;
-
-  try {
-    const now = Date.now();
-    const lastMessageTime = messageRateLimiter.get(chatId) || 0;
-
-    if (now - lastMessageTime < RATE_LIMIT_WINDOW) {
-      debugLog(`Rate limit applied for chat: ${chatId}`);
-      await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_WINDOW));
-    }
-
-    messageRateLimiter.set(chatId, now);
-    return await bot.sendMessage(chatId, text, { ...options, disable_web_page_preview: true });
-  } catch (error: any) {
-    console.error("Error sending message to", chatId, ":", error.message);
-    try {
-      return await bot.sendMessage(chatId, text.replace(/[<>]/g, "").trim(), {
-        ...options,
-        parse_mode: undefined,
-        disable_web_page_preview: true,
-      });
-    } catch (secondError: any) {
-      console.error(`Failed to send even a simplified message to ${chatId}:`, secondError.message);
-    }
-  }
-};
 
 // Setup command handlers
 const setupCommandHandlers = () => {
   if (!bot) return;
 
-  // Start command
+  // Start command with enhanced verification guidance
   bot.onText(/\/start/, async (msg) => {
     debugLog("📝 Start command received from:", msg.chat.id);
-    await safeSendMessage(msg.chat.id, "🎮 Welcome to GoatedVIPs Affiliate Bot!\nUse /verify to link your account.");
+    const welcomeMessage = `🎮 Welcome to Goated Vips Stats Tracking Bot!
+
+To get started:
+1️⃣ Use /verify followed by your Goated username
+2️⃣ Wait for admin approval
+3️⃣ Once verified, you can use /stats to check your statistics
+
+Need help? Use /help for a list of commands.`;
+    await safeSendMessage(msg.chat.id, welcomeMessage);
   });
 
   // Help command
   bot.onText(/\/help/, async (msg) => {
     debugLog("📝 Help command received from:", msg.chat.id);
     const helpText = `
-Available commands:
-/start - Start the bot
-/help - Show this help message
-/verify <username> - Link your platform account
+🎮 GoatedVIPs Bot Commands:
+
+📋 Basic Commands:
+/verify <username> - Link your Goated account
 /stats - View your statistics
 /leaderboard - View top players
 /play - Get game link
 /website - Get website link
-/approve @username - Approve verification request (Admin only)
-/pending - View pending verification requests (Admin only)
+
+💡 Usage Tips:
+• Use /verify in private chat for security
+• Stats are updated in real-time
+• Leaderboard shows top 10 players
+
+🔒 Admin Commands:
+/approve @username - Approve verification
+/pending - View verification requests
+
+Need to verify? Click here: https://t.me/GoatedVipsBot?start=verify
 `.trim();
     await safeSendMessage(msg.chat.id, helpText);
   });
 
-  // Play command
-  bot.onText(/\/play/, async (msg) => {
-    debugLog("📝 Play command received from:", msg.chat.id);
-    await safeSendMessage(msg.chat.id, "🎮 Play on Goated: https://goatedvips.gg/?ref=telegram");
-  });
-
-  // Website command
-  bot.onText(/\/website/, async (msg) => {
-    debugLog("📝 Website command received from:", msg.chat.id);
-    await safeSendMessage(msg.chat.id, "🌐 Visit: https://goatedvips.gg");
-  });
-
-  // Verify command with enhanced error handling and proper API validation
-  bot.onText(/\/verify (.+)/, async (msg, match) => {
+  // Enhanced verify command with better UX
+  bot.onText(/\/verify(?:\s+(.+))?/, async (msg, match) => {
     const chatId = msg.chat.id;
     debugLog("📝 Verify command received from:", chatId);
+
+    // If in group chat, direct to private
+    if (msg.chat.type !== 'private') {
+      const privateLink = `https://t.me/GoatedVipsBot?start=verify`;
+      return safeSendMessage(chatId, `🔒 For security reasons, please verify in private chat:\n${privateLink}`);
+    }
+
     const username = match?.[1]?.trim();
-    if (!username) return safeSendMessage(chatId, "Usage: /verify your_platform_username");
+    if (!username) {
+      const verifyInstructions = `
+🔐 Verification Process:
+
+1️⃣ Type: /verify YOUR_GOATED_USERNAME
+   Example: /verify JohnDoe123
+
+2️⃣ Wait for admin review
+   • Admins will verify your account
+   • You'll receive a confirmation message
+
+3️⃣ After verification:
+   • Use /stats to check your statistics
+   • View /leaderboard rankings
+   • Access exclusive features
+
+❗️ Make sure to:
+• Use your exact Goated username
+• Be patient during verification
+• Keep your account active
+
+Ready? Type /verify followed by your username!
+`.trim();
+      return safeSendMessage(chatId, verifyInstructions);
+    }
 
     try {
       const existingUser = await db
@@ -296,7 +424,7 @@ Available commands:
         .limit(1);
 
       if (existingUser.length > 0 && existingUser[0].isVerified) {
-        return safeSendMessage(chatId, "✅ Already verified!");
+        return safeSendMessage(chatId, "✅ Your account is already verified!");
       }
 
       // Validate username against external API
@@ -483,7 +611,7 @@ Available commands:
     }
   });
 
-  // Enhanced stats command with admin override
+  // Enhanced stats command with admin override and improved formatting
   bot.onText(/\/stats(?:\s+(.+))?/, async (msg, match) => {
     const chatId = msg.chat.id;
     debugLog("📝 Stats command received from:", chatId);
@@ -505,7 +633,7 @@ Available commands:
           .limit(1);
 
         if (!telegramUser?.isVerified) {
-          return safeSendMessage(chatId, "❌ Please verify your account using /verify");
+          return safeSendMessage(chatId, "❌ Please verify your account first using /verify <your_username>");
         }
 
         const [user] = await db
@@ -517,15 +645,18 @@ Available commands:
         return await fetchAndSendStats(chatId, user.username);
       } else {
         // Admin checking another user's stats
+        if (!isAdmin) {
+          return safeSendMessage(chatId, "❌ You don't have permission to check other users' stats.");
+        }
         return await fetchAndSendStats(chatId, targetUsername);
       }
     } catch (error) {
       console.error("Stats error:", error);
-      await safeSendMessage(chatId, "❌ Error fetching stats. Try again later.");
+      await safeSendMessage(chatId, "❌ Error fetching stats. Please try again later.");
     }
   });
 
-  // Helper function to fetch and send stats
+  // Helper function to fetch and send stats with improved formatting
   async function fetchAndSendStats(chatId: number, username: string) {
     const response = await fetch(
       `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
@@ -554,11 +685,19 @@ Available commands:
     ) + 1;
 
     const statsMessage = `📊 Stats for ${username}:
-💰 Today: $${formatCurrency(userStats.wagered.today)}
-📅 This Week: $${formatCurrency(userStats.wagered.this_week)}
-📆 This Month: $${formatCurrency(userStats.wagered.this_month)}
-🏆 All Time: $${formatCurrency(userStats.wagered.all_time)}
-📍 Monthly Race Position: #${position}`;
+
+💰 Daily Stats:
+   Wagered Today: $${formatCurrency(userStats.wagered.today)}
+
+📅 Weekly Stats:
+   Wagered This Week: $${formatCurrency(userStats.wagered.this_week)}
+
+📆 Monthly Stats:
+   Wagered This Month: $${formatCurrency(userStats.wagered.this_month)}
+   Monthly Race Position: #${position}
+
+🏆 All-Time Stats:
+   Total Wagered: $${formatCurrency(userStats.wagered.all_time)}`;
 
     await safeSendMessage(chatId, statsMessage);
   }

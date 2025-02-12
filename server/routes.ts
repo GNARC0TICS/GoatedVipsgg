@@ -3,13 +3,13 @@ import { createServer, type Server } from "http";
 import { WebSocket, WebSocketServer } from "ws";
 import { log } from "./vite";
 import { API_CONFIG } from "./config/api";
-import { RateLimiterMemory } from "rate-limiter-flexible";
+import { RateLimiterMemory, type RateLimiterRes } from "rate-limiter-flexible";
 import { db } from "@db";
 import { wagerRaces } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { users, type SelectUser } from "@db/schema";
-import { transformLeaderboardData } from "./utils/leaderboard";
+import { transformLeaderboardData as transformData } from "./utils/leaderboard";
 import { initializeBot } from "./telegram/bot";
 
 /**
@@ -62,11 +62,9 @@ class CacheManager {
   }
 }
 
-/**
- * Rate Limiting Configuration
- * Defines different tiers of rate limits for API endpoints
- */
-const rateLimits = {
+// Define rate limit tiers type
+type RateLimitTier = 'HIGH' | 'MEDIUM' | 'LOW';
+const rateLimits: Record<RateLimitTier, { points: number; duration: number }> = {
   HIGH: { points: 30, duration: 60 },    // 30 requests per minute
   MEDIUM: { points: 15, duration: 60 },  // 15 requests per minute
   LOW: { points: 5, duration: 60 }       // 5 requests per minute
@@ -111,32 +109,33 @@ const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) =
  * Rate Limit Middleware Factory
  * Creates rate limiting middleware based on specified tier
  */
-const createRateLimiter = (tier: 'high' | 'medium' | 'low') => {
+const createRateLimiter = (tier: keyof typeof rateLimiters) => {
   const limiter = rateLimiters[tier];
   return async (req: any, res: any, next: any) => {
     try {
       const rateLimitRes = await limiter.consume(req.ip);
 
       // Set standard rate limit headers
-      res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase()].points);
+      res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase() as RateLimitTier].points);
       res.setHeader('X-RateLimit-Remaining', rateLimitRes.remainingPoints);
       res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateLimitRes.msBeforeNext).toISOString());
 
       log(`Rate limit - ${tier}: ${rateLimitRes.remainingPoints} requests remaining`);
       next();
     } catch (rejRes) {
+      const rejection = rejRes as RateLimiterRes;
       log(`Rate limit exceeded - ${tier}: IP ${req.ip}`);
 
       // Set headers for rate limit exceeded response
-      res.setHeader('Retry-After', Math.ceil(rejRes.msBeforeNext / 1000));
-      res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase()].points);
+      res.setHeader('Retry-After', Math.ceil(rejection.msBeforeNext / 1000));
+      res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase() as RateLimitTier].points);
       res.setHeader('X-RateLimit-Remaining', 0);
-      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rejRes.msBeforeNext).toISOString());
+      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rejection.msBeforeNext).toISOString());
 
       res.status(429).json({
         status: 'error',
         message: 'Too many requests',
-        retryAfter: Math.ceil(rejRes.msBeforeNext / 1000)
+        retryAfter: Math.ceil(rejection.msBeforeNext / 1000)
       });
     }
   };
@@ -244,7 +243,7 @@ function setupRESTRoutes(app: Express) {
         }
 
         const rawData = await response.json();
-        const stats = transformLeaderboardData(rawData);
+        const stats = transformData(rawData);
 
         // Calculate race period
         const now = new Date();
@@ -306,7 +305,7 @@ function setupRESTRoutes(app: Express) {
         }
 
         const apiData = await response.json();
-        const transformedData = transformLeaderboardData(apiData);
+        const transformedData = transformData(apiData);
 
         res.json(transformedData);
       } catch (error) {
@@ -510,48 +509,7 @@ function sortByWagered(data: any[], period: string) {
  * Transforms raw leaderboard data into standardized format
  */
 export function transformLeaderboardData(apiData: any) {
-  const responseData = apiData.data || apiData.results || apiData;
-  if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
-    return {
-      status: "success",
-      metadata: {
-        totalUsers: 0,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: { data: [] },
-        weekly: { data: [] },
-        monthly: { data: [] },
-        all_time: { data: [] },
-      },
-    };
-  }
-
-  const dataArray = Array.isArray(responseData) ? responseData : [responseData];
-  const transformedData = dataArray.map((entry) => ({
-    uid: entry.uid || "",
-    name: entry.name || "",
-    wagered: {
-      today: entry.wagered?.today || 0,
-      this_week: entry.wagered?.this_week || 0,
-      this_month: entry.wagered?.this_month || 0,
-      all_time: entry.wagered?.all_time || 0,
-    },
-  }));
-
-  return {
-    status: "success",
-    metadata: {
-      totalUsers: transformedData.length,
-      lastUpdated: new Date().toISOString(),
-    },
-    data: {
-      today: { data: sortByWagered(transformedData, "today") },
-      weekly: { data: sortByWagered(transformedData, "this_week") },
-      monthly: { data: sortByWagered(transformedData, "this_month") },
-      all_time: { data: sortByWagered(transformedData, "all_time") },
-    },
-  };
+  return transformData(apiData);
 }
 
 /**
@@ -593,6 +551,7 @@ function handleLeaderboardConnection(ws: WebSocket) {
   log(`Leaderboard WebSocket client connected (${clientId})`);
 
   // Keep connection alive with ping/pong
+  ws.isAlive = true; // Initialize isAlive property
   const pingInterval = setInterval(() => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.ping();
@@ -635,4 +594,11 @@ export function broadcastLeaderboardUpdate(data: any) {
       }));
     }
   });
+}
+
+// Update WebSocket type to include isAlive property
+declare module 'ws' {
+  interface WebSocket {
+    isAlive?: boolean;
+  }
 }
