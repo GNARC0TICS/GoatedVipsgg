@@ -827,6 +827,7 @@ Need assistance? Contact @xGoombas`.trim();
         break;
       // Add other command handlers as needed
       default:
+        // Only handle specific redirects, ignore other unknown commands
         if (isGroupChat && ['verify', 'stats', 'profile', 'check_stats'].includes(command)) {
           const privateLink = `https://t.me/${bot.botInfo?.username}?start=${command}`;
           await safeSendMessage(
@@ -835,8 +836,6 @@ Need assistance? Contact @xGoombas`.trim();
             {},
             'high'
           );
-        } else {
-          await safeSendMessage(chatId, `Unknown command: ${command}. Use /help for a list of commands.`);
         }
         break;
     }
