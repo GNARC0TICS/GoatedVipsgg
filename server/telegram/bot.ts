@@ -145,11 +145,7 @@ const initializeBot = async () => {
 
   try {
     debugLog("Initializing bot...");
-    const REPL_OWNER = process.env.REPL_OWNER;
-    const REPL_SLUG = process.env.REPL_SLUG;
-    const WEBHOOK_DOMAIN = REPL_SLUG && REPL_OWNER ?
-      `https://${REPL_SLUG}.${REPL_OWNER}.repl.co` :
-      process.env.WEBHOOK_URL;
+    const WEBHOOK_DOMAIN = process.env.WEBHOOK_URL || 'https://goatedvips.gg';
 
     if (process.env.NODE_ENV === "development") {
       console.log("🔄 Running bot in POLLING mode...");
