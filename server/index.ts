@@ -10,6 +10,7 @@ import { exec } from "child_process";
 import { createServer } from "http";
 import fetch from "node-fetch";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
+import webhookRouter from "./routes/webhook"; // Import your webhook routes
 
 const execAsync = promisify(exec);
 const app = express();
@@ -17,9 +18,9 @@ const PORT = process.env.PORT || 5000;
 
 // Rate limiter setup
 const apiLimiter = new RateLimiterMemory({
-  points: 60,         // Number of points
-  duration: 60,       // Per 60 seconds
-  blockDuration: 60,  // Block for 1 minute if exceeded
+  points: 60,
+  duration: 60,
+  blockDuration: 60,
 });
 
 async function setupMiddleware() {
@@ -109,7 +110,6 @@ async function cleanupPort() {
 
 async function cleanupBot() {
   try {
-    // Clear any existing bot sessions
     if (process.env.TELEGRAM_BOT_TOKEN) {
       await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteWebhook?drop_pending_updates=true`);
       log("Cleared existing webhook configuration");
@@ -119,41 +119,38 @@ async function cleanupBot() {
   }
 }
 
-async function startServer() {
+async function startMainServer() {
   try {
-    log("Starting server initialization...");
+    log("Starting main server initialization...");
     await checkDatabase();
     await cleanupBot();
     await cleanupPort();
 
-    const server = createServer(app);
-
-    // Setup middleware and routes
+    // Setup middleware and routes for main app
     await setupMiddleware();
     registerRoutes(app);
 
     // Setup Vite or serve static files based on environment
     if (app.get("env") === "development") {
-      await setupVite(app, server);
+      await setupVite(app, createServer(app));
     } else {
       serveStatic(app);
     }
 
     return new Promise((resolve, reject) => {
-      server
-        .listen(PORT, "0.0.0.0")
+      app.listen(PORT, "0.0.0.0")
         .on("error", async (err: NodeJS.ErrnoException) => {
           if (err.code === 'EADDRINUSE') {
             log(`Port ${PORT} is in use, attempting to free it...`);
             await cleanupPort();
-            server.listen(PORT, "0.0.0.0");
+            app.listen(PORT, "0.0.0.0");
           } else {
-            console.error(`Failed to start server: ${err.message}`);
+            console.error(`Failed to start main server: ${err.message}`);
             reject(err);
           }
         })
         .on("listening", async () => {
-          log(`🌍 Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+          log(`🌍 Main server running on port ${PORT} (http://0.0.0.0:${PORT})`);
 
           // Initialize Telegram bot after server is ready
           try {
@@ -165,21 +162,44 @@ async function startServer() {
             log("✅ Telegram bot initialized successfully");
           } catch (error) {
             console.error("⚠️ Telegram bot failed to start:", error);
-            // Continue server startup even if bot fails
           }
 
-          resolve(server);
+          resolve(true);
         });
     });
   } catch (error) {
-    console.error("Failed to start application:", error);
+    console.error("Failed to start main server:", error);
     process.exit(1);
   }
 }
 
-// Graceful shutdown handler
+async function startWebhookServer() {
+  // Create a new Express instance for the webhook
+  const webhookApp = express();
+
+  // Use JSON middleware. (If you need raw body for signature verification, consider adding a verify function.)
+  webhookApp.use(express.json());
+
+  // Register only the webhook route
+  webhookApp.use("/webhook", webhookRouter);
+
+  // Listen on port 5001 for webhook requests
+  webhookApp.listen(5001, "0.0.0.0", () => {
+    log("🚀 Webhook server running on port 5001 (accessible externally on port 3000)");
+  });
+}
+
+// Initialize both servers concurrently
+Promise.all([startMainServer(), startWebhookServer()])
+  .then(() => log("Both main and webhook servers are running"))
+  .catch((error) => {
+    console.error("Error starting servers:", error);
+    process.exit(1);
+  });
+
+// Graceful shutdown handler remains the same
 process.on("SIGINT", async () => {
-  log("🛑 Shutting down server and bot...");
+  log("🛑 Shutting down servers and bot...");
   if (bot) {
     try {
       await bot.stopPolling();
@@ -189,10 +209,4 @@ process.on("SIGINT", async () => {
     }
   }
   process.exit(0);
-});
-
-// Initialize application
-startServer().catch((error) => {
-  console.error("Failed to start server:", error);
-  process.exit(1);
 });
