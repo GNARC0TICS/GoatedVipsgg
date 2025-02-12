@@ -7,6 +7,14 @@ import { eq } from "drizzle-orm";
 import fetch from "node-fetch";
 import { transformLeaderboardData } from "../utils/leaderboard";
 
+// Prevent multiple instances when deployed
+if (process.env.NODE_ENV === "production" && process.env.BOT_ALREADY_RUNNING) {
+  console.log("🚨 Bot is already running! Exiting...");
+  process.exit(1);
+}
+
+process.env.BOT_ALREADY_RUNNING = "true";
+
 // Extend TelegramBot type to include required properties
 declare module 'node-telegram-bot-api' {
   interface TelegramBot {
@@ -115,36 +123,45 @@ const initializeBot = async () => {
 
   try {
     debugLog("Initializing bot...");
+    const REPL_OWNER = process.env.REPL_OWNER;
+    const REPL_SLUG = process.env.REPL_SLUG;
+    const WEBHOOK_DOMAIN = REPL_SLUG && REPL_OWNER ?
+      `https://${REPL_SLUG}.${REPL_OWNER}.repl.co` :
+      process.env.WEBHOOK_URL;
 
-    const WEBHOOK_DOMAIN = process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://your-domain.com';
-    const webhookPath = '/telegram-webhook';
-    
-    bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
-      webHook: {
-        port: 5001,
-        host: '0.0.0.0'
-      },
-      filepath: false
-    });
+    if (process.env.NODE_ENV === "development") {
+      console.log("🔄 Running bot in POLLING mode...");
+      bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
+        polling: {
+          interval: 300,
+          autoStart: true,
+          params: {
+            timeout: 10,
+            allowed_updates: ["message", "callback_query", "chat_member", "my_chat_member"],
+          }
+        },
+        filepath: false
+      });
+    } else {
+      console.log(`🌍 Running bot in WEBHOOK mode at ${WEBHOOK_DOMAIN}`);
+      const webhookPath = '/telegram-webhook';
 
-    // Set webhook
-    await bot.setWebHook(`${WEBHOOK_DOMAIN}${webhookPath}`, {
-      allowed_updates: [
-        "message",
-        "callback_query", 
-        "chat_member",
-        "my_chat_member"
-      ]
-    });
+      bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
+        webHook: {
+          port: 5001,
+          host: '0.0.0.0'
+        }
+      });
 
-    // Add webhook endpoint to express
-    const app = require('express')();
-    app.use(require('body-parser').json());
-    
-    app.post(webhookPath, (req, res) => {
-      bot.handleUpdate(req.body);
-      res.sendStatus(200);
-    });
+      // Clear any existing webhook and set new one
+      await bot.deleteWebHook();
+      await bot.setWebHook(`${WEBHOOK_DOMAIN}${webhookPath}`, {
+        allowed_updates: ["message", "callback_query", "chat_member", "my_chat_member"]
+      });
+
+      const webhookInfo = await bot.getWebHookInfo();
+      console.log("Webhook Info:", webhookInfo);
+    }
 
     // Get bot info
     const botInfo = await bot.getMe();
