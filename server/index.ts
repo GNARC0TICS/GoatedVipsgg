@@ -31,7 +31,7 @@ async function setupMiddleware() {
   // API rate limiting middleware
   app.use('/api/', async (req, res, next) => {
     try {
-      await apiLimiter.consume(req.ip);
+      await apiLimiter.consume(req.ip || 'unknown');
       next();
     } catch (error) {
       res.status(429).json({
@@ -183,9 +183,14 @@ async function startWebhookServer() {
   // Register only the webhook route
   webhookApp.use("/webhook", webhookRouter);
 
-  // Listen on port 5001 for webhook requests
-  webhookApp.listen(5001, "0.0.0.0", () => {
-    log("🚀 Webhook server running on port 5001 (accessible externally on port 3000)");
+  return new Promise((resolve, reject) => {
+    webhookApp.listen(5001, "0.0.0.0", () => {
+      log("🚀 Webhook server running on port 5001 (accessible externally on port 3000)");
+      resolve(true);
+    }).on("error", (err) => {
+      console.error("Error starting webhook server:", err);
+      reject(err);
+    })
   });
 }
 

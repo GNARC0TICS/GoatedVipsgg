@@ -10,7 +10,13 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { users, type SelectUser } from "@db/schema";
 import { transformLeaderboardData as transformData } from "./utils/leaderboard";
-import { initializeBot, handleUpdate } from "./telegram/bot";
+import { initializeBot } from "./telegram/bot";
+
+// Type definitions for error handling
+interface ApiError extends Error {
+  status?: number;
+  code?: string;
+}
 
 /**
  * Cache Manager Class
@@ -166,14 +172,15 @@ const batchHandler = async (req: any, res: any) => {
           );
 
           if (!response.ok) {
-            throw new Error(`API Error: ${response.status}`);
+            throw new ApiError(`API Error: ${response.status}`, { status: response.status });
           }
 
           return await response.json();
         } catch (error) {
+          const apiError = error as ApiError;
           return {
             status: 'error',
-            error: error.message || 'Failed to process request',
+            error: apiError.message || 'Failed to process request',
             endpoint: request.endpoint
           };
         }
@@ -190,7 +197,7 @@ const batchHandler = async (req: any, res: any) => {
     res.status(500).json({
       status: 'error',
       message: 'Batch processing failed',
-      error: error.message
+      error: (error as Error).message
     });
   }
 };
@@ -282,7 +289,7 @@ function setupRESTRoutes(app: Express) {
     cacheMiddleware(60000),
     async (req, res) => {
       try {
-        const username = req.query.username;
+        const username = typeof req.query.username === 'string' ? req.query.username : undefined;
         let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
 
         if (username) {
@@ -299,9 +306,9 @@ function setupRESTRoutes(app: Express) {
         if (!response.ok) {
           if (response.status === 401) {
             log("API Authentication failed - check API token");
-            throw new Error("API Authentication failed");
+            throw new ApiError("API Authentication failed", {status: 401});
           }
-          throw new Error(`API request failed: ${response.status}`);
+          throw new ApiError(`API request failed: ${response.status}`, { status: response.status });
         }
 
         const apiData = await response.json();
@@ -344,7 +351,7 @@ function setupRESTRoutes(app: Express) {
         );
 
         if (!response.ok) {
-          throw new Error(`API request failed: ${response.status}`);
+          throw new ApiError(`API request failed: ${response.status}`, { status: response.status });
         }
 
         const rawData = await response.json();
@@ -434,7 +441,7 @@ function setupRESTRoutes(app: Express) {
           .limit(1);
 
         const now = new Date();
-        const lastSpinDate = lastSpin?.timestamp ? new Date(lastSpin.timestamp) : null;
+        const lastSpinDate = lastSpin?.timestamp ? new Date(lastSpin.timestamp as string) : null;
 
         // Can spin if:
         // 1. Never spun before OR
