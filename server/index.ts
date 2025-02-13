@@ -13,31 +13,12 @@ import { bot } from "./telegram/bot";
 import { registerRoutes } from "./routes";
 import { initializeAdmin } from "./middleware/admin";
 import db from "../db";
+import viteConfig from "../vite.config";
 
 const execAsync = promisify(exec);
 const PORT = process.env.PORT || 5000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
-import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
-
-const viteConfig = defineConfig({
-  plugins: [react(), runtimeErrorOverlay(), themePlugin()],
-  resolve: {
-    alias: {
-      "@db": path.resolve(__dirname, "db"),
-      "@": path.resolve(__dirname, "client", "src"),
-    },
-  },
-  root: path.resolve(__dirname, "client"),
-  build: {
-    outDir: path.resolve(__dirname, "dist", "public"),
-    emptyOutDir: true,
-  },
-});
 
 async function setupVite(app: express.Application, server: any) {
   const viteLogger = createLogger();
@@ -62,20 +43,14 @@ async function setupVite(app: express.Application, server: any) {
 
   app.use("*", async (req, res, next) => {
     try {
-      const clientTemplate = path.resolve(__dirname, "..", "client", "index.html");
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
-
-      const timestamp = Date.now();
-      template = template.replace(
-        'src="/src/main.tsx"',
-        `src="/src/main.tsx?t=${timestamp}"`
+      const url = req.originalUrl;
+      const template = fs.readFileSync(
+        path.resolve(__dirname, "..", "client", "index.html"),
+        "utf-8"
       );
 
-      const page = await vite.transformIndexHtml(req.originalUrl, template);
-      res.status(200).set({
-        "Content-Type": "text/html",
-        "Cache-Control": "no-store, must-revalidate"
-      }).end(page);
+      const html = await vite.transformIndexHtml(url, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(html);
     } catch (error) {
       vite.ssrFixStacktrace(error as Error);
       next(error);
@@ -90,17 +65,29 @@ async function serveStatic(app: express.Application) {
     throw new Error(`Could not find the build directory: ${distPath}. Please build the client first.`);
   }
 
+  // Serve static files with appropriate cache headers
   app.use(express.static(distPath, {
     maxAge: '1d',
     etag: true,
-    lastModified: true
+    lastModified: true,
+    setHeaders: (res, filePath) => {
+      // Cache assets (JS, CSS, images) aggressively
+      if (filePath.match(/\.(js|css|png|jpg|jpeg|gif|ico|woff2?)$/)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
+      }
+    }
   }));
 
+  // Always return index.html for any unknown routes (client-side routing)
   app.get('*', (_req, res) => {
-    res.sendFile(path.resolve(distPath, 'index.html'), {
+    const indexPath = path.resolve(distPath, 'index.html');
+
+    // Read and serve index.html with proper headers
+    res.sendFile(indexPath, {
       headers: {
-        'Cache-Control': 'no-store, must-revalidate',
-        'X-Content-Type-Options': 'nosniff'
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
   });
@@ -151,15 +138,15 @@ const requestLogger = (() => {
 
   return (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const start = Date.now();
-    const originalJson = res.json.bind(res);
 
-    res.json = (body: any) => {
-      res.locals.body = body;
-      return originalJson(body);
-    };
+    if (req.path.startsWith("/api")) {
+      const originalJson = res.json.bind(res);
+      res.json = (body: any) => {
+        res.locals.body = body;
+        return originalJson(body);
+      };
 
-    res.on("finish", () => {
-      if (req.path.startsWith("/api")) {
+      res.on("finish", () => {
         const duration = Date.now() - start;
         let logMessage = `${req.method} ${req.path} ${res.statusCode} in ${duration}ms`;
         if (res.locals.body) {
@@ -170,8 +157,8 @@ const requestLogger = (() => {
         if (!flushTimeout) {
           flushTimeout = setTimeout(flushLogs, 1000);
         }
-      }
-    });
+      });
+    }
 
     next();
   };
@@ -194,6 +181,7 @@ async function startServer() {
     app.set('trust proxy', 1);
 
     await setupMiddleware(app);
+    const server = createServer(app);
     registerRoutes(app);
     await initializeAdmin().catch(console.error);
 
@@ -202,31 +190,24 @@ async function startServer() {
     }
     log("Initializing Telegram bot...");
 
-    const server = createServer(app);
-
-    // Use Vite middleware in development; otherwise, serve static files
+    // Configure server based on environment
     if (process.env.NODE_ENV === "development") {
+      log("Starting development server with Vite...");
       await setupVite(app, server);
       log("Development server configured with Vite");
     } else {
+      log("Starting production server...");
       await serveStatic(app);
-      log("Production server configured with static file serving");
+      log("Production static file serving configured");
     }
 
-    return new Promise((resolve, reject) => {
-      server
-        .listen(PORT, "0.0.0.0")
-        .once("listening", () => {
-          log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-          log("Telegram bot started successfully");
-          resolve(server);
-        })
-        .once("error", (error: Error) => {
-          console.error("Failed to start server:", error);
-          reject(error);
-        });
+    // Start the server
+    server.listen(PORT, "0.0.0.0", () => {
+      log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+      log("Telegram bot started successfully");
     });
 
+    return server;
   } catch (error) {
     console.error("Failed to start application:", error);
     process.exit(1);
@@ -236,13 +217,13 @@ async function startServer() {
 // Graceful shutdown handling
 process.on("SIGTERM", async () => {
   log("Received SIGTERM signal. Shutting down gracefully...");
-  await bot.stopPolling();
+  if (bot) await bot.stopPolling();
   process.exit(0);
 });
 
 process.on("SIGINT", async () => {
   log("Received SIGINT signal. Shutting down gracefully...");
-  await bot.stopPolling();
+  if (bot) await bot.stopPolling();
   process.exit(0);
 });
 
