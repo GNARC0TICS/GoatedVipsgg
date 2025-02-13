@@ -15,7 +15,7 @@ import { initializeAdmin } from "./middleware/admin";
 import db from "../db";
 
 const execAsync = promisify(exec);
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -34,7 +34,7 @@ const viteConfig = defineConfig({
   },
   root: path.resolve(__dirname, "client"),
   build: {
-    outDir: path.resolve(__dirname, "dist/public"),
+    outDir: path.resolve(__dirname, "dist", "public"),
     emptyOutDir: true,
   },
 });
@@ -99,7 +99,7 @@ async function serveStatic(app: express.Application) {
   app.get('*', (_req, res) => {
     res.sendFile(path.resolve(distPath, 'index.html'), {
       headers: {
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'no-store, must-revalidate',
         'X-Content-Type-Options': 'nosniff'
       }
     });
@@ -125,7 +125,7 @@ async function cleanupPort() {
   }
 }
 
-function setupMiddleware(app: express.Application) {
+async function setupMiddleware(app: express.Application) {
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
   app.use(cookieParser());
@@ -193,7 +193,7 @@ async function startServer() {
     const app = express();
     app.set('trust proxy', 1);
 
-    setupMiddleware(app);
+    await setupMiddleware(app);
     registerRoutes(app);
     await initializeAdmin().catch(console.error);
 
@@ -204,22 +204,28 @@ async function startServer() {
 
     const server = createServer(app);
 
+    // Use Vite middleware in development; otherwise, serve static files
     if (process.env.NODE_ENV === "development") {
       await setupVite(app, server);
+      log("Development server configured with Vite");
     } else {
       await serveStatic(app);
+      log("Production server configured with static file serving");
     }
 
-    server
-      .listen(PORT, "0.0.0.0")
-      .on("listening", () => {
-        log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-        log("Telegram bot started successfully");
-      })
-      .on("error", (error: Error) => {
-        console.error("Failed to start server:", error);
-        process.exit(1);
-      });
+    return new Promise((resolve, reject) => {
+      server
+        .listen(PORT, "0.0.0.0")
+        .once("listening", () => {
+          log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+          log("Telegram bot started successfully");
+          resolve(server);
+        })
+        .once("error", (error: Error) => {
+          console.error("Failed to start server:", error);
+          reject(error);
+        });
+    });
 
   } catch (error) {
     console.error("Failed to start application:", error);
@@ -227,4 +233,20 @@ async function startServer() {
   }
 }
 
-startServer();
+// Graceful shutdown handling
+process.on("SIGTERM", async () => {
+  log("Received SIGTERM signal. Shutting down gracefully...");
+  await bot.stopPolling();
+  process.exit(0);
+});
+
+process.on("SIGINT", async () => {
+  log("Received SIGINT signal. Shutting down gracefully...");
+  await bot.stopPolling();
+  process.exit(0);
+});
+
+startServer().catch((error) => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
+});
