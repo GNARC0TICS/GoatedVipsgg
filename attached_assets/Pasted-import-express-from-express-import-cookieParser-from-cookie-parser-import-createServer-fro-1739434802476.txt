@@ -1,0 +1,200 @@
+import express from "express";
+import cookieParser from "cookie-parser";
+import { createServer } from "http";
+import { WebSocket, WebSocketServer } from "ws";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { createServer as createViteServer, createLogger } from "vite";
+import { promisify } from "util";
+import { exec } from "child_process";
+import { sql } from "drizzle-orm";
+import { log } from "./utils/logger";
+import { bot } from "./telegram/bot"; // your Telegram bot instance
+import { registerRoutes } from "./routes"; // assume this function registers all REST routes
+import { initializeAdmin } from "./middleware/admin"; // admin initialization function
+
+const execAsync = promisify(exec);
+const PORT = 5000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Vite Configuration
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
+import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+
+const viteConfig = defineConfig({
+  plugins: [react(), runtimeErrorOverlay(), themePlugin()],
+  resolve: {
+    alias: {
+      "@db": path.resolve(__dirname, "db"),
+      "@": path.resolve(__dirname, "client", "src"),
+    },
+  },
+  root: path.resolve(__dirname, "client"),
+  build: {
+    outDir: path.resolve(__dirname, "dist/public"),
+    emptyOutDir: true,
+  },
+});
+
+async function setupVite(app: express.Application, server: any) {
+  const viteLogger = createLogger();
+  const vite = await createViteServer({
+    ...viteConfig,
+    configFile: false,
+    customLogger: {
+      ...viteLogger,
+      error: (msg, options) => {
+        viteLogger.error(msg, options);
+        process.exit(1);
+      },
+    },
+    server: {
+      middlewareMode: true,
+      hmr: { server },
+    },
+    appType: "custom",
+  });
+  app.use(vite.middlewares);
+  app.use("*", async (req, res, next) => {
+    try {
+      const clientTemplate = path.resolve(__dirname, "..", "client", "index.html");
+      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      template = template.replace(`src="/src/main.tsx"`, `src="/src/main.tsx?v=${Date.now()}"`);
+      const page = await vite.transformIndexHtml(req.originalUrl, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+    } catch (error) {
+      vite.ssrFixStacktrace(error);
+      next(error);
+    }
+  });
+}
+
+function serveStatic(app: express.Application) {
+  const distPath = path.resolve(__dirname, "public");
+  if (!fs.existsSync(distPath)) {
+    throw new Error(`Could not find the build directory: ${distPath}. Please build the client first.`);
+  }
+  app.use(express.static(distPath));
+  app.use("*", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "index.html"));
+  });
+}
+
+async function checkDatabaseConnection() {
+  try {
+    await db.execute(sql`SELECT 1`);
+    log("Database connection established successfully");
+  } catch (error: any) {
+    log(`Database connection error: ${error.message}`);
+    throw error;
+  }
+}
+
+async function cleanupPort() {
+  try {
+    await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  } catch (error) {
+    log(`No existing process found on port ${PORT}`);
+  }
+}
+
+function setupMiddleware(app: express.Application) {
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
+  app.use(cookieParser());
+  app.use(requestLogger);
+  app.use(errorHandler);
+  app.get("/api/health", (_req, res) => res.json({ status: "healthy" }));
+}
+
+function requestLogger(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const start = Date.now();
+  const originalJson = res.json.bind(res);
+  res.json = (body: any) => {
+    res.locals.body = body;
+    return originalJson(body);
+  };
+  res.on("finish", () => {
+    if (req.path.startsWith("/api")) {
+      const duration = Date.now() - start;
+      let logMessage = `${req.method} ${req.path} ${res.statusCode} in ${duration}ms`;
+      if (res.locals.body) {
+        logMessage += ` :: ${JSON.stringify(res.locals.body)}`;
+      }
+      log(logMessage);
+    }
+  });
+  next();
+}
+
+function errorHandler(err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) {
+  console.error("Server error:", err);
+  res.status(500).json({ error: err.message || "Internal Server Error" });
+}
+
+async function startServer() {
+  try {
+    log("Starting server initialization...");
+    await checkDatabaseConnection();
+    await cleanupPort();
+
+    const app = express();
+
+    registerRoutes(app);
+    initializeAdmin().catch(console.error);
+    log("Initializing Telegram bot...");
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+      throw new Error("TELEGRAM_BOT_TOKEN must be provided");
+    }
+
+    const server = createServer(app);
+
+    // Use Vite middleware in development; otherwise, serve static files
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
+
+    setupMiddleware(app);
+
+    server
+      .listen(PORT, "0.0.0.0")
+      .on("error", async (err: any) => {
+        if (err.code === "EADDRINUSE") {
+          log(`Port ${PORT} is in use, attempting to free it...`);
+          await cleanupPort();
+          server.listen(PORT, "0.0.0.0");
+        } else {
+          console.error(`Failed to start server: ${err.message}`);
+          process.exit(1);
+        }
+      })
+      .on("listening", () => {
+        log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+        log("Telegram bot started successfully");
+      });
+  } catch (error) {
+    console.error("Failed to start application:", error);
+    process.exit(1);
+  }
+}
+
+process.on("SIGTERM", () => {
+  log("Received SIGTERM signal. Shutting down gracefully...");
+  bot.stopPolling();
+  process.exit(0);
+});
+
+process.on("SIGINT", () => {
+  log("Received SIGINT signal. Shutting down gracefully...");
+  bot.stopPolling();
+  process.exit(0);
+});
+
+startServer();

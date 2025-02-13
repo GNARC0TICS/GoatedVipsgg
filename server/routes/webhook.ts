@@ -1,7 +1,7 @@
-import express from 'express';
-import { bot, handleUpdate } from '../telegram/bot';
-import type TelegramBot from 'node-telegram-bot-api';
-import { RateLimiterMemory } from 'rate-limiter-flexible';
+import express, { Request, Response, NextFunction } from "express";
+import { bot, handleUpdate } from "../telegram/bot";
+import type TelegramBot from "node-telegram-bot-api";
+import { RateLimiterMemory } from "rate-limiter-flexible";
 
 const router = express.Router();
 
@@ -12,41 +12,46 @@ const webhookLimiter = new RateLimiterMemory({
   blockDuration: 60 // Block for 1 minute if exceeded
 });
 
-// Dedicated webhook route with improved error handling
-router.post('/', express.json(), async (req, res) => {
-  const ip = req.ip || 'unknown';
+// Type guard for rate limiter error
+const isRateLimiterError = (error: any): error is { consumedPoints: number; msBeforeNext: number } => {
+  return error && typeof error.consumedPoints === "number" && typeof error.msBeforeNext === "number";
+};
+
+router.post("/", express.json(), async (req: Request, res: Response, next: NextFunction) => {
+  const ip = req.ip || "unknown";
 
   try {
     // Apply rate limiting
     await webhookLimiter.consume(ip);
 
     if (!bot) {
-      console.error('Bot not initialized');
+      console.error("Webhook error: Bot not initialized");
       return res.sendStatus(503); // Service Unavailable
     }
 
-    // Type assertion and validation for the update object
+    // Validate incoming update
     const update = req.body as TelegramBot.Update;
     if (!update || (!update.message && !update.callback_query)) {
+      console.error("Webhook error: Invalid update payload", req.body);
       return res.sendStatus(400); // Bad Request
     }
 
-    // Process update
+    // Process the update
     await handleUpdate(update);
 
-    res.sendStatus(200);
-  } catch (error) {
-    if (error.consumedPoints) {
+    return res.sendStatus(200);
+  } catch (error: any) {
+    if (isRateLimiterError(error)) {
       // Rate limit exceeded
       return res.status(429).json({
-        status: 'error',
-        message: 'Too many requests',
-        retryAfter: Math.ceil(error.msBeforeNext / 1000)
+        status: "error",
+        message: "Too many requests",
+        retryAfter: Math.ceil(error.msBeforeNext / 1000),
       });
     }
 
-    console.error('Error processing webhook:', error);
-    res.sendStatus(500);
+    console.error("Error processing webhook:", error);
+    return res.sendStatus(500);
   }
 });
 

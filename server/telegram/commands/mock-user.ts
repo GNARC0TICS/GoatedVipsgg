@@ -12,7 +12,7 @@ const DEVELOPER_USERNAMES = ["your_telegram_username"]; // Replace with your use
 const isDeveloper = async (chatId: number, userId: number): Promise<boolean> => {
   try {
     const user = await db.query.telegramUsers.findFirst({
-      where: eq(telegramUsers.telegramUserId, userId.toString()),
+      where: eq(telegramUsers.telegramId, userId.toString()),
     });
     return DEVELOPER_USERNAMES.includes(user?.username || "");
   } catch (error) {
@@ -21,7 +21,11 @@ const isDeveloper = async (chatId: number, userId: number): Promise<boolean> => 
   }
 };
 
-export const handleMockUserCommand = async (msg: TelegramBot.Message, args: string[], bot: TelegramBot) => {
+export const handleMockUserCommand = async (
+  msg: TelegramBot.Message,
+  args: string[],
+  bot: TelegramBot
+) => {
   const chatId = msg.chat.id;
   const fromId = msg.from!.id;
 
@@ -93,7 +97,11 @@ export const handleMockUserCommand = async (msg: TelegramBot.Message, args: stri
   }
 };
 
-export const handleClearUserCommand = async (msg: TelegramBot.Message, args: string[], bot: TelegramBot) => {
+export const handleClearUserCommand = async (
+  msg: TelegramBot.Message,
+  args: string[],
+  bot: TelegramBot
+) => {
   const chatId = msg.chat.id;
   const fromId = msg.from!.id;
 
