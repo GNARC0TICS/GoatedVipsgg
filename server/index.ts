@@ -1,7 +1,6 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
-import { WebSocket, WebSocketServer } from "ws";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -19,9 +18,6 @@ const execAsync = promisify(exec);
 const PORT = 5000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Cache for template file
-let templateCache: string | null = null;
 
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
@@ -64,47 +60,44 @@ async function setupVite(app: express.Application, server: any) {
 
   app.use(vite.middlewares);
 
-  // Cache the template in memory
-  const loadTemplate = async () => {
-    if (!templateCache) {
-      const clientTemplate = path.resolve(__dirname, "..", "client", "index.html");
-      templateCache = await fs.promises.readFile(clientTemplate, "utf-8");
-    }
-    return templateCache;
-  };
-
   app.use("*", async (req, res, next) => {
     try {
-      let template = await loadTemplate();
-      template = template.replace(`src="/src/main.tsx"`, `src="/src/main.tsx?v=${Date.now()}"`);
+      const clientTemplate = path.resolve(__dirname, "..", "client", "index.html");
+      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+
+      const timestamp = Date.now();
+      template = template.replace(
+        'src="/src/main.tsx"',
+        `src="/src/main.tsx?t=${timestamp}"`
+      );
+
       const page = await vite.transformIndexHtml(req.originalUrl, template);
-      res.status(200).set({ 
+      res.status(200).set({
         "Content-Type": "text/html",
-        "Cache-Control": "no-cache",
-        "X-Content-Type-Options": "nosniff"
+        "Cache-Control": "no-store, must-revalidate"
       }).end(page);
     } catch (error) {
-      vite.ssrFixStacktrace(error);
+      vite.ssrFixStacktrace(error as Error);
       next(error);
     }
   });
 }
 
-function serveStatic(app: express.Application) {
-  const distPath = path.resolve(__dirname, "public");
+async function serveStatic(app: express.Application) {
+  const distPath = path.resolve(__dirname, "..", "dist", "public");
+
   if (!fs.existsSync(distPath)) {
     throw new Error(`Could not find the build directory: ${distPath}. Please build the client first.`);
   }
 
-  // Serve static files with cache headers
   app.use(express.static(distPath, {
     maxAge: '1d',
     etag: true,
     lastModified: true
   }));
 
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"), {
+  app.get('*', (_req, res) => {
+    res.sendFile(path.resolve(distPath, 'index.html'), {
       headers: {
         'Cache-Control': 'no-cache',
         'X-Content-Type-Options': 'nosniff'
@@ -139,7 +132,6 @@ function setupMiddleware(app: express.Application) {
   app.use(requestLogger);
   app.use(errorHandler);
 
-  // Health check endpoint
   app.get("/api/health", (_req, res) => {
     res.set('Cache-Control', 'no-store').json({ status: "healthy" });
   });
@@ -187,8 +179,8 @@ const requestLogger = (() => {
 
 function errorHandler(err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) {
   console.error("Server error:", err);
-  res.status(500).json({ 
-    error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message 
+  res.status(500).json({
+    error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message
   });
 }
 
@@ -201,6 +193,7 @@ async function startServer() {
     const app = express();
     app.set('trust proxy', 1);
 
+    setupMiddleware(app);
     registerRoutes(app);
     await initializeAdmin().catch(console.error);
 
@@ -211,31 +204,22 @@ async function startServer() {
 
     const server = createServer(app);
 
-    if (app.get("env") === "development") {
+    if (process.env.NODE_ENV === "development") {
       await setupVite(app, server);
     } else {
-      serveStatic(app);
+      await serveStatic(app);
     }
 
-    setupMiddleware(app);
-
-    const port = process.env.PORT || 5000;
-    server.listen(port, '0.0.0.0', () => {
-      log(`Server listening on http://0.0.0.0:${port}`);
-    });
-
-
-    const shutdown = async () => {
-      log("Shutting down gracefully...");
-      await bot.stopPolling();
-      server.close(() => {
-        log("Server closed");
-        process.exit(0);
+    server
+      .listen(PORT, "0.0.0.0")
+      .on("listening", () => {
+        log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+        log("Telegram bot started successfully");
+      })
+      .on("error", (error: Error) => {
+        console.error("Failed to start server:", error);
+        process.exit(1);
       });
-    };
-
-    process.on("SIGTERM", shutdown);
-    process.on("SIGINT", shutdown);
 
   } catch (error) {
     console.error("Failed to start application:", error);
