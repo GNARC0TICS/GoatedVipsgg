@@ -28,6 +28,12 @@ interface RaceData {
   participants: RaceParticipant[];
 }
 
+interface ApiResponse {
+  data?: any[];
+  results?: any[];
+  error?: string;
+}
+
 // ─── Custom Hook: Fetch Race Data ─────────────────────────────────────────────
 function useRaceData(showPrevious: boolean) {
   const { toast } = useToast();
@@ -35,37 +41,78 @@ function useRaceData(showPrevious: boolean) {
     ? "/api/wager-races/previous"
     : "/api/wager-races/current";
 
-  return useQuery<RaceData | null, Error>({
+  return useQuery<RaceData>({
     queryKey: [endpoint],
     queryFn: async () => {
-      const response = await fetch(endpoint, {
-        headers: { Accept: "application/json" }
-      });
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch ${showPrevious ? "previous" : "current"} race data`
-        );
-      }
-      const data = await response.json();
-      if (showPrevious && data) {
-        data.startDate = data.startDate || new Date().toISOString();
-        data.endDate = data.endDate || new Date().toISOString();
-      }
-      return data;
-    },
-    onError: (error: Error) => {
-      console.error("Race data fetch error:", error);
-      if (!showPrevious) {
+      try {
+        const response = await fetch(endpoint, {
+          headers: { Accept: "application/json" }
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch ${showPrevious ? "previous" : "current"} race data`
+          );
+        }
+
+        const apiData: ApiResponse = await response.json();
+
+        // Create default race data
+        const raceData: RaceData = {
+          id: new Date().getTime().toString(),
+          status: "live",
+          startDate: new Date().toISOString(),
+          endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).toISOString(),
+          prizePool: 0,
+          participants: []
+        };
+
+        // If we received valid data, override defaults
+        if (apiData) {
+          const data = Array.isArray(apiData) ? apiData[0] : apiData;
+          if (data?.id) raceData.id = data.id;
+          if (data?.status) raceData.status = data.status;
+          if (data?.startDate) raceData.startDate = data.startDate;
+          if (data?.endDate) raceData.endDate = data.endDate;
+          if (typeof data?.prizePool === 'number') raceData.prizePool = data.prizePool;
+
+          // Transform participants data if available
+          const users = data?.data || [];
+          if (Array.isArray(users)) {
+            raceData.participants = users.map((user: any, index: number) => ({
+              uid: user?.uid || `user-${index}`,
+              name: user?.name || `Anonymous ${index + 1}`,
+              wagered: typeof user?.wagered?.this_month === 'number' ? user.wagered.this_month : 0,
+              position: index + 1
+            }));
+
+            // Sort participants by wagered amount
+            raceData.participants.sort((a, b) => b.wagered - a.wagered);
+          }
+        }
+
+        return raceData;
+      } catch (error) {
+        console.error('Race data fetch error:', error);
         toast({
           title: "Error loading race data",
-          description: error.message || "Please try again later",
+          description: error instanceof Error ? error.message : "Please try again later",
           variant: "destructive"
         });
+        throw error;
       }
     },
-    ...(showPrevious
-      ? { enabled: true }
-      : { refetchInterval: 30000, retry: 3, staleTime: 60000 })
+    refetchInterval: 30000,
+    retry: 3,
+    staleTime: 60000,
+    placeholderData: {
+      id: new Date().getTime().toString(),
+      status: "live",
+      startDate: new Date().toISOString(),
+      endDate: new Date().toISOString(),
+      prizePool: 0,
+      participants: []
+    }
   });
 }
 
@@ -77,20 +124,25 @@ function useCountdown(endDate: string | null) {
     if (!endDate) return;
 
     const updateTimer = () => {
-      const end = new Date(endDate);
-      const now = new Date();
-      const diff = end.getTime() - now.getTime();
+      try {
+        const end = new Date(endDate);
+        const now = new Date();
+        const diff = end.getTime() - now.getTime();
 
-      if (diff <= 0) {
-        setTimeLeft("Race Ended");
-        return;
+        if (diff <= 0) {
+          setTimeLeft("Race Ended");
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+        setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+      } catch (error) {
+        console.error('Error updating timer:', error);
+        setTimeLeft("--");
       }
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-      setTimeLeft(`${days}d ${hours}h ${minutes}m`);
     };
 
     updateTimer();
@@ -101,10 +153,22 @@ function useCountdown(endDate: string | null) {
   return timeLeft;
 }
 
-// ─── Helper: Format Date ─────────────────────────────────────────────────────
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
+// ─── Helper: Format Currency ─────────────────────────────────────────────────
+const formatCurrency = (amount: number | undefined | null): string => {
+  if (typeof amount !== 'number') return '$0';
+  return `$${amount.toLocaleString()}`;
+};
+
+// ─── Helper: Format Date ───────────────────────────────────────────────────────
+const formatDate = (dateString: string | undefined | null): string => {
+  if (!dateString) return 'Invalid Date';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return "Invalid Date";
+  }
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -213,7 +277,7 @@ export function RaceTimer() {
               <div className="p-4 border-t border-[#2A2B31]">
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-[#8A8B91] text-sm">
-                    Prize Pool: ${raceData.prizePool.toLocaleString()}
+                    Prize Pool: {formatCurrency(raceData.prizePool)}
                   </span>
                 </div>
                 {raceData.participants.map((participant: RaceParticipant, index: number) => (
@@ -238,7 +302,7 @@ export function RaceTimer() {
                       </span>
                     </div>
                     <span className="text-[#D7FF00] font-mono">
-                      ${participant.wagered.toLocaleString()}
+                      {formatCurrency(participant.wagered)}
                     </span>
                   </div>
                 ))}

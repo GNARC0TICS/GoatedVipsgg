@@ -2,7 +2,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import fs from "fs";
-import path from "path";
+import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer, createLogger } from "vite";
 import { promisify } from "util";
@@ -16,7 +16,7 @@ import db from "../db";
 import viteConfig from "../vite.config";
 
 const execAsync = promisify(exec);
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT || 5000);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -62,34 +62,16 @@ async function serveStatic(app: express.Application) {
   const distPath = path.resolve(__dirname, "..", "dist", "public");
 
   if (!fs.existsSync(distPath)) {
-    throw new Error(`Could not find the build directory: ${distPath}. Please build the client first.`);
+    throw new Error(
+      `Could not find the build directory: ${distPath}. Please build the client first.`
+    );
   }
 
-  // Serve static files with appropriate cache headers
-  app.use(express.static(distPath, {
-    maxAge: '1d',
-    etag: true,
-    lastModified: true,
-    setHeaders: (res, filePath) => {
-      // Cache assets (JS, CSS, images) aggressively
-      if (filePath.match(/\.(js|css|png|jpg|jpeg|gif|ico|woff2?)$/)) {
-        res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
-      }
-    }
-  }));
+  app.use(express.static(distPath));
 
-  // Always return index.html for any unknown routes (client-side routing)
-  app.get('*', (_req, res) => {
-    const indexPath = path.resolve(distPath, 'index.html');
-
-    // Read and serve index.html with proper headers
-    res.sendFile(indexPath, {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-    });
+  // fall through to index.html if the file doesn't exist
+  app.use("*", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
 
@@ -116,58 +98,14 @@ async function setupMiddleware(app: express.Application) {
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
   app.use(cookieParser());
-  app.use(requestLogger);
-  app.use(errorHandler);
 
+  // Add health check endpoint first
   app.get("/api/health", (_req, res) => {
-    res.set('Cache-Control', 'no-store').json({ status: "healthy" });
-  });
-}
-
-const requestLogger = (() => {
-  const logQueue: string[] = [];
-  let flushTimeout: NodeJS.Timeout | null = null;
-
-  const flushLogs = () => {
-    if (logQueue.length > 0) {
-      console.log(logQueue.join('\n'));
-      logQueue.length = 0;
-    }
-    flushTimeout = null;
-  };
-
-  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const start = Date.now();
-
-    if (req.path.startsWith("/api")) {
-      const originalJson = res.json.bind(res);
-      res.json = (body: any) => {
-        res.locals.body = body;
-        return originalJson(body);
-      };
-
-      res.on("finish", () => {
-        const duration = Date.now() - start;
-        let logMessage = `${req.method} ${req.path} ${res.statusCode} in ${duration}ms`;
-        if (res.locals.body) {
-          logMessage += ` :: ${JSON.stringify(res.locals.body)}`;
-        }
-
-        logQueue.push(logMessage);
-        if (!flushTimeout) {
-          flushTimeout = setTimeout(flushLogs, 1000);
-        }
-      });
-    }
-
-    next();
-  };
-})();
-
-function errorHandler(err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) {
-  console.error("Server error:", err);
-  res.status(500).json({
-    error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message
+    res.set('Cache-Control', 'no-store').json({ 
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      port: PORT
+    });
   });
 }
 
@@ -201,13 +139,42 @@ async function startServer() {
       log("Production static file serving configured");
     }
 
-    // Start the server
-    server.listen(PORT, "0.0.0.0", () => {
-      log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-      log("Telegram bot started successfully");
-    });
+    // Start the server and return a promise that resolves when the server is ready
+    return new Promise((resolve) => {
+      const serverInstance = server.listen(PORT, "0.0.0.0", () => {
+        log(`Server running on port ${PORT}`);
+        log("Telegram bot started successfully");
 
-    return server;
+        // Add an explicit ready check
+        const healthCheck = async () => {
+          try {
+            const response = await fetch(`http://localhost:${PORT}/api/health`);
+            if (response.ok) {
+              const data = await response.json();
+              log(`Server health check passed: ${JSON.stringify(data)}`);
+              resolve(serverInstance);
+            } else {
+              setTimeout(healthCheck, 1000);
+            }
+          } catch (error) {
+            log(`Health check failed, retrying: ${error}`);
+            setTimeout(healthCheck, 1000);
+          }
+        };
+
+        healthCheck();
+      });
+
+      serverInstance.on('error', (error: NodeJS.ErrnoException) => {
+        if (error.code === 'EADDRINUSE') {
+          log(`Port ${PORT} is already in use`);
+          process.exit(1);
+        } else {
+          log(`Server error: ${error.message}`);
+          throw error;
+        }
+      });
+    });
   } catch (error) {
     console.error("Failed to start application:", error);
     process.exit(1);
@@ -227,7 +194,13 @@ process.on("SIGINT", async () => {
   process.exit(0);
 });
 
-startServer().catch((error) => {
-  console.error("Failed to start server:", error);
-  process.exit(1);
-});
+// Export the startServer function for use in workflow configuration
+export { startServer };
+
+// Only start the server if this is the main module
+if (import.meta.url === import.meta.resolve('./index.ts')) {
+  startServer().catch((error) => {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  });
+}

@@ -10,7 +10,6 @@ import { wagerRaces } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { users, type SelectUser } from "@db/schema";
-//import { transformLeaderboardData as transformData } from "./utils/leaderboard"; // Removed because it's not used in the edited code for this endpoint
 import { initializeBot } from "./telegram/bot";
 
 // Convert ApiError interface to a class
@@ -268,13 +267,13 @@ function setupRESTRoutes(app: Express) {
         const rawData = await response.json();
         log('Raw API data received:', JSON.stringify(rawData).slice(0, 200) + '...');
 
-        // Extract data from response
+        // Extract data from response, handling both array and object responses
         const responseData = Array.isArray(rawData) ? rawData[0] : rawData;
         const users = responseData?.data || [];
 
         log(`Processing ${users.length} users`);
 
-        // Map users to participants with proper type checking
+        // Map users to participants with proper type checking and default values
         const participants = users.map((user: any, index: number) => ({
           uid: user?.uid || `user-${index}`,
           name: user?.name || `Anonymous ${index + 1}`,
@@ -283,9 +282,9 @@ function setupRESTRoutes(app: Express) {
         }));
 
         // Sort participants by wagered amount
-        participants.sort((a, b) => b.wagered - a.wagered);
+        participants.sort((a: any, b: any) => (b.wagered || 0) - (a.wagered || 0));
 
-        // Create race data object
+        // Create race data object with proper defaults
         const now = new Date();
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
