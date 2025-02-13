@@ -1,10 +1,16 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, ChevronDown, ChevronUp, Clock, AlertCircle, History } from "lucide-react";
+import {
+  Trophy,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  AlertCircle,
+  History
+} from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/lib/auth";
 
 interface RaceParticipant {
   uid: string;
@@ -15,83 +21,63 @@ interface RaceParticipant {
 
 interface RaceData {
   id: string;
-  status: 'live' | 'ended' | 'upcoming';
+  status: "live" | "ended" | "upcoming";
   startDate: string;
   endDate: string;
   prizePool: number;
   participants: RaceParticipant[];
 }
 
-export function RaceTimer() {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [showPrevious, setShowPrevious] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<string>("");
+// ─── Custom Hook: Fetch Race Data ─────────────────────────────────────────────
+function useRaceData(showPrevious: boolean) {
   const { toast } = useToast();
+  const endpoint = showPrevious
+    ? "/api/wager-races/previous"
+    : "/api/wager-races/current";
 
-  const { 
-    data: currentRaceData, 
-    error: currentError, 
-    isLoading: isCurrentLoading 
-  } = useQuery<RaceData, Error>({
-    queryKey: ["/api/wager-races/current"],
+  return useQuery<RaceData | null, Error>({
+    queryKey: [endpoint],
     queryFn: async () => {
-      const response = await fetch('/api/wager-races/current', {
-        headers: {
-          'Accept': 'application/json'
-        }
+      const response = await fetch(endpoint, {
+        headers: { Accept: "application/json" }
       });
       if (!response.ok) {
-        throw new Error('Failed to fetch current race data');
-      }
-      return response.json();
-    },
-    refetchInterval: 30000,
-    retry: 3,
-    enabled: !showPrevious,
-    staleTime: 60000,
-    onError: (error: Error) => {
-      console.error('Race data fetch error:', error);
-      toast({
-        title: "Error loading race data",
-        description: error.message || "Please try again later",
-        variant: "destructive"
-      });
-    }
-  });
-
-  const { 
-    data: previousRaceData, 
-    error: previousError, 
-    isLoading: isPreviousLoading 
-  } = useQuery<RaceData | null, Error>({
-    queryKey: ["/api/wager-races/previous"],
-    queryFn: async () => {
-      const response = await fetch('/api/wager-races/previous', {
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch previous race data');
+        throw new Error(
+          `Failed to fetch ${showPrevious ? "previous" : "current"} race data`
+        );
       }
       const data = await response.json();
-      return data ? {
-        ...data,
-        startDate: data.startDate || new Date().toISOString(),
-        endDate: data.endDate || new Date().toISOString()
-      } : null;
+      if (showPrevious && data) {
+        data.startDate = data.startDate || new Date().toISOString();
+        data.endDate = data.endDate || new Date().toISOString();
+      }
+      return data;
     },
-    enabled: showPrevious
+    onError: (error: Error) => {
+      console.error("Race data fetch error:", error);
+      if (!showPrevious) {
+        toast({
+          title: "Error loading race data",
+          description: error.message || "Please try again later",
+          variant: "destructive"
+        });
+      }
+    },
+    ...(showPrevious
+      ? { enabled: true }
+      : { refetchInterval: 30000, retry: 3, staleTime: 60000 })
   });
+}
 
-  const raceData = showPrevious ? previousRaceData : currentRaceData;
-  const error = showPrevious ? previousError : currentError;
+// ─── Custom Hook: Countdown Timer ─────────────────────────────────────────────
+function useCountdown(endDate: string | null) {
+  const [timeLeft, setTimeLeft] = useState<string>("");
 
   useEffect(() => {
-    if (!currentRaceData?.endDate) return;
+    if (!endDate) return;
 
     const updateTimer = () => {
-      const end = new Date(currentRaceData.endDate);
+      const end = new Date(endDate);
       const now = new Date();
       const diff = end.getTime() - now.getTime();
 
@@ -110,19 +96,28 @@ export function RaceTimer() {
     updateTimer();
     const interval = setInterval(updateTimer, 60000);
     return () => clearInterval(interval);
-  }, [currentRaceData?.endDate]);
+  }, [endDate]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric',
-      month: 'long'
-    });
-  };
+  return timeLeft;
+}
+
+// ─── Helper: Format Date ─────────────────────────────────────────────────────
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+export function RaceTimer() {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showPrevious, setShowPrevious] = useState(false);
+
+  const { data: raceData, error, isLoading } = useRaceData(showPrevious);
+  const timeLeft = useCountdown(!showPrevious && raceData ? raceData.endDate : null);
 
   if (error) {
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="fixed bottom-4 right-4 z-50"
@@ -137,10 +132,9 @@ export function RaceTimer() {
     );
   }
 
-  const isLoading = showPrevious ? isPreviousLoading : isCurrentLoading;
   if (isLoading) {
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="fixed bottom-4 right-4 z-50 w-80"
@@ -158,13 +152,13 @@ export function RaceTimer() {
   if (!raceData) return null;
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="fixed bottom-4 right-4 z-50 w-80"
     >
       <div className="bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg shadow-lg overflow-hidden">
-        <div 
+        <div
           className="p-4 cursor-pointer"
           onClick={() => setIsExpanded(!isExpanded)}
         >
@@ -172,7 +166,7 @@ export function RaceTimer() {
             <div className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-[#D7FF00]" />
               <span className="font-heading text-white">
-                {showPrevious ? 'Previous Race' : 'Monthly Race'}
+                {showPrevious ? "Previous Race" : "Monthly Race"}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -190,10 +184,10 @@ export function RaceTimer() {
               {formatDate(raceData.startDate)}
             </span>
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowPrevious(!showPrevious);
+                  setShowPrevious((prev) => !prev);
                 }}
                 className="p-1 rounded hover:bg-[#2A2B31] transition-colors"
               >
@@ -223,18 +217,20 @@ export function RaceTimer() {
                   </span>
                 </div>
                 {raceData.participants.map((participant: RaceParticipant, index: number) => (
-                  <div 
+                  <div
                     key={participant.uid}
                     className="flex items-center justify-between py-2"
                   >
                     <div className="flex items-center gap-2">
-                      <span className={`
-                        w-5 h-5 flex items-center justify-center rounded-full text-sm font-medium
-                        ${index === 0 ? 'bg-yellow-500 text-black' : ''}
-                        ${index === 1 ? 'bg-gray-400 text-black' : ''}
-                        ${index === 2 ? 'bg-amber-700 text-white' : ''}
-                        ${index > 2 ? 'bg-[#2A2B31] text-white' : ''}
-                      `}>
+                      <span
+                        className={`
+                          w-5 h-5 flex items-center justify-center rounded-full text-sm font-medium
+                          ${index === 0 ? "bg-yellow-500 text-black" : ""}
+                          ${index === 1 ? "bg-gray-400 text-black" : ""}
+                          ${index === 2 ? "bg-amber-700 text-white" : ""}
+                          ${index > 2 ? "bg-[#2A2B31] text-white" : ""}
+                        `}
+                      >
                         {index + 1}
                       </span>
                       <span className="text-white truncate max-w-[120px]">
