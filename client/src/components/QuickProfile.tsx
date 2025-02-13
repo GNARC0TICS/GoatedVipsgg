@@ -47,27 +47,33 @@ export function QuickProfile({
     }
   });
 
+  interface LeaderboardPlayer {
+    uid: string;
+    wagered: {
+      today: number;
+      this_week: number;
+      this_month: number;
+      all_time: number;
+    };
+  }
+
   const stats = React.useMemo(() => {
     if (!leaderboardData?.data) return null;
 
     const userStats = {
-      today:
-        leaderboardData.data.today.data.find((p) => p.uid === userId)?.wagered
-          ?.today || 0,
-      this_week:
-        leaderboardData.data.weekly.data.find((p) => p.uid === userId)?.wagered
-          ?.this_week || 0,
-      this_month:
-        leaderboardData.data.monthly.data.find((p) => p.uid === userId)?.wagered
-          ?.this_month || 0,
-      all_time:
-        leaderboardData.data.all_time.data.find((p) => p.uid === userId)
-          ?.wagered?.all_time || 0,
+      today: leaderboardData.data.today.data
+        .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.today || 0,
+      this_week: leaderboardData.data.weekly.data
+        .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.this_week || 0,
+      this_month: leaderboardData.data.monthly.data
+        .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.this_month || 0,
+      all_time: leaderboardData.data.all_time.data
+        .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.all_time || 0,
     };
 
     const position = {
-      weekly: leaderboardData.data.weekly.data.findIndex((p) => p.uid === userId) + 1 || undefined,
-      monthly: leaderboardData.data.monthly.data.findIndex((p) => p.uid === userId) + 1 || undefined
+      weekly: leaderboardData.data.weekly.data.findIndex((p: LeaderboardPlayer) => p.uid === userId) + 1 || undefined,
+      monthly: leaderboardData.data.monthly.data.findIndex((p: LeaderboardPlayer) => p.uid === userId) + 1 || undefined
     };
 
     return { 
