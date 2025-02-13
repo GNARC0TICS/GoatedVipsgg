@@ -5,7 +5,7 @@ import { relations } from "drizzle-orm";
 
 export const bonusCodes = pgTable('bonus_codes', {
   id: serial('id').primaryKey(),
-  code: text('code').notNull(),
+  code: text('code').notNull().unique(),
   description: text('description'),
   bonusAmount: text('bonus_amount').notNull(),
   requiredWager: text('required_wager'),
@@ -14,7 +14,7 @@ export const bonusCodes = pgTable('bonus_codes', {
   expiresAt: timestamp('expires_at').notNull(),
   status: text('status').default('active'),
   source: text('source').default('web'), // 'web' or 'telegram'
-  createdBy: text('created_by').notNull(),
+  createdBy: integer('created_by').references(() => users.id),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`)
 });
@@ -30,7 +30,7 @@ export const challenges = pgTable('challenges', {
   description: text('description'),
   status: text('status').default('active'),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
-  createdBy: text('created_by').notNull(),
+  createdBy: integer('created_by').references(() => users.id),
   bonusCode: text('bonus_code'),
   source: text('source').default('web'), // 'web' or 'telegram'
   updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`)
@@ -39,19 +39,23 @@ export const challenges = pgTable('challenges', {
 export const challengeEntries = pgTable('challenge_entries', {
   id: serial('id').primaryKey(),
   challengeId: integer('challenge_id').notNull().references(() => challenges.id),
-  userId: text('user_id').notNull().references(() => users.id),
+  userId: integer('user_id').notNull().references(() => users.id),
   betLink: text('bet_link').notNull(),
   status: text('status').default('pending'),
   bonusCode: text('bonus_code'),
   submittedAt: timestamp('submitted_at').default(sql`CURRENT_TIMESTAMP`),
   verifiedAt: timestamp('verified_at'),
-  verifiedBy: text('verified_by'),
+  verifiedBy: integer('verified_by').references(() => users.id),
   updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`)
 });
 
 // Define relations
-export const challengeRelations = relations(challenges, ({ many }) => ({
+export const challengeRelations = relations(challenges, ({ many, one }) => ({
   entries: many(challengeEntries),
+  creator: one(users, {
+    fields: [challenges.createdBy],
+    references: [users.id],
+  })
 }));
 
 export const challengeEntriesRelations = relations(challengeEntries, ({ one }) => ({
@@ -63,6 +67,10 @@ export const challengeEntriesRelations = relations(challengeEntries, ({ one }) =
     fields: [challengeEntries.userId],
     references: [users.id],
   }),
+  verifier: one(users, {
+    fields: [challengeEntries.verifiedBy],
+    references: [users.id],
+  })
 }));
 
 export const bonusCodeRelations = relations(bonusCodes, ({ one }) => ({

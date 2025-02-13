@@ -4,6 +4,8 @@ import { WebSocket, WebSocketServer } from "ws";
 import { log } from "./vite";
 import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory, type RateLimiterRes } from "rate-limiter-flexible";
+import bonusCodesRouter from "./routes/bonus-codes";
+import challengesRouter from "./routes/challenges";
 import { db } from "@db";
 import { wagerRaces } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
@@ -12,10 +14,17 @@ import { users, type SelectUser } from "@db/schema";
 import { transformLeaderboardData as transformData } from "./utils/leaderboard";
 import { initializeBot } from "./telegram/bot";
 
-// Type definitions for error handling
-interface ApiError extends Error {
+// Convert ApiError interface to a class
+class ApiError extends Error {
   status?: number;
   code?: string;
+
+  constructor(message: string, options?: { status?: number; code?: string }) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = options?.status;
+    this.code = options?.code;
+  }
 }
 
 /**
@@ -217,6 +226,10 @@ function setupRESTRoutes(app: Express) {
   app.get("/api/health", (_req, res) => {
     res.json({ status: "healthy" });
   });
+
+  // Mount bonus codes and challenges routes
+  app.use("/api", bonusCodesRouter);
+  app.use("/api", challengesRouter);
 
   // Batch processing endpoint
   app.post("/api/batch", createRateLimiter('medium'), batchHandler);
@@ -573,7 +586,7 @@ function handleLeaderboardConnection(ws: WebSocket) {
   log(`Leaderboard WebSocket client connected (${clientId})`);
 
   // Keep connection alive with ping/pong
-  ws.isAlive = true; // Initialize isAlive property
+  ws.isAlive = true;
   const pingInterval = setInterval(() => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.ping();
@@ -584,8 +597,9 @@ function handleLeaderboardConnection(ws: WebSocket) {
     ws.isAlive = true;
   });
 
-  ws.on("error", (error) => {
-    log(`WebSocket error (${clientId}):`, error);
+  ws.on("error", (error: Error) => {
+    // Fix error logging to use error message instead of raw Error object
+    log(`WebSocket error (${clientId}): ${error.message}`);
     clearInterval(pingInterval);
     ws.terminate();
   });

@@ -140,34 +140,37 @@ async function startServer() {
     }
 
     return new Promise((resolve, reject) => {
-      const server = app.listen(PORT, "0.0.0.0")
-        .on("error", async (err: NodeJS.ErrnoException) => {
-          if (err.code === 'EADDRINUSE') {
-            log(`Port ${PORT} is in use, attempting to free it...`);
-            await cleanupPort();
-            app.listen(PORT, "0.0.0.0");
-          } else {
-            console.error(`Failed to start server: ${err.message}`);
-            reject(err);
-          }
-        })
-        .on("listening", async () => {
-          log(`🚀 Server running on port ${PORT}`);
+      const server = app.listen(PORT, "0.0.0.0", () => {
+        log(`🚀 Server running on port ${PORT}`);
 
-          // Initialize Telegram bot after server is ready
-          try {
-            log("Starting Telegram Bot...");
-            const botInstance = await initializeBot();
+        // Initialize Telegram bot after server is ready
+        initializeBot()
+          .then((botInstance) => {
             if (!botInstance) {
-              throw new Error("Failed to initialize bot");
+              log("⚠️ Warning: Bot initialization failed");
+            } else {
+              log("✅ Telegram bot initialized successfully");
             }
-            log("✅ Telegram bot initialized successfully");
-          } catch (error) {
+            resolve(true);
+          })
+          .catch((error) => {
             console.error("⚠️ Telegram bot failed to start:", error);
-          }
-
-          resolve(true);
-        });
+            resolve(true); // Still resolve as server is running
+          });
+      })
+      .on("error", async (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EADDRINUSE') {
+          log(`Port ${PORT} is in use, attempting to free it...`);
+          await cleanupPort();
+          app.listen(PORT, "0.0.0.0", () => {
+            log(`🚀 Server running on port ${PORT} after retry`);
+            resolve(true);
+          });
+        } else {
+          console.error(`Failed to start server: ${err.message}`);
+          reject(err);
+        }
+      });
 
       // Graceful shutdown handler
       process.on("SIGINT", async () => {
