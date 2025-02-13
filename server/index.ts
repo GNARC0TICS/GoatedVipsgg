@@ -13,8 +13,10 @@ import { RateLimiterMemory } from 'rate-limiter-flexible';
 import webhookRouter from "./routes/webhook";
 
 const execAsync = promisify(exec);
-const app = express();
-const PORT = Number(process.env.PORT) || 5000;
+const mainApp = express();  // Main app for Vite
+const apiApp = express();   // Separate app for API
+const MAIN_PORT = Number(process.env.PORT) || 5000;
+const API_PORT = Number(process.env.API_PORT) || 5001;
 
 // Rate limiter setup
 const apiLimiter = new RateLimiterMemory({
@@ -23,13 +25,13 @@ const apiLimiter = new RateLimiterMemory({
   blockDuration: 60,
 });
 
-async function setupMiddleware() {
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  app.use(cookieParser());
+async function setupApiMiddleware() {
+  apiApp.use(express.json());
+  apiApp.use(express.urlencoded({ extended: false }));
+  apiApp.use(cookieParser());
 
   // API rate limiting middleware
-  app.use('/api/', async (req, res, next) => {
+  apiApp.use('/', async (req, res, next) => {
     try {
       await apiLimiter.consume(req.ip || 'unknown');
       next();
@@ -41,12 +43,22 @@ async function setupMiddleware() {
     }
   });
 
-  registerRoutes(app);
+  // Mount all API routes
+  registerRoutes(apiApp);
+  apiApp.use("/webhook", webhookRouter);
 
-  app.use("/webhook", webhookRouter);
+  apiApp.use(requestLogger);
+  apiApp.use(errorHandler);
+}
 
-  app.use(requestLogger);
-  app.use(errorHandler);
+async function setupMainMiddleware() {
+  mainApp.use(cookieParser());
+
+  if (process.env.NODE_ENV === "development") {
+    await setupVite(mainApp, createServer(mainApp));
+  } else {
+    serveStatic(mainApp);
+  }
 }
 
 function requestLogger(
@@ -65,14 +77,12 @@ function requestLogger(
   };
 
   res.on("finish", () => {
-    if (path.startsWith("/api")) {
-      const duration = Date.now() - start;
-      let logMessage = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedResponse) {
-        logMessage += ` :: ${JSON.stringify(capturedResponse)}`;
-      }
-      log(logMessage.slice(0, 79) + (logMessage.length > 79 ? "…" : ""));
+    const duration = Date.now() - start;
+    let logMessage = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+    if (capturedResponse) {
+      logMessage += ` :: ${JSON.stringify(capturedResponse)}`;
     }
+    log(logMessage.slice(0, 79) + (logMessage.length > 79 ? "…" : ""));
   });
 
   next();
@@ -94,21 +104,19 @@ async function checkDatabase() {
     log("Database connection successful");
   } catch (error: any) {
     if (error.message?.includes("endpoint is disabled")) {
-      log(
-        "Database endpoint is disabled. Please enable the database in the Replit Database tab.",
-      );
+      log("Database endpoint is disabled. Please enable the database in the Replit Database tab.");
     } else {
       throw error;
     }
   }
 }
 
-async function cleanupPort() {
+async function cleanupPort(port: number) {
   try {
-    await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
+    await execAsync(`lsof -ti:${port} | xargs kill -9`);
     await new Promise(resolve => setTimeout(resolve, 1000));
   } catch (error) {
-    log("No existing process found on port " + PORT);
+    log("No existing process found on port " + port);
   }
 }
 
@@ -123,24 +131,31 @@ async function cleanupBot() {
   }
 }
 
-// Combined server setup
 async function startServer() {
   try {
     log("Starting server initialization...");
     await checkDatabase();
     await cleanupBot();
-    await cleanupPort();
-    await setupMiddleware();
+    await Promise.all([
+      cleanupPort(MAIN_PORT),
+      cleanupPort(API_PORT)
+    ]);
 
-    if (process.env.NODE_ENV === "development") {
-      await setupVite(app, createServer(app));
-    } else {
-      serveStatic(app);
-    }
+    // Set up both middleware stacks
+    await Promise.all([
+      setupApiMiddleware(),
+      setupMainMiddleware()
+    ]);
 
     return new Promise((resolve, reject) => {
-      const server = app.listen(PORT, "0.0.0.0", () => {
-        log(`🚀 Server running on port ${PORT}`);
+      // Start API server
+      const apiServer = apiApp.listen(API_PORT, "0.0.0.0", () => {
+        log(`🚀 API Server running on port ${API_PORT}`);
+      });
+
+      // Start main server
+      const mainServer = mainApp.listen(MAIN_PORT, "0.0.0.0", () => {
+        log(`🚀 Main Server running on port ${MAIN_PORT}`);
 
         initializeBot()
           .then((botInstance) => {
@@ -155,22 +170,38 @@ async function startServer() {
             console.error("⚠️ Telegram bot failed to start:", error);
             resolve(true);
           });
-      }).on("error", async (err: NodeJS.ErrnoException) => {
+      });
+
+      // Error handling for both servers
+      apiServer.on("error", async (err: NodeJS.ErrnoException) => {
         if (err.code === 'EADDRINUSE') {
-          log(`Port ${PORT} is in use, attempting to free it...`);
-          await cleanupPort();
-          app.listen(PORT, "0.0.0.0", () => {
-            log(`🚀 Server running on port ${PORT} after retry`);
-            resolve(true);
+          log(`Port ${API_PORT} is in use, attempting to free it...`);
+          await cleanupPort(API_PORT);
+          apiApp.listen(API_PORT, "0.0.0.0", () => {
+            log(`🚀 API Server running on port ${API_PORT} after retry`);
           });
         } else {
-          console.error(`Failed to start server: ${err.message}`);
+          console.error(`Failed to start API server: ${err.message}`);
           reject(err);
         }
       });
 
+      mainServer.on("error", async (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EADDRINUSE') {
+          log(`Port ${MAIN_PORT} is in use, attempting to free it...`);
+          await cleanupPort(MAIN_PORT);
+          mainApp.listen(MAIN_PORT, "0.0.0.0", () => {
+            log(`🚀 Main Server running on port ${MAIN_PORT} after retry`);
+          });
+        } else {
+          console.error(`Failed to start main server: ${err.message}`);
+          reject(err);
+        }
+      });
+
+      // Graceful shutdown handler
       process.on("SIGINT", async () => {
-        log("🛑 Shutting down server and bot...");
+        log("🛑 Shutting down servers and bot...");
         if (bot) {
           try {
             await bot.deleteWebHook();
@@ -179,13 +210,14 @@ async function startServer() {
             console.error("Error cleaning up bot:", error);
           }
         }
-        server.close(() => {
+        apiServer.close();
+        mainServer.close(() => {
           process.exit(0);
         });
       });
     });
   } catch (error) {
-    console.error("Failed to start server:", error);
+    console.error("Failed to start servers:", error);
     process.exit(1);
   }
 }
