@@ -85,7 +85,8 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             className="max-w-7xl mx-auto mb-16"
-          >
+          ></motion.div>
+
             <div className="max-w-4xl mx-auto mb-12">
               <FeatureCarousel />
             </div>
