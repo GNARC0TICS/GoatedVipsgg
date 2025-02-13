@@ -20,6 +20,32 @@ const PORT = Number(process.env.PORT || 5000);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Server state flags
+let isServerReady = false;
+
+async function isPortAvailable(port: number): Promise<boolean> {
+  try {
+    const server = createServer();
+    await new Promise((resolve, reject) => {
+      server.once('error', (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EADDRINUSE') {
+          reject(new Error(`Port ${port} is already in use`));
+        } else {
+          reject(err);
+        }
+      });
+      server.once('listening', () => {
+        server.close();
+        resolve(true);
+      });
+      server.listen(port, '0.0.0.0');
+    });
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
 async function setupVite(app: express.Application, server: any) {
   const viteLogger = createLogger();
   const vite = await createViteServer({
@@ -68,8 +94,6 @@ async function serveStatic(app: express.Application) {
   }
 
   app.use(express.static(distPath));
-
-  // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });
@@ -79,18 +103,25 @@ async function checkDatabaseConnection() {
   try {
     await db.execute(sql`SELECT 1`);
     log("Database connection established successfully");
+    return true;
   } catch (error: any) {
     log(`Database connection error: ${error.message}`);
-    throw error;
+    return false;
   }
 }
 
 async function cleanupPort() {
   try {
-    await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const portAvailable = await isPortAvailable(PORT);
+    if (!portAvailable) {
+      await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      log(`Cleaned up port ${PORT}`);
+    }
+    return true;
   } catch (error) {
     log(`No existing process found on port ${PORT}`);
+    return true;
   }
 }
 
@@ -99,12 +130,14 @@ async function setupMiddleware(app: express.Application) {
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
   app.use(cookieParser());
 
-  // Add health check endpoint first
+  // Enhanced health check endpoint
   app.get("/api/health", (_req, res) => {
-    res.set('Cache-Control', 'no-store').json({ 
+    res.set('Cache-Control', 'no-store').json({
       status: "healthy",
       timestamp: new Date().toISOString(),
-      port: PORT
+      port: PORT,
+      env: process.env.NODE_ENV || 'development',
+      uptime: process.uptime()
     });
   });
 }
@@ -112,8 +145,20 @@ async function setupMiddleware(app: express.Application) {
 async function startServer() {
   try {
     log("Starting server initialization...");
-    await checkDatabaseConnection();
-    await cleanupPort();
+    isServerReady = false;
+
+    // Check port availability first
+    const portAvailable = await isPortAvailable(PORT);
+    if (!portAvailable) {
+      log(`Port ${PORT} is not available, attempting cleanup...`);
+      await cleanupPort();
+    }
+
+    // Check database connection
+    const dbConnected = await checkDatabaseConnection();
+    if (!dbConnected) {
+      throw new Error("Failed to connect to database");
+    }
 
     const app = express();
     app.set('trust proxy', 1);
@@ -122,11 +167,6 @@ async function startServer() {
     const server = createServer(app);
     registerRoutes(app);
     await initializeAdmin().catch(console.error);
-
-    if (!process.env.TELEGRAM_BOT_TOKEN) {
-      throw new Error("TELEGRAM_BOT_TOKEN must be provided");
-    }
-    log("Initializing Telegram bot...");
 
     // Configure server based on environment
     if (process.env.NODE_ENV === "development") {
@@ -139,63 +179,80 @@ async function startServer() {
       log("Production static file serving configured");
     }
 
-    // Start the server and return a promise that resolves when the server is ready
-    return new Promise((resolve) => {
-      const serverInstance = server.listen(PORT, "0.0.0.0", () => {
+    // Start the server with enhanced error handling and health checks
+    return new Promise((resolve, reject) => {
+      const serverInstance = server.listen(PORT, "0.0.0.0", async () => {
         log(`Server running on port ${PORT}`);
-        log("Telegram bot started successfully");
 
-        // Add an explicit ready check
-        const healthCheck = async () => {
+        // Verify server is actually listening
+        const healthCheck = async (retries = 3) => {
           try {
             const response = await fetch(`http://localhost:${PORT}/api/health`);
             if (response.ok) {
               const data = await response.json();
               log(`Server health check passed: ${JSON.stringify(data)}`);
+              isServerReady = true;
+              process.env.SERVER_READY = 'true';
               resolve(serverInstance);
+            } else if (retries > 0) {
+              log(`Health check failed, retrying... (${retries} attempts left)`);
+              setTimeout(() => healthCheck(retries - 1), 1000);
             } else {
-              setTimeout(healthCheck, 1000);
+              reject(new Error("Server health check failed after multiple attempts"));
             }
           } catch (error) {
-            log(`Health check failed, retrying: ${error}`);
-            setTimeout(healthCheck, 1000);
+            if (retries > 0) {
+              log(`Health check error, retrying... (${retries} attempts left): ${error}`);
+              setTimeout(() => healthCheck(retries - 1), 1000);
+            } else {
+              reject(error);
+            }
           }
         };
 
-        healthCheck();
+        await healthCheck();
       });
 
       serverInstance.on('error', (error: NodeJS.ErrnoException) => {
         if (error.code === 'EADDRINUSE') {
           log(`Port ${PORT} is already in use`);
-          process.exit(1);
+          reject(error);
         } else {
           log(`Server error: ${error.message}`);
-          throw error;
+          reject(error);
         }
       });
+
+      // Add timeout to prevent hanging
+      setTimeout(() => {
+        if (!isServerReady) {
+          reject(new Error("Server startup timed out"));
+        }
+      }, 30000);
     });
   } catch (error) {
     console.error("Failed to start application:", error);
-    process.exit(1);
+    throw error;
   }
 }
 
 // Graceful shutdown handling
 process.on("SIGTERM", async () => {
   log("Received SIGTERM signal. Shutting down gracefully...");
+  isServerReady = false;
   if (bot) await bot.stopPolling();
   process.exit(0);
 });
 
 process.on("SIGINT", async () => {
   log("Received SIGINT signal. Shutting down gracefully...");
+  isServerReady = false;
   if (bot) await bot.stopPolling();
   process.exit(0);
 });
 
-// Export the startServer function for use in workflow configuration
-export { startServer };
+// Export the startServer function and server state
+export { startServer, isServerReady };
 
 // Only start the server if this is the main module
 if (import.meta.url === import.meta.resolve('./index.ts')) {

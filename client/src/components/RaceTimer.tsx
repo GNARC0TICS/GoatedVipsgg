@@ -28,15 +28,53 @@ interface RaceData {
   participants: RaceParticipant[];
 }
 
-interface ApiParticipant {
-  uid?: string | null;
-  name?: string | null;
-  wagered?: number | null;
-  position?: number | null;
-}
+// ─── Helper: Format Currency ─────────────────────────────────────────────────
+const formatCurrency = (amount: number): string => {
+  try {
+    if (typeof amount !== 'number' || isNaN(amount)) {
+      console.warn('Invalid amount provided to formatCurrency:', amount);
+      return '$0';
+    }
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  } catch (error) {
+    console.error('Error in formatCurrency:', error);
+    return '$0';
+  }
+};
+
+// ─── Helper: Format Date ───────────────────────────────────────────────────────
+const formatDate = (dateString: string | undefined): string => {
+  try {
+    if (!dateString) {
+      console.warn('No date provided to formatDate');
+      return 'Invalid Date';
+    }
+
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date provided to formatDate:', dateString);
+      return 'Invalid Date';
+    }
+
+    // Use toLocaleDateString with explicit options for better control
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      timeZone: 'UTC'
+    });
+  } catch (error) {
+    console.error('Error in formatDate:', error);
+    return 'Invalid Date';
+  }
+};
 
 // ─── Custom Hook: Fetch Race Data ─────────────────────────────────────────────
-function useRaceData(showPrevious: boolean) {
+function useRaceData() {
   const { toast } = useToast();
   const endpoint = "/api/wager-races/current";
 
@@ -44,18 +82,16 @@ function useRaceData(showPrevious: boolean) {
     queryKey: [endpoint],
     queryFn: async () => {
       try {
-        console.log('Fetching race data...'); // Debug log
         const response = await fetch(endpoint);
         if (!response.ok) {
           throw new Error("Failed to fetch race data");
         }
 
         const data = await response.json();
-        console.log('Received race data:', data); // Debug log
 
         // Ensure participants is an array and has valid wagered amounts
-        const validParticipants = Array.isArray(data.participants) 
-          ? data.participants.map((p: ApiParticipant): RaceParticipant => ({
+        const validParticipants = Array.isArray(data.participants)
+          ? data.participants.map((p: any): RaceParticipant => ({
               uid: String(p.uid || ''),
               name: String(p.name || 'Anonymous'),
               wagered: Number(p.wagered) || 0,
@@ -64,18 +100,18 @@ function useRaceData(showPrevious: boolean) {
           : [];
 
         // Sort participants by wagered amount
-        validParticipants.sort((a: RaceParticipant, b: RaceParticipant) => b.wagered - a.wagered);
+        validParticipants.sort((a, b) => b.wagered - a.wagered);
 
+        // Ensure all required fields are present with proper defaults
         const raceData: RaceData = {
-          id: String(data.id || ''),
+          id: String(data.id || new Date().getFullYear() + (new Date().getMonth() + 1).toString().padStart(2, '0')),
           status: data.status === 'ended' || data.status === 'upcoming' ? data.status : 'live',
-          startDate: data.startDate || new Date().toISOString(),
+          startDate: data.startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
           endDate: data.endDate || new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).toISOString(),
           prizePool: Number(data.prizePool) || 500,
           participants: validParticipants.slice(0, 10)
         };
 
-        console.log('Transformed race data:', raceData); // Debug log
         return raceData;
       } catch (error) {
         console.error('Race data fetch error:', error);
@@ -93,52 +129,58 @@ function useRaceData(showPrevious: boolean) {
   });
 }
 
-// ─── Helper: Format Currency ─────────────────────────────────────────────────
-const formatCurrency = (amount: number): string => {
-  try {
-    // Ensure we're dealing with a number
-    const numAmount = Number(amount);
-    if (isNaN(numAmount)) {
-      console.warn('Invalid amount provided to formatCurrency:', amount);
-      return '$0';
-    }
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(numAmount);
-  } catch (error) {
-    console.error('Error in formatCurrency:', error);
-    return '$0';
-  }
-};
+function useCountdown(endDate: string | null) {
+  const [timeLeft, setTimeLeft] = useState<string>("");
 
-// ─── Helper: Format Date ───────────────────────────────────────────────────────
-const formatDate = (dateString: string): string => {
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      console.warn('Invalid date provided to formatDate:', dateString);
-      return 'Invalid Date';
+  useEffect(() => {
+    if (!endDate) {
+      setTimeLeft("--");
+      return;
     }
-    return date.toLocaleDateString("en-US", { 
-      year: "numeric", 
-      month: "long",
-      timeZone: 'UTC'
-    });
-  } catch (error) {
-    console.error('Error in formatDate:', error);
-    return 'Invalid Date';
-  }
-};
+
+    const updateTimer = () => {
+      try {
+        const end = new Date(endDate);
+        const now = new Date();
+
+        if (isNaN(end.getTime())) {
+          console.warn('Invalid end date in countdown:', endDate);
+          setTimeLeft("--");
+          return;
+        }
+
+        const diff = end.getTime() - now.getTime();
+
+        if (diff <= 0) {
+          setTimeLeft("Race Ended");
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+        setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+      } catch (error) {
+        console.error('Error updating timer:', error);
+        setTimeLeft("--");
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 60000);
+    return () => clearInterval(interval);
+  }, [endDate]);
+
+  return timeLeft;
+}
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export function RaceTimer() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPrevious, setShowPrevious] = useState(false);
 
-  const { data: raceData, error, isLoading } = useRaceData(showPrevious);
+  const { data: raceData, error, isLoading } = useRaceData();
   const timeLeft = useCountdown(!showPrevious && raceData ? raceData.endDate : null);
 
   if (error) {
@@ -240,7 +282,7 @@ export function RaceTimer() {
                     Prize Pool: {formatCurrency(raceData.prizePool)}
                   </span>
                 </div>
-                {raceData.participants.map((participant: RaceParticipant, index: number) => (
+                {raceData.participants.map((participant, index) => (
                   <div
                     key={participant.uid}
                     className="flex items-center justify-between py-2"
@@ -278,40 +320,4 @@ export function RaceTimer() {
       </div>
     </motion.div>
   );
-}
-
-function useCountdown(endDate: string | null) {
-  const [timeLeft, setTimeLeft] = useState<string>("");
-
-  useEffect(() => {
-    if (!endDate) return;
-
-    const updateTimer = () => {
-      try {
-        const end = new Date(endDate);
-        const now = new Date();
-        const diff = end.getTime() - now.getTime();
-
-        if (diff <= 0) {
-          setTimeLeft("Race Ended");
-          return;
-        }
-
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-        setTimeLeft(`${days}d ${hours}h ${minutes}m`);
-      } catch (error) {
-        console.error('Error updating timer:', error);
-        setTimeLeft("--");
-      }
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 60000);
-    return () => clearInterval(interval);
-  }, [endDate]);
-
-  return timeLeft;
 }
