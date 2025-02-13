@@ -1,6 +1,22 @@
-import { ReactNode, useState, useRef, useEffect } from "react";
+import React, {
+  ReactNode,
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, Bell, Settings, User, LogOut, ChevronDown, Gift, Lock } from "lucide-react";
+import {
+  Menu,
+  Bell,
+  Settings,
+  User,
+  LogOut,
+  ChevronDown,
+  Gift,
+  Lock,
+} from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
@@ -23,11 +39,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UtilityPanelButton } from "./UtilityPanel";
 import { useToast } from "@/hooks/use-toast";
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
 
-// Improved header styling
+// --- Static Styles (Memoized as constants) ---
 const headerClasses = {
-  container: "fixed top-0 left-0 right-0 z-50 bg-[#14151A]/80 backdrop-blur-xl border-b border-[#2A2B31]/50",
+  container:
+    "fixed top-0 left-0 right-0 z-50 bg-[#14151A]/80 backdrop-blur-xl border-b border-[#2A2B31]/50",
   nav: "container mx-auto h-16 px-4 flex items-center justify-between",
   logo: "h-8 w-auto relative transition-transform duration-300 hover:scale-105",
   menuButton: "md:hidden relative overflow-hidden group",
@@ -35,13 +52,13 @@ const headerClasses = {
   userSection: "flex items-center space-x-4",
 };
 
-// Consolidated dropdown styling
 const dropdownClasses = {
-  content: "w-56 bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1",
-  item: "px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer",
+  content:
+    "w-56 bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1",
+  item:
+    "px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer",
 };
 
-// Footer styling
 const footerClasses = {
   wrapper: "bg-[#D7FF00] relative mt-auto",
   container: "container mx-auto px-4 py-16",
@@ -49,11 +66,23 @@ const footerClasses = {
   heading: "font-heading text-[#14151A] text-2xl font-bold",
 };
 
-function MobileNavLink({ href, label, onClose, isTitle = false }: { href: string; label: string | React.ReactNode; onClose: () => void; isTitle?: boolean; }) {
+// --- MobileNavLink Component ---
+type MobileNavLinkProps = {
+  href: string;
+  label: string | React.ReactNode;
+  onClose: () => void;
+  isTitle?: boolean;
+};
+
+const MobileNavLink = React.memo(function MobileNavLink({
+  href,
+  label,
+  onClose,
+  isTitle = false,
+}: MobileNavLinkProps) {
   const [location] = useLocation();
   const isActive = location === href;
   const isHome = href === "/";
-
   return (
     <motion.div
       whileTap={{ scale: 0.98 }}
@@ -69,9 +98,53 @@ function MobileNavLink({ href, label, onClose, isTitle = false }: { href: string
       {label}
     </motion.div>
   );
-}
+});
 
-// Main Layout Component
+// --- NavLink Component ---
+type NavLinkProps = {
+  href: string;
+  label: string | React.ReactNode;
+  tooltip?: string;
+};
+
+const NavLink = React.memo(function NavLink({ href, label, tooltip }: NavLinkProps) {
+  const [location] = useLocation();
+  const isActive = location === href;
+
+  const linkContent = (
+    <motion.div
+      className={`relative font-heading cursor-pointer ${
+        isActive ? "text-[#D7FF00]" : "text-white"
+      } hover:text-[#D7FF00] transition-all duration-300`}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+    >
+      {label}
+      <motion.div
+        className="absolute -bottom-1 left-0 h-0.5 bg-[#D7FF00] origin-left"
+        initial={{ scaleX: isActive ? 1 : 0 }}
+        animate={{ scaleX: isActive ? 1 : 0 }}
+        whileHover={{ scaleX: 1 }}
+        transition={{ duration: 0.3 }}
+      />
+    </motion.div>
+  );
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Link href={href}>{linkContent}</Link>
+      </TooltipTrigger>
+      {tooltip && (
+        <TooltipContent sideOffset={5} className="bg-[#1A1B21] border-[#2A2B31] text-white">
+          <p>{tooltip}</p>
+        </TooltipContent>
+      )}
+    </Tooltip>
+  );
+});
+
+// --- Main Layout Component ---
 export function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const footerRef = useRef<HTMLElement>(null);
@@ -79,29 +152,29 @@ export function Layout({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [openMobile, setOpenMobile] = useState(false);
 
-  const { data: user } = useQuery<SelectUser>({
-    queryKey: ["/api/user"],
-  });
-
+  const { data: user } = useQuery<SelectUser>({ queryKey: ["/api/user"] });
   const isAuthenticated = !!user;
 
+  // Scroll to top on location change
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location]);
 
+  // Set up IntersectionObserver to detect footer visibility
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => setIsFooterVisible(entry.isIntersecting),
       { threshold: 0.1 }
     );
-
     if (footerRef.current) {
       observer.observe(footerRef.current);
-      return () => observer.unobserve(footerRef.current!);
+      return () => {
+        observer.disconnect();
+      };
     }
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       const response = await fetch("/api/logout", {
         method: "POST",
@@ -116,7 +189,7 @@ export function Layout({ children }: { children: ReactNode }) {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#14151A]">
@@ -140,10 +213,10 @@ export function Layout({ children }: { children: ReactNode }) {
                 <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/wager-races">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2">
                         <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200 flex items-center gap-2">
+                          <span className="absolute -left-2 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:left-0">→</span>
+                          <span className="ml-0 transition-all duration-200 group-hover:ml-2 flex items-center gap-2">
                             Monthly Race
                             <div className="flex items-center gap-1">
                               <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
@@ -154,10 +227,10 @@ export function Layout({ children }: { children: ReactNode }) {
                       </div>
                     </Link>
                     <Link href="/challenges">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2">
                         <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                          <span className="absolute -left-2 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:left-0">→</span>
+                          <span className="ml-0 transition-all duration-200 group-hover:ml-2">
                             Challenges
                           </span>
                         </span>
@@ -176,43 +249,43 @@ export function Layout({ children }: { children: ReactNode }) {
                     <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
-                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible transition-all duration-300 ease-in-out group-hover:opacity-100 group-hover:visible">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/how-it-works">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2">
                         <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                          <span className="absolute -left-2 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:left-0">→</span>
+                          <span className="ml-0 transition-all duration-200 group-hover:ml-2">
                             Become an Affiliate
                           </span>
                         </span>
                       </div>
                     </Link>
                     <Link href="/vip-transfer">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2">
                         <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                          <span className="absolute -left-2 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:left-0">→</span>
+                          <span className="ml-0 transition-all duration-200 group-hover:ml-2">
                             VIP Transfer
                           </span>
                         </span>
                       </div>
                     </Link>
                     <Link href="/tips-and-strategies">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2">
                         <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                          <span className="absolute -left-2 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:left-0">→</span>
+                          <span className="ml-0 transition-all duration-200 group-hover:ml-2">
                             Tips & Strategies
                           </span>
                         </span>
                       </div>
                     </Link>
                     <Link href="/vip-program">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
+                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2">
                         <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
+                          <span className="absolute -left-2 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:left-0">→</span>
+                          <span className="ml-0 transition-all duration-200 group-hover:ml-2">
                             VIP Program
                           </span>
                         </span>
@@ -231,57 +304,38 @@ export function Layout({ children }: { children: ReactNode }) {
                     <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
-                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible transition-all duration-300 ease-in-out group-hover:opacity-100 group-hover:visible">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/promotions">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                            News & Promotions
-                          </span>
-                        </span>
+                      <div className={dropdownClasses.item}>
+                        News & Promotions
                       </div>
                     </Link>
                     <Link href="/goated-token">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                            Goated Airdrop
-                          </span>
-                        </span>
+                      <div className={dropdownClasses.item}>
+                        Goated Airdrop
                       </div>
                     </Link>
                     <Link href="/bonus-codes">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                        <span className="relative flex items-center gap-2">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                            {isAuthenticated ? (
-                              "Bonus Codes"
-                            ) : (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger className="flex items-center gap-2 opacity-50 cursor-not-allowed">
-                                    <span>Bonus Codes</span>
-                                    <Lock className="h-4 w-4" />
-                                  </TooltipTrigger>
-                                  <TooltipContent side="right">
-                                    <p>Sign in to access bonus codes and rewards</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </span>
-                          <Gift className="h-4 w-4" />
-                        </span>
+                      <div className={dropdownClasses.item}>
+                        {isAuthenticated ? "Bonus Codes" : (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger className="flex items-center gap-2 opacity-50 cursor-not-allowed">
+                                <span>Bonus Codes</span>
+                                <Lock className="h-4 w-4" />
+                              </TooltipTrigger>
+                              <TooltipContent side="right">
+                                <p>Sign in to access bonus codes and rewards</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                       </div>
                     </Link>
                   </div>
                 </div>
               </div>
-
               <div className="relative group">
                 <Link href="/leaderboard?period=daily">
                   <Button
@@ -292,46 +346,26 @@ export function Layout({ children }: { children: ReactNode }) {
                     <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
-                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible transition-all duration-300 ease-in-out group-hover:opacity-100 group-hover:visible">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/leaderboard?period=daily">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                            Daily
-                          </span>
-                        </span>
+                      <div className={dropdownClasses.item}>
+                        Daily
                       </div>
                     </Link>
                     <Link href="/leaderboard?period=weekly">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                            Weekly
-                          </span>
-                        </span>
+                      <div className={dropdownClasses.item}>
+                        Weekly
                       </div>
                     </Link>
                     <Link href="/leaderboard?period=monthly">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                            Monthly
-                          </span>
-                        </span>
+                      <div className={dropdownClasses.item}>
+                        Monthly
                       </div>
                     </Link>
                     <Link href="/leaderboard?period=all_time">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                            All Time
-                          </span>
-                        </span>
+                      <div className={dropdownClasses.item}>
+                        All Time
                       </div>
                     </Link>
                   </div>
@@ -347,16 +381,11 @@ export function Layout({ children }: { children: ReactNode }) {
                     <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
-                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible transition-all duration-300 ease-in-out group-hover:opacity-100 group-hover:visible">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/telegram">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                            Telegram Community
-                          </span>
-                        </span>
+                      <div className={dropdownClasses.item}>
+                        Telegram Community
                       </div>
                     </Link>
                   </div>
@@ -373,36 +402,21 @@ export function Layout({ children }: { children: ReactNode }) {
                     <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
-                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible transition-all duration-300 ease-in-out group-hover:opacity-100 group-hover:visible">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/help">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                            Help Center
-                          </span>
-                        </span>
+                      <div className={dropdownClasses.item}>
+                        Help Center
                       </div>
                     </Link>
                     <Link href="/faq">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                            FAQ
-                          </span>
-                        </span>
+                      <div className={dropdownClasses.item}>
+                        FAQ
                       </div>
                     </Link>
                     <Link href="/support">
-                      <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover-item:opacity-100 group-hover-item:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group-hover-item:ml-2 transition-all duration-200">
-                            Contact Support
-                          </span>
-                        </span>
+                      <div className={dropdownClasses.item}>
+                        Contact Support
                       </div>
                     </Link>
                   </div>
@@ -418,30 +432,30 @@ export function Layout({ children }: { children: ReactNode }) {
                     <span className="font-bold">ADMIN</span>
                     <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
-                  <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                  <div className="absolute left-0 mt-2 w-56 opacity-0 invisible transition-all duration-300 ease-in-out group-hover:opacity-100 group-hover:visible">
                     <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                       <Link href="/admin/user-management">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                        <div className={dropdownClasses.item}>
                           User Management
                         </div>
                       </Link>
                       <Link href="/admin/notifications">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                        <div className={dropdownClasses.item}>
                           Notification Management
                         </div>
                       </Link>
                       <Link href="/admin/support">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                        <div className={dropdownClasses.item}>
                           Support Management
                         </div>
                       </Link>
                       <Link href="/admin/wager-races">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                        <div className={dropdownClasses.item}>
                           Wager Race Management
                         </div>
                       </Link>
                       <Link href="/admin/bonus-codes">
-                        <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
+                        <div className={dropdownClasses.item}>
                           Bonus Code Management
                         </div>
                       </Link>
@@ -559,7 +573,6 @@ export function Layout({ children }: { children: ReactNode }) {
                       onClose={() => setOpenMobile(false)}
                     />
 
-
                     <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">SOCIALS</div>
                     <MobileNavLink href="/telegram" label="Telegram Community" onClose={() => setOpenMobile(false)} />
 
@@ -586,7 +599,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
                     <div className="mt-6 px-4 border-t border-[#2A2B31]/50 pt-6">
                       <Button
-                                                onClick={() => {
+                        onClick={() => {
                           setOpenMobile(false);
                           window.open("https://www.goated.com/r/SPIN", "_blank");
                         }}
@@ -826,39 +839,4 @@ export function Layout({ children }: { children: ReactNode }) {
   );
 }
 
-function NavLink({ href, label, tooltip }: { href: string; label: string | React.ReactNode; tooltip?: string; }) {
-  const [location] = useLocation();
-  const isActive = location === href;
-
-  const linkContent = (
-    <motion.div
-      className={`relative font-heading cursor-pointer ${
-        isActive ? "text-[#D7FF00]" : "text-white"
-      } hover:text-[#D7FF00] transition-all duration-300`}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-    >
-      {label}
-      <motion.div
-        className="absolute -bottom-1 left-0 h-0.5 bg-[#D7FF00] origin-left"
-        initial={{ scaleX: isActive ? 1 : 0 }}
-        animate={{ scaleX: isActive ? 1 : 0 }}
-        whileHover={{ scaleX: 1 }}
-        transition={{ duration: 0.3 }}
-      />
-    </motion.div>
-  );
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Link href={href}>{linkContent}</Link>
-      </TooltipTrigger>
-      {tooltip && (
-        <TooltipContent sideOffset={5} className="bg-[#1A1B21] border-[#2A2B31] text-white">
-          <p>{tooltip}</p>
-        </TooltipContent>
-      )}
-    </Tooltip>
-  );
-}
+export default Layout;

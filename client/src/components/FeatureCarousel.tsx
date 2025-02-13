@@ -1,20 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import {useAuth} from '@/lib/auth'; //Hypothetical auth context
-import {useToast} from '@/hooks/use-toast';
-
+import { useAuth } from "@/lib/auth"; // Hypothetical auth context
+import { useToast } from "@/hooks/use-toast";
 
 const useWagerTotal = () => {
   const { data } = useQuery({
-    queryKey: ['wager-total'],
+    queryKey: ["wager-total"],
     queryFn: async () => {
-      const response = await fetch('/api/affiliate/stats');
+      const response = await fetch("/api/affiliate/stats");
       const data = await response.json();
-      const total = data?.data?.all_time?.data?.reduce((sum: number, entry: any) => {
-        return sum + (entry?.wagered?.all_time || 0);
-      }, 0);
+      const total = data?.data?.all_time?.data?.reduce(
+        (sum: number, entry: any) => sum + (entry?.wagered?.all_time || 0),
+        0
+      );
       return total || 2147483;
     },
     refetchInterval: 86400000,
@@ -41,68 +41,71 @@ const announcements = [
 export const FeatureCarousel = () => {
   const totalWager = useWagerTotal();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState<'next' | 'prev'>('next');
+  const [direction, setDirection] = useState<"next" | "prev">("next");
   const [, setLocation] = useLocation();
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState(0);
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
 
-  const items = totalWager ? [
-    { text: `+${totalWager?.toLocaleString()} WAGERED`, link: "/leaderboard" },
-    ...announcements
-  ] : [];
+  // Memoize the items array
+  const items = useMemo(() => {
+    return totalWager
+      ? [{ text: `+${totalWager.toLocaleString()} WAGERED`, link: "/leaderboard" }, ...announcements]
+      : [];
+  }, [totalWager]);
 
-  const wrap = (index: number) => {
-    if (index < 0) return items.length - 1;
-    if (index >= items.length) return 0;
-    return index;
-  };
+  const wrap = useCallback(
+    (index: number) => {
+      if (index < 0) return items.length - 1;
+      if (index >= items.length) return 0;
+      return index;
+    },
+    [items.length]
+  );
 
   useEffect(() => {
     const interval = setInterval(() => {
       if (!isDragging) {
-        setDirection('next');
-        setCurrentIndex(prev => wrap(prev + 1));
+        setDirection("next");
+        setCurrentIndex((prev) => wrap(prev + 1));
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [isDragging, items.length]);
+  }, [isDragging, wrap]);
 
-  const handleDragStart = (event: React.TouchEvent | React.MouseEvent) => {
+  const handleDragStart = useCallback((event: React.TouchEvent | React.MouseEvent) => {
     setIsDragging(true);
-    setDragStart('touches' in event ? event.touches[0].clientX : event.clientX);
-  };
+    setDragStart("touches" in event ? event.touches[0].clientX : event.clientX);
+  }, []);
 
-  const handleDragEnd = (event: React.TouchEvent | React.MouseEvent) => {
+  const handleDragEnd = useCallback((event: React.TouchEvent | React.MouseEvent) => {
     if (!isDragging) return;
-
-    const endX = 'changedTouches' in event ? event.changedTouches[0].clientX : event.clientX;
+    const endX = "changedTouches" in event ? event.changedTouches[0].clientX : event.clientX;
     const diff = endX - dragStart;
     const threshold = window.innerWidth * 0.15;
 
     if (Math.abs(diff) > threshold) {
       if (diff > 0) {
-        setDirection('prev');
-        setCurrentIndex(prev => wrap(prev - 1));
+        setDirection("prev");
+        setCurrentIndex((prev) => wrap(prev - 1));
       } else {
-        setDirection('next');
-        setCurrentIndex(prev => wrap(prev + 1));
+        setDirection("next");
+        setCurrentIndex((prev) => wrap(prev + 1));
       }
     }
-
     setIsDragging(false);
-  };
+  }, [dragStart, isDragging, wrap]);
 
-  const handleClick = (link: string) => {
+  const handleClick = useCallback((link: string) => {
     if (!isDragging) {
-      if (link === '/bonus-codes' && !isAuthenticated) {
+      if (link === "/bonus-codes" && !isAuthenticated) {
         toast({
           variant: "warning",
           title: "Authentication Required",
           description: "Please sign in to access bonus codes"
         });
-        setLocation('/');
+        setLocation("/");
         return;
       }
       if (link.startsWith("#")) {
@@ -112,14 +115,14 @@ export const FeatureCarousel = () => {
         setLocation(link);
       }
     }
-  };
+  }, [isDragging, isAuthenticated, setLocation, toast]);
 
   const variants = {
-    enter: (direction: 'next' | 'prev') => ({
-      x: direction === 'next' ? 1000 : -1000,
+    enter: (direction: "next" | "prev") => ({
+      x: direction === "next" ? 1000 : -1000,
       opacity: 0,
       scale: 0.8,
-      rotateY: direction === 'next' ? 45 : -45,
+      rotateY: direction === "next" ? 45 : -45,
     }),
     center: {
       x: 0,
@@ -133,16 +136,16 @@ export const FeatureCarousel = () => {
         rotateY: { type: "spring", stiffness: 250, damping: 25 }
       }
     },
-    exit: (direction: 'next' | 'prev') => ({
-      x: direction === 'next' ? -1000 : 1000,
+    exit: (direction: "next" | "prev") => ({
+      x: direction === "next" ? -1000 : 1000,
       opacity: 0,
       scale: 0.8,
-      rotateY: direction === 'next' ? -45 : 45,
+      rotateY: direction === "next" ? -45 : 45,
     }),
   };
 
   return (
-    <div className="relative h-24 overflow-hidden mb-8 select-none" style={{ perspective: '1000px' }}>
+    <div className="relative h-24 overflow-hidden mb-8 select-none" style={{ perspective: "1000px" }}>
       <div 
         className="flex justify-center items-center h-full relative"
         onTouchStart={handleDragStart}
@@ -152,7 +155,7 @@ export const FeatureCarousel = () => {
         onMouseLeave={handleDragEnd}
       >
         <AnimatePresence initial={false} custom={direction} mode="wait">
-          {items.length > 0 && ( //Added conditional rendering
+          {items.length > 0 && (
             <motion.div
               key={currentIndex}
               custom={direction}
