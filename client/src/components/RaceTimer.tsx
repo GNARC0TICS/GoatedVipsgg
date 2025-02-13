@@ -28,69 +28,54 @@ interface RaceData {
   participants: RaceParticipant[];
 }
 
-interface ApiResponse {
-  data?: any[];
-  results?: any[];
-  error?: string;
+interface ApiParticipant {
+  uid?: string | null;
+  name?: string | null;
+  wagered?: number | null;
+  position?: number | null;
 }
 
 // ─── Custom Hook: Fetch Race Data ─────────────────────────────────────────────
 function useRaceData(showPrevious: boolean) {
   const { toast } = useToast();
-  const endpoint = showPrevious
-    ? "/api/wager-races/previous"
-    : "/api/wager-races/current";
+  const endpoint = "/api/wager-races/current";
 
   return useQuery<RaceData>({
     queryKey: [endpoint],
     queryFn: async () => {
       try {
-        const response = await fetch(endpoint, {
-          headers: { Accept: "application/json" }
-        });
-
+        console.log('Fetching race data...'); // Debug log
+        const response = await fetch(endpoint);
         if (!response.ok) {
-          throw new Error(
-            `Failed to fetch ${showPrevious ? "previous" : "current"} race data`
-          );
+          throw new Error("Failed to fetch race data");
         }
 
-        const apiData: ApiResponse = await response.json();
+        const data = await response.json();
+        console.log('Received race data:', data); // Debug log
 
-        // Create default race data
+        // Ensure participants is an array and has valid wagered amounts
+        const validParticipants = Array.isArray(data.participants) 
+          ? data.participants.map((p: ApiParticipant): RaceParticipant => ({
+              uid: String(p.uid || ''),
+              name: String(p.name || 'Anonymous'),
+              wagered: Number(p.wagered) || 0,
+              position: Number(p.position) || 0
+            }))
+          : [];
+
+        // Sort participants by wagered amount
+        validParticipants.sort((a: RaceParticipant, b: RaceParticipant) => b.wagered - a.wagered);
+
         const raceData: RaceData = {
-          id: new Date().getTime().toString(),
-          status: "live",
-          startDate: new Date().toISOString(),
-          endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).toISOString(),
-          prizePool: 0,
-          participants: []
+          id: String(data.id || ''),
+          status: data.status === 'ended' || data.status === 'upcoming' ? data.status : 'live',
+          startDate: data.startDate || new Date().toISOString(),
+          endDate: data.endDate || new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).toISOString(),
+          prizePool: Number(data.prizePool) || 500,
+          participants: validParticipants.slice(0, 10)
         };
 
-        // If we received valid data, override defaults
-        if (apiData) {
-          const data = Array.isArray(apiData) ? apiData[0] : apiData;
-          if (data?.id) raceData.id = data.id;
-          if (data?.status) raceData.status = data.status;
-          if (data?.startDate) raceData.startDate = data.startDate;
-          if (data?.endDate) raceData.endDate = data.endDate;
-          if (typeof data?.prizePool === 'number') raceData.prizePool = data.prizePool;
-
-          // Transform participants data if available
-          const users = data?.data || [];
-          if (Array.isArray(users)) {
-            raceData.participants = users.map((user: any, index: number) => ({
-              uid: user?.uid || `user-${index}`,
-              name: user?.name || `Anonymous ${index + 1}`,
-              wagered: typeof user?.wagered?.this_month === 'number' ? user.wagered.this_month : 0,
-              position: index + 1
-            }));
-
-            // Sort participants by wagered amount
-            raceData.participants.sort((a, b) => b.wagered - a.wagered);
-          }
-        }
-
+        console.log('Transformed race data:', raceData); // Debug log
         return raceData;
       } catch (error) {
         console.error('Race data fetch error:', error);
@@ -104,70 +89,47 @@ function useRaceData(showPrevious: boolean) {
     },
     refetchInterval: 30000,
     retry: 3,
-    staleTime: 60000,
-    placeholderData: {
-      id: new Date().getTime().toString(),
-      status: "live",
-      startDate: new Date().toISOString(),
-      endDate: new Date().toISOString(),
-      prizePool: 0,
-      participants: []
-    }
+    staleTime: 60000
   });
 }
 
-// ─── Custom Hook: Countdown Timer ─────────────────────────────────────────────
-function useCountdown(endDate: string | null) {
-  const [timeLeft, setTimeLeft] = useState<string>("");
-
-  useEffect(() => {
-    if (!endDate) return;
-
-    const updateTimer = () => {
-      try {
-        const end = new Date(endDate);
-        const now = new Date();
-        const diff = end.getTime() - now.getTime();
-
-        if (diff <= 0) {
-          setTimeLeft("Race Ended");
-          return;
-        }
-
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-        setTimeLeft(`${days}d ${hours}h ${minutes}m`);
-      } catch (error) {
-        console.error('Error updating timer:', error);
-        setTimeLeft("--");
-      }
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 60000);
-    return () => clearInterval(interval);
-  }, [endDate]);
-
-  return timeLeft;
-}
-
 // ─── Helper: Format Currency ─────────────────────────────────────────────────
-const formatCurrency = (amount: number | undefined | null): string => {
-  if (typeof amount !== 'number') return '$0';
-  return `$${amount.toLocaleString()}`;
+const formatCurrency = (amount: number): string => {
+  try {
+    // Ensure we're dealing with a number
+    const numAmount = Number(amount);
+    if (isNaN(numAmount)) {
+      console.warn('Invalid amount provided to formatCurrency:', amount);
+      return '$0';
+    }
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(numAmount);
+  } catch (error) {
+    console.error('Error in formatCurrency:', error);
+    return '$0';
+  }
 };
 
 // ─── Helper: Format Date ───────────────────────────────────────────────────────
-const formatDate = (dateString: string | undefined | null): string => {
-  if (!dateString) return 'Invalid Date';
+const formatDate = (dateString: string): string => {
   try {
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date provided to formatDate:', dateString);
+      return 'Invalid Date';
+    }
+    return date.toLocaleDateString("en-US", { 
+      year: "numeric", 
+      month: "long",
+      timeZone: 'UTC'
+    });
   } catch (error) {
-    console.error('Error formatting date:', error);
-    return "Invalid Date";
+    console.error('Error in formatDate:', error);
+    return 'Invalid Date';
   }
 };
 
@@ -196,7 +158,7 @@ export function RaceTimer() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || !raceData) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -212,8 +174,6 @@ export function RaceTimer() {
       </motion.div>
     );
   }
-
-  if (!raceData) return null;
 
   return (
     <motion.div
@@ -318,4 +278,40 @@ export function RaceTimer() {
       </div>
     </motion.div>
   );
+}
+
+function useCountdown(endDate: string | null) {
+  const [timeLeft, setTimeLeft] = useState<string>("");
+
+  useEffect(() => {
+    if (!endDate) return;
+
+    const updateTimer = () => {
+      try {
+        const end = new Date(endDate);
+        const now = new Date();
+        const diff = end.getTime() - now.getTime();
+
+        if (diff <= 0) {
+          setTimeLeft("Race Ended");
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+        setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+      } catch (error) {
+        console.error('Error updating timer:', error);
+        setTimeLeft("--");
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 60000);
+    return () => clearInterval(interval);
+  }, [endDate]);
+
+  return timeLeft;
 }
