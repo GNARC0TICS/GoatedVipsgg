@@ -1,14 +1,5 @@
-import {
-  pgTable,
-  text,
-  serial,
-  timestamp,
-  boolean,
-  decimal,
-  jsonb,
-  integer,
-  eq,
-} from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, decimal, jsonb, integer } from "drizzle-orm/pg-core";
+import { eq } from "drizzle-orm";
 import { db } from "@db";
 import { users, mockWagerData } from "@db/schema";
 
