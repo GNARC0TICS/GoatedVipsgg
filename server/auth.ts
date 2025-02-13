@@ -9,8 +9,33 @@ import { users, insertUserSchema, type SelectUser } from "@db/schema";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
 import express from 'express';
+import jwt from 'jsonwebtoken';
 
 const scryptAsync = promisify(scrypt);
+
+// JWT secret key - in production this should be an environment variable
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+// Token verification function
+export const verifyToken = async (token: string) => {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { 
+      id: number;
+      isAdmin: boolean;
+    };
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+};
+
+// Generate token for testing
+export const generateTestToken = (isAdmin: boolean = false) => {
+  return jwt.sign({ 
+    id: 1, // Test user ID
+    isAdmin 
+  }, JWT_SECRET, { expiresIn: '1h' });
+};
 
 // Crypto utilities
 const crypto = {

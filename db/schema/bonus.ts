@@ -5,13 +5,16 @@ import { users } from "./users";
 export const bonusCodes = pgTable('bonus_codes', {
   id: integer('id').primaryKey(),
   code: text('code').notNull().unique(),
-  amount: integer('amount').notNull(),
-  requiredWager: integer('required_wager').notNull(),
+  description: text('description'),
+  bonusAmount: text('bonus_amount').notNull(),
+  requiredWager: text('required_wager'),
   totalClaims: integer('total_claims').notNull(),
   currentClaims: integer('current_claims').default(0),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`),
   expiresAt: timestamp('expires_at'),
-  isActive: boolean('is_active').default(true),
+  status: text('status').default('active'),
+  source: text('source').default('web'),
   createdBy: integer('created_by').references(() => users.id),
 });
 
