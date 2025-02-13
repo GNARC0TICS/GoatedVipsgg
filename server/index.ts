@@ -9,7 +9,7 @@ import { createServer as createViteServer, createLogger } from "vite";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { sql } from "drizzle-orm";
-import { log } from "./utils/logger";
+import { log } from "./telegram/utils/logger";
 import { bot } from "./telegram/bot";
 import { registerRoutes } from "./routes";
 import { initializeAdmin } from "./middleware/admin";
