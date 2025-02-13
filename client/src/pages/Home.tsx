@@ -80,7 +80,7 @@ export default function Home() {
             </a>
           </motion.div>
 
-          <motion.div>
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
@@ -311,7 +311,6 @@ export default function Home() {
               </motion.div>
             </motion.div>
           </div>
-        </div>
       </main>
       <RaceTimer />
     </div>
