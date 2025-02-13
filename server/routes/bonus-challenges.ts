@@ -1,30 +1,29 @@
 import { Router } from "express";
 import { db } from "@db";
 import { bonusCodes } from "@db/schema/bonus";
-import { eq, and, gte } from "drizzle-orm";
+import { eq, and, gt } from "drizzle-orm";
 import { z } from "zod";
 import type { Request, Response, NextFunction } from "express";
 import { verifyToken, generateTestToken } from "../auth";
 import { log } from "../vite";
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 const router = Router();
 
-// Test endpoint to get admin token (only for testing purposes)
-if (process.env.NODE_ENV !== 'production') {
-  router.get("/test-token", (_req, res) => {
-    log("Test token endpoint called");
-    res.setHeader('Content-Type', 'application/json');
-    const token = generateTestToken(true); // Generate admin token
-    res.json({ token, generated: new Date().toISOString() });
-  });
-}
+// Rate limiter setup for public endpoints
+const publicLimiter = new RateLimiterMemory({
+  points: 60, // Number of requests
+  duration: 60, // Per minute
+});
 
 // Types for authenticated requests
+interface AuthUser {
+  id: number;
+  isAdmin: boolean;
+}
+
 interface AuthenticatedRequest extends Request {
-  user?: {
-    id: number;
-    isAdmin: boolean;
-  } | null;
+  user?: AuthUser;
 }
 
 // Validation schemas
@@ -86,32 +85,65 @@ const asyncHandler = (fn: (req: AuthenticatedRequest, res: Response, next: NextF
     Promise.resolve(fn(req, res, next)).catch((error) => {
       log(`Error in route handler: ${error}`);
       res.status(500).json({
-        error: "Internal server error",
-        message: error.message
+        status: "error",
+        message: error.message || "Internal server error"
       });
     });
   };
 };
 
 // Get active bonus codes (public)
-router.get("/bonus-codes", asyncHandler(async (_req, res) => {
-  log("Fetching active bonus codes");
+router.get("/bonus-codes", asyncHandler(async (req, res) => {
+  log("Fetching active bonus codes - Starting query...");
   try {
+    // Rate limiting
+    const rateLimitRes = await publicLimiter.consume(req.ip);
+    const remainingPoints = rateLimitRes.remainingPoints;
+
+    // Set response headers
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('X-RateLimit-Limit', publicLimiter.points);
+    res.setHeader('X-RateLimit-Remaining', remainingPoints);
+
+    const now = new Date();
+    log(`Current time for comparison: ${now.toISOString()}`);
+
+    // First try with just status filter
     const activeBonusCodes = await db
       .select()
       .from(bonusCodes)
       .where(
         and(
           eq(bonusCodes.status, 'active'),
-          gte(bonusCodes.expiresAt, new Date())
+          gt(bonusCodes.expiresAt, now)
         )
       );
 
     log(`Found ${activeBonusCodes.length} active bonus codes`);
-    res.json(activeBonusCodes);
+    if (activeBonusCodes.length > 0) {
+      log(`Query result sample: ${JSON.stringify(activeBonusCodes[0])}`);
+    }
+
+    return res.json({
+      status: "success",
+      count: activeBonusCodes.length,
+      data: activeBonusCodes,
+      _meta: {
+        timestamp: now.toISOString(),
+        filters: {
+          status: 'active',
+          expiresAfter: now.toISOString()
+        }
+      }
+    });
   } catch (error) {
     log(`Error fetching bonus codes: ${error}`);
-    throw error;
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to fetch bonus codes",
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 }));
 
@@ -203,7 +235,7 @@ router.delete("/admin/bonus-codes/:id", isAdmin, asyncHandler(async (req: Authen
   try {
     const [deactivated] = await db
       .update(bonusCodes)
-      .set({ 
+      .set({
         status: 'inactive',
         updatedAt: new Date()
       })
@@ -222,5 +254,15 @@ router.delete("/admin/bonus-codes/:id", isAdmin, asyncHandler(async (req: Authen
     throw error;
   }
 }));
+
+// Test endpoint to get admin token (only for testing purposes)
+if (process.env.NODE_ENV !== 'production') {
+  router.get("/test-token", (_req, res) => {
+    log("Test token endpoint called");
+    res.setHeader('Content-Type', 'application/json');
+    const token = generateTestToken(true); // Generate admin token
+    res.json({ token, generated: new Date().toISOString() });
+  });
+}
 
 export default router;
