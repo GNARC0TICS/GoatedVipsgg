@@ -10,11 +10,11 @@ import { exec } from "child_process";
 import { createServer } from "http";
 import fetch from "node-fetch";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
-import webhookRouter from "./routes/webhook"; // Import your webhook routes
+import webhookRouter from "./routes/webhook";
 
 const execAsync = promisify(exec);
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
 // Rate limiter setup
 const apiLimiter = new RateLimiterMemory({
@@ -40,6 +40,10 @@ async function setupMiddleware() {
       });
     }
   });
+
+  registerRoutes(app);
+
+  app.use("/webhook", webhookRouter);
 
   app.use(requestLogger);
   app.use(errorHandler);
@@ -126,14 +130,9 @@ async function startServer() {
     await checkDatabase();
     await cleanupBot();
     await cleanupPort();
-
     await setupMiddleware();
-    registerRoutes(app);
 
-    // Add webhook route to main app on a different path
-    app.use("/webhook", webhookRouter);
-
-    if (app.get("env") === "development") {
+    if (process.env.NODE_ENV === "development") {
       await setupVite(app, createServer(app));
     } else {
       serveStatic(app);
@@ -143,7 +142,6 @@ async function startServer() {
       const server = app.listen(PORT, "0.0.0.0", () => {
         log(`🚀 Server running on port ${PORT}`);
 
-        // Initialize Telegram bot after server is ready
         initializeBot()
           .then((botInstance) => {
             if (!botInstance) {
@@ -155,10 +153,9 @@ async function startServer() {
           })
           .catch((error) => {
             console.error("⚠️ Telegram bot failed to start:", error);
-            resolve(true); // Still resolve as server is running
+            resolve(true);
           });
-      })
-      .on("error", async (err: NodeJS.ErrnoException) => {
+      }).on("error", async (err: NodeJS.ErrnoException) => {
         if (err.code === 'EADDRINUSE') {
           log(`Port ${PORT} is in use, attempting to free it...`);
           await cleanupPort();
@@ -172,7 +169,6 @@ async function startServer() {
         }
       });
 
-      // Graceful shutdown handler
       process.on("SIGINT", async () => {
         log("🛑 Shutting down server and bot...");
         if (bot) {
@@ -194,7 +190,6 @@ async function startServer() {
   }
 }
 
-// Start the server
 startServer()
   .then(() => log("✅ Server startup complete"))
   .catch((error) => {
