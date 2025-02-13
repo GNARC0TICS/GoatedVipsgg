@@ -10,13 +10,11 @@ import { exec } from "child_process";
 import { createServer } from "http";
 import fetch from "node-fetch";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
-import webhookRouter from "./routes/webhook";
+import webhookRouter from "./routes/webhook"; // Import your webhook routes
 
 const execAsync = promisify(exec);
-const mainApp = express();  // Main app for Vite
-const apiApp = express();   // Separate app for API
-const MAIN_PORT = Number(process.env.PORT) || 5000;
-const API_PORT = Number(process.env.API_PORT) || 5001;
+const app = express();
+const PORT = process.env.PORT || 5000;
 
 // Rate limiter setup
 const apiLimiter = new RateLimiterMemory({
@@ -25,13 +23,13 @@ const apiLimiter = new RateLimiterMemory({
   blockDuration: 60,
 });
 
-async function setupApiMiddleware() {
-  apiApp.use(express.json());
-  apiApp.use(express.urlencoded({ extended: false }));
-  apiApp.use(cookieParser());
+async function setupMiddleware() {
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
+  app.use(cookieParser());
 
   // API rate limiting middleware
-  apiApp.use('/', async (req, res, next) => {
+  app.use('/api/', async (req, res, next) => {
     try {
       await apiLimiter.consume(req.ip || 'unknown');
       next();
@@ -43,22 +41,8 @@ async function setupApiMiddleware() {
     }
   });
 
-  // Mount all API routes
-  registerRoutes(apiApp);
-  apiApp.use("/webhook", webhookRouter);
-
-  apiApp.use(requestLogger);
-  apiApp.use(errorHandler);
-}
-
-async function setupMainMiddleware() {
-  mainApp.use(cookieParser());
-
-  if (process.env.NODE_ENV === "development") {
-    await setupVite(mainApp, createServer(mainApp));
-  } else {
-    serveStatic(mainApp);
-  }
+  app.use(requestLogger);
+  app.use(errorHandler);
 }
 
 function requestLogger(
@@ -77,12 +61,14 @@ function requestLogger(
   };
 
   res.on("finish", () => {
-    const duration = Date.now() - start;
-    let logMessage = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-    if (capturedResponse) {
-      logMessage += ` :: ${JSON.stringify(capturedResponse)}`;
+    if (path.startsWith("/api")) {
+      const duration = Date.now() - start;
+      let logMessage = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (capturedResponse) {
+        logMessage += ` :: ${JSON.stringify(capturedResponse)}`;
+      }
+      log(logMessage.slice(0, 79) + (logMessage.length > 79 ? "…" : ""));
     }
-    log(logMessage.slice(0, 79) + (logMessage.length > 79 ? "…" : ""));
   });
 
   next();
@@ -104,19 +90,21 @@ async function checkDatabase() {
     log("Database connection successful");
   } catch (error: any) {
     if (error.message?.includes("endpoint is disabled")) {
-      log("Database endpoint is disabled. Please enable the database in the Replit Database tab.");
+      log(
+        "Database endpoint is disabled. Please enable the database in the Replit Database tab.",
+      );
     } else {
       throw error;
     }
   }
 }
 
-async function cleanupPort(port: number) {
+async function cleanupPort() {
   try {
-    await execAsync(`lsof -ti:${port} | xargs kill -9`);
+    await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
     await new Promise(resolve => setTimeout(resolve, 1000));
   } catch (error) {
-    log("No existing process found on port " + port);
+    log("No existing process found on port " + PORT);
   }
 }
 
@@ -131,32 +119,31 @@ async function cleanupBot() {
   }
 }
 
+// Combined server setup
 async function startServer() {
   try {
     log("Starting server initialization...");
     await checkDatabase();
     await cleanupBot();
-    await Promise.all([
-      cleanupPort(MAIN_PORT),
-      cleanupPort(API_PORT)
-    ]);
+    await cleanupPort();
 
-    // Set up both middleware stacks
-    await Promise.all([
-      setupApiMiddleware(),
-      setupMainMiddleware()
-    ]);
+    await setupMiddleware();
+    registerRoutes(app);
+
+    // Add webhook route to main app on a different path
+    app.use("/webhook", webhookRouter);
+
+    if (app.get("env") === "development") {
+      await setupVite(app, createServer(app));
+    } else {
+      serveStatic(app);
+    }
 
     return new Promise((resolve, reject) => {
-      // Start API server
-      const apiServer = apiApp.listen(API_PORT, "0.0.0.0", () => {
-        log(`🚀 API Server running on port ${API_PORT}`);
-      });
+      const server = app.listen(PORT, "0.0.0.0", () => {
+        log(`🚀 Server running on port ${PORT}`);
 
-      // Start main server
-      const mainServer = mainApp.listen(MAIN_PORT, "0.0.0.0", () => {
-        log(`🚀 Main Server running on port ${MAIN_PORT}`);
-
+        // Initialize Telegram bot after server is ready
         initializeBot()
           .then((botInstance) => {
             if (!botInstance) {
@@ -168,40 +155,26 @@ async function startServer() {
           })
           .catch((error) => {
             console.error("⚠️ Telegram bot failed to start:", error);
+            resolve(true); // Still resolve as server is running
+          });
+      })
+      .on("error", async (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EADDRINUSE') {
+          log(`Port ${PORT} is in use, attempting to free it...`);
+          await cleanupPort();
+          app.listen(PORT, "0.0.0.0", () => {
+            log(`🚀 Server running on port ${PORT} after retry`);
             resolve(true);
           });
-      });
-
-      // Error handling for both servers
-      apiServer.on("error", async (err: NodeJS.ErrnoException) => {
-        if (err.code === 'EADDRINUSE') {
-          log(`Port ${API_PORT} is in use, attempting to free it...`);
-          await cleanupPort(API_PORT);
-          apiApp.listen(API_PORT, "0.0.0.0", () => {
-            log(`🚀 API Server running on port ${API_PORT} after retry`);
-          });
         } else {
-          console.error(`Failed to start API server: ${err.message}`);
-          reject(err);
-        }
-      });
-
-      mainServer.on("error", async (err: NodeJS.ErrnoException) => {
-        if (err.code === 'EADDRINUSE') {
-          log(`Port ${MAIN_PORT} is in use, attempting to free it...`);
-          await cleanupPort(MAIN_PORT);
-          mainApp.listen(MAIN_PORT, "0.0.0.0", () => {
-            log(`🚀 Main Server running on port ${MAIN_PORT} after retry`);
-          });
-        } else {
-          console.error(`Failed to start main server: ${err.message}`);
+          console.error(`Failed to start server: ${err.message}`);
           reject(err);
         }
       });
 
       // Graceful shutdown handler
       process.on("SIGINT", async () => {
-        log("🛑 Shutting down servers and bot...");
+        log("🛑 Shutting down server and bot...");
         if (bot) {
           try {
             await bot.deleteWebHook();
@@ -210,18 +183,18 @@ async function startServer() {
             console.error("Error cleaning up bot:", error);
           }
         }
-        apiServer.close();
-        mainServer.close(() => {
+        server.close(() => {
           process.exit(0);
         });
       });
     });
   } catch (error) {
-    console.error("Failed to start servers:", error);
+    console.error("Failed to start server:", error);
     process.exit(1);
   }
 }
 
+// Start the server
 startServer()
   .then(() => log("✅ Server startup complete"))
   .catch((error) => {
