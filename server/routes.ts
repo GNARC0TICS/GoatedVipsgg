@@ -228,8 +228,47 @@ function setupRESTRoutes(app: Express) {
   // Mount consolidated bonus and challenges routes
   app.use("/api", bonusChallengesRouter);
 
-  // Batch processing endpoint
-  app.post("/api/batch", createRateLimiter('medium'), batchHandler);
+  // Telegram webhook endpoint
+  app.post("/webhook", async (req, res) => {
+    try {
+      const bot = await initializeBot();
+      if (!bot) {
+        return res.status(500).json({
+          status: "error",
+          message: "Bot not initialized"
+        });
+      }
+
+      // Use processUpdate instead of handleUpdate
+      await bot.processUpdate(req.body);
+      res.json({ status: "success" });
+    } catch (error) {
+      log(`Error processing webhook: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to process webhook"
+      });
+    }
+  });
+
+  // Admin endpoints
+  app.use("/api/admin", async (req, res, next) => {
+    // Admin authentication middleware
+    if (!req.headers.authorization) {
+      return res.status(401).json({ error: "No authorization token provided" });
+    }
+
+    try {
+      // Verify admin token
+      const token = req.headers.authorization.split(" ")[1];
+      if (token !== process.env.ADMIN_API_TOKEN) {
+        throw new Error("Invalid token");
+      }
+      next();
+    } catch (error) {
+      res.status(401).json({ error: "Invalid authorization" });
+    }
+  });
 
   // Current wager race data endpoint
   app.get("/api/wager-races/current",
@@ -361,7 +400,6 @@ function setupRESTRoutes(app: Express) {
       }
     }
   );
-
   // Analytics endpoint for admin
   app.get("/api/admin/analytics",
     createRateLimiter('low'),
@@ -417,7 +455,6 @@ function setupRESTRoutes(app: Express) {
       }
     }
   );
-
   // Status endpoint for Telegram bot
   app.get("/api/telegram/status",
     createRateLimiter('medium'),

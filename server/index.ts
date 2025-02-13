@@ -1,10 +1,9 @@
-import express from "express";
+import express, { Express } from "express";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
-import { createServer as createViteServer, createLogger } from "vite";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { sql } from "drizzle-orm";
@@ -12,13 +11,13 @@ import { log } from "./telegram/utils/logger";
 import { bot } from "./telegram/bot";
 import { registerRoutes } from "./routes";
 import { initializeAdmin } from "./middleware/admin";
+import { setupVite, serveStatic } from "./vite";
 import db from "../db";
-import viteConfig from "../vite.config";
 
 const execAsync = promisify(exec);
 const PORT = Number(process.env.PORT || 5000);
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
 
 // Server state flags
 let isServerReady = false;
@@ -46,57 +45,40 @@ async function isPortAvailable(port: number): Promise<boolean> {
   }
 }
 
-async function setupVite(app: express.Application, server: any) {
-  const viteLogger = createLogger();
-  const vite = await createViteServer({
-    ...viteConfig,
-    configFile: false,
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
-      },
-    },
-    server: {
-      middlewareMode: true,
-      hmr: { server },
-    },
-    appType: "custom",
-  });
+async function setupMiddleware(app: express.Application) {
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ extended: false, limit: '1mb' }));
+  app.use(cookieParser());
 
-  app.use(vite.middlewares);
-
-  app.use("*", async (req, res, next) => {
-    try {
-      const url = req.originalUrl;
-      const template = fs.readFileSync(
-        path.resolve(__dirname, "..", "client", "index.html"),
-        "utf-8"
-      );
-
-      const html = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(html);
-    } catch (error) {
-      vite.ssrFixStacktrace(error as Error);
-      next(error);
-    }
+  // Enhanced health check endpoint
+  app.get("/api/health", (_req, res) => {
+    res.set('Cache-Control', 'no-store').json({
+      status: isServerReady ? "healthy" : "initializing",
+      timestamp: new Date().toISOString(),
+      port: PORT,
+      env: process.env.NODE_ENV || 'development',
+      uptime: process.uptime(),
+      ready: isServerReady
+    });
   });
 }
 
-async function serveStatic(app: express.Application) {
-  const distPath = path.resolve(__dirname, "..", "dist", "public");
-
-  if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}. Please build the client first.`
-    );
+async function waitForServerReady(port: number, maxRetries = 10, interval = 1000): Promise<boolean> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(`http://localhost:${port}/api/health`);
+      const data = await response.json();
+      if (data.status === "healthy" || data.status === "initializing") {
+        log(`Health check successful on attempt ${i + 1}`);
+        return true;
+      }
+      log(`Health check attempt ${i + 1}: Server not ready yet`);
+    } catch (error) {
+      log(`Health check attempt ${i + 1} failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+    await new Promise(resolve => setTimeout(resolve, interval));
   }
-
-  app.use(express.static(distPath));
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
-  });
+  return false;
 }
 
 async function checkDatabaseConnection() {
@@ -125,23 +107,6 @@ async function cleanupPort() {
   }
 }
 
-async function setupMiddleware(app: express.Application) {
-  app.use(express.json({ limit: '1mb' }));
-  app.use(express.urlencoded({ extended: false, limit: '1mb' }));
-  app.use(cookieParser());
-
-  // Enhanced health check endpoint
-  app.get("/api/health", (_req, res) => {
-    res.set('Cache-Control', 'no-store').json({
-      status: "healthy",
-      timestamp: new Date().toISOString(),
-      port: PORT,
-      env: process.env.NODE_ENV || 'development',
-      uptime: process.uptime()
-    });
-  });
-}
-
 async function startServer() {
   try {
     log("Starting server initialization...");
@@ -165,73 +130,61 @@ async function startServer() {
 
     await setupMiddleware(app);
     const server = createServer(app);
+
+    // Setup routes before static file serving
     registerRoutes(app);
     await initializeAdmin().catch(console.error);
 
-    // Configure server based on environment
-    if (process.env.NODE_ENV === "development") {
-      log("Starting development server with Vite...");
-      await setupVite(app, server);
-      log("Development server configured with Vite");
+    if (process.env.NODE_ENV === 'production') {
+      // In production, serve static files directly
+      serveStatic(app);
     } else {
-      log("Starting production server...");
-      await serveStatic(app);
-      log("Production static file serving configured");
+      // In development, use Vite middleware
+      await setupVite(app, server);
     }
 
     // Start the server with enhanced error handling and health checks
     return new Promise((resolve, reject) => {
       const serverInstance = server.listen(PORT, "0.0.0.0", async () => {
-        log(`Server running on port ${PORT}`);
+        log(`Server listening on port ${PORT}`);
 
-        // Verify server is actually listening
-        const healthCheck = async (retries = 3) => {
-          try {
-            const response = await fetch(`http://localhost:${PORT}/api/health`);
-            if (response.ok) {
-              const data = await response.json();
-              log(`Server health check passed: ${JSON.stringify(data)}`);
-              isServerReady = true;
-              process.env.SERVER_READY = 'true';
-              resolve(serverInstance);
-            } else if (retries > 0) {
-              log(`Health check failed, retrying... (${retries} attempts left)`);
-              setTimeout(() => healthCheck(retries - 1), 1000);
-            } else {
-              reject(new Error("Server health check failed after multiple attempts"));
-            }
-          } catch (error) {
-            if (retries > 0) {
-              log(`Health check error, retrying... (${retries} attempts left): ${error}`);
-              setTimeout(() => healthCheck(retries - 1), 1000);
-            } else {
-              reject(error);
-            }
-          }
-        };
+        // Set initial server state
+        isServerReady = true;
+        process.env.SERVER_READY = 'true';
 
-        await healthCheck();
+        // Additional health check verification
+        const serverReady = await waitForServerReady(PORT);
+        if (!serverReady) {
+          const error = new Error("Server health check failed");
+          log(error.message);
+          reject(error);
+          return;
+        }
+
+        log("Server is fully initialized and ready");
+        resolve(serverInstance);
       });
 
       serverInstance.on('error', (error: NodeJS.ErrnoException) => {
         if (error.code === 'EADDRINUSE') {
           log(`Port ${PORT} is already in use`);
-          reject(error);
         } else {
           log(`Server error: ${error.message}`);
-          reject(error);
         }
+        reject(error);
       });
 
-      // Add timeout to prevent hanging
+      // Shorter timeout for faster feedback
       setTimeout(() => {
         if (!isServerReady) {
-          reject(new Error("Server startup timed out"));
+          const error = new Error("Server startup timed out");
+          log(error.message);
+          reject(error);
         }
-      }, 30000);
+      }, 10000); // 10 second timeout
     });
   } catch (error) {
-    console.error("Failed to start application:", error);
+    log(`Failed to start application: ${error instanceof Error ? error.message : 'Unknown error'}`);
     throw error;
   }
 }
