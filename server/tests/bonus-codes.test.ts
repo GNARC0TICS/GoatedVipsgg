@@ -1,5 +1,4 @@
-import { describe, it, before, after } from 'mocha';
-import { expect } from 'chai';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import { db } from "@db";
@@ -12,27 +11,37 @@ describe('Bonus Codes API', () => {
   let app: express.Express;
   let adminToken: string;
 
-  before(async () => {
-    // Setup test environment
-    app = express();
-    app.use(express.json());
-    app.use('/', bonusChallengesRouter);
-    adminToken = generateTestToken(true);
+  beforeAll(async () => {
+    console.log('Setting up test environment...');
+    try {
+      // Setup express app
+      app = express();
+      app.use(express.json());
+      app.use('/', bonusChallengesRouter);
 
-    // Clear existing test data
-    await db.delete(bonusCodes).where(eq(bonusCodes.code, 'TEST100'));
+      // Generate admin token
+      adminToken = generateTestToken(true);
+      console.log('Admin token generated successfully');
+
+      // Clear existing test data
+      await db.delete(bonusCodes).where(eq(bonusCodes.code, 'TEST100'));
+      console.log('Test data cleared successfully');
+    } catch (error) {
+      console.error('Setup failed:', error);
+      throw error;
+    }
   });
 
-  describe('GET /api/bonus-codes', () => {
+  describe('GET /bonus-codes', () => {
     it('should return active, non-expired bonus codes', async () => {
       const response = await request(app)
         .get('/bonus-codes')
         .expect('Content-Type', /json/)
         .expect(200);
 
-      expect(response.body.status).to.equal('success');
-      expect(response.body.data).to.be.an('array');
-      expect(response.body._meta).to.have.property('timestamp');
+      expect(response.body.status).toBe('success');
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body._meta).toHaveProperty('timestamp');
     });
 
     it('should include rate limit headers', async () => {
@@ -40,8 +49,8 @@ describe('Bonus Codes API', () => {
         .get('/bonus-codes')
         .expect(200);
 
-      expect(response.headers).to.have.property('x-ratelimit-limit');
-      expect(response.headers).to.have.property('x-ratelimit-remaining');
+      expect(response.headers).toHaveProperty('x-ratelimit-limit');
+      expect(response.headers).toHaveProperty('x-ratelimit-remaining');
     });
   });
 
@@ -59,7 +68,7 @@ describe('Bonus Codes API', () => {
           .set('Authorization', `Bearer ${adminToken}`)
           .expect(200);
 
-        expect(response.body).to.be.an('array');
+        expect(Array.isArray(response.body)).toBe(true);
       });
     });
 
@@ -79,8 +88,8 @@ describe('Bonus Codes API', () => {
           .send(newCode)
           .expect(201);
 
-        expect(response.body).to.have.property('id');
-        expect(response.body.code).to.equal(newCode.code);
+        expect(response.body).toHaveProperty('id');
+        expect(response.body.code).toBe(newCode.code);
       });
 
       it('should validate request body', async () => {
@@ -117,8 +126,8 @@ describe('Bonus Codes API', () => {
           .send(update)
           .expect(200);
 
-        expect(response.body.description).to.equal(update.description);
-        expect(response.body.bonusAmount).to.equal(update.bonusAmount);
+        expect(response.body.description).toBe(update.description);
+        expect(response.body.bonusAmount).toBe(update.bonusAmount);
       });
 
       it('should handle invalid bonus code IDs', async () => {
@@ -147,7 +156,7 @@ describe('Bonus Codes API', () => {
           .set('Authorization', `Bearer ${adminToken}`)
           .expect(200);
 
-        expect(response.body.message).to.equal('Bonus code deactivated successfully');
+        expect(response.body.message).toBe('Bonus code deactivated successfully');
 
         // Verify code is deactivated
         const [deactivatedCode] = await db
@@ -156,13 +165,20 @@ describe('Bonus Codes API', () => {
           .where(eq(bonusCodes.id, testCode.id))
           .limit(1);
 
-        expect(deactivatedCode.status).to.equal('inactive');
+        expect(deactivatedCode.status).toBe('inactive');
       });
     });
   });
 
-  after(async () => {
-    // Cleanup test data
-    await db.delete(bonusCodes).where(eq(bonusCodes.code, 'TEST100'));
+  afterAll(async () => {
+    console.log('Cleaning up test data...');
+    try {
+      // Cleanup test data
+      await db.delete(bonusCodes).where(eq(bonusCodes.code, 'TEST100'));
+      console.log('Test data cleanup completed');
+    } catch (error) {
+      console.error('Cleanup failed:', error);
+      throw error;
+    }
   });
 });

@@ -6,6 +6,7 @@ import { telegramUsers, verificationRequests } from "@db/schema/telegram";
 import { users } from "@db/schema/users";
 import { eq } from "drizzle-orm";
 import type { Request, Response } from "express";
+import { handleMockUserCommand, handleClearUserCommand } from "./commands/mock-user";
 
 let botInstance: TelegramBot | null = null;
 let healthCheckInterval: NodeJS.Timeout | null = null;
@@ -22,9 +23,33 @@ export async function initializeBot(): Promise<TelegramBot | null> {
 
   try {
     botInstance = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
+    botInstance.on("message", async (msg) => {
+      if (!msg.text) return;
+
+      const [command, ...args] = msg.text.split(" ");
+
+      switch (command.toLowerCase()) {
+        case "/verify":
+          await handleVerifyCommand(msg, args);
+          break;
+        case "/stats":
+          await handleStatsCommand(msg);
+          break;
+        case "/leaderboard":
+          await handleLeaderboardCommand(msg);
+          break;
+        case "/mockuser":
+          await handleMockUserCommand(msg, args, botInstance!);
+          break;
+        case "/clearuser":
+          await handleClearUserCommand(msg, args, botInstance!);
+          break;
+      }
+    });
+
     const botInfo = await botInstance.getMe();
     console.log("✅ Bot initialized successfully");
-    startHealthCheck(); // Start monitoring after initialization
+    startHealthCheck();
     return botInstance;
   } catch (error) {
     console.error("❌ Bot initialization failed:", error);
@@ -155,8 +180,8 @@ async function handleVerificationAction(msg: any, action: 'approve' | 'reject', 
     }
 
     await safeSendMessage(chatId, `✅ Verification request ${action}ed for @${username}`);
-    await safeSendMessage(parseInt(request.telegramId), 
-      action === 'approve' 
+    await safeSendMessage(parseInt(request.telegramId),
+      action === 'approve'
         ? "✅ Your account has been verified! You can now use /stats to check your statistics."
         : "❌ Your verification request has been rejected. Please contact support if you think this is a mistake."
     );

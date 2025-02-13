@@ -28,12 +28,12 @@ interface AuthenticatedRequest extends Request {
 
 // Validation schemas
 const createBonusCodeSchema = z.object({
-  code: z.string().min(1),
+  code: z.string().min(1, "Code is required"),
   description: z.string().optional(),
-  bonusAmount: z.string().min(1),
+  bonusAmount: z.string().min(1, "Bonus amount is required"),
   requiredWager: z.string().optional(),
-  totalClaims: z.number().int().positive(),
-  expiresAt: z.string().datetime(),
+  totalClaims: z.number().int().positive("Total claims must be a positive number"),
+  expiresAt: z.string().datetime("Invalid expiration date"),
   source: z.string().default('web'),
 });
 
@@ -84,6 +84,14 @@ const asyncHandler = (fn: (req: AuthenticatedRequest, res: Response, next: NextF
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch((error) => {
       log(`Error in route handler: ${error}`);
+      // Check if it's a validation error
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          status: "error",
+          message: "Validation failed",
+          errors: error.errors.map(err => err.message)
+        });
+      }
       res.status(500).json({
         status: "error",
         message: error.message || "Internal server error"
@@ -97,19 +105,17 @@ router.get("/bonus-codes", asyncHandler(async (req, res) => {
   log("Fetching active bonus codes - Starting query...");
   try {
     // Rate limiting
-    const rateLimitRes = await publicLimiter.consume(req.ip);
-    const remainingPoints = rateLimitRes.remainingPoints;
+    await publicLimiter.consume(req.ip || 'unknown');
 
     // Set response headers
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('X-RateLimit-Limit', publicLimiter.points);
-    res.setHeader('X-RateLimit-Remaining', remainingPoints);
+    res.setHeader('X-RateLimit-Remaining', (await publicLimiter.get(req.ip || 'unknown'))?.remainingPoints || 0);
 
     const now = new Date();
     log(`Current time for comparison: ${now.toISOString()}`);
 
-    // First try with just status filter
     const activeBonusCodes = await db
       .select()
       .from(bonusCodes)
@@ -139,16 +145,12 @@ router.get("/bonus-codes", asyncHandler(async (req, res) => {
     });
   } catch (error) {
     log(`Error fetching bonus codes: ${error}`);
-    return res.status(500).json({
-      status: "error",
-      message: "Failed to fetch bonus codes",
-      error: error instanceof Error ? error.message : String(error)
-    });
+    throw error;
   }
 }));
 
 // Get all bonus codes (admin only)
-router.get("/admin/bonus-codes", isAdmin, asyncHandler(async (_req, res) => {
+router.get("/admin/bonus-codes", isAdmin, asyncHandler(async (req: AuthenticatedRequest, res) => {
   log("Admin: Fetching all bonus codes");
   try {
     const allBonusCodes = await db
@@ -157,6 +159,11 @@ router.get("/admin/bonus-codes", isAdmin, asyncHandler(async (_req, res) => {
       .orderBy(bonusCodes.createdAt);
 
     log(`Found ${allBonusCodes.length} total bonus codes`);
+
+    if (allBonusCodes.length > 0) {
+      log(`Query result sample: ${JSON.stringify(allBonusCodes[0])}`);
+    }
+
     res.json(allBonusCodes);
   } catch (error) {
     log(`Error fetching all bonus codes: ${error}`);
@@ -168,21 +175,24 @@ router.get("/admin/bonus-codes", isAdmin, asyncHandler(async (_req, res) => {
 router.post("/admin/bonus-codes", isAdmin, asyncHandler(async (req: AuthenticatedRequest, res) => {
   log("Admin: Creating new bonus code");
   try {
-    const data = createBonusCodeSchema.parse(req.body);
+    const result = createBonusCodeSchema.safeParse(req.body);
+    if (!result.success) {
+      log(`Validation failed: ${JSON.stringify(result.error.issues)}`);
+      return res.status(400).json({
+        status: "error",
+        message: "Validation failed",
+        errors: result.error.issues.map(i => i.message)
+      });
+    }
 
     const [bonusCode] = await db
       .insert(bonusCodes)
       .values({
-        code: data.code,
-        description: data.description,
-        bonusAmount: data.bonusAmount,
-        requiredWager: data.requiredWager,
-        totalClaims: data.totalClaims,
+        ...result.data,
         currentClaims: 0,
-        expiresAt: new Date(data.expiresAt),
         status: 'active',
-        source: data.source,
         createdBy: req.user!.id,
+        expiresAt: new Date(result.data.expiresAt),
       })
       .returning();
 
@@ -199,17 +209,20 @@ router.put("/admin/bonus-codes/:id", isAdmin, asyncHandler(async (req: Authentic
   const { id } = req.params;
   log(`Admin: Updating bonus code ${id}`);
   try {
-    const data = updateBonusCodeSchema.parse(req.body);
+    const result = updateBonusCodeSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        status: "error",
+        message: "Validation failed",
+        errors: result.error.issues.map(i => i.message)
+      });
+    }
 
     const [updated] = await db
       .update(bonusCodes)
       .set({
-        ...(data.description !== undefined && { description: data.description }),
-        ...(data.bonusAmount !== undefined && { bonusAmount: data.bonusAmount }),
-        ...(data.requiredWager !== undefined && { requiredWager: data.requiredWager }),
-        ...(data.totalClaims !== undefined && { totalClaims: data.totalClaims }),
-        ...(data.expiresAt !== undefined && { expiresAt: new Date(data.expiresAt) }),
-        ...(data.status !== undefined && { status: data.status }),
+        ...result.data,
+        ...(result.data.expiresAt && { expiresAt: new Date(result.data.expiresAt) }),
         updatedAt: new Date(),
       })
       .where(eq(bonusCodes.id, parseInt(id)))
