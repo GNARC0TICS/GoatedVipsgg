@@ -1,3 +1,33 @@
+declare module "node-telegram-bot-api" {
+  interface ChatPermissions {
+    can_send_messages?: boolean;
+    can_send_media_messages?: boolean;
+    can_send_other_messages?: boolean;
+    can_add_web_page_previews?: boolean;
+  }
+
+  interface TelegramBot {
+    botInfo?: {
+      id: number;
+      is_bot: boolean;
+      first_name: string;
+      username: string;
+      can_join_groups: boolean;
+      can_read_all_group_messages: boolean;
+      supports_inline_queries: boolean;
+    };
+    kickChatMember(chatId: number | string, userId: number): Promise<boolean>;
+    restrictChatMember(
+      chatId: number | string,
+      userId: number,
+      permissions: Partial<ChatPermissions>
+    ): Promise<boolean>;
+    emit(event: "message", message: TelegramBot.Message): boolean;
+    emit(event: "callback_query", query: TelegramBot.CallbackQuery): boolean;
+    emit(event: string, ...args: any[]): boolean;
+  }
+}
+
 import TelegramBot from "node-telegram-bot-api";
 import fetch from "node-fetch";
 import schedule from "node-schedule";
@@ -11,773 +41,757 @@ import { transformLeaderboardData } from "../utils/leaderboard";
 //#region Extended Types & Constants
 
 // Enhanced type definition for TelegramBot
-declare module "node-telegram-bot-api" {
-  interface TelegramBot {
-    botInfo?: {
-      id: number;
-      is_bot: boolean;
-      first_name: string;
-      username: string;
-      can_join_groups: boolean;
-      can_read_all_group_messages: boolean;
-      supports_inline_queries: boolean;
-    };
-    emit(event: "message", message: TelegramBot.Message): boolean;
-    emit(event: "callback_query", query: TelegramBot.CallbackQuery): boolean;
-    emit(event: string, ...args: any[]): boolean;
-  }
-}
 
-const RECONNECT_DELAY = 3000;
-const MAX_RECONNECT_ATTEMPTS = 8;
-const RECONNECT_BACKOFF_MULTIPLIER = 1.5;
-const WEBHOOK_URL = "https://goatedvips.replit.app/webhook";
-const DEBUG = process.env.NODE_ENV !== "production";
-const BOT_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID
-  ? parseInt(process.env.TELEGRAM_ADMIN_ID)
-  : 1689953605;
-const GROUP_MESSAGE_TYPES = ["group", "supergroup"];
-const HEALTH_CHECK_INTERVAL = 15000; // 15 sec
-const HEALTH_CHECK_TIMEOUT = 5000; // 5 sec
-const MAX_HEALTH_CHECK_FAILURES = 5;
-const GROUP_CHAT_ID = process.env.GROUP_CHAT_ID ? parseInt(process.env.GROUP_CHAT_ID) : undefined;
+//const RECONNECT_DELAY = 3000;
+//const MAX_RECONNECT_ATTEMPTS = 8;
+//const RECONNECT_BACKOFF_MULTIPLIER = 1.5;
+//const WEBHOOK_URL = "https://goatedvips.replit.app/webhook";
+//const DEBUG = process.env.NODE_ENV !== "production";
+//const BOT_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID
+//  ? parseInt(process.env.TELEGRAM_ADMIN_ID)
+//  : 1689953605;
+//const GROUP_MESSAGE_TYPES = ["group", "supergroup"];
+//const HEALTH_CHECK_INTERVAL = 15000; // 15 sec
+//const HEALTH_CHECK_TIMEOUT = 5000; // 5 sec
+//const MAX_HEALTH_CHECK_FAILURES = 5;
+//const GROUP_CHAT_ID = process.env.GROUP_CHAT_ID ? parseInt(process.env.GROUP_CHAT_ID) : undefined;
 
 // This Set will track all group IDs where the bot is present (for recurring broadcasts)
-const groupChatIds = new Set<number>();
+//const groupChatIds = new Set<number>();
 
 // In-memory storage for warnings and permanent bans
-const warningsMap = new Map<string, number>();
-const bannedUsers = new Set<number>();
+//const warningsMap = new Map<string, number>();
+//const bannedUsers = new Set<number>();
 
 //#endregion
 
 //#region Utility Functions
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+//const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const debugLog = (...args: any[]) => {
-  const timestamp = new Date().toISOString();
-  if (DEBUG) {
-    console.log(`[Telegram Bot Debug ${timestamp}]`, ...args);
-  } else if (typeof args[0] === "string" && (args[0].includes("Error") || args[0].includes("❌"))) {
-    console.error(`[Telegram Bot Error ${timestamp}]`, ...args);
-  }
-};
+//const debugLog = (...args: any[]) => {
+//  const timestamp = new Date().toISOString();
+//  if (DEBUG) {
+//    console.log(`[Telegram Bot Debug ${timestamp}]`, ...args);
+//  } else if (typeof args[0] === "string" && (args[0].includes("Error") || args[0].includes("❌"))) {
+//    console.error(`[Telegram Bot Error ${timestamp}]`, ...args);
+//  }
+//};
 
 // For commands that only the main admin should run
-const isMainAdmin = (userId: number) => userId === BOT_ADMIN_ID;
+//const isMainAdmin = (userId: number) => userId === BOT_ADMIN_ID;
 
 // Check if a user is an admin in the current chat (or the main admin)
-async function isUserGroupAdmin(chatId: number, userId: number): Promise<boolean> {
-  if (userId === BOT_ADMIN_ID) return true;
-  try {
-    const admins = await botInstance!.getChatAdministrators(chatId);
-    return admins.some((admin) => admin.user.id === userId);
-  } catch (e) {
-    console.error("Error checking admin status", e);
-    return false;
-  }
-}
+//async function isUserGroupAdmin(chatId: number, userId: number): Promise<boolean> {
+//  if (userId === BOT_ADMIN_ID) return true;
+//  try {
+//    const admins = await botInstance!.getChatAdministrators(chatId);
+//    return admins.some((admin) => admin.user.id === userId);
+//  } catch (e) {
+//    console.error("Error checking admin status", e);
+//    return false;
+//  }
+//}
 
 //#endregion
 
 //#region Singleton Bot & Initialization
 
-let botInstance: TelegramBot | null = null;
-let isInitializing = false;
-let isReconnecting = false;
-let reconnectAttempts = 0;
+//let botInstance: TelegramBot | null = null;
+//let isInitializing = false;
+//let isReconnecting = false;
+//let reconnectAttempts = 0;
 
-const initializeBot = async (): Promise<TelegramBot | null> => {
-  if (!process.env.TELEGRAM_BOT_TOKEN) {
-    console.error("❌ TELEGRAM_BOT_TOKEN is not set!");
-    return null;
-  }
+//const initializeBot = async (): Promise<TelegramBot | null> => {
+//  if (!process.env.TELEGRAM_BOT_TOKEN) {
+//    console.error("❌ TELEGRAM_BOT_TOKEN is not set!");
+//    return null;
+//  }
 
-  if (isInitializing) {
-    debugLog("Bot initialization already in progress...");
-    return botInstance;
-  }
-  if (botInstance) return botInstance;
+//  if (isInitializing) {
+//    debugLog("Bot initialization already in progress...");
+//    return botInstance;
+//  }
+//  if (botInstance) return botInstance;
 
-  isInitializing = true;
+//  isInitializing = true;
 
-  try {
-    debugLog("Initializing bot...");
+//  try {
+//    debugLog("Initializing bot...");
 
-    // Clear any existing webhook
-    const tempBot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
-    const webhookInfo = await tempBot.getWebHookInfo();
-    if (webhookInfo.url) {
-      await tempBot.deleteWebHook();
-      await sleep(2000);
-    }
+//    // Clear any existing webhook
+//    const tempBot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
+//    const webhookInfo = await tempBot.getWebHookInfo();
+//    if (webhookInfo.url) {
+//      await tempBot.deleteWebHook();
+//      await sleep(2000);
+//    }
 
-    // Create new instance and set webhook with improved options
-    botInstance = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
-    await botInstance.setWebHook(WEBHOOK_URL, {
-      allowed_updates: ["message", "callback_query", "chat_member", "my_chat_member"],
-      max_connections: 100,
-    });
-    console.log("✅ Webhook set successfully to:", WEBHOOK_URL);
+//    // Create new instance and set webhook with improved options
+//    botInstance = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
+//    await botInstance.setWebHook(WEBHOOK_URL, {
+//      allowed_updates: ["message", "callback_query", "chat_member", "my_chat_member"],
+//      max_connections: 100,
+//    });
+//    console.log("✅ Webhook set successfully to:", WEBHOOK_URL);
 
-    // Get and store bot info
-    const botInfo = await botInstance.getMe();
-    botInstance.botInfo = botInfo;
+//    // Get and store bot info
+//    const botInfo = await botInstance.getMe();
+//    botInstance.botInfo = botInfo;
 
-    setupBotEventHandlers();
-    setupCommandHandlers();
+//    setupBotEventHandlers();
+//    setupCommandHandlers();
 
-    debugLog("Bot initialized successfully");
-    isInitializing = false;
-    return botInstance;
-  } catch (error) {
-    console.error("❌ Bot initialization failed:", error);
-    isInitializing = false;
-    botInstance = null;
-    return null;
-  }
-};
+//    debugLog("Bot initialized successfully");
+//    isInitializing = false;
+//    return botInstance;
+//  } catch (error) {
+//    console.error("❌ Bot initialization failed:", error);
+//    isInitializing = false;
+//    botInstance = null;
+//    return null;
+//  }
+//};
 
 //#endregion
 
 //#region Priority Queue & Rate Limiter
 
-type Priority = "high" | "medium" | "low";
-interface QueueItem {
-  priority: Priority;
-  task: () => Promise<void>;
-  timestamp: number;
-}
+//type Priority = "high" | "medium" | "low";
+//interface QueueItem {
+//  priority: Priority;
+//  task: () => Promise<void>;
+//  timestamp: number;
+//}
 
-class PriorityMessageQueue {
-  private queue: Map<number, QueueItem[]> = new Map();
-  private processing: Map<number, boolean> = new Map();
-  private readonly RATE_LIMITS: Record<Priority, number> = {
-    high: 300, // ~3 messages/sec
-    medium: 600, // ~2 messages/sec
-    low: 1000, // 1 message/sec
-  };
+//class PriorityMessageQueue {
+//  private queue: Map<number, QueueItem[]> = new Map();
+//  private processing: Map<number, boolean> = new Map();
+//  private readonly RATE_LIMITS: Record<Priority, number> = {
+//    high: 300, // ~3 messages/sec
+//    medium: 600, // ~2 messages/sec
+//    low: 1000, // 1 message/sec
+//  };
 
-  async add(chatId: number, task: () => Promise<void>, priority: Priority = "medium") {
-    const items = this.queue.get(chatId) || [];
-    items.push({ priority, task, timestamp: Date.now() });
-    items.sort((a, b) =>
-      this.RATE_LIMITS[b.priority] - this.RATE_LIMITS[a.priority] || a.timestamp - b.timestamp
-    );
-    this.queue.set(chatId, items);
-    if (!this.processing.get(chatId)) {
-      await this.process(chatId);
-    }
-  }
+//  async add(chatId: number, task: () => Promise<void>, priority: Priority = "medium") {
+//    const items = this.queue.get(chatId) || [];
+//    items.push({ priority, task, timestamp: Date.now() });
+//    items.sort((a, b) =>
+//      this.RATE_LIMITS[b.priority] - this.RATE_LIMITS[a.priority] || a.timestamp - b.timestamp
+//    );
+//    this.queue.set(chatId, items);
+//    if (!this.processing.get(chatId)) {
+//      await this.process(chatId);
+//    }
+//  }
 
-  private async process(chatId: number) {
-    if (!this.queue.has(chatId)) return;
-    this.processing.set(chatId, true);
-    const items = this.queue.get(chatId)!;
-    while (items.length > 0) {
-      const item = items[0];
-      try {
-        await item.task();
-        await sleep(this.RATE_LIMITS[item.priority]);
-      } catch (error) {
-        debugLog(`Error processing queue item for ${chatId}:`, error);
-      }
-      items.shift();
-    }
-    this.processing.set(chatId, false);
-    this.queue.delete(chatId);
-  }
-}
+//  private async process(chatId: number) {
+//    if (!this.queue.has(chatId)) return;
+//    this.processing.set(chatId, true);
+//    const items = this.queue.get(chatId)!;
+//    while (items.length > 0) {
+//      const item = items[0];
+//      try {
+//        await item.task();
+//        await sleep(this.RATE_LIMITS[item.priority]);
+//      } catch (error) {
+//        debugLog(`Error processing queue item for ${chatId}:`, error);
+//      }
+//      items.shift();
+//    }
+//    this.processing.set(chatId, false);
+//    this.queue.delete(chatId);
+//  }
+//}
 
-class RateLimiter {
-  private limits: Map<number, number> = new Map();
-  private readonly WINDOW = 60000; // 1 minute
-  private readonly MAX_MESSAGES = 30;
+//class RateLimiter {
+//  private limits: Map<number, number> = new Map();
+//  private readonly WINDOW = 60000; // 1 minute
+//  private readonly MAX_MESSAGES = 30;
 
-  async checkLimit(chatId: number): Promise<boolean> {
-    const now = Date.now();
-    const count = this.limits.get(chatId) || 0;
-    if (count >= this.MAX_MESSAGES) return false;
-    this.limits.set(chatId, count + 1);
-    setTimeout(() => {
-      this.limits.set(chatId, (this.limits.get(chatId) || 1) - 1);
-    }, this.WINDOW);
-    return true;
-  }
-}
+//  async checkLimit(chatId: number): Promise<boolean> {
+//    const now = Date.now();
+//    const count = this.limits.get(chatId) || 0;
+//    if (count >= this.MAX_MESSAGES) return false;
+//    this.limits.set(chatId, count + 1);
+//    setTimeout(() => {
+//      this.limits.set(chatId, (this.limits.get(chatId) || 1) - 1);
+//    }, this.WINDOW);
+//    return true;
+//  }
+//}
 
-const messageQueue = new PriorityMessageQueue();
-const rateLimiter = new RateLimiter();
+//const messageQueue = new PriorityMessageQueue();
+//const rateLimiter = new RateLimiter();
 
 //#endregion
 
 //#region Health Check & Reconnection
 
-let healthCheckFailures = 0;
+//let healthCheckFailures = 0;
 
-const handleReconnection = async () => {
-  if (!botInstance || isReconnecting || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return;
-  isReconnecting = true;
-  reconnectAttempts++;
-  console.log(`🔄 Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
-  try {
-    await sleep(RECONNECT_DELAY);
-    const botInfo = await botInstance.getMe();
-    botInstance.botInfo = botInfo;
-    isReconnecting = false;
-    healthCheckFailures = 0;
-    console.log("✅ Reconnection successful");
-  } catch (error) {
-    console.error("❌ Reconnection failed:", error);
-    isReconnecting = false;
-    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-      setTimeout(handleReconnection, RECONNECT_DELAY);
-    } else {
-      console.error("❌ Max reconnection attempts reached. Manual intervention required.");
-      safeSendMessage(BOT_ADMIN_ID, "⚠️ Bot reconnection failed after maximum attempts. Please check the logs.");
-    }
-  }
-};
+//const handleReconnection = async () => {
+//  if (!botInstance || isReconnecting || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return;
+//  isReconnecting = true;
+//  reconnectAttempts++;
+//  console.log(`🔄 Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+//  try {
+//    await sleep(RECONNECT_DELAY);
+//    const botInfo = await botInstance.getMe();
+//    botInstance.botInfo = botInfo;
+//    isReconnecting = false;
+//    healthCheckFailures = 0;
+//    console.log("✅ Reconnection successful");
+//  } catch (error) {
+//    console.error("❌ Reconnection failed:", error);
+//    isReconnecting = false;
+//    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+//      setTimeout(handleReconnection, RECONNECT_DELAY * RECONNECT_BACKOFF_MULTIPLIER);
+//    } else {
+//      console.error("❌ Max reconnection attempts reached. Manual intervention required.");
+//      safeSendMessage(BOT_ADMIN_ID, "⚠️ Bot reconnection failed after maximum attempts. Please check the logs.");
+//    }
+//  }
+//};
 
-const startHealthCheck = () => {
-  if (!botInstance) return;
-  let consecutiveFailures = 0;
-  const RECOVERY_DELAY = 5000;
-  setInterval(async () => {
-    try {
-      const webhookInfo = await botInstance!.getWebHookInfo();
-      if (webhookInfo.url) {
-        healthCheckFailures = 0;
-        debugLog("Webhook health check passed");
-      } else {
-        throw new Error("Webhook not set");
-      }
-    } catch (error) {
-      console.error("Webhook health check error:", error);
-      healthCheckFailures++;
-      debugLog(`Health check failed (${healthCheckFailures}/${MAX_HEALTH_CHECK_FAILURES})`);
-      if (healthCheckFailures >= MAX_HEALTH_CHECK_FAILURES) {
-        debugLog("Max health check failures reached - Attempting webhook reset");
-        await initializeBot();
-      }
-    }
-  }, HEALTH_CHECK_INTERVAL);
-};
+//const startHealthCheck = () => {
+//  if (!botInstance) return;
+//  let consecutiveFailures = 0;
+//  const RECOVERY_DELAY = 5000;
+//  setInterval(async () => {
+//    try {
+//      const webhookInfo = await botInstance!.getWebHookInfo();
+//      if (webhookInfo.url) {
+//        healthCheckFailures = 0;
+//        debugLog("Webhook health check passed");
+//      } else {
+//        throw new Error("Webhook not set");
+//      }
+//    } catch (error) {
+//      console.error("Webhook health check error:", error);
+//      healthCheckFailures++;
+//      debugLog(`Health check failed (${healthCheckFailures}/${MAX_HEALTH_CHECK_FAILURES})`);
+//      if (healthCheckFailures >= MAX_HEALTH_CHECK_FAILURES) {
+//        debugLog("Max health check failures reached - Attempting webhook reset");
+//        await initializeBot();
+//      }
+//    }
+//  }, HEALTH_CHECK_INTERVAL);
+//};
 
 //#endregion
 
 //#region Bot Event Handlers
 
-const setupBotEventHandlers = () => {
-  if (!botInstance) return;
+//const setupBotEventHandlers = () => {
+//  if (!botInstance) return;
 
-  botInstance.on("message", handleMessage);
-  botInstance.on("callback_query", handleCallbackQuery);
+//  botInstance.on("message", handleMessage);
+//  botInstance.on("callback_query", handleCallbackQuery);
 
-  botInstance.on("my_chat_member", async (chatMember) => {
-    const { chat, new_chat_member } = chatMember;
-    debugLog("Chat member status update:", {
-      chatId: chat.id,
-      type: chat.type,
-      newStatus: new_chat_member.status,
-    });
-    // When added to a group, store the group ID (for recurring broadcasts)
-    if (GROUP_MESSAGE_TYPES.includes(chat.type)) {
-      groupChatIds.add(chat.id);
-      if (new_chat_member.status === "administrator") {
-        await safeSendMessage(chat.id, `✅ Thank you for making me an admin! I'm now fully operational.`, {}, "high");
-      } else if (new_chat_member.status === "member") {
-        await safeSendMessage(chat.id, `⚠️ Please note: I need admin rights to function properly.`, {}, "high");
-      }
-    }
-  });
+//  botInstance.on("my_chat_member", async (chatMember) => {
+//    const { chat, new_chat_member } = chatMember;
+//    debugLog("Chat member status update:", {
+//      chatId: chat.id,
+//      type: chat.type,
+//      newStatus: new_chat_member.status,
+//    });
+//    // When added to a group, store the group ID (for recurring broadcasts)
+//    if (GROUP_MESSAGE_TYPES.includes(chat.type)) {
+//      groupChatIds.add(chat.id);
+//      if (new_chat_member.status === "administrator") {
+//        await safeSendMessage(chat.id, `✅ Thank you for making me an admin! I'm now fully operational.`, {}, "high");
+//      } else if (new_chat_member.status === "member") {
+//        await safeSendMessage(chat.id, `⚠️ Please note: I need admin rights to function properly.`, {}, "high");
+//      }
+//    }
+//  });
 
-  // Polling and error handling
-  botInstance.on("polling_error", (error) => {
-    console.error("Polling error:", error);
-    healthCheckFailures++;
-    if (healthCheckFailures >= MAX_HEALTH_CHECK_FAILURES) handleReconnection();
-  });
+//  // Polling and error handling
+//  botInstance.on("polling_error", (error) => {
+//    console.error("Polling error:", error);
+//    healthCheckFailures++;
+//    if (healthCheckFailures >= MAX_HEALTH_CHECK_FAILURES) handleReconnection();
+//  });
 
-  botInstance.on("error", (error) => {
-    console.error("Bot error:", error);
-    healthCheckFailures++;
-    if (healthCheckFailures >= MAX_HEALTH_CHECK_FAILURES) handleReconnection();
-  });
-};
+//  botInstance.on("error", (error) => {
+//    console.error("Bot error:", error);
+//    healthCheckFailures++;
+//    if (healthCheckFailures >= MAX_HEALTH_CHECK_FAILURES) handleReconnection();
+//  });
+//};
 
-const setupCommandHandlers = () => {
-  if (!botInstance) return;
+//const setupCommandHandlers = () => {
+//  if (!botInstance) return;
 
-  // Matches commands with optional arguments
-  botInstance.onText(
-    /\/(start|help|verify|stats|leaderboard|race|play|website|check_stats|adminpanel|broadcast|message|createchallenge|createbonus|launchchallenge|available|setrecurring|ban|mute|unmute|warn|bootfuck|getinfo)(?:@[\w]+)?(?: (.+))?/,
-    async (msg, match) => {
-      if (!match) return;
-      const command = `/${match[1]}`;
-      const args = match[2] ? match[2].split(" ") : [];
-      handleCommand(command, msg, args);
-    }
-  );
+//  // Matches commands with optional arguments
+//  botInstance.onText(
+//    /\/(start|help|verify|stats|leaderboard|race|play|website|check_stats|adminpanel|broadcast|message|createchallenge|createbonus|launchchallenge|available|setrecurring|ban|mute|unmute|warn|bootfuck|getinfo)(?:@[\w]+)?(?: (.+))?/,
+//    async (msg, match) => {
+//      if (!match) return;
+//      const command = `/${match[1]}`;
+//      const args = match[2] ? match[2].split(" ") : [];
+//      handleCommand(command, msg, args);
+//    }
+//  );
 
-  // Admin-only verification approval
-  botInstance.onText(/\/approve (.+)/, async (msg, match) => {
-    if (!(await isUserGroupAdmin(msg.chat.id, msg.from!.id))) {
-      return safeSendMessage(msg.chat.id, "❌ This command is only available to group admins.");
-    }
-    const telegramUsername = match?.[1]?.trim().replace("@", "");
-    if (!telegramUsername) {
-      return safeSendMessage(msg.chat.id, "Usage: /approve @username");
-    }
-    try {
-      const [request] = await db
-        .select()
-        .from(verificationRequests)
-        .where(eq(verificationRequests.telegramUsername, telegramUsername))
-        .limit(1);
-      if (!request) {
-        return safeSendMessage(msg.chat.id, "❌ No pending verification request found for this user.");
-      }
-      await db
-        .update(verificationRequests)
-        .set({ status: "approved" })
-        .where(eq(verificationRequests.telegramUsername, telegramUsername));
-      await db
-        .insert(telegramUsers)
-        .values({
-          telegramId: request.telegramId,
-          telegramUsername: telegramUsername,
-          userId: request.userId,
-          isVerified: true,
-        })
-        .onConflictDoUpdate({
-          target: [telegramUsers.telegramId],
-          set: {
-            telegramUsername: telegramUsername,
-            userId: request.userId,
-            isVerified: true,
-          },
-        });
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, request.userId))
-        .limit(1);
-      await safeSendMessage(msg.chat.id, `✅ Verified @${telegramUsername} as ${user.username}`);
-      await safeSendMessage(parseInt(request.telegramId), "✅ Your account has been verified! You can now use /stats to check your statistics.");
-    } catch (error) {
-      console.error("Approval error:", error);
-      await safeSendMessage(msg.chat.id, "❌ Error processing approval.");
-    }
-  });
+//  // Admin-only verification approval
+//  botInstance.onText(/\/approve (.+)/, async (msg, match) => {
+//    if (!(await isUserGroupAdmin(msg.chat.id, msg.from!.id))) {
+//      return safeSendMessage(msg.chat.id, "❌ This command is only available to group admins.");
+//    }
+//    const telegramUsername = match?.[1]?.trim().replace("@", "");
+//    if (!telegramUsername) {
+//      return safeSendMessage(msg.chat.id, "Usage: /approve @username");
+//    }
+//    try {
+//      const [request] = await db
+//        .select()
+//        .from(verificationRequests)
+//        .where(eq(verificationRequests.telegramUsername, telegramUsername))
+//        .limit(1);
+//      if (!request) {
+//        return safeSendMessage(msg.chat.id, "❌ No pending verification request found for this user.");
+//      }
+//      await db
+//        .update(verificationRequests)
+//        .set({ status: "approved" })
+//        .where(eq(verificationRequests.telegramUsername, telegramUsername));
+//      await db
+//        .insert(telegramUsers)
+//        .values({
+//          telegramId: request.telegramId,
+//          telegramUsername: telegramUsername,
+//          userId: request.userId,
+//          isVerified: true,
+//        })
+//        .onConflictDoUpdate({
+//          target: [telegramUsers.telegramId],
+//          set: {
+//            telegramUsername: telegramUsername,
+//            userId: request.userId,
+//            isVerified: true,
+//          },
+//        });
+//      const [user] = await db
+//        .select()
+//        .from(users)
+//        .where(eq(users.id, request.userId))
+//        .limit(1);
+//      await safeSendMessage(msg.chat.id, `✅ Verified @${telegramUsername} as ${user.username}`);
+//      await safeSendMessage(parseInt(request.telegramId), "✅ Your account has been verified! You can now use /stats to check your statistics.");
+//    } catch (error) {
+//      console.error("Approval error:", error);
+//      await safeSendMessage(msg.chat.id, "❌ Error processing approval.");
+//    }
+//  });
 
-  // Admin command to view pending verification requests
-  botInstance.onText(/\/pending/, async (msg) => {
-    if (!(await isUserGroupAdmin(msg.chat.id, msg.from!.id))) {
-      return safeSendMessage(msg.chat.id, "❌ This command is only available to group admins.");
-    }
-    try {
-      const pendingRequests = await db
-        .select({
-          id: verificationRequests.id,
-          telegramUsername: verificationRequests.telegramUsername,
-          userId: verificationRequests.userId,
-          requestedAt: verificationRequests.requestedAt,
-          username: users.username,
-        })
-        .from(verificationRequests)
-        .innerJoin(users, eq(users.id, verificationRequests.userId))
-        .where(eq(verificationRequests.status, "pending"));
+//  // Admin command to view pending verification requests
+//  botInstance.onText(/\/pending/, async (msg) => {
+//    if (!(await isUserGroupAdmin(msg.chat.id, msg.from!.id))) {
+//      return safeSendMessage(msg.chat.id, "❌ This command is only available to group admins.");
+//    }
+//    try {
+//      const pendingRequests = await db
+//        .select({
+//          id: verificationRequests.id,
+//          telegramUsername: verificationRequests.telegramUsername,
+//          userId: verificationRequests.userId,
+//          requestedAt: verificationRequests.requestedAt,
+//          username: users.username,
+//        })
+//        .from(verificationRequests)
+//        .innerJoin(users, eq(users.id, verificationRequests.userId))
+//        .where(eq(verificationRequests.status, "pending"));
 
-      if (pendingRequests.length === 0) {
-        return safeSendMessage(msg.chat.id, "✅ No pending verification requests.", {}, "high");
-      }
-      for (const request of pendingRequests) {
-        const message = `🔍 Verification Request #${request.id}
-👤 Telegram: @${request.telegramUsername || "N/A"}
-🎮 Goated: ${request.username}
-⏰ Requested: ${new Date(request.requestedAt).toLocaleString()}`;
-        const inlineKeyboard = {
-          reply_markup: {
-            inline_keyboard: [
-              [
-                { text: "✅ Approve", callback_data: `approve_${request.id}` },
-                { text: "❌ Reject", callback_data: `reject_${request.id}` },
-              ],
-            ],
-          },
-        };
-        await safeSendMessage(msg.chat.id, message, inlineKeyboard, "high");
-      }
-    } catch (error) {
-      console.error("Error fetching pending requests:", error);
-      await safeSendMessage(msg.chat.id, "❌ Error fetching pending requests.");
-    }
-  });
-};
+//      if (pendingRequests.length === 0) {
+//        return safeSendMessage(msg.chat.id, "✅ No pending verification requests.", {}, "high");
+//      }
+//      for (const request of pendingRequests) {
+//        const message = `🔍 Verification Request #${request.id}
+//👤 Telegram: @${request.telegramUsername || "N/A"}
+//🎮 Goated: ${request.username}
+//⏰ Requested: ${new Date(request.requestedAt).toLocaleString()}`;
+//        const inlineKeyboard = {
+//          reply_markup: {
+//            inline_keyboard: [
+//              [
+//                { text: "✅ Approve", callback_data: `approve_${request.id}` },
+//                { text: "❌ Reject", callback_data: `reject_${request.id}` },
+//              ],
+//            ],
+//          },
+//        };
+//        await safeSendMessage(msg.chat.id, message, inlineKeyboard, "high");
+//      }
+//    } catch (error) {
+//      console.error("Error fetching pending requests:", error);
+//      await safeSendMessage(msg.chat.id, "❌ Error fetching pending requests.");
+//    }
+//  });
+//};
 
 //#endregion
 
 //#region Challenge & Bonus Code Creation Feature
 
-interface ChallengeCreationState {
-  step: number;
-  game?: string;
-  minBet?: string;
-  multiplier?: string;
-  prize?: string;
-  numClaims?: number;
-  timeframe?: string;
-  bonusCode?: string;
-}
+//interface ChallengeCreationState {
+//  step: number;
+//  game?: string;
+//  minBet?: string;
+//  multiplier?: string;
+//  prize?: string;
+//  numClaims?: number;
+//  timeframe?: string;
+//  bonusCode?: string;
+//}
 
-interface BonusCreationState {
-  step: number;
-  bonusAmount?: string;
-  requiredWager?: string;
-  totalClaims?: number;
-  bonusCode?: string;
-}
+//interface BonusCreationState {
+//  step: number;
+//  bonusAmount?: string;
+//  requiredWager?: string;
+//  totalClaims?: number;
+//  bonusCode?: string;
+//}
 
-const challengeCreationStates = new Map<number, ChallengeCreationState>();
-const bonusCreationStates = new Map<number, BonusCreationState>();
+//const challengeCreationStates = new Map<number, ChallengeCreationState>();
+//const bonusCreationStates = new Map<number, BonusCreationState>();
 
 // Temporary storage for the last created challenge – in production, save to your DB
-let lastCreatedChallenge: ChallengeCreationState | null = null;
+//let lastCreatedChallenge: ChallengeCreationState | null = null;
 
-function startChallengeCreation(chatId: number) {
-  challengeCreationStates.set(chatId, { step: 1 });
-  // Send inline keyboard for game selection
-  const games = [
-    "GOAT RUN",
-    "G3 TOWER",
-    "DIAMONDS",
-    "DICE",
-    "KENO",
-    "BLACKJACK",
-    "PLINKO",
-    "LIMBO",
-    "MINES",
-    "WHEEL",
-    "CRASH",
-    "G3 CARDS",
-  ];
-  const keyboard = games.map((game) => ({ text: game, callback_data: `challenge_game_${game}` }));
-  // Group buttons in rows of 3
-  const rows = [];
-  for (let i = 0; i < keyboard.length; i += 3) {
-    rows.push(keyboard.slice(i, i + 3));
-  }
-  safeSendMessage(chatId, "Select the game for the challenge:", { reply_markup: { inline_keyboard: rows } });
-}
+//function startChallengeCreation(chatId: number) {
+//  challengeCreationStates.set(chatId, { step: 1 });
+//  // Send inline keyboard for game selection
+//  const games = [
+//    "GOAT RUN",
+//    "G3 TOWER",
+//    "DIAMONDS",
+//    "DICE",
+//    "KENO",
+//    "BLACKJACK",
+//    "PLINKO",
+//    "LIMBO",
+//    "MINES",
+//    "WHEEL",
+//    "CRASH",
+//    "G3 CARDS",
+//  ];
+//  const keyboard = games.map((game) => ({ text: game, callback_data: `challenge_game_${game}` }));
+//  // Group buttons in rows of 3
+//  const rows = [];
+//  for (let i = 0; i < keyboard.length; i += 3) {
+//    rows.push(keyboard.slice(i, i + 3));
+//  }
+//  safeSendMessage(chatId, "Select the game for the challenge:", { reply_markup: { inline_keyboard: rows } });
+//}
 
-function startBonusCreation(chatId: number) {
-  bonusCreationStates.set(chatId, { step: 1 });
-  safeSendMessage(chatId, "Enter the bonus amount (e.g., $10):");
-}
+//function startBonusCreation(chatId: number) {
+//  bonusCreationStates.set(chatId, { step: 1 });
+//  safeSendMessage(chatId, "Enter the bonus amount (e.g., $10):");
+//}
 
-function processChallengeCreationInput(chatId: number, text: string) {
-  const state = challengeCreationStates.get(chatId);
-  if (!state) return;
-  switch (state.step) {
-    case 3:
-      state.multiplier = text.trim();
-      state.step = 4;
-      safeSendMessage(chatId, "Enter the prize amount (e.g., $50):");
-      break;
-    case 4:
-      state.prize = text.trim();
-      state.step = 5;
-      safeSendMessage(chatId, "Enter the number of claims:");
-      break;
-    case 5:
-      const num = parseInt(text.trim());
-      if (isNaN(num)) {
-        safeSendMessage(chatId, "Please enter a valid number for claims:");
-        return;
-      }
-      state.numClaims = num;
-      state.step = 6;
-      safeSendMessage(chatId, "Enter the competition timeframe (e.g., 2025-02-15 18:00):");
-      break;
-    case 6:
-      state.timeframe = text.trim();
-      state.step = 7;
-      safeSendMessage(chatId, "Enter the bonus code to be given upon completion:");
-      break;
-    case 7:
-      state.bonusCode = text.trim();
-      state.step = 8;
-      // Show confirmation
-      const confirmationText = `Please confirm the challenge details:
-Game: ${state.game}
-Min Bet: ${state.minBet}
-Multiplier: ${state.multiplier}x
-Prize: ${state.prize}
-Number of Claims: ${state.numClaims}
-Timeframe: ${state.timeframe}
-Bonus Code: ${state.bonusCode}`;
-      const keyboard = {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "Confirm Challenge", callback_data: "challenge_confirm" }],
-            [{ text: "Cancel", callback_data: "challenge_cancel" }],
-          ],
-        },
-      };
-      safeSendMessage(chatId, confirmationText, keyboard);
-      break;
-    default:
-      break;
-  }
-}
+//function processChallengeCreationInput(chatId: number, text: string) {
+//  const state = challengeCreationStates.get(chatId);
+//  if (!state) return;
+//  switch (state.step) {
+//    case 3:
+//      state.multiplier = text.trim();
+//      state.step = 4;
+//      safeSendMessage(chatId, "Enter the prize amount (e.g., $50):");
+//      break;
+//    case 4:
+//      state.prize = text.trim();
+//      state.step = 5;
+//      safeSendMessage(chatId, "Enter the number of claims:");
+//      break;
+//    case 5:
+//      const num = parseInt(text.trim());
+//      if (isNaN(num)) {
+//        safeSendMessage(chatId, "Please enter a valid number for claims:");
+//        return;
+//      }
+//      state.numClaims = num;
+//      state.step = 6;
+//      safeSendMessage(chatId, "Enter the competition timeframe (e.g., 2025-02-15 18:00):");
+//      break;
+//    case 6:
+//      state.timeframe = text.trim();
+//      state.step = 7;
+//      safeSendMessage(chatId, "Enter the bonus code to be given upon completion:");
+//      break;
+//    case 7:
+//      state.bonusCode = text.trim();
+//      state.step = 8;
+//      // Show confirmation
+//      const confirmationText = `Please confirm the challenge details:
+//Game: ${state.game}
+//Min Bet: ${state.minBet}
+//Multiplier: ${state.multiplier}x
+//Prize: ${state.prize}
+//Number of Claims: ${state.numClaims}
+//Timeframe: ${state.timeframe}
+//Bonus Code: ${state.bonusCode}`;
+//      const keyboard = {
+//        reply_markup: {
+//          inline_keyboard: [
+//            [{ text: "Confirm Challenge", callback_data: "challenge_confirm" }],
+//            [{ text: "Cancel", callback_data: "challenge_cancel" }],
+//          ],
+//        },
+//      };
+//      safeSendMessage(chatId, confirmationText, keyboard);
+//      break;
+//    default:
+//      break;
+//  }
+//}
 
-function processBonusCreationInput(chatId: number, text: string) {
-  const state = bonusCreationStates.get(chatId);
-  if (!state) return;
-  switch (state.step) {
-    case 1:
-      state.bonusAmount = text.trim();
-      state.step = 2;
-      safeSendMessage(chatId, "Enter the required wager amount over the past 7 days:");
-      break;
-    case 2:
-      state.requiredWager = text.trim();
-      state.step = 3;
-      safeSendMessage(chatId, "Enter the total number of claims allowed:");
-      break;
-    case 3:
-      const num = parseInt(text.trim());
-      if (isNaN(num)) {
-        safeSendMessage(chatId, "Please enter a valid number for total claims:");
-        return;
-      }
-      state.totalClaims = num;
-      state.step = 4;
-      safeSendMessage(chatId, "Enter the bonus code:");
-      break;
-    case 4:
-      state.bonusCode = text.trim();
-      state.step = 5;
-      const confirmationText = `Please confirm the bonus code details:
-Bonus Amount: ${state.bonusAmount}
-Required Wager: ${state.requiredWager}
-Total Claims: ${state.totalClaims}
-Bonus Code: ${state.bonusCode}`;
-      const keyboard = {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "Confirm Bonus", callback_data: "bonus_confirm" }],
-            [{ text: "Cancel", callback_data: "bonus_cancel" }],
-          ],
-        },
-      };
-      safeSendMessage(chatId, confirmationText, keyboard);
-      break;
-    default:
-      break;
-  }
-}
+//function processBonusCreationInput(chatId: number, text: string) {
+//  const state = bonusCreationStates.get(chatId);
+//  if (!state) return;
+//  switch (state.step) {
+//    case 1:
+//      state.bonusAmount = text.trim();
+//      state.step = 2;
+//      safeSendMessage(chatId, "Enter the required wager amount over the past 7 days:");
+//      break;
+//    case 2:
+//      state.requiredWager = text.trim();
+//      state.step = 3;
+//      safeSendMessage(chatId, "Enter the total number of claims allowed:");
+//      break;
+//    case 3:
+//      const num = parseInt(text.trim());
+//      if (isNaN(num)) {
+//        safeSendMessage(chatId, "Please enter a valid number for total claims:");
+//        return;
+//      }
+//      state.totalClaims = num;
+//      state.step = 4;
+//      safeSendMessage(chatId, "Enter the bonus code:");
+//      break;
+//    case 4:
+//      state.bonusCode = text.trim();
+//      state.step = 5;
+//      const confirmationText = `Please confirm the bonus code details:
+//Bonus Amount: ${state.bonusAmount}
+//Required Wager: ${state.requiredWager}
+//Total Claims: ${state.totalClaims}
+//Bonus Code: ${state.bonusCode}`;
+//      const keyboard = {
+//        reply_markup: {
+//          inline_keyboard: [
+//            [{ text: "Confirm Bonus", callback_data: "bonus_confirm" }],
+//            [{ text: "Cancel", callback_data: "bonus_cancel" }],
+//          ],
+//        },
+//      };
+//      safeSendMessage(chatId, confirmationText, keyboard);
+//      break;
+//    default:
+//      break;
+//  }
+//}
 
 //#endregion
 
 //#region Callback Query Handler
 
-const handleCallbackQuery = async (query: TelegramBot.CallbackQuery): Promise<void> => {
-  if (!botInstance || !query.message) return;
-  const chatId = query.message.chat.id;
+//const handleCallbackQuery = async (query: TelegramBot.CallbackQuery): Promise<void> => {
+//  if (!botInstance || !query.message) return;
+//  const chatId = query.message.chat.id;
 
-  try {
-    // New admin panel actions
-    if (query.data === "create_challenge") {
-      if (!(await isUserGroupAdmin(chatId, query.from!.id))) return;
-      startChallengeCreation(chatId);
-      await botInstance.answerCallbackQuery(query.id, { text: "Starting challenge creation..." });
-      return;
-    }
-    if (query.data === "create_bonus") {
-      if (!(await isUserGroupAdmin(chatId, query.from!.id))) return;
-      startBonusCreation(chatId);
-      await botInstance.answerCallbackQuery(query.id, { text: "Starting bonus code creation..." });
-      return;
-    }
-    // Handle game selection for challenge creation
-    if (query.data.startsWith("challenge_game_")) {
-      const game = query.data.replace("challenge_game_", "");
-      const state = challengeCreationStates.get(chatId);
-      if (!state) return;
-      state.game = game;
-      state.step = 2;
-      // Send inline keyboard for min bet options
-      const minBetOptions = ["None", ".01", ".10", ".25", "$1", "$2"];
-      const keyboard = {
-        reply_markup: {
-          inline_keyboard: minBetOptions.map((opt) => [{ text: opt, callback_data: `challenge_minbet_${opt}` }]),
-        },
-      };
-      await safeSendMessage(chatId, `Selected game: ${game}\nNow, choose the minimum bet amount:`, keyboard);
-      await botInstance.answerCallbackQuery(query.id);
-      return;
-    }
-    // Handle minimum bet selection
-    if (query.data.startsWith("challenge_minbet_")) {
-      const minBet = query.data.replace("challenge_minbet_", "");
-      const state = challengeCreationStates.get(chatId);
-      if (!state) return;
-      state.minBet = minBet;
-      state.step = 3;
-      await safeSendMessage(chatId, `Selected minimum bet: ${minBet}\nPlease enter the multiplier (e.g., 2 for 2x):`);
-      await botInstance.answerCallbackQuery(query.id);
-      return;
-    }
-    // Confirmation for challenge creation
-    if (query.data === "challenge_confirm") {
-      const state = challengeCreationStates.get(chatId);
-      if (!state) return;
-      // In a real implementation, save the challenge to your DB here.
-      lastCreatedChallenge = { ...state };
-      challengeCreationStates.delete(chatId);
-      await safeSendMessage(chatId, "✅ Challenge created successfully!\nYou can now launch the challenge using the /launchchallenge command.");
-      await botInstance.answerCallbackQuery(query.id, { text: "Challenge confirmed." });
-      return;
-    }
-    if (query.data === "challenge_cancel") {
-      challengeCreationStates.delete(chatId);
-      await safeSendMessage(chatId, "❌ Challenge creation canceled.");
-      await botInstance.answerCallbackQuery(query.id, { text: "Challenge creation canceled." });
-      return;
-    }
-    // Confirmation for bonus creation
-    if (query.data === "bonus_confirm") {
-      const state = bonusCreationStates.get(chatId);
-      if (!state) return;
-      // In a real implementation, save the bonus code to your DB here.
-      bonusCreationStates.delete(chatId);
-      await safeSendMessage(chatId, "✅ Bonus code created successfully!");
-      await botInstance.answerCallbackQuery(query.id, { text: "Bonus confirmed." });
-      return;
-    }
-    if (query.data === "bonus_cancel") {
-      bonusCreationStates.delete(chatId);
-      await safeSendMessage(chatId, "❌ Bonus code creation canceled.");
-      await botInstance.answerCallbackQuery(query.id, { text: "Bonus creation canceled." });
-      return;
-    }
+//  try {
+//    // New admin panel actions
+//    if (query.data === "create_challenge") {
+//      if (!(await isUserGroupAdmin(chatId, query.from!.id))) return;
+//      startChallengeCreation(chatId);
+//      await botInstance.answerCallbackQuery(query.id, { text: "Starting challenge creation..." });
+//      return;
+//    }
+//    if (query.data === "create_bonus") {
+//      if (!(await isUserGroupAdmin(chatId, query.from!.id))) return;
+//      startBonusCreation(chatId);
+//      await botInstance.answerCallbackQuery(query.id, { text: "Starting bonus code creation..." });
+//      return;
+//    }
+//    // Handle game selection for challenge creation
+//    if (query.data.startsWith("challenge_game_")) {
+//      const game = query.data.replace("challenge_game_", "");
+//      const state = challengeCreationStates.get(chatId);
+//      if (!state) return;
+//      state.game = game;
+//      state.step = 2;
+//      // Send inline keyboard for min bet options
+//      const minBetOptions = ["None", ".01", ".10", ".25", "$1", "$2"];
+//      const keyboard = {
+//        reply_markup: {
+//          inline_keyboard: minBetOptions.map((opt) => [{ text: opt, callback_data: `challenge_minbet_${opt}` }]),
+//        },
+//      };
+//      await safeSendMessage(chatId, `Selected game: ${game}\nNow, choose the minimum bet amount:`, keyboard);
+//      await botInstance.answerCallbackQuery(query.id);
+//      return;
+//    }
+//    // Handle minimum bet selection
+//    if (query.data.startsWith("challenge_minbet_")) {
+//      const minBet = query.data.replace("challenge_minbet_", "");
+//      const state = challengeCreationStates.get(chatId);
+//      if (!state) return;
+//      state.minBet = minBet;
+//      state.step = 3;
+//      await safeSendMessage(chatId, `Selected minimum bet: ${minBet}\nPlease enter the multiplier (e.g., 2 for 2x):`);
+//      await botInstance.answerCallbackQuery(query.id);
+//      return;
+//    }
+//    // Confirmation for challenge creation
+//    if (query.data === "challenge_confirm") {
+//      const state = challengeCreationStates.get(chatId);
+//      if (!state) return;
+//      // In a real implementation, save the challenge to your DB here.
+//      lastCreatedChallenge = { ...state };
+//      challengeCreationStates.delete(chatId);
+//      await safeSendMessage(chatId, "✅ Challenge created successfully!\nYou can now launch the challenge using the /launchchallenge command.");
+//      await botInstance.answerCallbackQuery(query.id, { text: "Challenge confirmed." });
+//      return;
+//    }
+//    if (query.data === "challenge_cancel") {
+//      challengeCreationStates.delete(chatId);
+//      await safeSendMessage(chatId, "❌ Challenge creation canceled.");
+//      await botInstance.answerCallbackQuery(query.id, { text: "Challenge creation canceled." });
+//      return;
+//    }
+//    // Confirmation for bonus creation
+//    if (query.data === "bonus_confirm") {
+//      const state = bonusCreationStates.get(chatId);
+//      if (!state) return;
+//      // In a real implementation, save the bonus code to your DB here.
+//      bonusCreationStates.delete(chatId);
+//      await safeSendMessage(chatId, "✅ Bonus code created successfully!");
+//      await botInstance.answerCallbackQuery(query.id, { text: "Bonus confirmed." });
+//      return;
+//    }
+//    if (query.data === "bonus_cancel") {
+//      bonusCreationStates.delete(chatId);
+//      await safeSendMessage(chatId, "❌ Bonus code creation canceled.");
+//      await botInstance.answerCallbackQuery(query.id, { text: "Bonus creation canceled." });
+//      return;
+//    }
 
-    // Existing inline commands mapping
-    const callbackToCommand: Record<string, string> = {
-      my_stats: "/stats",
-      refresh_leaderboard: "/leaderboard",
-      verify: "/verify",
-      stats: "/stats",
-      leaderboard: "/leaderboard",
-      help: "/help",
-      play: "/play",
-      admin_broadcast: "/broadcast",
-      admin_message: "/message",
-      admin_pending: "/pending",
-    };
+//    // Existing inline commands mapping
+//    const callbackToCommand: Record<string, string> = {
+//      my_stats: "/stats",
+//      refresh_leaderboard: "/leaderboard",
+//      verify: "/verify",
+//      stats: "/stats",
+//      leaderboard: "/leaderboard",
+//      help: "/help",
+//      play: "/play",
+//      admin_broadcast: "/broadcast",
+//      admin_message: "/message",
+//      admin_pending: "/pending",
+//    };
 
-    if (query.data && callbackToCommand[query.data]) {
-      botInstance.emit("message", {
-        ...query.message,
-        text: callbackToCommand[query.data],
-        entities: [{ offset: 0, length: callbackToCommand[query.data].length, type: "bot_command" }],
-      });
-    }
-    await botInstance.answerCallbackQuery(query.id);
-  } catch (error) {
-    debugLog("Error handling callback query:", error);
-    await botInstance.answerCallbackQuery(query.id, {
-      text: "❌ Error processing request",
-      show_alert: true,
-    });
-  }
-};
+//    if (query.data && callbackToCommand[query.data]) {
+//      botInstance.emit("message", {
+//        ...query.message,
+//        text: callbackToCommand[query.data],
+//        entities: [{ offset: 0, length: callbackToCommand[query.data].length, type: "bot_command" }],
+//      });
+//    }
+//    await botInstance.answerCallbackQuery(query.id);
+//  } catch (error) {
+//    debugLog("Error handling callback query:", error);
+//    await botInstance.answerCallbackQuery(query.id, {
+//      text: "❌ Error processing request",
+//      show_alert: true,
+//    });
+//  }
+//};
 
 //#endregion
 
 //#region Message Handler
 
-const handleMessage = async (msg: TelegramBot.Message) => {
-  if (!botInstance) return;
-  const chatId = msg.chat.id;
+//const handleMessage = async (msg: TelegramBot.Message) => {
+//  if (!botInstance) return;
+//  const chatId = msg.chat.id;
 
-  // Track group chat IDs for recurring broadcasts
-  if (GROUP_MESSAGE_TYPES.includes(msg.chat.type)) {
-    groupChatIds.add(chatId);
-  }
+//  // Track group chat IDs for recurring broadcasts
+//  if (GROUP_MESSAGE_TYPES.includes(msg.chat.type)) {
+//    groupChatIds.add(chatId);
+//  }
 
-  // If admin sends /cancel while in a creation flow, cancel it.
-  if (msg.text && isMainAdmin(msg.from!.id) && msg.text.trim() === "/cancel") {
-    if (challengeCreationStates.has(chatId)) {
-      challengeCreationStates.delete(chatId);
-      safeSendMessage(chatId, "Challenge creation canceled.");
-      return;
-    }
-    if (bonusCreationStates.has(chatId)) {
-      bonusCreationStates.delete(chatId);
-      safeSendMessage(chatId, "Bonus code creation canceled.");
-      return;
-    }
-  }
+//  // If admin sends /cancel while in a creation flow, cancel it.
+//  if (msg.text && isMainAdmin(msg.from!.id) && msg.text.trim() === "/cancel") {
+//    if (challengeCreationStates.has(chatId)) {
+//      challengeCreationStates.delete(chatId);
+//      safeSendMessage(chatId, "Challenge creation canceled.");
+//      return;
+//    }
+//    if (bonusCreationStates.has(chatId)) {
+//      bonusCreationStates.delete(chatId);
+//      safeSendMessage(chatId, "Bonus code creation canceled.");
+//      return;
+//    }
+//  }
 
-  // If admin is in the middle of a challenge/bonus creation flow, process the input.
-  if (msg.text && (await isUserGroupAdmin(chatId, msg.from!.id))) {
-    if (challengeCreationStates.has(chatId) && !msg.text.startsWith("/")) {
-      processChallengeCreationInput(chatId, msg.text);
-      return;
-    }
-    if (bonusCreationStates.has(chatId) && !msg.text.startsWith("/")) {
-      processBonusCreationInput(chatId, msg.text);
-      return;
-    }
-  }
+//  // If admin is in the middle of a challenge/bonus creation flow, process the input.
+//  if (msg.text && (await isUserGroupAdmin(chatId, msg.from!.id))) {
+//    if (challengeCreationStates.has(chatId) && !msg.text.startsWith("/")) {
+//      processChallengeCreationInput(chatId, msg.text);
+//      return;
+//    }
+//    if (bonusCreationStates.has(chatId) && !msg.text.startsWith("/")) {
+//      processBonusCreationInput(chatId, msg.text);
+//      return;
+//    }
+//  }
 
-  try {
-    const isGroupChat = GROUP_MESSAGE_TYPES.includes(msg.chat.type);
-    debugLog(`Message from ${msg.from?.username || "Unknown"} in ${msg.chat.type}`);
+//  try {
+//    const isGroupChat = GROUP_MESSAGE_TYPES.includes(msg.chat.type);
+//    debugLog(`Message from ${msg.from?.username || "Unknown"} in ${msg.chat.type}`);
 
-    // Handle commands (text starting with '/')
-    if (msg.text?.startsWith("/")) {
-      const command = msg.text.split(" ")[0].split("@")[0];
-      const args = msg.text.split(" ").slice(1);
-      await handleCommand(command, msg, args);
-      return;
-    }
+//    // Handle commands (text starting with '/')
+//    if (msg.text?.startsWith("/")) {
+//      const command = msg.text.split(" ")[0].split("@")[0];
+//      const args = msg.text.split(" ").slice(1);
+//      await handleCommand(command, msg, args);
+//      return;
+//    }
 
-    // Group-specific behavior: welcome when added
-    if (isGroupChat && msg.new_chat_members?.some((member) => member.id === botInstance!.botInfo?.id)) {
-      await safeSendMessage(
-        chatId,
-        `👋 Thanks for adding me! Please make me an admin to ensure proper functionality.\n\nUse /help to see available commands.`,
-        {},
-        "high"
-      );
-    }
-  } catch (error) {
-    console.error("Error handling message:", error);
-  }
-};
+//    // Group-specific behavior: welcome when added
+//    if (isGroupChat && msg.new_chat_members?.some((member) => member.id === botInstance!.botInfo?.id)) {
+//      await safeSendMessage(
+//        chatId,
+//        `👋 Thanks for adding me! Please make me an admin to ensure proper functionality.\n\nUse /help to see available commands.`,
+//        {},
+//        "high"
+//      );
+//    }
+//  } catch (error) {
+//    console.error("Error handling message:", error);
+//  }
+//};
 
 //#endregion
 
 //#region Command Handler
 
-const handleCommand = async (command: string, msg: TelegramBot.Message, args: string[]) => {
-  if (!botInstance) return;
-  const chatId = msg.chat.id;
+//const handleCommand = async (command: string, msg: TelegramBot.Message, args: string[]) => {
+//  if (!botInstance) return;
+//  const chatId = msg.chat.id;
 
-  if (!(await rateLimiter.checkLimit(chatId))) {
-    return safeSendMessage(chatId, "⚠️ Rate limit exceeded. Please wait a moment before trying again.");
-  }
-  const isGroupChat = GROUP_MESSAGE_TYPES.includes(msg.chat.type);
-  try {
-    switch (command) {
-      // ---------------- Admin-Only (Main Admin) Commands ----------------
-      case "/message":
-        if (!isMainAdmin(msg.from!.id)) {
+//  if (!(await rateLimiter.checkLimit(chatId))) {
+//    return safeSendMessage(chatId, "⚠️ Rate limit exceeded. Please wait a moment before trying again.");
+//  }
+//  const isGroupChat = GROUP_MESSAGE_TYPES.includes(msg.chat.type);
+//  try {
+//    switch (command) {
+//      // ---------------- Admin-Only (Main Admin) Commands ----------------
+//      case "/message":
+//        if (!isMainAdmin(msg.from!.id)) {
           return safeSendMessage(chatId, "❌ This command is only available to the main admin.");
         }
         {
