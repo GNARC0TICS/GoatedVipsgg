@@ -4,8 +4,7 @@ import { WebSocket, WebSocketServer } from "ws";
 import { log } from "./vite";
 import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory, type RateLimiterRes } from "rate-limiter-flexible";
-import bonusCodesRouter from "./routes/bonus-codes";
-import challengesRouter from "./routes/challenges";
+import bonusChallengesRouter from "./routes/bonus-challenges";
 import { db } from "@db";
 import { wagerRaces } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
@@ -227,9 +226,8 @@ function setupRESTRoutes(app: Express) {
     res.json({ status: "healthy" });
   });
 
-  // Mount bonus codes and challenges routes
-  app.use("/api", bonusCodesRouter);
-  app.use("/api", challengesRouter);
+  // Mount consolidated bonus and challenges routes
+  app.use("/api", bonusChallengesRouter);
 
   // Batch processing endpoint
   app.post("/api/batch", createRateLimiter('medium'), batchHandler);
