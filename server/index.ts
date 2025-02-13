@@ -22,29 +22,6 @@ const __dirname = dirname(__filename);
 // Server state flags
 let isServerReady = false;
 
-async function isPortAvailable(port: number): Promise<boolean> {
-  try {
-    const server = createServer();
-    await new Promise((resolve, reject) => {
-      server.once('error', (err: NodeJS.ErrnoException) => {
-        if (err.code === 'EADDRINUSE') {
-          reject(new Error(`Port ${port} is already in use`));
-        } else {
-          reject(err);
-        }
-      });
-      server.once('listening', () => {
-        server.close();
-        resolve(true);
-      });
-      server.listen(port, '0.0.0.0');
-    });
-    return true;
-  } catch (err) {
-    return false;
-  }
-}
-
 async function setupMiddleware(app: express.Application) {
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
@@ -63,67 +40,17 @@ async function setupMiddleware(app: express.Application) {
   });
 }
 
-async function waitForServerReady(port: number, maxRetries = 10, interval = 1000): Promise<boolean> {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      const response = await fetch(`http://localhost:${port}/api/health`);
-      const data = await response.json();
-      if (data.status === "healthy" || data.status === "initializing") {
-        log(`Health check successful on attempt ${i + 1}`);
-        return true;
-      }
-      log(`Health check attempt ${i + 1}: Server not ready yet`);
-    } catch (error) {
-      log(`Health check attempt ${i + 1} failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-    await new Promise(resolve => setTimeout(resolve, interval));
-  }
-  return false;
-}
-
-async function checkDatabaseConnection() {
-  try {
-    await db.execute(sql`SELECT 1`);
-    log("Database connection established successfully");
-    return true;
-  } catch (error: any) {
-    log(`Database connection error: ${error.message}`);
-    return false;
-  }
-}
-
-async function cleanupPort() {
-  try {
-    const portAvailable = await isPortAvailable(PORT);
-    if (!portAvailable) {
-      await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      log(`Cleaned up port ${PORT}`);
-    }
-    return true;
-  } catch (error) {
-    log(`No existing process found on port ${PORT}`);
-    return true;
-  }
-}
-
 async function startServer() {
   try {
     log("Starting server initialization...");
     isServerReady = false;
 
-    // Check port availability first
-    const portAvailable = await isPortAvailable(PORT);
-    if (!portAvailable) {
-      log(`Port ${PORT} is not available, attempting cleanup...`);
-      await cleanupPort();
-    }
-
     // Check database connection
-    const dbConnected = await checkDatabaseConnection();
+    const dbConnected = await db.execute(sql`SELECT 1`);
     if (!dbConnected) {
       throw new Error("Failed to connect to database");
     }
+    log("Database connection established successfully");
 
     const app = express();
     app.set('trust proxy', 1);
@@ -143,7 +70,7 @@ async function startServer() {
       await setupVite(app, server);
     }
 
-    // Start the server with enhanced error handling and health checks
+    // Start the server with enhanced error handling
     return new Promise((resolve, reject) => {
       const serverInstance = server.listen(PORT, "0.0.0.0", async () => {
         log(`Server listening on port ${PORT}`);
@@ -152,25 +79,12 @@ async function startServer() {
         isServerReady = true;
         process.env.SERVER_READY = 'true';
 
-        // Additional health check verification
-        const serverReady = await waitForServerReady(PORT);
-        if (!serverReady) {
-          const error = new Error("Server health check failed");
-          log(error.message);
-          reject(error);
-          return;
-        }
-
         log("Server is fully initialized and ready");
         resolve(serverInstance);
       });
 
       serverInstance.on('error', (error: NodeJS.ErrnoException) => {
-        if (error.code === 'EADDRINUSE') {
-          log(`Port ${PORT} is already in use`);
-        } else {
-          log(`Server error: ${error.message}`);
-        }
+        log(`Server error: ${error.message}`);
         reject(error);
       });
 

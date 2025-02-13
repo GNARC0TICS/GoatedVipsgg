@@ -11,6 +11,7 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { users, type SelectUser } from "@db/schema";
 import { initializeBot } from "./telegram/bot";
+import express from "express";
 
 // Convert ApiError interface to a class
 class ApiError extends Error {
@@ -225,34 +226,14 @@ function setupRESTRoutes(app: Express) {
     res.json({ status: "healthy" });
   });
 
+  // API routes under /api
+  const apiRouter = express.Router();
+
   // Mount consolidated bonus and challenges routes
-  app.use("/api", bonusChallengesRouter);
+  apiRouter.use("/bonus", bonusChallengesRouter);
 
-  // Telegram webhook endpoint
-  app.post("/webhook", async (req, res) => {
-    try {
-      const bot = await initializeBot();
-      if (!bot) {
-        return res.status(500).json({
-          status: "error",
-          message: "Bot not initialized"
-        });
-      }
-
-      // Use processUpdate instead of handleUpdate
-      await bot.processUpdate(req.body);
-      res.json({ status: "success" });
-    } catch (error) {
-      log(`Error processing webhook: ${error}`);
-      res.status(500).json({
-        status: "error",
-        message: "Failed to process webhook"
-      });
-    }
-  });
-
-  // Admin endpoints
-  app.use("/api/admin", async (req, res, next) => {
+  // Admin routes under /api/admin
+  apiRouter.use("/admin", async (req, res, next) => {
     // Admin authentication middleware
     if (!req.headers.authorization) {
       return res.status(401).json({ error: "No authorization token provided" });
@@ -270,8 +251,9 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
+
   // Current wager race data endpoint
-  app.get("/api/wager-races/current",
+  apiRouter.get("/wager-races/current",
     createRateLimiter('high'),
     cacheMiddleware(15000),
     async (_req, res) => {
@@ -351,7 +333,7 @@ function setupRESTRoutes(app: Express) {
   );
 
   // Affiliate statistics endpoint
-  app.get("/api/affiliate/stats",
+  apiRouter.get("/affiliate/stats",
     createRateLimiter('medium'),
     cacheMiddleware(60000),
     async (req, res) => {
@@ -400,8 +382,9 @@ function setupRESTRoutes(app: Express) {
       }
     }
   );
+
   // Analytics endpoint for admin
-  app.get("/api/admin/analytics",
+  apiRouter.get("/admin/analytics",
     createRateLimiter('low'),
     cacheMiddleware(300000),
     async (_req, res) => {
@@ -455,8 +438,32 @@ function setupRESTRoutes(app: Express) {
       }
     }
   );
+
+  // Telegram webhook endpoint
+  app.post("/webhook", async (req, res) => {
+    try {
+      const bot = await initializeBot();
+      if (!bot) {
+        return res.status(500).json({
+          status: "error",
+          message: "Bot not initialized"
+        });
+      }
+
+      // Use processUpdate instead of handleUpdate
+      await bot.processUpdate(req.body);
+      res.json({ status: "success" });
+    } catch (error) {
+      log(`Error processing webhook: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to process webhook"
+      });
+    }
+  });
+
   // Status endpoint for Telegram bot
-  app.get("/api/telegram/status",
+  apiRouter.get("/telegram/status",
     createRateLimiter('medium'),
     async (_req, res) => {
       try {
@@ -487,7 +494,7 @@ function setupRESTRoutes(app: Express) {
 
 
   // Wheel Challenge Routes
-  app.get("/api/wheel/check-eligibility",
+  apiRouter.get("/wheel/check-eligibility",
     createRateLimiter('high'),
     async (req, res) => {
       try {
@@ -530,7 +537,7 @@ function setupRESTRoutes(app: Express) {
     }
   );
 
-  app.post("/api/wheel/record-spin",
+  apiRouter.post("/wheel/record-spin",
     createRateLimiter('medium'),
     async (req, res) => {
       try {
@@ -579,6 +586,27 @@ function setupRESTRoutes(app: Express) {
       }
     }
   );
+
+  // Mount API router
+  app.use("/api", apiRouter);
+
+  // Setup WebSocket for real-time updates
+  function setupWebSocket(httpServer: Server) {
+    wss = new WebSocketServer({ noServer: true });
+
+    httpServer.on("upgrade", (request, socket, head) => {
+      if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
+        return;
+      }
+
+      if (request.url === "/ws/leaderboard") {
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          wss.emit("connection", ws, request);
+          handleLeaderboardConnection(ws);
+        });
+      }
+    });
+  }
 }
 
 let wss: WebSocketServer;

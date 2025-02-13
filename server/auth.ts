@@ -10,6 +10,14 @@ import { db } from "@db";
 import { eq } from "drizzle-orm";
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import { RateLimiterMemory } from "rate-limiter-flexible";
+
+// Initialize rate limiter for registration
+const registrationLimiter = new RateLimiterMemory({
+  points: 5,      // Number of registration attempts
+  duration: 3600, // Per hour
+  blockDuration: 3600 // Block for 1 hour if exceeded
+});
 
 const scryptAsync = promisify(scrypt);
 
@@ -176,13 +184,15 @@ export function setupAuth(app: Express) {
         });
       }
 
-      // Rate limiting check
+      // Rate limiting check using the new registrationLimiter
       const ipAddress = req.ip;
-      const registrationAttempts = await rateLimiter.get(ipAddress);
-      if (registrationAttempts > 5) {
+      try {
+        await registrationLimiter.consume(ipAddress);
+      } catch (rateLimitErr) {
         return res.status(429).json({
           status: "error",
           message: "Too many registration attempts. Please try again later.",
+          retryAfter: Math.ceil((rateLimitErr as any).msBeforeNext / 1000) // Type assertion needed here
         });
       }
 
