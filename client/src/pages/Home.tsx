@@ -18,6 +18,7 @@ import { FeatureCarousel } from "@/components/FeatureCarousel";
 import { MVPCards } from "@/components/MVPCards";
 import { RaceTimer } from "@/components/RaceTimer";
 import { BonusCodeHeroCard } from "@/components/BonusCodeHeroCard";
+//import { HeroCards } from "@/components/HeroCards"; //Removed as per instructions
 import {
   Tooltip,
   TooltipContent,
@@ -129,14 +130,12 @@ export default function Home() {
                 EXPLORE OUR FEATURES
               </h2>
 
-              {/* Updated grid classes for optimized spacing on desktop */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 xl:gap-10 mb-12 max-w-7xl mx-auto px-4"
               >
-                {/* Card 1: Bonus Codes */}
                 <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                   <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
                   <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 flex flex-col justify-between h-full">
@@ -174,7 +173,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Card 2: VIP Transfer */}
                 <Link href="/vip-transfer" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                     <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
@@ -193,7 +191,6 @@ export default function Home() {
                   </div>
                 </Link>
 
-                {/* Card 3: Wager Races */}
                 <Link href="/wager-races" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                     <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
@@ -219,63 +216,79 @@ export default function Home() {
                 </Link>
               </motion.div>
 
-              {/* Second grid: Additional feature cards */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 xl:gap-10 mb-20"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 xl:gap-10 mb-20"
               >
-                {/* Card 4: Challenges */}
-                <Link href="/challenges" className="block">
+                <Link href="/provably-fair" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
-                    <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:blur-[2px]" />
                     <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 flex flex-col justify-between h-full">
-                      <Trophy className="h-8 w-8 text-[#D7FF00] mb-4" />
-                      <div className="flex items-center justify-center gap-2 mb-4">
-                        <h3 className="text-2xl font-heading uppercase text-white">
-                          Challenges
-                        </h3>
-                        <span className="text-xs font-heading text-[#D7FF00] px-2 py-1 bg-[#D7FF00]/10 rounded-full">
-                          NEW
-                        </span>
-                      </div>
+                      <Shield className="h-8 w-8 text-[#D7FF00] mb-4" />
+                      <h3 className="text-2xl font-heading uppercase text-white mb-4">
+                        Provably Fair
+                      </h3>
                       <p className="text-[#8A8B91] mb-6 font-body">
-                        Complete daily and weekly challenges to earn exclusive rewards and boost your earnings.
+                        Learn how our games ensure complete transparency and fairness
                       </p>
                       <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
-                        View Challenges <ArrowRight className="h-4 w-4" />
+                        Learn More <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                       </span>
                     </div>
                   </div>
                 </Link>
 
-                {/* Card 5: Wheel Spin */}
-                <Link href="/wheel-challenge" className="block">
+                <Link href="/tips-and-strategies" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
-                    <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:blur-[2px]" />
                     <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 flex flex-col justify-between h-full">
-                      <Gift className="h-8 w-8 text-[#D7FF00] mb-4" />
-                      <div className="flex items-center justify-center gap-2 mb-4">
-                        <h3 className="text-2xl font-heading uppercase text-white">
-                          Wheel Spin
-                        </h3>
-                        {!isAuthenticated ? (
-                          <span className="text-xs font-heading text-[#D7FF00] px-2 py-1 bg-[#D7FF00]/10 rounded-full">
-                            SIGN IN TO PLAY
-                          </span>
-                        ) : (
-                          <span className="text-xs font-heading text-[#D7FF00] px-2 py-1 bg-[#D7FF00]/10 rounded-full">
-                            PLAY NOW
-                          </span>
-                        )}
-                      </div>
+                      <Zap className="h-8 w-8 text-[#D7FF00] mb-4" />
+                      <h3 className="text-2xl font-heading uppercase text-white mb-4">
+                        Tips & Strategies
+                      </h3>
                       <p className="text-[#8A8B91] mb-6 font-body">
-                        Spin the wheel daily for a chance to win exclusive bonus codes and rewards!
-                        {!isAuthenticated && " Sign in to start winning daily prizes."}
+                        Discover winning strategies from our community experts
                       </p>
                       <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
-                        {isAuthenticated ? "Try Your Luck" : "Sign In to Play"} <ArrowRight className="h-4 w-4" />
+                        View Tips <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+
+                <a href="https://t.me/xGoombas" target="_blank" rel="noopener noreferrer" className="block">
+                  <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:blur-[2px]" />
+                    <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 flex flex-col justify-between h-full">
+                      <MessageSquare className="h-8 w-8 text-[#D7FF00] mb-4" />
+                      <h3 className="text-2xl font-heading uppercase text-white mb-4">
+                        Telegram Community
+                      </h3>
+                      <p className="text-[#8A8B91] mb-6 font-body">
+                        Join our active Telegram community for updates and support
+                      </p>
+                      <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
+                        Join Now <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </span>
+                    </div>
+                  </div>
+                </a>
+
+                <Link href="/goated-token" className="block">
+                  <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:blur-[2px]" />
+                    <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 flex flex-col justify-between h-full">
+                      <Coins className="h-8 w-8 text-[#D7FF00] mb-4" />
+                      <h3 className="text-2xl font-heading uppercase text-white mb-4">
+                        $GOATED Airdrop
+                      </h3>
+                      <p className="text-[#8A8B91] mb-6 font-body">
+                        Participate in our token airdrop and earn rewards
+                      </p>
+                      <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
+                        Learn More <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                       </span>
                     </div>
                   </div>
@@ -311,7 +324,7 @@ export default function Home() {
                 </a>
               </motion.div>
             </motion.div>
-          </div>
+        </div>
       </main>
       <RaceTimer />
     </div>
