@@ -1,4 +1,3 @@
-
 import express from "express";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
@@ -95,14 +94,14 @@ function serveStatic(app: express.Application) {
   if (!fs.existsSync(distPath)) {
     throw new Error(`Could not find the build directory: ${distPath}. Please build the client first.`);
   }
-  
+
   // Serve static files with cache headers
   app.use(express.static(distPath, {
     maxAge: '1d',
     etag: true,
     lastModified: true
   }));
-  
+
   app.use("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"), {
       headers: {
@@ -138,7 +137,7 @@ function setupMiddleware(app: express.Application) {
   app.use(cookieParser());
   app.use(requestLogger);
   app.use(errorHandler);
-  
+
   // Health check endpoint
   app.get("/api/health", (_req, res) => {
     res.set('Cache-Control', 'no-store').json({ status: "healthy" });
@@ -160,7 +159,7 @@ const requestLogger = (() => {
   return (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const start = Date.now();
     const originalJson = res.json.bind(res);
-    
+
     res.json = (body: any) => {
       res.locals.body = body;
       return originalJson(body);
@@ -173,14 +172,14 @@ const requestLogger = (() => {
         if (res.locals.body) {
           logMessage += ` :: ${JSON.stringify(res.locals.body)}`;
         }
-        
+
         logQueue.push(logMessage);
         if (!flushTimeout) {
           flushTimeout = setTimeout(flushLogs, 1000);
         }
       }
     });
-    
+
     next();
   };
 })();
@@ -203,7 +202,7 @@ async function startServer() {
 
     registerRoutes(app);
     await initializeAdmin().catch(console.error);
-    
+
     if (!process.env.TELEGRAM_BOT_TOKEN) {
       throw new Error("TELEGRAM_BOT_TOKEN must be provided");
     }
@@ -219,22 +218,10 @@ async function startServer() {
 
     setupMiddleware(app);
 
-    server
-      .listen(PORT, "0.0.0.0")
-      .on("error", async (err: any) => {
-        if (err.code === "EADDRINUSE") {
-          log(`Port ${PORT} is in use, attempting to free it...`);
-          await cleanupPort();
-          server.listen(PORT, "0.0.0.0");
-        } else {
-          console.error(`Failed to start server: ${err.message}`);
-          process.exit(1);
-        }
-      })
-      .on("listening", () => {
-        log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-        log("Telegram bot started successfully");
-      });
+    server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
+      console.log(`Server running on port ${process.env.PORT || 3000}`);
+    });
+
 
     const shutdown = async () => {
       log("Shutting down gracefully...");
