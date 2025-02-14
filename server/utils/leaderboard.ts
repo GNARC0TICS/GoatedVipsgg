@@ -19,8 +19,9 @@ function sortByWagered(data: any[], period: string) {
  */
 export async function transformLeaderboardData(apiData: any) {
   try {
+    // Extract users array from API response
     const users = apiData?.data || [];
-    
+
     // Map the external API data structure to our internal format
     const mappedUsers = users.map((user: any) => ({
       uid: user.id || '',
@@ -33,6 +34,7 @@ export async function transformLeaderboardData(apiData: any) {
       }
     }));
 
+    // Transform and sort data for each time period
     const transformedData = {
       status: "success",
       metadata: {
@@ -40,10 +42,22 @@ export async function transformLeaderboardData(apiData: any) {
         lastUpdated: new Date().toISOString(),
       },
       data: {
-        today: { data: sortByWagered(mappedUsers, "today").filter(entry => entry.wagered?.today > 0) },
-        weekly: { data: sortByWagered(mappedUsers, "this_week").filter(entry => entry.wagered?.this_week > 0) },
-        monthly: { data: sortByWagered(mappedUsers, "this_month").filter(entry => entry.wagered?.this_month > 0) },
-        all_time: { data: sortByWagered(mappedUsers, "all_time").filter(entry => entry.wagered?.all_time > 0) }
+        today: { 
+          data: sortByWagered(mappedUsers, "today")
+            .filter(entry => entry.wagered?.today > 0)
+        },
+        weekly: { 
+          data: sortByWagered(mappedUsers, "this_week")
+            .filter(entry => entry.wagered?.this_week > 0)
+        },
+        monthly: { 
+          data: sortByWagered(mappedUsers, "this_month")
+            .filter(entry => entry.wagered?.this_month > 0)
+        },
+        all_time: { 
+          data: sortByWagered(mappedUsers, "all_time")
+            .filter(entry => entry.wagered?.all_time > 0)
+        }
       }
     };
 
