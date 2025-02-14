@@ -1,0 +1,114 @@
+1. Verify & Fix the Transformation Function
+Current Goals:
+
+Robust Null Safety:
+Use optional chaining and default values so that missing fields (like wagered) do not break the transformation.
+Type Safety & Conversion:
+Use explicit number conversion (e.g., Number(value)) when sorting wager values.
+Error Handling:
+Wrap transformation logic in try-catch and log errors with detailed payload information.
+Example Implementation:
+
+function transformRawLeaderboardData(rawData) {
+  try {
+    // Defensive check: if rawData isn't an array, return a default response.
+    if (!Array.isArray(rawData)) {
+      rawData = [];
+    }
+    
+    // Normalize each entry to ensure wagered fields are defined.
+    const safeData = rawData.map((entry) => ({
+      ...entry,
+      wagered: {
+        today: Number(entry.wagered?.today ?? 0),
+        this_week: Number(entry.wagered?.this_week ?? 0),
+        this_month: Number(entry.wagered?.this_month ?? 0),
+        all_time: Number(entry.wagered?.all_time ?? 0),
+      },
+    }));
+    
+    // Create sorted arrays for each period.
+    const sortByPeriod = (period) =>
+      [...safeData].sort(
+        (a, b) => (b.wagered?.[period] || 0) - (a.wagered?.[period] || 0)
+      );
+    
+    const todayData = sortByPeriod("today");
+    const weeklyData = sortByPeriod("this_week");
+    const monthlyData = sortByPeriod("this_month");
+    const allTimeData = sortByPeriod("all_time");
+    
+    return {
+      status: "success",
+      metadata: {
+        totalUsers: safeData.length,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: todayData },
+        weekly: { data: weeklyData },
+        monthly: { data: monthlyData },
+        all_time: { data: allTimeData },
+      },
+    };
+  } catch (error) {
+    // Log detailed error and payload for debugging.
+    console.error("Error in transformRawLeaderboardData:", { error, rawData });
+    // Return a safe default structure.
+    return {
+      status: "success",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    };
+  }
+}
+2. Comprehensive Testing Steps
+Unit Testing the Transformation Function
+
+Test Cases:
+Valid Data: Provide an array with complete wagered data for multiple users.
+Partial Data: Provide entries where wagered is missing some fields.
+Invalid Data: Pass a non-array value and ensure the function returns the default structure.
+Edge Cases: Test with an empty array.
+Tools:
+Use a testing framework like Jest. For example, create tests like:
+test("should return default structure when input is not an array", () => {
+  const result = transformRawLeaderboardData(null);
+  expect(result.data.today.data).toEqual([]);
+  expect(result.metadata.totalUsers).toBe(0);
+});
+
+test("should sort entries correctly by monthly wager", () => {
+  const data = [
+    { uid: "1", name: "User1", wagered: { today: 100, this_week: 200, this_month: 300, all_time: 400 } },
+    { uid: "2", name: "User2", wagered: { today: 50, this_week: 150, this_month: 350, all_time: 450 } },
+  ];
+  const result = transformRawLeaderboardData(data);
+  // Expect the user with highest this_month wager (User2: 350 vs. User1: 300) to come first.
+  expect(result.data.monthly.data[0].uid).toBe("2");
+});
+Integration Testing with API Endpoints
+
+Endpoint Testing:
+Using Postman or cURL, hit the /api/affiliate/stats endpoint. Verify:
+The returned JSON includes a data object with keys today, weekly, monthly, and all_time.
+Each array is sorted correctly and contains valid wager numbers.
+Simulate Partial Data:
+Temporarily modify the raw data source (or mock it) to remove some wagered fields. Ensure the API still returns valid output with zeros as fallback.
+Front-End Verification
+
+Leaderboard Display:
+Load the leaderboard page in your browser. Check that:
+No errors occur in the console related to .toLocaleString().
+Wager amounts are displayed correctly with thousands separators.
+Pagination and search features work as expected.
+Real-time Updates:
+Verify that the WebSocket integration properly pushes updates and that the leaderboard reflects any changes in real time.
