@@ -47,7 +47,8 @@ export async function initializeBot(): Promise<TelegramBot | null> {
 
 
     const botInfo = await botInstance.getMe();
-    console.log("✅ Bot initialized successfully");
+    console.log(`✅ Bot initialized successfully as @${botInfo.username}`);
+    console.log(`🔗 Bot is connected and ready to handle messages`);
     startHealthCheck();
     return botInstance;
   } catch (error) {
