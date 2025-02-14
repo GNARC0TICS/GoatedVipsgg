@@ -236,6 +236,14 @@ const wheelSpinSchema = z.object({
  * Configures endpoints with appropriate middleware and handlers
  */
 function setupRESTRoutes(app: Express) {
+  // Add CORS middleware for development
+  app.use((_req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    next();
+  });
+
   // Health check endpoint
   app.get("/api/health", (_req, res) => {
     res.json({ status: "healthy" });

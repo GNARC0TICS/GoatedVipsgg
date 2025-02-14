@@ -48,8 +48,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     queryKey: ["/api/user"],
     queryFn: async () => {
       try {
-        const response = await fetch("/api/user", {
+        const serverUrl = import.meta.env.DEV ? 'http://localhost:5000' : '';
+        const response = await fetch(`${serverUrl}/api/user`, {
           credentials: "include",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+          }
         });
 
         if (response.status === 401) {
