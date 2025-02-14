@@ -38,14 +38,27 @@ export async function initializeBot(): Promise<TelegramBot | null> {
     botInstance.on("new_chat_members", async (msg) => {
       if (msg.chat.id.toString() === TARGET_GROUP_ID) {
         msg.new_chat_members.forEach(member => activeUsers.add(member.id));
+        notifyActiveUsersChange();
       }
     });
 
     botInstance.on("left_chat_member", async (msg) => {
       if (msg.chat.id.toString() === TARGET_GROUP_ID) {
         activeUsers.delete(msg.left_chat_member.id);
+        notifyActiveUsersChange();
       }
     });
+
+    // Function to notify clients of active users change
+    const notifyActiveUsersChange = () => {
+      const activeUsersCount = activeUsers.size;
+      clients.forEach(client => {
+        client.res.write(`data: ${JSON.stringify({ count: activeUsersCount })}\n\n`);
+      });
+    };
+
+    // Store connected SSE clients
+    const clients = new Set();
 
     const botInfo = await botInstance.getMe();
     console.log("✅ Bot initialized successfully");

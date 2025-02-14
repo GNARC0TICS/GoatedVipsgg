@@ -23,19 +23,16 @@ export function BonusCodeHeroCard() {
   const [activeUsers, setActiveUsers] = useState(0);
 
   useEffect(() => {
-    const fetchActiveUsers = async () => {
-      try {
-        const response = await fetch('/api/telegram/active-users');
-        const data = await response.json();
-        setActiveUsers(data.count);
-      } catch (error) {
-        console.error('Failed to fetch active users:', error);
-      }
+    const eventSource = new EventSource('/api/telegram/active-users/stream');
+    
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setActiveUsers(data.count);
     };
 
-    fetchActiveUsers();
-    const interval = setInterval(fetchActiveUsers, 30000); // Update every 30 seconds
-    return () => clearInterval(interval);
+    return () => {
+      eventSource.close();
+    };
   }, []);
 
   return (

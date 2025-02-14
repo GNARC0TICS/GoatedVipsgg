@@ -10,7 +10,7 @@ import { wagerRaces } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { users, type SelectUser } from "@db/schema";
-import { initializeBot } from "./telegram/bot";
+import { initializeBot, activeUsers, getActiveUsersCount } from "./telegram/bot";
 import express from "express";
 
 // Convert ApiError interface to a class
@@ -440,12 +440,7 @@ function setupRESTRoutes(app: Express) {
   );
 
   // Telegram webhook endpoint
-  app.get("/api/telegram/active-users", (_req, res) => {
-  const { getActiveUsersCount } = require("./telegram/bot");
-  res.json({ count: getActiveUsersCount() });
-});
-
-app.post("/webhook", async (req, res) => {
+  app.post("/webhook", async (req, res) => {
     try {
       const bot = await initializeBot();
       if (!bot) {
@@ -615,6 +610,7 @@ app.post("/webhook", async (req, res) => {
 }
 
 let wss: WebSocketServer;
+const clients = new Set();
 
 /**
  * Utility function to sort data by wagered amount
@@ -785,3 +781,23 @@ declare module 'ws' {
     isAlive?: boolean;
   }
 }
+
+app.get("/api/telegram/active-users/stream", (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  const client = { res };
+  clients.add(client);
+
+  // Send initial count
+  res.write(`data: ${JSON.stringify({ count: getActiveUsersCount() })}\n\n`);
+
+  req.on('close', () => {
+    clients.delete(client);
+  });
+
+  activeUsers.on('change', (event) => {
+    res.write(`data: ${JSON.stringify({ count: getActiveUsersCount() })}\n\n`);
+  })
+});
