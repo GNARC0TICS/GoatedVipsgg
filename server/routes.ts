@@ -817,7 +817,11 @@ export function registerRoutes(app: Express): Server {
  */
 // Webhook endpoint for Telegram bot
 function setupWebSocket(httpServer: Server) {
-  wss = new WebSocketServer({ noServer: true });
+  wss = new WebSocketServer({ 
+    noServer: true,
+    clientTracking: true,
+    perMessageDeflate: false
+  });
 
   httpServer.on("upgrade", (request, socket, head) => {
     if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
@@ -825,10 +829,21 @@ function setupWebSocket(httpServer: Server) {
     }
 
     if (request.url === "/ws/leaderboard") {
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit("connection", ws, request);
-        handleLeaderboardConnection(ws);
-      });
+      try {
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          ws.on('error', (error) => {
+            console.error('WebSocket error:', error);
+          });
+          
+          wss.emit("connection", ws, request);
+          handleLeaderboardConnection(ws);
+        });
+      } catch (error) {
+        console.error('WebSocket upgrade error:', error);
+        socket.destroy();
+      }
+    } else {
+      socket.destroy();
     }
   });
 }
