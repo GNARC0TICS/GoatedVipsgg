@@ -48,12 +48,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     queryKey: ["/api/user"],
     queryFn: async () => {
       try {
-        const serverUrl = import.meta.env.DEV ? 'http://localhost:5000' : '';
+        const serverUrl = import.meta.env.DEV ? 'http://localhost:5000' : window.location.origin;
         const response = await fetch(`${serverUrl}/api/user`, {
           credentials: "include",
           headers: {
             "Accept": "application/json",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem('token') || ''}`
           }
         });
 

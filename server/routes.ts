@@ -236,11 +236,19 @@ const wheelSpinSchema = z.object({
  * Configures endpoints with appropriate middleware and handlers
  */
 function setupRESTRoutes(app: Express) {
-  // Add CORS middleware for development
-  app.use((_req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+  // Add CORS middleware
+  app.use((req, res, next) => {
+    const allowedOrigins = ['http://localhost:5173', 'http://localhost:5000', 'https://' + req.headers.host];
+    const origin = req.headers.origin;
+    if (origin && allowedOrigins.includes(origin)) {
+      res.header('Access-Control-Allow-Origin', origin);
+    }
     res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
     next();
   });
 
