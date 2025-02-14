@@ -964,8 +964,6 @@ async function transformLeaderboardData(rawData: any) {
     throw error;
   }
 }
-</replit_finalfile>
-}
 
 /**
  * Handles new WebSocket connections for leaderboard
