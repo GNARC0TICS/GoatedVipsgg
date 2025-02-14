@@ -23,13 +23,8 @@ export async function initializeBot(): Promise<TelegramBot | null> {
     return null;
   }
 
-  if (botInstance) {
-    console.log("Bot instance already exists, reusing...");
-    return botInstance;
-  }
-
   try {
-    botInstance = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
+    botInstance = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
     botInstance.on("message", async (msg) => {
       if (!msg.text) return;
       if (msg.chat.id.toString() === TARGET_GROUP_ID) {
@@ -52,8 +47,7 @@ export async function initializeBot(): Promise<TelegramBot | null> {
 
 
     const botInfo = await botInstance.getMe();
-    console.log(`✅ Bot initialized successfully as @${botInfo.username}`);
-    console.log(`🔗 Bot is connected and ready to handle messages`);
+    console.log("✅ Bot initialized successfully");
     startHealthCheck();
     return botInstance;
   } catch (error) {

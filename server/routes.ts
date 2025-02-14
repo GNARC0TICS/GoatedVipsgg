@@ -1,5 +1,5 @@
 import type { Express } from "express";
-import { createServer, Server } from "http";
+import { createServer, type Server } from "http";
 import { WebSocket, WebSocketServer } from "ws";
 import { log } from "./vite";
 import { API_CONFIG } from "./config/api";
@@ -10,9 +10,8 @@ import { wagerRaces } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { users, type SelectUser } from "@db/schema";
-import { initializeBot, getActiveUsersCount } from "./telegram/bot";
+import { initializeBot, activeUsers, getActiveUsersCount } from "./telegram/bot";
 import express from "express";
-import { EventEmitter } from "events";
 
 // Convert ApiError interface to a class
 class ApiError extends Error {
@@ -260,17 +259,21 @@ function setupRESTRoutes(app: Express) {
     async (_req, res) => {
       try {
         log('Fetching current race data...');
-
-        // Get current race from database
-        const currentRace = await db.query.wagerRaces.findFirst({
-          where: eq(wagerRaces.status, 'live'),
-          with: {
-            participants: true
+        const response = await fetch(
+          `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+              "Content-Type": "application/json",
+            },
           }
-        });
+        );
 
-        if (!currentRace) {
-          log('No active race found');
+        log(`API Response status: ${response.status}`);
+
+        // If API call fails, return default race data
+        if (!response.ok) {
+          log(`API response not OK: ${response.status} ${response.statusText}`);
           const defaultRace = {
             id: new Date().getFullYear() + (new Date().getMonth() + 1).toString().padStart(2, '0'),
             status: 'live',
@@ -282,30 +285,40 @@ function setupRESTRoutes(app: Express) {
           return res.json(defaultRace);
         }
 
-        // Map participants data
-        const participants = currentRace.participants
-          .map((p: any) => ({
-            uid: p.userId,
-            name: p.username || 'Anonymous',
-            wagered: p.totalWager || 0,
-            position: 0
-          }))
-          .sort((a: any, b: any) => b.wagered - a.wagered)
-          .map((p: any, index: number) => ({
-            ...p,
-            position: index + 1
-          }));
+        const rawData = await response.json();
+        log('Raw API data received:', JSON.stringify(rawData).slice(0, 200) + '...');
+
+        // Extract data from response, handling both array and object responses
+        const responseData = Array.isArray(rawData) ? rawData[0] : rawData;
+        const users = responseData?.data || [];
+
+        log(`Processing ${users.length} users`);
+
+        // Map users to participants with proper type checking and default values
+        const participants = users.map((user: any, index: number) => ({
+          uid: user?.uid || `user-${index}`,
+          name: user?.name || `Anonymous ${index + 1}`,
+          wagered: typeof user?.wagered?.this_month === 'number' ? user.wagered.this_month : 0,
+          position: index + 1
+        }));
+
+        // Sort participants by wagered amount
+        participants.sort((a: any, b: any) => (b.wagered || 0) - (a.wagered || 0));
+
+        // Create race data object with proper defaults
+        const now = new Date();
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
         const raceData = {
-          id: currentRace.id,
-          status: currentRace.status,
-          startDate: currentRace.startDate.toISOString(),
-          endDate: currentRace.endDate.toISOString(),
-          prizePool: Number(currentRace.prizePool),
+          id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
+          status: 'live',
+          startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+          endDate: endOfMonth.toISOString(),
+          prizePool: 500,
           participants: participants.slice(0, 10)
         };
 
-        log('Successfully processed race data from database');
+        log('Successfully processed race data');
         res.json(raceData);
 
       } catch (error) {
@@ -575,8 +588,6 @@ function setupRESTRoutes(app: Express) {
   );
 
   // SSE endpoint for active users
-  const activeUsersEmitter = new EventEmitter();
-
   app.get("/api/telegram/active-users/stream", (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -592,9 +603,8 @@ function setupRESTRoutes(app: Express) {
       clients.delete(client);
     });
 
-    // Use the EventEmitter for active users updates
-    activeUsersEmitter.on('change', (count: number) => {
-      res.write(`data: ${JSON.stringify({ count })}\n\n`);
+    activeUsers.on('change', (event) => {
+      res.write(`data: ${JSON.stringify({ count: getActiveUsersCount() })}\n\n`);
     });
   });
 
@@ -711,6 +721,9 @@ export function registerRoutes(app: Express): Server {
   return httpServer;
 }
 
+/**
+ * Configures WebSocket server
+ */
 // Webhook endpoint for Telegram bot
 function setupWebSocket(httpServer: Server) {
   wss = new WebSocketServer({ noServer: true });
@@ -789,3 +802,5 @@ declare module 'ws' {
     isAlive?: boolean;
   }
 }
+
+// SSE endpoint moved inside setupRESTRoutes function

@@ -1,30 +1,40 @@
 import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
 
-export type WageredData = {
+type WageredData = {
   today: number;
   this_week: number;
   this_month: number;
   all_time: number;
 };
 
-export type LeaderboardEntry = {
+type LeaderboardEntry = {
   uid: string;
   name: string;
   wagered: WageredData;
   wagerChange?: number;
   isWagering?: boolean;
-  lastUpdate?: string;
+};
+
+type LeaderboardPeriodData = {
+  data: LeaderboardEntry[];
+};
+
+type APIResponse = {
+  status: "success";
+  metadata?: {
+    totalUsers: number;
+    lastUpdated: string;
+  };
+  data: {
+    today: LeaderboardPeriodData;
+    weekly: LeaderboardPeriodData;
+    monthly: LeaderboardPeriodData;
+    all_time: LeaderboardPeriodData;
+  };
 };
 
 export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
-
-const defaultWageredData: WageredData = {
-  today: 0,
-  this_week: 0,
-  this_month: 0,
-  all_time: 0
-};
 
 export function useLeaderboard(
   timePeriod: TimePeriod = "today",
@@ -33,159 +43,118 @@ export function useLeaderboard(
   const [ws, setWs] = React.useState<WebSocket | null>(null);
   const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
 
-  // WebSocket connection management
   React.useEffect(() => {
     let reconnectTimer: NodeJS.Timeout;
-    let wsInstance: WebSocket | null = null;
+    let ws: WebSocket;
 
     const connect = () => {
-      try {
-        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        wsInstance = new WebSocket(`${protocol}//${window.location.host}/ws/leaderboard`);
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      ws = new WebSocket(`${protocol}//${window.location.host}/ws/leaderboard`);
 
-        wsInstance.onmessage = (event: MessageEvent) => {
-          try {
-            const update = JSON.parse(event.data);
-            if (update.type === "LEADERBOARD_UPDATE") {
-              refetch();
-            }
-          } catch (err) {
-            console.error('WebSocket message parsing error:', err);
+      ws.onmessage = (event: MessageEvent) => {
+        try {
+          const update = JSON.parse(event.data);
+          if (update.type === "LEADERBOARD_UPDATE") {
+            refetch();
           }
-        };
+        } catch (err) {
+          console.error('WebSocket message parsing error:', err);
+        }
+      };
 
-        wsInstance.onclose = () => {
-          console.log('WebSocket closed, attempting reconnect...');
-          reconnectTimer = setTimeout(connect, 3000);
-        };
-
-        wsInstance.onerror = (error: Event) => {
-          console.error('WebSocket error:', error);
-          if (wsInstance) {
-            wsInstance.close();
-          }
-        };
-
-        setWs(wsInstance);
-      } catch (error) {
-        console.error('WebSocket connection error:', error);
+      ws.onclose = () => {
         reconnectTimer = setTimeout(connect, 3000);
-      }
+      };
+
+      ws.onerror = (error: Event) => {
+        console.error('WebSocket error:', error);
+        ws.close();
+      };
+
+      setWs(ws);
     };
 
     connect();
 
     return () => {
       clearTimeout(reconnectTimer);
-      if (wsInstance) {
-        wsInstance.close();
-      }
+      if (ws) ws.close();
     };
   }, []);
 
   // Primary data fetch hook using React Query
-  const { data, isLoading, error, refetch } = useQuery({
+// This is the main entry point for leaderboard data in the frontend
+const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
+    // Unique key for React Query cache - changes when time period or page changes
     queryKey: ["/api/affiliate/stats", timePeriod, page],
     queryFn: async () => {
-      try {
-        const response = await fetch(
-          `/api/affiliate/stats?period=${timePeriod}&page=${page}&limit=10`,
-          {
-            headers: {
-              'Accept': 'application/json'
-            }
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+      const response = await fetch(`/api/affiliate/stats?period=${timePeriod}&page=${page}&limit=10`, {
+        headers: {
+          'Accept': 'application/json'
         }
+      });
 
-        const freshData = await response.json();
-
-        // Ensure the data has the expected structure
-        if (!freshData?.data || typeof freshData.data !== 'object') {
-          throw new Error('Invalid data structure received from API');
-        }
-
-        // Cache the data in sessionStorage
-        sessionStorage.setItem(`leaderboard-${timePeriod}-${page}`, JSON.stringify({
-          data: freshData,
-          timestamp: Date.now()
-        }));
-
-        return freshData;
-      } catch (error) {
-        console.error('Error fetching leaderboard data:', error);
-        throw error;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      const freshData = await response.json() as APIResponse;
+
+      sessionStorage.setItem(`leaderboard-${timePeriod}-${page}`, JSON.stringify({
+        data: freshData,
+        timestamp: Date.now()
+      }));
+
+      return freshData;
     },
-    refetchInterval: 60000, // Poll every minute
+    refetchInterval: 60000, // Poll every minute instead of 30 seconds
     staleTime: 45000, // Consider data fresh for 45 seconds
+    cacheTime: 300000,
     retry: 3,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false
   });
 
-  const periodKey = timePeriod === "weekly" 
-    ? "weekly" 
-    : timePeriod === "monthly"
-      ? "monthly"
-      : timePeriod === "today"
-        ? "today"
-        : "all_time";
+  const periodKey =
+    timePeriod === "weekly"
+      ? "weekly"
+      : timePeriod === "monthly"
+        ? "monthly"
+        : timePeriod === "today"
+          ? "today"
+          : "all_time";
 
-  // Transform and enhance the data with wager changes
-  const sortedData = React.useMemo(() => {
-    if (!data?.data?.[periodKey]?.data) {
-      console.warn('No data available for period:', periodKey);
-      return [];
-    }
+  const sortedData = data?.data[periodKey]?.data.map((entry: LeaderboardEntry) => {
+    const prevEntry = previousData.find((p) => p.uid === entry.uid);
+    const currentWager = entry.wagered[
+      timePeriod === "weekly"
+        ? "this_week"
+        : timePeriod === "monthly"
+          ? "this_month"
+          : timePeriod === "today"
+            ? "today"
+            : "all_time"
+    ];
+    const previousWager = prevEntry
+      ? prevEntry.wagered[
+          timePeriod === "weekly"
+            ? "this_week"
+            : timePeriod === "monthly"
+              ? "this_month"
+              : timePeriod === "today"
+                ? "today"
+                : "all_time"
+        ]
+      : 0;
 
-    return data.data[periodKey].data.map((entry: LeaderboardEntry) => {
-      const prevEntry = previousData.find((p) => p.uid === entry.uid);
+    return {
+      ...entry,
+      isWagering: currentWager > previousWager,
+      wagerChange: currentWager - previousWager,
+    };
+  }) || [];
 
-      // Ensure wagered data has all required fields
-      const wagered = {
-        ...defaultWageredData,
-        ...(entry.wagered || {})
-      };
-
-      const currentWager = wagered[
-        timePeriod === "weekly"
-          ? "this_week"
-          : timePeriod === "monthly"
-            ? "this_month"
-            : timePeriod === "today"
-              ? "today"
-              : "all_time"
-      ] || 0;
-
-      const previousWager = prevEntry
-        ? (prevEntry.wagered?.[
-            timePeriod === "weekly"
-              ? "this_week"
-              : timePeriod === "monthly"
-                ? "this_month"
-                : timePeriod === "today"
-                  ? "today"
-                  : "all_time"
-          ] || 0)
-        : 0;
-
-      return {
-        ...entry,
-        wagered,
-        isWagering: currentWager > previousWager,
-        wagerChange: currentWager - previousWager,
-        lastUpdate: new Date().toISOString()
-      };
-    });
-  }, [data, periodKey, previousData, timePeriod]);
-
-  // Update previous data for change tracking
   useEffect(() => {
-    if (data?.data?.[periodKey]?.data) {
+    if (data?.data[periodKey]?.data) {
       setPreviousData(data.data[periodKey].data);
     }
   }, [data, periodKey]);

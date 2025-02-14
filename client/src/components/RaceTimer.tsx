@@ -29,7 +29,7 @@ interface RaceData {
 }
 
 // ─── Helper: Format Currency ─────────────────────────────────────────────────
-const formatCurrency = (amount: number | undefined): string => {
+const formatCurrency = (amount: number): string => {
   try {
     if (typeof amount !== 'number' || isNaN(amount)) {
       console.warn('Invalid amount provided to formatCurrency:', amount);
@@ -61,6 +61,7 @@ const formatDate = (dateString: string | undefined): string => {
       return 'Invalid Date';
     }
 
+    // Use toLocaleDateString with explicit options for better control
     return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -73,27 +74,24 @@ const formatDate = (dateString: string | undefined): string => {
 };
 
 // ─── Custom Hook: Fetch Race Data ─────────────────────────────────────────────
-const endpoint = "/api/wager-races/current";
-
 function useRaceData() {
   const { toast } = useToast();
+  const endpoint = "/api/wager-races/current";
 
   return useQuery<RaceData>({
     queryKey: [endpoint],
     queryFn: async () => {
       try {
-        console.log('Fetching race data from:', endpoint);
         const response = await fetch(endpoint);
         if (!response.ok) {
-          throw new Error(`Failed to fetch race data: ${response.status}`);
+          throw new Error("Failed to fetch race data");
         }
 
         const data = await response.json();
-        console.log('Received race data:', data);
 
         // Ensure participants is an array and has valid wagered amounts
         const validParticipants = Array.isArray(data.participants)
-          ? data.participants.map((p: RaceParticipant) => ({
+          ? data.participants.map((p: any): RaceParticipant => ({
               uid: String(p.uid || ''),
               name: String(p.name || 'Anonymous'),
               wagered: Number(p.wagered) || 0,
@@ -101,10 +99,8 @@ function useRaceData() {
             }))
           : [];
 
-        console.log('Processed participants:', validParticipants);
-
-        // Sort participants by wagered amount in descending order
-        validParticipants.sort((a: RaceParticipant, b: RaceParticipant) => b.wagered - a.wagered);
+        // Sort participants by wagered amount
+        validParticipants.sort((a, b) => b.wagered - a.wagered);
 
         // Ensure all required fields are present with proper defaults
         const raceData: RaceData = {
@@ -116,7 +112,6 @@ function useRaceData() {
           participants: validParticipants.slice(0, 10)
         };
 
-        console.log('Processed race data:', raceData);
         return raceData;
       } catch (error) {
         console.error('Race data fetch error:', error);
