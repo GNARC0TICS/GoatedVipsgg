@@ -201,6 +201,18 @@ router.post("/admin/bonus-codes", isAdmin, asyncHandler(async (req: Authenticate
       .returning();
 
     log(`Created bonus code: ${bonusCode.code}`);
+
+    // Notify Telegram users of new bonus code
+    try {
+      const bot = await initializeBot(); //this function needs to be defined elsewhere and handle bot initialization.
+      if (bot) {
+        const message = `🎁 NEW BONUS CODE AVAILABLE!\n\nCode: ${bonusCode.code}\nAmount: ${bonusCode.bonusAmount}\nExpires: ${new Date(bonusCode.expiresAt).toLocaleString()}`;
+        await bot.sendMessage(process.env.TELEGRAM_GROUP_ID || '', message);
+      }
+    } catch (error) {
+      log(`Failed to send Telegram notification: ${error}`);
+    }
+
     res.status(201).json(bonusCode);
   } catch (error) {
     log(`Error creating bonus code: ${error}`);

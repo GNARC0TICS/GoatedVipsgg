@@ -33,6 +33,18 @@ router.post("/admin/challenges", isAdmin, async (req, res) => {
       source: "web",
     };
     const [challenge] = await db.insert(challenges).values(newChallenge).returning();
+    
+    // Notify Telegram users of new challenge
+    try {
+      const bot = await initializeBot();
+      if (bot) {
+        const message = `🏆 NEW CHALLENGE AVAILABLE!\n\nTitle: ${challenge.title}\nDescription: ${challenge.description}\nReward: ${challenge.reward}`;
+        await bot.sendMessage(process.env.TELEGRAM_GROUP_ID || '', message);
+      }
+    } catch (error) {
+      console.error("Failed to send Telegram notification:", error);
+    }
+    
     res.status(201).json(challenge);
   } catch (error) {
     console.error("Error creating challenge:", error);
