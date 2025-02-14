@@ -99,8 +99,8 @@ function useRaceData() {
             }))
           : [];
 
-        // Sort participants by wagered amount
-        validParticipants.sort((a, b) => b.wagered - a.wagered);
+        // Sort participants by wagered amount with proper types
+        validParticipants.sort((a: RaceParticipant, b: RaceParticipant) => b.wagered - a.wagered);
 
         // Ensure all required fields are present with proper defaults
         const raceData: RaceData = {

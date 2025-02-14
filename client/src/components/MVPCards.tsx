@@ -10,17 +10,15 @@ import { Dialog, DialogContent } from "./ui/dialog";
 type MVP = {
   username: string;
   uid: string;
-  wagerAmount?: number;
+  wagered: {
+    today: number;
+    this_week: number;
+    this_month: number;
+    all_time: number;
+  };
   avatarUrl?: string;
   rank: number;
-  wageredAllTime?: number;
   lastWagerChange?: number;
-  wagered: {
-    today?: number;
-    this_week?: number;
-    this_month?: number;
-    all_time?: number;
-  };
 };
 
 // Safe number formatting function
@@ -32,7 +30,7 @@ const formatNumber = (num: number | undefined): string => {
 const timeframes = [
   { 
     title: "Daily MVP", 
-    period: "daily", 
+    period: "today", 
     colors: {
       primary: "#8B5CF6",
       accent: "#7C3AED",
@@ -90,8 +88,20 @@ function MVPCard({
     );
   }
 
-  const wageredAmount = mvp.wagerAmount || 0;
-  const allTimeWagered = mvp.wagered?.all_time || 0;
+  const getWagerAmount = (period: string): number => {
+    switch(period) {
+      case 'today':
+        return mvp.wagered.today || 0;
+      case 'weekly':
+        return mvp.wagered.this_week || 0;
+      case 'monthly':
+        return mvp.wagered.this_month || 0;
+      default:
+        return 0;
+    }
+  };
+
+  const currentWager = getWagerAmount(timeframe.period);
 
   return (
     <>
@@ -158,7 +168,7 @@ function MVPCard({
                 <span className="text-white/70">Period Total:</span>
                 <div className="flex items-center gap-2">
                   <span className="text-white font-mono font-bold">
-                    ${formatNumber(wageredAmount)}
+                    ${formatNumber(currentWager)}
                   </span>
                   {showIncrease && (
                     <TrendingUp className="h-4 w-4 text-emerald-500 animate-pulse" />
@@ -178,7 +188,7 @@ function MVPCard({
               <div className="mb-6">
                 <div className="flex items-center gap-3 mb-4">
                   <img 
-                    src={getTierIcon(getTierFromWager(allTimeWagered))}
+                    src={getTierIcon(getTierFromWager(mvp.wagered.all_time))}
                     alt="VIP Tier"
                     className="w-8 h-8"
                   />
@@ -207,7 +217,7 @@ function MVPCard({
                   <div className="flex justify-between items-center">
                     <span className="text-[#D7FF00] text-sm font-semibold">All-Time Wagered:</span>
                     <span className="text-white font-mono font-bold text-lg">
-                      ${formatNumber(allTimeWagered)}
+                      ${formatNumber(mvp.wagered.all_time)}
                     </span>
                   </div>
                 </div>
@@ -237,9 +247,9 @@ export function MVPCards() {
   });
 
   const mvps = useMemo(() => ({
-    daily: leaderboardData?.data?.today?.data?.[0] || null,
-    weekly: leaderboardData?.data?.weekly?.data?.[0] || null,
-    monthly: leaderboardData?.data?.monthly?.data?.[0] || null
+    today: leaderboardData?.data?.today?.data?.[0],
+    weekly: leaderboardData?.data?.weekly?.data?.[0],
+    monthly: leaderboardData?.data?.monthly?.data?.[0]
   }), [leaderboardData]);
 
   const handleDialogChange = useCallback((open: boolean, period: string) => {
@@ -263,7 +273,7 @@ export function MVPCards() {
     };
   }, []);
 
-  if (isLoading || !mvps?.daily) {
+  if (isLoading || !mvps?.today) {
     return (
       <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
         {timeframes.map((timeframe) => (
@@ -284,7 +294,7 @@ export function MVPCards() {
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-5xl mx-auto perspective-1000 px-4 md:px-0">
       {timeframes.map((timeframe) => {
         const mvpData = mvps[timeframe.period as keyof typeof mvps];
-        const rank = leaderboardData?.data?.[timeframe.period === 'daily' ? 'today' : timeframe.period === 'weekly' ? 'weekly' : 'monthly']?.data?.findIndex((p: any) => p.uid === mvpData?.uid) + 1 || 0;
+        const rank = leaderboardData?.data?.[timeframe.period]?.data?.findIndex((p: any) => p.uid === mvpData?.uid) + 1 || 0;
 
         return (
           <motion.div
@@ -300,7 +310,6 @@ export function MVPCards() {
               mvp={mvpData ? {
                 username: mvpData.name || '',
                 uid: mvpData.uid || '',
-                wagerAmount: mvpData.wagered?.[timeframe.period === 'daily' ? 'today' : timeframe.period === 'weekly' ? 'this_week' : 'this_month'] || 0,
                 wagered: mvpData.wagered || { today: 0, this_week: 0, this_month: 0, all_time: 0 },
                 avatarUrl: mvpData.avatarUrl,
                 rank

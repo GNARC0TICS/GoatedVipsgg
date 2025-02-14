@@ -3,7 +3,6 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "./LoadingSpinner";
-import { type AffiliateResponse } from "@/hooks/useApi";
 
 interface QuickProfileProps {
   userId: string;
@@ -11,29 +10,76 @@ interface QuickProfileProps {
   children: React.ReactNode;
 }
 
+interface WagerData {
+  today: number;
+  this_week: number;
+  this_month: number;
+  all_time: number;
+}
+
+interface LeaderboardUser {
+  uid: string;
+  name: string;
+  wagered: WagerData;
+}
+
+interface LeaderboardResponse {
+  success: boolean;
+  data: {
+    today: { data: LeaderboardUser[] };
+    weekly: { data: LeaderboardUser[] };
+    monthly: { data: LeaderboardUser[] };
+    all_time: { data: LeaderboardUser[] };
+  };
+}
+
 export function QuickProfile({ userId, username, children }: QuickProfileProps) {
-  const { data: leaderboardData, isLoading } = useQuery<AffiliateResponse>({
+  const { data: leaderboardData, isLoading, error } = useQuery<LeaderboardResponse>({
     queryKey: ["/api/affiliate/stats"],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/affiliate/stats');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch profile data: ${response.statusText}`);
+        }
+        const data = await response.json();
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to fetch profile data');
+        }
+        return data;
+      } catch (error) {
+        console.error('Profile data fetch error:', error);
+        throw error;
+      }
+    },
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
     staleTime: 30000,
   });
 
   const stats = React.useMemo(() => {
     if (!leaderboardData?.data) return null;
 
-    const userStats = {
-      today: leaderboardData.data.today.data.find((p) => p.uid === userId)?.wagered || 0,
-      this_week: leaderboardData.data.weekly.data.find((p) => p.uid === userId)?.wagered || 0,
-      this_month: leaderboardData.data.monthly.data.find((p) => p.uid === userId)?.wagered || 0,
-      all_time: leaderboardData.data.all_time.data.find((p) => p.uid === userId)?.wagered || 0,
-    };
+    try {
+      const userStats = {
+        today: leaderboardData.data.today.data.find((p) => p.uid === userId)?.wagered.today || 0,
+        this_week: leaderboardData.data.weekly.data.find((p) => p.uid === userId)?.wagered.this_week || 0,
+        this_month: leaderboardData.data.monthly.data.find((p) => p.uid === userId)?.wagered.this_month || 0,
+        all_time: leaderboardData.data.all_time.data.find((p) => p.uid === userId)?.wagered.all_time || 0,
+      };
 
-    const rankings = {
-      weekly: (leaderboardData.data.weekly.data.findIndex((p) => p.uid === userId) + 1) || undefined,
-      monthly: (leaderboardData.data.monthly.data.findIndex((p) => p.uid === userId) + 1) || undefined,
-      all_time: (leaderboardData.data.all_time.data.findIndex((p) => p.uid === userId) + 1) || undefined,
-    };
+      // Calculate rankings based on sorted data
+      const rankings = {
+        weekly: (leaderboardData.data.weekly.data.findIndex((p) => p.uid === userId) + 1) || undefined,
+        monthly: (leaderboardData.data.monthly.data.findIndex((p) => p.uid === userId) + 1) || undefined,
+        all_time: (leaderboardData.data.all_time.data.findIndex((p) => p.uid === userId) + 1) || undefined,
+      };
 
-    return { wagered: userStats, rankings };
+      return { wagered: userStats, rankings };
+    } catch (error) {
+      console.error('Error processing user stats:', error);
+      return null;
+    }
   }, [leaderboardData, userId]);
 
   return (
@@ -46,6 +92,8 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
           <div className="flex justify-center p-4">
             <LoadingSpinner />
           </div>
+        ) : error ? (
+          <div className="text-red-500">Error loading profile data.</div>
         ) : (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
