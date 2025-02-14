@@ -97,28 +97,28 @@ router.post("/challenges/:id/entries", async (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: "Authentication required" });
   }
-  
+
   const { id } = req.params;
   const { betLink } = req.body;
-  
+
   try {
     const [challenge] = await db
       .select()
       .from(challenges)
       .where(eq(challenges.id, parseInt(id)))
       .limit(1);
-      
+
     if (!challenge) {
       return res.status(404).json({ error: "Challenge not found" });
     }
-    
+
     const entry = {
       challengeId: parseInt(id),
       userId: req.user.id,
       betLink,
       status: "pending",
     };
-    
+
     const [newEntry] = await db.insert(challengeEntries).values(entry).returning();
     res.status(201).json(newEntry);
   } catch (error) {
