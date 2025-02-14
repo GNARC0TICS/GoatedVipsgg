@@ -63,7 +63,7 @@ export function TelegramStats() {
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="flex items-center gap-2">
-            <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+            <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse mt-[2px]" />
             <span className="text-[#8A8B91]">
               <strong className="text-white">
                 {activeUsers.toLocaleString()}
