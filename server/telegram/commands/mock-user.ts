@@ -1,3 +1,5 @@
+// Mock user command temporarily disabled
+/*
 import { db } from "@db";
 import { eq, and } from "drizzle-orm";
 import { mockWagerData, users, telegramUsers } from "@db/schema";
@@ -145,3 +147,4 @@ export const handleClearUserCommand = async (
     safeSendMessage(chatId, "❌ Failed to clear mock user data.", bot);
   }
 };
+*/
