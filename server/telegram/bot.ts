@@ -10,13 +10,13 @@ import { handleMockUserCommand, handleClearUserCommand } from "./commands/mock-u
 
 let botInstance: TelegramBot | null = null;
 let healthCheckInterval: NodeJS.Timeout | null = null;
-const activeUsers = new Set<number>();
-const TARGET_GROUP_ID = "-iFlHl5V9VcszZTVh"; // Your new group ID
+export const activeUsers = new Set<number>();
+const TARGET_GROUP_ID = "-iFlHl5V9VcszZTVh";
 
-/**
- * Initializes the Telegram bot with the provided token
- * Sets up webhooks and event handlers
- */
+export function getActiveUsersCount(): number {
+  return activeUsers.size;
+}
+
 export async function initializeBot(): Promise<TelegramBot | null> {
   if (!process.env.TELEGRAM_BOT_TOKEN) {
     console.error("❌ TELEGRAM_BOT_TOKEN is not set!");
@@ -29,36 +29,22 @@ export async function initializeBot(): Promise<TelegramBot | null> {
       if (!msg.text) return;
       if (msg.chat.id.toString() === TARGET_GROUP_ID) {
         activeUsers.add(msg.from.id);
-        // Clear user after 5 minutes of inactivity
         setTimeout(() => activeUsers.delete(msg.from.id), 300000);
       }
     });
 
-    // Track when users join/leave the group
     botInstance.on("new_chat_members", async (msg) => {
       if (msg.chat.id.toString() === TARGET_GROUP_ID) {
         msg.new_chat_members.forEach(member => activeUsers.add(member.id));
-        notifyActiveUsersChange();
       }
     });
 
     botInstance.on("left_chat_member", async (msg) => {
       if (msg.chat.id.toString() === TARGET_GROUP_ID) {
         activeUsers.delete(msg.left_chat_member.id);
-        notifyActiveUsersChange();
       }
     });
 
-    // Function to notify clients of active users change
-    const notifyActiveUsersChange = () => {
-      const activeUsersCount = activeUsers.size;
-      clients.forEach(client => {
-        client.res.write(`data: ${JSON.stringify({ count: activeUsersCount })}\n\n`);
-      });
-    };
-
-    // Store connected SSE clients
-    const clients = new Set();
 
     const botInfo = await botInstance.getMe();
     console.log("✅ Bot initialized successfully");
@@ -69,6 +55,23 @@ export async function initializeBot(): Promise<TelegramBot | null> {
     botInstance = null;
     return null;
   }
+}
+
+function startHealthCheck() {
+  if (healthCheckInterval) {
+    clearInterval(healthCheckInterval);
+  }
+
+  healthCheckInterval = setInterval(async () => {
+    if (!botInstance) return;
+    try {
+      await botInstance.getMe();
+      console.log("✅ Bot health check passed");
+    } catch (error) {
+      console.error("❌ Bot health check failed:", error);
+      await initializeBot();
+    }
+  }, 60000);
 }
 
 // Safe message sending with rate limiting and error handling
@@ -205,23 +208,6 @@ async function handleVerificationAction(msg: any, action: 'approve' | 'reject', 
 }
 
 // Health check function
-function startHealthCheck() {
-  if (healthCheckInterval) {
-    clearInterval(healthCheckInterval);
-  }
-
-  healthCheckInterval = setInterval(async () => {
-    if (!botInstance) return;
-
-    try {
-      await botInstance.getMe();
-      console.log("✅ Bot health check passed");
-    } catch (error) {
-      console.error("❌ Bot health check failed:", error);
-      await initializeBot();
-    }
-  }, 60000); // Check every minute
-}
 
 export function handleUpdate(update: TelegramBot.Update) {
   if (!botInstance) return;
@@ -243,4 +229,5 @@ export {
   handleStatsCommand,
   handleLeaderboardCommand,
   handleVerificationAction,
+  getActiveUsersCount
 };
