@@ -19,7 +19,11 @@ const publicLimiter = new RateLimiterMemory({
 // Types for authenticated requests
 interface AuthUser {
   id: number;
+  username: string;
+  password: string;
+  email: string;
   isAdmin: boolean;
+  createdAt: Date;
 }
 
 interface AuthenticatedRequest extends Request {

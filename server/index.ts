@@ -13,6 +13,7 @@ import { registerRoutes } from "./routes";
 import { initializeAdmin } from "./middleware/admin";
 import { setupVite, serveStatic } from "./vite";
 import db from "../db";
+import fetch from 'node-fetch';
 
 const execAsync = promisify(exec);
 const PORT = Number(process.env.PORT || 5000);
@@ -58,29 +59,44 @@ async function startServer() {
     await setupMiddleware(app);
     const server = createServer(app);
 
-    // Setup routes before static file serving
+    // Setup API routes before static file serving
     registerRoutes(app);
+
+    // Initialize admin functionality
     await initializeAdmin().catch(console.error);
 
+    // Setup static file serving or Vite after API routes
     if (process.env.NODE_ENV === 'production') {
-      // In production, serve static files directly
       serveStatic(app);
     } else {
-      // In development, use Vite middleware
       await setupVite(app, server);
     }
 
     // Start the server with enhanced error handling
     return new Promise((resolve, reject) => {
       const serverInstance = server.listen(PORT, "0.0.0.0", async () => {
-        log(`Server listening on port ${PORT}`);
+        try {
+          // Test that the server is actually responding
+          const healthCheck = await fetch(`http://localhost:${PORT}/api/health`);
+          if (!healthCheck.ok) {
+            throw new Error("Health check failed");
+          }
 
-        // Set initial server state
-        isServerReady = true;
-        process.env.SERVER_READY = 'true';
+          log(`Server listening on port ${PORT}`);
 
-        log("Server is fully initialized and ready");
-        resolve(serverInstance);
+          // Set initial server state
+          isServerReady = true;
+          process.env.SERVER_READY = 'true';
+
+          // Write a ready file that the workflow can check
+          fs.writeFileSync(path.join(process.cwd(), '.server-ready'), 'ready');
+
+          log("Server is fully initialized and ready");
+          resolve(serverInstance);
+        } catch (error) {
+          log(`Server startup validation failed: ${error}`);
+          reject(error);
+        }
       });
 
       serverInstance.on('error', (error: NodeJS.ErrnoException) => {

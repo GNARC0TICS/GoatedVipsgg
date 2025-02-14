@@ -7,7 +7,8 @@ import { users } from "@db/schema/users";
 import { eq } from "drizzle-orm";
 import { log } from "./utils/logger";
 import type { Request, Response } from "express";
-import { handleMockUserCommand, handleClearUserCommand } from "./commands/mock-user";
+// Commenting out mock user commands for now
+// import { handleMockUserCommand, handleClearUserCommand } from "./commands/mock-user";
 
 let botInstance: TelegramBot | null = null;
 let healthCheckInterval: NodeJS.Timeout | null = null;
@@ -227,6 +228,7 @@ export function handleUpdate(update: TelegramBot.Update) {
 
   try {
     if (update.message) {
+      // Comment out mock user command handling
       botInstance.emit("message" as any, update.message);
     } else if (update.callback_query) {
       botInstance.emit("callback_query" as any, update.callback_query);
