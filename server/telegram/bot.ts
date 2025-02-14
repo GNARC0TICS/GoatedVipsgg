@@ -13,7 +13,7 @@ let healthCheckInterval: NodeJS.Timeout | null = null;
 export const activeUsers = new Set<number>();
 const TARGET_GROUP_ID = "-iFlHl5V9VcszZTVh";
 
-export function getActiveUsersCount(): number {
+function getActiveUsersCount(): number {
   return activeUsers.size;
 }
 
