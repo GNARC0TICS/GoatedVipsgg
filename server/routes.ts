@@ -13,40 +13,31 @@ import { users, type SelectUser } from "@db/schema";
 import { transformLeaderboardData as transformData } from "./utils/leaderboard";
 import { initializeBot } from "./telegram/bot";
 
- /**
-+ * Transforms a raw array of user objects into a snapshot containing sorted data for each period.
-+ * Assumes each user object has a "wagered" field structured as:
-+ *   { today: number, this_week: number, this_month: number, all_time: number }
-+ */
-+function transformRawLeaderboardData(rawData) {
-+  // Defensive check – if rawData is not an array, assume empty array
-+  if (!Array.isArray(rawData)) {
-+    rawData = [];
-+  }
-+
-+  // Create sorted arrays for each period
-+  const todayData = [...rawData].sort((a, b) => (b.wagered.today || 0) - (a.wagered.today || 0));
-+  const weeklyData = [...rawData].sort((a, b) => (b.wagered.this_week || 0) - (a.wagered.this_week || 0));
-+  const monthlyData = [...rawData].sort((a, b) => (b.wagered.this_month || 0) - (a.wagered.this_month || 0));
-+  const allTimeData = [...rawData].sort((a, b) => (b.wagered.all_time || 0) - (a.wagered.all_time || 0));
-+
-+  return {
-+    status: "success",
-+    metadata: {
-+      totalUsers: rawData.length,
-+      lastUpdated: new Date().toISOString(),
-+    },
-+    data: {
-+      today: { data: todayData },
-+      weekly: { data: weeklyData },
-+      monthly: { data: monthlyData },
-+      all_time: { data: allTimeData },
-+    },
-+  };
-+}
+function transformRawLeaderboardData(rawData: any[]) {
+  if (!Array.isArray(rawData)) {
+    rawData = [];
+  }
 
+  const todayData = [...rawData].sort((a, b) => (b.wagered.today || 0) - (a.wagered.today || 0));
+  const weeklyData = [...rawData].sort((a, b) => (b.wagered.this_week || 0) - (a.wagered.this_week || 0));
+  const monthlyData = [...rawData].sort((a, b) => (b.wagered.this_month || 0) - (a.wagered.this_month || 0));
+  const allTimeData = [...rawData].sort((a, b) => (b.wagered.all_time || 0) - (a.wagered.all_time || 0));
 
-// Convert ApiError interface to a class
+  return {
+    status: "success",
+    metadata: {
+      totalUsers: rawData.length,
+      lastUpdated: new Date().toISOString(),
+    },
+    data: {
+      today: { data: todayData },
+      weekly: { data: weeklyData },
+      monthly: { data: monthlyData },
+      all_time: { data: allTimeData },
+    },
+  };
+}
+
 class ApiError extends Error {
   status?: number;
   code?: string;
@@ -59,29 +50,19 @@ class ApiError extends Error {
   }
 }
 
-/**
- * Cache Manager Class
- * Handles in-memory caching with TTL (Time To Live) functionality
- */
 class CacheManager {
   private cache: Map<string, { data: any; timestamp: number }>;
   private readonly defaultTTL: number;
 
-  constructor(defaultTTL = 30000) { // Default TTL of 30 seconds
+  constructor(defaultTTL = 30000) {
     this.cache = new Map();
     this.defaultTTL = defaultTTL;
   }
 
-  /**
-   * Generates a unique cache key based on request properties
-   */
   generateKey(req: any): string {
     return `${req.method}-${req.originalUrl}-${JSON.stringify(req.query)}`;
   }
 
-  /**
-   * Retrieves cached data if valid, returns null if expired
-   */
   get(key: string): any {
     const cached = this.cache.get(key);
     if (!cached) return null;
@@ -94,9 +75,6 @@ class CacheManager {
     return cached.data;
   }
 
-  /**
-   * Stores data in cache with current timestamp
-   */
   set(key: string, data: any): void {
     this.cache.set(key, {
       data,
@@ -109,28 +87,21 @@ class CacheManager {
   }
 }
 
-// Define rate limit tiers type
 type RateLimitTier = 'HIGH' | 'MEDIUM' | 'LOW';
 const rateLimits: Record<RateLimitTier, { points: number; duration: number }> = {
-  HIGH: { points: 30, duration: 60 },    // 30 requests per minute
-  MEDIUM: { points: 15, duration: 60 },  // 15 requests per minute
-  LOW: { points: 5, duration: 60 }       // 5 requests per minute
+  HIGH: { points: 30, duration: 60 },
+  MEDIUM: { points: 15, duration: 60 },
+  LOW: { points: 5, duration: 60 }
 };
 
-// Initialize rate limiters for each tier
 const rateLimiters = {
   high: new RateLimiterMemory(rateLimits.HIGH),
   medium: new RateLimiterMemory(rateLimits.MEDIUM),
   low: new RateLimiterMemory(rateLimits.LOW),
 };
 
-// Initialize cache manager
 const cacheManager = new CacheManager();
 
-/**
- * Cache Middleware
- * Implements caching logic for API responses
- */
 const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) => {
   const key = cacheManager.generateKey(req);
   const cachedResponse = cacheManager.get(key);
@@ -152,17 +123,12 @@ const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) =
   next();
 };
 
-/**
- * Rate Limit Middleware Factory
- * Creates rate limiting middleware based on specified tier
- */
 const createRateLimiter = (tier: keyof typeof rateLimiters) => {
   const limiter = rateLimiters[tier];
   return async (req: any, res: any, next: any) => {
     try {
       const rateLimitRes = await limiter.consume(req.ip);
 
-      // Set standard rate limit headers
       res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase() as RateLimitTier].points);
       res.setHeader('X-RateLimit-Remaining', rateLimitRes.remainingPoints);
       res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateLimitRes.msBeforeNext).toISOString());
@@ -173,7 +139,6 @@ const createRateLimiter = (tier: keyof typeof rateLimiters) => {
       const rejection = rejRes as RateLimiterRes;
       log(`Rate limit exceeded - ${tier}: IP ${req.ip}`);
 
-      // Set headers for rate limit exceeded response
       res.setHeader('Retry-After', Math.ceil(rejection.msBeforeNext / 1000));
       res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase() as RateLimitTier].points);
       res.setHeader('X-RateLimit-Remaining', 0);
@@ -188,10 +153,6 @@ const createRateLimiter = (tier: keyof typeof rateLimiters) => {
   };
 };
 
-/**
- * Batch Request Handler
- * Processes multiple API requests in parallel
- */
 const batchHandler = async (req: any, res: any) => {
   try {
     const { requests } = req.body;
@@ -243,29 +204,20 @@ const batchHandler = async (req: any, res: any) => {
   }
 };
 
-// Add new schema for wheel spin
 const wheelSpinSchema = z.object({
   segmentIndex: z.number(),
   reward: z.string().nullable(),
 });
 
-/**
- * Sets up REST API routes
- * Configures endpoints with appropriate middleware and handlers
- */
 function setupRESTRoutes(app: Express) {
-  // Health check endpoint
   app.get("/api/health", (_req, res) => {
     res.json({ status: "healthy" });
   });
 
-  // Mount consolidated bonus and challenges routes
   app.use("/api", bonusChallengesRouter);
 
-  // Batch processing endpoint
   app.post("/api/batch", createRateLimiter('medium'), batchHandler);
 
-  // Current wager race data endpoint
   app.get("/api/wager-races/current",
     createRateLimiter('high'),
     cacheMiddleware(15000),
@@ -282,7 +234,6 @@ function setupRESTRoutes(app: Express) {
         );
 
         if (!response.ok) {
-          // Return empty race data instead of throwing error
           return res.json({
             id: new Date().getFullYear() + (new Date().getMonth() + 1).toString().padStart(2, '0'),
             status: 'live',
@@ -296,7 +247,6 @@ function setupRESTRoutes(app: Express) {
         const rawData = await response.json();
         const stats = transformData(rawData);
 
-        // Calculate race period
         const now = new Date();
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
@@ -327,61 +277,55 @@ function setupRESTRoutes(app: Express) {
     }
   );
 
-  +  // Affiliate statistics endpoint - updated to fetch raw data and transform it
-  +  app.get("/api/affiliate/stats",
-  +    createRateLimiter('medium'),
-  +    cacheMiddleware(60000),
-  +    async (req, res) => {
-  +      try {
-  +        const username = typeof req.query.username === 'string' ? req.query.username : undefined;
-  +        // Append ?raw=true so the external API returns the complete dataset
-  +        let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}?raw=true`;
-  +
-  +        if (username) {
-  +          url += `&username=${encodeURIComponent(username)}`;
-  +        }
-  +
-  +        const response = await fetch(url, {
-  +          headers: {
-  +            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-  +            "Content-Type": "application/json",
-  +          },
-  +        });
-  +
-  +        if (!response.ok) {
-  +          if (response.status === 401) {
-  +            log("API Authentication failed - check API token");
-  +            throw new ApiError("API Authentication failed", { status: 401 });
-  +          }
-  +          throw new ApiError(`API request failed: ${response.status}`, { status: response.status });
-  +        }
-  +
-  +        // Assume the API returns an array of user objects
-  +        const rawData = await response.json();
-  +
-  +        // Transform the raw data into sorted snapshots for each time period
-  +        const transformedData = transformRawLeaderboardData(rawData);
-  +        res.json(transformedData);
-  +      } catch (error) {
-  +        log(`Error in /api/affiliate/stats: ${error}`);
-  +        res.json({
-  +          status: "success",
-  +          metadata: {
-  +            totalUsers: 0,
-  +            lastUpdated: new Date().toISOString(),
-  +          },
-  +          data: {
-  +            today: { data: [] },
-  +            weekly: { data: [] },
-  +            monthly: { data: [] },
-  +            all_time: { data: [] },
-  +          },
-  +        });
-  +      }
-  +    }
-  +  );
+  app.get("/api/affiliate/stats",
+    createRateLimiter('medium'),
+    cacheMiddleware(60000),
+    async (req, res) => {
+      try {
+        const username = typeof req.query.username === 'string' ? req.query.username : undefined;
+        let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}?raw=true`;
 
-  // Analytics endpoint for admin
+        if (username) {
+          url += `&username=${encodeURIComponent(username)}`;
+        }
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            log("API Authentication failed - check API token");
+            throw new ApiError("API Authentication failed", { status: 401 });
+          }
+          throw new ApiError(`API request failed: ${response.status}`, { status: response.status });
+        }
+
+        const rawData = await response.json();
+        const transformedData = transformRawLeaderboardData(rawData);
+        res.json(transformedData);
+      } catch (error) {
+        log(`Error in /api/affiliate/stats: ${error}`);
+        res.json({
+          status: "success",
+          metadata: {
+            totalUsers: 0,
+            lastUpdated: new Date().toISOString(),
+          },
+          data: {
+            today: { data: [] },
+            weekly: { data: [] },
+            monthly: { data: [] },
+            all_time: { data: [] },
+          },
+        });
+      }
+    }
+  );
+
   app.get("/api/admin/analytics",
     createRateLimiter('low'),
     cacheMiddleware(300000),
@@ -404,7 +348,6 @@ function setupRESTRoutes(app: Express) {
         const rawData = await response.json();
         const data = rawData.data || rawData.results || rawData;
 
-        // Calculate totals
         const totals = data.reduce((acc: any, entry: any) => {
           acc.dailyTotal += entry.wagered?.today || 0;
           acc.weeklyTotal += entry.wagered?.this_week || 0;
@@ -418,7 +361,6 @@ function setupRESTRoutes(app: Express) {
           allTimeTotal: 0
         });
 
-        // Get race statistics
         const [raceCount, activeRaceCount] = await Promise.all([
           db.select({ count: sql`count(*)` }).from(wagerRaces),
           db.select({ count: sql`count(*)` }).from(wagerRaces).where(eq(wagerRaces.status, 'live')),
@@ -437,7 +379,6 @@ function setupRESTRoutes(app: Express) {
     }
   );
 
-  // Status endpoint for Telegram bot
   app.get("/api/telegram/status",
     createRateLimiter('medium'),
     async (_req, res) => {
@@ -467,8 +408,6 @@ function setupRESTRoutes(app: Express) {
     }
   );
 
-
-  // Wheel Challenge Routes
   app.get("/api/wheel/check-eligibility",
     createRateLimiter('high'),
     async (req, res) => {
@@ -480,7 +419,6 @@ function setupRESTRoutes(app: Express) {
           });
         }
 
-        // Check last spin time from database
         const [lastSpin] = await db
           .select({ timestamp: sql`MAX(timestamp)` })
           .from(sql`wheel_spins`)
@@ -490,9 +428,6 @@ function setupRESTRoutes(app: Express) {
         const now = new Date();
         const lastSpinDate = lastSpin?.timestamp ? new Date(lastSpin.timestamp as string) : null;
 
-        // Can spin if:
-        // 1. Never spun before OR
-        // 2. Last spin was before today (UTC midnight)
         const canSpin = !lastSpinDate ||
           (now.getUTCDate() !== lastSpinDate.getUTCDate() ||
             now.getUTCMonth() !== lastSpinDate.getUTCMonth() ||
@@ -534,13 +469,11 @@ function setupRESTRoutes(app: Express) {
 
         const { segmentIndex, reward } = result.data;
 
-        // Record the spin
         await db.execute(
           sql`INSERT INTO wheel_spins (user_id, segment_index, reward_code, timestamp)
               VALUES (${(req.user as SelectUser).id}, ${segmentIndex}, ${reward}, NOW())`
         );
 
-        // If there's a reward, create a bonus code record
         if (reward) {
           await db.execute(
             sql`INSERT INTO bonus_codes (code, user_id, claimed_at, expires_at)
@@ -565,25 +498,16 @@ function setupRESTRoutes(app: Express) {
 
 let wss: WebSocketServer;
 
-/**
- * Utility function to sort data by wagered amount
- */
 function sortByWagered(data: any[], period: string) {
   return [...data].sort(
     (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
   );
 }
 
-/**
- * Transforms raw leaderboard data into standardized format
- */
 export function transformLeaderboardData(apiData: any) {
   return transformData(apiData);
 }
 
-/**
- * Sets up WebSocket server and registers routes
- */
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
   setupRESTRoutes(app);
@@ -591,10 +515,6 @@ export function registerRoutes(app: Express): Server {
   return httpServer;
 }
 
-/**
- * Configures WebSocket server
- */
-// Webhook endpoint for Telegram bot
 function setupWebSocket(httpServer: Server) {
   wss = new WebSocketServer({ noServer: true });
 
@@ -612,14 +532,10 @@ function setupWebSocket(httpServer: Server) {
   });
 }
 
-/**
- * Handles new WebSocket connections for leaderboard
- */
 function handleLeaderboardConnection(ws: WebSocket) {
   const clientId = Date.now().toString();
   log(`Leaderboard WebSocket client connected (${clientId})`);
 
-  // Keep connection alive with ping/pong
   ws.isAlive = true;
   const pingInterval = setInterval(() => {
     if (ws.readyState === WebSocket.OPEN) {
@@ -632,7 +548,6 @@ function handleLeaderboardConnection(ws: WebSocket) {
   });
 
   ws.on("error", (error: Error) => {
-    // Fix error logging to use error message instead of raw Error object
     log(`WebSocket error (${clientId}): ${error.message}`);
     clearInterval(pingInterval);
     ws.terminate();
@@ -652,9 +567,6 @@ function handleLeaderboardConnection(ws: WebSocket) {
   }
 }
 
-/**
- * Broadcasts updates to all connected WebSocket clients
- */
 export function broadcastLeaderboardUpdate(data: any) {
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
@@ -666,7 +578,6 @@ export function broadcastLeaderboardUpdate(data: any) {
   });
 }
 
-// Update WebSocket type to include isAlive property
 declare module 'ws' {
   interface WebSocket {
     isAlive?: boolean;
