@@ -3,13 +3,26 @@ import { eq } from "drizzle-orm";
 import { db } from "@db";
 import { users, mockWagerData } from "@db/schema";
 
+interface WagerData {
+  today: number;
+  this_week: number;
+  this_month: number;
+  all_time: number;
+}
+
+interface LeaderboardUser {
+  uid: string;
+  name: string;
+  wagered: WagerData;
+}
+
 /**
  * Utility function to sort data by wagered amount
  */
-function sortByWagered(data: any[], period: string) {
+function sortByWagered(data: LeaderboardUser[], period: keyof WagerData): LeaderboardUser[] {
   return [...data].sort((a, b) => {
-    const bWager = typeof b.wagered === 'number' ? b.wagered : (b.wagered?.[period] || 0);
-    const aWager = typeof a.wagered === 'number' ? a.wagered : (a.wagered?.[period] || 0);
+    const bWager = parseFloat(String(b.wagered[period] || 0));
+    const aWager = parseFloat(String(a.wagered[period] || 0));
     return bWager - aWager;
   });
 }
@@ -26,8 +39,8 @@ export async function transformLeaderboardData(apiData: any) {
     console.log(`Found ${users.length} users to process`);
 
     // Map the external API data structure to our internal format
-    const mappedUsers = users.map((user: any) => ({
-      uid: user.uid || '',  // Changed from id to uid
+    const mappedUsers: LeaderboardUser[] = users.map((user: any) => ({
+      uid: user.uid || '',
       name: user.name || 'Anonymous',
       wagered: {
         today: parseFloat(user.wagered?.today || 0),
@@ -41,39 +54,18 @@ export async function transformLeaderboardData(apiData: any) {
 
     // Transform and sort data for each time period
     const transformedData = {
-      status: "success",
-      metadata: {
-        totalUsers: mappedUsers.length,
-        lastUpdated: new Date().toISOString(),
-      },
       data: {
         today: { 
-          data: sortByWagered(mappedUsers.map(user => ({
-            ...user,
-            wagered: user.wagered.today
-          })), "today")
-          .filter(entry => entry.wagered > 0)
+          data: sortByWagered(mappedUsers, 'today')
         },
         weekly: { 
-          data: sortByWagered(mappedUsers.map(user => ({
-            ...user,
-            wagered: user.wagered.this_week
-          })), "this_week")
-          .filter(entry => entry.wagered > 0)
+          data: sortByWagered(mappedUsers, 'this_week')
         },
         monthly: { 
-          data: sortByWagered(mappedUsers.map(user => ({
-            ...user,
-            wagered: user.wagered.this_month
-          })), "this_month")
-          .filter(entry => entry.wagered > 0)
+          data: sortByWagered(mappedUsers, 'this_month')
         },
         all_time: { 
-          data: sortByWagered(mappedUsers.map(user => ({
-            ...user,
-            wagered: user.wagered.all_time
-          })), "all_time")
-          .filter(entry => entry.wagered > 0)
+          data: sortByWagered(mappedUsers, 'all_time')
         }
       }
     };
@@ -84,6 +76,16 @@ export async function transformLeaderboardData(apiData: any) {
       monthly: transformedData.data.monthly.data.length,
       all_time: transformedData.data.all_time.data.length
     });
+
+    // Log top 3 users for debugging
+    console.log('Top 3 users (all time):', 
+      transformedData.data.all_time.data
+        .slice(0, 3)
+        .map(user => ({
+          name: user.name,
+          wagered: user.wagered.all_time
+        }))
+    );
 
     return transformedData;
   } catch (error) {

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
 
-type WageredData = {
+type WagerData = {
   today: number;
   this_week: number;
   this_month: number;
@@ -11,7 +11,7 @@ type WageredData = {
 type LeaderboardEntry = {
   uid: string;
   name: string;
-  wagered: WageredData;
+  wagered: WagerData;
   wagerChange?: number;
   isWagering?: boolean;
   lastUpdate?: string;
@@ -84,26 +84,14 @@ export function useLeaderboard(
   const { data, isLoading, error, refetch } = useQuery<APIResponse>({
     queryKey: ["leaderboard", timePeriod, page],
     queryFn: async () => {
-      const response = await fetch(`/api/leaderboard?period=${timePeriod}&page=${page}`, {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-
+      const response = await fetch(`/api/leaderboard?period=${timePeriod}&page=${page}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const freshData = await response.json();
-
-      // Cache the data in session storage for faster initial loads
-      sessionStorage.setItem(`leaderboard-${timePeriod}-${page}`, JSON.stringify({
-        data: freshData,
-        timestamp: Date.now()
-      }));
-
-      return freshData;
+      const data = await response.json();
+      console.log('Leaderboard data received:', data);
+      return data;
     },
     staleTime: 30000,
     gcTime: 5 * 60 * 1000,

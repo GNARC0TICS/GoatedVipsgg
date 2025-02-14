@@ -15,6 +15,44 @@ import express from "express";
 import { EventEmitter } from "node:events";
 import { transformLeaderboardData } from "./utils/leaderboard";
 
+let wss: WebSocketServer;
+const clients = new Set();
+
+/**
+ * Configures WebSocket server
+ */
+function setupWebSocket(httpServer: Server) {
+  wss = new WebSocketServer({
+    noServer: true,
+    clientTracking: true,
+    perMessageDeflate: false
+  });
+
+  httpServer.on("upgrade", (request, socket, head) => {
+    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
+      return;
+    }
+
+    if (request.url === "/ws/leaderboard") {
+      try {
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          ws.on('error', (error) => {
+            console.error('WebSocket error:', error);
+          });
+
+          wss.emit("connection", ws, request);
+          handleLeaderboardConnection(ws);
+        });
+      } catch (error) {
+        console.error('WebSocket upgrade error:', error);
+        socket.destroy();
+      }
+    } else {
+      socket.destroy();
+    }
+  });
+}
+
 // Convert ApiError interface to a class
 class ApiError extends Error {
   status?: number;
@@ -674,10 +712,15 @@ function setupRESTRoutes(app: Express) {
         log('Raw API data received:', JSON.stringify(rawData).slice(0, 200) + '...');
 
         const transformedData = await transformLeaderboardData(rawData);
-        log('Transformed data stats:', {
-          period,
-          entries: transformedData.data[period as keyof typeof transformedData.data].data.length
-        });
+
+        // Log top users for the requested period for debugging
+        const periodData = transformedData.data[period as keyof typeof transformedData.data].data;
+        log(`Top 3 users for ${period}:`,
+          periodData.slice(0, 3).map(user => ({
+            name: user.name,
+            wagered: user.wagered
+          }))
+        );
 
         // Send the complete transformed data for the requested period
         res.json({
@@ -700,44 +743,63 @@ function setupRESTRoutes(app: Express) {
   app.use("/api", apiRouter);
 
   // Setup WebSocket for real-time updates
-  /**
-   * Configures WebSocket server
-   */
-  function setupWebSocket(httpServer: Server) {
-    wss = new WebSocketServer({
-      noServer: true,
-      clientTracking: true,
-      perMessageDeflate: false
-    });
 
-    httpServer.on("upgrade", (request, socket, head) => {
-      if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
-        return;
-      }
+}
 
-      if (request.url === "/ws/leaderboard") {
-        try {
-          wss.handleUpgrade(request, socket, head, (ws) => {
-            ws.on('error', (error) => {
-              console.error('WebSocket error:', error);
-            });
+/**
+ * Handles new WebSocket connections for leaderboard
+ */
+function handleLeaderboardConnection(ws: WebSocket) {
+  const clientId = Date.now().toString();
+  log(`Leaderboard WebSocket client connected (${clientId})`);
 
-            wss.emit("connection", ws, request);
-            handleLeaderboardConnection(ws);
-          });
-        } catch (error) {
-          console.error('WebSocket upgrade error:', error);
-          socket.destroy();
-        }
-      } else {
-        socket.destroy();
-      }
-    });
+  ws.isAlive = true;
+  const pingInterval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.ping();
+    }
+  }, 30000);
+
+  ws.on("pong", () => {
+    ws.isAlive = true;
+  });
+
+  ws.on("error", (error: Error) => {
+    log(`WebSocket error (${clientId}): ${error.message}`);
+    clearInterval(pingInterval);
+    ws.terminate();
+  });
+
+  ws.on("close", () => {
+    log(`Leaderboard WebSocket client disconnected (${clientId})`);
+    clearInterval(pingInterval);
+  });
+
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: "CONNECTED",
+      clientId,
+      timestamp: Date.now()
+    }));
   }
 }
 
-let wss: WebSocketServer;
-const clients = new Set();
+// Update WebSocket type to include isAlive property
+declare module 'ws' {
+  interface WebSocket {
+    isAlive?: boolean;
+  }
+}
+
+/**
+ * Sets up WebSocket server and registers routes
+ */
+export function registerRoutes(app: Express): Server {
+  const httpServer = createServer(app);
+  setupRESTRoutes(app);
+  setupWebSocket(httpServer);
+  return httpServer;
+}
 
 /**
  * Utility function to sort data by wagered amount
@@ -849,28 +911,24 @@ async function transformLeaderboardData(rawData: any) {
             ...user,
             wagered: user.wagered.today
           })), "today")
-            .filter(entry => entry.wagered > 0)
         },
         weekly: {
           data: sortByWagered(mappedUsers.map(user => ({
             ...user,
             wagered: user.wagered.this_week
           })), "this_week")
-            .filter(entry => entry.wagered > 0)
         },
         monthly: {
           data: sortByWagered(mappedUsers.map(user => ({
             ...user,
             wagered: user.wagered.this_month
           })), "this_month")
-            .filter(entry => entry.wagered > 0)
         },
         all_time: {
           data: sortByWagered(mappedUsers.map(user => ({
             ...user,
             wagered: user.wagered.all_time
           })), "all_time")
-            .filter(entry => entry.wagered > 0)
         }
       }
     };
@@ -886,60 +944,5 @@ async function transformLeaderboardData(rawData: any) {
   } catch (error) {
     console.error('Error transforming data:', error);
     throw error;
-  }
-}
-
-/**
- * Sets up WebSocket server and registers routes
- */
-export function registerRoutes(app: Express): Server {
-  const httpServer = createServer(app);
-  setupRESTRoutes(app);
-  setupWebSocket(httpServer);
-  return httpServer;
-}
-
-/**
- * Handles new WebSocket connections for leaderboard
- */
-function handleLeaderboardConnection(ws: WebSocket) {
-  const clientId = Date.now().toString();
-  log(`Leaderboard WebSocket client connected (${clientId})`);
-
-  ws.isAlive = true;
-  const pingInterval = setInterval(() => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.ping();
-    }
-  }, 30000);
-
-  ws.on("pong", () => {
-    ws.isAlive = true;
-  });
-
-  ws.on("error", (error: Error) => {
-    log(`WebSocket error (${clientId}): ${error.message}`);
-    clearInterval(pingInterval);
-    ws.terminate();
-  });
-
-  ws.on("close", () => {
-    log(`Leaderboard WebSocket client disconnected (${clientId})`);
-    clearInterval(pingInterval);
-  });
-
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({
-      type: "CONNECTED",
-      clientId,
-      timestamp: Date.now()
-    }));
-  }
-}
-
-// Update WebSocket type to include isAlive property
-declare module 'ws' {
-  interface WebSocket {
-    isAlive?: boolean;
   }
 }
