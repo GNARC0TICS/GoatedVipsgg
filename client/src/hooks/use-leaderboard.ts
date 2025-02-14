@@ -27,12 +27,6 @@ type LeaderboardPeriodData = {
   };
 };
 
-//Simplified API response type
-type APIResponse = {
-  success: boolean;
-  data: LeaderboardEntry[];
-};
-
 export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
 
 export function useLeaderboard(
@@ -81,17 +75,38 @@ export function useLeaderboard(
     };
   }, []);
 
-  const { data, isLoading, error, refetch } = useQuery<APIResponse>({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["leaderboard", timePeriod, page],
     queryFn: async () => {
-      const response = await fetch(`/api/leaderboard?period=${timePeriod}&page=${page}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      try {
+        const response = await fetch(`/api/leaderboard?period=${timePeriod}&page=${page}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch leaderboard data: ${response.statusText}`);
+        }
 
-      const data = await response.json();
-      console.log('Leaderboard data received:', data);
-      return data;
+        const jsonData = await response.json();
+        if (!jsonData.success) {
+          throw new Error(jsonData.error || 'Failed to fetch leaderboard data');
+        }
+
+        // Get the correct period data from the response
+        const periodData = jsonData.data?.[timePeriod]?.data || [];
+
+        return periodData.map((entry: any) => ({
+          uid: entry.uid,
+          name: entry.name,
+          wagered: {
+            today: entry.wagered?.today || 0,
+            this_week: entry.wagered?.this_week || 0,
+            this_month: entry.wagered?.this_month || 0,
+            all_time: entry.wagered?.all_time || 0
+          },
+          lastUpdate: entry.lastUpdate
+        }));
+      } catch (error: any) {
+        console.error('Leaderboard fetch error:', error);
+        throw new Error(error.message || 'Failed to fetch leaderboard data');
+      }
     },
     staleTime: 30000,
     gcTime: 5 * 60 * 1000,
@@ -101,9 +116,9 @@ export function useLeaderboard(
   });
 
   const sortedData = React.useMemo(() => {
-    if (!data?.data) return [];
+    if (!data) return [];
 
-    return data.data.map((entry: LeaderboardEntry) => {
+    return data.map((entry: LeaderboardEntry) => {
       const prevEntry = previousData.find((p) => p.uid === entry.uid);
       const currentWager = entry.wagered[
         timePeriod === "weekly"
@@ -135,8 +150,8 @@ export function useLeaderboard(
   }, [data, previousData, timePeriod]);
 
   useEffect(() => {
-    if (data?.data) {
-      setPreviousData(data.data);
+    if (data) {
+      setPreviousData(data);
     }
   }, [data]);
 
