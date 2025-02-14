@@ -16,8 +16,10 @@ function sortByWagered(data: any[], period: string) {
  * Transforms raw leaderboard data into standardized format, including mock data
  */
 export async function transformLeaderboardData(apiData: any) {
-  const responseData = apiData.data || apiData.results || apiData;
-  if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
+  // Handle direct array response or nested data structure
+  const responseData = Array.isArray(apiData) ? apiData[0]?.data : apiData?.data;
+  
+  if (!responseData || responseData.length === 0) {
     return {
       status: "success",
       metadata: {
