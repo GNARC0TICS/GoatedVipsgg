@@ -124,6 +124,11 @@ function Router() {
                 )}
               </ProtectedRoute>
             </Route>
+            <Route path="/wheel-spin">
+              <ProtectedRoute>
+                <WheelChallenge />
+              </ProtectedRoute>
+            </Route>
             <Route path="/wheel-challenge">
               <ProtectedRoute>
                 <WheelChallenge />
