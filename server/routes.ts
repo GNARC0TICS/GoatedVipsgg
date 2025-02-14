@@ -629,6 +629,55 @@ function setupRESTRoutes(app: Express) {
     });
   });
 
+  // Update the leaderboard endpoint
+  apiRouter.get("/leaderboard",
+    createRateLimiter('high'),
+    cacheMiddleware(30000),
+    async (req, res) => {
+      try {
+        const period = req.query.period || 'today';
+        log('Fetching leaderboard data...');
+
+        const response = await fetch(
+          `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        log(`API Response status: ${response.status}`);
+
+        if (!response.ok) {
+          throw new Error(`API request failed with status ${response.status}`);
+        }
+
+        const rawData = await response.json();
+        log('Raw API data received:', JSON.stringify(rawData).slice(0, 200) + '...');
+
+        const transformedData = await transformLeaderboardData(rawData);
+
+        // Filter data based on period
+        const periodData = transformedData.data[period as keyof typeof transformedData.data];
+
+        res.json({
+          success: true,
+          data: periodData.data
+        });
+
+      } catch (error) {
+        log(`Error in /api/leaderboard: ${error}`);
+        res.status(500).json({
+          success: false,
+          error: "Failed to fetch leaderboard data",
+          details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+        });
+      }
+    }
+  );
+
   // Mount API router
   app.use("/api", apiRouter);
 
@@ -730,6 +779,11 @@ function transformData(apiData: any) {
     console.error('Error transforming data:', error);
     throw error;
   }
+}
+
+async function transformLeaderboardData(rawData: any):Promise<any> {
+    //This function needs to be implemented based on the actual structure of rawData
+    return {data: {today: {data: []}, weekly: {data: []}, monthly: {data: []}, all_time: {data: []}}}
 }
 
 /**

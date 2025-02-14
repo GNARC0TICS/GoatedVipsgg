@@ -14,27 +14,13 @@ async function analyzeLeaderboardAPI() {
         : "none",
     });
 
-    // Test API health
-    console.log(
-      "Making health check request to:",
-      `${API_CONFIG.baseUrl}/health`,
-    );
-    const healthCheck = await fetch(`${API_CONFIG.baseUrl}/health`, {
-      headers: {
-        Authorization: `Bearer ${API_CONFIG.token}`,
-        "Content-Type": "application/json",
-      },
-    });
-    console.log(
-      "API Health Check:",
-      healthCheck.status,
-      healthCheck.statusText,
-    );
-
     // Make leaderboard request
-    const response = await fetch(`${API_CONFIG.baseUrl}/api/affiliate/stats`, {
+    const leaderboardUrl = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
+    console.log("Making leaderboard request to:", leaderboardUrl);
+
+    const response = await fetch(leaderboardUrl, {
       headers: {
-        Authorization: `Bearer ${API_CONFIG.token}`,
+        Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
         "Content-Type": "application/json",
       },
     });
@@ -44,6 +30,10 @@ async function analyzeLeaderboardAPI() {
       "Response Headers:",
       Object.fromEntries(response.headers.entries()),
     );
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
 
     const rawData = await response.json();
 

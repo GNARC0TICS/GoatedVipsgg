@@ -27,18 +27,10 @@ type LeaderboardPeriodData = {
   };
 };
 
+//Simplified API response type
 type APIResponse = {
-  status: "success";
-  data: {
-    today: LeaderboardPeriodData;
-    weekly: LeaderboardPeriodData;
-    monthly: LeaderboardPeriodData;
-    all_time: LeaderboardPeriodData;
-  };
-  metadata?: {
-    totalUsers: number;
-    lastUpdated: string;
-  };
+  success: boolean;
+  data: LeaderboardEntry[];
 };
 
 export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
@@ -90,31 +82,20 @@ export function useLeaderboard(
   }, []);
 
   const { data, isLoading, error, refetch } = useQuery<APIResponse>({
-    queryKey: ["external-leaderboard", timePeriod, page],
+    queryKey: ["leaderboard", timePeriod, page],
     queryFn: async () => {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-      const apiToken = import.meta.env.VITE_API_TOKEN;
-
-      if (!apiBaseUrl || !apiToken) {
-        throw new Error('API configuration missing');
-      }
-
-      const response = await fetch(
-        `${apiBaseUrl}/affiliate/referral-leaderboard/2RW440E`,
-        {
-          headers: {
-            'Authorization': `Bearer ${apiToken}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
+      const response = await fetch(`/api/leaderboard?period=${timePeriod}&page=${page}`, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const freshData = await response.json() as APIResponse;
+      const freshData = await response.json();
 
       // Cache the data in session storage for faster initial loads
       sessionStorage.setItem(`leaderboard-${timePeriod}-${page}`, JSON.stringify({
@@ -131,17 +112,10 @@ export function useLeaderboard(
     refetchOnWindowFocus: true
   });
 
-  const periodKey =
-    timePeriod === "weekly"
-      ? "weekly"
-      : timePeriod === "monthly"
-        ? "monthly"
-        : timePeriod === "today"
-          ? "today"
-          : "all_time";
-
   const sortedData = React.useMemo(() => {
-    return data?.data?.[periodKey]?.data.map((entry: LeaderboardEntry) => {
+    if (!data?.data) return [];
+
+    return data.data.map((entry: LeaderboardEntry) => {
       const prevEntry = previousData.find((p) => p.uid === entry.uid);
       const currentWager = entry.wagered[
         timePeriod === "weekly"
@@ -169,22 +143,17 @@ export function useLeaderboard(
         isWagering: currentWager > previousWager,
         wagerChange: currentWager - previousWager,
       };
-    }) || [];
-  }, [data, periodKey, previousData, timePeriod]);
+    });
+  }, [data, previousData, timePeriod]);
 
   useEffect(() => {
-    if (data?.data?.[periodKey]?.data) {
-      setPreviousData(data.data[periodKey].data);
+    if (data?.data) {
+      setPreviousData(data.data);
     }
-  }, [data, periodKey]);
+  }, [data]);
 
   return {
     data: sortedData,
-    status: data?.data?.[periodKey]?.status,
-    metadata: {
-      ...data?.metadata,
-      ...data?.data?.[periodKey]?.metadata
-    },
     isLoading,
     error,
     refetch,
