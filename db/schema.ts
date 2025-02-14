@@ -265,10 +265,11 @@ export const insertAffiliateStatsSchema = createInsertSchema(affiliateStats);
 export const selectAffiliateStatsSchema = createSelectSchema(affiliateStats);
 
 
-export const insertMockWagerDataSchema = createInsertSchema(mockWagerData);
-export const selectMockWagerDataSchema = createSelectSchema(mockWagerData);
-export type InsertMockWagerData = typeof mockWagerData.$inferInsert;
-export type SelectMockWagerData = typeof mockWagerData.$inferSelect;
+// Mock data schemas temporarily commented out
+// export const insertMockWagerDataSchema = createInsertSchema(mockWagerData);
+// export const selectMockWagerDataSchema = createSelectSchema(mockWagerData);
+// export type InsertMockWagerData = typeof mockWagerData.$inferInsert;
+// export type SelectMockWagerData = typeof mockWagerData.$inferSelect;
 
 export type InsertNewsletterSubscription = typeof newsletterSubscriptions.$inferInsert;
 export type SelectNewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
