@@ -14,6 +14,7 @@ import { log } from "./utils/logger.js";
 import { bot } from "./telegram/bot";
 import { registerRoutes } from "./routes";
 import { initializeAdmin } from "./middleware/admin";
+import { db } from "../db";
 
 const execAsync = promisify(exec);
 const PORT = 5000;
