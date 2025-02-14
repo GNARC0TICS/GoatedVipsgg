@@ -1,11 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
 
-import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
-
-export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
-
 type WageredData = {
   today: number;
   this_week: number;
@@ -21,51 +16,9 @@ type LeaderboardEntry = {
   isWagering?: boolean;
 };
 
-export function useLeaderboard(timePeriod: TimePeriod) {
-  const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
-  
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["/api/affiliate/stats"],
-    refetchInterval: 30000,
-    select: (response: any) => {
-      if (!response?.data) return { data: {} };
-      
-      const periodMap = {
-        today: 'today',
-        weekly: 'weekly',
-        monthly: 'monthly',
-        all_time: 'all_time'
-      };
-      
-      const periodKey = periodMap[timePeriod];
-      const entries = response.data[periodKey]?.data || [];
-      
-      return entries.map((entry: any) => ({
-        uid: entry.uid,
-        name: entry.name,
-        wagered: {
-          today: entry.wagered?.today || 0,
-          this_week: entry.wagered?.this_week || 0,
-          this_month: entry.wagered?.this_month || 0,
-          all_time: entry.wagered?.all_time || 0
-        }
-      }));
-    }
-  });
-
-  useEffect(() => {
-    if (data) {
-      setPreviousData(data);
-    }
-  }, [data]);
-
-  return {
-    data: data || [],
-    isLoading,
-    error,
-    refetch
-  };
-}
+type LeaderboardPeriodData = {
+  data: LeaderboardEntry[];
+};
 
 type APIResponse = {
   status: "success";
