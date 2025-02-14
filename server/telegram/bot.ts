@@ -5,6 +5,7 @@ import { db } from "@db";
 import { telegramUsers, verificationRequests } from "@db/schema/telegram";
 import { users } from "@db/schema/users";
 import { eq } from "drizzle-orm";
+import { log } from "./utils/logger";
 import type { Request, Response } from "express";
 import { handleMockUserCommand, handleClearUserCommand } from "./commands/mock-user";
 
@@ -17,55 +18,52 @@ function getActiveUsersCount(): number {
   return activeUsers.size;
 }
 
-let activeUsersCount = 0; //Added to track active users count
-
-function updateActiveUsers(count:number){
-    activeUsersCount = count;
-    console.log("Active users updated:", activeUsersCount);
-}
-
 export async function initializeBot(): Promise<TelegramBot | null> {
   if (!process.env.TELEGRAM_BOT_TOKEN) {
-    console.error("❌ TELEGRAM_BOT_TOKEN is not set!");
+    log("❌ TELEGRAM_BOT_TOKEN is not set!");
     return null;
   }
 
   try {
     botInstance = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
-    botInstance.on("message", async (msg) => {
-      if (!msg.text) return;
-      if (msg.chat.id.toString() === TARGET_GROUP_ID) {
+
+    // Add message handler with proper type checking
+    botInstance.on("message", async (msg: TelegramBot.Message) => {
+      if (!msg.text || !msg.from) return;
+
+      const chatId = msg.chat.id;
+      if (chatId.toString() === TARGET_GROUP_ID) {
         activeUsers.add(msg.from.id);
-        updateActiveUsers(activeUsers.size);
         setTimeout(() => {
-          activeUsers.delete(msg.from.id);
-          updateActiveUsers(activeUsers.size);
+          if (msg.from) {
+            activeUsers.delete(msg.from.id);
+          }
         }, 300000);
       }
     });
 
-    botInstance.on("new_chat_members", async (msg) => {
-      if (msg.chat.id.toString() === TARGET_GROUP_ID) {
-        msg.new_chat_members.forEach(member => {
-          activeUsers.add(member.id);
-          updateActiveUsers(activeUsers.size);
-        });
-      }
+    // Add new chat members handler with type checking
+    botInstance.on("new_chat_members", async (msg: TelegramBot.Message) => {
+      if (!msg.new_chat_members || msg.chat.id.toString() !== TARGET_GROUP_ID) return;
+
+      msg.new_chat_members.forEach(member => {
+        activeUsers.add(member.id);
+      });
     });
 
-    botInstance.on("left_chat_member", async (msg) => {
-      if (msg.chat.id.toString() === TARGET_GROUP_ID) {
-        activeUsers.delete(msg.left_chat_member.id);
-        updateActiveUsers(activeUsers.size);
-      }
+    // Add left chat member handler with type checking
+    botInstance.on("left_chat_member", async (msg: TelegramBot.Message) => {
+      if (!msg.left_chat_member || msg.chat.id.toString() !== TARGET_GROUP_ID) return;
+
+      activeUsers.delete(msg.left_chat_member.id);
     });
 
     const botInfo = await botInstance.getMe();
-    console.log("✅ Bot initialized successfully");
+    log("✅ Bot initialized successfully");
     startHealthCheck();
     return botInstance;
   } catch (error) {
-    console.error("❌ Bot initialization failed:", error);
+    log(`❌ Bot initialization failed: ${error}`);
     botInstance = null;
     return null;
   }
@@ -153,7 +151,7 @@ async function handleStatsCommand(msg: any) {
       return safeSendMessage(chatId, "❌ You need to verify your account first using /verify");
     }
 
-    await safeSendMessage(chatId, `📊 Your stats will be displayed here. Currently ${activeUsersCount} users online`);
+    await safeSendMessage(chatId, `📊 Your stats will be displayed here. Currently ${activeUsers.size} users online`);
   } catch (error) {
     console.error("Stats error:", error);
     await safeSendMessage(chatId, "❌ Error fetching stats.");
@@ -220,6 +218,7 @@ async function handleVerificationAction(msg: any, action: 'approve' | 'reject', 
     await safeSendMessage(chatId, `❌ Error processing verification ${action}.`);
   }
 }
+
 
 // Health check function
 

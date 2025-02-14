@@ -14,7 +14,7 @@ const isDeveloper = async (chatId: number, userId: number): Promise<boolean> => 
     const user = await db.query.telegramUsers.findFirst({
       where: eq(telegramUsers.telegramId, userId.toString()),
     });
-    return DEVELOPER_USERNAMES.includes(user?.username || "");
+    return DEVELOPER_USERNAMES.includes(user?.telegramUsername || "");
   } catch (error) {
     log(`Error checking developer status: ${error}`);
     return false;
@@ -26,8 +26,12 @@ export const handleMockUserCommand = async (
   args: string[],
   bot: TelegramBot
 ) => {
+  if (!msg.from) {
+    return safeSendMessage(msg.chat.id, "❌ Invalid message format.", bot);
+  }
+
   const chatId = msg.chat.id;
-  const fromId = msg.from!.id;
+  const fromId = msg.from.id;
 
   if (!(await isDeveloper(chatId, fromId))) {
     return safeSendMessage(chatId, "❌ This command is only available to developers.", bot);
@@ -97,13 +101,18 @@ export const handleMockUserCommand = async (
   }
 };
 
+// handleClearUserCommand implementation remains the same, but add null check for msg.from
 export const handleClearUserCommand = async (
   msg: TelegramBot.Message,
   args: string[],
   bot: TelegramBot
 ) => {
+  if (!msg.from) {
+    return safeSendMessage(msg.chat.id, "❌ Invalid message format.", bot);
+  }
+
   const chatId = msg.chat.id;
-  const fromId = msg.from!.id;
+  const fromId = msg.from.id;
 
   if (!(await isDeveloper(chatId, fromId))) {
     return safeSendMessage(chatId, "❌ This command is only available to developers.", bot);
