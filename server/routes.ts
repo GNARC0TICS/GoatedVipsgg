@@ -587,6 +587,27 @@ function setupRESTRoutes(app: Express) {
     }
   );
 
+  // SSE endpoint for active users
+  app.get("/api/telegram/active-users/stream", (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const client = { res };
+    clients.add(client);
+
+    // Send initial count
+    res.write(`data: ${JSON.stringify({ count: getActiveUsersCount() })}\n\n`);
+
+    req.on('close', () => {
+      clients.delete(client);
+    });
+
+    activeUsers.on('change', (event) => {
+      res.write(`data: ${JSON.stringify({ count: getActiveUsersCount() })}\n\n`);
+    });
+  });
+
   // Mount API router
   app.use("/api", apiRouter);
 
@@ -782,22 +803,4 @@ declare module 'ws' {
   }
 }
 
-app.get("/api/telegram/active-users/stream", (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-
-  const client = { res };
-  clients.add(client);
-
-  // Send initial count
-  res.write(`data: ${JSON.stringify({ count: getActiveUsersCount() })}\n\n`);
-
-  req.on('close', () => {
-    clients.delete(client);
-  });
-
-  activeUsers.on('change', (event) => {
-    res.write(`data: ${JSON.stringify({ count: getActiveUsersCount() })}\n\n`);
-  })
-});
+// SSE endpoint moved inside setupRESTRoutes function
