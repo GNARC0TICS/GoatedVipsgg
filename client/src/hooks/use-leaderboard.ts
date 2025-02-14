@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
 
+import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+
 export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
 
 type WageredData = {
@@ -18,9 +21,51 @@ type LeaderboardEntry = {
   isWagering?: boolean;
 };
 
-type LeaderboardPeriodData = {
-  data: LeaderboardEntry[];
-};
+export function useLeaderboard(timePeriod: TimePeriod) {
+  const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
+  
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["/api/affiliate/stats"],
+    refetchInterval: 30000,
+    select: (response: any) => {
+      if (!response?.data) return { data: {} };
+      
+      const periodMap = {
+        today: 'today',
+        weekly: 'weekly',
+        monthly: 'monthly',
+        all_time: 'all_time'
+      };
+      
+      const periodKey = periodMap[timePeriod];
+      const entries = response.data[periodKey]?.data || [];
+      
+      return entries.map((entry: any) => ({
+        uid: entry.uid,
+        name: entry.name,
+        wagered: {
+          today: entry.wagered?.today || 0,
+          this_week: entry.wagered?.this_week || 0,
+          this_month: entry.wagered?.this_month || 0,
+          all_time: entry.wagered?.all_time || 0
+        }
+      }));
+    }
+  });
+
+  useEffect(() => {
+    if (data) {
+      setPreviousData(data);
+    }
+  }, [data]);
+
+  return {
+    data: data || [],
+    isLoading,
+    error,
+    refetch
+  };
+}
 
 type APIResponse = {
   status: "success";
@@ -35,6 +80,8 @@ type APIResponse = {
     all_time: LeaderboardPeriodData;
   };
 };
+
+export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
 
 export function useLeaderboard(
   timePeriod: TimePeriod = "today",
@@ -82,7 +129,10 @@ export function useLeaderboard(
     };
   }, []);
 
-  const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
+  // Primary data fetch hook using React Query
+// This is the main entry point for leaderboard data in the frontend
+const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
+    // Unique key for React Query cache - changes when time period or page changes
     queryKey: ["/api/affiliate/stats", timePeriod, page],
     queryFn: async () => {
       const response = await fetch(`/api/affiliate/stats?period=${timePeriod}&page=${page}&limit=10`, {
@@ -103,8 +153,8 @@ export function useLeaderboard(
 
       return freshData;
     },
-    refetchInterval: 60000,
-    staleTime: 45000,
+    refetchInterval: 60000, // Poll every minute instead of 30 seconds
+    staleTime: 45000, // Consider data fresh for 45 seconds
     cacheTime: 300000,
     retry: 3,
     gcTime: 5 * 60 * 1000,
