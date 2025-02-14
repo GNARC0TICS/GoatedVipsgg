@@ -65,7 +65,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch leaderboard data with error handling
-  const { data, isLoading, error } = useQuery<LeaderboardResponse>({
+  const { data, isLoading, error } = useQuery<LeaderboardEntry[]>({
     queryKey: ["/api/affiliate/stats", timePeriod],
     queryFn: async () => {
       try {
@@ -91,12 +91,8 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
   const filteredData = useMemo(() => {
     if (!data?.data) return [];
 
-    const periodData = data.data[
-      timePeriod === 'today' ? 'today' :
-      timePeriod === 'weekly' ? 'weekly' :
-      timePeriod === 'monthly' ? 'monthly' : 
-      'all_time'
-    ]?.data || [];
+    // The API returns data directly in the response
+    const periodData = data || [];
 
     return periodData
       .filter((entry: LeaderboardEntry) =>
