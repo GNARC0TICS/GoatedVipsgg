@@ -1,0 +1,51 @@
+Here's what we need to do:
+
+Update the Data Source URL:
+Modify the fetch URL in our React Query hook to use the external API endpoint:
+https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard/2RW440E
+This endpoint will serve as the raw data source for all wager stats.
+Fetch & Parse the Data:
+Ensure that the API response is parsed correctly. The response should match our expected schema (i.e., have the properties for leaderboard stats like today, weekly, monthly, and all_time).
+Data Transformation:
+In the hook, transform the raw data from the external API to match the structure required by our frontend components. This includes calculating any derived values like wagerChange and the isWagering flag.
+Update the React Query Hook:
+In our useLeaderboard hook, change the fetch call to point to the new URL and adjust the data transformation logic if necessary. For example:
+const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
+  queryKey: ["/api/affiliate/stats", timePeriod, page],
+  queryFn: async () => {
+    const response = await fetch(`https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard/2RW440E?page=${page}&limit=10`, {
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const freshData = await response.json() as APIResponse;
+
+    // Cache the data if needed, etc.
+    sessionStorage.setItem(`leaderboard-${timePeriod}-${page}`, JSON.stringify({
+      data: freshData,
+      timestamp: Date.now()
+    }));
+
+    return freshData;
+  },
+  refetchInterval: 30000,
+  staleTime: 30000,
+  cacheTime: 300000,
+  retry: 3,
+  gcTime: 5 * 60 * 1000,
+});
+Verify Leaderboard Display:
+Confirm that the transformed data is being correctly passed to your leaderboard components. Add logging if needed to ensure that:
+The raw API response is received.
+The transformation into LeaderboardEntry objects is accurate.
+The UI receives non-empty data arrays for all time periods (today, weekly, monthly, all_time).
+Test the Integration:
+Manually test the application to ensure that:
+The leaderboard displays proper wager stats.
+All transformation logic is working as expected.
+WebSocket updates (if any) correctly trigger a refetch().
+By following these steps, we’ll ensure that our leaderboard data is fetched from the correct external API and transformed properly for display on our platform. Please implement these changes and verify the results.
