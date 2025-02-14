@@ -1,9 +1,9 @@
-
 import React from "react";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "./LoadingSpinner";
+import { type AffiliateResponse } from "@/hooks/useApi";
 
 interface QuickProfileProps {
   userId: string;
@@ -12,7 +12,7 @@ interface QuickProfileProps {
 }
 
 export function QuickProfile({ userId, username, children }: QuickProfileProps) {
-  const { data: leaderboardData, isLoading } = useQuery({
+  const { data: leaderboardData, isLoading } = useQuery<AffiliateResponse>({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
   });
@@ -21,16 +21,16 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
     if (!leaderboardData?.data) return null;
 
     const userStats = {
-      today: leaderboardData.data.today.data.find((p: any) => p.uid === userId)?.wagered?.today || 0,
-      this_week: leaderboardData.data.weekly.data.find((p: any) => p.uid === userId)?.wagered?.this_week || 0,
-      this_month: leaderboardData.data.monthly.data.find((p: any) => p.uid === userId)?.wagered?.this_month || 0,
-      all_time: leaderboardData.data.all_time.data.find((p: any) => p.uid === userId)?.wagered?.all_time || 0,
+      today: leaderboardData.data.today.data.find((p) => p.uid === userId)?.wagered || 0,
+      this_week: leaderboardData.data.weekly.data.find((p) => p.uid === userId)?.wagered || 0,
+      this_month: leaderboardData.data.monthly.data.find((p) => p.uid === userId)?.wagered || 0,
+      all_time: leaderboardData.data.all_time.data.find((p) => p.uid === userId)?.wagered || 0,
     };
 
     const rankings = {
-      weekly: (leaderboardData.data.weekly.data.findIndex((p: any) => p.uid === userId) + 1) || undefined,
-      monthly: (leaderboardData.data.monthly.data.findIndex((p: any) => p.uid === userId) + 1) || undefined,
-      all_time: (leaderboardData.data.all_time.data.findIndex((p: any) => p.uid === userId) + 1) || undefined,
+      weekly: (leaderboardData.data.weekly.data.findIndex((p) => p.uid === userId) + 1) || undefined,
+      monthly: (leaderboardData.data.monthly.data.findIndex((p) => p.uid === userId) + 1) || undefined,
+      all_time: (leaderboardData.data.all_time.data.findIndex((p) => p.uid === userId) + 1) || undefined,
     };
 
     return { wagered: userStats, rankings };
@@ -56,7 +56,7 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
               />
               <span className="text-lg font-heading text-white">{username}</span>
             </div>
-            
+
             <div className="space-y-2">
               <div className="flex justify-between items-center p-2 rounded bg-black/20">
                 <span className="text-white/70 text-sm">Weekly Rank:</span>

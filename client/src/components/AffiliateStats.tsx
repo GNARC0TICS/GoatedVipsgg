@@ -7,45 +7,29 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
-import { useQuery } from "@tanstack/react-query";
+import { useAffiliateStats } from "@/hooks/useApi";
 import { Skeleton } from "@/components/ui/skeleton";
 
-type AffiliateData = {
-  timestamp: string;
-  referredUsers: number;
-  totalWagers: number;
-  commission: number;
-};
-
 export function AffiliateStats() {
-  const { data, isLoading } = useQuery<AffiliateData[]>({
-    queryKey: ["external-affiliate-stats"],
-    queryFn: async () => {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-      const apiToken = import.meta.env.VITE_API_TOKEN;
+  const { data, isLoading, error } = useAffiliateStats();
 
-      if (!apiBaseUrl || !apiToken) {
-        throw new Error('API configuration missing');
-      }
+  console.log('Affiliate Stats Data:', data);
+  console.log('Loading State:', isLoading);
+  if (error) console.error('Affiliate Stats Error:', error);
 
-      const response = await fetch(`${apiBaseUrl}/affiliate/stats`, {
-        headers: {
-          'Authorization': `Bearer ${apiToken}`,
-          'Accept': 'application/json'
-        }
-      });
+  if (error) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="col-span-full">
+          <CardContent className="p-6">
+            <p className="text-destructive">Failed to load affiliate statistics</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return response.json();
-    },
-    staleTime: 30000,
-    refetchInterval: 60000,
-  });
-
-  if (isLoading) {
+  if (isLoading || !data) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
@@ -55,19 +39,39 @@ export function AffiliateStats() {
     );
   }
 
+  // Extract stats from the data
+  const stats = {
+    daily: data.data.today.data.reduce((sum, user) => sum + (user.wagered || 0), 0),
+    weekly: data.data.weekly.data.reduce((sum, user) => sum + (user.wagered || 0), 0),
+    monthly: data.data.monthly.data.reduce((sum, user) => sum + (user.wagered || 0), 0),
+  };
+
+  // Create chart data
+  const chartData = [
+    { name: "Today", value: stats.daily },
+    { name: "This Week", value: stats.weekly },
+    { name: "This Month", value: stats.monthly },
+  ];
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <Card>
         <CardHeader>
-          <CardTitle>Referred Users</CardTitle>
+          <CardTitle>Daily Volume</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={data}>
-              <XAxis dataKey="timestamp" />
+            <LineChart data={[{ name: "Today", value: stats.daily }]}>
+              <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
-              <Line type="monotone" dataKey="referredUsers" stroke="#D7FF00" />
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke="#D7FF00" 
+                strokeWidth={2}
+                dot={{ fill: "#D7FF00" }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -75,15 +79,21 @@ export function AffiliateStats() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Total Wagers</CardTitle>
+          <CardTitle>Weekly Volume</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={data}>
-              <XAxis dataKey="timestamp" />
+            <LineChart data={[{ name: "This Week", value: stats.weekly }]}>
+              <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
-              <Line type="monotone" dataKey="totalWagers" stroke="#D7FF00" />
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke="#D7FF00" 
+                strokeWidth={2}
+                dot={{ fill: "#D7FF00" }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -91,15 +101,21 @@ export function AffiliateStats() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Commission</CardTitle>
+          <CardTitle>Monthly Volume</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={data}>
-              <XAxis dataKey="timestamp" />
+            <LineChart data={[{ name: "This Month", value: stats.monthly }]}>
+              <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
-              <Line type="monotone" dataKey="commission" stroke="#D7FF00" />
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke="#D7FF00" 
+                strokeWidth={2}
+                dot={{ fill: "#D7FF00" }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>

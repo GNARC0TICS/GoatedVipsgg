@@ -10,8 +10,9 @@ import { wagerRaces } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { users, type SelectUser } from "@db/schema";
-import { initializeBot, activeUsers, getActiveUsersCount } from "./telegram/bot";
+import { initializeBot } from "./telegram/bot";
 import express from "express";
+import { EventEmitter } from "node:events";
 
 // Convert ApiError interface to a class
 class ApiError extends Error {
@@ -24,6 +25,20 @@ class ApiError extends Error {
     this.status = options?.status;
     this.code = options?.code;
   }
+}
+
+// Create an event emitter for active users
+const activeUsersEmitter = new EventEmitter();
+const activeUsersSet = new Set<number>();
+
+// Update active users count
+function updateActiveUsers(count: number) {
+  activeUsersEmitter.emit('change', { count });
+}
+
+// Get active users count
+function getActiveUsersCount(): number {
+  return activeUsersSet.size;
 }
 
 /**
@@ -594,17 +609,22 @@ function setupRESTRoutes(app: Express) {
     res.setHeader('Connection', 'keep-alive');
 
     const client = { res };
+    const clients = new Set();
     clients.add(client);
 
     // Send initial count
     res.write(`data: ${JSON.stringify({ count: getActiveUsersCount() })}\n\n`);
 
+    // Setup change listener
+    const changeListener = (event: { count: number }) => {
+      res.write(`data: ${JSON.stringify({ count: event.count })}\n\n`);
+    };
+
+    activeUsersEmitter.on('change', changeListener);
+
     req.on('close', () => {
       clients.delete(client);
-    });
-
-    activeUsers.on('change', (event) => {
-      res.write(`data: ${JSON.stringify({ count: getActiveUsersCount() })}\n\n`);
+      activeUsersEmitter.off('change', changeListener);
     });
   });
 

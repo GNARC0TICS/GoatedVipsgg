@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
+import { TelegramStats } from "@/components/TelegramStats";
 
 export default function Community() {
   return (
@@ -25,6 +26,9 @@ export default function Community() {
               the latest gaming strategies and events. Join our community channels
               to be part of the conversation.
             </p>
+            <div className="flex justify-center mb-8">
+              <TelegramStats />
+            </div>
           </div>
 
           <div className="bg-[#1A1B21]/50 border border-[#2A2B31] rounded-xl p-8 mb-8">

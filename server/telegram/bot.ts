@@ -10,11 +10,18 @@ import { handleMockUserCommand, handleClearUserCommand } from "./commands/mock-u
 
 let botInstance: TelegramBot | null = null;
 let healthCheckInterval: NodeJS.Timeout | null = null;
-export const activeUsers = new Set<number>();
+const activeUsers = new Set<number>();
 const TARGET_GROUP_ID = "-iFlHl5V9VcszZTVh";
 
 function getActiveUsersCount(): number {
   return activeUsers.size;
+}
+
+let activeUsersCount = 0; //Added to track active users count
+
+function updateActiveUsers(count:number){
+    activeUsersCount = count;
+    console.log("Active users updated:", activeUsersCount);
 }
 
 export async function initializeBot(): Promise<TelegramBot | null> {
@@ -29,22 +36,29 @@ export async function initializeBot(): Promise<TelegramBot | null> {
       if (!msg.text) return;
       if (msg.chat.id.toString() === TARGET_GROUP_ID) {
         activeUsers.add(msg.from.id);
-        setTimeout(() => activeUsers.delete(msg.from.id), 300000);
+        updateActiveUsers(activeUsers.size);
+        setTimeout(() => {
+          activeUsers.delete(msg.from.id);
+          updateActiveUsers(activeUsers.size);
+        }, 300000);
       }
     });
 
     botInstance.on("new_chat_members", async (msg) => {
       if (msg.chat.id.toString() === TARGET_GROUP_ID) {
-        msg.new_chat_members.forEach(member => activeUsers.add(member.id));
+        msg.new_chat_members.forEach(member => {
+          activeUsers.add(member.id);
+          updateActiveUsers(activeUsers.size);
+        });
       }
     });
 
     botInstance.on("left_chat_member", async (msg) => {
       if (msg.chat.id.toString() === TARGET_GROUP_ID) {
         activeUsers.delete(msg.left_chat_member.id);
+        updateActiveUsers(activeUsers.size);
       }
     });
-
 
     const botInfo = await botInstance.getMe();
     console.log("✅ Bot initialized successfully");
@@ -139,7 +153,7 @@ async function handleStatsCommand(msg: any) {
       return safeSendMessage(chatId, "❌ You need to verify your account first using /verify");
     }
 
-    await safeSendMessage(chatId, `📊 Your stats will be displayed here. Currently ${activeUsers.size} users online`);
+    await safeSendMessage(chatId, `📊 Your stats will be displayed here. Currently ${activeUsersCount} users online`);
   } catch (error) {
     console.error("Stats error:", error);
     await safeSendMessage(chatId, "❌ Error fetching stats.");

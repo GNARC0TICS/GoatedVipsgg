@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Lock } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -24,7 +25,7 @@ export function BonusCodeHeroCard() {
 
   useEffect(() => {
     const eventSource = new EventSource('/api/telegram/active-users/stream');
-    
+
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setActiveUsers(data.count);
