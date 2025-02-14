@@ -14,7 +14,6 @@ type LeaderboardEntry = {
   wagered: WageredData;
   wagerChange?: number;
   isWagering?: boolean;
-  lastUpdate?: string;
 };
 
 type LeaderboardPeriodData = {
@@ -22,7 +21,7 @@ type LeaderboardPeriodData = {
 };
 
 type APIResponse = {
-  status: "success" | "error";
+  status: "success";
   metadata?: {
     totalUsers: number;
     lastUpdated: string;
@@ -37,19 +36,13 @@ type APIResponse = {
 
 export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
 
-const POLLING_INTERVAL = 30000; // 30 seconds
-const STALE_TIME = 15000; // 15 seconds
-const CACHE_TIME = 60000; // 1 minute
-
 export function useLeaderboard(
   timePeriod: TimePeriod = "today",
   page: number = 0,
 ) {
   const [ws, setWs] = React.useState<WebSocket | null>(null);
   const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
-  // WebSocket connection management
   React.useEffect(() => {
     let reconnectTimer: NodeJS.Timeout;
     let ws: WebSocket;
@@ -62,7 +55,6 @@ export function useLeaderboard(
         try {
           const update = JSON.parse(event.data);
           if (update.type === "LEADERBOARD_UPDATE") {
-            setLastUpdate(new Date());
             refetch();
           }
         } catch (err) {
@@ -71,7 +63,6 @@ export function useLeaderboard(
       };
 
       ws.onclose = () => {
-        console.log('WebSocket connection closed. Reconnecting...');
         reconnectTimer = setTimeout(connect, 3000);
       };
 
@@ -91,102 +82,82 @@ export function useLeaderboard(
     };
   }, []);
 
-  // Primary data fetch hook
-  const { data, isLoading, error, refetch } = useQuery<APIResponse>({
-    queryKey: ["/api/affiliate/stats", timePeriod, page, lastUpdate],
+  // Primary data fetch hook using React Query
+// This is the main entry point for leaderboard data in the frontend
+const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
+    // Unique key for React Query cache - changes when time period or page changes
+    queryKey: ["/api/affiliate/stats", timePeriod, page],
     queryFn: async () => {
-      try {
-        const response = await fetch(
-          `/api/affiliate/stats?period=${timePeriod}&page=${page}&limit=10`,
-          {
-            headers: {
-              'Accept': 'application/json',
-              'Cache-Control': 'no-cache'
-            }
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+      const response = await fetch(`/api/affiliate/stats?period=${timePeriod}&page=${page}&limit=10`, {
+        headers: {
+          'Accept': 'application/json'
         }
+      });
 
-        const freshData = await response.json();
-
-        if (freshData.status === "error") {
-          throw new Error("Failed to fetch leaderboard data");
-        }
-
-        // Cache the response
-        sessionStorage.setItem(`leaderboard-${timePeriod}-${page}`, JSON.stringify({
-          data: freshData,
-          timestamp: Date.now()
-        }));
-
-        return freshData;
-      } catch (error) {
-        console.error("Error fetching leaderboard data:", error);
-        // Try to get cached data
-        const cached = sessionStorage.getItem(`leaderboard-${timePeriod}-${page}`);
-        if (cached) {
-          const { data, timestamp } = JSON.parse(cached);
-          if (Date.now() - timestamp < 300000) { // 5 minutes
-            return data;
-          }
-        }
-        throw error;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      const freshData = await response.json() as APIResponse;
+
+      sessionStorage.setItem(`leaderboard-${timePeriod}-${page}`, JSON.stringify({
+        data: freshData,
+        timestamp: Date.now()
+      }));
+
+      return freshData;
     },
-    refetchInterval: POLLING_INTERVAL,
-    staleTime: STALE_TIME,
-    gcTime: CACHE_TIME,
+    refetchInterval: 60000, // Poll every minute instead of 30 seconds
+    staleTime: 45000, // Consider data fresh for 45 seconds
+    cacheTime: 300000,
     retry: 3,
-    refetchOnWindowFocus: true
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false
   });
 
-  const periodKey = timePeriod;
+  const periodKey =
+    timePeriod === "weekly"
+      ? "weekly"
+      : timePeriod === "monthly"
+        ? "monthly"
+        : timePeriod === "today"
+          ? "today"
+          : "all_time";
 
-  // Transform and process the data
-  const sortedData = React.useMemo(() => {
-    if (!data?.data?.[periodKey]?.data) return [];
+  const sortedData = data?.data[periodKey]?.data.map((entry: LeaderboardEntry) => {
+    const prevEntry = previousData.find((p) => p.uid === entry.uid);
+    const currentWager = entry.wagered[
+      timePeriod === "weekly"
+        ? "this_week"
+        : timePeriod === "monthly"
+          ? "this_month"
+          : timePeriod === "today"
+            ? "today"
+            : "all_time"
+    ];
+    const previousWager = prevEntry
+      ? prevEntry.wagered[
+          timePeriod === "weekly"
+            ? "this_week"
+            : timePeriod === "monthly"
+              ? "this_month"
+              : timePeriod === "today"
+                ? "today"
+                : "all_time"
+        ]
+      : 0;
 
-    return data.data[periodKey].data.map((entry: LeaderboardEntry) => {
-      const prevEntry = previousData.find((p) => p.uid === entry.uid);
-      const currentWager = entry.wagered[
-        timePeriod === "weekly"
-          ? "this_week"
-          : timePeriod === "monthly"
-            ? "this_month"
-            : timePeriod === "today"
-              ? "today"
-              : "all_time"
-      ];
-      const previousWager = prevEntry
-        ? prevEntry.wagered[
-            timePeriod === "weekly"
-              ? "this_week"
-              : timePeriod === "monthly"
-                ? "this_month"
-                : timePeriod === "today"
-                  ? "today"
-                  : "all_time"
-          ]
-        : 0;
+    return {
+      ...entry,
+      isWagering: currentWager > previousWager,
+      wagerChange: currentWager - previousWager,
+    };
+  }) || [];
 
-      return {
-        ...entry,
-        isWagering: currentWager > previousWager,
-        wagerChange: currentWager - previousWager,
-        lastUpdate: new Date().toISOString()
-      };
-    });
-  }, [data, periodKey, previousData, timePeriod]);
-
-  // Update previous data for comparison
   useEffect(() => {
-    if (sortedData.length > 0) {
-      setPreviousData(sortedData);
+    if (data?.data[periodKey]?.data) {
+      setPreviousData(data.data[periodKey].data);
     }
-  }, [sortedData]);
+  }, [data, periodKey]);
 
   return {
     data: sortedData,
@@ -194,6 +165,5 @@ export function useLeaderboard(
     isLoading,
     error,
     refetch,
-    lastUpdate
   };
 }

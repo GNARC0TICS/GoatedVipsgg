@@ -12,7 +12,6 @@ import { z } from "zod";
 import { users, type SelectUser } from "@db/schema";
 import { initializeBot, activeUsers, getActiveUsersCount } from "./telegram/bot";
 import express from "express";
-import { EventEmitter } from 'events';
 
 // Convert ApiError interface to a class
 class ApiError extends Error {
@@ -588,9 +587,6 @@ function setupRESTRoutes(app: Express) {
     }
   );
 
-  // Create a proper event emitter for active users
-  const activeUsersEmitter = new EventEmitter();
-
   // SSE endpoint for active users
   app.get("/api/telegram/active-users/stream", (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -607,8 +603,7 @@ function setupRESTRoutes(app: Express) {
       clients.delete(client);
     });
 
-    // Use the event emitter instead of activeUsers directly
-    activeUsersEmitter.on('change', (_: any) => {
+    activeUsers.on('change', (event) => {
       res.write(`data: ${JSON.stringify({ count: getActiveUsersCount() })}\n\n`);
     });
   });
@@ -638,7 +633,18 @@ function setupRESTRoutes(app: Express) {
 let wss: WebSocketServer;
 const clients = new Set();
 
-// Update the transformData function to ensure consistent data structure
+/**
+ * Utility function to sort data by wagered amount
+ */
+function sortByWagered(data: any[], period: string) {
+  return [...data].sort(
+    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
+  );
+}
+
+/**
+ * Transforms raw leaderboard data into standardized format
+ */
 function transformData(apiData: any) {
   try {
     // Handle array response structure
@@ -650,7 +656,7 @@ function transformData(apiData: any) {
     // Extract the data array from the response
     const users = responseData.data || [];
 
-    // Transform and validate the data
+    // Group data by time periods
     const transformedData = {
       status: "success",
       metadata: {
@@ -662,36 +668,21 @@ function transformData(apiData: any) {
           data: users.map((user: any) => ({
             uid: user.uid || '',
             name: user.name || 'Anonymous',
-            wagered: {
-              today: user.wagered?.today || 0,
-              this_week: user.wagered?.this_week || 0,
-              this_month: user.wagered?.this_month || 0,
-              all_time: user.wagered?.all_time || 0
-            }
+            wagered: user.wagered?.today || 0
           }))
         },
         weekly: {
           data: users.map((user: any) => ({
             uid: user.uid || '',
             name: user.name || 'Anonymous',
-            wagered: {
-              today: user.wagered?.today || 0,
-              this_week: user.wagered?.this_week || 0,
-              this_month: user.wagered?.this_month || 0,
-              all_time: user.wagered?.all_time || 0
-            }
+            wagered: user.wagered?.this_week || 0
           }))
         },
         monthly: {
           data: users.map((user: any) => ({
             uid: user.uid || '',
             name: user.name || 'Anonymous',
-            wagered: {
-              today: user.wagered?.today || 0,
-              this_week: user.wagered?.this_week || 0,
-              this_month: user.wagered?.this_month || 0,
-              all_time: user.wagered?.all_time || 0
-            },
+            wagered: user.wagered?.this_month || 0,
             position: 0  // Will be calculated later
           }))
         },
@@ -699,12 +690,7 @@ function transformData(apiData: any) {
           data: users.map((user: any) => ({
             uid: user.uid || '',
             name: user.name || 'Anonymous',
-            wagered: {
-              today: user.wagered?.today || 0,
-              this_week: user.wagered?.this_week || 0,
-              this_month: user.wagered?.this_month || 0,
-              all_time: user.wagered?.all_time || 0
-            }
+            wagered: user.wagered?.all_time || 0
           }))
         }
       }
@@ -712,7 +698,7 @@ function transformData(apiData: any) {
 
     // Sort monthly data by wagered amount and assign positions
     transformedData.data.monthly.data = transformedData.data.monthly.data
-      .sort((a: any, b: any) => (b.wagered.this_month || 0) - (a.wagered.this_month || 0))
+      .sort((a: any, b: any) => b.wagered - a.wagered)
       .map((user: any, index: number) => ({
         ...user,
         position: index + 1
@@ -733,6 +719,27 @@ export function registerRoutes(app: Express): Server {
   setupRESTRoutes(app);
   setupWebSocket(httpServer);
   return httpServer;
+}
+
+/**
+ * Configures WebSocket server
+ */
+// Webhook endpoint for Telegram bot
+function setupWebSocket(httpServer: Server) {
+  wss = new WebSocketServer({ noServer: true });
+
+  httpServer.on("upgrade", (request, socket, head) => {
+    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
+      return;
+    }
+
+    if (request.url === "/ws/leaderboard") {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit("connection", ws, request);
+        handleLeaderboardConnection(ws);
+      });
+    }
+  });
 }
 
 /**
@@ -796,8 +803,4 @@ declare module 'ws' {
   }
 }
 
-function sortByWagered(data: any[], period: string) {
-  return [...data].sort(
-    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
-  );
-}
+// SSE endpoint moved inside setupRESTRoutes function

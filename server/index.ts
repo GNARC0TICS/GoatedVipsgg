@@ -79,9 +79,6 @@ async function startServer() {
         isServerReady = true;
         process.env.SERVER_READY = 'true';
 
-        // Signal that port is available for the feedback tool
-        process.env.REPLIT_PORT = PORT.toString();
-
         log("Server is fully initialized and ready");
         resolve(serverInstance);
       });
