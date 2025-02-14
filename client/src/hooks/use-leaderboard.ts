@@ -88,17 +88,7 @@ const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
     // Unique key for React Query cache - changes when time period or page changes
     queryKey: ["/api/affiliate/stats", timePeriod, page],
     queryFn: async () => {
-      // Check session storage first for cached data to prevent unnecessary API calls
-      const cachedData = sessionStorage.getItem(`leaderboard-${timePeriod}-${page}`);
-      if (cachedData) {
-        const parsed = JSON.parse(cachedData);
-        const cacheTime = parsed.timestamp;
-        if (Date.now() - cacheTime < 30000) {
-          return parsed.data as APIResponse;
-        }
-      }
-
-      const response = await fetch(`/api/affiliate/stats?page=${page}&limit=10`, {
+      const response = await fetch(`/api/affiliate/stats?period=${timePeriod}&page=${page}&limit=10`, {
         headers: {
           'Accept': 'application/json'
         }

@@ -228,6 +228,11 @@ export function MVPCards() {
 
   const { data: leaderboardData, isLoading } = useQuery({
     queryKey: ["/api/affiliate/stats"],
+    queryFn: async () => {
+      const response = await fetch('/api/affiliate/stats');
+      if (!response.ok) throw new Error('Failed to fetch leaderboard data');
+      return response.json();
+    },
     staleTime: 30000,
   });
 
