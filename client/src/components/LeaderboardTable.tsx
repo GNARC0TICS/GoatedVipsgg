@@ -75,16 +75,21 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
         }
         const jsonData = await response.json();
         
+        // Get the correct period data
+        const periodData = jsonData.data?.[timePeriod === 'weekly' ? 'weekly' : 
+                                        timePeriod === 'monthly' ? 'monthly' : 
+                                        timePeriod === 'all_time' ? 'all_time' : 
+                                        'today']?.data || [];
+        
         // Transform the data into the expected format
-        const transformedData = jsonData.data.map((entry: any) => ({
-          uid: entry.uid,
-          name: entry.name,
-          wagered: {
-            today: Number(entry.wagered?.today || 0),
-            this_week: Number(entry.wagered?.this_week || 0),
-            this_month: Number(entry.wagered?.this_month || 0),
-            all_time: Number(entry.wagered?.all_time || 0)
-          },
+        const transformedData = periodData.map((entry: any) => ({
+          uid: entry.uid || '',
+          name: entry.name || 'Anonymous',
+          wagered: typeof entry.wagered === 'number' ? entry.wagered : 
+                  (entry.wagered?.[timePeriod === 'weekly' ? 'this_week' : 
+                                timePeriod === 'monthly' ? 'this_month' : 
+                                timePeriod === 'all_time' ? 'all_time' : 
+                                'today'] || 0),
           rank: 0 // Will be calculated during sorting
         }));
 
