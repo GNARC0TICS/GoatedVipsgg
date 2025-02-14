@@ -144,7 +144,7 @@ export function QuickProfile({
                     <span className="text-[#8A8B91] text-sm">Today</span>
                   </div>
                   <p className="text-xl font-bold text-white">
-                    ${stats?.wagered?.today.toLocaleString() || "0"}
+                    ${(stats?.wagered?.today || 0).toLocaleString()}
                   </p>
                 </CardContent>
               </Card>
@@ -156,7 +156,7 @@ export function QuickProfile({
                     <span className="text-[#8A8B91] text-sm">Weekly</span>
                   </div>
                   <p className="text-xl font-bold text-white">
-                    ${stats?.wagered?.this_week.toLocaleString() || "0"}
+                    ${(stats?.wagered?.this_week || 0).toLocaleString()}
                   </p>
                 </CardContent>
               </Card>
@@ -168,7 +168,7 @@ export function QuickProfile({
                     <span className="text-[#8A8B91] text-sm">Monthly</span>
                   </div>
                   <p className="text-xl font-bold text-white">
-                    ${stats?.wagered?.this_month.toLocaleString() || "0"}
+                    ${(stats?.wagered?.this_month || 0).toLocaleString()}
                   </p>
                 </CardContent>
               </Card>
@@ -180,7 +180,7 @@ export function QuickProfile({
                     <span className="text-[#8A8B91] text-sm">All Time</span>
                   </div>
                   <p className="text-xl font-bold text-white">
-                    ${stats?.wagered?.all_time.toLocaleString() || "0"}
+                    ${(stats?.wagered?.all_time || 0).toLocaleString()}
                   </p>
                 </CardContent>
               </Card>
