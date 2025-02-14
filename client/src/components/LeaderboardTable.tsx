@@ -73,11 +73,22 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
         if (!response.ok) {
           throw new Error(`Failed to fetch leaderboard data: ${response.statusText}`);
         }
-        const data = await response.json();
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to fetch leaderboard data');
-        }
-        return data;
+        const jsonData = await response.json();
+        
+        // Transform the data into the expected format
+        const transformedData = jsonData.data.map((entry: any) => ({
+          uid: entry.uid,
+          name: entry.name,
+          wagered: {
+            today: Number(entry.wagered?.today || 0),
+            this_week: Number(entry.wagered?.this_week || 0),
+            this_month: Number(entry.wagered?.this_month || 0),
+            all_time: Number(entry.wagered?.all_time || 0)
+          },
+          rank: 0 // Will be calculated during sorting
+        }));
+
+        return transformedData;
       } catch (error) {
         console.error('Leaderboard fetch error:', error);
         throw error;
@@ -89,12 +100,9 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
 
   // Filter and sort data based on search query and time period
   const filteredData = useMemo(() => {
-    if (!data?.data) return [];
-
-    // The API returns data directly in the response
-    const periodData = data || [];
-
-    return periodData
+    if (!data) return [];
+    
+    return data
       .filter((entry: LeaderboardEntry) =>
         entry.name.toLowerCase().includes(searchQuery.toLowerCase())
       )
