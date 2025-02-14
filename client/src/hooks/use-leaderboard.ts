@@ -1,7 +1,8 @@
+
 import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
 
-type WagerData = {
+type WageredData = {
   today: number;
   this_week: number;
   this_month: number;
@@ -11,7 +12,7 @@ type WagerData = {
 type LeaderboardEntry = {
   uid: string;
   name: string;
-  wagered: WagerData;
+  wagered: WageredData;
   wagerChange?: number;
   isWagering?: boolean;
   lastUpdate?: string;
@@ -19,11 +20,19 @@ type LeaderboardEntry = {
 
 type LeaderboardPeriodData = {
   data: LeaderboardEntry[];
-  status?: 'active' | 'completed' | 'transition';
+};
+
+type APIResponse = {
+  status: "success";
   metadata?: {
-    transitionEnds?: string;
-    totalParticipants?: number;
-    lastUpdated?: string;
+    totalUsers: number;
+    lastUpdated: string;
+  };
+  data: {
+    today: LeaderboardPeriodData;
+    weekly: LeaderboardPeriodData;
+    monthly: LeaderboardPeriodData;
+    all_time: LeaderboardPeriodData;
   };
 };
 
@@ -79,30 +88,27 @@ export function useLeaderboard(
     queryKey: ["leaderboard", timePeriod, page],
     queryFn: async () => {
       try {
-        const response = await fetch(`/api/leaderboard?period=${timePeriod}&page=${page}`);
+        const response = await fetch('/api/affiliate/stats');
         if (!response.ok) {
           throw new Error(`Failed to fetch leaderboard data: ${response.statusText}`);
         }
 
         const jsonData = await response.json();
-        if (!jsonData.success) {
-          throw new Error(jsonData.error || 'Failed to fetch leaderboard data');
-        }
-
-        // Get the correct period data from the response
-        const periodData = jsonData.data?.[timePeriod]?.data || [];
-
-        return periodData.map((entry: any) => ({
-          uid: entry.uid,
-          name: entry.name,
+        
+        // Transform the API response into our expected format
+        const transformedData = jsonData.data.map((entry: any) => ({
+          uid: entry.uid || '',
+          name: entry.name || 'Anonymous',
           wagered: {
-            today: entry.wagered?.today || 0,
-            this_week: entry.wagered?.this_week || 0,
-            this_month: entry.wagered?.this_month || 0,
-            all_time: entry.wagered?.all_time || 0
+            today: Number(entry.wagered?.today || 0),
+            this_week: Number(entry.wagered?.this_week || 0),
+            this_month: Number(entry.wagered?.this_month || 0),
+            all_time: Number(entry.wagered?.all_time || 0)
           },
-          lastUpdate: entry.lastUpdate
+          lastUpdate: entry.lastUpdate || new Date().toISOString()
         }));
+
+        return transformedData;
       } catch (error: any) {
         console.error('Leaderboard fetch error:', error);
         throw new Error(error.message || 'Failed to fetch leaderboard data');
@@ -112,6 +118,7 @@ export function useLeaderboard(
     gcTime: 5 * 60 * 1000,
     refetchInterval: 60000,
     retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
     refetchOnWindowFocus: true
   });
 
