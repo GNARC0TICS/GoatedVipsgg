@@ -100,10 +100,9 @@ export function useLeaderboard(
       }
 
       const response = await fetch(
-        `${apiBaseUrl}/leaderboard?period=${timePeriod}&page=${page}&limit=10`,
+        'https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard/2RW440E',
         {
           headers: {
-            'Authorization': `Bearer ${apiToken}`,
             'Accept': 'application/json'
           }
         }
