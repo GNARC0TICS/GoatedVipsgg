@@ -1,0 +1,73 @@
+To ensure that your code is not fetching data from the wrong API and to filter out users with zero amounts, you can add a validation step to filter out such users before processing the leaderboard data. Here's how you can modify your code:
+
+1. **Add a validation step to filter out users with zero amounts.**
+2. **Ensure the correct API endpoint is being used.**
+
+### Step-by-Step Plan
+
+1. Fetch data from the API.
+2. Validate the data to ensure it has the correct structure.
+3. Filter out users with zero amounts.
+4. Process the filtered data to create the leaderboard.
+
+### Modified Code
+
+```typescript
+async function analyzeLeaderboardAPI() {
+  try {
+    const rawData = await fetchExternalAPI(); // Replace with actual API call
+
+    // Validate the data structure
+    const validation = {
+      hasInvalidWagers: rawData.data.some(
+        (e: any) => !e.wagered || typeof e.wagered !== "object",
+      ),
+      wagerFieldsConsistent: rawData.data.every(
+        (e: any) =>
+          e.wagered &&
+          "today" in e.wagered &&
+          "this_week" in e.wagered &&
+          "this_month" in e.wagered &&
+          "all_time" in e.wagered,
+      ),
+    };
+
+    console.log("\nData Validation Results:", validation);
+
+    if (!validation.hasInvalidWagers && validation.wagerFieldsConsistent) {
+      // Filter out users with zero amounts
+      const filteredData = rawData.data.filter((participant: any) => participant.wagered.this_month > 0);
+
+      // Process the filtered data to create the leaderboard
+      const leaderboard = filteredData.map((participant: any, index: number) => ({
+        uid: participant.uid,
+        name: participant.name,
+        wagered: participant.wagered.this_month,
+        position: index + 1
+      })).slice(0, 10); // Top 10 participants
+
+      console.log("\nLeaderboard Data:", leaderboard);
+    } else {
+      console.error("\nInvalid data structure detected.");
+    }
+  } catch (error) {
+    console.error("\nError analyzing API:", error);
+  }
+}
+
+analyzeLeaderboardAPI();
+```
+
+### Explanation
+
+- **Validation**:
+  - The code checks if any participant has invalid wager data (`hasInvalidWagers`).
+  - It also checks if all participants have consistent wager fields (`wagerFieldsConsistent`).
+
+- **Filtering**:
+  - The `filteredData` array is created by filtering out participants whose `wagered.this_month` is zero.
+
+- **Processing**:
+  - The filtered data is then mapped to create the leaderboard, ensuring only the top 10 participants are included.
+
+This approach ensures that only participants with non-zero wager amounts are displayed on the leaderboard, and it validates the data structure to avoid fetching from the wrong API.
