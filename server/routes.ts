@@ -13,6 +13,39 @@ import { users, type SelectUser } from "@db/schema";
 import { transformLeaderboardData as transformData } from "./utils/leaderboard";
 import { initializeBot } from "./telegram/bot";
 
+ /**
++ * Transforms a raw array of user objects into a snapshot containing sorted data for each period.
++ * Assumes each user object has a "wagered" field structured as:
++ *   { today: number, this_week: number, this_month: number, all_time: number }
++ */
++function transformRawLeaderboardData(rawData) {
++  // Defensive check – if rawData is not an array, assume empty array
++  if (!Array.isArray(rawData)) {
++    rawData = [];
++  }
++
++  // Create sorted arrays for each period
++  const todayData = [...rawData].sort((a, b) => (b.wagered.today || 0) - (a.wagered.today || 0));
++  const weeklyData = [...rawData].sort((a, b) => (b.wagered.this_week || 0) - (a.wagered.this_week || 0));
++  const monthlyData = [...rawData].sort((a, b) => (b.wagered.this_month || 0) - (a.wagered.this_month || 0));
++  const allTimeData = [...rawData].sort((a, b) => (b.wagered.all_time || 0) - (a.wagered.all_time || 0));
++
++  return {
++    status: "success",
++    metadata: {
++      totalUsers: rawData.length,
++      lastUpdated: new Date().toISOString(),
++    },
++    data: {
++      today: { data: todayData },
++      weekly: { data: weeklyData },
++      monthly: { data: monthlyData },
++      all_time: { data: allTimeData },
++    },
++  };
++}
+
+
 // Convert ApiError interface to a class
 class ApiError extends Error {
   status?: number;
@@ -294,56 +327,59 @@ function setupRESTRoutes(app: Express) {
     }
   );
 
-  // Affiliate statistics endpoint
-  app.get("/api/affiliate/stats",
-    createRateLimiter('medium'),
-    cacheMiddleware(60000),
-    async (req, res) => {
-      try {
-        const username = typeof req.query.username === 'string' ? req.query.username : undefined;
-        let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
-
-        if (username) {
-          url += `?username=${encodeURIComponent(username)}`;
-        }
-
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            log("API Authentication failed - check API token");
-            throw new ApiError("API Authentication failed", {status: 401});
-          }
-          throw new ApiError(`API request failed: ${response.status}`, { status: response.status });
-        }
-
-        const apiData = await response.json();
-        const transformedData = transformData(apiData);
-
-        res.json(transformedData);
-      } catch (error) {
-        log(`Error in /api/affiliate/stats: ${error}`);
-        res.json({
-          status: "success",
-          metadata: {
-            totalUsers: 0,
-            lastUpdated: new Date().toISOString(),
-          },
-          data: {
-            today: { data: [] },
-            weekly: { data: [] },
-            monthly: { data: [] },
-            all_time: { data: [] },
-          },
-        });
-      }
-    }
-  );
+  +  // Affiliate statistics endpoint - updated to fetch raw data and transform it
+  +  app.get("/api/affiliate/stats",
+  +    createRateLimiter('medium'),
+  +    cacheMiddleware(60000),
+  +    async (req, res) => {
+  +      try {
+  +        const username = typeof req.query.username === 'string' ? req.query.username : undefined;
+  +        // Append ?raw=true so the external API returns the complete dataset
+  +        let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}?raw=true`;
+  +
+  +        if (username) {
+  +          url += `&username=${encodeURIComponent(username)}`;
+  +        }
+  +
+  +        const response = await fetch(url, {
+  +          headers: {
+  +            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+  +            "Content-Type": "application/json",
+  +          },
+  +        });
+  +
+  +        if (!response.ok) {
+  +          if (response.status === 401) {
+  +            log("API Authentication failed - check API token");
+  +            throw new ApiError("API Authentication failed", { status: 401 });
+  +          }
+  +          throw new ApiError(`API request failed: ${response.status}`, { status: response.status });
+  +        }
+  +
+  +        // Assume the API returns an array of user objects
+  +        const rawData = await response.json();
+  +
+  +        // Transform the raw data into sorted snapshots for each time period
+  +        const transformedData = transformRawLeaderboardData(rawData);
+  +        res.json(transformedData);
+  +      } catch (error) {
+  +        log(`Error in /api/affiliate/stats: ${error}`);
+  +        res.json({
+  +          status: "success",
+  +          metadata: {
+  +            totalUsers: 0,
+  +            lastUpdated: new Date().toISOString(),
+  +          },
+  +          data: {
+  +            today: { data: [] },
+  +            weekly: { data: [] },
+  +            monthly: { data: [] },
+  +            all_time: { data: [] },
+  +          },
+  +        });
+  +      }
+  +    }
+  +  );
 
   // Analytics endpoint for admin
   app.get("/api/admin/analytics",

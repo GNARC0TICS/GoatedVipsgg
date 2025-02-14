@@ -14,7 +14,7 @@ import {
   ChevronRight,
   Users,
 } from "lucide-react";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { QuickProfile } from "@/components/QuickProfile";
@@ -30,18 +30,18 @@ interface LeaderboardTableProps {
 
 /**
  * LeaderboardTable Component
- * Displays a paginated table of users ranked by their wager amounts
- * Includes search functionality and real-time updates
+ * Displays a paginated table of users ranked by their wager amounts.
+ * Includes search functionality and real-time updates.
  */
 export const LeaderboardTable = React.memo(function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
   // State management
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  
-  // Fetch leaderboard data
-  const { data, isLoading, error, metadata, refetch } = useLeaderboard(timePeriod);
 
-  // Filter data based on search query
+  // Fetch leaderboard data
+  const { data, isLoading, error, metadata } = useLeaderboard(timePeriod);
+
+  // Filter data based on search query (memoized)
   const filteredData = useMemo(() => {
     if (!data) return [];
     return data.filter((entry) =>
@@ -49,12 +49,12 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
     );
   }, [data, searchQuery]);
 
-  const totalPages = Math.ceil((filteredData?.length || 0) / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil((filteredData.length || 0) / ITEMS_PER_PAGE);
 
   /**
    * Returns the appropriate trophy icon based on rank
    */
-  const getTrophyIcon = (rank: number) => {
+  const getTrophyIcon = useCallback((rank: number) => {
     switch (rank) {
       case 1:
         return <Crown className="h-8 w-8 text-yellow-400 animate-pulse" />;
@@ -65,21 +65,21 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
       default:
         return <Star className="h-5 w-5 text-zinc-600" />;
     }
-  };
+  }, []);
 
   // Pagination handlers
-  const handlePrevPage = () => {
+  const handlePrevPage = useCallback(() => {
     setCurrentPage((prev) => Math.max(0, prev - 1));
-  };
+  }, []);
 
-  const handleNextPage = () => {
+  const handleNextPage = useCallback(() => {
     setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1));
-  };
+  }, [totalPages]);
 
   /**
    * Gets the wager amount based on the selected time period
    */
-  const getWagerAmount = (entry: any) => {
+  const getWagerAmount = useCallback((entry: any) => {
     if (!entry?.wagered) return 0;
     switch (timePeriod) {
       case "weekly":
@@ -93,7 +93,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
       default:
         return 0;
     }
-  };
+  }, [timePeriod]);
 
   // Loading state
   if (isLoading) {
@@ -150,13 +150,22 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
 
       {/* Leaderboard Table */}
       <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
-        <div className="overflow-x-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#2A2B31 #14151A' }}>
+        <div
+          className="overflow-x-auto"
+          style={{ scrollbarWidth: "thin", scrollbarColor: "#2A2B31 #14151A" }}
+        >
           <Table className="w-full">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[50px] md:w-20 font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap font-black">RANK</TableHead>
-                <TableHead className="font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base font-black">USERNAME</TableHead>
-                <TableHead className="text-right font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap font-black">WAGER</TableHead>
+                <TableHead className="w-[50px] md:w-20 font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap font-black">
+                  RANK
+                </TableHead>
+                <TableHead className="font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base font-black">
+                  USERNAME
+                </TableHead>
+                <TableHead className="text-right font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap font-black">
+                  WAGER
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
