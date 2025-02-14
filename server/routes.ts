@@ -440,7 +440,12 @@ function setupRESTRoutes(app: Express) {
   );
 
   // Telegram webhook endpoint
-  app.post("/webhook", async (req, res) => {
+  app.get("/api/telegram/active-users", (_req, res) => {
+  const { getActiveUsersCount } = require("./telegram/bot");
+  res.json({ count: getActiveUsersCount() });
+});
+
+app.post("/webhook", async (req, res) => {
     try {
       const bot = await initializeBot();
       if (!bot) {

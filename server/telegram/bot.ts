@@ -10,6 +10,7 @@ import { handleMockUserCommand, handleClearUserCommand } from "./commands/mock-u
 
 let botInstance: TelegramBot | null = null;
 let healthCheckInterval: NodeJS.Timeout | null = null;
+const activeUsers = new Set<number>();
 
 /**
  * Initializes the Telegram bot with the provided token
@@ -25,26 +26,9 @@ export async function initializeBot(): Promise<TelegramBot | null> {
     botInstance = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
     botInstance.on("message", async (msg) => {
       if (!msg.text) return;
-
-      const [command, ...args] = msg.text.split(" ");
-
-      switch (command.toLowerCase()) {
-        case "/verify":
-          await handleVerifyCommand(msg, args);
-          break;
-        case "/stats":
-          await handleStatsCommand(msg);
-          break;
-        case "/leaderboard":
-          await handleLeaderboardCommand(msg);
-          break;
-        case "/mockuser":
-          await handleMockUserCommand(msg, args, botInstance!);
-          break;
-        case "/clearuser":
-          await handleClearUserCommand(msg, args, botInstance!);
-          break;
-      }
+      activeUsers.add(msg.from.id);
+      // Clear user after 5 minutes of inactivity
+      setTimeout(() => activeUsers.delete(msg.from.id), 300000);
     });
 
     const botInfo = await botInstance.getMe();
@@ -123,7 +107,7 @@ async function handleStatsCommand(msg: any) {
       return safeSendMessage(chatId, "❌ You need to verify your account first using /verify");
     }
 
-    await safeSendMessage(chatId, "📊 Your stats will be displayed here");
+    await safeSendMessage(chatId, `📊 Your stats will be displayed here. Currently ${activeUsers.size} users online`);
   } catch (error) {
     console.error("Stats error:", error);
     await safeSendMessage(chatId, "❌ Error fetching stats.");

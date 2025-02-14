@@ -20,6 +20,23 @@ import { Link } from "wouter";
 
 export function BonusCodeHeroCard() {
   const { isAuthenticated } = useAuth();
+  const [activeUsers, setActiveUsers] = useState(0);
+
+  useEffect(() => {
+    const fetchActiveUsers = async () => {
+      try {
+        const response = await fetch('/api/telegram/active-users');
+        const data = await response.json();
+        setActiveUsers(data.count);
+      } catch (error) {
+        console.error('Failed to fetch active users:', error);
+      }
+    };
+
+    fetchActiveUsers();
+    const interval = setInterval(fetchActiveUsers, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <motion.div
@@ -39,9 +56,15 @@ export function BonusCodeHeroCard() {
           }}
         />
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-[#D7FF00]">
-            Bonus Codes
-            {!isAuthenticated && <Lock className="h-4 w-4 text-[#8A8B91]" />}
+          <CardTitle className="flex items-center justify-between text-[#D7FF00]">
+            <div className="flex items-center gap-2">
+              Bonus Codes
+              {!isAuthenticated && <Lock className="h-4 w-4 text-[#8A8B91]" />}
+            </div>
+            <div className="text-sm text-[#8A8B91] flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              {activeUsers} online
+            </div>
           </CardTitle>
           <CardDescription className="text-[#8A8B91]">
             {isAuthenticated 
