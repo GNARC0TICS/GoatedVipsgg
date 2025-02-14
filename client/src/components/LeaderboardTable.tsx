@@ -44,10 +44,26 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
   // Filter data based on search query (memoized)
   const filteredData = useMemo(() => {
     if (!data) return [];
-    return data.filter((entry) =>
-      entry.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [data, searchQuery]);
+    return data
+      .filter(entry => 
+        entry.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        (timePeriod === 'today' ? entry.wagered?.today > 0 :
+         timePeriod === 'weekly' ? entry.wagered?.this_week > 0 :
+         timePeriod === 'monthly' ? entry.wagered?.this_month > 0 :
+         entry.wagered?.all_time > 0)
+      )
+      .sort((a, b) => {
+        const aWager = timePeriod === 'today' ? a.wagered?.today :
+                      timePeriod === 'weekly' ? a.wagered?.this_week :
+                      timePeriod === 'monthly' ? a.wagered?.this_month :
+                      a.wagered?.all_time || 0;
+        const bWager = timePeriod === 'today' ? b.wagered?.today :
+                      timePeriod === 'weekly' ? b.wagered?.this_week :
+                      timePeriod === 'monthly' ? b.wagered?.this_month :
+                      b.wagered?.all_time || 0;
+        return bWager - aWager;
+      });
+  }, [data, searchQuery, timePeriod]);
 
   const totalPages = Math.ceil((filteredData.length || 0) / ITEMS_PER_PAGE);
 
