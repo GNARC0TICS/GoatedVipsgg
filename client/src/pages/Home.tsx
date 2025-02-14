@@ -315,6 +315,66 @@ export default function Home() {
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 className="relative group h-full perspective-1000"
               >
+                <Link href="/wheel-spin" className="block h-full">
+                  <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
+                    style={{ 
+                      background: 'linear-gradient(to bottom, #D7FF0020, transparent)',
+                    }}
+                  />
+                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover flex flex-col justify-between h-full"
+                    style={{
+                      '--hover-border-color': '#D7FF0080',
+                      '--hover-shadow-color': '#D7FF0040'
+                    } as React.CSSProperties}>
+                    <Gift className="h-8 w-8 text-[#D7FF00] mb-4" />
+                    <h3 className="text-2xl font-heading uppercase mb-4 text-white">
+                      Daily Wheel Spin
+                    </h3>
+                    <p className="text-[#8A8B91] mb-6 font-body">
+                      Spin the wheel daily for exclusive rewards and bonuses
+                    </p>
+                    <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
+                      Spin Now <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </span>
+                  </div>
+                </Link>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                className="relative group h-full perspective-1000"
+              >
+                <Link href="/challenges" className="block h-full">
+                  <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
+                    style={{ 
+                      background: 'linear-gradient(to bottom, #D7FF0020, transparent)',
+                    }}
+                  />
+                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover flex flex-col justify-between h-full"
+                    style={{
+                      '--hover-border-color': '#D7FF0080',
+                      '--hover-shadow-color': '#D7FF0040'
+                    } as React.CSSProperties}>
+                    <Zap className="h-8 w-8 text-[#D7FF00] mb-4" />
+                    <h3 className="text-2xl font-heading uppercase mb-4 text-white">
+                      Daily Challenges
+                    </h3>
+                    <p className="text-[#8A8B91] mb-6 font-body">
+                      Complete daily challenges to earn exclusive rewards
+                    </p>
+                    <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
+                      View Challenges <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </span>
+                  </div>
+                </Link>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                className="relative group h-full perspective-1000"
+              >
                 <a href="https://t.me/xGoombas" target="_blank" rel="noopener noreferrer" className="block h-full">
                   <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
                     style={{ 
