@@ -66,10 +66,10 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
 
   // Fetch leaderboard data with error handling
   const { data, isLoading, error } = useQuery<LeaderboardResponse>({
-    queryKey: ["/api/leaderboard", timePeriod],
+    queryKey: ["/api/affiliate/stats", timePeriod],
     queryFn: async () => {
       try {
-        const response = await fetch(`/api/leaderboard?period=${timePeriod}`);
+        const response = await fetch('/api/affiliate/stats');
         if (!response.ok) {
           throw new Error(`Failed to fetch leaderboard data: ${response.statusText}`);
         }
