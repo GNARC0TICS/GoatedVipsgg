@@ -73,20 +73,23 @@ const formatDate = (dateString: string | undefined): string => {
 };
 
 // ─── Custom Hook: Fetch Race Data ─────────────────────────────────────────────
+const endpoint = "/api/wager-races/current";
+
 function useRaceData() {
   const { toast } = useToast();
-  const endpoint = "/api/wager-races/current";
 
   return useQuery<RaceData>({
     queryKey: [endpoint],
     queryFn: async () => {
       try {
+        console.log('Fetching race data from:', endpoint);
         const response = await fetch(endpoint);
         if (!response.ok) {
           throw new Error(`Failed to fetch race data: ${response.status}`);
         }
 
         const data = await response.json();
+        console.log('Received race data:', data);
 
         // Ensure participants is an array and has valid wagered amounts
         const validParticipants = Array.isArray(data.participants)
@@ -98,8 +101,10 @@ function useRaceData() {
             }))
           : [];
 
+        console.log('Processed participants:', validParticipants);
+
         // Sort participants by wagered amount in descending order
-        validParticipants.sort((a, b) => b.wagered - a.wagered);
+        validParticipants.sort((a: RaceParticipant, b: RaceParticipant) => b.wagered - a.wagered);
 
         // Ensure all required fields are present with proper defaults
         const raceData: RaceData = {
@@ -111,6 +116,7 @@ function useRaceData() {
           participants: validParticipants.slice(0, 10)
         };
 
+        console.log('Processed race data:', raceData);
         return raceData;
       } catch (error) {
         console.error('Race data fetch error:', error);

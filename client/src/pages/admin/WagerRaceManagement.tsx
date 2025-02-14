@@ -690,7 +690,9 @@ export default function WagerRaceManagement() {
         {/* Delete Confirmation Dialog */}
         <AlertDialog
           open={deleteConfirm !== null}
-          onOpenChange={setDeleteConfirm}
+          onOpenChange={(open: boolean) => {
+            if (!open) setDeleteConfirm(null);
+          }}
         >
           <AlertDialogContent>
             <AlertDialogHeader>
