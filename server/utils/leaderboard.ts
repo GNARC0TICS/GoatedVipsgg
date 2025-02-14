@@ -17,8 +17,24 @@ function sortByWagered(data: any[], period: string) {
  * Transforms raw leaderboard data into standardized format
  */
 export async function transformLeaderboardData(apiData: any) {
-  const responseData = apiData.data || apiData.results || apiData;
-  if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
+  if (!apiData) {
+    return {
+      status: "success",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    };
+  }
+
+  const responseData = apiData.data || apiData.results || apiData || [];
+  if (Array.isArray(responseData) && responseData.length === 0) {
     return {
       status: "success",
       metadata: {
@@ -39,10 +55,10 @@ export async function transformLeaderboardData(apiData: any) {
     uid: entry.uid || "",
     name: entry.name || "",
     wagered: {
-      today: entry.wagered?.today || 0,
-      this_week: entry.wagered?.this_week || 0,
-      this_month: entry.wagered?.this_month || 0,
-      all_time: entry.wagered?.all_time || 0,
+      today: (entry?.wagered?.today !== undefined ? entry.wagered.today : 0),
+      this_week: (entry?.wagered?.this_week !== undefined ? entry.wagered.this_week : 0),
+      this_month: (entry?.wagered?.this_month !== undefined ? entry.wagered.this_month : 0),
+      all_time: (entry?.wagered?.all_time !== undefined ? entry.wagered.all_time : 0),
     },
   }));
 
