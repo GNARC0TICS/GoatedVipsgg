@@ -29,7 +29,7 @@ interface RaceData {
 }
 
 // ─── Helper: Format Currency ─────────────────────────────────────────────────
-const formatCurrency = (amount: number): string => {
+const formatCurrency = (amount: number | undefined): string => {
   try {
     if (typeof amount !== 'number' || isNaN(amount)) {
       console.warn('Invalid amount provided to formatCurrency:', amount);
@@ -61,7 +61,6 @@ const formatDate = (dateString: string | undefined): string => {
       return 'Invalid Date';
     }
 
-    // Use toLocaleDateString with explicit options for better control
     return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -84,14 +83,14 @@ function useRaceData() {
       try {
         const response = await fetch(endpoint);
         if (!response.ok) {
-          throw new Error("Failed to fetch race data");
+          throw new Error(`Failed to fetch race data: ${response.status}`);
         }
 
         const data = await response.json();
 
         // Ensure participants is an array and has valid wagered amounts
         const validParticipants = Array.isArray(data.participants)
-          ? data.participants.map((p: any): RaceParticipant => ({
+          ? data.participants.map((p: RaceParticipant) => ({
               uid: String(p.uid || ''),
               name: String(p.name || 'Anonymous'),
               wagered: Number(p.wagered) || 0,
@@ -99,7 +98,7 @@ function useRaceData() {
             }))
           : [];
 
-        // Sort participants by wagered amount
+        // Sort participants by wagered amount in descending order
         validParticipants.sort((a, b) => b.wagered - a.wagered);
 
         // Ensure all required fields are present with proper defaults

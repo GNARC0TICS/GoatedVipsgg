@@ -19,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -41,14 +40,26 @@ import {
   TrashIcon,
   PencilIcon,
   PlusCircle,
-  Copy,
-  Clock,
   Trophy,
   DollarSign,
   Users,
   X,
-  AlertCircle,
 } from "lucide-react";
+
+// Type definitions
+interface WagerRace {
+  id: string;
+  title: string;
+  type: "weekly" | "monthly" | "weekend";
+  status: "upcoming" | "live" | "completed";
+  prizePool: number;
+  minWager: number;
+  startDate: string;
+  endDate: string;
+  prizeDistribution: Record<string, number>;
+  rules?: string;
+  description?: string;
+}
 
 const wagerRaceSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -63,14 +74,16 @@ const wagerRaceSchema = z.object({
   description: z.string().optional(),
 });
 
+type WagerRaceFormValues = z.infer<typeof wagerRaceSchema>;
+
 export default function WagerRaceManagement() {
   const { toast } = useToast();
-  const [editingRace, setEditingRace] = useState(null);
+  const [editingRace, setEditingRace] = useState<WagerRace | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const form = useForm({
+  const form = useForm<WagerRaceFormValues>({
     resolver: zodResolver(wagerRaceSchema),
     defaultValues: {
       title: "",
@@ -97,13 +110,13 @@ export default function WagerRaceManagement() {
     },
   });
 
-  const { data: races = [], isLoading } = useQuery({
+  const { data: races = [], isLoading } = useQuery<WagerRace[]>({
     queryKey: ["/api/admin/wager-races"],
-    refetchInterval: 5000, // Poll every 5 seconds
+    refetchInterval: 5000,
   });
 
   const createRace = useMutation({
-    mutationFn: async (data) => {
+    mutationFn: async (data: WagerRaceFormValues) => {
       const response = await fetch("/api/admin/wager-races", {
         method: editingRace ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -111,7 +124,10 @@ export default function WagerRaceManagement() {
         credentials: "include",
       });
 
-      if (!response.ok) throw new Error(await response.text());
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText);
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -124,17 +140,28 @@ export default function WagerRaceManagement() {
       setEditingRace(null);
       setShowForm(false);
     },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const updateRaceStatus = useMutation({
-    mutationFn: async ({ id, status }) => {
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const response = await fetch(`/api/admin/wager-races/${id}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
         credentials: "include",
       });
-      if (!response.ok) throw new Error(await response.text());
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText);
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -144,15 +171,25 @@ export default function WagerRaceManagement() {
         description: "Race status has been updated successfully.",
       });
     },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const deleteRace = useMutation({
-    mutationFn: async (id) => {
+    mutationFn: async (id: string) => {
       const response = await fetch(`/api/admin/wager-races/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
-      if (!response.ok) throw new Error(await response.text());
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/wager-races"] });
@@ -161,18 +198,25 @@ export default function WagerRaceManagement() {
         description: "Race has been deleted.",
       });
     },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
-  const handleStatusToggle = (race) => {
+  const handleStatusToggle = (race: WagerRace) => {
     const newStatus = race.status === "live" ? "completed" : "live";
     updateRaceStatus.mutate({ id: race.id, status: newStatus });
   };
 
-  const onSubmit = (data) => {
+  const onSubmit = (data: WagerRaceFormValues) => {
     createRace.mutate(data);
   };
 
-  const formatDate = (date) => {
+  const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
@@ -182,7 +226,7 @@ export default function WagerRaceManagement() {
     });
   };
 
-  const calculateTimeLeft = (startDate, endDate) => {
+  const calculateTimeLeft = (startDate: string, endDate: string) => {
     const now = new Date();
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -196,7 +240,7 @@ export default function WagerRaceManagement() {
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "upcoming":
         return "text-blue-400";
@@ -544,8 +588,8 @@ export default function WagerRaceManagement() {
                         {createRace.isPending
                           ? "Saving..."
                           : editingRace
-                            ? "Update Race"
-                            : "Create Race"}
+                          ? "Update Race"
+                          : "Create Race"}
                       </Button>
                     </div>
                   </form>

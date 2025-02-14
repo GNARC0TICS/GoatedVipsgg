@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import React, { useState, useMemo, useCallback } from "react";
-import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
+import { useLeaderboard, type TimePeriod, type LeaderboardEntry } from "@/hooks/use-leaderboard";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { QuickProfile } from "@/components/QuickProfile";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,6 +26,14 @@ const ITEMS_PER_PAGE = 10;
 interface LeaderboardTableProps {
   timePeriod: TimePeriod;
 }
+
+/**
+ * Safely formats a number with commas and handles undefined values
+ */
+const formatNumber = (num: number | undefined): string => {
+  if (typeof num !== 'number' || isNaN(num)) return '0';
+  return num.toLocaleString();
+};
 
 /**
  * LeaderboardTable Component
@@ -79,21 +86,31 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
   /**
    * Gets the wager amount based on the selected time period
    */
-  const getWagerAmount = useCallback((entry: any) => {
+  const getWagerAmount = useCallback((entry: LeaderboardEntry | undefined): number => {
     if (!entry?.wagered) return 0;
+
     switch (timePeriod) {
       case "weekly":
-        return entry.wagered.this_week;
+        return entry.wagered.this_week || 0;
       case "monthly":
-        return entry.wagered.this_month;
+        return entry.wagered.this_month || 0;
       case "today":
-        return entry.wagered.today;
+        return entry.wagered.today || 0;
       case "all_time":
-        return entry.wagered.all_time;
+        return entry.wagered.all_time || 0;
       default:
         return 0;
     }
   }, [timePeriod]);
+
+  // Error state
+  if (error) {
+    return (
+      <div className="rounded-lg border border-red-500 bg-red-500/10 p-4 text-center text-red-500">
+        Error loading leaderboard data. Please try again later.
+      </div>
+    );
+  }
 
   // Loading state
   if (isLoading) {
@@ -127,7 +144,6 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
     );
   }
 
-  // Main render
   return (
     <div className="space-y-4">
       {/* Search and Live Status Bar */}
@@ -193,7 +209,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
                       <QuickProfile userId={entry.uid} username={entry.name}>
                         <div className="flex items-center gap-2 cursor-pointer">
                           <img
-                            src={getTierIcon(getTierFromWager(entry.wagered.all_time))}
+                            src={getTierIcon(getTierFromWager(entry.wagered.all_time || 0))}
                             alt="Tier"
                             className="w-5 h-5"
                           />
@@ -206,9 +222,9 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <span className="text-white font-semibold">
-                          ${(getWagerAmount(entry) || 0).toLocaleString()}
+                          ${formatNumber(getWagerAmount(entry))}
                         </span>
-                        {entry.isWagering && entry.wagerChange > 0 && (
+                        {entry.isWagering && entry.wagerChange && entry.wagerChange > 0 && (
                           <motion.div
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -216,7 +232,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
                           >
                             <TrendingUp className="h-4 w-4" />
                             <span className="text-xs font-bold">
-                              +${entry.wagerChange.toLocaleString()}
+                              +${formatNumber(entry.wagerChange)}
                             </span>
                           </motion.div>
                         )}

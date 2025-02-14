@@ -1,7 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { queryClient } from "@/lib/queryClient";
+import {
+  Trophy,
+  Crown,
+  Medal,
+  Award,
+  Star,
+  TrendingUp,
+} from "lucide-react";
+import { CountdownTimer } from "@/components/CountdownTimer";
+import { useLeaderboard } from "@/hooks/use-leaderboard";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { QuickProfile } from "@/components/QuickProfile";
 import {
   Table,
   TableBody,
@@ -10,68 +21,100 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import {
-  Trophy,
-  CircleDot,
-  Crown,
-  Medal,
-  Award,
-  Star,
-  Timer,
-  TrendingUp,
-  ArrowRight,
-} from "lucide-react";
-import { CountdownTimer } from "@/components/CountdownTimer";
-import { useLeaderboard } from "@/hooks/use-leaderboard";
-import { Card } from "@/components/ui/card";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { QuickProfile } from "@/components/QuickProfile";
-import { Link } from "wouter";
-import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 
-type WageredData = {
+interface WageredData {
   today: number;
   this_week: number;
   this_month: number;
   all_time: number;
-};
+}
 
-type LeaderboardEntry = {
+interface LeaderboardEntry {
   uid: string;
   name: string;
   wagered: WageredData;
   lastUpdate?: string;
-};
-
-import { PageTransition } from "@/components/PageTransition";
+}
 
 export default function WagerRaces() {
   const [raceType] = useState<"weekly" | "monthly" | "weekend">("monthly");
   const [showCompletedRace, setShowCompletedRace] = useState(false);
   const ws = useRef<WebSocket | null>(null);
+
+  // Use the leaderboard hook with proper type safety
   const { data: leaderboardData, isLoading } = useLeaderboard("monthly");
 
-  useEffect(() => {
-    ws.current = new WebSocket(`wss://${window.location.hostname}/ws`);
+  // Safe helper function to get wager amount
+  const getWagerAmount = (player: LeaderboardEntry | undefined): number => {
+    if (!player?.wagered) {
+      return 0;
+    }
 
-    return () => {
-      if (ws.current) {
-        ws.current.close();
-      }
+    switch (raceType) {
+      case "weekly":
+        return player.wagered.this_week || 0;
+      case "monthly":
+        return player.wagered.this_month || 0;
+      default:
+        return player.wagered.this_week || 0;
+    }
+  };
+
+  const getPrizeAmount = (rank: number): number => {
+    const prizePool = 500;
+    const prizeDistribution: Record<number, number> = {
+      1: 0.425,
+      2: 0.2,
+      3: 0.15,
+      4: 0.075,
+      5: 0.06,
+      6: 0.04,
+      7: 0.0275,
+      8: 0.0225,
+      9: 0.0175,
+      10: 0.0175,
     };
-  }, []);
-  const { data: previousRace } = useQuery<any>({
+    return Math.round(prizePool * (prizeDistribution[rank] || 0) * 100) / 100;
+  };
+
+  const getLastUpdateTime = (timestamp?: string): string => {
+    if (!timestamp) return 'recently';
+    const diff = Date.now() - new Date(timestamp).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  };
+
+  const getTrophyIcon = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return <Crown className="h-8 w-8 text-yellow-400 animate-pulse" />;
+      case 2:
+        return <Medal className="h-7 w-7 text-gray-400" />;
+      case 3:
+        return <Award className="h-7 w-7 text-amber-700" />;
+      default:
+        return <Star className="h-5 w-5 text-zinc-600" />;
+    }
+  };
+
+  // Query for previous race data with proper typing
+  const { data: previousRace } = useQuery<{
+    data: { participants: LeaderboardEntry[] };
+    metadata?: { transitionEnds: string };
+  }>({
     queryKey: ["/api/wager-races/previous"],
     enabled: showCompletedRace,
     staleTime: Infinity,
     select: (data) => {
       if (!data) return null;
 
-      const transitionEnds = new Date(data.metadata?.transitionEnds);
+      const transitionEnds = new Date(data.metadata?.transitionEnds || '');
       const now = new Date();
 
-      // Auto-hide completed race view after transition period
       if (transitionEnds < now && showCompletedRace) {
         setTimeout(() => setShowCompletedRace(false), 1000);
       }
@@ -92,7 +135,17 @@ export default function WagerRaces() {
     }
   });
 
-  // Auto-show completed race when race ends
+  useEffect(() => {
+    ws.current = new WebSocket(`wss://${window.location.hostname}/ws`);
+
+    return () => {
+      if (ws.current) {
+        ws.current.close();
+      }
+    };
+  }, []);
+
+
   useEffect(() => {
     const now = new Date();
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
@@ -125,57 +178,7 @@ export default function WagerRaces() {
   }, []);
 
   const prizePool = 500;
-  const prizeDistribution: Record<number, number> = {
-    1: 0.425, // $212.50
-    2: 0.2,   // $100
-    3: 0.15,  // $60
-    4: 0.075, // $30
-    5: 0.06,  // $24
-    6: 0.04,  // $16
-    7: 0.0275, // $11
-    8: 0.0225, // $9
-    9: 0.0175, // $7
-    10: 0.0175, // $7
-  };
 
-  const getLastUpdateTime = (timestamp?: string) => {
-  if (!timestamp) return 'recently';
-  const diff = Date.now() - new Date(timestamp).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-};
-
-const getTrophyIcon = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return <Crown className="h-8 w-8 text-yellow-400 animate-pulse" />;
-      case 2:
-        return <Medal className="h-7 w-7 text-gray-400" />;
-      case 3:
-        return <Award className="h-7 w-7 text-amber-700" />;
-      default:
-        return <Star className="h-5 w-5 text-zinc-600" />;
-    }
-  };
-
-  const getWagerAmount = (player: LeaderboardEntry) => {
-    switch (raceType) {
-      case "weekly":
-        return player.wagered.this_week;
-      case "monthly":
-        return player.wagered.this_month;
-      default:
-        return player.wagered.this_week;
-    }
-  };
-
-  const getPrizeAmount = (rank: number) => {
-    return Math.round(prizePool * (prizeDistribution[rank] || 0) * 100) / 100;
-  };
 
   if (isLoading || !leaderboardData) {
     return (
@@ -185,7 +188,7 @@ const getTrophyIcon = (rank: number) => {
     );
   }
 
-  const top10Players = showCompletedRace 
+  const top10Players = showCompletedRace
     ? (previousRace?.data?.participants || [])
     : (leaderboardData || []).slice(0, 10);
   const currentLeader = top10Players[0];
@@ -344,7 +347,7 @@ const getTrophyIcon = (rank: number) => {
               </div>
             </motion.div>
 
-            </div>
+          </div>
 
           {/* Podium Section */}
           <motion.div
@@ -357,7 +360,7 @@ const getTrophyIcon = (rank: number) => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ 
+                whileHover={{
                   scale: 1.05,
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
@@ -385,7 +388,7 @@ const getTrophyIcon = (rank: number) => {
                     <p className="text-sm text-white/60 mt-1 flex items-center justify-center gap-1">
                       <TrendingUp className="h-3 w-3" />
                       ${getWagerAmount(
-                        top10Players[1] || { wagered: { this_month: 0 } },
+                        top10Players[1]
                       ).toLocaleString()}
                     </p>
                     <p className="text-[10px] text-white/40 mt-1">
@@ -399,7 +402,7 @@ const getTrophyIcon = (rank: number) => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ 
+                whileHover={{
                   scale: 1.05,
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
@@ -416,32 +419,31 @@ const getTrophyIcon = (rank: number) => {
                     {getTrophyIcon(1)}
                   </div>
                   <div className="text-center">
-                  <QuickProfile userId={top10Players[0]?.uid} username={top10Players[0]?.name}>
-                    <p className="text-xl font-bold truncate text-white cursor-pointer hover:text-[#D7FF00] transition-colors">
-                      {top10Players[0]?.name || "-"}
+                    <QuickProfile userId={top10Players[0]?.uid} username={top10Players[0]?.name}>
+                      <p className="text-xl font-bold truncate text-white cursor-pointer hover:text-[#D7FF00] transition-colors">
+                        {top10Players[0]?.name || "-"}
+                      </p>
+                    </QuickProfile>
+                    <p className="text-lg font-heading text-[#D7FF00] mt-2">
+                      ${getPrizeAmount(1).toLocaleString()}
                     </p>
-                  </QuickProfile>
-                  <p className="text-lg font-heading text-[#D7FF00] mt-2">
-                    ${getPrizeAmount(1).toLocaleString()}
-                  </p>
-                  <p className="text-sm text-white/60 mt-1">
-                    $
-                    {getWagerAmount(
-                      top10Players[0] || { wagered: { this_month: 0 } },
-                    ).toLocaleString()}{" "}
-                    wagered
-                  </p>
+                    <p className="text-sm text-white/60 mt-1">
+                      $
+                      {getWagerAmount(
+                        top10Players[0]
+                      ).toLocaleString()}{" "}
+                      wagered
+                    </p>
                   </div>
                 </div>
               </motion.div>
-
 
 
               {/* 3rd Place */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ 
+                whileHover={{
                   scale: 1.05,
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
@@ -469,7 +471,7 @@ const getTrophyIcon = (rank: number) => {
                     <p className="text-sm text-white/60 mt-1 flex items-center justify-center gap-1">
                       <TrendingUp className="h-3 w-3" />
                       ${getWagerAmount(
-                        top10Players[2] || { wagered: { this_month: 0 } },
+                        top10Players[2]
                       ).toLocaleString()}
                     </p>
                     <p className="text-[10px] text-white/40 mt-1">
@@ -510,45 +512,44 @@ const getTrophyIcon = (rank: number) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(showCompletedRace ? (previousRace?.data?.participants || []).slice(0, 10) : top10Players).map((player: LeaderboardEntry, index: number) => (
-                  <TableRow
-                    key={player.uid}
-                    className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]"
-                  >
-                    <TableCell className="font-heading">
-                      <div className="flex items-center gap-2">
-                        {getTrophyIcon(index + 1)}
-                        {index + 1}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-sans text-white">
-                      <QuickProfile userId={player.uid} username={player.name}>
-                        <div className="flex items-center gap-2 cursor-pointer min-w-0">
-                          {/*Removed Tier Icon*/}
-                          <span className="truncate">{player.name}</span>
+                {top10Players.map((player: LeaderboardEntry | undefined, index: number) => {
+                  if (!player) return null;
+
+                  return (
+                    <TableRow
+                      key={player.uid}
+                      className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]"
+                    >
+                      <TableCell className="font-heading">
+                        <div className="flex items-center gap-2">
+                          {getTrophyIcon(index + 1)}
+                          {index + 1}
                         </div>
-                      </QuickProfile>
-                    </TableCell>
-                    <TableCell className="text-right font-sans">
-                      <motion.span
-                        animate={{
-                          scale: [1, 1.1, 1],
-                          backgroundColor: [
-                            "transparent",
-                            "#008000",
-                            "transparent",
-                          ],
-                        }}
-                        transition={{ duration: 5, repeat: 1, repeatDelay: 0 }}
-                      >
-                        ${getWagerAmount(player)?.toLocaleString()}
-                      </motion.span>
-                    </TableCell>
-                    <TableCell className={`text-right font-sans text-[#D7FF00] ${showCompletedRace ? 'font-bold' : ''}`}>
-                      ${getPrizeAmount(index + 1).toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell className="font-sans text-white">
+                        <QuickProfile userId={player.uid} username={player.name}>
+                          <div className="flex items-center gap-2 cursor-pointer min-w-0">
+                            <span className="truncate">{player.name}</span>
+                          </div>
+                        </QuickProfile>
+                      </TableCell>
+                      <TableCell className="text-right font-sans">
+                        <motion.span
+                          animate={{
+                            scale: [1, 1.1, 1],
+                            backgroundColor: ["transparent", "#008000", "transparent"],
+                          }}
+                          transition={{ duration: 5, repeat: 1, repeatDelay: 0 }}
+                        >
+                          ${getWagerAmount(player).toLocaleString()}
+                        </motion.span>
+                      </TableCell>
+                      <TableCell className={`text-right font-sans text-[#D7FF00] ${showCompletedRace ? 'font-bold' : ''}`}>
+                        ${getPrizeAmount(index + 1).toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </motion.div>
