@@ -141,14 +141,16 @@ export default function Home() {
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 className="relative group h-full perspective-1000"
               >
-                <div 
-                  className="absolute inset-0 w-[200%] transition-all duration-700 bg-gradient-to-r from-transparent via-[#D7FF00]/10 to-transparent -translate-x-full group-hover:translate-x-full"
-                  style={{
-                    maskImage: 'linear-gradient(to bottom, transparent, black, transparent)',
-                    WebkitMaskImage: 'linear-gradient(to bottom, transparent, black, transparent)'
-                  }}
-                />
-                <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm group-hover:border-[#D7FF00]/50 transition-colors duration-300 shadow-lg group-hover:shadow-[#D7FF00]/20 flex flex-col justify-between h-full">
+                <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
+                    style={{ 
+                      background: 'linear-gradient(to bottom, #D7FF0020, transparent)',
+                    }}
+                  />
+                <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover flex flex-col justify-between h-full"
+                    style={{
+                      '--hover-border-color': '#D7FF0080',
+                      '--hover-shadow-color': '#D7FF0040'
+                    } as React.CSSProperties}>
                   <Gift className="h-8 w-8 text-[#D7FF00] mb-4" />
                   <h3 className="text-2xl font-heading uppercase mb-4 text-white text-center flex items-center gap-2 justify-center">
                     Bonus Codes
@@ -189,14 +191,16 @@ export default function Home() {
                 className="relative group h-full perspective-1000"
               >
                 <Link href="/vip-transfer" className="block h-full">
-                  <div 
-                    className="absolute inset-0 w-[200%] transition-all duration-700 bg-gradient-to-r from-transparent via-[#D7FF00]/10 to-transparent -translate-x-full group-hover:translate-x-full"
-                    style={{
-                      maskImage: 'linear-gradient(to bottom, transparent, black, transparent)',
-                      WebkitMaskImage: 'linear-gradient(to bottom, transparent, black, transparent)'
+                  <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
+                    style={{ 
+                      background: 'linear-gradient(to bottom, #D7FF0020, transparent)',
                     }}
                   />
-                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm group-hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20 flex flex-col justify-between h-full">
+                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover flex flex-col justify-between h-full"
+                    style={{
+                      '--hover-border-color': '#D7FF0080',
+                      '--hover-shadow-color': '#D7FF0040'
+                    } as React.CSSProperties}>
                     <Trophy className="h-8 w-8 text-[#D7FF00] mb-4" />
                     <h3 className="text-2xl font-heading uppercase mb-4 text-white">
                       VIP Transfer
@@ -217,14 +221,16 @@ export default function Home() {
                 className="relative group h-full perspective-1000"
               >
                 <Link href="/wager-races" className="block h-full">
-                  <div 
-                    className="absolute inset-0 w-[200%] transition-all duration-700 bg-gradient-to-r from-transparent via-[#D7FF00]/10 to-transparent -translate-x-full group-hover:translate-x-full"
-                    style={{
-                      maskImage: 'linear-gradient(to bottom, transparent, black, transparent)',
-                      WebkitMaskImage: 'linear-gradient(to bottom, transparent, black, transparent)'
+                  <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
+                    style={{ 
+                      background: 'linear-gradient(to bottom, #D7FF0020, transparent)',
                     }}
                   />
-                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm group-hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20 flex flex-col justify-between h-full">
+                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover flex flex-col justify-between h-full"
+                    style={{
+                      '--hover-border-color': '#D7FF0080',
+                      '--hover-shadow-color': '#D7FF0040'
+                    } as React.CSSProperties}>
                     <div className="flex items-center justify-center gap-2 mb-4">
                       <h3 className="text-2xl font-heading uppercase text-white">
                         Wager Races
@@ -250,14 +256,16 @@ export default function Home() {
                 className="relative group h-full perspective-1000"
               >
                 <Link href="/provably-fair" className="block h-full">
-                  <div 
-                    className="absolute inset-0 w-[200%] transition-all duration-700 bg-gradient-to-r from-transparent via-[#D7FF00]/10 to-transparent -translate-x-full group-hover:translate-x-full"
-                    style={{
-                      maskImage: 'linear-gradient(to bottom, transparent, black, transparent)',
-                      WebkitMaskImage: 'linear-gradient(to bottom, transparent, black, transparent)'
+                  <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
+                    style={{ 
+                      background: 'linear-gradient(to bottom, #D7FF0020, transparent)',
                     }}
                   />
-                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm group-hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20 flex flex-col justify-between h-full">
+                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover flex flex-col justify-between h-full"
+                    style={{
+                      '--hover-border-color': '#D7FF0080',
+                      '--hover-shadow-color': '#D7FF0040'
+                    } as React.CSSProperties}>
                     <Shield className="h-8 w-8 text-[#D7FF00] mb-4" />
                     <h3 className="text-2xl font-heading uppercase text-white mb-4">
                       Provably Fair
@@ -278,14 +286,16 @@ export default function Home() {
                 className="relative group h-full perspective-1000"
               >
                 <Link href="/tips-and-strategies" className="block h-full">
-                  <div 
-                    className="absolute inset-0 w-[200%] transition-all duration-700 bg-gradient-to-r from-transparent via-[#D7FF00]/10 to-transparent -translate-x-full group-hover:translate-x-full"
-                    style={{
-                      maskImage: 'linear-gradient(to bottom, transparent, black, transparent)',
-                      WebkitMaskImage: 'linear-gradient(to bottom, transparent, black, transparent)'
+                  <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
+                    style={{ 
+                      background: 'linear-gradient(to bottom, #D7FF0020, transparent)',
                     }}
                   />
-                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm group-hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20 flex flex-col justify-between h-full">
+                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover flex flex-col justify-between h-full"
+                    style={{
+                      '--hover-border-color': '#D7FF0080',
+                      '--hover-shadow-color': '#D7FF0040'
+                    } as React.CSSProperties}>
                     <Zap className="h-8 w-8 text-[#D7FF00] mb-4" />
                     <h3 className="text-2xl font-heading uppercase text-white mb-4">
                       Tips & Strategies
@@ -306,14 +316,16 @@ export default function Home() {
                 className="relative group h-full perspective-1000"
               >
                 <a href="https://t.me/xGoombas" target="_blank" rel="noopener noreferrer" className="block h-full">
-                  <div 
-                    className="absolute inset-0 w-[200%] transition-all duration-700 bg-gradient-to-r from-transparent via-[#D7FF00]/10 to-transparent -translate-x-full group-hover:translate-x-full"
-                    style={{
-                      maskImage: 'linear-gradient(to bottom, transparent, black, transparent)',
-                      WebkitMaskImage: 'linear-gradient(to bottom, transparent, black, transparent)'
+                  <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
+                    style={{ 
+                      background: 'linear-gradient(to bottom, #D7FF0020, transparent)',
                     }}
                   />
-                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm group-hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20 flex flex-col justify-between h-full">
+                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover flex flex-col justify-between h-full"
+                    style={{
+                      '--hover-border-color': '#D7FF0080',
+                      '--hover-shadow-color': '#D7FF0040'
+                    } as React.CSSProperties}>
                     <MessageSquare className="h-8 w-8 text-[#D7FF00] mb-4" />
                     <h3 className="text-2xl font-heading uppercase text-white mb-4">
                       Telegram Community
@@ -334,14 +346,16 @@ export default function Home() {
                 className="relative group h-full perspective-1000"
               >
                 <Link href="/goated-token" className="block h-full">
-                  <div 
-                    className="absolute inset-0 w-[200%] transition-all duration-700 bg-gradient-to-r from-transparent via-[#D7FF00]/10 to-transparent -translate-x-full group-hover:translate-x-full"
-                    style={{
-                      maskImage: 'linear-gradient(to bottom, transparent, black, transparent)',
-                      WebkitMaskImage: 'linear-gradient(to bottom, transparent, black, transparent)'
+                  <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
+                    style={{ 
+                      background: 'linear-gradient(to bottom, #D7FF0020, transparent)',
                     }}
                   />
-                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm group-hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#D7FF00]/20 flex flex-col justify-between h-full">
+                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover flex flex-col justify-between h-full"
+                    style={{
+                      '--hover-border-color': '#D7FF0080',
+                      '--hover-shadow-color': '#D7FF0040'
+                    } as React.CSSProperties}>
                     <Coins className="h-8 w-8 text-[#D7FF00] mb-4" />
                     <h3 className="text-2xl font-heading uppercase text-white mb-4">
                       $GOATED Airdrop

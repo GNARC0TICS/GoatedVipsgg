@@ -84,6 +84,16 @@ html {
 @tailwind components;
 @tailwind utilities;
 
+.card-hover {
+  transition: all 0.3s ease;
+  border-color: var(--hover-border-color, transparent);
+}
+
+.card-hover:hover {
+  border-color: var(--hover-border-color, #D7FF0080);
+  box-shadow: 0 0 20px var(--hover-shadow-color, #D7FF0040);
+}
+
 @keyframes flicker {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
