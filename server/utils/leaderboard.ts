@@ -60,43 +60,44 @@ export async function transformLeaderboardData(apiData: any) {
         uid: entry.uid || "",
         name: entry.name || "",
         wagered: {
-          today: parseFloat(mockEntry.wageredToday),
-          this_week: parseFloat(mockEntry.wageredThisWeek),
-          this_month: parseFloat(mockEntry.wageredThisMonth),
-          all_time: parseFloat(mockEntry.wageredAllTime),
+          today: parseFloat(mockEntry.wageredToday) || 0,
+          this_week: parseFloat(mockEntry.wageredThisWeek) || 0,
+          this_month: parseFloat(mockEntry.wageredThisMonth) || 0,
+          all_time: parseFloat(mockEntry.wageredAllTime) || 0,
         },
       };
     }
 
-    // Use actual data
+    // Use actual data with safe defaults using nullish coalescing
     return {
       uid: entry.uid || "",
       name: entry.name || "",
       wagered: {
-        today: entry.wagered?.today || 0,
-        this_week: entry.wagered?.this_week || 0,
-        this_month: entry.wagered?.this_month || 0,
-        all_time: entry.wagered?.all_time || 0,
+        today: entry.wagered?.today ?? 0,
+        this_week: entry.wagered?.this_week ?? 0,
+        this_month: entry.wagered?.this_month ?? 0,
+        all_time: entry.wagered?.all_time ?? 0,
       },
     };
   });
 
-  // Add mock-only users that don't exist in the actual data
+  // Add mock-only users with safe defaults
   mockData.forEach(mock => {
     if (!transformedData.some(d => d.name === mock.username)) {
       transformedData.push({
         uid: mock.userId.toString(),
         name: mock.username,
         wagered: {
-          today: parseFloat(mock.wageredToday),
-          this_week: parseFloat(mock.wageredThisWeek),
-          this_month: parseFloat(mock.wageredThisMonth),
-          all_time: parseFloat(mock.wageredAllTime),
+          today: parseFloat(mock.wageredToday) || 0,
+          this_week: parseFloat(mock.wageredThisWeek) || 0,
+          this_month: parseFloat(mock.wageredThisMonth) || 0,
+          all_time: parseFloat(mock.wageredAllTime) || 0,
         },
       });
     }
   });
 
+  // Sort data for each period
   return {
     status: "success",
     metadata: {
@@ -104,10 +105,10 @@ export async function transformLeaderboardData(apiData: any) {
       lastUpdated: new Date().toISOString(),
     },
     data: {
-      today: { data: sortByWagered(transformedData, "today") },
-      weekly: { data: sortByWagered(transformedData, "this_week") },
-      monthly: { data: sortByWagered(transformedData, "this_month") },
-      all_time: { data: sortByWagered(transformedData, "all_time") },
+      today: { data: [...transformedData].sort((a, b) => (b.wagered.today - a.wagered.today)) },
+      weekly: { data: [...transformedData].sort((a, b) => (b.wagered.this_week - a.wagered.this_week)) },
+      monthly: { data: [...transformedData].sort((a, b) => (b.wagered.this_month - a.wagered.this_month)) },
+      all_time: { data: [...transformedData].sort((a, b) => (b.wagered.all_time - a.wagered.all_time)) },
     },
   };
 }
