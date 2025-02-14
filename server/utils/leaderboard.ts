@@ -7,8 +7,8 @@ import {
   decimal,
   jsonb,
   integer,
-  eq,
 } from "drizzle-orm/pg-core";
+import { eq } from "drizzle-orm";
 import { db } from "@db";
 import { users, mockWagerData } from "@db/schema";
 
