@@ -354,15 +354,17 @@ function setupRESTRoutes(app: Express) {
     async (req, res) => {
       try {
         const username = typeof req.query.username === 'string' ? req.query.username : undefined;
-        let url = 'https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard/2RW440E'; // Updated URL
+        let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
 
         if (username) {
           url += `?username=${encodeURIComponent(username)}`;
         }
 
-        const response = await fetch(url, { // Modified fetch call
+        const response = await fetch(url, {
           headers: {
-            'Accept': 'application/json', // Modified headers
+            'Authorization': `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
           },
         });
 

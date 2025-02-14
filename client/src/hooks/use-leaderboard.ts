@@ -100,10 +100,12 @@ export function useLeaderboard(
       }
 
       const response = await fetch(
-        'https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard/2RW440E',
+        `${apiBaseUrl}/affiliate/referral-leaderboard/2RW440E`,
         {
           headers: {
-            'Accept': 'application/json'
+            'Authorization': `Bearer ${apiToken}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
           }
         }
       );
