@@ -7,21 +7,17 @@ import { users, mockWagerData } from "@db/schema";
  * Utility function to sort data by wagered amount
  */
 function sortByWagered(data: any[], period: string) {
-  return [...data].sort((a, b) => {
-    const bWager = b.wagered?.[period] || 0;
-    const aWager = a.wagered?.[period] || 0;
-    return bWager - aWager;
-  });
+  return [...data].sort(
+    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
+  );
 }
 
 /**
  * Transforms raw leaderboard data into standardized format, including mock data
  */
 export async function transformLeaderboardData(apiData: any) {
-  // Handle direct array response or nested data structure
-  const responseData = Array.isArray(apiData) ? apiData[0]?.data : apiData?.data;
-  
-  if (!responseData || responseData.length === 0) {
+  const responseData = apiData.data || apiData.results || apiData;
+  if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
     return {
       status: "success",
       metadata: {
@@ -99,10 +95,10 @@ export async function transformLeaderboardData(apiData: any) {
       lastUpdated: new Date().toISOString(),
     },
     data: {
-      today: { data: sortByWagered(transformedData, "today").filter(entry => entry.wagered?.today > 0) },
-      weekly: { data: sortByWagered(transformedData, "this_week").filter(entry => entry.wagered?.this_week > 0) },
-      monthly: { data: sortByWagered(transformedData, "this_month").filter(entry => entry.wagered?.this_month > 0) },
-      all_time: { data: sortByWagered(transformedData, "all_time").filter(entry => entry.wagered?.all_time > 0) },
+      today: { data: sortByWagered(transformedData, "today") },
+      weekly: { data: sortByWagered(transformedData, "this_week") },
+      monthly: { data: sortByWagered(transformedData, "this_month") },
+      all_time: { data: sortByWagered(transformedData, "all_time") },
     },
   };
 }
