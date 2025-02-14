@@ -19,7 +19,30 @@ type AffiliateData = {
 
 export function AffiliateStats() {
   const { data, isLoading } = useQuery<AffiliateData[]>({
-    queryKey: ["/api/affiliate/stats"],
+    queryKey: ["external-affiliate-stats"],
+    queryFn: async () => {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+      const apiToken = import.meta.env.VITE_API_TOKEN;
+
+      if (!apiBaseUrl || !apiToken) {
+        throw new Error('API configuration missing');
+      }
+
+      const response = await fetch(`${apiBaseUrl}/affiliate/stats`, {
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return response.json();
+    },
+    staleTime: 30000,
+    refetchInterval: 60000,
   });
 
   if (isLoading) {

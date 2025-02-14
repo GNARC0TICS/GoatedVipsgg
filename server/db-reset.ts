@@ -53,18 +53,17 @@ async function resetDatabase() {
         })
         .returning();
 
-      // Insert affiliate stats with API uid and name
+      // Insert affiliate stats with API uid
       await db.insert(affiliateStats).values({
-        id: parseInt(entry.uid, 36) % 2147483647, // Convert uid to int32
         userId: user.id,
-        totalWager: entry.wagered.all_time || 0,
-        commission: 0,
+        totalWager: entry.wagered.all_time?.toString() || "0",
+        commission: "0",
         timestamp: new Date(),
       });
 
       // Insert default notification preferences
       await db.insert(notificationPreferences).values({
-        userId: user.id,
+        id: user.id,
         wagerRaceUpdates: true,
         vipStatusChanges: true,
         promotionalOffers: true,

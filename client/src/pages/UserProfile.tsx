@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 
 interface UserStats {
   username: string;
