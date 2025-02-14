@@ -26,7 +26,7 @@ export default function Dashboard() {
             />
           </Link>
           <div className="flex items-center gap-4">
-            <span className="font-sans">Welcome, {user?.name || 'User'}</span>
+            <span className="font-sans">Welcome, {user?.username}</span>
             <Button variant="outline" onClick={() => logout()}>
               SIGN OUT
             </Button>

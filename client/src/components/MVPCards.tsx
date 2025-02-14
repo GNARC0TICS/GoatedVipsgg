@@ -4,35 +4,31 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect as ReactuseEffect } from "react";
 import { QuickProfile } from "./QuickProfile";
-import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
+import { getTierFromWager, getTierIcon } from "@/lib/tier-utils"; // Added import
 import { Dialog, DialogContent } from "./ui/dialog";
 
 type MVP = {
   username: string;
   uid: string;
+  wagerAmount: number;
+  avatarUrl?: string;
+  rank: number;
+  wageredAllTime?: number;
+  lastWagerChange?: number;
   wagered: {
     today: number;
     this_week: number;
     this_month: number;
     all_time: number;
   };
-  avatarUrl?: string;
-  rank: number;
-  lastWagerChange?: number;
-};
-
-// Safe number formatting function
-const formatNumber = (num: number | undefined): string => {
-  if (typeof num !== 'number' || isNaN(num)) return '0';
-  return num.toLocaleString();
 };
 
 const timeframes = [
   { 
     title: "Daily MVP", 
-    period: "today", 
+    period: "daily", 
     colors: {
-      primary: "#8B5CF6",
+      primary: "#8B5CF6", // violet
       accent: "#7C3AED",
       shine: "#A78BFA"
     }
@@ -41,7 +37,7 @@ const timeframes = [
     title: "Weekly MVP", 
     period: "weekly", 
     colors: {
-      primary: "#10B981",
+      primary: "#10B981", // emerald
       accent: "#059669",
       shine: "#34D399"
     }
@@ -50,7 +46,7 @@ const timeframes = [
     title: "Monthly MVP", 
     period: "monthly", 
     colors: {
-      primary: "#F59E0B",
+      primary: "#F59E0B", // amber
       accent: "#D97706",
       shine: "#FBBF24"
     }
@@ -72,6 +68,7 @@ function MVPCard({
 }) {
   const [showIncrease, setShowIncrease] = useState(false);
 
+  // Show increase indicator for 10 seconds when wager amount changes
   ReactuseEffect(() => {
     if (mvp?.lastWagerChange) {
       setShowIncrease(true);
@@ -87,21 +84,6 @@ function MVPCard({
       </div>
     );
   }
-
-  const getWagerAmount = (period: string): number => {
-    switch(period) {
-      case 'today':
-        return mvp.wagered.today || 0;
-      case 'weekly':
-        return mvp.wagered.this_week || 0;
-      case 'monthly':
-        return mvp.wagered.this_month || 0;
-      default:
-        return 0;
-    }
-  };
-
-  const currentWager = getWagerAmount(timeframe.period);
 
   return (
     <>
@@ -168,7 +150,7 @@ function MVPCard({
                 <span className="text-white/70">Period Total:</span>
                 <div className="flex items-center gap-2">
                   <span className="text-white font-mono font-bold">
-                    ${formatNumber(currentWager)}
+                    ${mvp.wagerAmount.toLocaleString()}
                   </span>
                   {showIncrease && (
                     <TrendingUp className="h-4 w-4 text-emerald-500 animate-pulse" />
@@ -201,10 +183,10 @@ function MVPCard({
               </div>
               <div className="space-y-4">
                 {[
-                  { label: "Daily Rank", value: leaderboardData?.data?.today?.data?.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#8B5CF6" },
-                  { label: "Weekly Rank", value: leaderboardData?.data?.weekly?.data?.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#10B981" },
-                  { label: "Monthly Rank", value: leaderboardData?.data?.monthly?.data?.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#F59E0B" },
-                  { label: "All-Time Rank", value: leaderboardData?.data?.all_time?.data?.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#EC4899" }
+                  { label: "Daily Rank", value: leaderboardData?.data?.today?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#8B5CF6" },
+                  { label: "Weekly Rank", value: leaderboardData?.data?.weekly?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#10B981" },
+                  { label: "Monthly Rank", value: leaderboardData?.data?.monthly?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#F59E0B" },
+                  { label: "All-Time Rank", value: leaderboardData?.data?.all_time?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#EC4899" }
                 ].map((stat, index) => (
                   <div key={index} className="flex justify-between items-center p-2 rounded-lg bg-black/20 hover:bg-black/30 transition-colors">
                     <span className="text-white/80 text-sm">{stat.label}:</span>
@@ -217,7 +199,7 @@ function MVPCard({
                   <div className="flex justify-between items-center">
                     <span className="text-[#D7FF00] text-sm font-semibold">All-Time Wagered:</span>
                     <span className="text-white font-mono font-bold text-lg">
-                      ${formatNumber(mvp.wagered.all_time)}
+                      ${mvp.wagered.all_time.toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -238,18 +220,13 @@ export function MVPCards() {
 
   const { data: leaderboardData, isLoading } = useQuery({
     queryKey: ["/api/affiliate/stats"],
-    queryFn: async () => {
-      const response = await fetch('/api/affiliate/stats');
-      if (!response.ok) throw new Error('Failed to fetch leaderboard data');
-      return response.json();
-    },
     staleTime: 30000,
   });
 
   const mvps = useMemo(() => ({
-    today: leaderboardData?.data?.today?.data?.[0],
-    weekly: leaderboardData?.data?.weekly?.data?.[0],
-    monthly: leaderboardData?.data?.monthly?.data?.[0]
+    daily: leaderboardData?.data?.today?.data[0],
+    weekly: leaderboardData?.data?.weekly?.data[0],
+    monthly: leaderboardData?.data?.monthly?.data[0]
   }), [leaderboardData]);
 
   const handleDialogChange = useCallback((open: boolean, period: string) => {
@@ -273,7 +250,7 @@ export function MVPCards() {
     };
   }, []);
 
-  if (isLoading || !mvps?.today) {
+  if (isLoading || !mvps?.daily) {
     return (
       <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
         {timeframes.map((timeframe) => (
@@ -292,35 +269,30 @@ export function MVPCards() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-5xl mx-auto perspective-1000 px-4 md:px-0">
-      {timeframes.map((timeframe) => {
-        const mvpData = mvps[timeframe.period as keyof typeof mvps];
-        const rank = leaderboardData?.data?.[timeframe.period]?.data?.findIndex((p: any) => p.uid === mvpData?.uid) + 1 || 0;
-
-        return (
-          <motion.div
-            key={timeframe.period}
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="group relative transform transition-all duration-300"
-          >
-            <MVPCardMemo 
-              timeframe={timeframe}
-              mvp={mvpData ? {
-                username: mvpData.name || '',
-                uid: mvpData.uid || '',
-                wagered: mvpData.wagered || { today: 0, this_week: 0, this_month: 0, all_time: 0 },
-                avatarUrl: mvpData.avatarUrl,
-                rank
-              } : undefined}
-              isOpen={openCard === timeframe.period}
-              onOpenChange={(open) => handleDialogChange(open, timeframe.period)}
-              leaderboardData={leaderboardData}
-            />
-          </motion.div>
-        );
-      })}
+      {timeframes.map((timeframe) => (
+        <motion.div
+          key={timeframe.period}
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          whileHover={{ scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          className="group relative transform transition-all duration-300"
+        >
+          <MVPCardMemo 
+            timeframe={timeframe}
+            mvp={mvps[timeframe.period as keyof typeof mvps] ? {
+              username: mvps[timeframe.period as keyof typeof mvps]?.name || '',
+              uid: mvps[timeframe.period as keyof typeof mvps]?.uid || '',
+              wagerAmount: mvps[timeframe.period as keyof typeof mvps]?.wagered[timeframe.period === 'daily' ? 'today' : timeframe.period === 'weekly' ? 'this_week' : 'this_month'] || 0,
+              wagered: mvps[timeframe.period as keyof typeof mvps]?.wagered || { today: 0, this_week: 0, this_month: 0, all_time: 0 },
+              avatarUrl: mvps[timeframe.period as keyof typeof mvps]?.avatarUrl
+            } : undefined}
+            isOpen={openCard === timeframe.period}
+            onOpenChange={(open) => handleDialogChange(open, timeframe.period)}
+            leaderboardData={leaderboardData}
+          />
+        </motion.div>
+      ))}
     </div>
   );
 }

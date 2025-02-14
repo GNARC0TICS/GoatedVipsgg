@@ -22,6 +22,10 @@ ignorePorts = false
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 5001
+externalPort = 3000
+
 [server]
 host = "0.0.0.0"
 port = 5000
@@ -41,14 +45,14 @@ args = "Start application"
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
-mode = "parallel"
+mode = "sequential"
 
 [workflows.workflow.metadata]
 agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "tsx server/index.ts"
+task = "workflow.run"
+args = "Project"
 
 # Authentication settings
 [auth]

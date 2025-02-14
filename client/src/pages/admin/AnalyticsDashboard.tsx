@@ -1,37 +1,10 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
-
-interface Stats {
-  totalUsers: number;
-  activeRaces: number;
-  wagerTotals: {
-    dailyTotal: number;
-    weeklyTotal: number;
-    monthlyTotal: number;
-    allTimeTotal: number;
-  };
-}
-
-export default function AnalyticsDashboard() {
-  const { data: stats } = useQuery<{ success: boolean; data: Stats }>({
-    queryKey: ["/api/admin/stats"],
-    queryFn: async () => {
-      const response = await fetch('/api/admin/stats');
-      if (!response.ok) throw new Error('Failed to fetch stats');
-      return response.json();
-    },
-  });
-
-  return (
-    <div className="space-y-6 p-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <Card>
           <CardHeader>
             <CardTitle>Total Users</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-bold">
-            {stats?.data?.totalUsers || 0}
+            {stats?.totalUsers || 0}
           </CardContent>
         </Card>
 
@@ -40,7 +13,7 @@ export default function AnalyticsDashboard() {
             <CardTitle>Active Races</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-bold">
-            {stats?.data?.activeRaces || 0}
+            {stats?.activeRaces || 0}
           </CardContent>
         </Card>
       </div>
@@ -51,7 +24,7 @@ export default function AnalyticsDashboard() {
             <CardTitle>Daily Total</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-bold text-[#D7FF00]">
-            ${stats?.data?.wagerTotals?.dailyTotal?.toLocaleString() || '0'}
+            ${stats?.wagerTotals?.dailyTotal?.toLocaleString() || '0'}
           </CardContent>
         </Card>
 
@@ -60,7 +33,7 @@ export default function AnalyticsDashboard() {
             <CardTitle>Weekly Total</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-bold text-[#D7FF00]">
-            ${stats?.data?.wagerTotals?.weeklyTotal?.toLocaleString() || '0'}
+            ${stats?.wagerTotals?.weeklyTotal?.toLocaleString() || '0'}
           </CardContent>
         </Card>
 
@@ -69,7 +42,7 @@ export default function AnalyticsDashboard() {
             <CardTitle>Monthly Total</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-bold text-[#D7FF00]">
-            ${stats?.data?.wagerTotals?.monthlyTotal?.toLocaleString() || '0'}
+            ${stats?.wagerTotals?.monthlyTotal?.toLocaleString() || '0'}
           </CardContent>
         </Card>
 
@@ -78,10 +51,7 @@ export default function AnalyticsDashboard() {
             <CardTitle>All-Time Total</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-bold text-[#D7FF00]">
-            ${stats?.data?.wagerTotals?.allTimeTotal?.toLocaleString() || '0'}
+            ${stats?.wagerTotals?.allTimeTotal?.toLocaleString() || '0'}
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}

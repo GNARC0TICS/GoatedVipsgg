@@ -1,27 +1,16 @@
 import { QueryClient } from "@tanstack/react-query";
-import type { QueryKey } from "@tanstack/react-query";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: async ({ queryKey }) => {
         try {
-          // Convert query key array to a stable cache key string
-          const cacheKey = Array.isArray(queryKey) 
-            ? queryKey.join(':') 
-            : String(queryKey);
-
-          // Type the cached data structure
-          interface CacheEntry {
-            data: unknown;
-            timestamp: number;
-          }
-
+          const cacheKey = Array.isArray(queryKey) ? queryKey.join('-') : queryKey;
           const cachedData = sessionStorage.getItem(cacheKey);
 
           if (cachedData) {
-            const { data, timestamp } = JSON.parse(cachedData) as CacheEntry;
-            const isStale = Date.now() - timestamp > 60000; // 60 seconds
+            const { data, timestamp } = JSON.parse(cachedData);
+            const isStale = Date.now() - timestamp > 60000; // Increased to 60 seconds
 
             if (!isStale) {
               return data;
@@ -55,18 +44,18 @@ export const queryClient = new QueryClient({
           throw error;
         }
       },
-      refetchInterval: 60000, // 60 seconds
+      refetchInterval: 60000, // Increased refetch interval to 60 seconds
       refetchOnWindowFocus: true,
-      staleTime: 60000, // 60 seconds
-      gcTime: 300000, // 5 minutes (replaces deprecated cacheTime)
+      staleTime: 60000, // Increased stale time to 60 seconds
+      cacheTime: 300000, // Keep unused data in cache for 5 minutes
       retry: (failureCount, error) => {
-        return failureCount < 3 && !(error instanceof Error && error.message.includes('401'));
+        return failureCount < 3 && !error.message.includes('401');
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
       retry: (failureCount, error) => {
-        return failureCount < 2 && !(error instanceof Error && error.message.includes('401'));
+        return failureCount < 2 && !error.message.includes('401');
       },
     },
   },

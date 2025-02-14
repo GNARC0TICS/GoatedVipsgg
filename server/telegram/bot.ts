@@ -5,86 +5,57 @@ import { db } from "@db";
 import { telegramUsers, verificationRequests } from "@db/schema/telegram";
 import { users } from "@db/schema/users";
 import { eq } from "drizzle-orm";
-import { log } from "./utils/logger";
 import type { Request, Response } from "express";
-// Commenting out mock user commands for now
-// import { handleMockUserCommand, handleClearUserCommand } from "./commands/mock-user";
+import { handleMockUserCommand, handleClearUserCommand } from "./commands/mock-user";
 
 let botInstance: TelegramBot | null = null;
 let healthCheckInterval: NodeJS.Timeout | null = null;
-const activeUsers = new Set<number>();
-const TARGET_GROUP_ID = "-iFlHl5V9VcszZTVh";
 
-function getActiveUsersCount(): number {
-  return activeUsers.size;
-}
-
+/**
+ * Initializes the Telegram bot with the provided token
+ * Sets up webhooks and event handlers
+ */
 export async function initializeBot(): Promise<TelegramBot | null> {
   if (!process.env.TELEGRAM_BOT_TOKEN) {
-    log("❌ TELEGRAM_BOT_TOKEN is not set!");
+    console.error("❌ TELEGRAM_BOT_TOKEN is not set!");
     return null;
   }
 
   try {
     botInstance = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
+    botInstance.on("message", async (msg) => {
+      if (!msg.text) return;
 
-    // Add message handler with proper type checking
-    botInstance.on("message", async (msg: TelegramBot.Message) => {
-      if (!msg.text || !msg.from) return;
+      const [command, ...args] = msg.text.split(" ");
 
-      const chatId = msg.chat.id;
-      if (chatId.toString() === TARGET_GROUP_ID) {
-        activeUsers.add(msg.from.id);
-        setTimeout(() => {
-          if (msg.from) {
-            activeUsers.delete(msg.from.id);
-          }
-        }, 300000);
+      switch (command.toLowerCase()) {
+        case "/verify":
+          await handleVerifyCommand(msg, args);
+          break;
+        case "/stats":
+          await handleStatsCommand(msg);
+          break;
+        case "/leaderboard":
+          await handleLeaderboardCommand(msg);
+          break;
+        case "/mockuser":
+          await handleMockUserCommand(msg, args, botInstance!);
+          break;
+        case "/clearuser":
+          await handleClearUserCommand(msg, args, botInstance!);
+          break;
       }
     });
 
-    // Add new chat members handler with type checking
-    botInstance.on("new_chat_members", async (msg: TelegramBot.Message) => {
-      if (!msg.new_chat_members || msg.chat.id.toString() !== TARGET_GROUP_ID) return;
-
-      msg.new_chat_members.forEach(member => {
-        activeUsers.add(member.id);
-      });
-    });
-
-    // Add left chat member handler with type checking
-    botInstance.on("left_chat_member", async (msg: TelegramBot.Message) => {
-      if (!msg.left_chat_member || msg.chat.id.toString() !== TARGET_GROUP_ID) return;
-
-      activeUsers.delete(msg.left_chat_member.id);
-    });
-
     const botInfo = await botInstance.getMe();
-    log("✅ Bot initialized successfully");
+    console.log("✅ Bot initialized successfully");
     startHealthCheck();
     return botInstance;
   } catch (error) {
-    log(`❌ Bot initialization failed: ${error}`);
+    console.error("❌ Bot initialization failed:", error);
     botInstance = null;
     return null;
   }
-}
-
-function startHealthCheck() {
-  if (healthCheckInterval) {
-    clearInterval(healthCheckInterval);
-  }
-
-  healthCheckInterval = setInterval(async () => {
-    if (!botInstance) return;
-    try {
-      await botInstance.getMe();
-      console.log("✅ Bot health check passed");
-    } catch (error) {
-      console.error("❌ Bot health check failed:", error);
-      await initializeBot();
-    }
-  }, 60000);
 }
 
 // Safe message sending with rate limiting and error handling
@@ -152,7 +123,7 @@ async function handleStatsCommand(msg: any) {
       return safeSendMessage(chatId, "❌ You need to verify your account first using /verify");
     }
 
-    await safeSendMessage(chatId, `📊 Your stats will be displayed here. Currently ${activeUsers.size} users online`);
+    await safeSendMessage(chatId, "📊 Your stats will be displayed here");
   } catch (error) {
     console.error("Stats error:", error);
     await safeSendMessage(chatId, "❌ Error fetching stats.");
@@ -220,15 +191,30 @@ async function handleVerificationAction(msg: any, action: 'approve' | 'reject', 
   }
 }
 
-
 // Health check function
+function startHealthCheck() {
+  if (healthCheckInterval) {
+    clearInterval(healthCheckInterval);
+  }
+
+  healthCheckInterval = setInterval(async () => {
+    if (!botInstance) return;
+
+    try {
+      await botInstance.getMe();
+      console.log("✅ Bot health check passed");
+    } catch (error) {
+      console.error("❌ Bot health check failed:", error);
+      await initializeBot();
+    }
+  }, 60000); // Check every minute
+}
 
 export function handleUpdate(update: TelegramBot.Update) {
   if (!botInstance) return;
 
   try {
     if (update.message) {
-      // Comment out mock user command handling
       botInstance.emit("message" as any, update.message);
     } else if (update.callback_query) {
       botInstance.emit("callback_query" as any, update.callback_query);
@@ -244,5 +230,4 @@ export {
   handleStatsCommand,
   handleLeaderboardCommand,
   handleVerificationAction,
-  getActiveUsersCount
 };

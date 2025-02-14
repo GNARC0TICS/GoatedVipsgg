@@ -10,49 +10,8 @@ import { wagerRaces } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { users, type SelectUser } from "@db/schema";
+import { transformLeaderboardData as transformData } from "./utils/leaderboard";
 import { initializeBot } from "./telegram/bot";
-import express from "express";
-import { EventEmitter } from "node:events";
-import { transformLeaderboardData } from "./utils/leaderboard";
-
-let wss: WebSocketServer;
-const clients = new Set();
-
-/**
- * Configures WebSocket server
- */
-function setupWebSocket(httpServer: Server) {
-  wss = new WebSocketServer({
-    noServer: true,
-    clientTracking: true,
-    perMessageDeflate: false
-  });
-
-  httpServer.on("upgrade", (request, socket, head) => {
-    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
-      socket.destroy();
-      return;
-    }
-
-    if (request.url === "/ws/leaderboard") {
-      try {
-        wss.handleUpgrade(request, socket, head, (ws) => {
-          ws.on('error', (error) => {
-            console.error('WebSocket error:', error);
-          });
-
-          wss.emit("connection", ws, request);
-          handleLeaderboardConnection(ws);
-        });
-      } catch (error) {
-        console.error('WebSocket upgrade error:', error);
-        socket.destroy();
-      }
-    } else {
-      socket.destroy();
-    }
-  });
-}
 
 // Convert ApiError interface to a class
 class ApiError extends Error {
@@ -65,20 +24,6 @@ class ApiError extends Error {
     this.status = options?.status;
     this.code = options?.code;
   }
-}
-
-// Create an event emitter for active users
-const activeUsersEmitter = new EventEmitter();
-const activeUsersSet = new Set<number>();
-
-// Update active users count
-function updateActiveUsers(count: number) {
-  activeUsersEmitter.emit('change', { count });
-}
-
-// Get active users count
-function getActiveUsersCount(): number {
-  return activeUsersSet.size;
 }
 
 /**
@@ -276,60 +221,23 @@ const wheelSpinSchema = z.object({
  * Configures endpoints with appropriate middleware and handlers
  */
 function setupRESTRoutes(app: Express) {
-  // Add CORS middleware first
-  app.use((req, res, next) => {
-    const allowedOrigins = ['http://localhost:5173', 'http://localhost:5000', 'https://' + req.headers.host];
-    const origin = req.headers.origin;
-    if (origin && allowedOrigins.includes(origin)) {
-      res.header('Access-Control-Allow-Origin', origin);
-    }
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    if (req.method === 'OPTIONS') {
-      return res.status(200).end();
-    }
-    next();
-  });
-
   // Health check endpoint
   app.get("/api/health", (_req, res) => {
     res.json({ status: "healthy" });
   });
 
-  // API routes under /api
-  const apiRouter = express.Router();
-
   // Mount consolidated bonus and challenges routes
-  apiRouter.use("/bonus", bonusChallengesRouter);
+  app.use("/api", bonusChallengesRouter);
 
-  // Admin routes under /api/admin
-  apiRouter.use("/admin", async (req, res, next) => {
-    // Admin authentication middleware
-    if (!req.headers.authorization) {
-      return res.status(401).json({ error: "No authorization token provided" });
-    }
-
-    try {
-      // Verify admin token
-      const token = req.headers.authorization.split(" ")[1];
-      if (token !== process.env.ADMIN_API_TOKEN) {
-        throw new Error("Invalid token");
-      }
-      next();
-    } catch (error) {
-      res.status(401).json({ error: "Invalid authorization" });
-    }
-  });
-
+  // Batch processing endpoint
+  app.post("/api/batch", createRateLimiter('medium'), batchHandler);
 
   // Current wager race data endpoint
-  apiRouter.get("/wager-races/current",
+  app.get("/api/wager-races/current",
     createRateLimiter('high'),
     cacheMiddleware(15000),
     async (_req, res) => {
       try {
-        log('Fetching current race data...');
         const response = await fetch(
           `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
           {
@@ -340,43 +248,22 @@ function setupRESTRoutes(app: Express) {
           }
         );
 
-        log(`API Response status: ${response.status}`);
-
-        // If API call fails, return default race data
         if (!response.ok) {
-          log(`API response not OK: ${response.status} ${response.statusText}`);
-          const defaultRace = {
+          // Return empty race data instead of throwing error
+          return res.json({
             id: new Date().getFullYear() + (new Date().getMonth() + 1).toString().padStart(2, '0'),
             status: 'live',
             startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
             endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).toISOString(),
             prizePool: 500,
             participants: []
-          };
-          return res.json(defaultRace);
+          });
         }
 
         const rawData = await response.json();
-        log('Raw API data received:', JSON.stringify(rawData).slice(0, 200) + '...');
+        const stats = transformData(rawData);
 
-        // Extract data from response, handling both array and object responses
-        const responseData = Array.isArray(rawData) ? rawData[0] : rawData;
-        const users = responseData?.data || [];
-
-        log(`Processing ${users.length} users`);
-
-        // Map users to participants with proper type checking and default values
-        const participants = users.map((user: any, index: number) => ({
-          uid: user?.uid || `user-${index}`,
-          name: user?.name || `Anonymous ${index + 1}`,
-          wagered: typeof user?.wagered?.this_month === 'number' ? user.wagered.this_month : 0,
-          position: index + 1
-        }));
-
-        // Sort participants by wagered amount
-        participants.sort((a: any, b: any) => (b.wagered || 0) - (a.wagered || 0));
-
-        // Create race data object with proper defaults
+        // Calculate race period
         const now = new Date();
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
@@ -386,25 +273,29 @@ function setupRESTRoutes(app: Express) {
           startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
           endDate: endOfMonth.toISOString(),
           prizePool: 500,
-          participants: participants.slice(0, 10)
+          participants: stats.data.monthly.data
+            .map((participant: any, index: number) => ({
+              uid: participant.uid,
+              name: participant.name,
+              wagered: participant.wagered.this_month,
+              position: index + 1
+            }))
+            .slice(0, 10)
         };
 
-        log('Successfully processed race data');
         res.json(raceData);
-
       } catch (error) {
-        log(`Error in /api/wager-races/current: ${error}`);
+        log(`Error fetching current race: ${error}`);
         res.status(500).json({
           status: "error",
           message: "Failed to fetch current race",
-          details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
         });
       }
     }
   );
 
   // Affiliate statistics endpoint
-  apiRouter.get("/affiliate/stats",
+  app.get("/api/affiliate/stats",
     createRateLimiter('medium'),
     cacheMiddleware(60000),
     async (req, res) => {
@@ -418,9 +309,8 @@ function setupRESTRoutes(app: Express) {
 
         const response = await fetch(url, {
           headers: {
-            'Authorization': `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
           },
         });
 
@@ -456,7 +346,7 @@ function setupRESTRoutes(app: Express) {
   );
 
   // Analytics endpoint for admin
-  apiRouter.get("/admin/analytics",
+  app.get("/api/admin/analytics",
     createRateLimiter('low'),
     cacheMiddleware(300000),
     async (_req, res) => {
@@ -511,31 +401,8 @@ function setupRESTRoutes(app: Express) {
     }
   );
 
-  // Telegram webhook endpoint
-  app.post("/webhook", async (req, res) => {
-    try {
-      const bot = await initializeBot();
-      if (!bot) {
-        return res.status(500).json({
-          status: "error",
-          message: "Bot not initialized"
-        });
-      }
-
-      // Use processUpdate instead of handleUpdate
-      await bot.processUpdate(req.body);
-      res.json({ status: "success" });
-    } catch (error) {
-      log(`Error processing webhook: ${error}`);
-      res.status(500).json({
-        status: "error",
-        message: "Failed to process webhook"
-      });
-    }
-  });
-
   // Status endpoint for Telegram bot
-  apiRouter.get("/telegram/status",
+  app.get("/api/telegram/status",
     createRateLimiter('medium'),
     async (_req, res) => {
       try {
@@ -564,8 +431,9 @@ function setupRESTRoutes(app: Express) {
     }
   );
 
+
   // Wheel Challenge Routes
-  apiRouter.get("/wheel/check-eligibility",
+  app.get("/api/wheel/check-eligibility",
     createRateLimiter('high'),
     async (req, res) => {
       try {
@@ -608,7 +476,7 @@ function setupRESTRoutes(app: Express) {
     }
   );
 
-  apiRouter.post("/wheel/record-spin",
+  app.post("/api/wheel/record-spin",
     createRateLimiter('medium'),
     async (req, res) => {
       try {
@@ -657,106 +525,55 @@ function setupRESTRoutes(app: Express) {
       }
     }
   );
+}
 
-  // SSE endpoint for active users
-  app.get("/api/telegram/active-users/stream", (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
+let wss: WebSocketServer;
 
-    const client = { res };
-    const clients = new Set();
-    clients.add(client);
-
-    // Send initial count
-    res.write(`data: ${JSON.stringify({ count: getActiveUsersCount() })}\n\n`);
-
-    // Setup change listener
-    const changeListener = (event: { count: number }) => {
-      res.write(`data: ${JSON.stringify({ count: event.count })}\n\n`);
-    };
-
-    activeUsersEmitter.on('change', changeListener);
-
-    req.on('close', () => {
-      clients.delete(client);
-      activeUsersEmitter.off('change', changeListener);
-    });
-  });
-
-  // Update the leaderboard endpoint
-  apiRouter.get("/leaderboard",
-    createRateLimiter('high'),
-    cacheMiddleware(30000),
-    async (req, res) => {
-      try {
-        const period = req.query.period || 'today';
-        log('Fetching leaderboard data...');
-        log(`Requested period: ${period}`);
-
-        if (!process.env.API_TOKEN && !API_CONFIG.token) {
-          log('Missing API token');
-          return res.json({
-            success: true,
-            data: [] // Return empty data if no token
-          });
-        }
-
-        const response = await fetch(
-          `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-          {
-            headers: {
-              Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-          }
-        );
-
-        log(`API Response status: ${response.status}`);
-
-        const rawData = await response.json();
-        log('Raw API data received:', JSON.stringify(rawData).slice(0, 200) + '...');
-
-        if (!response.ok) {
-          log(`API request failed with status ${response.status}`);
-          return res.json({
-            success: true,
-            data: [] // Return empty data on API error
-          });
-        }
-
-        const transformedData = await transformLeaderboardData(rawData);
-
-        // Get data for the requested period
-        const periodData = transformedData.data[period as keyof typeof transformedData.data]?.data || [];
-
-        // Log the top users for debugging
-        if (periodData.length > 0) {
-          log('Top 3 users:', periodData.slice(0, 3));
-        }
-
-        res.json({
-          success: true,
-          data: periodData
-        });
-
-      } catch (error) {
-        log(`Error in /api/leaderboard: ${error}`);
-        // Return empty data instead of error for frontend
-        res.json({
-          success: true,
-          data: []
-        });
-      }
-    }
+/**
+ * Utility function to sort data by wagered amount
+ */
+function sortByWagered(data: any[], period: string) {
+  return [...data].sort(
+    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
   );
+}
 
-  // Mount API router before other routes
-  app.use("/api", apiRouter);
+/**
+ * Transforms raw leaderboard data into standardized format
+ */
+export function transformLeaderboardData(apiData: any) {
+  return transformData(apiData);
+}
 
-  // Setup WebSocket for real-time updates
+/**
+ * Sets up WebSocket server and registers routes
+ */
+export function registerRoutes(app: Express): Server {
+  const httpServer = createServer(app);
+  setupRESTRoutes(app);
+  setupWebSocket(httpServer);
+  return httpServer;
+}
 
+/**
+ * Configures WebSocket server
+ */
+// Webhook endpoint for Telegram bot
+function setupWebSocket(httpServer: Server) {
+  wss = new WebSocketServer({ noServer: true });
+
+  httpServer.on("upgrade", (request, socket, head) => {
+    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
+      return;
+    }
+
+    if (request.url === "/ws/leaderboard") {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit("connection", ws, request);
+        handleLeaderboardConnection(ws);
+      });
+    }
+  });
 }
 
 /**
@@ -766,6 +583,7 @@ function handleLeaderboardConnection(ws: WebSocket) {
   const clientId = Date.now().toString();
   log(`Leaderboard WebSocket client connected (${clientId})`);
 
+  // Keep connection alive with ping/pong
   ws.isAlive = true;
   const pingInterval = setInterval(() => {
     if (ws.readyState === WebSocket.OPEN) {
@@ -778,6 +596,7 @@ function handleLeaderboardConnection(ws: WebSocket) {
   });
 
   ws.on("error", (error: Error) => {
+    // Fix error logging to use error message instead of raw Error object
     log(`WebSocket error (${clientId}): ${error.message}`);
     clearInterval(pingInterval);
     ws.terminate();
@@ -797,170 +616,23 @@ function handleLeaderboardConnection(ws: WebSocket) {
   }
 }
 
+/**
+ * Broadcasts updates to all connected WebSocket clients
+ */
+export function broadcastLeaderboardUpdate(data: any) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: "LEADERBOARD_UPDATE",
+        data
+      }));
+    }
+  });
+}
+
 // Update WebSocket type to include isAlive property
 declare module 'ws' {
   interface WebSocket {
     isAlive?: boolean;
-  }
-}
-
-/**
- * Sets up WebSocket server and registers routes
- */
-export function registerRoutes(app: Express): Server {
-  const httpServer = createServer(app);
-  setupRESTRoutes(app);
-  setupWebSocket(httpServer);
-  return httpServer;
-}
-
-/**
- * Utility function to sort data by wagered amount
- */
-function sortByWagered(data: any[], period: string) {
-  return [...data].sort((a, b) => {
-    const bWager = typeof b.wagered === 'number' ? b.wagered : (b.wagered?.[period] || 0);
-    const aWager = typeof a.wagered === 'number' ? a.wagered : (a.wagered?.[period] || 0);
-    return bWager - aWager;
-  });
-}
-
-/**
- * Transforms raw leaderboard data into standardized format
- */
-function transformData(apiData: any) {
-  try {
-    // Handle array response structure
-    const responseData = Array.isArray(apiData) ? apiData[0] : apiData;
-    if (!responseData || !responseData.data) {
-      throw new Error('Invalid API response structure');
-    }
-
-    // Extract the data array from the response
-    const users = responseData.data || [];
-
-    // Group data by time periods
-    const transformedData = {
-      status: "success",
-      metadata: {
-        totalUsers: users.length,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: {
-          data: users.map((user: any) => ({
-            uid: user.uid || '',
-            name: user.name || 'Anonymous',
-            wagered: user.wagered?.today || 0
-          }))
-        },
-        weekly: {
-          data: users.map((user: any) => ({
-            uid: user.uid || '',
-            name: user.name || 'Anonymous',
-            wagered: user.wagered?.this_week || 0
-          }))
-        },
-        monthly: {
-          data: users.map((user: any) => ({
-            uid: user.uid || '',
-            name: user.name || 'Anonymous',
-            wagered: user.wagered?.this_month || 0,
-            position: 0  // Will be calculated later
-          }))
-        },
-        all_time: {
-          data: users.map((user: any) => ({
-            uid: user.uid || '',
-            name: user.name || 'Anonymous',
-            wagered: user.wagered?.all_time || 0
-          }))
-        }
-      }
-    };
-
-    // Sort monthly data by wagered amount and assign positions
-    transformedData.data.monthly.data = transformedData.data.monthly.data
-      .sort((a: any, b: any) => b.wagered - a.wagered)
-      .map((user: any, index: number) => ({
-        ...user,
-        position: index + 1
-      }));
-
-    return transformedData;
-  } catch (error) {
-    console.error('Error transforming data:', error);
-    throw error;
-  }
-}
-
-interface LeaderboardUser {
-  uid: string;
-  name: string;
-  wagered: {
-    today?: number;
-    this_week?: number;
-    this_month?: number;
-    all_time?: number;
-  };
-}
-
-interface LeaderboardEntry {
-  uid: string;
-  name: string;
-  wagered: number;
-}
-
-async function transformLeaderboardData(rawData: any) {
-  try {
-    console.log('Transforming leaderboard data. Raw input:', JSON.stringify(rawData).slice(0, 200) + '...');
-
-    // Extract users array from API response
-    const users = Array.isArray(rawData) ? rawData : (rawData?.data || []) as LeaderboardUser[];
-    console.log(`Found ${users.length} users to process`);
-
-    // Map and sort users by their wager amounts for each time period
-    const createLeaderboardEntry = (user: LeaderboardUser, wagerAmount: number): LeaderboardEntry => ({
-      uid: user.uid || '',
-      name: user.name || 'Anonymous',
-      wagered: wagerAmount
-    });
-
-    const transformedData = {
-      data: {
-        today: {
-          data: users
-            .map(user => createLeaderboardEntry(user, parseFloat(String(user.wagered?.today || 0))))
-            .sort((a: LeaderboardEntry, b: LeaderboardEntry) => b.wagered - a.wagered)
-        },
-        weekly: {
-          data: users
-            .map(user => createLeaderboardEntry(user, parseFloat(String(user.wagered?.this_week || 0))))
-            .sort((a: LeaderboardEntry, b: LeaderboardEntry) => b.wagered - a.wagered)
-        },
-        monthly: {
-          data: users
-            .map(user => createLeaderboardEntry(user, parseFloat(String(user.wagered?.this_month || 0))))
-            .sort((a: LeaderboardEntry, b: LeaderboardEntry) => b.wagered - a.wagered)
-        },
-        all_time: {
-          data: users
-            .map(user => createLeaderboardEntry(user, parseFloat(String(user.wagered?.all_time || 0))))
-            .sort((a: LeaderboardEntry, b: LeaderboardEntry) => b.wagered - a.wagered)
-        }
-      }
-    };
-
-    console.log('Transformed data stats:', {
-      today: transformedData.data.today.data.length,
-      weekly: transformedData.data.weekly.data.length,
-      monthly: transformedData.data.monthly.data.length,
-      all_time: transformedData.data.all_time.data.length
-    });
-
-    return transformedData;
-  } catch (error) {
-    console.error('Error transforming data:', error);
-    throw error;
   }
 }

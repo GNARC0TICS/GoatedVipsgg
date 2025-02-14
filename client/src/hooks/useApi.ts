@@ -1,5 +1,4 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { z } from "zod";
 
 interface ApiOptions {
   enabled?: boolean;
@@ -15,67 +14,18 @@ const CACHE_TIMES = {
   LONG: 1000 * 60 * 5, // 5 minutes
 };
 
-// API Response schemas
-export const affiliateStatsSchema = z.object({
-  success: z.boolean(),
-  data: z.object({
-    today: z.object({
-      data: z.array(z.object({
-        uid: z.string(),
-        name: z.string(),
-        wagered: z.number().optional(),
-      }))
-    }),
-    weekly: z.object({
-      data: z.array(z.object({
-        uid: z.string(),
-        name: z.string(),
-        wagered: z.number().optional(),
-      }))
-    }),
-    monthly: z.object({
-      data: z.array(z.object({
-        uid: z.string(),
-        name: z.string(),
-        wagered: z.number().optional(),
-        position: z.number().optional(),
-      }))
-    }),
-    all_time: z.object({
-      data: z.array(z.object({
-        uid: z.string(),
-        name: z.string(),
-        wagered: z.number().optional(),
-      }))
-    }),
-  }),
-  metadata: z.object({
-    totalUsers: z.number(),
-    lastUpdated: z.string(),
-  }),
-});
-
-export type AffiliateResponse = z.infer<typeof affiliateStatsSchema>;
-
 // Reusable fetch function with error handling and retry logic
 async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const MAX_RETRIES = 3;
   const INITIAL_RETRY_DELAY = 1000;
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-  const apiToken = import.meta.env.VITE_API_TOKEN;
-
-  if (!apiBaseUrl || !apiToken) {
-    throw new Error('API configuration missing');
-  }
 
   let lastError;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const response = await fetch(`${apiBaseUrl}${endpoint}`, {
+      const response = await fetch(endpoint, {
         ...options,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiToken}`,
           ...options.headers,
         },
       });
@@ -89,7 +39,7 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
     } catch (error) {
       lastError = error;
       if (attempt < MAX_RETRIES - 1) {
-        await new Promise(resolve =>
+        await new Promise(resolve => 
           setTimeout(resolve, INITIAL_RETRY_DELAY * Math.pow(2, attempt))
         );
       }
@@ -99,21 +49,18 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
 }
 
 // Hook for affiliate stats with optimized caching
-export function useAffiliateStats(options: ApiOptions = {}) {
+export function useAffiliateStats(username?: string, options: ApiOptions = {}) {
+  const endpoint = username 
+    ? `/api/affiliate/stats?username=${encodeURIComponent(username)}`
+    : '/api/affiliate/stats';
+
   return useQuery({
-    queryKey: ['affiliate-stats'],
-    queryFn: () => fetchApi('/api/affiliate/stats'),
+    queryKey: ['affiliate-stats', username],
+    queryFn: () => fetchApi(endpoint),
     staleTime: CACHE_TIMES.MEDIUM,
     cacheTime: CACHE_TIMES.LONG,
-    refetchInterval: 30000, // Refresh every 30 seconds
-    select: (data) => {
-      const parsed = affiliateStatsSchema.safeParse(data);
-      if (!parsed.success) {
-        console.error('API Schema validation failed:', parsed.error);
-        return null;
-      }
-      return parsed.data;
-    },
+    refetchInterval: username ? false : 30000, // Only poll for global stats
+    retry: 2,
     ...options,
   });
 }
@@ -125,7 +72,8 @@ export function useCurrentWagerRace(options: ApiOptions = {}) {
     queryFn: () => fetchApi('/api/wager-races/current'),
     staleTime: CACHE_TIMES.MEDIUM,
     cacheTime: CACHE_TIMES.LONG,
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 60000, // Reduced from 30s to 60s
+    retry: 2,
     ...options,
   });
 }
@@ -137,7 +85,7 @@ export function useChatMessages(options: ApiOptions = {}) {
     queryFn: () => fetchApi('/api/chat/messages'),
     staleTime: CACHE_TIMES.SHORT,
     cacheTime: CACHE_TIMES.MEDIUM,
-    refetchInterval: 10000, // Refresh every 10 seconds
+    refetchInterval: 10000, // Increased from 5s to 10s
     ...options,
   });
 }
@@ -160,7 +108,7 @@ export function useAnalytics(options: ApiOptions = {}) {
     queryFn: () => fetchApi('/api/admin/analytics'),
     staleTime: CACHE_TIMES.LONG,
     cacheTime: CACHE_TIMES.LONG,
-    refetchInterval: 300000, // Refresh every 5 minutes
+    refetchInterval: 300000, // 5 minutes
     ...options,
   });
 }
@@ -175,6 +123,7 @@ export function useBatchRequest(requests: string[], options: ApiOptions = {}) {
         body: JSON.stringify({ requests }),
       }),
     staleTime: CACHE_TIMES.MEDIUM,
+    retry: 2,
     ...options,
   });
 }

@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,11 +13,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
-  AlertCircle,
 } from "lucide-react";
-import React, { useState, useMemo, useCallback } from "react";
-import { useQuery } from '@tanstack/react-query';
-import { type TimePeriod } from "@/hooks/use-leaderboard";
+import React, { useState, useMemo } from "react";
+import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { QuickProfile } from "@/components/QuickProfile";
 import { motion, AnimatePresence } from "framer-motion";
@@ -29,104 +28,33 @@ interface LeaderboardTableProps {
   timePeriod: TimePeriod;
 }
 
-interface WagerData {
-  today: number;
-  this_week: number;
-  this_month: number;
-  all_time: number;
-}
-
-interface LeaderboardEntry {
-  uid: string;
-  name: string;
-  wagered: WagerData;
-  isWagering?: boolean;
-  wagerChange?: number;
-}
-
-interface LeaderboardResponse {
-  success: boolean;
-  data: {
-    today: { data: LeaderboardEntry[] };
-    weekly: { data: LeaderboardEntry[] };
-    monthly: { data: LeaderboardEntry[] };
-    all_time: { data: LeaderboardEntry[] };
-  };
-}
-
 /**
  * LeaderboardTable Component
- * Displays a paginated table of users ranked by their wager amounts.
- * Includes search functionality and real-time updates.
+ * Displays a paginated table of users ranked by their wager amounts
+ * Includes search functionality and real-time updates
  */
 export const LeaderboardTable = React.memo(function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
   // State management
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Fetch leaderboard data
+  const { data, isLoading, error, metadata, refetch } = useLeaderboard(timePeriod);
 
-  // Fetch leaderboard data with error handling
-  const { data, isLoading, error } = useQuery<LeaderboardEntry[]>({
-    queryKey: ["/api/affiliate/stats", timePeriod],
-    queryFn: async () => {
-      try {
-        const response = await fetch('/api/affiliate/stats');
-        if (!response.ok) {
-          throw new Error(`Failed to fetch leaderboard data: ${response.statusText}`);
-        }
-        const jsonData = await response.json();
-        
-        // Get the correct period data
-        const periodData = jsonData.data?.[timePeriod === 'weekly' ? 'weekly' : 
-                                        timePeriod === 'monthly' ? 'monthly' : 
-                                        timePeriod === 'all_time' ? 'all_time' : 
-                                        'today']?.data || [];
-        
-        // Transform the data into the expected format
-        const transformedData = periodData.map((entry: any) => ({
-          uid: entry.uid || '',
-          name: entry.name || 'Anonymous',
-          wagered: typeof entry.wagered === 'number' ? entry.wagered : 
-                  (entry.wagered?.[timePeriod === 'weekly' ? 'this_week' : 
-                                timePeriod === 'monthly' ? 'this_month' : 
-                                timePeriod === 'all_time' ? 'all_time' : 
-                                'today'] || 0),
-          rank: 0 // Will be calculated during sorting
-        }));
-
-        return transformedData;
-      } catch (error) {
-        console.error('Leaderboard fetch error:', error);
-        throw error;
-      }
-    },
-    retry: 3,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
-
-  // Filter and sort data based on search query and time period
+  // Filter data based on search query
   const filteredData = useMemo(() => {
     if (!data) return [];
-    
-    return data
-      .filter((entry: LeaderboardEntry) =>
-        entry.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-      .sort((a: LeaderboardEntry, b: LeaderboardEntry) => {
-        const aWager = timePeriod === 'today' ? a.wagered.today :
-                      timePeriod === 'weekly' ? a.wagered.this_week :
-                      timePeriod === 'monthly' ? a.wagered.this_month :
-                      a.wagered.all_time;
-        const bWager = timePeriod === 'today' ? b.wagered.today :
-                      timePeriod === 'weekly' ? b.wagered.this_week :
-                      timePeriod === 'monthly' ? b.wagered.this_month :
-                      b.wagered.all_time;
-        return bWager - aWager;
-      });
-  }, [data, searchQuery, timePeriod]);
+    return data.filter((entry) =>
+      entry.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [data, searchQuery]);
 
-  const totalPages = Math.ceil((filteredData.length || 0) / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil((filteredData?.length || 0) / ITEMS_PER_PAGE);
 
-  const getTrophyIcon = useCallback((rank: number) => {
+  /**
+   * Returns the appropriate trophy icon based on rank
+   */
+  const getTrophyIcon = (rank: number) => {
     switch (rank) {
       case 1:
         return <Crown className="h-8 w-8 text-yellow-400 animate-pulse" />;
@@ -137,17 +65,21 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
       default:
         return <Star className="h-5 w-5 text-zinc-600" />;
     }
-  }, []);
+  };
 
-  const handlePrevPage = useCallback(() => {
+  // Pagination handlers
+  const handlePrevPage = () => {
     setCurrentPage((prev) => Math.max(0, prev - 1));
-  }, []);
+  };
 
-  const handleNextPage = useCallback(() => {
+  const handleNextPage = () => {
     setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1));
-  }, [totalPages]);
+  };
 
-  const getWagerAmount = useCallback((entry: LeaderboardEntry): number => {
+  /**
+   * Gets the wager amount based on the selected time period
+   */
+  const getWagerAmount = (entry: any) => {
     if (!entry?.wagered) return 0;
     switch (timePeriod) {
       case "weekly":
@@ -161,8 +93,9 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
       default:
         return 0;
     }
-  }, [timePeriod]);
+  };
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
@@ -194,19 +127,10 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
     );
   }
 
-  if (error) {
-    return (
-      <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
-        <div className="flex items-center gap-2 text-destructive">
-          <AlertCircle className="h-5 w-5" />
-          <span>Failed to load leaderboard data: {error.message}</span>
-        </div>
-      </div>
-    );
-  }
-
+  // Main render
   return (
     <div className="space-y-4">
+      {/* Search and Live Status Bar */}
       <div className="flex items-center gap-2 max-w-md mx-auto w-full mb-4">
         <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -224,20 +148,21 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
         </div>
       </div>
 
+      {/* Leaderboard Table */}
       <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
+        <div className="overflow-x-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#2A2B31 #14151A' }}>
+          <Table className="w-full">
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-20">RANK</TableHead>
-                <TableHead>USERNAME</TableHead>
-                <TableHead className="text-right">WAGER</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-[50px] md:w-20 font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap font-black">RANK</TableHead>
+                <TableHead className="font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base font-black">USERNAME</TableHead>
+                <TableHead className="text-right font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap font-black">WAGER</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredData
                 .slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE)
-                .map((entry: LeaderboardEntry, index: number) => (
+                .map((entry, index) => (
                   <motion.tr
                     key={entry.uid}
                     initial={{ opacity: 0, y: 20 }}
@@ -272,9 +197,9 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <span className="text-white font-semibold">
-                          ${getWagerAmount(entry).toLocaleString()}
+                          ${(getWagerAmount(entry) || 0).toLocaleString()}
                         </span>
-                        {entry.isWagering && entry.wagerChange && entry.wagerChange > 0 && (
+                        {entry.isWagering && entry.wagerChange > 0 && (
                           <motion.div
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -294,11 +219,12 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
           </Table>
         </div>
 
+        {/* Pagination Footer */}
         <div className="p-4 border-t border-[#2A2B31] flex items-center justify-between">
           <div className="flex items-center gap-2 text-[#8A8B91]">
             <Users className="h-4 w-4" />
             <span className="text-sm">
-              {filteredData.length} Players
+              {metadata?.totalUsers || filteredData.length} Players
             </span>
           </div>
 

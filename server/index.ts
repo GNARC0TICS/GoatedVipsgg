@@ -1,146 +1,191 @@
-import express, { Express } from "express";
+import express from "express";
 import cookieParser from "cookie-parser";
-import { createServer } from "http";
-import fs from "fs";
-import path, { dirname } from "path";
-import { fileURLToPath } from "url";
+import { registerRoutes } from "./routes";
+import { bot, initializeBot } from "./telegram/bot";
+import { setupVite, serveStatic, log } from "./vite";
+import { db } from "@db";
+import { sql } from "drizzle-orm";
 import { promisify } from "util";
 import { exec } from "child_process";
-import { sql } from "drizzle-orm";
-import { log } from "./telegram/utils/logger";
-import { bot } from "./telegram/bot";
-import { registerRoutes } from "./routes";
-import { initializeAdmin } from "./middleware/admin";
-import { setupVite, serveStatic } from "./vite";
-import db from "../db";
-import fetch from 'node-fetch';
+import { createServer } from "http";
+import fetch from "node-fetch";
+import { RateLimiterMemory } from 'rate-limiter-flexible';
+import webhookRouter from "./routes/webhook";
+import bonusChallengesRouter from "./routes/bonus-challenges";
 
 const execAsync = promisify(exec);
-const PORT = Number(process.env.PORT || 5000);
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const app = express();
+const PORT = parseInt(process.env.PORT || '5000', 10);
 
-// Server state flags
-let isServerReady = false;
+// Rate limiter setup
+const apiLimiter = new RateLimiterMemory({
+  points: 60,
+  duration: 60,
+  blockDuration: 60,
+});
 
-async function setupMiddleware(app: express.Application) {
-  app.use(express.json({ limit: '1mb' }));
-  app.use(express.urlencoded({ extended: false, limit: '1mb' }));
+async function setupMiddleware() {
+  // Basic middleware
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
 
-  // Enhanced health check endpoint
-  app.get("/api/health", (_req, res) => {
-    res.set('Cache-Control', 'no-store').json({
-      status: isServerReady ? "healthy" : "initializing",
-      timestamp: new Date().toISOString(),
-      port: PORT,
-      env: process.env.NODE_ENV || 'development',
-      uptime: process.uptime(),
-      ready: isServerReady
-    });
+  // API request logging
+  app.use('/api', (req, res, next) => {
+    log(`API Request: ${req.method} ${req.path}`);
+    const originalJson = res.json;
+    res.json = function(body) {
+      log(`API Response for ${req.path}: ${JSON.stringify(body).slice(0, 200)}`);
+      return originalJson.call(this, body);
+    };
+    next();
   });
+
+  // API rate limiting middleware
+  app.use('/api/', async (req, res, next) => {
+    try {
+      await apiLimiter.consume(req.ip || 'unknown');
+      next();
+    } catch (error) {
+      res.status(429).json({
+        status: 'error',
+        message: 'Too many requests. Please try again later.'
+      });
+    }
+  });
+
+  // CORS headers for API routes
+  app.use('/api', (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+}
+
+async function setupAPIRoutes() {
+  // Mount API routes with explicit paths
+  app.use("/api", bonusChallengesRouter);
+  app.use("/api/webhook", webhookRouter);
+  registerRoutes(app);
+}
+
+async function setupFrontendRoutes() {
+  if (app.get("env") === "development") {
+    await setupVite(app, app);
+  } else {
+    serveStatic(app);
+  }
 }
 
 async function startServer() {
   try {
     log("Starting server initialization...");
-    isServerReady = false;
+    await checkDatabase();
+    await cleanupBot();
+    await cleanupPort();
 
-    // Check database connection
-    const dbConnected = await db.execute(sql`SELECT 1`);
-    if (!dbConnected) {
-      throw new Error("Failed to connect to database");
-    }
-    log("Database connection established successfully");
+    // Initialize middleware first
+    await setupMiddleware();
+    log("Middleware setup complete");
 
-    const app = express();
-    app.set('trust proxy', 1);
+    // Mount API routes before frontend routes
+    await setupAPIRoutes();
+    log("API routes mounted");
 
-    await setupMiddleware(app);
+    // Setup frontend routes last
+    await setupFrontendRoutes();
+    log("Frontend routes mounted");
+
     const server = createServer(app);
 
-    // Setup API routes before static file serving
-    registerRoutes(app);
-
-    // Initialize admin functionality
-    await initializeAdmin().catch(console.error);
-
-    // Setup static file serving or Vite after API routes
-    if (process.env.NODE_ENV === 'production') {
-      serveStatic(app);
-    } else {
-      await setupVite(app, server);
-    }
-
-    // Start the server with enhanced error handling
     return new Promise((resolve, reject) => {
-      const serverInstance = server.listen(PORT, "0.0.0.0", async () => {
-        try {
-          // Test that the server is actually responding
-          const healthCheck = await fetch(`http://localhost:${PORT}/api/health`);
-          if (!healthCheck.ok) {
-            throw new Error("Health check failed");
+      server.listen(PORT, "0.0.0.0", () => {
+        log(`🚀 Server running on port ${PORT}`);
+
+        // Initialize Telegram bot after server is ready
+        initializeBot()
+          .then((botInstance) => {
+            if (!botInstance) {
+              log("⚠️ Warning: Bot initialization failed");
+            } else {
+              log("✅ Telegram bot initialized successfully");
+            }
+            resolve(true);
+          })
+          .catch((error) => {
+            console.error("⚠️ Telegram bot failed to start:", error);
+            resolve(true); // Still resolve as server is running
+          });
+      });
+
+      server.on("error", (err: NodeJS.ErrnoException) => {
+        console.error(`Failed to start server: ${err.message}`);
+        reject(err);
+      });
+
+      // Graceful shutdown handler
+      process.on("SIGINT", async () => {
+        log("🛑 Shutting down server and bot...");
+        if (bot) {
+          try {
+            await bot.deleteWebHook();
+            log("✅ Bot webhook removed");
+          } catch (error) {
+            console.error("Error cleaning up bot:", error);
           }
-
-          log(`Server listening on port ${PORT}`);
-
-          // Set initial server state
-          isServerReady = true;
-          process.env.SERVER_READY = 'true';
-
-          // Write a ready file that the workflow can check
-          fs.writeFileSync(path.join(process.cwd(), '.server-ready'), 'ready');
-
-          log("Server is fully initialized and ready");
-          resolve(serverInstance);
-        } catch (error) {
-          log(`Server startup validation failed: ${error}`);
-          reject(error);
         }
+        server.close(() => {
+          process.exit(0);
+        });
       });
-
-      serverInstance.on('error', (error: NodeJS.ErrnoException) => {
-        log(`Server error: ${error.message}`);
-        reject(error);
-      });
-
-      // Shorter timeout for faster feedback
-      setTimeout(() => {
-        if (!isServerReady) {
-          const error = new Error("Server startup timed out");
-          log(error.message);
-          reject(error);
-        }
-      }, 10000); // 10 second timeout
     });
   } catch (error) {
-    log(`Failed to start application: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    throw error;
+    console.error("Failed to start server:", error);
+    process.exit(1);
   }
 }
 
-// Graceful shutdown handling
-process.on("SIGTERM", async () => {
-  log("Received SIGTERM signal. Shutting down gracefully...");
-  isServerReady = false;
-  if (bot) await bot.stopPolling();
-  process.exit(0);
-});
+async function checkDatabase() {
+  try {
+    await db.execute(sql`SELECT 1`);
+    log("Database connection successful");
+  } catch (error: any) {
+    if (error.message?.includes("endpoint is disabled")) {
+      log("Database endpoint is disabled. Please enable the database in the Replit Database tab.");
+    } else {
+      throw error;
+    }
+  }
+}
 
-process.on("SIGINT", async () => {
-  log("Received SIGINT signal. Shutting down gracefully...");
-  isServerReady = false;
-  if (bot) await bot.stopPolling();
-  process.exit(0);
-});
+async function cleanupPort() {
+  try {
+    await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  } catch (error) {
+    log("No existing process found on port " + PORT);
+  }
+}
 
-// Export the startServer function and server state
-export { startServer, isServerReady };
+async function cleanupBot() {
+  try {
+    if (process.env.TELEGRAM_BOT_TOKEN) {
+      await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteWebhook?drop_pending_updates=true`);
+      log("Cleared existing webhook configuration");
+    }
+  } catch (error) {
+    console.error("Error cleaning up bot:", error);
+  }
+}
 
-// Only start the server if this is the main module
-if (import.meta.url === import.meta.resolve('./index.ts')) {
-  startServer().catch((error) => {
-    console.error("Failed to start server:", error);
+// Start the server
+startServer()
+  .then(() => log("✅ Server startup complete"))
+  .catch((error) => {
+    console.error("Error during startup:", error);
     process.exit(1);
   });
-}

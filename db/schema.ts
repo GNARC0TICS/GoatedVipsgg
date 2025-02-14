@@ -225,8 +225,6 @@ export const affiliateStats = pgTable("affiliate_stats", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
-// Mock data schema commented out temporarily
-/*
 export const mockWagerData = pgTable("mock_wager_data", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
@@ -251,7 +249,6 @@ export const mockWagerDataRelations = relations(mockWagerData, ({ one }) => ({
     references: [users.id],
   }),
 }));
-*/
 
 export const insertNewsletterSubscriptionSchema = createInsertSchema(
   newsletterSubscriptions,
@@ -265,11 +262,10 @@ export const insertAffiliateStatsSchema = createInsertSchema(affiliateStats);
 export const selectAffiliateStatsSchema = createSelectSchema(affiliateStats);
 
 
-// Mock data schemas temporarily commented out
-// export const insertMockWagerDataSchema = createInsertSchema(mockWagerData);
-// export const selectMockWagerDataSchema = createSelectSchema(mockWagerData);
-// export type InsertMockWagerData = typeof mockWagerData.$inferInsert;
-// export type SelectMockWagerData = typeof mockWagerData.$inferSelect;
+export const insertMockWagerDataSchema = createInsertSchema(mockWagerData);
+export const selectMockWagerDataSchema = createSelectSchema(mockWagerData);
+export type InsertMockWagerData = typeof mockWagerData.$inferInsert;
+export type SelectMockWagerData = typeof mockWagerData.$inferSelect;
 
 export type InsertNewsletterSubscription = typeof newsletterSubscriptions.$inferInsert;
 export type SelectNewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;

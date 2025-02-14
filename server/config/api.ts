@@ -5,5 +5,21 @@ export const API_CONFIG = {
   endpoints: {
     leaderboard: "/affiliate/referral-leaderboard/2RW440E",
     health: "/health"
+  },
+  fallbackData: {
+    // Fallback data structure when API is unavailable
+    leaderboard: {
+      status: "success",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString()
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] }
+      }
+    }
   }
 };

@@ -11,17 +11,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Bell, Mail, Trophy, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { notificationPreferences } from "@db/schema";
+import type { SelectNotificationPreferences } from "@db/schema";
 
 export default function NotificationPreferences() {
   const { toast } = useToast();
   const [preferences, setPreferences] =
-    useState<typeof notificationPreferences.$inferSelect | null>(null);
+    useState<SelectNotificationPreferences | null>(null);
 
   // Fetch current preferences
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<SelectNotificationPreferences>({
     queryKey: ["/api/notification-preferences"],
-    onSuccess: (data: typeof notificationPreferences.$inferSelect) => {
+    onSuccess: (data) => {
       setPreferences(data);
     },
   });
@@ -29,7 +29,7 @@ export default function NotificationPreferences() {
   // Update preferences mutation
   const updatePreferences = useMutation({
     mutationFn: async (
-      newPreferences: Partial<typeof notificationPreferences.$inferSelect>,
+      newPreferences: Partial<SelectNotificationPreferences>,
     ) => {
       const response = await fetch("/api/notification-preferences", {
         method: "POST",
@@ -63,7 +63,7 @@ export default function NotificationPreferences() {
     },
   });
 
-  const handleToggle = (key: keyof typeof notificationPreferences.$inferSelect) => {
+  const handleToggle = (key: keyof SelectNotificationPreferences) => {
     if (!preferences) return;
 
     const newPreferences = {

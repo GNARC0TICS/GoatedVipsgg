@@ -1,5 +1,3 @@
-// Mock user command temporarily disabled
-/*
 import { db } from "@db";
 import { eq, and } from "drizzle-orm";
 import { mockWagerData, users, telegramUsers } from "@db/schema";
@@ -14,26 +12,18 @@ const DEVELOPER_USERNAMES = ["your_telegram_username"]; // Replace with your use
 const isDeveloper = async (chatId: number, userId: number): Promise<boolean> => {
   try {
     const user = await db.query.telegramUsers.findFirst({
-      where: eq(telegramUsers.telegramId, userId.toString()),
+      where: eq(telegramUsers.telegramUserId, userId.toString()),
     });
-    return DEVELOPER_USERNAMES.includes(user?.telegramUsername || "");
+    return DEVELOPER_USERNAMES.includes(user?.username || "");
   } catch (error) {
     log(`Error checking developer status: ${error}`);
     return false;
   }
 };
 
-export const handleMockUserCommand = async (
-  msg: TelegramBot.Message,
-  args: string[],
-  bot: TelegramBot
-) => {
-  if (!msg.from) {
-    return safeSendMessage(msg.chat.id, "❌ Invalid message format.", bot);
-  }
-
+export const handleMockUserCommand = async (msg: TelegramBot.Message, args: string[], bot: TelegramBot) => {
   const chatId = msg.chat.id;
-  const fromId = msg.from.id;
+  const fromId = msg.from!.id;
 
   if (!(await isDeveloper(chatId, fromId))) {
     return safeSendMessage(chatId, "❌ This command is only available to developers.", bot);
@@ -103,18 +93,9 @@ export const handleMockUserCommand = async (
   }
 };
 
-// handleClearUserCommand implementation remains the same, but add null check for msg.from
-export const handleClearUserCommand = async (
-  msg: TelegramBot.Message,
-  args: string[],
-  bot: TelegramBot
-) => {
-  if (!msg.from) {
-    return safeSendMessage(msg.chat.id, "❌ Invalid message format.", bot);
-  }
-
+export const handleClearUserCommand = async (msg: TelegramBot.Message, args: string[], bot: TelegramBot) => {
   const chatId = msg.chat.id;
-  const fromId = msg.from.id;
+  const fromId = msg.from!.id;
 
   if (!(await isDeveloper(chatId, fromId))) {
     return safeSendMessage(chatId, "❌ This command is only available to developers.", bot);
@@ -147,4 +128,3 @@ export const handleClearUserCommand = async (
     safeSendMessage(chatId, "❌ Failed to clear mock user data.", bot);
   }
 };
-*/

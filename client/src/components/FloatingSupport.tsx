@@ -67,7 +67,7 @@ export function FloatingSupport({ onClose }: { onClose: () => void }) {
                   Need help? Contact our VIP support team on Telegram:
                 </p>
                 <a 
-                  href="https://t.me/+iFlHl5V9VcszZTVh" 
+                  href="https://t.me/xGoombas" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="block"

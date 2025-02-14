@@ -17,12 +17,12 @@ const faqCategories = [
       {
         question: "How do I start earning rewards?",
         answer:
-          "Start by registering on Goated.com under one of our codes. Once your account is linked, you'll automatically be able to track & earn rewards based on your gameplay and wagering activity.",
+          "Start by registering an account and linking it to your Goated.com account. Once linked, you'll automatically begin earning rewards based on your gameplay and wagering activity.",
       },
       {
         question: "What are the VIP levels?",
         answer:
-          "The VIP program features multiple tiers, each offering increasingly valuable benefits. Progress through levels by maintaining consistent gameplay and meeting wagering requirements.",
+          "Our VIP program features multiple tiers, each offering increasingly valuable benefits. Progress through levels by maintaining consistent gameplay and meeting wagering requirements.",
       },
     ],
   },

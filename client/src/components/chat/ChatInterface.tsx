@@ -16,14 +16,8 @@ interface Message {
   isStaffReply: boolean;
 }
 
-interface UserData {
-  id: number;
-  isAdmin: boolean;
-  // Add other user properties as needed
-}
-
 export function ChatInterface() {
-  const { user } = useUser() as { user: UserData | null };
+  const { user } = useUser();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
