@@ -30,6 +30,7 @@ function setupWebSocket(httpServer: Server) {
 
   httpServer.on("upgrade", (request, socket, head) => {
     if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
+      socket.destroy();
       return;
     }
 
