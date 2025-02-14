@@ -11,6 +11,7 @@ import { handleMockUserCommand, handleClearUserCommand } from "./commands/mock-u
 let botInstance: TelegramBot | null = null;
 let healthCheckInterval: NodeJS.Timeout | null = null;
 const activeUsers = new Set<number>();
+const TARGET_GROUP_ID = "-iFlHl5V9VcszZTVh"; // Your new group ID
 
 /**
  * Initializes the Telegram bot with the provided token
@@ -26,9 +27,24 @@ export async function initializeBot(): Promise<TelegramBot | null> {
     botInstance = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
     botInstance.on("message", async (msg) => {
       if (!msg.text) return;
-      activeUsers.add(msg.from.id);
-      // Clear user after 5 minutes of inactivity
-      setTimeout(() => activeUsers.delete(msg.from.id), 300000);
+      if (msg.chat.id.toString() === TARGET_GROUP_ID) {
+        activeUsers.add(msg.from.id);
+        // Clear user after 5 minutes of inactivity
+        setTimeout(() => activeUsers.delete(msg.from.id), 300000);
+      }
+    });
+
+    // Track when users join/leave the group
+    botInstance.on("new_chat_members", async (msg) => {
+      if (msg.chat.id.toString() === TARGET_GROUP_ID) {
+        msg.new_chat_members.forEach(member => activeUsers.add(member.id));
+      }
+    });
+
+    botInstance.on("left_chat_member", async (msg) => {
+      if (msg.chat.id.toString() === TARGET_GROUP_ID) {
+        activeUsers.delete(msg.left_chat_member.id);
+      }
     });
 
     const botInfo = await botInstance.getMe();
