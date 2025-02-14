@@ -327,16 +327,18 @@ export default function Home() {
                       '--hover-border-color': '#D7FF0080',
                       '--hover-shadow-color': '#D7FF0040'
                     } as React.CSSProperties}>
-                    <div>
-                      <MessageSquare className="h-8 w-8 text-[#D7FF00] mb-4" />
-                      <h3 className="text-2xl font-heading uppercase text-white mb-4">
-                        Telegram Community
-                      </h3>
-                      <p className="text-[#8A8B91] mb-6 font-body">
-                        Join our active Telegram community for updates and support
-                      </p>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <MessageSquare className="h-8 w-8 text-[#D7FF00] mb-4" />
+                        <h3 className="text-2xl font-heading uppercase text-white mb-4">
+                          Telegram Community
+                        </h3>
+                      </div>
                       <TelegramStats />
                     </div>
+                    <p className="text-[#8A8B91] mb-6 font-body">
+                      Join our active Telegram community for updates and support
+                    </p>
                     <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
                       Join Now <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </span>
