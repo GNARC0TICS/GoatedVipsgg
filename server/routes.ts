@@ -13,6 +13,7 @@ import { users, type SelectUser } from "@db/schema";
 import { initializeBot } from "./telegram/bot";
 import express from "express";
 import { EventEmitter } from "node:events";
+import { transformLeaderboardData } from "./utils/leaderboard";
 
 // Convert ApiError interface to a class
 class ApiError extends Error {
@@ -524,7 +525,6 @@ function setupRESTRoutes(app: Express) {
     }
   );
 
-
   // Wheel Challenge Routes
   apiRouter.get("/wheel/check-eligibility",
     createRateLimiter('high'),
@@ -674,13 +674,15 @@ function setupRESTRoutes(app: Express) {
         log('Raw API data received:', JSON.stringify(rawData).slice(0, 200) + '...');
 
         const transformedData = await transformLeaderboardData(rawData);
+        log('Transformed data stats:', {
+          period,
+          entries: transformedData.data[period as keyof typeof transformedData.data].data.length
+        });
 
-        // Filter data based on period
-        const periodData = transformedData.data[period as keyof typeof transformedData.data];
-
+        // Send the complete transformed data for the requested period
         res.json({
           success: true,
-          data: periodData.data
+          data: transformedData.data[period as keyof typeof transformedData.data].data
         });
 
       } catch (error) {
@@ -698,8 +700,15 @@ function setupRESTRoutes(app: Express) {
   app.use("/api", apiRouter);
 
   // Setup WebSocket for real-time updates
+  /**
+   * Configures WebSocket server
+   */
   function setupWebSocket(httpServer: Server) {
-    wss = new WebSocketServer({ noServer: true });
+    wss = new WebSocketServer({
+      noServer: true,
+      clientTracking: true,
+      perMessageDeflate: false
+    });
 
     httpServer.on("upgrade", (request, socket, head) => {
       if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
@@ -707,10 +716,21 @@ function setupRESTRoutes(app: Express) {
       }
 
       if (request.url === "/ws/leaderboard") {
-        wss.handleUpgrade(request, socket, head, (ws) => {
-          wss.emit("connection", ws, request);
-          handleLeaderboardConnection(ws);
-        });
+        try {
+          wss.handleUpgrade(request, socket, head, (ws) => {
+            ws.on('error', (error) => {
+              console.error('WebSocket error:', error);
+            });
+
+            wss.emit("connection", ws, request);
+            handleLeaderboardConnection(ws);
+          });
+        } catch (error) {
+          console.error('WebSocket upgrade error:', error);
+          socket.destroy();
+        }
+      } else {
+        socket.destroy();
       }
     });
   }
@@ -723,9 +743,11 @@ const clients = new Set();
  * Utility function to sort data by wagered amount
  */
 function sortByWagered(data: any[], period: string) {
-  return [...data].sort(
-    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
-  );
+  return [...data].sort((a, b) => {
+    const bWager = typeof b.wagered === 'number' ? b.wagered : (b.wagered?.[period] || 0);
+    const aWager = typeof a.wagered === 'number' ? a.wagered : (a.wagered?.[period] || 0);
+    return bWager - aWager;
+  });
 }
 
 /**
@@ -797,9 +819,74 @@ function transformData(apiData: any) {
   }
 }
 
-async function transformLeaderboardData(rawData: any):Promise<any> {
-    //This function needs to be implemented based on the actual structure of rawData
-    return {data: {today: {data: []}, weekly: {data: []}, monthly: {data: []}, all_time: {data: []}}}
+async function transformLeaderboardData(rawData: any) {
+  try {
+    console.log('Transforming leaderboard data. Raw input:', JSON.stringify(rawData).slice(0, 200) + '...');
+
+    // Extract users array from API response
+    const users = Array.isArray(rawData) ? rawData : (rawData?.data || []);
+    console.log(`Found ${users.length} users to process`);
+
+    // Map the external API data structure to our internal format
+    const mappedUsers = users.map((user: any) => ({
+      uid: user.uid || '',
+      name: user.name || 'Anonymous',
+      wagered: {
+        today: parseFloat(user.wagered?.today || 0),
+        this_week: parseFloat(user.wagered?.this_week || 0),
+        this_month: parseFloat(user.wagered?.this_month || 0),
+        all_time: parseFloat(user.wagered?.all_time || 0)
+      }
+    }));
+
+    console.log('Sample mapped user:', JSON.stringify(mappedUsers[0]));
+
+    // Transform and sort data for each time period
+    const transformedData = {
+      data: {
+        today: {
+          data: sortByWagered(mappedUsers.map(user => ({
+            ...user,
+            wagered: user.wagered.today
+          })), "today")
+            .filter(entry => entry.wagered > 0)
+        },
+        weekly: {
+          data: sortByWagered(mappedUsers.map(user => ({
+            ...user,
+            wagered: user.wagered.this_week
+          })), "this_week")
+            .filter(entry => entry.wagered > 0)
+        },
+        monthly: {
+          data: sortByWagered(mappedUsers.map(user => ({
+            ...user,
+            wagered: user.wagered.this_month
+          })), "this_month")
+            .filter(entry => entry.wagered > 0)
+        },
+        all_time: {
+          data: sortByWagered(mappedUsers.map(user => ({
+            ...user,
+            wagered: user.wagered.all_time
+          })), "all_time")
+            .filter(entry => entry.wagered > 0)
+        }
+      }
+    };
+
+    console.log('Transformed data stats:', {
+      today: transformedData.data.today.data.length,
+      weekly: transformedData.data.weekly.data.length,
+      monthly: transformedData.data.monthly.data.length,
+      all_time: transformedData.data.all_time.data.length
+    });
+
+    return transformedData;
+  } catch (error) {
+    console.error('Error transforming data:', error);
+    throw error;
+  }
 }
 
 /**
@@ -813,49 +900,12 @@ export function registerRoutes(app: Express): Server {
 }
 
 /**
- * Configures WebSocket server
- */
-// Webhook endpoint for Telegram bot
-function setupWebSocket(httpServer: Server) {
-  wss = new WebSocketServer({ 
-    noServer: true,
-    clientTracking: true,
-    perMessageDeflate: false
-  });
-
-  httpServer.on("upgrade", (request, socket, head) => {
-    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
-      return;
-    }
-
-    if (request.url === "/ws/leaderboard") {
-      try {
-        wss.handleUpgrade(request, socket, head, (ws) => {
-          ws.on('error', (error) => {
-            console.error('WebSocket error:', error);
-          });
-          
-          wss.emit("connection", ws, request);
-          handleLeaderboardConnection(ws);
-        });
-      } catch (error) {
-        console.error('WebSocket upgrade error:', error);
-        socket.destroy();
-      }
-    } else {
-      socket.destroy();
-    }
-  });
-}
-
-/**
  * Handles new WebSocket connections for leaderboard
  */
 function handleLeaderboardConnection(ws: WebSocket) {
   const clientId = Date.now().toString();
   log(`Leaderboard WebSocket client connected (${clientId})`);
 
-  // Keep connection alive with ping/pong
   ws.isAlive = true;
   const pingInterval = setInterval(() => {
     if (ws.readyState === WebSocket.OPEN) {
@@ -868,7 +918,6 @@ function handleLeaderboardConnection(ws: WebSocket) {
   });
 
   ws.on("error", (error: Error) => {
-    // Fix error logging to use error message instead of raw Error object
     log(`WebSocket error (${clientId}): ${error.message}`);
     clearInterval(pingInterval);
     ws.terminate();
@@ -888,25 +937,9 @@ function handleLeaderboardConnection(ws: WebSocket) {
   }
 }
 
-/**
- * Broadcasts updates to all connected WebSocket clients
- */
-export function broadcastLeaderboardUpdate(data: any) {
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({
-        type: "LEADERBOARD_UPDATE",
-        data
-      }));
-    }
-  });
-}
-
 // Update WebSocket type to include isAlive property
 declare module 'ws' {
   interface WebSocket {
     isAlive?: boolean;
   }
 }
-
-// SSE endpoint moved inside setupRESTRoutes function
