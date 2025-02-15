@@ -57,11 +57,11 @@ export default function AuthPage() {
 
   const onSubmit = async (data: RegisterData) => {
     try {
-      const result = isLogin 
-        ? await auth.loginMutation.mutateAsync(data)
-        : await auth.registerMutation.mutateAsync(data);
-        
-      if (result) {
+      if (isLogin) {
+        await auth.loginMutation.mutateAsync(data);
+        navigate("/");
+      } else {
+        await auth.registerMutation.mutateAsync(data);
         navigate("/");
       }
     } catch (error: any) {
