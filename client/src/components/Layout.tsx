@@ -253,22 +253,12 @@ export function Layout({ children }: { children: ReactNode }) {
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/how-it-works">
                       <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2">
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:left-0">→</span>
-                          <span className="ml-0 transition-all duration-200 group-hover:ml-2">
-                            Become an Affiliate
-                          </span>
-                        </span>
+                        <span>Become an Affiliate</span>
                       </div>
                     </Link>
                     <Link href="/vip-transfer">
                       <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2">
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:left-0">→</span>
-                          <span className="ml-0 transition-all duration-200 group-hover:ml-2">
-                            VIP Transfer
-                          </span>
-                        </span>
+                        <span>VIP Transfer</span>
                       </div>
                     </Link>
                     <Link href="/tips-and-strategies">
