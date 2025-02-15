@@ -134,11 +134,9 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </QueryClientProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </ErrorBoundary>
   );
 }
