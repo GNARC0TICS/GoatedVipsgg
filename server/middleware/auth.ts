@@ -56,7 +56,7 @@ export const requireAdmin = async (
 ) => {
   try {
     await requireAuth(req, res, () => {
-      if (!req.user?.isAdmin) {
+      if (!req.user?.isAdmin && req.user?.username !== process.env.ADMIN_USERNAME) {
         return res.status(403).json({ message: "Admin access required" });
       }
       next();

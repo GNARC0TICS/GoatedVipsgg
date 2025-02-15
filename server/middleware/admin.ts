@@ -81,7 +81,7 @@ export async function initializeAdmin(
           username,
           password,
           email: `${username}@admin.local`,
-          role: 'admin',
+          isAdmin: true,
         })
         .returning();
       return newAdmin;

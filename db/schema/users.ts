@@ -15,7 +15,7 @@ export const users = pgTable('users', {
   password: text('password').notNull(),
   email: text('email').notNull(),
   telegramId: text('telegram_id'),
-  isAdmin: boolean('is_admin').default(false),
+  isAdmin: boolean('is_admin').notNull().default(false),
   bio: text('bio'),
   profileColor: text('profile_color').default('#D7FF00'),
   goatedAccountLinked: boolean('goated_account_linked').default(false),
