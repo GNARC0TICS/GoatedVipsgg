@@ -39,9 +39,7 @@ export default function Help() {
                   Contact Us
                 </h2>
                 <p className="text-[#8A8B91]">
-                  Email: support@goated.com
-                  <br />
-                  Discord: Join our community
+                  Telegram: @xGoombas
                 </p>
               </section>
             </div>
