@@ -49,7 +49,7 @@ const headerClasses = {
   logo: "h-8 w-auto relative transition-transform duration-300 hover:scale-105",
   menuButton: "md:hidden relative overflow-hidden group",
   desktopNav: "hidden md:flex items-center space-x-6",
-  userSection: "flex items-center space-x-4",
+  userSection: "flex items-center gap-2 md:gap-4",
 };
 
 const dropdownClasses = {
@@ -615,14 +615,14 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
 
           <div className={headerClasses.userSection}>
-            <div>
+            <div className="flex items-center gap-2 md:gap-4">
               {user && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-[#8A8B91] hover:text-white relative h-8 w-8 md:h-10 md:w-10"
+                      className="text-[#8A8B91] hover:text-white relative h-8 w-8 md:h-10 md:w-10 flex items-center justify-center"
                     >
                       <Bell className="h-4 w-4 md:h-5 md:w-5" />
                     </Button>
