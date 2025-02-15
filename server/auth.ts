@@ -23,6 +23,12 @@ const rateLimiter = new RateLimiterMemory({
   duration: 60 * 60, // per hour
 });
 
+declare global {
+  namespace Express {
+    interface User extends SelectUser {}
+  }
+}
+
 // Token verification function
 export const verifyToken = async (token: string) => {
   try {
@@ -50,46 +56,26 @@ export const generateTestToken = (isAdmin: boolean = false) => {
   }, JWT_SECRET, { expiresIn: '1h' });
 };
 
-// Crypto utilities
-const crypto = {
-  hash: async (password: string) => {
-    const salt = randomBytes(16).toString("hex");
-    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-    return `${buf.toString("hex")}.${salt}`;
-  },
-  compare: async (suppliedPassword: string, storedPassword: string) => {
-    const [hashedPassword, salt] = storedPassword.split(".");
-    const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
-    const suppliedPasswordBuf = (await scryptAsync(
-      suppliedPassword,
-      salt,
-      64,
-    )) as Buffer;
-    return timingSafeEqual(hashedPasswordBuf, suppliedPasswordBuf);
-  },
-};
-
-declare global {
-  namespace Express {
-    interface User extends SelectUser {}
-  }
-}
-
 export function setupAuth(app: Express) {
   const MemoryStore = createMemoryStore(session);
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.REPL_ID || "goated-rewards",
+    secret: process.env.SESSION_SECRET || process.env.REPL_ID || "goated-rewards",
     resave: false,
     saveUninitialized: false,
-    cookie: {},
+    name: 'sid', // Custom session ID cookie name
+    cookie: {
+      httpOnly: true,
+      secure: app.get("env") === "production",
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    },
     store: new MemoryStore({
-      checkPeriod: 86400000,
+      checkPeriod: 86400000, // Prune expired entries every 24h
     }),
   };
 
   if (app.get("env") === "production") {
     app.set("trust proxy", 1);
-    sessionSettings.cookie = { secure: true };
   }
 
   app.use(session(sessionSettings));
@@ -138,10 +124,12 @@ export function setupAuth(app: Express) {
         if (!user) {
           return done(null, false, { message: "Invalid username or password" });
         }
-        const isMatch = await crypto.compare(sanitizedPassword, user.password);
+
+        const isMatch = await comparePasswords(sanitizedPassword, user.password);
         if (!isMatch) {
           return done(null, false, { message: "Invalid username or password" });
         }
+
         return done(null, user);
       } catch (err) {
         return done(err);
@@ -149,23 +137,7 @@ export function setupAuth(app: Express) {
     }),
   );
 
-  // Non-blocking authentication middleware
-  const optionalAuth = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    try {
-      const token = req.headers.authorization?.split(" ")[1];
-      if (token) {
-        const userData = await verifyToken(token);
-        if (userData) {
-          (req as any).user = userData;
-        }
-      }
-      next();
-    } catch (error) {
-      next();
-    }
-  };
-
-  app.post("/api/register", async (req, res, next) => {
+  app.post("/api/register", async (req, res) => {
     try {
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
@@ -178,9 +150,8 @@ export function setupAuth(app: Express) {
       }
 
       // Rate limiting check
-      const ipAddress = req.ip;
       try {
-        await rateLimiter.consume(ipAddress);
+        await rateLimiter.consume(req.ip);
       } catch (error) {
         return res.status(429).json({
           status: "error",
@@ -204,24 +175,10 @@ export function setupAuth(app: Express) {
         });
       }
 
-      // Check for existing email
-      const [existingEmail] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, email))
-        .limit(1);
+      // Hash password
+      const hashedPassword = await hashPassword(password);
 
-      if (existingEmail) {
-        return res.status(400).json({
-          status: "error",
-          message: "Email already registered",
-        });
-      }
-
-      // Hash the password
-      const hashedPassword = await crypto.hash(password);
-
-      // Create the new user
+      // Create user
       const [newUser] = await db
         .insert(users)
         .values({
@@ -232,7 +189,7 @@ export function setupAuth(app: Express) {
         })
         .returning();
 
-      // Generate JWT token
+      // Generate JWT
       const token = jwt.sign(
         { 
           id: newUser.id,
@@ -245,10 +202,17 @@ export function setupAuth(app: Express) {
         { expiresIn: '24h' }
       );
 
-      // Log the user in after registration
+      // Log user in after registration
       req.login(newUser, (err) => {
-        if (err) return next(err);
-        return res.json({
+        if (err) {
+          console.error("Login after registration failed:", err);
+          return res.status(500).json({
+            status: "error",
+            message: "Registration successful but login failed",
+          });
+        }
+
+        return res.status(201).json({
           status: "success",
           message: "Registration successful",
           user: {
@@ -262,28 +226,17 @@ export function setupAuth(app: Express) {
         });
       });
     } catch (error: any) {
-      if (error.code === "23505") {
-        return res.status(400).json({
-          status: "error",
-          message: "Username or email already exists",
-        });
-      }
-      if (error.errors) {
-        return res.status(400).json({ 
-          ok: false,
-          message: "Validation failed",
-          errors: error.errors
-        });
-      }
-      return res.status(400).json({ 
-        ok: false,
-        message: error.message || "Invalid request",
+      console.error("Registration error:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Registration failed",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   });
 
-  app.post("/api/login", express.json(), (req, res, next) => {
-    if (!req.body || !req.body.username || !req.body.password) {
+  app.post("/api/login", (req, res, next) => {
+    if (!req.body?.username || !req.body?.password) {
       return res.status(400).json({
         status: "error",
         message: "Username and password are required"
@@ -294,8 +247,8 @@ export function setupAuth(app: Express) {
       "local",
       (err: any, user: Express.User | false, info: IVerifyOptions) => {
         if (err) {
+          console.error("Authentication error:", err);
           return res.status(500).json({
-            ok: false,
             status: "error",
             message: "Internal server error",
           });
@@ -303,18 +256,18 @@ export function setupAuth(app: Express) {
 
         if (!user) {
           return res.status(401).json({
-            ok: false,
             status: "error",
             message: info.message ?? "Invalid credentials",
           });
         }
 
-        req.logIn(user, (err) => {
+        req.login(user, (err) => {
           if (err) {
+            console.error("Login error:", err);
             return next(err);
           }
 
-          // Generate JWT token
+          // Generate JWT
           const token = jwt.sign(
             { 
               id: user.id,
@@ -345,13 +298,22 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/logout", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(400).json({
+        status: "error",
+        message: "Not logged in",
+      });
+    }
+
     req.logout((err) => {
       if (err) {
+        console.error("Logout error:", err);
         return res.status(500).json({
           status: "error",
           message: "Logout failed",
         });
       }
+
       res.json({
         status: "success",
         message: "Logout successful",
@@ -359,23 +321,42 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", optionalAuth, (req, res) => {
-    if (req.isAuthenticated() || req.user) {
-      const user = req.user;
-      return res.json({
+  app.get("/api/user", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({
+        status: "error",
+        message: "Not logged in",
+      });
+    }
+
+    const user = req.user;
+    res.json({
+      status: "success",
+      data: {
         id: user.id,
         username: user.username,
         email: user.email,
         isAdmin: user.isAdmin,
         createdAt: user.createdAt,
-      });
-    }
-    res.status(401).json({
-      status: "error",
-      message: "Not logged in",
+      }
     });
   });
+}
 
-  // Add the optional auth middleware to all routes
-  app.use(optionalAuth);
+// Password utilities
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
+
+async function comparePasswords(supplied: string, stored: string) {
+  const [hashedPassword, salt] = stored.split(".");
+  const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
+  const suppliedPasswordBuf = (await scryptAsync(
+    supplied,
+    salt,
+    64,
+  )) as Buffer;
+  return timingSafeEqual(hashedPasswordBuf, suppliedPasswordBuf);
 }

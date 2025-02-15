@@ -14,6 +14,8 @@ import { bot } from "./telegram/bot";
 import { registerRoutes } from "./routes";
 import { initializeAdmin } from "./middleware/admin";
 import { db } from "../db";
+import { setupAuth } from "./auth";
+import cors from "cors";
 
 const execAsync = promisify(exec);
 const PORT = 5000;
@@ -22,6 +24,210 @@ const __dirname = path.dirname(__filename);
 
 // Cache for template file
 let templateCache: string | null = null;
+
+function setupMiddleware(app: express.Application) {
+  // Basic middleware setup
+  app.set('trust proxy', 1);
+
+  // Configure CORS for API routes
+  app.use('/api', cors({
+    origin: process.env.NODE_ENV === 'development' 
+      ? ['http://localhost:5000', 'http://0.0.0.0:5000']
+      : process.env.ALLOWED_ORIGINS?.split(',') || [],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+
+  // Parse JSON and URL-encoded bodies
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ extended: false, limit: '1mb' }));
+  app.use(cookieParser());
+
+  // Request logging
+  app.use(requestLogger);
+
+  // Health check endpoint
+  app.get("/api/health", (_req, res) => {
+    res.set('Cache-Control', 'no-store').json({ status: "healthy" });
+  });
+}
+
+function serveStatic(app: express.Application) {
+  const distPath = path.resolve(__dirname, "public");
+  if (!fs.existsSync(distPath)) {
+    throw new Error(`Could not find the build directory: ${distPath}. Please build the client first.`);
+  }
+
+  // Serve static files with cache headers
+  app.use(express.static(distPath, {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true
+  }));
+
+  app.use("*", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "index.html"), {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff'
+      }
+    });
+  });
+}
+
+async function checkDatabaseConnection() {
+  try {
+    await db.execute(sql`SELECT 1`);
+    log("Database connection established successfully");
+  } catch (error: any) {
+    log(`Database connection error: ${error.message}`);
+    throw error;
+  }
+}
+
+async function cleanupPort() {
+  try {
+    await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  } catch (error) {
+    log(`No existing process found on port ${PORT}`);
+  }
+}
+
+const requestLogger = (() => {
+  const logQueue: string[] = [];
+  let flushTimeout: NodeJS.Timeout | null = null;
+
+  const flushLogs = () => {
+    if (logQueue.length > 0) {
+      console.log(logQueue.join('\n'));
+      logQueue.length = 0;
+    }
+    flushTimeout = null;
+  };
+
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const start = Date.now();
+    const originalJson = res.json.bind(res);
+
+    res.json = (body: any) => {
+      res.locals.body = body;
+      return originalJson(body);
+    };
+
+    res.on("finish", () => {
+      if (req.path.startsWith("/api")) {
+        const duration = Date.now() - start;
+        let logMessage = `${req.method} ${req.path} ${res.statusCode} in ${duration}ms`;
+        if (res.locals.body) {
+          logMessage += ` :: ${JSON.stringify(res.locals.body)}`;
+        }
+
+        logQueue.push(logMessage);
+        if (!flushTimeout) {
+          flushTimeout = setTimeout(flushLogs, 1000);
+        }
+      }
+    });
+
+    next();
+  };
+})();
+
+function errorHandler(err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) {
+  console.error("Server error:", err);
+  res.status(500).json({
+    error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message
+  });
+}
+
+async function startServer() {
+  try {
+    log("Starting server initialization...");
+    await checkDatabaseConnection();
+    await cleanupPort();
+
+    const app = express();
+
+    // Setup basic middleware first
+    setupMiddleware(app);
+
+    // Setup authentication
+    setupAuth(app);
+
+    // Register API routes before Vite middleware
+    registerRoutes(app);
+    await initializeAdmin().catch(console.error);
+
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+      throw new Error("TELEGRAM_BOT_TOKEN must be provided");
+    }
+    log("Initializing Telegram bot...");
+
+    const server = createServer(app);
+
+    // Setup Vite or static serving after API routes
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
+
+    // Error handling middleware should be last
+    app.use(errorHandler);
+
+    // Return a promise that resolves when the server is ready
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error(`Server failed to start within 30 seconds on port ${PORT}`));
+      }, 30000);
+
+      server
+        .listen(PORT, "0.0.0.0")
+        .on("error", async (err: any) => {
+          clearTimeout(timeoutId);
+          if (err.code === "EADDRINUSE") {
+            log(`Port ${PORT} is in use, attempting to free it...`);
+            await cleanupPort();
+            server.listen(PORT, "0.0.0.0");
+          } else {
+            console.error(`Failed to start server: ${err.message}`);
+            reject(err);
+          }
+        })
+        .on("listening", () => {
+          clearTimeout(timeoutId);
+          // Send a ready signal that the workflow can detect - this must be first
+          console.log(`Server is ready and listening on port ${PORT}`);
+          console.log(`PORT_READY=${PORT}`);
+
+          log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+          log("Telegram bot started successfully");
+
+          // Add health check endpoint for workflow verification
+          resolve(server);
+        });
+
+      const shutdown = async () => {
+        log("Shutting down gracefully...");
+        if (bot) {
+          await bot.stopPolling();
+        }
+        server.close(() => {
+          log("Server closed");
+          process.exit(0);
+        });
+      };
+
+      process.on("SIGTERM", shutdown);
+      process.on("SIGINT", shutdown);
+    });
+  } catch (error) {
+    console.error("Failed to start application:", error);
+    process.exit(1);
+  }
+}
 
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
@@ -90,195 +296,9 @@ async function setupVite(app: express.Application, server: any) {
   });
 }
 
-function serveStatic(app: express.Application) {
-  const distPath = path.resolve(__dirname, "public");
-  if (!fs.existsSync(distPath)) {
-    throw new Error(`Could not find the build directory: ${distPath}. Please build the client first.`);
-  }
-
-  // Serve static files with cache headers
-  app.use(express.static(distPath, {
-    maxAge: '1d',
-    etag: true,
-    lastModified: true
-  }));
-
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"), {
-      headers: {
-        'Cache-Control': 'no-cache',
-        'X-Content-Type-Options': 'nosniff'
-      }
-    });
-  });
-}
-
-async function checkDatabaseConnection() {
-  try {
-    await db.execute(sql`SELECT 1`);
-    log("Database connection established successfully");
-  } catch (error: any) {
-    log(`Database connection error: ${error.message}`);
-    throw error;
-  }
-}
-
-async function cleanupPort() {
-  try {
-    await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  } catch (error) {
-    log(`No existing process found on port ${PORT}`);
-  }
-}
-
-function setupMiddleware(app: express.Application) {
-  app.use(express.json({ limit: '1mb' }));
-  app.use(express.urlencoded({ extended: false, limit: '1mb' }));
-  app.use(cookieParser());
-  app.use(requestLogger);
-  app.use(errorHandler);
-
-  // Health check endpoint
-  app.get("/api/health", (_req, res) => {
-    res.set('Cache-Control', 'no-store').json({ status: "healthy" });
-  });
-}
-
-const requestLogger = (() => {
-  const logQueue: string[] = [];
-  let flushTimeout: NodeJS.Timeout | null = null;
-
-  const flushLogs = () => {
-    if (logQueue.length > 0) {
-      console.log(logQueue.join('\n'));
-      logQueue.length = 0;
-    }
-    flushTimeout = null;
-  };
-
-  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const start = Date.now();
-    const originalJson = res.json.bind(res);
-
-    res.json = (body: any) => {
-      res.locals.body = body;
-      return originalJson(body);
-    };
-
-    res.on("finish", () => {
-      if (req.path.startsWith("/api")) {
-        const duration = Date.now() - start;
-        let logMessage = `${req.method} ${req.path} ${res.statusCode} in ${duration}ms`;
-        if (res.locals.body) {
-          logMessage += ` :: ${JSON.stringify(res.locals.body)}`;
-        }
-
-        logQueue.push(logMessage);
-        if (!flushTimeout) {
-          flushTimeout = setTimeout(flushLogs, 1000);
-        }
-      }
-    });
-
-    next();
-  };
-})();
-
-function errorHandler(err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) {
-  console.error("Server error:", err);
-  res.status(500).json({
-    error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message
-  });
-}
-
-async function startServer() {
-  try {
-    log("Starting server initialization...");
-    await checkDatabaseConnection();
-    await cleanupPort();
-
-    const app = express();
-    app.set('trust proxy', 1);
-
-    registerRoutes(app);
-    await initializeAdmin().catch(console.error);
-
-    if (!process.env.TELEGRAM_BOT_TOKEN) {
-      throw new Error("TELEGRAM_BOT_TOKEN must be provided");
-    }
-    log("Initializing Telegram bot...");
-
-    const server = createServer(app);
-
-    if (app.get("env") === "development") {
-      await setupVite(app, server);
-    } else {
-      serveStatic(app);
-    }
-
-    setupMiddleware(app);
-
-    // Return a promise that resolves when the server is ready
-    return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        reject(new Error(`Server failed to start within 30 seconds on port ${PORT}`));
-      }, 30000);
-
-      server
-        .listen(PORT, "0.0.0.0")
-        .on("error", async (err: any) => {
-          clearTimeout(timeoutId);
-          if (err.code === "EADDRINUSE") {
-            log(`Port ${PORT} is in use, attempting to free it...`);
-            await cleanupPort();
-            server.listen(PORT, "0.0.0.0");
-          } else {
-            console.error(`Failed to start server: ${err.message}`);
-            reject(err);
-          }
-        })
-        .on("listening", () => {
-          clearTimeout(timeoutId);
-          // Send a ready signal that the workflow can detect - this must be first
-          console.log(`Server is ready and listening on port ${PORT}`);
-          console.log(`PORT_READY=${PORT}`);
-
-          log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-          log("Telegram bot started successfully");
-
-          // Add health check endpoint for workflow verification
-          app.get("/_health", (_req, res) => {
-            res.status(200).json({ status: "healthy", uptime: process.uptime() });
-          });
-
-          resolve(server);
-        });
-
-      const shutdown = async () => {
-        log("Shutting down gracefully...");
-        if (bot) {
-          await bot.stopPolling();
-        }
-        server.close(() => {
-          log("Server closed");
-          process.exit(0);
-        });
-      };
-
-      process.on("SIGTERM", shutdown);
-      process.on("SIGINT", shutdown);
-    });
-  } catch (error) {
-    console.error("Failed to start application:", error);
-    process.exit(1);
-  }
-}
-
-// Start the server and wait for it to be ready
+// Start the server
 startServer().then(() => {
   log("Server initialization completed");
-  // Additional signal for workflow port readiness - removed as PORT_READY is now logged earlier
 }).catch((error) => {
   console.error("Failed to start server:", error);
   process.exit(1);
