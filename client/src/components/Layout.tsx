@@ -613,55 +613,41 @@ export function Layout({ children }: { children: ReactNode }) {
 
           <div className={headerClasses.userSection}>
             <div className="flex items-center gap-2 md:gap-4">
-              {user && (
+              {user?.isAdmin && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-[#8A8B91] hover:text-white relative h-8 w-8 md:h-10 md:w-10 flex items-center justify-center"
+                      className="text-[#D7FF00] hover:text-white relative h-8 w-8 md:h-10 md:w-10 flex items-center justify-center group"
                     >
-                      <Bell className="h-4 w-4 md:h-5 md:w-5" />
+                      <div className="absolute inset-0 bg-[#D7FF00]/10 transform scale-0 group-hover:scale-100 transition-transform duration-300 rounded-lg" />
+                      <Settings className="h-4 w-4 md:h-5 md:w-5 relative z-10" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-80 bg-[#1A1B21] border-[#2A2B31]">
-                    <DropdownMenuLabel className="flex items-center justify-between">
-                      Notifications
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                          window.open("/notification-preferences", "_self")
-                        }
-                        className="h-8 w-8"
-                      >
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuLabel>
+                  <DropdownMenuContent className="w-56 bg-[#1A1B21] border-[#2A2B31]">
+                    <DropdownMenuLabel className="text-[#D7FF00]">Admin Panel</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <div className="max-h-[300px] overflow-y-auto">
-                      <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 text-white">
-                        <div className="text-sm font-medium">
-                          Monthly Wager Race Live!
-                        </div>
-                        <div className="text-xs text-[#8A8B91]">
-                          Compete for a share of the $2000 prize pool - Join now!
-                        </div>
-                        <div className="text-xs text-[#8A8B91]">
-                          Just now
-                        </div>
+                    <Link href="/admin/user-management">
+                      <DropdownMenuItem className="cursor-pointer text-white">
+                        User Management
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 text-white">
-                        <div className="text-sm font-medium">
-                          Welcome to GoatedVIPs!
-                        </div>
-                        <div className="text-xs text-[#8A8B91]">
-                          Your #1 source for casino rewards and competitions
-                        </div>
-                        <div className="text-xs text-[#8A8B91]">2 days ago</div>
+                    </Link>
+                    <Link href="/admin/wager-races">
+                      <DropdownMenuItem className="cursor-pointer text-white">
+                        Wager Races
                       </DropdownMenuItem>
-                    </div>
+                    </Link>
+                    <Link href="/admin/bonus-codes">
+                      <DropdownMenuItem className="cursor-pointer text-white">
+                        Bonus Codes
+                      </DropdownMenuItem>
+                    </Link>
+                    <Link href="/admin/notifications">
+                      <DropdownMenuItem className="cursor-pointer text-white">
+                        Notifications
+                      </DropdownMenuItem>
+                    </Link>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
