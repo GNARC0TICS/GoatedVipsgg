@@ -20,11 +20,54 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 
 const execAsync = promisify(exec);
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let templateCache: string | null = null;
+let server: any = null;
+let bot: any = null;
+let wss: WebSocketServer | null = null;
+
+// Function to check if a port is available
+async function isPortAvailable(port: number): Promise<boolean> {
+  try {
+    await execAsync(`lsof -i:${port}`);
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+async function waitForPort(port: number, timeout = 30000): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    if (await isPortAvailable(port)) {
+      return;
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  throw new Error(`Timeout waiting for port ${port} to become available`);
+}
+
+function setupWebSocket(server: any) {
+  wss = new WebSocketServer({ server, path: '/ws' });
+
+  wss.on('connection', (ws: WebSocket, req: any) => {
+    // Ignore Vite HMR connections
+    if (req.headers['sec-websocket-protocol']?.includes('vite-hmr')) {
+      return;
+    }
+
+    log("info", "New WebSocket connection established");
+
+    ws.on('error', (error) => {
+      log("error", `WebSocket error: ${error.message}`);
+    });
+  });
+
+  return wss;
+}
 
 function setupMiddleware(app: express.Application) {
   app.set('trust proxy', 1);
@@ -36,6 +79,7 @@ function setupMiddleware(app: express.Application) {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
   }));
+
   const PostgresSessionStore = connectPg(session);
   app.use(session({
     store: new PostgresSessionStore({
@@ -53,14 +97,128 @@ function setupMiddleware(app: express.Application) {
       maxAge: 30 * 24 * 60 * 60 * 1000,
     },
   }));
+
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
   app.use(cookieParser());
   app.use(requestLogger);
-  app.get("/api/health", (_req, res) => {
-    res.set('Cache-Control', 'no-store').json({ status: "healthy" });
-  });
 }
+
+const requestLogger = (() => {
+  const logQueue: string[] = [];
+  let flushTimeout: NodeJS.Timeout | null = null;
+
+  const flushLogs = () => {
+    if (logQueue.length > 0) {
+      console.log(logQueue.join('\n'));
+      logQueue.length = 0;
+    }
+    flushTimeout = null;
+  };
+
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const start = Date.now();
+    res.on("finish", () => {
+      if (req.path.startsWith("/api")) {
+        const duration = Date.now() - start;
+        logQueue.push(`${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
+        if (!flushTimeout) {
+          flushTimeout = setTimeout(flushLogs, 1000);
+        }
+      }
+    });
+    next();
+  };
+})();
+
+
+async function startServer() {
+  try {
+    log("info", "Starting server initialization...");
+
+    // Wait for port to be available
+    await waitForPort(PORT);
+
+    // Check database connection
+    await db.execute(sql`SELECT 1`);
+    log("info", "Database connection established");
+
+    const app = express();
+    setupMiddleware(app);
+    setupAuth(app);
+    registerRoutes(app);
+    await initializeAdmin().catch(console.error);
+
+    server = createServer(app);
+    setupWebSocket(server);
+
+    // Initialize Telegram bot
+    log("info", "Initializing Telegram bot...");
+    bot = await initializeBot();
+    if (!bot) {
+      log("error", "Failed to initialize Telegram bot - continuing without bot functionality");
+    } else {
+      log("info", "Telegram bot initialized successfully");
+    }
+
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
+
+    app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+      console.error("Server error:", err);
+      res.status(500).json({
+        error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message
+      });
+    });
+
+    return new Promise((resolve, reject) => {
+      server.listen(PORT, "0.0.0.0", () => {
+        log("info", `Server is ready at http://0.0.0.0:${PORT}`);
+        // Signal that the port is ready for Replit
+        console.log(`PORT_READY=${PORT}`);
+        resolve(server);
+      }).on("error", (err: Error) => {
+        log("error", `Server failed to start: ${err.message}`);
+        reject(err);
+      });
+
+      const shutdown = async () => {
+        log("info", "Shutting down gracefully...");
+        if (bot) {
+          try {
+            await bot.stopPolling();
+            log("info", "Telegram bot stopped");
+          } catch (error) {
+            log("error", "Error stopping Telegram bot");
+          }
+        }
+        if (wss) {
+          wss.close(() => {
+            log("info", "WebSocket server closed");
+          });
+        }
+        server.close(() => {
+          log("info", "HTTP server closed");
+          process.exit(0);
+        });
+      };
+
+      process.on("SIGTERM", shutdown);
+      process.on("SIGINT", shutdown);
+    });
+  } catch (error) {
+    log("error", `Failed to start application: ${error instanceof Error ? error.message : String(error)}`);
+    process.exit(1);
+  }
+}
+
+startServer().catch((error) => {
+  log("error", `Server startup error: ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(1);
+});
 
 function serveStatic(app: express.Application) {
   const distPath = path.resolve(__dirname, "public");
@@ -80,152 +238,6 @@ function serveStatic(app: express.Application) {
       }
     });
   });
-}
-
-async function checkDatabaseConnection() {
-  try {
-    await db.execute(sql`SELECT 1`);
-    log("Database connection established successfully");
-  } catch (error: any) {
-    log(`Database connection error: ${error.message}`);
-    throw error;
-  }
-}
-
-async function cleanupPort() {
-  try {
-    await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  } catch (error) {
-    log(`No existing process found on port ${PORT}`);
-  }
-}
-
-const requestLogger = (() => {
-  const logQueue: string[] = [];
-  let flushTimeout: NodeJS.Timeout | null = null;
-
-  const flushLogs = () => {
-    if (logQueue.length > 0) {
-      console.log(logQueue.join('\n'));
-      logQueue.length = 0;
-    }
-    flushTimeout = null;
-  };
-
-  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const start = Date.now();
-    const originalJson = res.json.bind(res);
-
-    res.json = (body: any) => {
-      res.locals.body = body;
-      return originalJson(body);
-    };
-
-    res.on("finish", () => {
-      if (req.path.startsWith("/api")) {
-        const duration = Date.now() - start;
-        let logMessage = `${req.method} ${req.path} ${res.statusCode} in ${duration}ms`;
-        if (res.locals.body) {
-          logMessage += ` :: ${JSON.stringify(res.locals.body)}`;
-        }
-
-        logQueue.push(logMessage);
-        if (!flushTimeout) {
-          flushTimeout = setTimeout(flushLogs, 1000);
-        }
-      }
-    });
-
-    next();
-  };
-})();
-
-function errorHandler(err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) {
-  console.error("Server error:", err);
-  res.status(500).json({
-    error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message
-  });
-}
-
-async function startServer() {
-  try {
-    log("Starting server initialization...");
-    await checkDatabaseConnection();
-    await cleanupPort();
-
-    const app = express();
-    setupMiddleware(app);
-    setupAuth(app);
-    registerRoutes(app);
-    await initializeAdmin().catch(console.error);
-
-    if (!process.env.TELEGRAM_BOT_TOKEN) {
-      throw new Error("TELEGRAM_BOT_TOKEN must be provided");
-    }
-    log("Initializing Telegram bot...");
-
-    const bot = await initializeBot();
-    if (!bot) {
-      throw new Error("Failed to initialize Telegram bot");
-    }
-
-    const server = createServer(app);
-
-    if (app.get("env") === "development") {
-      await setupVite(app, server);
-    } else {
-      serveStatic(app);
-    }
-
-    app.use(errorHandler);
-
-    return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        reject(new Error(`Server failed to start within 30 seconds on port ${PORT}`));
-      }, 30000);
-
-      server
-        .listen(PORT, "0.0.0.0")
-        .on("error", async (err: any) => {
-          clearTimeout(timeoutId);
-          if (err.code === "EADDRINUSE") {
-            log(`Port ${PORT} is in use, attempting to free it...`);
-            await cleanupPort();
-            server.listen(PORT, "0.0.0.0");
-          } else {
-            console.error(`Failed to start server: ${err.message}`);
-            reject(err);
-          }
-        })
-        .on("listening", () => {
-          clearTimeout(timeoutId);
-          console.log(`Server is ready and listening on port ${PORT}`);
-          console.log(`PORT_READY=${PORT}`);
-
-          log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-          log("Server initialization completed");
-          resolve(server);
-        });
-
-      const shutdown = async () => {
-        log("Shutting down gracefully...");
-        if (bot) {
-          await bot.stopPolling();
-        }
-        server.close(() => {
-          log("Server closed");
-          process.exit(0);
-        });
-      };
-
-      process.on("SIGTERM", shutdown);
-      process.on("SIGINT", shutdown);
-    });
-  } catch (error) {
-    console.error("Failed to start application:", error);
-    process.exit(1);
-  }
 }
 
 import { defineConfig } from "vite";
@@ -293,8 +305,3 @@ async function setupVite(app: express.Application, server: any) {
     }
   });
 }
-
-startServer().catch((error) => {
-  console.error("Failed to start server:", error);
-  process.exit(1);
-});

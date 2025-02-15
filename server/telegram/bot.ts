@@ -5,7 +5,7 @@ import { db } from "@db";
 import { telegramUsers, verificationRequests } from "@db/schema/telegram";
 import { users } from "@db/schema/users";
 import { eq } from "drizzle-orm";
-import { log, logError, logAction } from "./utils/logger";
+import { logError, logAction } from "./utils/logger";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import type { InlineQueryResult } from "node-telegram-bot-api";
 
@@ -17,7 +17,10 @@ const CUSTOM_EMOJIS = {
   admin: "👑",
   logo: "🎮",
   play: "🎲",
-  stats: "📊"
+  stats: "📊",
+  leaderboard: "🏆",
+  race: "🏃",
+  notifications: "🔔"
 };
 
 const rateLimiter = new RateLimiterMemory({
@@ -184,14 +187,18 @@ interface WagerRaceData {
   }[];
 }
 
+function log(level: "error" | "info" | "debug", message: string) {
+  console.log(`[${level.toUpperCase()}] ${message}`);
+}
+
 export async function initializeBot(): Promise<TelegramBot | null> {
   if (!process.env.TELEGRAM_BOT_TOKEN) {
-    log("❌ TELEGRAM_BOT_TOKEN is not set!");
+    log("error", "TELEGRAM_BOT_TOKEN is not set!");
     return null;
   }
 
   try {
-    log("Starting Telegram bot initialization...");
+    log("info", "Starting Telegram bot initialization...");
     const options: TelegramBot.ConstructorOptions = {
       filepath: false,
       polling: !process.env.WEBHOOK_URL
@@ -208,26 +215,20 @@ export async function initializeBot(): Promise<TelegramBot | null> {
 
     if (process.env.NODE_ENV === 'production' && process.env.WEBHOOK_URL) {
       await bot.setWebHook(`${process.env.WEBHOOK_URL}/bot${process.env.TELEGRAM_BOT_TOKEN}`);
-      log("Webhook set successfully");
+      log("info", "Webhook set successfully");
     }
 
-    log("Bot instance created, setting up event handlers...");
+    log("info", "Bot instance created, setting up event handlers...");
 
-    await Promise.all([
-      bot.setMyCommands(BOT_COMMANDS),
-      bot.setInlineMode(true)
-    ]);
+    await bot.setMyCommands(BOT_COMMANDS);
+
+    bot.on('inline_query', handleInlineQuery);
 
     registerEventHandlers(bot);
 
     const botInfo = await bot.getMe();
-    log(`✅ Bot initialized successfully as @${botInfo.username}`);
-    log("Bot settings:", {
-      username: botInfo.username,
-      supportsInline: botInfo.supports_inline_queries,
-      canJoinGroups: botInfo.can_join_groups,
-      pollingEnabled: !process.env.WEBHOOK_URL
-    });
+    log("info", `Bot initialized successfully as @${botInfo.username}`);
+    log("info", "Bot configuration completed");
 
     startHealthCheck();
     return bot;
@@ -248,15 +249,18 @@ function registerEventHandlers(bot: TelegramBot) {
     logError(error, 'Polling error');
   });
 
-  bot.onText(/\/start/, handleStart);
-  bot.onText(/\/help/, handleHelp);
-  bot.onText(/\/verify/, handleVerify);
-  bot.onText(/\/menu/, handleMenu);
-  bot.onText(/\/notifications/, handleNotifications);
-  bot.onText(/\/bonuscodes/, handleBonusCodes);
-  bot.onText(/\/pending/, handlePending);
-  bot.onText(/\/stats/, handleStats);
-  bot.onText(/\/status/, handleStatus);
+  bot.onText(/\/start/, (msg: TelegramBot.Message) => handleStart(msg));
+  bot.onText(/\/help/, (msg: TelegramBot.Message) => handleHelp(msg));
+  bot.onText(/\/verify (.+)/, (msg: TelegramBot.Message, match: RegExpExecArray | null) => {
+    handleVerify(msg, match ? match[1] : undefined);
+  });
+  bot.onText(/\/verify$/, (msg: TelegramBot.Message) => handleVerify(msg));
+  bot.onText(/\/menu/, (msg: TelegramBot.Message) => handleMenu(msg));
+  bot.onText(/\/notifications/, (msg: TelegramBot.Message) => handleNotifications(msg));
+  bot.onText(/\/bonuscodes/, (msg: TelegramBot.Message) => handleBonusCodes(msg));
+  bot.onText(/\/pending/, (msg: TelegramBot.Message) => handlePending(msg));
+  bot.onText(/\/stats/, (msg: TelegramBot.Message) => handleStats(msg));
+  bot.onText(/\/status/, (msg: TelegramBot.Message) => handleStatus(msg));
 
   bot.on('callback_query', async (query) => {
     if (!query.message || !query.from.id) return;
@@ -305,24 +309,24 @@ async function handleInlineQuery(query: TelegramBot.InlineQuery) {
 
   try {
     const searchTerm = query.query.toLowerCase();
-    log(`Processing inline query: "${searchTerm}" from user: ${query.from.username || query.from.id}`);
+    log("info",`Processing inline query: "${searchTerm}" from user: ${query.from.username || query.from.id}`);
 
     const results: InlineQueryResult[] = [];
 
     const raceData = await fetchCurrentRaceData();
-    log('Fetched race data:', {
+    log("info",'Fetched race data:', {
       success: Boolean(raceData),
       hasParticipants: raceData ? Boolean(raceData.participants.length) : false,
       participantsCount: raceData?.participants.length ?? 0
     });
 
     if (raceData && (searchTerm === '' || 'leaderboard'.includes(searchTerm))) {
-      log('Adding leaderboard result');
+      log("info",'Adding leaderboard result');
       results.push(formatLeaderboardResult(raceData));
     }
 
     if ('daily'.includes(searchTerm) || 'today'.includes(searchTerm)) {
-      log('Adding daily stats result');
+      log("info",'Adding daily stats result');
       results.push(formatDailyStatsResult(raceData));
     }
 
@@ -333,11 +337,11 @@ async function handleInlineQuery(query: TelegramBot.InlineQuery) {
       .limit(1);
 
     if (user[0]?.isVerified && ('mystats'.includes(searchTerm) || 'stats'.includes(searchTerm))) {
-      log('Adding personal stats result');
+      log("info",'Adding personal stats result');
       results.push(formatPersonalStatsResult(user[0]));
     }
 
-    log(`Sending ${results.length} inline results`);
+    log("info",`Sending ${results.length} inline results`);
     await botInstance.answerInlineQuery(query.id, results, {
       cache_time: 30,
       is_personal: true
@@ -357,17 +361,17 @@ async function handleInlineQuery(query: TelegramBot.InlineQuery) {
 
 async function fetchCurrentRaceData(): Promise<WagerRaceData | null> {
   try {
-    log('Fetching current race data from internal endpoint...');
+    log("info",'Fetching current race data from internal endpoint...');
     const apiBaseUrl = process.env.NODE_ENV === 'production'
       ? process.env.INTERNAL_API_URL || 'http://0.0.0.0:5000'
       : 'http://0.0.0.0:5000';
 
     const endpoint = `${apiBaseUrl}/api/wager-races/current`;
-    log(`Fetching from endpoint: ${endpoint}`);
+    log("info",`Fetching from endpoint: ${endpoint}`);
 
     const response = await fetch(endpoint);
 
-    log('Internal API Response:', {
+    log("info",'Internal API Response:', {
       status: response.status,
       ok: response.ok,
       statusText: response.statusText
@@ -378,7 +382,7 @@ async function fetchCurrentRaceData(): Promise<WagerRaceData | null> {
     }
 
     const data = await response.json();
-    log('Race data received:', {
+    log("info",'Race data received:', {
       id: data.id,
       status: data.status,
       participantsCount: data.participants?.length ?? 0
@@ -395,7 +399,7 @@ async function fetchCurrentRaceData(): Promise<WagerRaceData | null> {
         body: JSON.stringify({
           text: `❌ Race data fetch error: ${error.message}`
         })
-      }).catch(err => log(`Slack notification failed: ${err.message}`, 'error'));
+      }).catch(err => log("error",`Slack notification failed: ${err.message}`));
     }
     return null;
   }
@@ -645,7 +649,7 @@ async function handlePending(msg: TelegramBot.Message) {
     await safeSendMessage(msg.chat.id, MESSAGES.pendingRequests(pending), { parse_mode: "Markdown" });
   } catch (error) {
     if (error instanceof Error) {
-      log(`Error listing pending requests: ${error.message}`);
+      log("error",`Error listing pending requests: ${error.message}`);
       await safeSendMessage(msg.chat.id, "❌ Error fetching pending requests.");
     }
   }
@@ -694,7 +698,7 @@ async function handleApproval(request: any, adminId: string, query: TelegramBot.
     });
   } catch (error) {
     if (error instanceof Error) {
-      log(`Error approving user: ${error.message}`);
+      log("error",`Error approving user: ${error.message}`);
       await botInstance.answerCallbackQuery(query.id, {
         text: "Error approving user",
         show_alert: true
@@ -735,7 +739,7 @@ async function handleRejection(request: any, adminId: string, query: TelegramBot
     });
   } catch (error) {
     if (error instanceof Error) {
-      log(`Error rejecting user: ${error.message}`);
+      log("error",`Error rejecting user: ${error.message}`);
       await botInstance.answerCallbackQuery(query.id, {
         text: "Error rejecting user",
         show_alert: true
@@ -771,7 +775,7 @@ async function handleNotifications(msg: TelegramBot.Message) {
     );
   } catch (error) {
     if (error instanceof Error) {
-      log(`Error toggling notifications: ${error.message}`);
+      log("error",`Error toggling notifications: ${error.message}`);
       await safeSendMessage(msg.chat.id, "❌ Error updating notification preferences.");
     }
   }
@@ -798,7 +802,7 @@ async function handleBonusCodes(msg: TelegramBot.Message) {
     );
   } catch (error) {
     if (error instanceof Error) {
-      log(`Error fetching bonus codes: ${error.message}`);
+      log("error",`Error fetching bonus codes: ${error.message}`);
       await safeSendMessage(msg.chat.id, "❌ Error fetching bonus codes.");
     }
   }
@@ -831,7 +835,7 @@ async function handleStats(msg: TelegramBot.Message) {
     await safeSendMessage(msg.chat.id, MESSAGES.stats(verifiedUsers.length, pendingRequests.length), { parse_mode: "Markdown" });
   } catch (error) {
     if (error instanceof Error) {
-      log(`Error fetching stats: ${error.message}`);
+      log("error",`Error fetching stats: ${error.message}`);
       await safeSendMessage(msg.chat.id, "❌ Error fetching platform statistics.");
     }
   }
@@ -855,7 +859,7 @@ async function checkIsAdmin(telegramId?: string): Promise<boolean> {
     return !!admin[0]?.isAdmin;
   } catch (error) {
     if (error instanceof Error) {
-      log(`Error checking admin status: ${error.message}`);
+      log("error",`Error checking admin status: ${error.message}`);
     }
     return false;
   }
@@ -863,7 +867,7 @@ async function checkIsAdmin(telegramId?: string): Promise<boolean> {
 
 async function handleCallbackQuery(query: TelegramBot.CallbackQuery) {
   if (!query.message || !query.from.id) {
-    log("Received callback query without message");
+    log("info","Received callback query without message");
     return;
   }
 
@@ -957,15 +961,16 @@ async function handleStatus(msg: TelegramBot.Message) {
       .where(eq(telegramUsers.telegramId, msg.from.id.toString()))
       .limit(1);
 
+
     if (!user[0]) {
-      return safeSendMessage(msg.chat.id, "❌ Your account is not verified. Use /verify to link your Goated.com account.");
+      return safeSendMessage(msg.chat.id, "❌ Your accountis not verified. Use /verify to link your Goated.com account.");
     }
 
     await safeSendMessage(msg.chat.id, MESSAGES.status(user[0]), { parse_mode: "Markdown" });
   } catch (error) {
     if (error instanceof Error) {
-      log(`Error in status command: ${error.message}`);
-      await safeSendMessage(msg.chat.id, "❌ Error checking status. Please try again later.");
+      log("error",`Error in status command: ${error.message}`);
+      await safeSendMessage(msg.chat.id, "❌ Error checking status. Please tryagain later.");
     }
   }
 }
@@ -977,7 +982,7 @@ async function safeSendMessage(chatId: number, text: string, options: any = {}) 
     await botInstance.sendMessage(chatId, text, options);
   } catch (error) {
     if (error instanceof Error) {
-      log(`Failed to send message to ${chatId}: ${error.message}`);
+      log("error",`Failed to send message to ${chatId}: ${error.message}`);
     }
   }
 }
@@ -992,28 +997,37 @@ function startHealthCheck() {
 
     try {
       await botInstance.getMe();
-      log("✅ Bot health check passed");
+      log("info", "Bot health check passed");
     } catch (error) {
       if (error instanceof Error) {
-        log(`❌ Bot health check failed: ${error.message}`);
+        log("error", `Bot health check failed: ${error.message}`);
       }
-      await initializeBot();
     }
   }, 60000);
 }
 
+async function handleMenu(msg: TelegramBot.Message) {
+  if (!botInstance) return;
+
+  try {
+    await safeSendMessage(msg.chat.id, MESSAGES.menu, {
+      parse_mode: "Markdown",
+      disable_web_page_preview: true
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      log("error", `Error in menu command: ${error.message}`);
+      await safeSendMessage(msg.chat.id, "❌ Error showing menu. Please try again later.");
+    }
+  }
+}
+
 export {
-  handleMessage,
-  handleStart,
-  handleHelp,
-  handleVerify,
+  botInstance,
   handleMenu,
-  handleNotifications,
-  handleBonusCodes,
-  handlePending,
-  handleStats,
-  handleStatus,
+  handleInlineQuery,
+  handleMessage,
   handleCallbackQuery,
-  initializeBot,
-  botInstance
+  safeSendMessage,
+  initializeBot as default
 };
