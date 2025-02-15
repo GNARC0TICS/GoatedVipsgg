@@ -19,7 +19,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  emailVerificationToken: text(),
+  emailVerificationToken: text("emailVerificationToken"),
   emailVerified: boolean().default(false),
 });
 
