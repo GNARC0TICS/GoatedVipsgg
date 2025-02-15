@@ -48,8 +48,21 @@ interface UserStats {
   }>;
 }
 
-export default function UserProfile({ userId }: { userId: string }) {
+const getTierFromWager = (wager: number): string => {
+  if (wager >= 1000000) return 'diamond';
+  if (wager >= 500000) return 'platinum';
+  if (wager >= 100000) return 'gold';
+  if (wager >= 50000) return 'silver';
+  return 'bronze';
+};
+
+const getTierIcon = (tier: string): string => {
+  return `/images/tiers/${tier}.svg`;
+};
+
+export default function UserProfile({ params }: { params: { id: string } }) {
   const [, setLocation] = useLocation();
+  const userId = params.id;
 
   const { data: user, isLoading } = useQuery<UserStats>({
     queryKey: [`/api/users/${userId}`],

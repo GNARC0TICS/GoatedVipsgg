@@ -4,17 +4,18 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider, useAuth, requiresAuth } from "@/lib/auth";
+import { AuthProvider } from "@/hooks/use-auth";
 import { AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "react-error-boundary";
 import { PreLoader } from "@/components/PreLoader";
 import { Layout } from "@/components/Layout";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { Redirect } from "@/lib/navigation";
+import { ProtectedRoute } from "@/lib/protected-route";
 
 // Import all pages
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
+import AuthPage from "@/pages/auth-page";
 import VipTransfer from "@/pages/VipTransfer";
 import ProvablyFair from "@/pages/ProvablyFair";
 import WagerRaces from "@/pages/WagerRaces";
@@ -60,112 +61,6 @@ function ErrorFallback({ error }: { error: Error }) {
   );
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
-  const [location] = useLocation();
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  if (!user && requiresAuth(location)) {
-    return <Redirect to="/" />;
-  }
-
-  return <>{children}</>;
-}
-
-function Router() {
-  return (
-    <Layout>
-      <AnimatePresence mode="wait">
-        <ErrorBoundary FallbackComponent={ErrorFallback}>
-          <Switch>
-            {/* Public Routes */}
-            <Route path="/" component={Home} />
-            <Route path="/wager-races" component={WagerRaces} />
-            <Route path="/leaderboard" component={Leaderboard} />
-            <Route path="/tips-and-strategies" component={TipsAndStrategies} />
-            <Route path="/promotions" component={Promotions} />
-            <Route path="/help" component={Help} />
-            <Route path="/provably-fair" component={ProvablyFair} />
-            <Route path="/telegram" component={Telegram} />
-            <Route path="/how-it-works" component={HowItWorks} />
-            <Route path="/goated-token" component={GoatedToken} />
-            <Route path="/faq" component={FAQ} />
-            <Route path="/vip-program" component={VipProgram} />
-            <Route path="/challenges" component={Challenges} />
-
-            {/* Protected Routes */}
-            <Route path="/bonus-codes">
-              <ProtectedRoute>
-                <BonusCodes />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/notification-preferences">
-              <ProtectedRoute>
-                <NotificationPreferences />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/vip-transfer">
-              <ProtectedRoute>
-                <VipTransfer />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/support">
-              <ProtectedRoute>
-                <Support />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/user/:id">
-              <ProtectedRoute>
-                {(params: { id: string }) => (
-                  <UserProfile userId={params.id} />
-                )}
-              </ProtectedRoute>
-            </Route>
-            <Route path="/wheel-challenge">
-              <ProtectedRoute>
-                <WheelChallenge />
-              </ProtectedRoute>
-            </Route>
-
-            {/* Admin Routes */}
-            <Route path="/admin/wager-races">
-              <ProtectedRoute>
-                <WagerRaceManagement />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/admin/users">
-              <ProtectedRoute>
-                <UserManagement />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/admin/notifications">
-              <ProtectedRoute>
-                <NotificationManagement />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/admin/bonus-codes">
-              <ProtectedRoute>
-                <BonusCodeManagement />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/admin/support">
-              <ProtectedRoute>
-                <SupportManagement />
-              </ProtectedRoute>
-            </Route>
-
-            {/* 404 Route */}
-            <Route component={NotFound} />
-          </Switch>
-        </ErrorBoundary>
-      </AnimatePresence>
-    </Layout>
-  );
-}
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -186,7 +81,6 @@ function AppContent() {
   useEffect(() => {
     if (!isInitialLoad) return;
 
-    // Wait for the DOM to be ready before setting hasVisited
     const timeout = setTimeout(() => {
       sessionStorage.setItem('hasVisited', 'true');
       setIsInitialLoad(false);
@@ -202,7 +96,45 @@ function AppContent() {
       ) : (
         <Suspense fallback={<LoadingSpinner />}>
           <TooltipProvider>
-            <Router />
+            <Layout>
+              <ErrorBoundary FallbackComponent={ErrorFallback}>
+                <Switch>
+                  {/* Public Routes */}
+                  <Route path="/" component={Home} />
+                  <Route path="/auth" component={AuthPage} />
+                  <Route path="/wager-races" component={WagerRaces} />
+                  <Route path="/leaderboard" component={Leaderboard} />
+                  <Route path="/tips-and-strategies" component={TipsAndStrategies} />
+                  <Route path="/promotions" component={Promotions} />
+                  <Route path="/help" component={Help} />
+                  <Route path="/provably-fair" component={ProvablyFair} />
+                  <Route path="/telegram" component={Telegram} />
+                  <Route path="/how-it-works" component={HowItWorks} />
+                  <Route path="/goated-token" component={GoatedToken} />
+                  <Route path="/faq" component={FAQ} />
+                  <Route path="/vip-program" component={VipProgram} />
+                  <Route path="/challenges" component={Challenges} />
+
+                  {/* Protected Routes */}
+                  <ProtectedRoute path="/bonus-codes" component={BonusCodes} />
+                  <ProtectedRoute path="/notification-preferences" component={NotificationPreferences} />
+                  <ProtectedRoute path="/vip-transfer" component={VipTransfer} />
+                  <ProtectedRoute path="/support" component={Support} />
+                  <ProtectedRoute path="/wheel-challenge" component={WheelChallenge} />
+                  <ProtectedRoute path="/user/:id" component={UserProfile} />
+
+                  {/* Admin Routes */}
+                  <ProtectedRoute path="/admin/wager-races" component={WagerRaceManagement} />
+                  <ProtectedRoute path="/admin/users" component={UserManagement} />
+                  <ProtectedRoute path="/admin/notifications" component={NotificationManagement} />
+                  <ProtectedRoute path="/admin/bonus-codes" component={BonusCodeManagement} />
+                  <ProtectedRoute path="/admin/support" component={SupportManagement} />
+
+                  {/* 404 Route */}
+                  <Route component={NotFound} />
+                </Switch>
+              </ErrorBoundary>
+            </Layout>
             <Toaster />
           </TooltipProvider>
         </Suspense>
