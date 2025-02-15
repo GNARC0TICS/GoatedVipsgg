@@ -7,20 +7,18 @@ import { users } from "@db/schema/users";
 import { eq } from "drizzle-orm";
 import { logError, logAction } from "./utils/logger";
 import { RateLimiterMemory } from "rate-limiter-flexible";
-import type { InlineQueryResult } from "node-telegram-bot-api";
 
+// Custom emojis for consistent branding
 const CUSTOM_EMOJIS = {
   error: "❌",
   success: "✅",
-  mvp: "🌟",
-  live: "🔴",
-  admin: "👑",
-  logo: "🎮",
-  play: "🎲",
+  vip: "👑",
   stats: "📊",
-  leaderboard: "🏆",
   race: "🏃",
-  notifications: "🔔"
+  play: "🎮",
+  bonus: "🎁",
+  challenge: "🎯",
+  verify: "✨"
 };
 
 const rateLimiter = new RateLimiterMemory({
@@ -28,164 +26,165 @@ const rateLimiter = new RateLimiterMemory({
   duration: 60
 });
 
+// Updated command list
 const BOT_COMMANDS = [
-  { command: '/start', description: 'Start the bot and see welcome message' },
+  { command: '/start', description: 'Start bot and see welcome message' },
+  { command: '/verify', description: 'Request account verification' },
+  { command: '/stats', description: 'View your gaming statistics' },
+  { command: '/race', description: 'View your current race position' },
+  { command: '/leaderboard', description: 'View top 10 monthly race standings' },
+  { command: '/bonuscodes', description: 'Get latest bonus codes' },
+  { command: '/challenges', description: 'View active challenges' },
+  { command: '/website', description: 'Get platform website link' },
+  { command: '/play', description: 'Get game link with affiliate code' },
   { command: '/help', description: 'Show available commands' },
-  { command: '/verify', description: 'Link your Goated account' },
-  { command: '/menu', description: 'Show main menu with quick links' },
-  { command: '/status', description: 'Check your verification status' },
-  { command: '/bonuscodes', description: 'Get latest bonus codes (verified users)' },
-  { command: '/notifications', description: 'Toggle notifications' },
-  { command: '/pending', description: 'View pending verification requests (admins)' },
-  { command: '/stats', description: 'View platform statistics (admins)' }
+  // Admin commands - only visible to admins
+  { command: '/pending', description: 'View verification requests' },
+  { command: '/broadcast', description: 'Send announcement to all users' },
+  { command: '/approve', description: 'Approve a verification request' },
+  { command: '/reject', description: 'Reject a verification request' }
 ];
 
+// Updated message templates
 const MESSAGES = {
   welcome: `
-${CUSTOM_EMOJIS.logo} *Welcome to the VIP Bot!*
+${CUSTOM_EMOJIS.vip} *Welcome to GoatedVIPs Bot*
 
-Your gateway to exclusive rewards and VIP benefits!
+Your gateway to exclusive VIP benefits and rewards!
 
-🌟 *VIP Features:*
-• ${CUSTOM_EMOJIS.stats} Real-time stats tracking
-• ${CUSTOM_EMOJIS.leaderboard} Exclusive tournaments
-• ${CUSTOM_EMOJIS.play} Special promotions
-• ${CUSTOM_EMOJIS.mvp} Priority support
-• ${CUSTOM_EMOJIS.race} Enhanced rewards
+${CUSTOM_EMOJIS.verify} Use /verify to link your account
+${CUSTOM_EMOJIS.stats} Check /stats for your gaming stats
+${CUSTOM_EMOJIS.race} View /race for leaderboard
+${CUSTOM_EMOJIS.bonus} Get /bonuscodes for latest bonuses
+${CUSTOM_EMOJIS.challenge} Join /challenges for extra rewards
 
-🎮 *Available Commands:*
-• Type /verify to link your account
-• Use /menu to see quick links
-• Check /status for your VIP level
-
-${CUSTOM_EMOJIS.live} *Join the Community:*
-• Daily races and challenges
-• VIP-only events
-• Special member perks
-
-Ready to join the elite? Use /verify to get started!
-`.trim(),
-
-  menu: `
-${CUSTOM_EMOJIS.logo} *Quick Links*
-
-${CUSTOM_EMOJIS.play} *Gaming:*
-• [Play Now](https://www.Goated.com/play)
-• [Tournaments](https://www.Goated.com/tournaments)
-• [Challenges](https://www.Goated.com/challenges)
-
-${CUSTOM_EMOJIS.stats} *Account:*
-• [VIP Status](https://www.Goated.com/vip)
-• [Rewards](https://www.Goated.com/rewards)
-• [Profile](https://www.Goated.com/profile)
-
-${CUSTOM_EMOJIS.leaderboard} *Community:*
-• [Leaderboard](https://www.Goated.com/leaderboard)
-• [Race Stats](https://www.Goated.com/races)
-• [Rankings](https://www.Goated.com/rankings)
+Type /help for all available commands
 `.trim(),
 
   help: (isAdmin: boolean) => `
-${CUSTOM_EMOJIS.logo} *VIP Bot Commands*
+${CUSTOM_EMOJIS.vip} *Available Commands*
 
-📱 *General Commands:*
-• /start - Get started
-• /help - Show this menu
+📱 *User Commands:*
 • /verify - Link your account
-• /menu - Quick links
-• /status - Check VIP status
-• /notifications - Toggle alerts
+• /stats - View your statistics
+• /race - Race leaderboard
+• /leaderboard - Monthly Leaderboard
 • /bonuscodes - Get bonus codes
+• /challenges - View challenges
+• /website - Platform website
+• /play - Game with affiliate
 
 ${isAdmin ? `
-${CUSTOM_EMOJIS.admin} *Admin Commands:*
-• /pending - View verifications
-• /stats - Platform statistics
+${CUSTOM_EMOJIS.vip} *Admin Commands:*
+• /pending - View verification requests
+• /approve <username> - Approve user
+• /reject <username> - Reject user
 • /broadcast - Send announcements` : ''}
 
 Need help? Contact @xGoombas
 `.trim(),
 
   verifyInstructions: `
-${CUSTOM_EMOJIS.logo} *Account Verification*
+${CUSTOM_EMOJIS.verify} *Account Verification*
 
-To verify your account:
+To request verification:
 1️⃣ Type: /verify YourUsername
 2️⃣ Example: /verify JohnDoe123
 
-*Note:* Make sure to use your exact username
+An admin will review your request shortly.
 `.trim(),
 
   verificationSubmitted: `
-${CUSTOM_EMOJIS.success} *Verification Request Submitted!*
+${CUSTOM_EMOJIS.success} *Verification Request Submitted*
 
-Your request has been received and will be processed shortly.
+Your request will be reviewed by an admin.
 You'll receive a notification once verified.
 
-${CUSTOM_EMOJIS.mvp} While waiting:
-• Check out /help for available commands
-• Join our VIP community: @GoatedVIP
-• Use /menu to explore features
+While waiting:
+• Check /help for available commands
+• Use /website to visit our platform
 `.trim(),
 
-  status: (user: any) => `
-${CUSTOM_EMOJIS.success} *Account Status:*
-• Telegram: @${user.telegramUsername}
-• User ID: ${user.userId}
-• Verified: ${user.isVerified ? `${CUSTOM_EMOJIS.success}` : `${CUSTOM_EMOJIS.error}`}
+  stats: (user: any) => `
+${CUSTOM_EMOJIS.stats} *Your Stats*
+
+• Username: ${user.username}
+• Verified: ${user.isVerified ? CUSTOM_EMOJIS.success : CUSTOM_EMOJIS.error}
 • Notifications: ${user.notificationsEnabled ? '🔔' : '🔕'}
-${user.verifiedAt ? `• Verified On: ${new Date(user.verifiedAt).toLocaleDateString()}` : ''}
+${user.verifiedAt ? `• Member since: ${new Date(user.verifiedAt).toLocaleDateString()}` : ''}
 `.trim(),
 
-  bonusCodes: `${CUSTOM_EMOJIS.mvp} *Latest Bonus Codes:*\n\nVIPBOOST - New user promotion\n\nMore codes coming soon!`,
+  website: `
+${CUSTOM_EMOJIS.vip} *Official Website*
 
-  pendingRequests: (requests: any[]) => requests.map((request: any) =>
-    `${CUSTOM_EMOJIS.admin} Verification Request:\nTelegram: @${request.telegramUsername}\nID: ${request.userId}`
-  ).join('\n\n'),
+Visit our platform: https://goatedvips.gg
+`.trim(),
 
-  stats: (verifiedUsers: number, pendingRequests: number) => `
-${CUSTOM_EMOJIS.stats} *Platform Statistics:*
+  play: `
+${CUSTOM_EMOJIS.play} *Play Now*
 
-${CUSTOM_EMOJIS.mvp} Verified Users: ${verifiedUsers}
-${CUSTOM_EMOJIS.play} Pending Requests: ${pendingRequests}
-`.trim()
+Join through our link:
+https://www.Goated.com/r/GOATEDVIPS
+`.trim(),
+
+  race: (user: any, participants: any[]) => {
+    const userPosition = participants.findIndex(p => p.uid === user.userId) + 1;
+    const userStats = participants.find(p => p.uid === user.userId);
+
+    return `
+${CUSTOM_EMOJIS.race} *Your Monthly Race Status*
+
+Position: #${userPosition || 'Not participating'}
+${userStats ? `Wagered: $${userStats.wagered.toFixed(2)}` : 'Start playing to join the race!'}
+
+🏆 Prize Pool: $500
+⏰ Updated: ${new Date().toLocaleString()}
+`.trim();
+  },
+
+  leaderboard: (participants: any[]) => {
+    const top10 = participants.slice(0, 10);
+    return `
+${CUSTOM_EMOJIS.vip} *Monthly Race Leaderboard*
+
+${top10.map((p, i) => `${i + 1}. ${p.name}: $${p.wagered.toFixed(2)}`).join('\n')}
+
+🏆 Prize Pool: $500
+⏰ Updated: ${new Date().toLocaleString()}
+`.trim();
+  },
+  pendingRequests: (requests: any[]) => {
+    if (requests.length === 0) {
+      return `${CUSTOM_EMOJIS.success} No pending verification requests.`;
+    }
+
+    return `${CUSTOM_EMOJIS.verify} *Pending Verification Requests*\n\n${
+      requests.map((req, index) =>
+        `${index + 1}. @${req.telegramUsername}\n` +
+        `   • User ID: ${req.userId}\n` +
+        `   • Requested: ${new Date(req.createdAt).toLocaleString()}\n` +
+        `   • Status: ${req.status}\n` +
+        `   • Commands: /approve ${req.telegramUsername} or /reject ${req.telegramUsername}\n`
+      ).join('\n')
+    }`;
+  },
+
+  broadcastPrompt: `
+${CUSTOM_EMOJIS.vip} *Send Broadcast Message*
+
+To send a message to all verified users:
+1. Use: /broadcast Your Message
+2. Example: /broadcast New bonus codes available!
+
+Your message will be sent to all verified users.
+`.trim(),
+
+  broadcastSent: (count: number) => `
+${CUSTOM_EMOJIS.success} Broadcast sent successfully to ${count} users.
+`.trim(),
 };
 
-function createMainMenu(isVerified: boolean = false) {
-  return {
-    inline_keyboard: [
-      [
-        { text: isVerified ? `${CUSTOM_EMOJIS.stats} My Status` : `${CUSTOM_EMOJIS.logo} Verify Account`,
-          callback_data: isVerified ? "status" : "verify" }
-      ],
-      [
-        { text: `${CUSTOM_EMOJIS.mvp} Bonus Codes`, callback_data: "bonuscodes" },
-        { text: `${CUSTOM_EMOJIS.play} Quick Links`, callback_data: "menu" }
-      ],
-      [
-        { text: "🔔 Notifications", callback_data: "notifications" },
-        { text: "❓ Help", callback_data: "help" }
-      ]
-    ]
-  };
-}
-
 let botInstance: TelegramBot | null = null;
-let healthCheckInterval: NodeJS.Timeout | null = null;
-
-interface WagerRaceData {
-  id: string;
-  status: 'live' | 'completed';
-  startDate: string;
-  endDate: string;
-  prizePool: number;
-  participants: {
-    uid: string;
-    name: string;
-    wagered: number;
-    position: number;
-  }[];
-}
 
 function log(level: "error" | "info" | "debug", message: string) {
   console.log(`[${level.toUpperCase()}] ${message}`);
@@ -198,9 +197,7 @@ export async function initializeBot(): Promise<TelegramBot | null> {
   }
 
   try {
-    log("info", "Starting Telegram bot initialization...");
     const options: TelegramBot.ConstructorOptions = {
-      filepath: false,
       polling: !process.env.WEBHOOK_URL
     };
 
@@ -218,344 +215,74 @@ export async function initializeBot(): Promise<TelegramBot | null> {
       log("info", "Webhook set successfully");
     }
 
-    log("info", "Bot instance created, setting up event handlers...");
-
     await bot.setMyCommands(BOT_COMMANDS);
-
-    bot.on('inline_query', handleInlineQuery);
-
     registerEventHandlers(bot);
 
     const botInfo = await bot.getMe();
     log("info", `Bot initialized successfully as @${botInfo.username}`);
-    log("info", "Bot configuration completed");
 
-    startHealthCheck();
     return bot;
   } catch (error) {
-    if (error instanceof Error) {
-      logError(error, 'Bot initialization');
-    }
+    log("error", `Bot initialization error: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
 }
 
 function registerEventHandlers(bot: TelegramBot) {
-  bot.on('error', (error: Error) => {
-    logError(error, 'Bot error');
-  });
+  bot.onText(/\/start/, handleStart);
+  bot.onText(/\/help/, handleHelp);
+  bot.onText(/\/verify (.+)/, (msg, match) => handleVerify(msg, match ? match[1] : undefined));
+  bot.onText(/\/verify$/, (msg) => handleVerify(msg));
+  bot.onText(/\/stats/, handleStats);
+  bot.onText(/\/race/, handleRace);
+  bot.onText(/\/bonuscodes/, handleBonusCodes);
+  bot.onText(/\/challenges/, handleChallenges);
+  bot.onText(/\/website/, handleWebsite);
+  bot.onText(/\/play/, handlePlay);
+  bot.onText(/\/pending/, handlePending);
+  bot.onText(/\/leaderboard/, handleLeaderboard);
 
-  bot.on('polling_error', (error: Error) => {
-    logError(error, 'Polling error');
-  });
-
-  bot.onText(/\/start/, (msg: TelegramBot.Message) => handleStart(msg));
-  bot.onText(/\/help/, (msg: TelegramBot.Message) => handleHelp(msg));
-  bot.onText(/\/verify (.+)/, (msg: TelegramBot.Message, match: RegExpExecArray | null) => {
-    handleVerify(msg, match ? match[1] : undefined);
-  });
-  bot.onText(/\/verify$/, (msg: TelegramBot.Message) => handleVerify(msg));
-  bot.onText(/\/menu/, (msg: TelegramBot.Message) => handleMenu(msg));
-  bot.onText(/\/notifications/, (msg: TelegramBot.Message) => handleNotifications(msg));
-  bot.onText(/\/bonuscodes/, (msg: TelegramBot.Message) => handleBonusCodes(msg));
-  bot.onText(/\/pending/, (msg: TelegramBot.Message) => handlePending(msg));
-  bot.onText(/\/stats/, (msg: TelegramBot.Message) => handleStats(msg));
-  bot.onText(/\/status/, (msg: TelegramBot.Message) => handleStatus(msg));
-
-  bot.on('callback_query', async (query) => {
-    if (!query.message || !query.from.id) return;
-
-    try {
-      await rateLimiter.consume(query.from.id.toString());
-      await handleCallbackQuery(query);
-    } catch (error) {
-      if (error instanceof Error) {
-        logError(error, 'Callback query handler');
-      }
-      await bot.answerCallbackQuery(query.id, {
-        text: "⚠️ Please wait before making more requests",
-        show_alert: true
-      });
-    }
-  });
-
-  bot.on('inline_query', async (query) => {
-    await handleInlineQuery(query);
-  });
+  // Admin commands
+  bot.onText(/\/broadcast$/, handleBroadcastPrompt);
+  bot.onText(/\/broadcast (.+)/, (msg, match) => handleBroadcast(msg, match ? match[1] : undefined));
+  bot.onText(/\/approve (.+)/, (msg, match) => handleApprove(msg, match ? match[1] : undefined));
+  bot.onText(/\/reject (.+)/, (msg, match) => handleReject(msg, match ? match[1] : undefined));
 
   bot.on("message", async (msg) => {
-    if (msg.sticker) {
-      console.log(`Received sticker. File ID: ${msg.sticker.file_id}`);
-      await safeSendMessage(msg.chat.id, `Sticker File ID: ${msg.sticker.file_id}`);
-      return;
-    }
-
     if (!msg.text || !msg.from?.id) return;
-
     try {
       await rateLimiter.consume(msg.from.id.toString());
-      await handleMessage(msg);
-    } catch (error) {
-      if (error instanceof Error) {
-        logError(error, 'Message handler');
-      }
+    } catch {
       await safeSendMessage(msg.chat.id, "⚠️ Please wait before sending more commands.");
     }
   });
 }
 
-async function handleInlineQuery(query: TelegramBot.InlineQuery) {
-  if (!botInstance) return;
-
-  try {
-    const searchTerm = query.query.toLowerCase();
-    log("info",`Processing inline query: "${searchTerm}" from user: ${query.from.username || query.from.id}`);
-
-    const results: InlineQueryResult[] = [];
-
-    const raceData = await fetchCurrentRaceData();
-    log("info",'Fetched race data:', {
-      success: Boolean(raceData),
-      hasParticipants: raceData ? Boolean(raceData.participants.length) : false,
-      participantsCount: raceData?.participants.length ?? 0
-    });
-
-    if (raceData && (searchTerm === '' || 'leaderboard'.includes(searchTerm))) {
-      log("info",'Adding leaderboard result');
-      results.push(formatLeaderboardResult(raceData));
-    }
-
-    if ('daily'.includes(searchTerm) || 'today'.includes(searchTerm)) {
-      log("info",'Adding daily stats result');
-      results.push(formatDailyStatsResult(raceData));
-    }
-
-    const user = await db
-      .select()
-      .from(telegramUsers)
-      .where(eq(telegramUsers.telegramId, query.from.id.toString()))
-      .limit(1);
-
-    if (user[0]?.isVerified && ('mystats'.includes(searchTerm) || 'stats'.includes(searchTerm))) {
-      log("info",'Adding personal stats result');
-      results.push(formatPersonalStatsResult(user[0]));
-    }
-
-    log("info",`Sending ${results.length} inline results`);
-    await botInstance.answerInlineQuery(query.id, results, {
-      cache_time: 30,
-      is_personal: true
-    });
-
-    logAction({
-      action: 'Inline Query',
-      userId: query.from.username || query.from.id.toString(),
-      success: true,
-      details: `Query: "${query.query}" - Results: ${results.length}`
-    });
-  } catch (error) {
-    logError(error instanceof Error ? error : new Error('Unknown error'), 'Inline query handler');
-    await sendFallbackInlineResponse(query);
-  }
-}
-
-async function fetchCurrentRaceData(): Promise<WagerRaceData | null> {
-  try {
-    log("info",'Fetching current race data from internal endpoint...');
-    const apiBaseUrl = process.env.NODE_ENV === 'production'
-      ? process.env.INTERNAL_API_URL || 'http://0.0.0.0:5000'
-      : 'http://0.0.0.0:5000';
-
-    const endpoint = `${apiBaseUrl}/api/wager-races/current`;
-    log("info",`Fetching from endpoint: ${endpoint}`);
-
-    const response = await fetch(endpoint);
-
-    log("info",'Internal API Response:', {
-      status: response.status,
-      ok: response.ok,
-      statusText: response.statusText
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch race data: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    log("info",'Race data received:', {
-      id: data.id,
-      status: data.status,
-      participantsCount: data.participants?.length ?? 0
-    });
-
-    return data;
-  } catch (error) {
-    logError(error instanceof Error ? error : new Error('Unknown error fetching race data'), 'fetchCurrentRaceData');
-    // Report errors to Slack
-    if (process.env.SLACK_WEBHOOK_URL) {
-      await fetch(process.env.SLACK_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: `❌ Race data fetch error: ${error.message}`
-        })
-      }).catch(err => log("error",`Slack notification failed: ${err.message}`));
-    }
-    return null;
-  }
-}
-
-function formatLeaderboardResult(data: WagerRaceData): InlineQueryResult {
-  const topParticipants = data.participants.slice(0, 5);
-  const leaderboardText = topParticipants.map((participant, index) =>
-    `${index + 1}. ${participant.name}: ${participant.wagered}`
-  ).join('\n');
-
-  return {
-    type: 'article',
-    id: 'monthly_leaderboard',
-    title: '🏆 Monthly Race Leaders (Top 5)',
-    description: 'View current race standings',
-    input_message_content: {
-      message_text: `${CUSTOM_EMOJIS.leaderboard} *Monthly Race Leaders*\n\n${leaderboardText}\n\nPrize Pool: $${data.prizePool}\nUpdated: ${new Date().toLocaleString()}`,
-      parse_mode: 'Markdown'
-    }
-  };
-}
-
-function formatDailyStatsResult(data: WagerRaceData): InlineQueryResult {
-  const topDaily = data.participants.slice(0, 3);
-  const dailyText = topDaily.map((participant, index) =>
-    `${index + 1}. ${participant.name}: ${participant.wagered}`
-  ).join('\n');
-
-  return {
-    type: 'article',
-    id: 'daily_stats',
-    title: '📊 Today\'s Top 3',
-    description: 'View today\'s race progress',
-    input_message_content: {
-      message_text: `${CUSTOM_EMOJIS.stats} *Today's Race Progress*\n\n${dailyText}\n\nUpdated: ${new Date().toLocaleString()}`,
-      parse_mode: 'Markdown'
-    }
-  };
-}
-
-function formatPersonalStatsResult(user: any): InlineQueryResult {
-  return {
-    type: 'article',
-    id: 'personal_stats',
-    title: '👤 My Stats',
-    description: 'View your personal race statistics',
-    input_message_content: {
-      message_text: MESSAGES.status(user),
-      parse_mode: 'Markdown'
-    }
-  };
-}
-
-async function sendFallbackInlineResponse(query: TelegramBot.InlineQuery) {
-  if (!botInstance) return;
-
-  await botInstance.answerInlineQuery(query.id, [{
-    type: 'article',
-    id: 'error',
-    title: '❌ Error',
-    description: 'Could not fetch data. Please try again.',
-    input_message_content: {
-      message_text: 'Could not fetch race data. Please try again later or use /menu in direct chat.'
-    }
-  }]);
-}
-
-async function handleMessage(msg: TelegramBot.Message) {
-  if (!msg.text || !msg.from) return;
-
-  logAction({
-    action: 'Received Message',
-    userId: msg.from.username || 'unknown',
-    success: true,
-    details: `Command: ${msg.text}`
-  });
-
-  const [command, ...args] = msg.text.split(" ");
-
-  try {
-    switch (command) {
-      case '/verify':
-        await handleVerify(msg, args[0]);
-        break;
-      case '/pending':
-        await handlePending(msg);
-        break;
-      case '/help':
-        await handleHelp(msg);
-        break;
-      case '/notifications':
-        await handleNotifications(msg);
-        break;
-      case '/bonuscodes':
-        await handleBonusCodes(msg);
-        break;
-      case '/stats':
-        await handleStats(msg);
-        break;
-      case '/menu':
-        await handleMenu(msg);
-        break;
-      default:
-        if (command.startsWith('/')) {
-          logAction({
-            action: 'Unknown Command',
-            userId: msg.from.username || 'unknown',
-            success: false,
-            details: command
-          });
-          await safeSendMessage(msg.chat.id, "Unknown command. Use /help to see available commands.");
-        }
-    }
-  } catch (error) {
-    if (error instanceof Error) {
-      logError(error, `Error handling command ${command}`);
-      await safeSendMessage(msg.chat.id, "❌ An error occurred. Please try again later.");
-    }
-  }
-}
-
+// Handler implementations
 async function handleStart(msg: TelegramBot.Message) {
-  if (!msg.from) return;
-
-  try {
-    logAction({
-      action: 'Start Command',
-      userId: msg.from.username,
-      success: true
-    });
-
-    const user = await db
-      .select()
-      .from(telegramUsers)
-      .where(eq(telegramUsers.telegramId, msg.from.id.toString()))
-      .limit(1);
-    const isVerified = Boolean(user.length > 0 && user[0].isVerified);
-
-    await safeSendMessage(msg.chat.id, MESSAGES.welcome, {
-      parse_mode: "Markdown",
-      reply_markup: createMainMenu(isVerified)
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      logError(error, 'Start command');
-    }
-  }
+  await safeSendMessage(msg.chat.id, MESSAGES.welcome, { parse_mode: "Markdown" });
 }
 
-async function handleVerify(msg: TelegramBot.Message, goatedUsername?: string) {
-  if (!botInstance || !msg.from?.username) {
+async function handleHelp(msg: TelegramBot.Message) {
+  const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
+  await safeSendMessage(msg.chat.id, MESSAGES.help(isAdmin), { parse_mode: "Markdown" });
+}
+
+async function handleWebsite(msg: TelegramBot.Message) {
+  await safeSendMessage(msg.chat.id, MESSAGES.website, { parse_mode: "Markdown" });
+}
+
+async function handlePlay(msg: TelegramBot.Message) {
+  await safeSendMessage(msg.chat.id, MESSAGES.play, { parse_mode: "Markdown" });
+}
+
+
+async function handleVerify(msg: TelegramBot.Message, username?: string) {
+  if (!msg.from?.username) {
     return safeSendMessage(msg.chat.id, "❌ Please set a Telegram username first.");
   }
 
-  if (!goatedUsername) {
+  if (!username) {
     return safeSendMessage(msg.chat.id, MESSAGES.verifyInstructions, { parse_mode: "Markdown" });
   }
 
@@ -567,31 +294,19 @@ async function handleVerify(msg: TelegramBot.Message, goatedUsername?: string) {
       .limit(1);
 
     if (existing[0]) {
-      logAction({
-        action: 'Verification Attempt',
-        userId: msg.from.username,
-        success: false,
-        details: 'Account already verified'
-      });
       return safeSendMessage(msg.chat.id, "✅ Your account is already verified!");
     }
 
     await db.insert(verificationRequests).values({
       telegramId: msg.from.id.toString(),
       telegramUsername: msg.from.username,
-      userId: parseInt(goatedUsername),
+      userId: parseInt(username),
       status: "pending"
-    });
-
-    logAction({
-      action: 'Verification Request',
-      userId: msg.from.username,
-      success: true,
-      details: `Requested verification for Goated ID: ${goatedUsername}`
     });
 
     await safeSendMessage(msg.chat.id, MESSAGES.verificationSubmitted, { parse_mode: "Markdown" });
 
+    // Notify admins
     const admins = await db
       .select()
       .from(users)
@@ -599,156 +314,17 @@ async function handleVerify(msg: TelegramBot.Message, goatedUsername?: string) {
 
     for (const admin of admins) {
       if (!admin.telegramId) continue;
-
-      const buttons = {
-        inline_keyboard: [[
-          { text: "✅ Approve", callback_data: `approve:${msg.from.username}` },
-          { text: "❌ Reject", callback_data: `reject:${msg.from.username}` }
-        ]]
-      };
-
-      await botInstance.sendMessage(
-        parseInt(admin.telegramId),
-        `🆕 New verification request:\n` +
-        `Telegram: @${msg.from.username}\n` +
-        `Goated: ${goatedUsername}`,
-        { reply_markup: buttons }
-      );
+      await safeSendMessage(parseInt(admin.telegramId),
+        `🆕 New verification request:\nTelegram: @${msg.from.username}\nUser ID: ${username}`,
+        { parse_mode: "Markdown" });
     }
   } catch (error) {
-    if (error instanceof Error) {
-      logError(error, 'Verification process');
-      await safeSendMessage(msg.chat.id, "❌ Error submitting request. Please try again later.");
-    }
+    log("error", `Verification error: ${error instanceof Error ? error.message : String(error)}`);
+    await safeSendMessage(msg.chat.id, "❌ Error submitting request. Please try again later.");
   }
 }
 
-async function handlePending(msg: TelegramBot.Message) {
-  if (!botInstance) return;
-
-  try {
-    const admin = await db
-      .select()
-      .from(users)
-      .where(eq(users.telegramId, msg.from!.id.toString()))
-      .limit(1);
-
-    if (!admin[0]?.isAdmin) {
-      return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
-    }
-
-    const pending = await db
-      .select()
-      .from(verificationRequests)
-      .where(eq(verificationRequests.status, 'pending'));
-
-    if (pending.length === 0) {
-      return safeSendMessage(msg.chat.id, "✅ No pending requests!");
-    }
-
-    await safeSendMessage(msg.chat.id, MESSAGES.pendingRequests(pending), { parse_mode: "Markdown" });
-  } catch (error) {
-    if (error instanceof Error) {
-      log("error",`Error listing pending requests: ${error.message}`);
-      await safeSendMessage(msg.chat.id, "❌ Error fetching pending requests.");
-    }
-  }
-}
-
-async function handleApproval(request: any, adminId: string, query: TelegramBot.CallbackQuery) {
-  if (!botInstance) return;
-
-  try {
-    await db
-      .update(verificationRequests)
-      .set({
-        status: 'approved',
-        verifiedAt: new Date(),
-        verifiedBy: adminId
-      })
-      .where(eq(verificationRequests.telegramUsername, request.telegramUsername));
-
-    await db
-      .insert(telegramUsers)
-      .values({
-        telegramId: request.telegramId,
-        telegramUsername: request.telegramUsername,
-        userId: request.userId,
-        isVerified: true,
-        verifiedAt: new Date(),
-        verifiedBy: adminId
-      });
-
-    await botInstance.editMessageText(
-      `✅ Approved @${request.telegramUsername}`,
-      {
-        chat_id: query.message?.chat.id,
-        message_id: query.message?.message_id
-      }
-    );
-
-    await botInstance.sendMessage(
-      parseInt(request.telegramId),
-      "✅ Your account has been verified! Welcome to Goated!"
-    );
-
-    await botInstance.answerCallbackQuery(query.id, {
-      text: "User approved successfully",
-      show_alert: true
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      log("error",`Error approving user: ${error.message}`);
-      await botInstance.answerCallbackQuery(query.id, {
-        text: "Error approving user",
-        show_alert: true
-      });
-    }
-  }
-}
-
-async function handleRejection(request: any, adminId: string, query: TelegramBot.CallbackQuery) {
-  if (!botInstance) return;
-
-  try {
-    await db
-      .update(verificationRequests)
-      .set({
-        status: 'rejected',
-        verifiedAt: new Date(),
-        verifiedBy: adminId
-      })
-      .where(eq(verificationRequests.telegramUsername, request.telegramUsername));
-
-    await botInstance.editMessageText(
-      `❌ Rejected @${request.telegramUsername}`,
-      {
-        chat_id: query.message?.chat.id,
-        message_id: query.message?.message_id
-      }
-    );
-
-    await botInstance.sendMessage(
-      parseInt(request.telegramId),
-      "❌ Your verification request was rejected. Please ensure you provided the correct Goated username and try again with /verify."
-    );
-
-    await botInstance.answerCallbackQuery(query.id, {
-      text: "User rejected successfully",
-      show_alert: true
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      log("error",`Error rejecting user: ${error.message}`);
-      await botInstance.answerCallbackQuery(query.id, {
-        text: "Error rejecting user",
-        show_alert: true
-      });
-    }
-  }
-}
-
-async function handleNotifications(msg: TelegramBot.Message) {
+async function handleRace(msg: TelegramBot.Message) {
   if (!msg.from?.id) return;
 
   try {
@@ -762,26 +338,28 @@ async function handleNotifications(msg: TelegramBot.Message) {
       return safeSendMessage(msg.chat.id, "❌ Please verify your account first using /verify");
     }
 
-    const newStatus = !user[0].notificationsEnabled;
-
-    await db
-      .update(telegramUsers)
-      .set({ notificationsEnabled: newStatus })
-      .where(eq(telegramUsers.telegramId, msg.from.id.toString()));
-
-    await safeSendMessage(
-      msg.chat.id,
-      `✅ Notifications ${newStatus ? 'enabled' : 'disabled'} successfully!`
-    );
-  } catch (error) {
-    if (error instanceof Error) {
-      log("error",`Error toggling notifications: ${error.message}`);
-      await safeSendMessage(msg.chat.id, "❌ Error updating notification preferences.");
+    const response = await fetch(`${process.env.INTERNAL_API_URL}/api/wager-races/current`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch race data: ${response.status}`);
     }
+
+    const data = await response.json();
+    await safeSendMessage(msg.chat.id, MESSAGES.race(user[0], data.participants), { parse_mode: "Markdown" });
+  } catch (error) {
+    log("error", `Race data error: ${error instanceof Error ? error.message : String(error)}`);
+    await safeSendMessage(msg.chat.id, "❌ Error fetching race data. Please try again later.");
   }
 }
 
+async function handleChallenges(msg: TelegramBot.Message) {
+  await safeSendMessage(msg.chat.id, "🎯 No active challenges at the moment. Check back soon!", { parse_mode: "Markdown" });
+}
+
 async function handleBonusCodes(msg: TelegramBot.Message) {
+  await safeSendMessage(msg.chat.id, "🎁 Bonus codes coming soon!", { parse_mode: "Markdown" });
+}
+
+async function handleStats(msg: TelegramBot.Message) {
   if (!msg.from?.id) return;
 
   try {
@@ -791,35 +369,160 @@ async function handleBonusCodes(msg: TelegramBot.Message) {
       .where(eq(telegramUsers.telegramId, msg.from.id.toString()))
       .limit(1);
 
-    if (!user[0]?.isVerified) {
-      return safeSendMessage(msg.chat.id, "❌ This command is only available for verified users.");
+    if (!user[0]) {
+      return safeSendMessage(msg.chat.id, "❌ Please verify your account first using /verify");
     }
 
-    await safeSendMessage(
-      msg.chat.id,
-      MESSAGES.bonusCodes,
-      { parse_mode: "Markdown" }
-    );
+    await safeSendMessage(msg.chat.id, MESSAGES.stats(user[0]), { parse_mode: "Markdown" });
   } catch (error) {
-    if (error instanceof Error) {
-      log("error",`Error fetching bonus codes: ${error.message}`);
-      await safeSendMessage(msg.chat.id, "❌ Error fetching bonus codes.");
-    }
+    log("error", `Error fetching stats: ${error instanceof Error ? error.message : String(error)}`);
+    await safeSendMessage(msg.chat.id, "❌ Error fetching your statistics.");
   }
 }
 
-async function handleStats(msg: TelegramBot.Message) {
-  if (!msg.from?.id) return;
+async function handlePending(msg: TelegramBot.Message) {
+  if (!botInstance) return;
+
+  try {
+    const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
+    if (!isAdmin) {
+      return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
+    }
+
+    const pending = await db
+      .select()
+      .from(verificationRequests)
+      .where(eq(verificationRequests.status, 'pending'));
+
+    await safeSendMessage(msg.chat.id, MESSAGES.pendingRequests(pending), { parse_mode: "Markdown" });
+  } catch (error) {
+    log("error", `Error listing pending requests: ${error instanceof Error ? error.message : String(error)}`);
+    await safeSendMessage(msg.chat.id, "❌ Error fetching pending requests.");
+  }
+}
+
+async function handleApprove(msg: TelegramBot.Message, username?: string) {
+  if (!botInstance) return;
 
   try {
     const admin = await db
       .select()
       .from(users)
-      .where(eq(users.telegramId, msg.from.id.toString()))
+      .where(eq(users.telegramId, msg.from!.id.toString()))
       .limit(1);
 
     if (!admin[0]?.isAdmin) {
       return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
+    }
+
+    if (!username) {
+      return safeSendMessage(msg.chat.id, "❌ Please provide a username to approve.");
+    }
+
+    const request = await db
+      .select()
+      .from(verificationRequests)
+      .where(eq(verificationRequests.telegramUsername, username))
+      .limit(1);
+
+
+    if (!request[0]) {
+      return safeSendMessage(msg.chat.id, "❌ Request not found");
+    }
+
+    await db
+      .update(verificationRequests)
+      .set({
+        status: 'approved',
+        verifiedAt: new Date(),
+        verifiedBy: admin[0].id
+      })
+      .where(eq(verificationRequests.telegramUsername, username));
+
+    await db
+      .insert(telegramUsers)
+      .values({
+        telegramId: request[0].telegramId,
+        telegramUsername: request[0].telegramUsername,
+        userId: request[0].userId,
+        isVerified: true,
+        verifiedAt: new Date(),
+        verifiedBy: admin[0].id
+      });
+
+    await safeSendMessage(msg.chat.id, `✅ Approved @${username}`);
+    await safeSendMessage(parseInt(request[0].telegramId), "✅ Your account has been verified! Welcome to Goated!");
+  } catch (error) {
+    log("error", `Error approving user: ${error instanceof Error ? error.message : String(error)}`);
+    await safeSendMessage(msg.chat.id, "❌ Error approving user");
+  }
+}
+
+async function handleReject(msg: TelegramBot.Message, username?: string) {
+  if (!botInstance) return;
+
+  try {
+    const admin = await db
+      .select()
+      .from(users)
+      .where(eq(users.telegramId, msg.from!.id.toString()))
+      .limit(1);
+
+    if (!admin[0]?.isAdmin) {
+      return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
+    }
+
+    if (!username) {
+      return safeSendMessage(msg.chat.id, "❌ Please provide a username to reject.");
+    }
+
+    const request = await db
+      .select()
+      .from(verificationRequests)
+      .where(eq(verificationRequests.telegramUsername, username))
+      .limit(1);
+
+    if (!request[0]) {
+      return safeSendMessage(msg.chat.id, "❌ Request not found");
+    }
+
+    await db
+      .update(verificationRequests)
+      .set({
+        status: 'rejected',
+        verifiedAt: new Date(),
+        verifiedBy: admin[0].id
+      })
+      .where(eq(verificationRequests.telegramUsername, username));
+
+    await safeSendMessage(msg.chat.id, `❌ Rejected @${username}`);
+    await safeSendMessage(parseInt(request[0].telegramId), "❌ Your verification request was rejected. Please ensure you provided the correct Goated username and try again with /verify.");
+  } catch (error) {
+    log("error", `Error rejecting user: ${error instanceof Error ? error.message : String(error)}`);
+    await safeSendMessage(msg.chat.id, "❌ Error rejecting user");
+  }
+}
+
+async function handleBroadcastPrompt(msg: TelegramBot.Message) {
+  const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
+  if (!isAdmin) {
+    return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
+  }
+
+  await safeSendMessage(msg.chat.id, MESSAGES.broadcastPrompt, { parse_mode: "Markdown" });
+}
+
+async function handleBroadcast(msg: TelegramBot.Message, message?: string) {
+  if (!botInstance) return;
+
+  try {
+    const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
+    if (!isAdmin) {
+      return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
+    }
+
+    if (!message) {
+      return safeSendMessage(msg.chat.id, MESSAGES.broadcastPrompt, { parse_mode: "Markdown" });
     }
 
     const verifiedUsers = await db
@@ -827,207 +530,61 @@ async function handleStats(msg: TelegramBot.Message) {
       .from(telegramUsers)
       .where(eq(telegramUsers.isVerified, true));
 
-    const pendingRequests = await db
-      .select()
-      .from(verificationRequests)
-      .where(eq(verificationRequests.status, 'pending'));
-
-    await safeSendMessage(msg.chat.id, MESSAGES.stats(verifiedUsers.length, pendingRequests.length), { parse_mode: "Markdown" });
-  } catch (error) {
-    if (error instanceof Error) {
-      log("error",`Error fetching stats: ${error.message}`);
-      await safeSendMessage(msg.chat.id, "❌ Error fetching platform statistics.");
+    let sentCount = 0;
+    for (const user of verifiedUsers) {
+      try {
+        await safeSendMessage(parseInt(user.telegramId), message, { parse_mode: "Markdown" });
+        sentCount++;
+      } catch (error) {
+        log("error", `Failed to send broadcast to user ${user.telegramId}: ${error instanceof Error ? error.message : String(error)}`);
+      }
     }
+
+    await safeSendMessage(msg.chat.id, MESSAGES.broadcastSent(sentCount), { parse_mode: "Markdown" });
+    log("info", `Broadcast sent to ${sentCount} users by admin ${msg.from?.username}`);
+  } catch (error) {
+    log("error", `Broadcast error: ${error instanceof Error ? error.message : String(error)}`);
+    await safeSendMessage(msg.chat.id, "❌ Error sending broadcast message.");
   }
 }
 
-async function handleHelp(msg: TelegramBot.Message) {
-  const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
-  await safeSendMessage(msg.chat.id, MESSAGES.help(isAdmin), { parse_mode: "Markdown" });
+// Utility functions
+async function safeSendMessage(chatId: number, text: string, options: any = {}) {
+  if (!botInstance) return;
+  try {
+    await botInstance.sendMessage(chatId, text, options);
+  } catch (error) {
+    log("error", `Failed to send message: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 async function checkIsAdmin(telegramId?: string): Promise<boolean> {
   if (!telegramId) return false;
-
   try {
     const admin = await db
       .select()
       .from(users)
       .where(eq(users.telegramId, telegramId))
       .limit(1);
-
     return !!admin[0]?.isAdmin;
-  } catch (error) {
-    if (error instanceof Error) {
-      log("error",`Error checking admin status: ${error.message}`);
-    }
+  } catch {
     return false;
   }
 }
 
-async function handleCallbackQuery(query: TelegramBot.CallbackQuery) {
-  if (!query.message || !query.from.id) {
-    log("info","Received callback query without message");
-    return;
-  }
-
-  logAction({
-    action: 'Callback Query',
-    userId: query.from.username,
-    success: true,
-    details: `Action: ${query.data}`
-  });
-
+async function handleLeaderboard(msg: TelegramBot.Message) {
   try {
-    switch (query.data) {
-      case 'menu':
-        await handleMenu(query.message);
-        break;
-
-      case 'verify':
-        await botInstance?.sendMessage(
-          query.message.chat.id,
-          MESSAGES.verifyInstructions,
-          { parse_mode: "Markdown" }
-        );
-        break;
-
-      case 'help':
-        const isAdmin = await checkIsAdmin(query.from.id.toString());
-        await botInstance?.sendMessage(
-          query.message.chat.id,
-          MESSAGES.help(isAdmin),
-          { parse_mode: "Markdown" }
-        );
-        break;
-
-      case 'status':
-        await handleStatus({ ...query.message, from: query.from });
-        break;
-
-      case 'bonuscodes':
-        await handleBonusCodes({ ...query.message, from: query.from });
-        break;
-
-      case 'notifications':
-        await handleNotifications({ ...query.message, from: query.from });
-        break;
-
-      default:
-        if (query.data?.startsWith('approve:') || query.data?.startsWith('reject:')) {
-          const [action, username] = query.data.split(':');
-          const adminId = query.from.id.toString();
-
-          const request = await db
-            .select()
-            .from(verificationRequests)
-            .where(eq(verificationRequests.telegramUsername, username))
-            .limit(1);
-
-          if (!request[0]) {
-            return botInstance?.answerCallbackQuery(query.id, {
-              text: "❌ Request not found",
-              show_alert: true
-            });
-          }
-
-          if (action === 'approve') {
-            await handleApproval(request[0], adminId, query);
-          } else {
-            await handleRejection(request[0], adminId, query);
-          }
-        }
+    const response = await fetch(`${process.env.INTERNAL_API_URL}/api/wager-races/current`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch race data: ${response.status}`);
     }
 
-    await botInstance?.answerCallbackQuery(query.id);
+    const data = await response.json();
+    await safeSendMessage(msg.chat.id, MESSAGES.leaderboard(data.participants), { parse_mode: "Markdown" });
   } catch (error) {
-    if (error instanceof Error) {
-      logError(error, 'Callback query handler');
-      await botInstance?.answerCallbackQuery(query.id, {
-        text: "❌ Error processing request",
-        show_alert: true
-      });
-    }
+    log("error", `Leaderboard error: ${error instanceof Error ? error.message : String(error)}`);
+    await safeSendMessage(msg.chat.id, "❌ Error fetching leaderboard data. Please try again later.");
   }
 }
 
-async function handleStatus(msg: TelegramBot.Message) {
-  if (!msg.from?.id) return;
-
-  try {
-    const user = await db
-      .select()
-      .from(telegramUsers)
-      .where(eq(telegramUsers.telegramId, msg.from.id.toString()))
-      .limit(1);
-
-
-    if (!user[0]) {
-      return safeSendMessage(msg.chat.id, "❌ Your accountis not verified. Use /verify to link your Goated.com account.");
-    }
-
-    await safeSendMessage(msg.chat.id, MESSAGES.status(user[0]), { parse_mode: "Markdown" });
-  } catch (error) {
-    if (error instanceof Error) {
-      log("error",`Error in status command: ${error.message}`);
-      await safeSendMessage(msg.chat.id, "❌ Error checking status. Please tryagain later.");
-    }
-  }
-}
-
-async function safeSendMessage(chatId: number, text: string, options: any = {}) {
-  if (!botInstance) return;
-
-  try {
-    await botInstance.sendMessage(chatId, text, options);
-  } catch (error) {
-    if (error instanceof Error) {
-      log("error",`Failed to send message to ${chatId}: ${error.message}`);
-    }
-  }
-}
-
-function startHealthCheck() {
-  if (healthCheckInterval) {
-    clearInterval(healthCheckInterval as NodeJS.Timeout);
-  }
-
-  healthCheckInterval = setInterval(async () => {
-    if (!botInstance) return;
-
-    try {
-      await botInstance.getMe();
-      log("info", "Bot health check passed");
-    } catch (error) {
-      if (error instanceof Error) {
-        log("error", `Bot health check failed: ${error.message}`);
-      }
-    }
-  }, 60000);
-}
-
-async function handleMenu(msg: TelegramBot.Message) {
-  if (!botInstance) return;
-
-  try {
-    await safeSendMessage(msg.chat.id, MESSAGES.menu, {
-      parse_mode: "Markdown",
-      disable_web_page_preview: true
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      log("error", `Error in menu command: ${error.message}`);
-      await safeSendMessage(msg.chat.id, "❌ Error showing menu. Please try again later.");
-    }
-  }
-}
-
-export {
-  botInstance,
-  handleMenu,
-  handleInlineQuery,
-  handleMessage,
-  handleCallbackQuery,
-  safeSendMessage,
-  initializeBot as default
-};
+export default initializeBot;
