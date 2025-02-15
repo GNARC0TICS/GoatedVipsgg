@@ -113,11 +113,12 @@ function AppContent() {
                   <ProtectedRoute path="/user/:id" component={UserProfile} />
 
                   {/* Admin Routes */}
+                  <AdminRoute path="/admin/user-management" component={UserManagement} />
                   <AdminRoute path="/admin/wager-races" component={WagerRaceManagement} />
-                  <AdminRoute path="/admin/users" component={UserManagement} />
-                  <AdminRoute path="/admin/notifications" component={NotificationManagement} />
                   <AdminRoute path="/admin/bonus-codes" component={BonusCodeManagement} />
+                  <AdminRoute path="/admin/notifications" component={NotificationManagement} />
                   <AdminRoute path="/admin/support" component={SupportManagement} />
+
 
                   {/* 404 Route */}
                   <Route component={NotFound} />

@@ -697,6 +697,32 @@ export function Layout({ children }: { children: ReactNode }) {
                           Settings
                         </DropdownMenuItem>
                       </Link>
+                      {user.isAdmin && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel className="text-[#D7FF00]">Admin Panel</DropdownMenuLabel>
+                          <Link href="/admin/user-management">
+                            <DropdownMenuItem className="cursor-pointer text-white">
+                              User Management
+                            </DropdownMenuItem>
+                          </Link>
+                          <Link href="/admin/wager-races">
+                            <DropdownMenuItem className="cursor-pointer text-white">
+                              Wager Races
+                            </DropdownMenuItem>
+                          </Link>
+                          <Link href="/admin/bonus-codes">
+                            <DropdownMenuItem className="cursor-pointer text-white">
+                              Bonus Codes
+                            </DropdownMenuItem>
+                          </Link>
+                          <Link href="/admin/notifications">
+                            <DropdownMenuItem className="cursor-pointer text-white">
+                              Notifications
+                            </DropdownMenuItem>
+                          </Link>
+                        </>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={handleLogout}
