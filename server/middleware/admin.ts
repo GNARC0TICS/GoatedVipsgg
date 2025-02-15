@@ -72,10 +72,10 @@ export async function initializeAdmin(
       .limit(1);
 
     if (existingAdmin) {
+      // Don't update username if it already exists
       const [updatedAdmin] = await db
         .update(users)
         .set({
-          username,
           password,
           email: `${username}@admin.local`,
         })
