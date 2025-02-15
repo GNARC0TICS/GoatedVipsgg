@@ -1,6 +1,12 @@
 import { pgTable, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { jsonb } from 'drizzle-orm/pg-core';
+import { relations, type InferModel } from 'drizzle-orm';
+
+export const sessions = pgTable('session', {
+  id: text('id').primaryKey(),
+  userId: integer('user_id'),
+  expiresAt: timestamp('expires_at').notNull(),
+});
 
 export const users = pgTable('users', {
   id: integer('id').primaryKey(),
