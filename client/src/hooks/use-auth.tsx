@@ -93,11 +93,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     },
     onSuccess: () => {
+      queryClient.clear();
       queryClient.setQueryData(["/api/user"], null);
       toast({
         title: "Goodbye!",
         description: "You have been logged out",
       });
+      window.location.href = '/';
     },
     onError: (error: Error) => {
       toast({

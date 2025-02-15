@@ -195,9 +195,8 @@ export function Layout({ children }: { children: ReactNode }) {
         description: "Logged out successfully"
       });
       
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      queryClient.clear();
+      window.location.href = '/';
     } catch (error) {
       console.error("Logout error:", error);
       toast({
