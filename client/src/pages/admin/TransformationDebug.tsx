@@ -25,12 +25,15 @@ export default function TransformationDebug() {
 
   const { data: metrics } = useQuery<TransformationMetrics>({
     queryKey: ["/api/admin/transformation-metrics"],
-    refetchInterval: 30000,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   useEffect(() => {
-    const websocket = new WebSocket(`ws://${window.location.host}/ws/transformation-logs`);
-    
+    // Setup WebSocket connection
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/transformation-logs`;
+    const websocket = new WebSocket(wsUrl);
+
     websocket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'TRANSFORMATION_LOG') {
