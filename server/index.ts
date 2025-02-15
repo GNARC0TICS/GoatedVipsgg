@@ -40,7 +40,7 @@ async function isPortAvailable(port: number): Promise<boolean> {
 
 async function waitForPort(port: number, timeout = 30000): Promise<void> {
   const start = Date.now();
-  
+
   // First check if port is already in use
   const isInUse = !await isPortAvailable(port);
   if (isInUse) {
