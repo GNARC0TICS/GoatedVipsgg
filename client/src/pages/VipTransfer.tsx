@@ -44,6 +44,7 @@ const vipLevels = [
 ];
 
 export default function VipTransfer() {
+  // Remove any auth checks - VIP Transfer should be publicly accessible
   return (
     <div className="min-h-screen bg-[#14151A] text-white">
       {/* Hero Section */}
