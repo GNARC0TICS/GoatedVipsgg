@@ -51,11 +51,20 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
+        // For admin login
+        if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
+          return done(null, {
+            id: 1,
+            username: process.env.ADMIN_USERNAME,
+            isAdmin: true
+          });
+        }
+
         if (!username || !password) {
           return done(null, false, { message: "Username and password are required" });
         }
 
-        // Sanitize credentials
+        // Sanitize credentials for non-admin users
         const sanitizedUsername = username.trim().toLowerCase();
         const sanitizedPassword = password.trim();
 
