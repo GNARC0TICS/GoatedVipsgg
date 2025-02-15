@@ -142,7 +142,8 @@ export function setupAuth(app: Express) {
       // Hash password
       const hashedPassword = await hashPassword(password);
 
-      // Create user
+      // Create user with email verification token
+      const emailVerificationToken = randomBytes(32).toString('hex');
       const [newUser] = await db
         .insert(users)
         .values({
@@ -150,8 +151,25 @@ export function setupAuth(app: Express) {
           password: hashedPassword,
           email: email.toLowerCase(),
           isAdmin: false,
+          emailVerificationToken,
+          emailVerified: false,
         })
         .returning();
+
+      // Send verification email
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({
+        from: 'noreply@goatedvips.gg',
+        to: email.toLowerCase(),
+        subject: 'Verify your GoatedVIPs account',
+        html: `
+          <h1>Welcome to GoatedVIPs!</h1>
+          <p>Click the link below to verify your email address:</p>
+          <a href="${process.env.APP_URL}/verify-email/${emailVerificationToken}">
+            Verify Email
+          </a>
+        `
+      });
 
       // Log user in after registration
       req.login(newUser, (err) => {

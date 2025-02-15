@@ -19,6 +19,8 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  emailVerificationToken: text(),
+  emailVerified: boolean().default(false),
 });
 
 // Wheel spins table
