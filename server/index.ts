@@ -16,6 +16,8 @@ import { initializeAdmin } from "./middleware/admin";
 import { db } from "../db";
 import { setupAuth } from "./auth";
 import cors from "cors";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
 
 const execAsync = promisify(exec);
 const PORT = 5000;
@@ -36,7 +38,26 @@ function setupMiddleware(app: express.Application) {
       : process.env.ALLOWED_ORIGINS?.split(',') || [],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+  }));
+
+  // Setup session handling
+  const PostgresSessionStore = connectPg(session);
+  app.use(session({
+    store: new PostgresSessionStore({
+      conObject: {
+        connectionString: process.env.DATABASE_URL,
+      },
+      createTableIfMissing: true,
+    }),
+    secret: process.env.SESSION_SECRET || 'your-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    },
   }));
 
   // Parse JSON and URL-encoded bodies

@@ -4,7 +4,6 @@ import { bonusCodes } from "@db/schema/bonus";
 import { eq, and, gt } from "drizzle-orm";
 import { z } from "zod";
 import type { Request, Response, NextFunction } from "express";
-import { verifyToken, generateTestToken } from "../auth";
 import { log } from "../vite";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 import type { SelectUser } from "@db/schema";
@@ -44,26 +43,12 @@ const updateBonusCodeSchema = z.object({
 
 // Authentication middleware with enhanced logging
 const authenticate = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) {
-      log("Authentication failed: No token provided");
-      return res.status(401).json({ error: "No token provided" });
-    }
-
-    const userData = await verifyToken(token);
-    if (!userData) {
-      log("Authentication failed: Invalid token");
-      return res.status(401).json({ error: "Invalid token" });
-    }
-
-    req.user = userData as SelectUser;
-    log(`User authenticated: ID ${userData.id}, Admin: ${userData.isAdmin}`);
-    next();
-  } catch (error) {
-    log(`Authentication error: ${error}`);
-    return res.status(401).json({ error: "Authentication failed" });
+  if (!req.isAuthenticated()) {
+    log("Authentication failed: User not authenticated");
+    return res.status(401).json({ error: "Not authenticated" });
   }
+
+  next();
 };
 
 // Admin middleware
@@ -123,9 +108,6 @@ router.get("/bonus-codes", asyncHandler(async (req, res) => {
       );
 
     log(`Found ${activeBonusCodes.length} active bonus codes`);
-    if (activeBonusCodes.length > 0) {
-      log(`Query result sample: ${JSON.stringify(activeBonusCodes[0])}`);
-    }
 
     return res.json({
       status: "success",
@@ -155,11 +137,6 @@ router.get("/admin/bonus-codes", isAdmin, asyncHandler(async (req: Authenticated
       .orderBy(bonusCodes.createdAt);
 
     log(`Found ${allBonusCodes.length} total bonus codes`);
-
-    if (allBonusCodes.length > 0) {
-      log(`Query result sample: ${JSON.stringify(allBonusCodes[0])}`);
-    }
-
     res.json(allBonusCodes);
   } catch (error) {
     log(`Error fetching all bonus codes: ${error}`);
@@ -185,7 +162,6 @@ router.post("/admin/bonus-codes", isAdmin, asyncHandler(async (req: Authenticate
       .insert(bonusCodes)
       .values({
         ...result.data,
-        currentClaims: 0,
         status: 'active',
         createdBy: req.user!.id,
         expiresAt: new Date(result.data.expiresAt),
@@ -264,14 +240,5 @@ router.delete("/admin/bonus-codes/:id", isAdmin, asyncHandler(async (req: Authen
   }
 }));
 
-// Test endpoint to get admin token (only for testing purposes)
-if (process.env.NODE_ENV !== 'production') {
-  router.get("/test-token", (_req, res) => {
-    log("Test token endpoint called");
-    res.setHeader('Content-Type', 'application/json');
-    const token = generateTestToken(true); // Generate admin token
-    res.json({ token, generated: new Date().toISOString() });
-  });
-}
 
 export default router;

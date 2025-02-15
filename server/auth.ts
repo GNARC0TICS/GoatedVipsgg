@@ -2,22 +2,17 @@ import passport from "passport";
 import { IVerifyOptions, Strategy as LocalStrategy } from "passport-local";
 import { type Express } from "express";
 import session from "express-session";
-import createMemoryStore from "memorystore";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { users, insertUserSchema, type SelectUser } from "@db/schema";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
 import express from 'express';
-import jwt from 'jsonwebtoken';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 const scryptAsync = promisify(scrypt);
 
-// JWT secret key - in production this should be an environment variable
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
-// Rate limiter for registration
+// Rate limiter for registration and login attempts
 const rateLimiter = new RateLimiterMemory({
   points: 5, // 5 attempts
   duration: 60 * 60, // per hour
@@ -29,60 +24,12 @@ declare global {
   }
 }
 
-// Token verification function
-export const verifyToken = async (token: string) => {
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      id: number;
-      username: string;
-      email: string;
-      isAdmin: boolean;
-      createdAt: string;
-    };
-    return decoded;
-  } catch (error) {
-    return null;
-  }
-};
-
-// Generate token for testing
-export const generateTestToken = (isAdmin: boolean = false) => {
-  return jwt.sign({ 
-    id: 1,
-    username: 'test',
-    email: 'test@example.com',
-    isAdmin,
-    createdAt: new Date().toISOString()
-  }, JWT_SECRET, { expiresIn: '1h' });
-};
-
 export function setupAuth(app: Express) {
-  const MemoryStore = createMemoryStore(session);
-  const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || process.env.REPL_ID || "goated-rewards",
-    resave: false,
-    saveUninitialized: false,
-    name: 'sid', // Custom session ID cookie name
-    cookie: {
-      httpOnly: true,
-      secure: app.get("env") === "production",
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    },
-    store: new MemoryStore({
-      checkPeriod: 86400000, // Prune expired entries every 24h
-    }),
-  };
-
-  if (app.get("env") === "production") {
-    app.set("trust proxy", 1);
-  }
-
-  app.use(session(sessionSettings));
+  // Session configuration is now handled in index.ts
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Session configuration
+  // Session serialization
   passport.serializeUser((user: Express.User, done) => {
     done(null, user.id);
   });
@@ -100,6 +47,7 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Local strategy setup
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
@@ -137,6 +85,7 @@ export function setupAuth(app: Express) {
     }),
   );
 
+  // Registration endpoint
   app.post("/api/register", async (req, res) => {
     try {
       const result = insertUserSchema.safeParse(req.body);
@@ -189,19 +138,6 @@ export function setupAuth(app: Express) {
         })
         .returning();
 
-      // Generate JWT
-      const token = jwt.sign(
-        { 
-          id: newUser.id,
-          username: newUser.username,
-          email: newUser.email,
-          isAdmin: newUser.isAdmin,
-          createdAt: newUser.createdAt.toISOString()
-        },
-        JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-
       // Log user in after registration
       req.login(newUser, (err) => {
         if (err) {
@@ -222,7 +158,6 @@ export function setupAuth(app: Express) {
             isAdmin: newUser.isAdmin,
             createdAt: newUser.createdAt,
           },
-          token,
         });
       });
     } catch (error: any) {
@@ -235,6 +170,7 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Login endpoint
   app.post("/api/login", (req, res, next) => {
     if (!req.body?.username || !req.body?.password) {
       return res.status(400).json({
@@ -267,19 +203,6 @@ export function setupAuth(app: Express) {
             return next(err);
           }
 
-          // Generate JWT
-          const token = jwt.sign(
-            { 
-              id: user.id,
-              username: user.username,
-              email: user.email,
-              isAdmin: user.isAdmin,
-              createdAt: user.createdAt.toISOString()
-            },
-            JWT_SECRET,
-            { expiresIn: '24h' }
-          );
-
           return res.json({
             status: "success",
             message: "Login successful",
@@ -290,13 +213,13 @@ export function setupAuth(app: Express) {
               isAdmin: user.isAdmin,
               createdAt: user.createdAt,
             },
-            token,
           });
         });
       },
     )(req, res, next);
   });
 
+  // Logout endpoint
   app.post("/api/logout", (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(400).json({
@@ -321,6 +244,7 @@ export function setupAuth(app: Express) {
     });
   });
 
+  // Get current user endpoint
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({
