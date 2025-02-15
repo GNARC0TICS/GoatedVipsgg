@@ -258,7 +258,10 @@ function serveStatic(app: express.Application) {
     etag: true,
     lastModified: true
   }));
-  app.get("*", (_req, res) => {
+  app.get("*", (_req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
     res.sendFile(path.resolve(distPath, "index.html"), {
       headers: {
         'Cache-Control': 'no-cache',

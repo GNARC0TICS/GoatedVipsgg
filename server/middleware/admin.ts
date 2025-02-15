@@ -72,24 +72,16 @@ export async function initializeAdmin(
       .limit(1);
 
     if (existingAdmin) {
-      // Don't update username if it already exists
-      const [updatedAdmin] = await db
-        .update(users)
-        .set({
-          password,
-          email: `${username}@admin.local`,
-        })
-        .where(eq(users.id, existingAdmin.id))
-        .returning();
-      return updatedAdmin;
+      // Skip update if admin already exists
+      return existingAdmin;
     } else {
       const [newAdmin] = await db
         .insert(users)
         .values({
           username,
           password,
-          isAdmin: true,
           email: `${username}@admin.local`,
+          role: 'admin',
         })
         .returning();
       return newAdmin;
