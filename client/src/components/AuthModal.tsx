@@ -54,9 +54,9 @@ export default function AuthModal() {
       }
 
       const formData = {
-        username: values.username.trim(),
-        password: values.password.trim(),
-        email: values.email.trim(),
+        username: values.username?.trim() || "",
+        password: values.password?.trim() || "",
+        email: values.email?.trim() || "",
       };
 
       const mutation = mode === "login" ? loginMutation : registerMutation;
