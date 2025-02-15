@@ -1013,6 +1013,7 @@ export {
   handlePending,
   handleStats,
   handleStatus,
-  handleCallbackQuery
+  handleCallbackQuery,
+  initializeBot,
+  botInstance
 };
-export { initializeBot, bot as botInstance };

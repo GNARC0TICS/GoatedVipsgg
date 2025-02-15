@@ -904,7 +904,4 @@ const rateLimiters = {
 
 const cacheManager = new CacheManager();
 
-function initializeBot() {
-    //Implementation for initializeBot() would go here.  This is omitted as it's not relevant to the specific edit.
-    return null;
-}
+// Using initializeBot from telegram/bot.ts instead
