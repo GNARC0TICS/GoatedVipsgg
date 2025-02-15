@@ -1,3 +1,36 @@
+
+import { Router } from "express";
+import { db } from "@db";
+import { sql } from "drizzle-orm";
+
+const router = Router();
+
+router.get("/health", async (_req, res) => {
+  try {
+    // Check database connection
+    await db.execute(sql`SELECT 1`);
+    
+    // System health status
+    const health = {
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      db: "connected",
+      telegramBot: global.botInstance ? "initialized" : "not initialized",
+    };
+    
+    res.json(health);
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: process.env.NODE_ENV === "production" 
+        ? "Health check failed" 
+        : error.message
+    });
+  }
+});
+
+export { router };
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocket, WebSocketServer } from "ws";
