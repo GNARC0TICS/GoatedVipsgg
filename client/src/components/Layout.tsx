@@ -594,6 +594,8 @@ export function Layout({ children }: { children: ReactNode }) {
                         <MobileNavLink href="/admin/user-management" label="User Management" onClose={() => setOpenMobile(false)} />
                         <MobileNavLink href="/admin/wager-races" label="Wager Race Management" onClose={() => setOpenMobile(false)} />
                         <MobileNavLink href="/admin/bonus-codes" label="Bonus Code Management" onClose={() => setOpenMobile(false)} />
+                        <MobileNavLink href="/admin/notifications" label="Notification Management" onClose={() => setOpenMobile(false)} />
+                        <MobileNavLink href="/admin/support" label="Support Management" onClose={() => setOpenMobile(false)} />
                       </>
                     )}
 
