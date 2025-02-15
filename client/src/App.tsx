@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "./lib/queryClient"; //This line is still needed to initialize queryClient
+import { queryClient } from "./lib/queryClient"; 
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -134,9 +134,11 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }
