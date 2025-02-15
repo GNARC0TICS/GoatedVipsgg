@@ -1,4 +1,3 @@
-
 import { pgTable, text, timestamp, integer, boolean, jsonb } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { relations } from 'drizzle-orm';
@@ -7,7 +6,7 @@ export const sessions = pgTable('session', {
   id: text('id').primaryKey(),
   userId: integer('user_id'),
   expiresAt: timestamp('expires_at').notNull(),
-  data: text('data'),
+  data: text('data')
 });
 
 export const users = pgTable('users', {
