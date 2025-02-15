@@ -297,6 +297,12 @@ function registerEventHandlers(bot: TelegramBot) {
   });
 
   bot.on("message", async (msg) => {
+    if (msg.sticker) {
+      console.log(`Received sticker. File ID: ${msg.sticker.file_id}`);
+      await safeSendMessage(msg.chat.id, `Sticker File ID: ${msg.sticker.file_id}`);
+      return;
+    }
+    
     if (!msg.text || !msg.from?.id) return;
 
     try {
