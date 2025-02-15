@@ -7,6 +7,7 @@ export const sessions = pgTable('session', {
   id: text('id').primaryKey(),
   userId: integer('user_id'),
   expiresAt: timestamp('expires_at').notNull(),
+  data: text('data'),
 });
 
 export const users = pgTable('users', {
@@ -14,7 +15,7 @@ export const users = pgTable('users', {
   username: text('username').notNull().unique(),
   password: text('password').notNull(),
   email: text('email').notNull(),
-  telegramId: text('telegram_id').unique(),
+  telegramId: text('telegram_id'),
   isAdmin: boolean('is_admin').default(false),
   bio: text('bio'),
   profileColor: text('profile_color').default('#D7FF00'),
@@ -24,3 +25,7 @@ export const users = pgTable('users', {
   lastLogin: timestamp('last_login'),
   customization: jsonb('customization').default({}).notNull(),
 });
+
+export const userRelations = relations(users, ({ many }) => ({
+  sessions: many(sessions),
+}));
