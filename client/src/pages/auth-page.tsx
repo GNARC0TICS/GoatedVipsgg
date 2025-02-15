@@ -56,15 +56,17 @@ export default function AuthPage() {
   });
 
   const onSubmit = async (data: RegisterData) => {
-    const result = isLogin 
-      ? await auth.login(data)
-      : await auth.register(data);
-
-    if (result.ok) {
-      navigate("/");
-    } else if (result.message) {
+    try {
+      const result = isLogin 
+        ? await auth.loginMutation.mutateAsync(data)
+        : await auth.registerMutation.mutateAsync(data);
+        
+      if (result) {
+        navigate("/");
+      }
+    } catch (error: any) {
       form.setError("root", { 
-        message: result.message 
+        message: error.message || "Authentication failed" 
       });
     }
   };
