@@ -14,9 +14,9 @@ const scryptAsync = promisify(scrypt);
 
 // Rate limiter for registration and login attempts
 const authLimiter = new RateLimiterMemory({
-  points: 5, // 5 attempts
-  duration: 60 * 60, // per hour
-  blockDuration: 60 * 15, // Block for 15 minutes
+  points: 20, // 20 attempts
+  duration: 60 * 5, // per 5 minutes
+  blockDuration: 60 * 2, // Block for 2 minutes
 });
 
 declare global {
