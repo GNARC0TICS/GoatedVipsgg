@@ -29,7 +29,6 @@ let server: any = null;
 let bot: any = null;
 let wss: WebSocketServer | null = null;
 
-// Function to check if a port is available
 async function isPortAvailable(port: number): Promise<boolean> {
   try {
     await execAsync(`lsof -i:${port}`);
@@ -48,6 +47,102 @@ async function waitForPort(port: number, timeout = 30000): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
   throw new Error(`Timeout waiting for port ${port} to become available`);
+}
+
+async function initializeServer() {
+  try {
+    log("info", "Starting server initialization...");
+
+    // Wait for port to be available
+    await waitForPort(PORT);
+    log("info", "Port available, proceeding with initialization");
+
+    // Check database connection
+    await db.execute(sql`SELECT 1`);
+    log("info", "Database connection established");
+
+    const app = express();
+    setupMiddleware(app);
+    setupAuth(app);
+    registerRoutes(app);
+
+    // Initialize admin after routes are set up
+    await initializeAdmin().catch(error => {
+      log("error", `Admin initialization error: ${error instanceof Error ? error.message : String(error)}`);
+    });
+
+    server = createServer(app);
+    setupWebSocket(server);
+
+    // Initialize Telegram bot
+    log("info", "Initializing Telegram bot...");
+    bot = await initializeBot();
+    if (!bot) {
+      log("error", "Failed to initialize Telegram bot - continuing without bot functionality");
+    } else {
+      log("info", "Telegram bot initialized successfully");
+    }
+
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
+
+    // Error handler
+    app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+      console.error("Server error:", err);
+      res.status(500).json({
+        error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message
+      });
+    });
+
+    return new Promise((resolve, reject) => {
+      server.listen(PORT, "0.0.0.0", () => {
+        log("info", `Server is ready at http://0.0.0.0:${PORT}`);
+        // Signal that all components are initialized and the port is ready
+        console.log(`PORT=${PORT}`);
+        console.log(`PORT_READY=${PORT}`);
+        resolve(server);
+      }).on("error", (err: Error) => {
+        log("error", `Server failed to start: ${err.message}`);
+        reject(err);
+      });
+
+      const shutdown = async () => {
+        log("info", "Shutting down gracefully...");
+        if (bot) {
+          try {
+            await bot.stopPolling();
+            log("info", "Telegram bot stopped");
+          } catch (error) {
+            log("error", "Error stopping Telegram bot");
+          }
+        }
+        if (wss) {
+          wss.close(() => {
+            log("info", "WebSocket server closed");
+          });
+        }
+        server.close(() => {
+          log("info", "HTTP server closed");
+          process.exit(0);
+        });
+
+        // Force exit after 10 seconds if graceful shutdown fails
+        setTimeout(() => {
+          log("error", "Forced shutdown after timeout");
+          process.exit(1);
+        }, 10000);
+      };
+
+      process.on("SIGTERM", shutdown);
+      process.on("SIGINT", shutdown);
+    });
+  } catch (error) {
+    log("error", `Failed to start application: ${error instanceof Error ? error.message : String(error)}`);
+    process.exit(1);
+  }
 }
 
 function setupWebSocket(server: any) {
@@ -130,95 +225,6 @@ const requestLogger = (() => {
     next();
   };
 })();
-
-
-async function startServer() {
-  try {
-    log("info", "Starting server initialization...");
-
-    // Wait for port to be available
-    await waitForPort(PORT);
-
-    // Check database connection
-    await db.execute(sql`SELECT 1`);
-    log("info", "Database connection established");
-
-    const app = express();
-    setupMiddleware(app);
-    setupAuth(app);
-    registerRoutes(app);
-    await initializeAdmin().catch(console.error);
-
-    server = createServer(app);
-    setupWebSocket(server);
-
-    // Initialize Telegram bot
-    log("info", "Initializing Telegram bot...");
-    bot = await initializeBot();
-    if (!bot) {
-      log("error", "Failed to initialize Telegram bot - continuing without bot functionality");
-    } else {
-      log("info", "Telegram bot initialized successfully");
-    }
-
-    if (app.get("env") === "development") {
-      await setupVite(app, server);
-    } else {
-      serveStatic(app);
-    }
-
-    app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-      console.error("Server error:", err);
-      res.status(500).json({
-        error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message
-      });
-    });
-
-    return new Promise((resolve, reject) => {
-      server.listen(PORT, "0.0.0.0", () => {
-        log("info", `Server is ready at http://0.0.0.0:${PORT}`);
-        // Signal that the port is ready for Replit
-        console.log(`PORT_READY=${PORT}`);
-        resolve(server);
-      }).on("error", (err: Error) => {
-        log("error", `Server failed to start: ${err.message}`);
-        reject(err);
-      });
-
-      const shutdown = async () => {
-        log("info", "Shutting down gracefully...");
-        if (bot) {
-          try {
-            await bot.stopPolling();
-            log("info", "Telegram bot stopped");
-          } catch (error) {
-            log("error", "Error stopping Telegram bot");
-          }
-        }
-        if (wss) {
-          wss.close(() => {
-            log("info", "WebSocket server closed");
-          });
-        }
-        server.close(() => {
-          log("info", "HTTP server closed");
-          process.exit(0);
-        });
-      };
-
-      process.on("SIGTERM", shutdown);
-      process.on("SIGINT", shutdown);
-    });
-  } catch (error) {
-    log("error", `Failed to start application: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
-  }
-}
-
-startServer().catch((error) => {
-  log("error", `Server startup error: ${error instanceof Error ? error.message : String(error)}`);
-  process.exit(1);
-});
 
 function serveStatic(app: express.Application) {
   const distPath = path.resolve(__dirname, "public");
@@ -305,3 +311,8 @@ async function setupVite(app: express.Application, server: any) {
     }
   });
 }
+
+initializeServer().catch((error) => {
+  log("error", `Server startup error: ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(1);
+});
