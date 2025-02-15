@@ -78,7 +78,7 @@ async function setupVite(app: express.Application, server: any) {
       let template = await loadTemplate();
       template = template.replace(`src="/src/main.tsx"`, `src="/src/main.tsx?v=${Date.now()}"`);
       const page = await vite.transformIndexHtml(req.originalUrl, template);
-      res.status(200).set({ 
+      res.status(200).set({
         "Content-Type": "text/html",
         "Cache-Control": "no-cache",
         "X-Content-Type-Options": "nosniff"
@@ -95,14 +95,14 @@ function serveStatic(app: express.Application) {
   if (!fs.existsSync(distPath)) {
     throw new Error(`Could not find the build directory: ${distPath}. Please build the client first.`);
   }
-  
+
   // Serve static files with cache headers
   app.use(express.static(distPath, {
     maxAge: '1d',
     etag: true,
     lastModified: true
   }));
-  
+
   app.use("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"), {
       headers: {
@@ -138,7 +138,7 @@ function setupMiddleware(app: express.Application) {
   app.use(cookieParser());
   app.use(requestLogger);
   app.use(errorHandler);
-  
+
   // Health check endpoint
   app.get("/api/health", (_req, res) => {
     res.set('Cache-Control', 'no-store').json({ status: "healthy" });
@@ -160,7 +160,7 @@ const requestLogger = (() => {
   return (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const start = Date.now();
     const originalJson = res.json.bind(res);
-    
+
     res.json = (body: any) => {
       res.locals.body = body;
       return originalJson(body);
@@ -173,22 +173,22 @@ const requestLogger = (() => {
         if (res.locals.body) {
           logMessage += ` :: ${JSON.stringify(res.locals.body)}`;
         }
-        
+
         logQueue.push(logMessage);
         if (!flushTimeout) {
           flushTimeout = setTimeout(flushLogs, 1000);
         }
       }
     });
-    
+
     next();
   };
 })();
 
 function errorHandler(err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) {
   console.error("Server error:", err);
-  res.status(500).json({ 
-    error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message 
+  res.status(500).json({
+    error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message
   });
 }
 
@@ -203,7 +203,7 @@ async function startServer() {
 
     registerRoutes(app);
     await initializeAdmin().catch(console.error);
-    
+
     if (!process.env.TELEGRAM_BOT_TOKEN) {
       throw new Error("TELEGRAM_BOT_TOKEN must be provided");
     }
@@ -219,39 +219,67 @@ async function startServer() {
 
     setupMiddleware(app);
 
-    server
-      .listen(PORT, "0.0.0.0")
-      .on("error", async (err: any) => {
-        if (err.code === "EADDRINUSE") {
-          log(`Port ${PORT} is in use, attempting to free it...`);
-          await cleanupPort();
-          server.listen(PORT, "0.0.0.0");
-        } else {
-          console.error(`Failed to start server: ${err.message}`);
-          process.exit(1);
+    // Return a promise that resolves when the server is ready
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error(`Server failed to start within 30 seconds on port ${PORT}`));
+      }, 30000);
+
+      server
+        .listen(PORT, "0.0.0.0")
+        .on("error", async (err: any) => {
+          clearTimeout(timeoutId);
+          if (err.code === "EADDRINUSE") {
+            log(`Port ${PORT} is in use, attempting to free it...`);
+            await cleanupPort();
+            server.listen(PORT, "0.0.0.0");
+          } else {
+            console.error(`Failed to start server: ${err.message}`);
+            reject(err);
+          }
+        })
+        .on("listening", () => {
+          clearTimeout(timeoutId);
+          // Send a ready signal that the workflow can detect - this must be first
+          console.log(`Server is ready and listening on port ${PORT}`);
+          console.log(`PORT_READY=${PORT}`);
+
+          log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+          log("Telegram bot started successfully");
+
+          // Add health check endpoint for workflow verification
+          app.get("/_health", (_req, res) => {
+            res.status(200).json({ status: "healthy", uptime: process.uptime() });
+          });
+
+          resolve(server);
+        });
+
+      const shutdown = async () => {
+        log("Shutting down gracefully...");
+        if (bot) {
+          await bot.stopPolling();
         }
-      })
-      .on("listening", () => {
-        log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-        log("Telegram bot started successfully");
-      });
+        server.close(() => {
+          log("Server closed");
+          process.exit(0);
+        });
+      };
 
-    const shutdown = async () => {
-      log("Shutting down gracefully...");
-      await bot.stopPolling();
-      server.close(() => {
-        log("Server closed");
-        process.exit(0);
-      });
-    };
-
-    process.on("SIGTERM", shutdown);
-    process.on("SIGINT", shutdown);
-
+      process.on("SIGTERM", shutdown);
+      process.on("SIGINT", shutdown);
+    });
   } catch (error) {
     console.error("Failed to start application:", error);
     process.exit(1);
   }
 }
 
-startServer();
+// Start the server and wait for it to be ready
+startServer().then(() => {
+  log("Server initialization completed");
+  // Additional signal for workflow port readiness - removed as PORT_READY is now logged earlier
+}).catch((error) => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
+});

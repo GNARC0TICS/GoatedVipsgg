@@ -528,31 +528,61 @@ function setupRESTRoutes(app: Express) {
           totalTransformations: number;
           averageTimeMs: number;
           errorCount: number;
-          lastUpdated: Date;
+          lastUpdated: Date | null;
         }
 
+        // Add logging for debugging
+        console.log('Fetching transformation metrics...');
+
         const [metrics] = await db.select({
-          totalTransformations: sql<number>`COUNT(*)::int`,
-          averageTimeMs: sql<number>`AVG(duration_ms)::float`,
-          errorCount: sql<number>`SUM(CASE WHEN type = 'error' THEN 1 ELSE 0 END)::int`,
-          lastUpdated: sql<Date>`MAX(created_at)::timestamptz`
+          totalTransformations: sql<number>`COALESCE(COUNT(*)::int, 0)`,
+          averageTimeMs: sql<number>`COALESCE(AVG(duration_ms)::float, 0)`,
+          errorCount: sql<number>`COALESCE(SUM(CASE WHEN type = 'error' THEN 1 ELSE 0 END)::int, 0)`,
+          lastUpdated: sql<Date>`COALESCE(MAX(created_at), NOW())::timestamptz`
         })
           .from(transformationLogs)
           .where(sql`created_at > NOW() - INTERVAL '24 hours'`);
 
-        const errorRate = metrics.errorCount / (metrics.totalTransformations || 1);
-
-        res.json({
-          totalTransformations: metrics.totalTransformations || 0,
-          averageTimeMs: metrics.averageTimeMs || 0,
-          errorRate,
-          lastUpdated: metrics.lastUpdated?.toISOString() || new Date().toISOString()
+        // Log raw metrics for debugging
+        console.log('Raw metrics from database:', {
+          ...metrics,
+          lastUpdated: metrics.lastUpdated ? metrics.lastUpdated.toISOString() : null
         });
+
+        const errorRate = metrics.errorCount / Math.max(metrics.totalTransformations, 1);
+
+        // Ensure we have valid data before sending response
+        const response = {
+          status: "success",
+          data: {
+            totalTransformations: metrics.totalTransformations,
+            averageTimeMs: Math.round(metrics.averageTimeMs * 100) / 100,
+            errorRate: Math.round(errorRate * 100) / 100,
+            lastUpdated: metrics.lastUpdated
+              ? metrics.lastUpdated instanceof Date
+                ? metrics.lastUpdated.toISOString()
+                : new Date(metrics.lastUpdated).toISOString()
+              : new Date().toISOString()
+          }
+        };
+
+        // Log final response for debugging
+        console.log('Sending metrics response:', response);
+
+        res.json(response);
       } catch (error) {
         console.error('Error fetching transformation metrics:', error);
+        if (error instanceof Error) {
+          console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+          });
+        }
         res.status(500).json({
           status: "error",
-          message: "Failed to fetch transformation metrics"
+          message: "Failed to fetch transformation metrics",
+          details: process.env.NODE_ENV === 'development' ? String(error) : undefined
         });
       }
     }
