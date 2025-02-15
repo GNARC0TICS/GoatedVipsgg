@@ -6,7 +6,7 @@ import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory, type RateLimiterRes } from "rate-limiter-flexible";
 import bonusChallengesRouter from "./routes/bonus-challenges";
 import { db } from "@db";
-import { wagerRaces, users, transformationLogs } from "@db/schema";
+import { wagerRaces, users, transformationLogs, mockWagerData } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { transformLeaderboardData as transformData } from "./utils/leaderboard";
@@ -337,6 +337,7 @@ function setupRESTRoutes(app: Express) {
         res.json(transformedData);
       } catch (error) {
         log(`Error in /api/affiliate/stats: ${error}`);
+        // In case of API failure, return empty data structure
         res.json({
           status: "success",
           metadata: {

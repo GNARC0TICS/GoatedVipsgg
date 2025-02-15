@@ -31,6 +31,15 @@ function sortByWagered(data: any[], period: string) {
   );
 }
 
+type TransformationLog = {
+  type: 'info' | 'error';
+  message: string;
+  payload?: Record<string, any>;
+  duration_ms?: number;
+  created_at: Date;
+  resolved: boolean;
+};
+
 /**
  * Transforms raw leaderboard data into standardized format, including mock data
  */
@@ -148,8 +157,8 @@ export async function transformLeaderboardData(apiData: any) {
       }
     });
 
-    // Log transformation metrics
-    await db.insert(transformationLogs).values({
+    // Log transformation success
+    const log: TransformationLog = {
       type: 'info',
       message: 'Leaderboard transformation completed successfully',
       payload: {
@@ -160,7 +169,9 @@ export async function transformLeaderboardData(apiData: any) {
       duration_ms: Date.now() - startTime,
       created_at: new Date(),
       resolved: false
-    });
+    };
+
+    await db.insert(transformationLogs).values(log);
 
     // Return transformed data with guaranteed structure
     return {
@@ -188,8 +199,8 @@ export async function transformLeaderboardData(apiData: any) {
       }
     });
 
-    // Log error metrics
-    await db.insert(transformationLogs).values({
+    // Log error
+    const errorLog: TransformationLog = {
       type: 'error',
       message: error instanceof Error ? error.message : String(error),
       payload: {
@@ -199,7 +210,9 @@ export async function transformLeaderboardData(apiData: any) {
       duration_ms: Date.now() - startTime,
       created_at: new Date(),
       resolved: false
-    });
+    };
+
+    await db.insert(transformationLogs).values(errorLog);
 
     return defaultResponse;
   }

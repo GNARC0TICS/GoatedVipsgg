@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,21 @@ import { motion, AnimatePresence } from "framer-motion";
 const ITEMS_PER_PAGE = 10;
 
 // Types
+interface WagerData {
+  today: number;
+  this_week: number;
+  this_month: number;
+  all_time: number;
+}
+
+interface LeaderboardEntry {
+  uid: string;
+  name: string;
+  wagered: WagerData;
+  isWagering?: boolean;
+  wagerChange?: number;
+}
+
 interface LeaderboardTableProps {
   timePeriod: TimePeriod;
 }
@@ -44,7 +58,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
   // Filter data based on search query (memoized)
   const filteredData = useMemo(() => {
     if (!data) return [];
-    return data.filter((entry) =>
+    return data.filter((entry: LeaderboardEntry) =>
       entry.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [data, searchQuery]);
@@ -79,7 +93,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
   /**
    * Gets the wager amount based on the selected time period
    */
-  const getWagerAmount = useCallback((entry: any) => {
+  const getWagerAmount = useCallback((entry: LeaderboardEntry) => {
     if (!entry?.wagered) return 0;
     switch (timePeriod) {
       case "weekly":
@@ -171,7 +185,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
             <TableBody>
               {filteredData
                 .slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE)
-                .map((entry, index) => (
+                .map((entry: LeaderboardEntry, index: number) => (
                   <motion.tr
                     key={entry.uid}
                     initial={{ opacity: 0, y: 20 }}
