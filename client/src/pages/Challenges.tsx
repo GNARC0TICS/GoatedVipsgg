@@ -43,7 +43,7 @@ const CHALLENGES = [
 export default function Challenges() {
   return (
     <PageTransition>
-      <div className="min-h-screen bg-[#14151A] text-white">
+      <div className="min-h-screen bg-[#14151A] text-white pt-16">
         <div className="container mx-auto px-4 py-8 md:py-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

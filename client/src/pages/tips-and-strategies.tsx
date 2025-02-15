@@ -53,7 +53,7 @@ export default function TipsAndStrategies() {
   const [, setLocation] = useLocation();
 
   return (
-    <div className="min-h-screen bg-[#14151A] text-white">
+    <div className="min-h-screen bg-[#14151A] text-white pt-16">
       <div className="container mx-auto px-4 pt-2 pb-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
