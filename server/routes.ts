@@ -12,6 +12,9 @@ import { z } from "zod";
 import { users, type SelectUser } from "@db/schema";
 import { transformLeaderboardData as transformData } from "./utils/leaderboard";
 import { initializeBot } from "./telegram/bot";
+import { db } from "@db";
+import { transformationLogs } from "@db/schema";
+import { sql } from "drizzle-orm";
 
 function transformRawLeaderboardData(rawData: any[]) {
   if (!Array.isArray(rawData)) {
@@ -223,6 +226,7 @@ function setupRESTRoutes(app: Express) {
     cacheMiddleware(15000),
     async (_req, res) => {
       try {
+        console.log('Fetching current race data...');
         const response = await fetch(
           `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
           {
@@ -234,6 +238,7 @@ function setupRESTRoutes(app: Express) {
         );
 
         if (!response.ok) {
+          console.log('API response not ok, returning default race data');
           return res.json({
             id: new Date().getFullYear() + (new Date().getMonth() + 1).toString().padStart(2, '0'),
             status: 'live',
@@ -245,10 +250,22 @@ function setupRESTRoutes(app: Express) {
         }
 
         const rawData = await response.json();
-        const stats = transformData(rawData);
+        console.log('Raw data received:', {
+          hasData: Boolean(rawData),
+          structure: rawData ? Object.keys(rawData) : null
+        });
+
+        const stats = await transformLeaderboardData(rawData);
+        console.log('Transformed stats:', {
+          hasMonthlyData: Boolean(stats?.data?.monthly?.data),
+          monthlyDataLength: stats?.data?.monthly?.data?.length ?? 0
+        });
 
         const now = new Date();
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+        // Ensure we have a valid stats object with monthly data
+        const monthlyData = stats?.data?.monthly?.data ?? [];
 
         const raceData = {
           id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
@@ -256,22 +273,33 @@ function setupRESTRoutes(app: Express) {
           startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
           endDate: endOfMonth.toISOString(),
           prizePool: 500,
-          participants: stats.data.monthly.data
+          participants: monthlyData
             .map((participant: any, index: number) => ({
-              uid: participant.uid,
-              name: participant.name,
-              wagered: participant.wagered.this_month,
+              uid: participant?.uid ?? "",
+              name: participant?.name ?? "Unknown",
+              wagered: Number(participant?.wagered?.this_month ?? 0),
               position: index + 1
             }))
             .slice(0, 10)
         };
 
+        console.log('Sending race data:', {
+          participantsCount: raceData.participants.length,
+          startDate: raceData.startDate,
+          endDate: raceData.endDate
+        });
+
         res.json(raceData);
       } catch (error) {
-        log(`Error fetching current race: ${error}`);
-        res.status(500).json({
-          status: "error",
-          message: "Failed to fetch current race",
+        console.error('Error in /api/wager-races/current:', error);
+        // Return a safe default response
+        res.status(200).json({
+          id: new Date().getFullYear() + (new Date().getMonth() + 1).toString().padStart(2, '0'),
+          status: 'live',
+          startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
+          endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).toISOString(),
+          prizePool: 500,
+          participants: []
         });
       }
     }
@@ -494,6 +522,37 @@ function setupRESTRoutes(app: Express) {
       }
     }
   );
+  app.get("/api/admin/transformation-metrics",
+    createRateLimiter('medium'),
+    cacheMiddleware(30000),
+    async (_req, res) => {
+      try {
+        const [metrics] = await db.select({
+          totalTransformations: sql`COUNT(*)`,
+          averageTimeMs: sql`AVG(duration_ms)`,
+          errorCount: sql`SUM(CASE WHEN type = 'error' THEN 1 ELSE 0 END)`,
+          lastUpdated: sql`MAX(created_at)`
+        })
+          .from(transformationLogs)
+          .where(sql`created_at > NOW() - INTERVAL '24 hours'`);
+
+        const errorRate = metrics.errorCount / metrics.totalTransformations;
+
+        res.json({
+          totalTransformations: metrics.totalTransformations,
+          averageTimeMs: metrics.averageTimeMs,
+          errorRate,
+          lastUpdated: metrics.lastUpdated
+        });
+      } catch (error) {
+        console.error('Error fetching transformation metrics:', error);
+        res.status(500).json({
+          status: "error",
+          message: "Failed to fetch transformation metrics"
+        });
+      }
+    }
+  );
 }
 
 let wss: WebSocketServer;
@@ -527,6 +586,13 @@ function setupWebSocket(httpServer: Server) {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit("connection", ws, request);
         handleLeaderboardConnection(ws);
+      });
+    }
+
+    if (request.url === "/ws/transformation-logs") {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit("connection", ws, request);
+        handleTransformationLogsConnection(ws);
       });
     }
   });
@@ -567,12 +633,65 @@ function handleLeaderboardConnection(ws: WebSocket) {
   }
 }
 
+function handleTransformationLogsConnection(ws: WebSocket) {
+  const clientId = Date.now().toString();
+  log(`Transformation logs WebSocket client connected (${clientId})`);
+
+  ws.isAlive = true;
+  const pingInterval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.ping();
+    }
+  }, 30000);
+
+  ws.on("pong", () => {
+    ws.isAlive = true;
+  });
+
+  ws.on("error", (error: Error) => {
+    log(`WebSocket error (${clientId}): ${error.message}`);
+    clearInterval(pingInterval);
+    ws.terminate();
+  });
+
+  ws.on("close", () => {
+    log(`Transformation logs WebSocket client disconnected (${clientId})`);
+    clearInterval(pingInterval);
+  });
+
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: "CONNECTED",
+      clientId,
+      timestamp: Date.now()
+    }));
+  }
+}
+
 export function broadcastLeaderboardUpdate(data: any) {
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify({
         type: "LEADERBOARD_UPDATE",
         data
+      }));
+    }
+  });
+}
+
+export function broadcastTransformationLog(log: {
+  type: 'info' | 'error' | 'warning';
+  message: string;
+  data?: any;
+}) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: "TRANSFORMATION_LOG",
+        log: {
+          ...log,
+          timestamp: new Date().toISOString()
+        }
       }));
     }
   });

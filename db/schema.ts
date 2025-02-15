@@ -108,16 +108,19 @@ export const wagerRaceRelations = relations(wagerRaces, ({ many }) => ({
   participants: many(wagerRaceParticipants),
 }));
 
-export const wagerRaceParticipantRelations = relations(wagerRaceParticipants, ({ one }) => ({
-  race: one(wagerRaces, {
-    fields: [wagerRaceParticipants.raceId],
-    references: [wagerRaces.id],
+export const wagerRaceParticipantRelations = relations(
+  wagerRaceParticipants,
+  ({ one }) => ({
+    race: one(wagerRaces, {
+      fields: [wagerRaceParticipants.raceId],
+      references: [wagerRaces.id],
+    }),
+    user: one(users, {
+      fields: [wagerRaceParticipants.userId],
+      references: [users.id],
+    }),
   }),
-  user: one(users, {
-    fields: [wagerRaceParticipants.userId],
-    references: [users.id],
-  }),
-}));
+);
 
 export const supportTicketRelations = relations(supportTickets, ({ one, many }) => ({
   user: one(users, {
@@ -147,8 +150,12 @@ export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 export const insertWagerRaceSchema = createInsertSchema(wagerRaces);
 export const selectWagerRaceSchema = createSelectSchema(wagerRaces);
-export const insertWagerRaceParticipantSchema = createInsertSchema(wagerRaceParticipants);
-export const selectWagerRaceParticipantSchema = createSelectSchema(wagerRaceParticipants);
+export const insertWagerRaceParticipantSchema = createInsertSchema(
+  wagerRaceParticipants,
+);
+export const selectWagerRaceParticipantSchema = createSelectSchema(
+  wagerRaceParticipants,
+);
 export const insertSupportTicketSchema = createInsertSchema(supportTickets);
 export const selectSupportTicketSchema = createSelectSchema(supportTickets);
 export const insertTicketMessageSchema = createInsertSchema(ticketMessages);
@@ -171,10 +178,7 @@ export type InsertTicketMessage = typeof ticketMessages.$inferInsert;
 export type SelectTicketMessage = typeof ticketMessages.$inferSelect;
 
 // Export all tables and schemas
-export {
-  challenges,
-  challengeEntries,
-} from "./schema/challenges";
+export { challenges, challengeEntries } from "./schema/challenges";
 
 export {
   telegramUsers,
@@ -193,9 +197,9 @@ export const historicalRaces = pgTable("historical_races", {
   participants: jsonb("participants").notNull(),
   totalWagered: decimal("total_wagered", { precision: 18, scale: 2 }).notNull(),
   participantCount: text("participant_count").notNull(),
-  status: text("status").notNull().default('completed'),
+  status: text("status").notNull().default("completed"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  metadata: jsonb("metadata").default({}).notNull()
+  metadata: jsonb("metadata").default({}).notNull(),
 });
 
 export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
@@ -229,10 +233,18 @@ export const mockWagerData = pgTable("mock_wager_data", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
   username: text("username").notNull(),
-  wageredToday: decimal("wagered_today", { precision: 18, scale: 8 }).default('0').notNull(),
-  wageredThisWeek: decimal("wagered_this_week", { precision: 18, scale: 8 }).default('0').notNull(),
-  wageredThisMonth: decimal("wagered_this_month", { precision: 18, scale: 8 }).default('0').notNull(),
-  wageredAllTime: decimal("wagered_all_time", { precision: 18, scale: 8 }).default('0').notNull(),
+  wageredToday: decimal("wagered_today", { precision: 18, scale: 8 })
+    .default("0")
+    .notNull(),
+  wageredThisWeek: decimal("wagered_this_week", { precision: 18, scale: 8 })
+    .default("0")
+    .notNull(),
+  wageredThisMonth: decimal("wagered_this_month", { precision: 18, scale: 8 })
+    .default("0")
+    .notNull(),
+  wageredAllTime: decimal("wagered_all_time", { precision: 18, scale: 8 })
+    .default("0")
+    .notNull(),
   isMocked: boolean("is_mocked").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -250,6 +262,17 @@ export const mockWagerDataRelations = relations(mockWagerData, ({ one }) => ({
   }),
 }));
 
+export const transformationLogs = pgTable("transformation_logs", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(), // 'info' | 'error' | 'warning'
+  message: text("message").notNull(),
+  payload: jsonb("payload"),
+  duration_ms: decimal("duration_ms", { precision: 10, scale: 2 }),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  resolved: boolean("resolved").default(false).notNull(),
+  error_message: text("error_message"),
+});
+
 export const insertNewsletterSubscriptionSchema = createInsertSchema(
   newsletterSubscriptions,
 );
@@ -260,7 +283,6 @@ export const insertHistoricalRaceSchema = createInsertSchema(historicalRaces);
 export const selectHistoricalRaceSchema = createSelectSchema(historicalRaces);
 export const insertAffiliateStatsSchema = createInsertSchema(affiliateStats);
 export const selectAffiliateStatsSchema = createSelectSchema(affiliateStats);
-
 
 export const insertMockWagerDataSchema = createInsertSchema(mockWagerData);
 export const selectMockWagerDataSchema = createSelectSchema(mockWagerData);
@@ -273,3 +295,9 @@ export type InsertHistoricalRace = typeof historicalRaces.$inferInsert;
 export type SelectHistoricalRace = typeof historicalRaces.$inferSelect;
 export type InsertAffiliateStats = typeof affiliateStats.$inferInsert;
 export type SelectAffiliateStats = typeof affiliateStats.$inferSelect;
+
+export const insertTransformationLogSchema = createInsertSchema(transformationLogs);
+export const selectTransformationLogSchema = createSelectSchema(transformationLogs);
+
+export type InsertTransformationLog = typeof transformationLogs.$inferInsert;
+export type SelectTransformationLog = typeof transformationLogs.$inferSelect;

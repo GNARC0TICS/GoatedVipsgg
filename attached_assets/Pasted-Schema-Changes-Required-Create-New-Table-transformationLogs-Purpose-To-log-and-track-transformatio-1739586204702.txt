@@ -1,0 +1,52 @@
+Schema Changes Required
+Create New Table: transformationLogs
+Purpose: To log and track transformation operations (including errors and payloads) for debugging and performance monitoring.
+Suggested Columns:
+id: Primary key (UUID or serial)
+timestamp: Timestamp of when the transformation occurred
+payload: JSON or text column storing the data being transformed
+errorMessage: Text column for any error messages encountered during transformation
+resolved: Boolean flag indicating if the logged error has been addressed
+Additional metadata fields as needed (e.g., processing time, user_id if applicable)
+Modify Existing Table: bonus_codes
+Change: Add a new column named user_id
+Details:
+Action: Create column (do not rename an existing one)
+Type: Should match the type used for user IDs in your system (e.g., UUID or integer)
+Impact: This new column will allow you to properly associate bonus codes with the respective user and will be used in the updated data processing logic.
+Additional Considerations:
+Leaderboard and Wager Data:
+Ensure that any modifications to how leaderboard or wager data is stored are reflected in both your database schema and the ORM definitions. This may involve:
+Verifying that all wager fields (today, this_week, this_month, all_time) are present and of the correct numeric type.
+Updating any related indices or constraints that might affect data retrieval for leaderboard queries.
+Migration Approach Options
+Automated Migration:
+Use the updated drizzle-kit push command with the --force flag. This will:
+Pull the current schema from the database.
+Apply the necessary changes (create the transformationLogs table, add the user_id column to bonus_codes, etc.).
+Manual Migration:
+If preferred or if any issues arise, you can manually run SQL commands to:
+Create the new transformationLogs table.
+Alter the bonus_codes table to add the user_id column.
+Alternative Approach:
+Use pre-configured responses with your migration tool to handle schema changes if automated migration poses issues.
+Verification Steps
+Before Migration:
+Back up your current database state.
+Verify current schema details, especially for the bonus_codes table and any existing leaderboard tables.
+During Migration:
+Run the updated drizzle-kit push command with the --force flag.
+Watch the logs to confirm that:
+The transformationLogs table is created.
+The bonus_codes table now includes the new user_id column (the prompt should have you select “+ user_id create column”).
+Post-Migration Testing:
+API Endpoints:
+Test your endpoints (especially /api/affiliate/stats, /api/wager-races/current, etc.) to verify that data is being stored and retrieved correctly.
+Leaderboard Verification:
+Ensure the leaderboard displays wager amounts correctly and that transformation logic (including default fallbacks) is working.
+Telegram Bot:
+Verify that the Telegram bot is still functioning without errors.
+Database Checks:
+Query your database to ensure:
+The new transformationLogs table exists and is operational.
+The bonus_codes table includes the user_id column with the correct data type.
