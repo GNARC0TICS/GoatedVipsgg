@@ -247,7 +247,11 @@ async function initializeBot(): Promise<TelegramBot | null> {
 
       for (const admin of admins) {
         if (!admin.telegramId) continue;
+        
         try {
+          // First check if the chat exists
+          await bot.getChat(parseInt(admin.telegramId));
+          
           await bot.setMyCommands([...BOT_COMMANDS, ...ADMIN_COMMANDS], {
             scope: {
               type: 'chat',
@@ -256,13 +260,15 @@ async function initializeBot(): Promise<TelegramBot | null> {
           });
           log("info", `Set admin commands for ${admin.telegramId}`);
         } catch (cmdError) {
-          log("error", `Failed to set admin commands for ${admin.telegramId}: ${cmdError}`);
-          // Continue with other admins even if one fails
+          if (cmdError.message.includes('chat not found')) {
+            log("info", `Admin ${admin.telegramId} hasn't started a chat with the bot yet`);
+          } else {
+            log("error", `Failed to set admin commands for ${admin.telegramId}: ${cmdError}`);
+          }
         }
       }
     } catch (adminError) {
       log("error", `Error setting admin commands: ${adminError}`);
-      // Continue bot initialization even if admin command setting fails
     }
 
     registerEventHandlers(bot);
