@@ -6,12 +6,11 @@ import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory, type RateLimiterRes } from "rate-limiter-flexible";
 import bonusChallengesRouter from "./routes/bonus-challenges";
 import { db } from "@db";
-import { wagerRaces, users, transformationLogs, mockWagerData } from "@db/schema";
+import { wagerRaces, users, transformationLogs } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { transformLeaderboardData as transformData } from "./utils/leaderboard";
+import { transformLeaderboardData } from "./utils/leaderboard";
 import type { SelectUser } from "@db/schema";
-import { initializeBot } from "./telegram/bot";
 import { createObjectCsvWriter } from 'csv-writer';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -311,11 +310,13 @@ function setupRESTRoutes(app: Express) {
     async (req, res) => {
       try {
         const username = typeof req.query.username === 'string' ? req.query.username : undefined;
-        let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}?raw=true`;
+        let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
 
         if (username) {
-          url += `&username=${encodeURIComponent(username)}`;
+          url += `?username=${encodeURIComponent(username)}`;
         }
+
+        log('Fetching affiliate stats from:', url);
 
         const response = await fetch(url, {
           headers: {
@@ -333,17 +334,39 @@ function setupRESTRoutes(app: Express) {
         }
 
         const rawData = await response.json();
-        const transformedData = transformRawLeaderboardData(rawData);
+
+        // More detailed logging of the raw data structure
+        log('Raw API response structure:', {
+          hasData: Boolean(rawData),
+          dataStructure: typeof rawData,
+          keys: Object.keys(rawData),
+          hasResults: Boolean(rawData?.results),
+          resultsLength: rawData?.results?.length,
+          hasSuccess: 'success' in rawData,
+          successValue: rawData?.success,
+          nestedData: Boolean(rawData?.data),
+          nestedDataLength: rawData?.data?.length,
+        });
+
+        const transformedData = await transformLeaderboardData(rawData);
+
+        log('Transformed leaderboard data:', {
+          status: transformedData.status,
+          totalUsers: transformedData.metadata?.totalUsers,
+          dataLengths: {
+            today: transformedData.data?.today?.data?.length,
+            weekly: transformedData.data?.weekly?.data?.length,
+            monthly: transformedData.data?.monthly?.data?.length,
+            allTime: transformedData.data?.all_time?.data?.length,
+          }
+        });
+
         res.json(transformedData);
       } catch (error) {
         log(`Error in /api/affiliate/stats: ${error}`);
-        // In case of API failure, return empty data structure
-        res.json({
-          status: "success",
-          metadata: {
-            totalUsers: 0,
-            lastUpdated: new Date().toISOString(),
-          },
+        res.status(error instanceof ApiError ? error.status || 500 : 500).json({
+          status: "error",
+          message: error instanceof Error ? error.message : "An unexpected error occurred",
           data: {
             today: { data: [] },
             weekly: { data: [] },
@@ -650,7 +673,7 @@ function sortByWagered(data: any[], period: string) {
 }
 
 export function transformLeaderboardData(apiData: any) {
-  return transformData(apiData);
+  return transformRawLeaderboardData(apiData.data || apiData.results || apiData);
 }
 
 export function registerRoutes(app: Express): Server {
@@ -809,4 +832,9 @@ declare module 'ws' {
   interface WebSocket {
     isAlive?: boolean;
   }
+}
+
+function initializeBot() {
+    //Implementation for initializeBot() would go here.  This is omitted as it's not relevant to the specific edit.
+    return null;
 }

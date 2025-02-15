@@ -8,70 +8,142 @@ import {
   jsonb,
   integer,
 } from "drizzle-orm/pg-core";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@db";
-import { users, mockWagerData, transformationLogs } from "@db/schema";
+import { users, transformationLogs } from "@db/schema";
 import { broadcastTransformationLog } from "../routes";
 
-/**
- * Utility function to sort data by wagered amount with safe defaults
- */
-function sortByWagered(data: any[], period: string) {
-  if (!Array.isArray(data)) {
-    console.warn(`Invalid data passed to sortByWagered: ${typeof data}`);
-    return [];
-  }
+type WageredData = {
+  today: number;
+  this_week: number;
+  this_month: number;
+  all_time: number;
+};
 
-  return [...data].sort(
-    (a, b) => {
-      const bValue = Number(b?.wagered?.[period] ?? 0);
-      const aValue = Number(a?.wagered?.[period] ?? 0);
-      return bValue - aValue;
-    }
-  );
-}
-
-type TransformationLog = {
-  type: 'info' | 'error';
-  message: string;
-  payload?: Record<string, any>;
-  duration_ms?: number;
-  created_at: Date;
-  resolved: boolean;
+type LeaderboardEntry = {
+  uid: string;
+  name: string;
+  wagered: WageredData;
 };
 
 /**
- * Transforms raw leaderboard data into standardized format, including mock data
+ * Utility function to sort data by wagered amount
+ */
+function sortByWagered(data: LeaderboardEntry[], period: keyof WageredData): LeaderboardEntry[] {
+  return [...data].sort((a, b) => {
+    const bValue = Number(b.wagered[period]) || 0;
+    const aValue = Number(a.wagered[period]) || 0;
+    return bValue - aValue;
+  });
+}
+
+/**
+ * Transforms raw leaderboard data into standardized format
  */
 export async function transformLeaderboardData(apiData: any) {
   const startTime = Date.now();
 
   try {
-    console.log('Transforming leaderboard data:', { 
-      dataType: typeof apiData,
+    console.log('Starting leaderboard transformation:', { 
       hasData: Boolean(apiData),
-      structure: apiData ? Object.keys(apiData) : null
+      keys: Object.keys(apiData),
+      dataType: typeof apiData
     });
 
-    broadcastTransformationLog({
-      type: 'info',
-      message: 'Starting leaderboard transformation',
-      data: {
-        dataType: typeof apiData,
-        hasStructure: Boolean(apiData && Object.keys(apiData).length)
+    // Extract data from API response
+    const rawData = apiData?.data || apiData?.results || [];
+
+    console.log('Raw data extracted:', {
+      isArray: Array.isArray(rawData),
+      length: Array.isArray(rawData) ? rawData.length : 'not an array',
+      sampleEntry: Array.isArray(rawData) && rawData.length > 0 ? 
+        JSON.stringify(rawData[0], null, 2) : 'no entries'
+    });
+
+    // Transform the data into a standardized format
+    const transformedEntries = (Array.isArray(rawData) ? rawData : []).map((entry): LeaderboardEntry => ({
+      uid: String(entry?.uid || ""),
+      name: String(entry?.name || "Unknown"),
+      wagered: {
+        today: Number(entry?.wagered?.today || 0),
+        this_week: Number(entry?.wagered?.this_week || 0),
+        this_month: Number(entry?.wagered?.this_month || 0),
+        all_time: Number(entry?.wagered?.all_time || 0),
       }
-    });
+    }));
 
-    // Ensure we have valid input data or return empty structure
-    const responseData = apiData?.data || apiData?.results || apiData || [];
+    // Log transformation stats
+    const transformedStats = {
+      totalEntries: transformedEntries.length,
+      hasTodayWagers: transformedEntries.some(e => e.wagered.today > 0),
+      hasWeeklyWagers: transformedEntries.some(e => e.wagered.this_week > 0),
+      hasMonthlyWagers: transformedEntries.some(e => e.wagered.this_month > 0),
+      hasAllTimeWagers: transformedEntries.some(e => e.wagered.all_time > 0)
+    };
 
-    // Default empty response structure
-    const defaultResponse = {
+    console.log('Transformation stats:', transformedStats);
+
+    // Sort data for each time period
+    const todayData = sortByWagered(transformedEntries, 'today');
+    const weeklyData = sortByWagered(transformedEntries, 'this_week');
+    const monthlyData = sortByWagered(transformedEntries, 'this_month');
+    const allTimeData = sortByWagered(transformedEntries, 'all_time');
+
+    // Create the final response with all time periods
+    const response = {
       status: "success",
       metadata: {
-        totalUsers: 0,
+        totalUsers: transformedEntries.length,
         lastUpdated: new Date().toISOString(),
       },
+      data: {
+        today: { data: todayData.slice(0, 100) }, // Limit to top 100 for each period
+        weekly: { data: weeklyData.slice(0, 100) },
+        monthly: { data: monthlyData.slice(0, 100) },
+        all_time: { data: allTimeData.slice(0, 100) }
+      },
+    };
+
+    // Log transformation success
+    await db.insert(transformationLogs).values({
+      type: 'info' as const,
+      message: 'Leaderboard transformation completed',
+      payload: JSON.stringify({
+        ...transformedStats,
+        sortedStats: {
+          todayLength: todayData.length,
+          weeklyLength: weeklyData.length,
+          monthlyLength: monthlyData.length,
+          allTimeLength: allTimeData.length,
+        }
+      }),
+      duration_ms: (Date.now() - startTime).toString(),
+      created_at: new Date(),
+      resolved: true,
+      error_message: null
+    });
+
+    return response;
+  } catch (error) {
+    console.error('Error transforming leaderboard data:', error);
+
+    // Log error
+    await db.insert(transformationLogs).values({
+      type: 'error' as const,
+      message: error instanceof Error ? error.message : String(error),
+      payload: JSON.stringify({
+        error: error instanceof Error ? error.stack : undefined,
+        input: apiData ? { type: typeof apiData, keys: Object.keys(apiData) } : null
+      }),
+      duration_ms: (Date.now() - startTime).toString(),
+      created_at: new Date(),
+      resolved: false,
+      error_message: error instanceof Error ? error.message : String(error)
+    });
+
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "An unexpected error occurred",
       data: {
         today: { data: [] },
         weekly: { data: [] },
@@ -79,141 +151,5 @@ export async function transformLeaderboardData(apiData: any) {
         all_time: { data: [] },
       },
     };
-
-    // Get all mock data with safe type checking
-    const mockData = await db
-      .select()
-      .from(mockWagerData)
-      .where(eq(mockWagerData.isMocked, true));
-
-    const mockDataMap = new Map(mockData.map(m => [m.username, m]));
-
-    const dataArray = Array.isArray(responseData) ? responseData : [responseData];
-    console.log('Processing data array:', { length: dataArray.length });
-
-    broadcastTransformationLog({
-      type: 'info',
-      message: 'Processing wager data',
-      data: { recordCount: dataArray.length }
-    });
-
-    const transformedData = dataArray.map((entry) => {
-      const mockEntry = mockDataMap.get(entry?.name || '');
-
-      if (mockEntry) {
-        // Use mock data if available with safe type conversion
-        return {
-          uid: entry?.uid || "",
-          name: entry?.name || "",
-          wagered: {
-            today: Number(mockEntry.wageredToday) || 0,
-            this_week: Number(mockEntry.wageredThisWeek) || 0,
-            this_month: Number(mockEntry.wageredThisMonth) || 0,
-            all_time: Number(mockEntry.wageredAllTime) || 0,
-          },
-        };
-      }
-
-      // Use actual data with safe defaults
-      return {
-        uid: entry?.uid || "",
-        name: entry?.name || "",
-        wagered: {
-          today: Number(entry?.wagered?.today) || 0,
-          this_week: Number(entry?.wagered?.this_week) || 0,
-          this_month: Number(entry?.wagered?.this_month) || 0,
-          all_time: Number(entry?.wagered?.all_time) || 0,
-        },
-      };
-    });
-
-    // Add mock-only users with safe type conversion
-    mockData.forEach(mock => {
-      if (!transformedData.some(d => d.name === mock.username)) {
-        transformedData.push({
-          uid: mock.userId?.toString() || "",
-          name: mock.username || "",
-          wagered: {
-            today: Number(mock.wageredToday) || 0,
-            this_week: Number(mock.wageredThisWeek) || 0,
-            this_month: Number(mock.wageredThisMonth) || 0,
-            all_time: Number(mock.wageredAllTime) || 0,
-          },
-        });
-      }
-    });
-
-    console.log('Transformation complete:', { 
-      totalTransformed: transformedData.length,
-      hasMockData: mockData.length > 0
-    });
-
-    broadcastTransformationLog({
-      type: 'info',
-      message: 'Transformation complete',
-      data: {
-        totalTransformed: transformedData.length,
-        processingTimeMs: Date.now() - startTime
-      }
-    });
-
-    // Log transformation success
-    const log: TransformationLog = {
-      type: 'info',
-      message: 'Leaderboard transformation completed successfully',
-      payload: {
-        recordCount: dataArray.length,
-        mockDataCount: mockData.length,
-        transformedCount: transformedData.length
-      },
-      duration_ms: Date.now() - startTime,
-      created_at: new Date(),
-      resolved: false
-    };
-
-    await db.insert(transformationLogs).values(log);
-
-    // Return transformed data with guaranteed structure
-    return {
-      status: "success",
-      metadata: {
-        totalUsers: transformedData.length,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: { data: sortByWagered(transformedData, 'today') },
-        weekly: { data: sortByWagered(transformedData, 'this_week') },
-        monthly: { data: sortByWagered(transformedData, 'this_month') },
-        all_time: { data: sortByWagered(transformedData, 'all_time') },
-      },
-    };
-  } catch (error) {
-    console.error('Error transforming leaderboard data:', error);
-
-    broadcastTransformationLog({
-      type: 'error',
-      message: 'Transformation failed',
-      data: {
-        error: error instanceof Error ? error.message : String(error),
-        processingTimeMs: Date.now() - startTime
-      }
-    });
-
-    // Log error
-    const errorLog: TransformationLog = {
-      type: 'error',
-      message: error instanceof Error ? error.message : String(error),
-      payload: {
-        error: error instanceof Error ? error.stack : undefined,
-        input: apiData ? { type: typeof apiData, keys: Object.keys(apiData) } : null
-      },
-      duration_ms: Date.now() - startTime,
-      created_at: new Date(),
-      resolved: false
-    };
-
-    await db.insert(transformationLogs).values(errorLog);
-
-    return defaultResponse;
   }
 }
