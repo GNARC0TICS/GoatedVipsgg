@@ -12,6 +12,9 @@ import { z } from "zod";
 import { transformLeaderboardData as transformData } from "./utils/leaderboard";
 import type { SelectUser } from "@db/schema";
 import { initializeBot } from "./telegram/bot";
+import { createObjectCsvWriter } from 'csv-writer';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 function transformRawLeaderboardData(rawData: any[]) {
   if (!Array.isArray(rawData)) {
@@ -524,65 +527,113 @@ function setupRESTRoutes(app: Express) {
     cacheMiddleware(30000),
     async (_req, res) => {
       try {
-        interface TransformationMetrics {
-          totalTransformations: number;
-          averageTimeMs: number;
-          errorCount: number;
-          lastUpdated: Date | null;
-        }
+        console.log('Executing transformation metrics query...');
 
-        // Add logging for debugging
-        console.log('Fetching transformation metrics...');
-
-        const [metrics] = await db.select({
-          totalTransformations: sql<number>`COALESCE(COUNT(*)::int, 0)`,
-          averageTimeMs: sql<number>`COALESCE(AVG(duration_ms)::float, 0)`,
-          errorCount: sql<number>`COALESCE(SUM(CASE WHEN type = 'error' THEN 1 ELSE 0 END)::int, 0)`,
-          lastUpdated: sql<Date>`COALESCE(MAX(created_at), NOW())::timestamptz`
-        })
-          .from(transformationLogs)
-          .where(sql`created_at > NOW() - INTERVAL '24 hours'`);
-
-        // Log raw metrics for debugging
-        console.log('Raw metrics from database:', {
-          ...metrics,
-          lastUpdated: metrics.lastUpdated ? metrics.lastUpdated.toISOString() : null
+        const result = await db.query.transformationLogs.findMany({
+          columns: {
+            type: true,
+            duration_ms: true,
+            created_at: true
+          },
+          where: sql`created_at > NOW() - INTERVAL '24 hours'`
         });
 
-        const errorRate = metrics.errorCount / Math.max(metrics.totalTransformations, 1);
+        console.log('Raw query result:', result);
 
-        // Ensure we have valid data before sending response
+        // Calculate metrics from the result array
+        const metrics = {
+          total_transformations: result.length,
+          average_time_ms: result.reduce((acc, row) => acc + (Number(row.duration_ms) || 0), 0) / (result.length || 1),
+          error_count: result.filter(row => row.type === 'error').length,
+          last_updated: result.length > 0
+            ? Math.max(...result.map(row => row.created_at.getTime()))
+            : Date.now()
+        };
+
+        console.log('Calculated metrics:', metrics);
+
         const response = {
-          status: "success",
+          status: 'success',
           data: {
-            totalTransformations: metrics.totalTransformations,
-            averageTimeMs: Math.round(metrics.averageTimeMs * 100) / 100,
-            errorRate: Math.round(errorRate * 100) / 100,
-            lastUpdated: metrics.lastUpdated
-              ? metrics.lastUpdated instanceof Date
-                ? metrics.lastUpdated.toISOString()
-                : new Date(metrics.lastUpdated).toISOString()
-              : new Date().toISOString()
+            totalTransformations: metrics.total_transformations,
+            averageTimeMs: Number(metrics.average_time_ms.toFixed(2)),
+            errorRate: metrics.total_transformations > 0
+              ? Number((metrics.error_count / metrics.total_transformations).toFixed(2))
+              : 0,
+            lastUpdated: new Date(metrics.last_updated).toISOString()
           }
         };
 
-        // Log final response for debugging
-        console.log('Sending metrics response:', response);
-
+        console.log('Processed response:', response);
         res.json(response);
       } catch (error) {
-        console.error('Error fetching transformation metrics:', error);
-        if (error instanceof Error) {
-          console.error('Error details:', {
-            name: error.name,
+        console.error('Error in transformation metrics endpoint:', {
+          error: error instanceof Error ? {
             message: error.message,
-            stack: error.stack
-          });
-        }
+            stack: error.stack,
+            name: error.name
+          } : error,
+          timestamp: new Date().toISOString()
+        });
+
         res.status(500).json({
-          status: "error",
-          message: "Failed to fetch transformation metrics",
-          details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+          status: 'error',
+          message: 'Failed to fetch transformation metrics',
+          details: process.env.NODE_ENV === 'development'
+            ? error instanceof Error ? error.message : String(error)
+            : undefined
+        });
+      }
+    }
+  );
+  app.get("/api/admin/export-logs",
+    createRateLimiter('low'),
+    async (_req, res) => {
+      try {
+        console.log('Fetching logs for export...');
+
+        const logs = await db.query.transformationLogs.findMany({
+          orderBy: (logs, { desc }) => [desc(logs.created_at)],
+          limit: 1000 // Limit to last 1000 logs
+        });
+
+        console.log(`Found ${logs.length} logs to export`);
+
+        const formattedLogs = logs.map(log => ({
+          timestamp: log.created_at.toISOString(),
+          type: log.type,
+          message: log.message,
+          duration_ms: log.duration_ms?.toString() || '',
+          resolved: log.resolved ? 'Yes' : 'No',
+          error_message: log.error_message || '',
+          payload: log.payload ? JSON.stringify(log.payload) : ''
+        }));
+
+        // Set headers for CSV download
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=transformation_logs_${new Date().toISOString().split('T')[0]}.csv`);
+
+        // Convert to CSV format
+        const csvData = [
+          // Header row
+          Object.keys(formattedLogs[0] || {}).join(','),
+          // Data rows
+          ...formattedLogs.map(log =>
+            Object.values(log)
+              .map(value => `"${String(value).replace(/"/g, '""')}"`)
+              .join(',')
+          )
+        ].join('\n');
+
+        res.send(csvData);
+      } catch (error) {
+        console.error('Error exporting logs:', error);
+        res.status(500).json({
+          status: 'error',
+          message: 'Failed to export logs',
+          details: process.env.NODE_ENV === 'development'
+            ? error instanceof Error ? error.message : String(error)
+            : undefined
         });
       }
     }
