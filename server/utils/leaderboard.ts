@@ -26,6 +26,12 @@ type LeaderboardEntry = {
   wagered: WageredData;
 };
 
+type APIResponse = {
+  data?: any;
+  results?: any;
+  success?: boolean;
+};
+
 /**
  * Utility function to sort data by wagered amount
  */
@@ -40,48 +46,37 @@ function sortByWagered(data: LeaderboardEntry[], period: keyof WageredData): Lea
 /**
  * Transforms raw leaderboard data into standardized format
  */
-export async function transformLeaderboardData(apiData: any) {
+export async function transformLeaderboardData(apiData: APIResponse) {
   const startTime = Date.now();
 
   try {
     console.log('Starting leaderboard transformation:', { 
       hasData: Boolean(apiData),
-      keys: Object.keys(apiData),
-      dataType: typeof apiData
+      structure: Object.keys(apiData)
     });
 
-    // Extract data from API response
-    const rawData = apiData?.data || apiData?.results || [];
+    // Extract data from API response, handling potential nested structures
+    const rawData = Array.isArray(apiData) ? apiData : 
+                   Array.isArray(apiData?.data) ? apiData.data :
+                   Array.isArray(apiData?.results) ? apiData.results : [];
 
-    console.log('Raw data extracted:', {
+    console.log('Raw data structure:', {
       isArray: Array.isArray(rawData),
-      length: Array.isArray(rawData) ? rawData.length : 'not an array',
-      sampleEntry: Array.isArray(rawData) && rawData.length > 0 ? 
-        JSON.stringify(rawData[0], null, 2) : 'no entries'
+      length: rawData.length,
+      availablePeriods: rawData.length > 0 ? Object.keys(rawData[0]?.wagered || {}) : []
     });
 
-    // Transform the data into a standardized format
-    const transformedEntries = (Array.isArray(rawData) ? rawData : []).map((entry): LeaderboardEntry => ({
+    // Transform each entry, preserving all available data
+    const transformedEntries = rawData.map((entry: any): LeaderboardEntry => ({
       uid: String(entry?.uid || ""),
       name: String(entry?.name || "Unknown"),
       wagered: {
         today: Number(entry?.wagered?.today || 0),
         this_week: Number(entry?.wagered?.this_week || 0),
         this_month: Number(entry?.wagered?.this_month || 0),
-        all_time: Number(entry?.wagered?.all_time || 0),
+        all_time: Number(entry?.wagered?.all_time || 0)
       }
     }));
-
-    // Log transformation stats
-    const transformedStats = {
-      totalEntries: transformedEntries.length,
-      hasTodayWagers: transformedEntries.some(e => e.wagered.today > 0),
-      hasWeeklyWagers: transformedEntries.some(e => e.wagered.this_week > 0),
-      hasMonthlyWagers: transformedEntries.some(e => e.wagered.this_month > 0),
-      hasAllTimeWagers: transformedEntries.some(e => e.wagered.all_time > 0)
-    };
-
-    console.log('Transformation stats:', transformedStats);
 
     // Sort data for each time period
     const todayData = sortByWagered(transformedEntries, 'today');
@@ -89,7 +84,20 @@ export async function transformLeaderboardData(apiData: any) {
     const monthlyData = sortByWagered(transformedEntries, 'this_month');
     const allTimeData = sortByWagered(transformedEntries, 'all_time');
 
-    // Create the final response with all time periods
+    // Log transformation stats
+    const transformedStats = {
+      totalEntries: transformedEntries.length,
+      availableData: {
+        today: todayData.some(e => e.wagered.today > 0),
+        weekly: weeklyData.some(e => e.wagered.this_week > 0),
+        monthly: monthlyData.some(e => e.wagered.this_month > 0),
+        allTime: allTimeData.some(e => e.wagered.all_time > 0)
+      }
+    };
+
+    console.log('Transformation stats:', transformedStats);
+
+    // Create the final response
     const response = {
       status: "success",
       metadata: {
@@ -97,26 +105,18 @@ export async function transformLeaderboardData(apiData: any) {
         lastUpdated: new Date().toISOString(),
       },
       data: {
-        today: { data: todayData.slice(0, 100) }, // Limit to top 100 for each period
-        weekly: { data: weeklyData.slice(0, 100) },
-        monthly: { data: monthlyData.slice(0, 100) },
-        all_time: { data: allTimeData.slice(0, 100) }
+        today: { data: todayData },
+        weekly: { data: weeklyData },
+        monthly: { data: monthlyData },
+        all_time: { data: allTimeData }
       },
     };
 
-    // Log transformation success
+    // Log successful transformation
     await db.insert(transformationLogs).values({
-      type: 'info' as const,
+      type: 'info',
       message: 'Leaderboard transformation completed',
-      payload: JSON.stringify({
-        ...transformedStats,
-        sortedStats: {
-          todayLength: todayData.length,
-          weeklyLength: weeklyData.length,
-          monthlyLength: monthlyData.length,
-          allTimeLength: allTimeData.length,
-        }
-      }),
+      payload: JSON.stringify(transformedStats),
       duration_ms: (Date.now() - startTime).toString(),
       created_at: new Date(),
       resolved: true,
@@ -129,7 +129,7 @@ export async function transformLeaderboardData(apiData: any) {
 
     // Log error
     await db.insert(transformationLogs).values({
-      type: 'error' as const,
+      type: 'error',
       message: error instanceof Error ? error.message : String(error),
       payload: JSON.stringify({
         error: error instanceof Error ? error.stack : undefined,

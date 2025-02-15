@@ -15,30 +15,6 @@ import { createObjectCsvWriter } from 'csv-writer';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
-function transformRawLeaderboardData(rawData: any[]) {
-  if (!Array.isArray(rawData)) {
-    rawData = [];
-  }
-
-  const todayData = [...rawData].sort((a, b) => (b.wagered.today || 0) - (a.wagered.today || 0));
-  const weeklyData = [...rawData].sort((a, b) => (b.wagered.this_week || 0) - (a.wagered.this_week || 0));
-  const monthlyData = [...rawData].sort((a, b) => (b.wagered.this_month || 0) - (a.wagered.this_month || 0));
-  const allTimeData = [...rawData].sort((a, b) => (b.wagered.all_time || 0) - (a.wagered.all_time || 0));
-
-  return {
-    status: "success",
-    metadata: {
-      totalUsers: rawData.length,
-      lastUpdated: new Date().toISOString(),
-    },
-    data: {
-      today: { data: todayData },
-      weekly: { data: weeklyData },
-      monthly: { data: monthlyData },
-      all_time: { data: allTimeData },
-    },
-  };
-}
 
 class ApiError extends Error {
   status?: number;
@@ -666,14 +642,42 @@ function setupRESTRoutes(app: Express) {
 
 let wss: WebSocketServer;
 
-function sortByWagered(data: any[], period: string) {
-  return [...data].sort(
-    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
-  );
-}
-
 export function transformLeaderboardData(apiData: any) {
-  return transformRawLeaderboardData(apiData.data || apiData.results || apiData);
+  const data = apiData.data || apiData.results || apiData;
+  if (!Array.isArray(data)) {
+    return {
+      status: "success",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    };
+  }
+
+  const todayData = [...data].sort((a, b) => (b.wagered.today || 0) - (a.wagered.today || 0));
+  const weeklyData = [...data].sort((a, b) => (b.wagered.this_week || 0) - (a.wagered.this_week || 0));
+  const monthlyData = [...data].sort((a, b) => (b.wagered.this_month || 0) - (a.wagered.this_month || 0));
+  const allTimeData = [...data].sort((a, b) => (b.wagered.all_time || 0) - (a.wagered.all_time || 0));
+
+  return {
+    status: "success",
+    metadata: {
+      totalUsers: data.length,
+      lastUpdated: new Date().toISOString(),
+    },
+    data: {
+      today: { data: todayData },
+      weekly: { data: weeklyData },
+      monthly: { data: monthlyData },
+      all_time: { data: allTimeData },
+    },
+  };
 }
 
 export function registerRoutes(app: Express): Server {
