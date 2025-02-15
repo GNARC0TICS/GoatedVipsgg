@@ -50,6 +50,10 @@ export default function AuthModal() {
   const onSubmit = async (values: AuthFormData) => {
     setIsLoading(true);
     try {
+      if (!values.username || !values.password) {
+        throw new Error("Username and password are required");
+      }
+
       const formData = {
         username: values.username.trim(),
         password: values.password.trim(),
@@ -59,7 +63,7 @@ export default function AuthModal() {
       const mutation = mode === "login" ? loginMutation : registerMutation;
       const result = await mutation.mutateAsync(formData);
 
-      if (result.ok) {
+      if (result?.ok) {
         toast({
           title: "Success",
           description: mode === "login" 
@@ -69,11 +73,7 @@ export default function AuthModal() {
         setIsOpen(false);
         form.reset();
       } else {
-        toast({
-          variant: "destructive",
-          title: mode === "login" ? "Login Failed" : "Registration Failed",
-          description: result.message || "Please check your credentials and try again",
-        });
+        throw new Error(result?.message || "Invalid username or password");
       }
     } catch (error) {
       toast({
