@@ -2,12 +2,11 @@ import { pgTable, text, timestamp, integer, boolean, jsonb } from "drizzle-orm/p
 import { sql } from "drizzle-orm";
 import { relations } from 'drizzle-orm';
 
-export const sessions = pgTable('sessions', {
+export const sessions = pgTable('session', {
   id: text('id').primaryKey(),
   userId: integer('user_id').references(() => users.id),
   expiresAt: timestamp('expires_at').notNull(),
   data: text('data'),
-  createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const users = pgTable('users', {
