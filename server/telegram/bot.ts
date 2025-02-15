@@ -21,7 +21,20 @@ const CUSTOM_EMOJIS = {
   error: "❌",
   success: "✅",
   mvp: "🌟",
-  live: "🔴"
+  live: "🔴",
+  bonus: "🎁",
+  vip: "💎",
+  challenge: "🎯",
+  link: "🔗",
+  wallet: "💰",
+  time: "⏰",
+  support: "💬",
+  settings: "⚙️",
+  alert: "🔔",
+  rocket: "🚀",
+  fire: "🔥",
+  trophy: "🏆",
+  gift: "🎁"
 };
 
 const rateLimiter = new RateLimiterMemory({
