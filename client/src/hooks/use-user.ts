@@ -63,7 +63,7 @@ export function useUser() {
       return response.json();
     },
     staleTime: 30000, // Data considered fresh for 30 seconds
-    cacheTime: 60000, // Keep in cache for 1 minute
+    gcTime: 60000, // Keep in cache for 1 minute (replaces deprecated cacheTime)
     refetchOnWindowFocus: false
   });
 

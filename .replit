@@ -53,6 +53,7 @@ agentRequireRestartOnSave = false
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "tsx server/index.ts"
+wait_for_port = 5000
 
 # Authentication settings
 [auth]
