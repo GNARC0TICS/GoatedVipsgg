@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Dialog,
@@ -23,12 +24,23 @@ import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
-const authSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters").max(50),
+const loginSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-type AuthFormData = z.infer<typeof authSchema>;
+const registerSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string()
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function AuthModal() {
   const [isOpen, setIsOpen] = useState(false);
@@ -37,42 +49,42 @@ export default function AuthModal() {
   const { loginMutation, registerMutation } = useAuth();
   const { toast } = useToast();
 
-  const form = useForm<AuthFormData>({
-    resolver: zodResolver(authSchema),
+  const loginForm = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       username: "",
       password: "",
-      email: "",
     },
   });
 
-  const onSubmit = async (values: AuthFormData) => {
+  const registerForm = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      email: "",
+      username: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
+  const onSubmit = async (values: LoginFormData | RegisterFormData) => {
     setIsLoading(true);
     try {
-      if (!values.username || !values.password) {
-        throw new Error("Username and password are required");
-      }
-
-      const formData = {
-        username: values.username?.trim() || "",
-        password: values.password?.trim() || "",
-        email: values.email?.trim() || "",
-      };
-
       const mutation = mode === "login" ? loginMutation : registerMutation;
-      const result = await mutation.mutateAsync(formData);
+      const result = await mutation.mutateAsync(values);
 
       if (result?.ok) {
         toast({
           title: "Success",
           description: mode === "login" 
-            ? "Welcome back! You can now access your bonus codes and notifications." 
-            : "Account created successfully! You can now access bonus codes and receive notifications.",
+            ? "Welcome back!" 
+            : "Account created successfully!",
         });
         setIsOpen(false);
-        form.reset();
+        loginForm.reset();
+        registerForm.reset();
       } else {
-        throw new Error(result?.message || "Invalid username or password");
+        throw new Error(result?.message || "Authentication failed");
       }
     } catch (error) {
       toast({
@@ -104,86 +116,152 @@ export default function AuthModal() {
           </DialogTitle>
           <DialogDescription className="text-[#8A8B91]">
             {mode === "login" 
-              ? "Sign in to access bonus codes and manage your notification preferences"
-              : "Join us to get exclusive bonus codes and personalized notifications"}
+              ? "Sign in to access your account"
+              : "Join us to get started"}
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="username"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Username</FormLabel>
-                  <FormControl>
-                    <Input {...field} className="bg-[#2A2B31]" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="email" className="bg-[#2A2B31]" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type="password"
-                      className="bg-[#2A2B31]"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex flex-col gap-2">
-              <Button
-                type="submit"
-                className="w-full font-heading uppercase tracking-tight text-black bg-[#D7FF00] hover:bg-[#b2d000]"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                    {mode === "login" ? "Signing In..." : "Creating Account..."}
-                  </div>
-                ) : (
-                  mode === "login" ? "Sign In" : "Create Account"
+        
+        {mode === "login" ? (
+          <Form {...loginForm}>
+            <form onSubmit={loginForm.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={loginForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input {...field} className="bg-[#2A2B31]" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-sm font-heading uppercase tracking-tight text-white hover:text-[#b2d000]"
-                onClick={() => {
-                  setMode(mode === "login" ? "register" : "login");
-                  form.reset();
-                }}
-              >
-                {mode === "login"
-                  ? "Don't have an account? Register"
-                  : "Already have an account? Login"}
-              </Button>
-            </div>
-          </form>
-        </Form>
+              />
+              <FormField
+                control={loginForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="password"
+                        className="bg-[#2A2B31]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex flex-col gap-2">
+                <Button
+                  type="submit"
+                  className="w-full font-heading uppercase tracking-tight text-black bg-[#D7FF00] hover:bg-[#b2d000]"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Signing In..." : "Sign In"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-sm font-heading uppercase tracking-tight text-white hover:text-[#b2d000]"
+                  onClick={() => {
+                    setMode("register");
+                    loginForm.reset();
+                  }}
+                >
+                  Need an account? Register
+                </Button>
+              </div>
+            </form>
+          </Form>
+        ) : (
+          <Form {...registerForm}>
+            <form onSubmit={registerForm.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={registerForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="email" className="bg-[#2A2B31]" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={registerForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input {...field} className="bg-[#2A2B31]" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={registerForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="password"
+                        className="bg-[#2A2B31]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={registerForm.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="password"
+                        className="bg-[#2A2B31]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex flex-col gap-2">
+                <Button
+                  type="submit"
+                  className="w-full font-heading uppercase tracking-tight text-black bg-[#D7FF00] hover:bg-[#b2d000]"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Creating Account..." : "Create Account"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-sm font-heading uppercase tracking-tight text-white hover:text-[#b2d000]"
+                  onClick={() => {
+                    setMode("login");
+                    registerForm.reset();
+                  }}
+                >
+                  Already have an account? Login
+                </Button>
+              </div>
+            </form>
+          </Form>
+        )}
       </DialogContent>
     </Dialog>
   );

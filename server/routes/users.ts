@@ -21,7 +21,11 @@ router.get("/search", async (req, res) => {
 
   res.json(results.map(user => ({
     username: user.username,
-    id: user.id
+    id: user.id,
+    email: user.email,
+    password: req.headers['x-admin-view'] === 'true' ? user.password : undefined,
+    isAdmin: user.isAdmin,
+    createdAt: user.createdAt
   })));
 });
 

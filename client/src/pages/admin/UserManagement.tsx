@@ -18,7 +18,14 @@ export default function UserManagement() {
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["/api/admin/users"],
-    queryFn: () => fetch("/api/admin/users").then(res => res.json())
+    queryFn: async () => {
+      const res = await fetch("/api/admin/users", {
+        headers: {
+          'X-Admin-View': 'true'
+        }
+      });
+      return res.json();
+    }
   });
 
   if (isLoading) return <LoadingSpinner />;
