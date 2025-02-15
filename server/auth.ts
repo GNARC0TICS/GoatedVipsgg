@@ -52,12 +52,17 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         // For admin login
-        if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-          return done(null, {
-            id: 1,
-            username: process.env.ADMIN_USERNAME,
-            isAdmin: true
-          });
+        if (username === process.env.ADMIN_USERNAME) {
+          if (password === process.env.ADMIN_PASSWORD) {
+            return done(null, {
+              id: 1,
+              username: process.env.ADMIN_USERNAME,
+              isAdmin: true,
+              email: `${process.env.ADMIN_USERNAME}@admin.local`
+            });
+          } else {
+            return done(null, false, { message: "Invalid admin password" });
+          }
         }
 
         if (!username || !password) {
