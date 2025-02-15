@@ -18,6 +18,7 @@ export default function UserManagement() {
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["/api/admin/users"],
+    queryFn: () => fetch("/api/admin/users").then(res => res.json())
   });
 
   if (isLoading) return <LoadingSpinner />;

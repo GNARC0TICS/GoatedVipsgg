@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast({
         title: "Welcome back!",
         description: `Logged in as ${data.user.username}`,
+        variant: "default"
       });
     },
     onError: (error: Error) => {
