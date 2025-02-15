@@ -35,7 +35,7 @@ export default function AuthModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [isLoading, setIsLoading] = useState(false);
-  const { login, register } = useAuth();
+  const { loginMutation, registerMutation } = useAuth();
   const { toast } = useToast();
 
   const form = useForm<AuthFormData>({
@@ -56,8 +56,8 @@ export default function AuthModal() {
         email: values.email.trim(),
       };
 
-      const authFn = mode === "login" ? login : register;
-      const result = await authFn(formData);
+      const mutation = mode === "login" ? loginMutation : registerMutation;
+      const result = await mutation.mutateAsync(formData);
 
       if (result.ok) {
         toast({
