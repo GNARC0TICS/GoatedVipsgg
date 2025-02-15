@@ -6,15 +6,12 @@ import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory, type RateLimiterRes } from "rate-limiter-flexible";
 import bonusChallengesRouter from "./routes/bonus-challenges";
 import { db } from "@db";
-import { wagerRaces } from "@db/schema";
+import { wagerRaces, users, transformationLogs } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { users, type SelectUser } from "@db/schema";
 import { transformLeaderboardData as transformData } from "./utils/leaderboard";
+import type { SelectUser } from "@db/schema";
 import { initializeBot } from "./telegram/bot";
-import { db } from "@db";
-import { transformationLogs } from "@db/schema";
-import { sql } from "drizzle-orm";
 
 function transformRawLeaderboardData(rawData: any[]) {
   if (!Array.isArray(rawData)) {
@@ -527,22 +524,29 @@ function setupRESTRoutes(app: Express) {
     cacheMiddleware(30000),
     async (_req, res) => {
       try {
+        interface TransformationMetrics {
+          totalTransformations: number;
+          averageTimeMs: number;
+          errorCount: number;
+          lastUpdated: Date;
+        }
+
         const [metrics] = await db.select({
-          totalTransformations: sql`COUNT(*)`,
-          averageTimeMs: sql`AVG(duration_ms)`,
-          errorCount: sql`SUM(CASE WHEN type = 'error' THEN 1 ELSE 0 END)`,
-          lastUpdated: sql`MAX(created_at)`
+          totalTransformations: sql<number>`COUNT(*)::int`,
+          averageTimeMs: sql<number>`AVG(duration_ms)::float`,
+          errorCount: sql<number>`SUM(CASE WHEN type = 'error' THEN 1 ELSE 0 END)::int`,
+          lastUpdated: sql<Date>`MAX(created_at)::timestamptz`
         })
           .from(transformationLogs)
           .where(sql`created_at > NOW() - INTERVAL '24 hours'`);
 
-        const errorRate = metrics.errorCount / metrics.totalTransformations;
+        const errorRate = metrics.errorCount / (metrics.totalTransformations || 1);
 
         res.json({
-          totalTransformations: metrics.totalTransformations,
-          averageTimeMs: metrics.averageTimeMs,
+          totalTransformations: metrics.totalTransformations || 0,
+          averageTimeMs: metrics.averageTimeMs || 0,
           errorRate,
-          lastUpdated: metrics.lastUpdated
+          lastUpdated: metrics.lastUpdated?.toISOString() || new Date().toISOString()
         });
       } catch (error) {
         console.error('Error fetching transformation metrics:', error);
@@ -637,6 +641,36 @@ function handleTransformationLogsConnection(ws: WebSocket) {
   const clientId = Date.now().toString();
   log(`Transformation logs WebSocket client connected (${clientId})`);
 
+  // Send initial connection confirmation
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: "CONNECTED",
+      clientId,
+      timestamp: Date.now()
+    }));
+
+    // Send recent logs on connection
+    db.select()
+      .from(transformationLogs)
+      .orderBy(sql`created_at DESC`)
+      .limit(50)
+      .then(logs => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: "INITIAL_LOGS",
+            logs: logs.map(log => ({
+              ...log,
+              timestamp: log.created_at.toISOString()
+            }))
+          }));
+        }
+      })
+      .catch(error => {
+        console.error("Error fetching initial logs:", error);
+      });
+  }
+
+  // Setup ping/pong for connection health check
   ws.isAlive = true;
   const pingInterval = setInterval(() => {
     if (ws.readyState === WebSocket.OPEN) {
@@ -648,24 +682,16 @@ function handleTransformationLogsConnection(ws: WebSocket) {
     ws.isAlive = true;
   });
 
+  ws.on("close", () => {
+    clearInterval(pingInterval);
+    log(`Transformation logs WebSocket client disconnected (${clientId})`);
+  });
+
   ws.on("error", (error: Error) => {
     log(`WebSocket error (${clientId}): ${error.message}`);
     clearInterval(pingInterval);
     ws.terminate();
   });
-
-  ws.on("close", () => {
-    log(`Transformation logs WebSocket client disconnected (${clientId})`);
-    clearInterval(pingInterval);
-  });
-
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({
-      type: "CONNECTED",
-      clientId,
-      timestamp: Date.now()
-    }));
-  }
 }
 
 export function broadcastLeaderboardUpdate(data: any) {

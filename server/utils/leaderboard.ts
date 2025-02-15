@@ -157,7 +157,9 @@ export async function transformLeaderboardData(apiData: any) {
         mockDataCount: mockData.length,
         transformedCount: transformedData.length
       },
-      duration_ms: Date.now() - startTime
+      duration_ms: Date.now() - startTime,
+      created_at: new Date(),
+      resolved: false
     });
 
     // Return transformed data with guaranteed structure
@@ -194,7 +196,9 @@ export async function transformLeaderboardData(apiData: any) {
         error: error instanceof Error ? error.stack : undefined,
         input: apiData ? { type: typeof apiData, keys: Object.keys(apiData) } : null
       },
-      duration_ms: Date.now() - startTime
+      duration_ms: Date.now() - startTime,
+      created_at: new Date(),
+      resolved: false
     });
 
     return defaultResponse;
