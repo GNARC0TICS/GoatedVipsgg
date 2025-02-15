@@ -40,6 +40,20 @@ async function isPortAvailable(port: number): Promise<boolean> {
 
 async function waitForPort(port: number, timeout = 30000): Promise<void> {
   const start = Date.now();
+  
+  // First check if port is already in use
+  const isInUse = !await isPortAvailable(port);
+  if (isInUse) {
+    log("info", `Port ${port} is in use, attempting to kill existing process`);
+    try {
+      await execAsync(`kill $(lsof -t -i:${port})`);
+      // Wait a bit for the port to be released
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } catch (error) {
+      log("error", `Failed to kill process on port ${port}`);
+    }
+  }
+
   while (Date.now() - start < timeout) {
     if (await isPortAvailable(port)) {
       return;
