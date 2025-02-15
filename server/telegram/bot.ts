@@ -210,10 +210,28 @@ const rateLimiter = new RateLimiterMemory({
 });
 
 let botInstance: TelegramBot | null = null;
+let isPolling = false;
 
 function log(level: "error" | "info" | "debug", message: string) {
   console.log(`[${level.toUpperCase()}] ${message}`);
 }
+
+// Add cleanup handler
+function cleanup() {
+  if (botInstance && isPolling) {
+    try {
+      botInstance.stopPolling();
+      isPolling = false;
+      log("info", "Bot polling stopped");
+    } catch (error) {
+      log("error", `Error stopping bot: ${error}`);
+    }
+  }
+}
+
+// Handle process termination
+process.on('SIGTERM', cleanup);
+process.on('SIGINT', cleanup);
 
 // Update the initializeBot function to handle admin command setup more gracefully
 async function initializeBot(): Promise<TelegramBot | null> {
@@ -248,8 +266,14 @@ async function initializeBot(): Promise<TelegramBot | null> {
       polling: true // Always use polling for now since we don't have a webhook URL
     };
 
+    if (botInstance) {
+      log("info", "Bot instance already exists, reusing existing instance");
+      return botInstance;
+    }
+
     const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, options);
     botInstance = bot;
+    isPolling = true;
 
     // Set commands for regular users first
     try {
