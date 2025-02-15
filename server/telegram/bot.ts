@@ -385,6 +385,16 @@ async function fetchCurrentRaceData(): Promise<WagerRaceData | null> {
     return data;
   } catch (error) {
     logError(error instanceof Error ? error : new Error('Unknown error fetching race data'), 'fetchCurrentRaceData');
+    // Report errors to Slack
+    if (process.env.SLACK_WEBHOOK_URL) {
+      await fetch(process.env.SLACK_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: `❌ Race data fetch error: ${error.message}`
+        })
+      }).catch(err => log(`Slack notification failed: ${err.message}`, 'error'));
+    }
     return null;
   }
 }
