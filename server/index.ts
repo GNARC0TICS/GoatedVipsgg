@@ -258,7 +258,7 @@ function serveStatic(app: express.Application) {
     etag: true,
     lastModified: true
   }));
-  app.use("*", (_req, res) => {
+  app.get("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"), {
       headers: {
         'Cache-Control': 'no-cache',
