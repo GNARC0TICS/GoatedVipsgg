@@ -43,24 +43,22 @@ const createVerificationButtons = (username: string) => ({
 
 // Updated command list
 const BOT_COMMANDS = [
-  { command: '/start', description: 'Start bot and see welcome message' },
-  { command: '/verify', description: 'Request account verification' },
-  { command: '/stats', description: 'View your gaming statistics' },
-  { command: '/race', description: 'View your current race position' },
-  { command: '/leaderboard', description: 'View top 10 monthly race standings' },
-  { command: '/bonuscodes', description: 'Get latest bonus codes' },
-  { command: '/challenges', description: 'View active challenges' },
-  { command: '/website', description: 'Get platform website link' },
-  { command: '/play', description: 'Get game link with affiliate code' },
-  { command: '/help', description: 'Show available commands' }
+  { command: 'start', description: '🚀 Start using the bot' },
+  { command: 'verify', description: '🔐 Link your Goated account' },
+  { command: 'stats', description: '📊 Check your wager stats' },
+  { command: 'race', description: '🏁 View your race position' },
+  { command: 'leaderboard', description: '🏆 See top players' },
+  { command: 'play', description: '🎮 Play on Goated with our affiliate link' },
+  { command: 'website', description: '🌐 Visit GoatedVIPs.gg' },
+  { command: 'help', description: '❓ Get help using the bot' }
 ];
 
-// Admin-only commands - these will be added separately for admin users
+// Admin-only commands
 const ADMIN_COMMANDS = [
-  { command: '/pending', description: 'View verification requests' },
-  { command: '/broadcast', description: 'Send announcement to all users' },
-  { command: '/approve', description: 'Approve a verification request' },
-  { command: '/reject', description: 'Reject a verification request' }
+  { command: 'pending', description: '📝 View pending verifications' },
+  { command: 'broadcast', description: '📢 Send announcement to all users' },
+  { command: 'approve', description: '✅ Approve a verification request' },
+  { command: 'reject', description: '❌ Reject a verification request' }
 ];
 
 // Updated message templates
@@ -87,10 +85,9 @@ ${CUSTOM_EMOJIS.vip} *Available Commands*
 • /stats - View your statistics
 • /race - Race leaderboard
 • /leaderboard - Monthly Leaderboard
-• /bonuscodes - Get bonus codes
-• /challenges - View challenges
-• /website - Platform website
 • /play - Game with affiliate
+• /website - Platform website
+• /help - Show this help message
 
 ${isAdmin ? `
 ${CUSTOM_EMOJIS.vip} *Admin Commands:*
@@ -103,16 +100,16 @@ Need help? Contact @xGoombas
 `.trim(),
 
   verifyInstructions: `
-${CUSTOM_EMOJIS.verify} *Account Verification*
+🔐 *Account Verification*
 
 Use: /verify YourGoatedUsername
-Your Goated username must match your account on Goated.com
+Your username must match your account on Goated.com
 
 An admin will review your request shortly.
-`.trim(),
+  `.trim(),
 
   verificationSubmitted: `
-${CUSTOM_EMOJIS.success} *Verification Request Submitted*
+✅ *Verification Request Submitted*
 
 Your request will be reviewed by an admin.
 You'll receive a notification once verified.
@@ -120,7 +117,7 @@ You'll receive a notification once verified.
 While waiting:
 • Check /help for available commands
 • Use /website to visit our platform
-`.trim(),
+  `.trim(),
   stats: (user: any) => `
 ${CUSTOM_EMOJIS.stats} *Your Stats*
 
@@ -182,16 +179,14 @@ ${top10.map((p, i) => {
   },
   pendingRequests: (requests: any[]) => {
     if (requests.length === 0) {
-      return `${CUSTOM_EMOJIS.success} No pending verification requests.`;
+      return '✅ No pending verification requests.';
     }
 
-    return `${CUSTOM_EMOJIS.verify} *Pending Verification Requests*\n\n${
+    return `📝 *Pending Verification Requests*\n\n${
       requests.map((req, index) =>
         `${index + 1}. @${req.telegramUsername}\n` +
-        `   • User ID: ${req.userId}\n` +
-        `   • Requested: ${new Date(req.createdAt).toLocaleString()}\n` +
-        `   • Status: ${req.status}\n` +
-        `   • Commands: /approve ${req.telegramUsername} or /reject ${req.telegramUsername}\n`
+        `   • Goated Username: ${req.goatedUsername}\n` +
+        `   • Requested: ${new Date(req.requestedAt).toLocaleString()}\n`
       ).join('\n')
     }`;
   },
@@ -220,7 +215,8 @@ function log(level: "error" | "info" | "debug", message: string) {
   console.log(`[${level.toUpperCase()}] ${message}`);
 }
 
-export async function initializeBot(): Promise<TelegramBot | null> {
+// Update the initializeBot function to handle admin command setup more gracefully
+async function initializeBot(): Promise<TelegramBot | null> {
   if (!process.env.TELEGRAM_BOT_TOKEN) {
     log("error", "TELEGRAM_BOT_TOKEN is not set!");
     return null;
@@ -228,40 +224,45 @@ export async function initializeBot(): Promise<TelegramBot | null> {
 
   try {
     const options: TelegramBot.ConstructorOptions = {
-      polling: !process.env.WEBHOOK_URL
+      polling: true // Always use polling for now since we don't have a webhook URL
     };
-
-    if (process.env.NODE_ENV === 'production' && process.env.WEBHOOK_URL) {
-      options.webHook = {
-        port: parseInt(process.env.WEBHOOK_PORT || '8443')
-      };
-    }
 
     const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, options);
     botInstance = bot;
 
-    if (process.env.NODE_ENV === 'production' && process.env.WEBHOOK_URL) {
-      await bot.setWebHook(`${process.env.WEBHOOK_URL}/bot${process.env.TELEGRAM_BOT_TOKEN}`);
-      log("info", "Webhook set successfully");
+    // Set commands for regular users first
+    try {
+      await bot.setMyCommands(BOT_COMMANDS);
+      log("info", "Set basic commands successfully");
+    } catch (error) {
+      log("error", `Error setting basic commands: ${error}`);
     }
 
-    // Set commands for regular users
-    await bot.setMyCommands(BOT_COMMANDS);
-
     // Set admin commands for admin users
-    const admins = await db
-      .select()
-      .from(users)
-      .where(eq(users.isAdmin, true));
+    try {
+      const admins = await db
+        .select()
+        .from(users)
+        .where(eq(users.isAdmin, true));
 
-    for (const admin of admins) {
-      if (!admin.telegramId) continue;
-      await bot.setMyCommands([...BOT_COMMANDS, ...ADMIN_COMMANDS], {
-        scope: {
-          type: 'chat',
-          chat_id: parseInt(admin.telegramId)
+      for (const admin of admins) {
+        if (!admin.telegramId) continue;
+        try {
+          await bot.setMyCommands([...BOT_COMMANDS, ...ADMIN_COMMANDS], {
+            scope: {
+              type: 'chat',
+              chat_id: parseInt(admin.telegramId)
+            }
+          });
+          log("info", `Set admin commands for ${admin.telegramId}`);
+        } catch (cmdError) {
+          log("error", `Failed to set admin commands for ${admin.telegramId}: ${cmdError}`);
+          // Continue with other admins even if one fails
         }
-      });
+      }
+    } catch (adminError) {
+      log("error", `Error setting admin commands: ${adminError}`);
+      // Continue bot initialization even if admin command setting fails
     }
 
     registerEventHandlers(bot);
@@ -306,61 +307,7 @@ function registerEventHandlers(bot: TelegramBot) {
   });
 
   // Add callback query handler for buttons
-  bot.on('callback_query', async (callbackQuery) => {
-    if (!callbackQuery.message || !callbackQuery.data) return;
-
-    const chatId = callbackQuery.message.chat.id;
-    const messageId = callbackQuery.message.message_id;
-
-    try {
-      if (callbackQuery.data === 'refresh_leaderboard') {
-        await handleLeaderboardRefresh(chatId, messageId);
-        await bot.answerCallbackQuery(callbackQuery.id, { text: "Leaderboard refreshed!" });
-      } else if (callbackQuery.data === 'view_stats') {
-        const user = await db
-          .select()
-          .from(telegramUsers)
-          .where(eq(telegramUsers.telegramId, callbackQuery.from.id.toString()))
-          .limit(1);
-
-        if (!user[0]) {
-          await bot.answerCallbackQuery(callbackQuery.id, {
-            text: "Please verify your account first using /verify",
-            show_alert: true
-          });
-          return;
-        }
-
-        await bot.sendMessage(chatId, MESSAGES.stats(user[0]), {
-          parse_mode: "Markdown"
-        });
-        await bot.answerCallbackQuery(callbackQuery.id);
-      } else if (callbackQuery.data.startsWith('approve_') || callbackQuery.data.startsWith('reject_')) {
-        const isAdmin = await checkIsAdmin(callbackQuery.from.id.toString());
-        if (!isAdmin) {
-          await bot.answerCallbackQuery(callbackQuery.id, {
-            text: "This action is for admins only",
-            show_alert: true
-          });
-          return;
-        }
-
-        const [action, username] = callbackQuery.data.split('_');
-        if (action === 'approve') {
-          await handleApprove({ ...callbackQuery.message, from: callbackQuery.from }, username);
-        } else {
-          await handleReject({ ...callbackQuery.message, from: callbackQuery.from }, username);
-        }
-        await bot.answerCallbackQuery(callbackQuery.id);
-      }
-    } catch (error) {
-      log("error", `Callback query error: ${error instanceof Error ? error.message : String(error)}`);
-      await bot.answerCallbackQuery(callbackQuery.id, {
-        text: "Error processing request. Please try again.",
-        show_alert: true
-      });
-    }
-  });
+  bot.on('callback_query', handleCallbackQuery);
 }
 
 // Handler implementations
@@ -383,24 +330,53 @@ async function handlePlay(msg: TelegramBot.Message) {
 
 
 async function handleVerify(msg: TelegramBot.Message, username?: string) {
-  if (!msg.from?.username) {
-    return safeSendMessage(msg.chat.id, "❌ Please set a Telegram username first.");
+  if (!msg.from?.id) return;
+
+  const chatId = msg.chat.id;
+  const telegramId = msg.from.id.toString();
+
+  // If in group chat, direct to private chat
+  if (msg.chat.type !== 'private') {
+    return bot.sendMessage(
+      chatId,
+      'Please start a private chat with me to complete verification:\n' +
+      'https://t.me/GoatedVIPsBot?start=verify'
+    );
   }
 
   if (!username) {
-    return safeSendMessage(msg.chat.id, MESSAGES.verifyInstructions, { parse_mode: "Markdown" });
+    return bot.sendMessage(chatId, MESSAGES.verifyInstructions, {
+      parse_mode: "Markdown"
+    });
   }
 
   try {
-    // Check if user is already verified
-    const existing = await db
-      .select()
-      .from(telegramUsers)
-      .where(eq(telegramUsers.telegramId, msg.from.id.toString()))
-      .limit(1);
+    // Check if user already has a pending verification
+    const existingRequest = await db.select()
+      .from(verificationRequests)
+      .where(eq(verificationRequests.telegramId, telegramId))
+      .execute();
 
-    if (existing[0]) {
-      return safeSendMessage(msg.chat.id, "✅ Your account is already verified!");
+    if (existingRequest?.[0]?.status === 'pending') {
+      return bot.sendMessage(chatId,
+        '⏳ You already have a pending verification request.\n\n' +
+        'Please wait for an admin to review your request.\n' +
+        'If you need help, contact @xGoombas');
+    }
+
+    // Check if user is already verified
+    const existingUser = await db.select()
+      .from(telegramUsers)
+      .where(eq(telegramUsers.telegramId, telegramId))
+      .execute();
+
+    if (existingUser?.[0]?.isVerified) {
+      return bot.sendMessage(chatId,
+        '✅ Your account is already verified!\n\n' +
+        'Available commands:\n' +
+        '/stats - Check your wager statistics\n' +
+        '/race - View your monthly race position\n' +
+        '/leaderboard - See top players');
     }
 
     // Check if the Goated username exists in our database
@@ -411,34 +387,24 @@ async function handleVerify(msg: TelegramBot.Message, username?: string) {
       .limit(1);
 
     if (!goatedUser[0]) {
-      return safeSendMessage(msg.chat.id,
-        "❌ This username was not found in our system. Please make sure you've entered your correct Goated username.");
-    }
-
-    // Check if this Goated account is already linked to another Telegram account
-    const existingLink = await db
-      .select()
-      .from(telegramUsers)
-      .where(eq(telegramUsers.userId, goatedUser[0].id))
-      .limit(1);
-
-    if (existingLink[0]) {
-      return safeSendMessage(msg.chat.id,
-        "❌ This Goated account is already linked to another Telegram account. Please contact support if you believe this is an error.");
+      return bot.sendMessage(chatId,
+        '❌ This username was not found in our system. Please make sure you\'ve entered your correct Goated username.');
     }
 
     // Create verification request
     await db.insert(verificationRequests).values({
-      telegramId: msg.from.id.toString(),
-      telegramUsername: msg.from.username,
-      userId: goatedUser[0].id,
-      status: "pending",
+      telegramId: telegramId,
+      telegramUsername: msg.from.username || 'unknown',
+      goatedUsername: username,
+      status: 'pending',
       requestedAt: new Date()
     });
 
-    await safeSendMessage(msg.chat.id, MESSAGES.verificationSubmitted, { parse_mode: "Markdown" });
+    await bot.sendMessage(chatId, MESSAGES.verificationSubmitted, {
+      parse_mode: "Markdown"
+    });
 
-    // Notify admins
+    // Notify admins with inline buttons
     const admins = await db
       .select()
       .from(users)
@@ -446,19 +412,26 @@ async function handleVerify(msg: TelegramBot.Message, username?: string) {
 
     for (const admin of admins) {
       if (!admin.telegramId) continue;
-      const message = `${CUSTOM_EMOJIS.verify} *New Verification Request*\n\n` +
+      const message = `📝 *New Verification Request*\n\n` +
         `From: @${msg.from.username}\n` +
         `Goated Username: ${username}\n` +
-        `User ID: ${goatedUser[0].id}\n\n` +
-        `Use /pending to view and manage requests`;
+        `Requested: ${new Date().toLocaleString()}`;
 
-      await safeSendMessage(parseInt(admin.telegramId), message, {
-        parse_mode: "Markdown"
+      await bot.sendMessage(admin.telegramId, message, {
+        parse_mode: "Markdown",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '✅ Approve', callback_data: `approve_${msg.from.username}` },
+              { text: '❌ Reject', callback_data: `reject_${msg.from.username}` }
+            ]
+          ]
+        }
       });
     }
   } catch (error) {
-    log("error", `Verification error: ${error instanceof Error ? error.message : String(error)}`);
-    await safeSendMessage(msg.chat.id, "❌ Error submitting request. Please try again later.");
+    console.error('Verification error:', error);
+    await bot.sendMessage(chatId, '❌ Error submitting request. Please try again later.');
   }
 }
 
@@ -809,4 +782,35 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
   }
 }
 
+async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
+  const chatId = callbackQuery.message?.chat.id;
+  const messageId = callbackQuery.message?.message_id;
+  const data = callbackQuery.data;
+
+  if (!chatId || !messageId || !data) return;
+
+  if (data.startsWith('approve_') || data.startsWith('reject_')) {
+    const [action, username] = data.split('_');
+    const isAdmin = await checkIsAdmin(callbackQuery.from.id.toString());
+
+    if (!isAdmin) {
+      return bot.answerCallbackQuery(callbackQuery.id, {
+        text: '❌ Only admins can perform this action',
+        show_alert: true
+      });
+    }
+
+    if (action === 'approve') {
+      await handleApprove({ chat_id: chatId, from: callbackQuery.from }, username);
+    } else {
+      await handleReject({ chat_id: chatId, from: callbackQuery.from }, username);
+    }
+
+    await bot.answerCallbackQuery(callbackQuery.id);
+    await bot.deleteMessage(chatId, messageId);
+  }
+}
+
+
+export { initializeBot };
 export default initializeBot;
