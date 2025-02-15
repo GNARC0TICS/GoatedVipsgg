@@ -33,7 +33,7 @@ function setupMiddleware(app: express.Application) {
 
   // Configure CORS for API routes
   app.use('/api', cors({
-    origin: process.env.NODE_ENV === 'development' 
+    origin: process.env.NODE_ENV === 'development'
       ? ['http://localhost:5000', 'http://0.0.0.0:5000']
       : process.env.ALLOWED_ORIGINS?.split(',') || [],
     credentials: true,
@@ -170,14 +170,8 @@ async function startServer() {
     await cleanupPort();
 
     const app = express();
-
-    // Setup basic middleware first
     setupMiddleware(app);
-
-    // Setup authentication
     setupAuth(app);
-
-    // Register API routes before Vite middleware
     registerRoutes(app);
     await initializeAdmin().catch(console.error);
 
@@ -188,17 +182,14 @@ async function startServer() {
 
     const server = createServer(app);
 
-    // Setup Vite or static serving after API routes
     if (app.get("env") === "development") {
       await setupVite(app, server);
     } else {
       serveStatic(app);
     }
 
-    // Error handling middleware should be last
     app.use(errorHandler);
 
-    // Return a promise that resolves when the server is ready
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         reject(new Error(`Server failed to start within 30 seconds on port ${PORT}`));
@@ -219,14 +210,14 @@ async function startServer() {
         })
         .on("listening", () => {
           clearTimeout(timeoutId);
-          // Send a ready signal that the workflow can detect - this must be first
+          // Print ready message for workflow detection
           console.log(`Server is ready and listening on port ${PORT}`);
           console.log(`PORT_READY=${PORT}`);
 
           log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
           log("Telegram bot started successfully");
+          log("Server initialization completed");
 
-          // Add health check endpoint for workflow verification
           resolve(server);
         });
 
@@ -311,16 +302,14 @@ async function setupVite(app: express.Application, server: any) {
         "X-Content-Type-Options": "nosniff"
       }).end(page);
     } catch (error) {
-      vite.ssrFixStacktrace(error);
-      next(error);
+      vite.ssrFixStacktrace(error as Error);
+      next(error instanceof Error ? error : new Error(String(error)));
     }
   });
 }
 
 // Start the server
-startServer().then(() => {
-  log("Server initialization completed");
-}).catch((error) => {
+startServer().catch((error) => {
   console.error("Failed to start server:", error);
   process.exit(1);
 });

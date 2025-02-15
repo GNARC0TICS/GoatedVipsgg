@@ -47,7 +47,6 @@ const authenticate = async (req: AuthenticatedRequest, res: Response, next: Next
     log("Authentication failed: User not authenticated");
     return res.status(401).json({ error: "Not authenticated" });
   }
-
   next();
 };
 
@@ -65,7 +64,6 @@ const asyncHandler = (fn: (req: AuthenticatedRequest, res: Response, next: NextF
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch((error) => {
       log(`Error in route handler: ${error}`);
-      // Check if it's a validation error
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           status: "error",
@@ -85,10 +83,8 @@ const asyncHandler = (fn: (req: AuthenticatedRequest, res: Response, next: NextF
 router.get("/bonus-codes", asyncHandler(async (req, res) => {
   log("Fetching active bonus codes - Starting query...");
   try {
-    // Rate limiting
     await publicLimiter.consume(req.ip || 'unknown');
 
-    // Set response headers
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('X-RateLimit-Limit', publicLimiter.points);
@@ -128,7 +124,7 @@ router.get("/bonus-codes", asyncHandler(async (req, res) => {
 }));
 
 // Get all bonus codes (admin only)
-router.get("/admin/bonus-codes", isAdmin, asyncHandler(async (req: AuthenticatedRequest, res) => {
+router.get("/admin/bonus-codes", isAdmin, asyncHandler(async (_req: AuthenticatedRequest, res) => {
   log("Admin: Fetching all bonus codes");
   try {
     const allBonusCodes = await db
@@ -158,13 +154,19 @@ router.post("/admin/bonus-codes", isAdmin, asyncHandler(async (req: Authenticate
       });
     }
 
+    const { code, description, bonusAmount, requiredWager, totalClaims, expiresAt, source } = result.data;
     const [bonusCode] = await db
       .insert(bonusCodes)
       .values({
-        ...result.data,
-        status: 'active',
+        code,
+        description,
+        bonusAmount,
+        requiredWager,
+        totalClaims,
+        expiresAt: new Date(expiresAt),
+        source,
         createdBy: req.user!.id,
-        expiresAt: new Date(result.data.expiresAt),
+        currentClaims: 0,
       })
       .returning();
 
@@ -190,13 +192,18 @@ router.put("/admin/bonus-codes/:id", isAdmin, asyncHandler(async (req: Authentic
       });
     }
 
+    const updateData = {
+      ...result.data,
+      updatedAt: new Date()
+    };
+
+    if (updateData.expiresAt) {
+      updateData.expiresAt = new Date(updateData.expiresAt);
+    }
+
     const [updated] = await db
       .update(bonusCodes)
-      .set({
-        ...result.data,
-        ...(result.data.expiresAt && { expiresAt: new Date(result.data.expiresAt) }),
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(bonusCodes.id, parseInt(id)))
       .returning();
 
@@ -239,6 +246,5 @@ router.delete("/admin/bonus-codes/:id", isAdmin, asyncHandler(async (req: Authen
     throw error;
   }
 }));
-
 
 export default router;

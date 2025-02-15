@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/lib/auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Loader2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -36,11 +37,11 @@ type RegisterData = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
-  const [location, navigate] = useLocation();
-  const { user, loginMutation, registerMutation } = useAuth();
+  const [_, navigate] = useLocation();
+  const auth = useAuth();
 
   // Redirect if already logged in
-  if (user) {
+  if (auth.user) {
     navigate("/");
     return null;
   }
@@ -55,10 +56,16 @@ export default function AuthPage() {
   });
 
   const onSubmit = async (data: RegisterData) => {
-    if (isLogin) {
-      await loginMutation.mutateAsync(data);
-    } else {
-      await registerMutation.mutateAsync(data);
+    const result = isLogin 
+      ? await auth.login(data)
+      : await auth.register(data);
+
+    if (result.ok) {
+      navigate("/");
+    } else if (result.message) {
+      form.setError("root", { 
+        message: result.message 
+      });
     }
   };
 
@@ -118,12 +125,17 @@ export default function AuthPage() {
                     </FormItem>
                   )}
                 />
+                {form.formState.errors.root && (
+                  <div className="text-sm text-red-500 mt-2">
+                    {form.formState.errors.root.message}
+                  </div>
+                )}
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={loginMutation.isPending || registerMutation.isPending}
+                  disabled={form.formState.isSubmitting}
                 >
-                  {loginMutation.isPending || registerMutation.isPending ? (
+                  {form.formState.isSubmitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : isLogin ? (
                     "Sign In"

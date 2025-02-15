@@ -13,9 +13,10 @@ import { RateLimiterMemory } from 'rate-limiter-flexible';
 const scryptAsync = promisify(scrypt);
 
 // Rate limiter for registration and login attempts
-const rateLimiter = new RateLimiterMemory({
+const authLimiter = new RateLimiterMemory({
   points: 5, // 5 attempts
   duration: 60 * 60, // per hour
+  blockDuration: 60 * 15, // Block for 15 minutes
 });
 
 declare global {
@@ -25,7 +26,6 @@ declare global {
 }
 
 export function setupAuth(app: Express) {
-  // Session configuration is now handled in index.ts
   app.use(passport.initialize());
   app.use(passport.session());
 
@@ -56,7 +56,7 @@ export function setupAuth(app: Express) {
         }
 
         // Sanitize credentials
-        const sanitizedUsername = username.trim();
+        const sanitizedUsername = username.trim().toLowerCase();
         const sanitizedPassword = password.trim();
 
         if (!sanitizedUsername || !sanitizedPassword) {
@@ -100,21 +100,22 @@ export function setupAuth(app: Express) {
 
       // Rate limiting check
       try {
-        await rateLimiter.consume(req.ip || 'unknown');
+        await authLimiter.consume(req.ip || 'unknown');
       } catch (error) {
         return res.status(429).json({
           status: "error",
-          message: "Too many registration attempts. Please try again later.",
+          message: "Too many attempts. Please try again later.",
         });
       }
 
       const { username, password, email } = result.data;
+      const sanitizedUsername = username.trim().toLowerCase();
 
       // Check for existing username
       const [existingUsername] = await db
         .select()
         .from(users)
-        .where(eq(users.username, username))
+        .where(eq(users.username, sanitizedUsername))
         .limit(1);
 
       if (existingUsername) {
@@ -131,9 +132,9 @@ export function setupAuth(app: Express) {
       const [newUser] = await db
         .insert(users)
         .values({
-          username,
+          username: sanitizedUsername,
           password: hashedPassword,
-          email,
+          email: email.toLowerCase(),
           isAdmin: false,
         })
         .returning();
@@ -170,8 +171,18 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Login endpoint
-  app.post("/api/login", (req, res, next) => {
+  // Login endpoint with rate limiting
+  app.post("/api/login", async (req, res, next) => {
+    try {
+      // Rate limiting check
+      await authLimiter.consume(req.ip || 'unknown');
+    } catch (error) {
+      return res.status(429).json({
+        status: "error",
+        message: "Too many login attempts. Please try again later.",
+      });
+    }
+
     if (!req.body?.username || !req.body?.password) {
       return res.status(400).json({
         status: "error",
