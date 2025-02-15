@@ -179,13 +179,30 @@ export function Layout({ children }: { children: ReactNode }) {
       const response = await fetch("/api/logout", {
         method: "POST",
         credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        }
       });
-      if (!response.ok) throw new Error("Logout failed");
-      window.location.reload();
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || "Logout failed");
+      }
+      
+      toast({
+        title: "Success",
+        description: "Logged out successfully"
+      });
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (error) {
+      console.error("Logout error:", error);
       toast({
         title: "Error",
-        description: "Failed to logout. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to logout. Please try again.",
         variant: "destructive",
       });
     }
