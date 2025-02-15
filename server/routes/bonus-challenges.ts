@@ -7,6 +7,7 @@ import type { Request, Response, NextFunction } from "express";
 import { verifyToken, generateTestToken } from "../auth";
 import { log } from "../vite";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
+import type { SelectUser } from "@db/schema";
 
 const router = Router();
 
@@ -17,13 +18,8 @@ const publicLimiter = new RateLimiterMemory({
 });
 
 // Types for authenticated requests
-interface AuthUser {
-  id: number;
-  isAdmin: boolean;
-}
-
 interface AuthenticatedRequest extends Request {
-  user?: AuthUser;
+  user?: SelectUser;
 }
 
 // Validation schemas
@@ -61,7 +57,7 @@ const authenticate = async (req: AuthenticatedRequest, res: Response, next: Next
       return res.status(401).json({ error: "Invalid token" });
     }
 
-    req.user = userData;
+    req.user = userData as SelectUser;
     log(`User authenticated: ID ${userData.id}, Admin: ${userData.isAdmin}`);
     next();
   } catch (error) {

@@ -10,18 +10,28 @@ import { db } from "@db";
 import { eq } from "drizzle-orm";
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 const scryptAsync = promisify(scrypt);
 
 // JWT secret key - in production this should be an environment variable
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
+// Rate limiter for registration
+const rateLimiter = new RateLimiterMemory({
+  points: 5, // 5 attempts
+  duration: 60 * 60, // per hour
+});
+
 // Token verification function
 export const verifyToken = async (token: string) => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { 
+    const decoded = jwt.verify(token, JWT_SECRET) as {
       id: number;
+      username: string;
+      email: string;
       isAdmin: boolean;
+      createdAt: string;
     };
     return decoded;
   } catch (error) {
@@ -32,8 +42,11 @@ export const verifyToken = async (token: string) => {
 // Generate token for testing
 export const generateTestToken = (isAdmin: boolean = false) => {
   return jwt.sign({ 
-    id: 1, // Test user ID
-    isAdmin 
+    id: 1,
+    username: 'test',
+    email: 'test@example.com',
+    isAdmin,
+    createdAt: new Date().toISOString()
   }, JWT_SECRET, { expiresIn: '1h' });
 };
 
@@ -84,7 +97,7 @@ export function setupAuth(app: Express) {
   app.use(passport.session());
 
   // Session configuration
-  passport.serializeUser((user: any, done) => {
+  passport.serializeUser((user: Express.User, done) => {
     done(null, user.id);
   });
 
@@ -112,48 +125,20 @@ export function setupAuth(app: Express) {
         const sanitizedUsername = username.trim();
         const sanitizedPassword = password.trim();
 
-        // Trim whitespace
-        username = username.trim();
-        password = password.trim();
-
-        if (!username || !password) {
+        if (!sanitizedUsername || !sanitizedPassword) {
           return done(null, false, { message: "Username and password cannot be empty" });
-        }
-
-        // Check if this is an admin login attempt
-        if (username === process.env.ADMIN_USERNAME && 
-            password === process.env.ADMIN_PASSWORD) {
-          // Create admin user if doesn't exist
-          let [adminUser] = await db
-            .select()
-            .from(users)
-            .where(eq(users.isAdmin, true))
-            .limit(1);
-
-          if (!adminUser) {
-            [adminUser] = await db
-              .insert(users)
-              .values({
-                username: username,
-                password: await crypto.hash(password),
-                email: 'admin@goatedvips.com',
-                isAdmin: true,
-              })
-              .returning();
-          }
-          return done(null, adminUser);
         }
 
         const [user] = await db
           .select()
           .from(users)
-          .where(eq(users.username, username))
+          .where(eq(users.username, sanitizedUsername))
           .limit(1);
 
         if (!user) {
           return done(null, false, { message: "Invalid username or password" });
         }
-        const isMatch = await crypto.compare(password, user.password);
+        const isMatch = await crypto.compare(sanitizedPassword, user.password);
         if (!isMatch) {
           return done(null, false, { message: "Invalid username or password" });
         }
@@ -163,6 +148,22 @@ export function setupAuth(app: Express) {
       }
     }),
   );
+
+  // Non-blocking authentication middleware
+  const optionalAuth = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    try {
+      const token = req.headers.authorization?.split(" ")[1];
+      if (token) {
+        const userData = await verifyToken(token);
+        if (userData) {
+          (req as any).user = userData;
+        }
+      }
+      next();
+    } catch (error) {
+      next();
+    }
+  };
 
   app.post("/api/register", async (req, res, next) => {
     try {
@@ -178,8 +179,9 @@ export function setupAuth(app: Express) {
 
       // Rate limiting check
       const ipAddress = req.ip;
-      const registrationAttempts = await rateLimiter.get(ipAddress);
-      if (registrationAttempts > 5) {
+      try {
+        await rateLimiter.consume(ipAddress);
+      } catch (error) {
         return res.status(429).json({
           status: "error",
           message: "Too many registration attempts. Please try again later.",
@@ -230,11 +232,22 @@ export function setupAuth(app: Express) {
         })
         .returning();
 
+      // Generate JWT token
+      const token = jwt.sign(
+        { 
+          id: newUser.id,
+          username: newUser.username,
+          email: newUser.email,
+          isAdmin: newUser.isAdmin,
+          createdAt: newUser.createdAt.toISOString()
+        },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
       // Log the user in after registration
       req.login(newUser, (err) => {
-        if (err) {
-          return next(err);
-        }
+        if (err) return next(err);
         return res.json({
           status: "success",
           message: "Registration successful",
@@ -243,13 +256,13 @@ export function setupAuth(app: Express) {
             username: newUser.username,
             email: newUser.email,
             isAdmin: newUser.isAdmin,
+            createdAt: newUser.createdAt,
           },
+          token,
         });
       });
     } catch (error: any) {
-      // Handle database-level errors
       if (error.code === "23505") {
-        // Unique constraint violation
         return res.status(400).json({
           status: "error",
           message: "Username or email already exists",
@@ -270,17 +283,12 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", express.json(), (req, res, next) => {
-    // Validate request body exists
     if (!req.body || !req.body.username || !req.body.password) {
       return res.status(400).json({
         status: "error",
         message: "Username and password are required"
       });
     }
-
-    // Validate credentials
-    const { username, password } = req.body;
-
 
     passport.authenticate(
       "local",
@@ -306,6 +314,19 @@ export function setupAuth(app: Express) {
             return next(err);
           }
 
+          // Generate JWT token
+          const token = jwt.sign(
+            { 
+              id: user.id,
+              username: user.username,
+              email: user.email,
+              isAdmin: user.isAdmin,
+              createdAt: user.createdAt.toISOString()
+            },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+          );
+
           return res.json({
             status: "success",
             message: "Login successful",
@@ -314,7 +335,9 @@ export function setupAuth(app: Express) {
               username: user.username,
               email: user.email,
               isAdmin: user.isAdmin,
+              createdAt: user.createdAt,
             },
+            token,
           });
         });
       },
@@ -336,14 +359,15 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", (req, res) => {
-    if (req.isAuthenticated()) {
+  app.get("/api/user", optionalAuth, (req, res) => {
+    if (req.isAuthenticated() || req.user) {
       const user = req.user;
       return res.json({
         id: user.id,
         username: user.username,
         email: user.email,
         isAdmin: user.isAdmin,
+        createdAt: user.createdAt,
       });
     }
     res.status(401).json({
@@ -351,4 +375,7 @@ export function setupAuth(app: Express) {
       message: "Not logged in",
     });
   });
+
+  // Add the optional auth middleware to all routes
+  app.use(optionalAuth);
 }
