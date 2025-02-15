@@ -24,8 +24,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+
 
 interface UserStats {
+  id: string; // Added ID for API calls
   username: string;
   totalWagered: number;
   currentRank: number;
@@ -46,7 +51,21 @@ interface UserStats {
     rank: number;
     prize: number;
   }>;
+  bio?: string; // Added bio field
+  profileColor?: string; // Added profile color field
 }
+
+const PROFILE_COLORS = {
+  yellow: '#D7FF00',
+  emerald: '#10B981',
+  sapphire: '#3B82F6',
+  ruby: '#EF4444',
+  amethyst: '#8B5CF6',
+  gold: '#F59E0B',
+  pearl: '#F3F4F6',
+  obsidian: '#1F2937',
+  diamond: '#60A5FA'
+};
 
 const getTierFromWager = (wager: number): string => {
   if (wager >= 1000000) return 'diamond';
@@ -64,7 +83,7 @@ export default function UserProfile({ params }: { params: { id: string } }) {
   const [, setLocation] = useLocation();
   const userId = params.id;
 
-  const { data: user, isLoading } = useQuery<UserStats>({
+  const { data: user, isLoading, refetch } = useQuery<UserStats>({
     queryKey: [`/api/users/${userId}`],
   });
 
@@ -86,8 +105,55 @@ export default function UserProfile({ params }: { params: { id: string } }) {
     visible: { opacity: 1, y: 0 },
   };
 
+  const EditProfileDialog = ({ user, onUpdate }: { user: UserStats; onUpdate: () => void }) => {
+    const [bio, setBio] = useState(user.bio || '');
+    const [color, setColor] = useState(user.profileColor || '#D7FF00');
+
+    const handleSubmit = async () => {
+      await fetch(`/api/users/${user.id}/profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bio, profileColor: color })
+      });
+      onUpdate();
+    };
+
+    return (
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm">Edit Profile</Button>
+        </DialogTrigger>
+        <DialogContent className="bg-[#1A1B21] border-[#2A2B31]">
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Bio</Label>
+              <Textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={160} />
+            </div>
+            <div>
+              <Label>Profile Color</Label>
+              <div className="grid grid-cols-5 gap-2 mt-2">
+                {Object.entries(PROFILE_COLORS).map(([name, value]) => (
+                  <div
+                    key={name}
+                    className={`w-8 h-8 rounded-full cursor-pointer ${color === value ? 'ring-2 ring-white' : ''}`}
+                    style={{ backgroundColor: value }}
+                    onClick={() => setColor(value)}
+                  />
+                ))}
+              </div>
+            </div>
+            <Button onClick={handleSubmit}>Save Changes</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-[#14151A] text-white">
+    <div className={`min-h-screen bg-[${user.profileColor || PROFILE_COLORS.yellow}] text-white`}> {/* Apply profile color */}
       <div className="container mx-auto px-4 py-8 md:py-16">
         <motion.div
           variants={containerVariants}
@@ -108,6 +174,7 @@ export default function UserProfile({ params }: { params: { id: string } }) {
               <ArrowLeft className="h-4 w-4" />
               Back to Races
             </Button>
+            <EditProfileDialog user={user} onUpdate={refetch} /> {/* Add Edit Profile Dialog */}
           </motion.div>
 
           {/* User Info */}
@@ -131,6 +198,7 @@ export default function UserProfile({ params }: { params: { id: string } }) {
                     <h1 className="text-2xl md:text-3xl font-heading font-bold text-[#D7FF00] mb-2">
                       {user.username}
                     </h1>
+                    <p className="text-sm text-[#8A8B91] mb-2">{user.bio || "No bio provided"}</p> {/* Display bio */}
                     <div className="flex flex-wrap gap-4 text-sm text-[#8A8B91]">
                       <div className="flex items-center gap-2">
                         <LineChart className="h-4 w-4 text-[#D7FF00]" />
