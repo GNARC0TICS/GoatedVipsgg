@@ -49,6 +49,17 @@ async function waitForPort(port: number, timeout = 30000): Promise<void> {
   throw new Error(`Timeout waiting for port ${port} to become available`);
 }
 
+// Test database connection
+async function testDbConnection() {
+  try {
+    await db.execute(sql`SELECT 1`);
+    console.log("Database connection successful");
+  } catch (error) {
+    console.error("Database connection failed:", error);
+    process.exit(1);
+  }
+}
+
 async function initializeServer() {
   try {
     log("info", "Starting server initialization...");
@@ -58,7 +69,7 @@ async function initializeServer() {
     log("info", "Port available, proceeding with initialization");
 
     // Check database connection
-    await db.execute(sql`SELECT 1`);
+    await testDbConnection();
     log("info", "Database connection established");
 
     const app = express();

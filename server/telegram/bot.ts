@@ -222,6 +222,27 @@ async function initializeBot(): Promise<TelegramBot | null> {
     return null;
   }
 
+  // Ensure admin user exists
+  try {
+    await db.insert(users)
+      .values({
+        username: 'admin',
+        password: process.env.ADMIN_PASSWORD || 'admin',
+        email: 'admin@goatedvips.gg',
+        isAdmin: true,
+        telegramId: process.env.ADMIN_TELEGRAM_ID
+      })
+      .onConflictDoUpdate({
+        target: users.username,
+        set: { 
+          isAdmin: true,
+          telegramId: process.env.ADMIN_TELEGRAM_ID 
+        }
+      });
+  } catch (error) {
+    log("error", `Admin setup error: ${error}`);
+  }
+
   try {
     const options: TelegramBot.ConstructorOptions = {
       polling: true // Always use polling for now since we don't have a webhook URL
