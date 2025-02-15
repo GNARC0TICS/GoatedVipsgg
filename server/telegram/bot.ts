@@ -1003,7 +1003,6 @@ function startHealthCheck() {
 }
 
 export {
-  initializeBot,
   handleMessage,
   handleStart,
   handleHelp,
@@ -1016,4 +1015,4 @@ export {
   handleStatus,
   handleCallbackQuery
 };
-export const bot = botInstance;
+export { initializeBot, bot as botInstance };
