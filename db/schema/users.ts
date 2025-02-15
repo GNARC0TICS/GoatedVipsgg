@@ -1,6 +1,7 @@
-import { pgTable, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+
+import { pgTable, text, timestamp, integer, boolean, jsonb } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { relations, type InferModel } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
 
 export const sessions = pgTable('session', {
   id: text('id').primaryKey(),
@@ -21,5 +22,5 @@ export const users = pgTable('users', {
   goatedUsername: text('goated_username'),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
   lastLogin: timestamp('last_login'),
-  customization: jsonb('customization').default({}),
+  customization: jsonb('customization').default({}).notNull(),
 });
