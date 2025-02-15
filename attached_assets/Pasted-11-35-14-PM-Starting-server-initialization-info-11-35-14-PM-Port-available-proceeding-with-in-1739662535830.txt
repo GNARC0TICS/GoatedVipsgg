@@ -1,0 +1,46 @@
+11:35:14 PM [Starting server initialization...] info
+11:35:14 PM [Port available, proceeding with initialization] info
+11:35:14 PM [express] Database connection established successfully
+Database connection successful
+11:35:14 PM [Database connection established] info
+Error initializing admin: NeonDbError: duplicate key value violates unique constraint "users_username_unique"
+    at execute (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1556:55)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonHttpPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-http/session.ts:68:18)
+    at async initializeAdmin (/home/runner/workspace/server/middleware/admin.ts:75:30)
+    at async initializeServer (/home/runner/workspace/server/index.ts:92:5) {
+  severity: 'ERROR',
+  code: '23505',
+  detail: 'Key (username)=(Goombas) already exists.',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'users',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'users_username_unique',
+  file: 'nbtinsert.c',
+  line: '666',
+  routine: '_bt_check_unique',
+  sourceError: undefined
+}
+11:35:14 PM [Admin initialization error: duplicate key value violates unique constraint "users_username_unique"] error
+11:35:14 PM [Initializing Telegram bot...] info
+[ERROR] Admin setup error: NeonDbError: column "telegram_id" of relation "users" does not exist
+[ERROR] Bot initialization error: ETELEGRAM: 400 Bad Request: bad webhook: Failed to resolve host: Name or service not known
+11:35:15 PM [Failed to initialize Telegram bot - continuing without bot functionality] error
+11:35:15 PM [Server is ready at http://0.0.0.0:5000] info
+PORT=5000
+PORT_READY=5000
+11:35:22 PM [express] Rate limit - medium: 14 requests remaining
+11:35:22 PM [https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard/2RW440E] Fetching affiliate stats from:
+11:35:22 PM [express] Rate limit - medium: 14 requests remaining
+11:35:22 PM [https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard/2RW440E] Fetching affiliate stats from:
+11:35:22 PM [express] Rate limit - high: 29 requests remaining
+Fetching current race data...
+11:35:22 PM [express] Rate limit - medium: 14 requests remaining
+11:35:22 PM [https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard/2RW440E] Fetching affiliate stats from:
+GET /api/user 200 37ms
