@@ -23,6 +23,10 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
+localPort = 5001
+externalPort = 3001
+
+[[ports]]
 localPort = 5173
 externalPort = 3000
 
@@ -52,7 +56,7 @@ agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "tsx --tsconfig tsconfig.json server/index.ts"
+args = "BOT_PORT=5001 tsx --tsconfig tsconfig.json server/index.ts"
 wait_for_port = 5000
 
 # Authentication settings
