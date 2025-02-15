@@ -9,8 +9,8 @@ import { createServer as createViteServer, createLogger } from "vite";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { sql } from "drizzle-orm";
-import { log } from "./utils/logger.js";
-import { bot } from "./telegram/bot";
+import { log } from "./utils/logger";
+import { initializeBot } from "./telegram/bot";
 import { registerRoutes } from "./routes";
 import { initializeAdmin } from "./middleware/admin";
 import { db } from "../db";
@@ -24,14 +24,10 @@ const PORT = 5000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Cache for template file
 let templateCache: string | null = null;
 
 function setupMiddleware(app: express.Application) {
-  // Basic middleware setup
   app.set('trust proxy', 1);
-
-  // Configure CORS for API routes
   app.use('/api', cors({
     origin: process.env.NODE_ENV === 'development'
       ? ['http://localhost:5000', 'http://0.0.0.0:5000']
@@ -40,8 +36,6 @@ function setupMiddleware(app: express.Application) {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
   }));
-
-  // Setup session handling
   const PostgresSessionStore = connectPg(session);
   app.use(session({
     store: new PostgresSessionStore({
@@ -56,19 +50,13 @@ function setupMiddleware(app: express.Application) {
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     },
   }));
-
-  // Parse JSON and URL-encoded bodies
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
   app.use(cookieParser());
-
-  // Request logging
   app.use(requestLogger);
-
-  // Health check endpoint
   app.get("/api/health", (_req, res) => {
     res.set('Cache-Control', 'no-store').json({ status: "healthy" });
   });
@@ -79,14 +67,11 @@ function serveStatic(app: express.Application) {
   if (!fs.existsSync(distPath)) {
     throw new Error(`Could not find the build directory: ${distPath}. Please build the client first.`);
   }
-
-  // Serve static files with cache headers
   app.use(express.static(distPath, {
     maxAge: '1d',
     etag: true,
     lastModified: true
   }));
-
   app.use("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"), {
       headers: {
@@ -180,6 +165,11 @@ async function startServer() {
     }
     log("Initializing Telegram bot...");
 
+    const bot = await initializeBot();
+    if (!bot) {
+      throw new Error("Failed to initialize Telegram bot");
+    }
+
     const server = createServer(app);
 
     if (app.get("env") === "development") {
@@ -210,14 +200,11 @@ async function startServer() {
         })
         .on("listening", () => {
           clearTimeout(timeoutId);
-          // Print ready message for workflow detection
           console.log(`Server is ready and listening on port ${PORT}`);
           console.log(`PORT_READY=${PORT}`);
 
           log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-          log("Telegram bot started successfully");
           log("Server initialization completed");
-
           resolve(server);
         });
 
@@ -282,7 +269,6 @@ async function setupVite(app: express.Application, server: any) {
 
   app.use(vite.middlewares);
 
-  // Cache the template in memory
   const loadTemplate = async () => {
     if (!templateCache) {
       const clientTemplate = path.resolve(__dirname, "..", "client", "index.html");
@@ -308,7 +294,6 @@ async function setupVite(app: express.Application, server: any) {
   });
 }
 
-// Start the server
 startServer().catch((error) => {
   console.error("Failed to start server:", error);
   process.exit(1);
