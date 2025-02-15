@@ -262,8 +262,11 @@ async function initializeBot(): Promise<TelegramBot | null> {
   }
 
   try {
+    const webhookUrl = `${process.env.PUBLIC_URL}/api/webhook`;
     const options: TelegramBot.ConstructorOptions = {
-      polling: true // Always use polling for now since we don't have a webhook URL
+      webHook: {
+        port: process.env.PORT ? parseInt(process.env.PORT) : 5000
+      }
     };
 
     if (botInstance) {
@@ -273,7 +276,10 @@ async function initializeBot(): Promise<TelegramBot | null> {
 
     const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, options);
     botInstance = bot;
-    isPolling = true;
+    
+    // Set webhook
+    await bot.setWebHook(webhookUrl);
+    console.log(`Webhook set to: ${webhookUrl}`);
 
     // Set commands for regular users first
     try {
