@@ -10,36 +10,19 @@ import { RateLimiterMemory } from "rate-limiter-flexible";
 import type { InlineQueryResult } from "node-telegram-bot-api";
 
 const CUSTOM_EMOJIS = {
-  logo: "🐐",
-  welcome: "✨",
-  stats: "📊",
-  leaderboard: "🏆",
-  play: "🎲",
-  race: "🏃",
-  banned: "⛔",
-  admin: "👑",
   error: "❌",
   success: "✅",
   mvp: "🌟",
   live: "🔴",
-  bonus: "🎁",
-  vip: "💎",
-  challenge: "🎯",
-  link: "🔗",
-  wallet: "💰",
-  time: "⏰",
-  support: "💬",
-  settings: "⚙️",
-  alert: "🔔",
-  rocket: "🚀",
-  fire: "🔥",
-  trophy: "🏆",
-  gift: "🎁"
+  admin: "👑",
+  logo: "🎮",
+  play: "🎲",
+  stats: "📊"
 };
 
 const rateLimiter = new RateLimiterMemory({
   points: 20,
-  duration: 60,
+  duration: 60
 });
 
 const BOT_COMMANDS = [
@@ -302,7 +285,7 @@ function registerEventHandlers(bot: TelegramBot) {
       await safeSendMessage(msg.chat.id, `Sticker File ID: ${msg.sticker.file_id}`);
       return;
     }
-    
+
     if (!msg.text || !msg.from?.id) return;
 
     try {
@@ -1012,7 +995,7 @@ function startHealthCheck() {
       log("✅ Bot health check passed");
     } catch (error) {
       if (error instanceof Error) {
-        log(`❌ Bot health check failed`: ${error.message}`);
+        log(`❌ Bot health check failed: ${error.message}`);
       }
       await initializeBot();
     }
