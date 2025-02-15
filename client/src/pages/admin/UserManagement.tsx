@@ -28,9 +28,50 @@ export default function UserManagement() {
       user.email.toLowerCase().includes(search.toLowerCase()),
   );
 
+  const { data: verificationRequests } = useQuery({
+    queryKey: ["/api/admin/verification-requests"],
+  });
+
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-2xl font-bold mb-6">User Management</h1>
+      
+      {verificationRequests?.length > 0 && (
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <h2 className="text-xl font-bold mb-4">Pending Verifications</h2>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Requested Username</TableHead>
+                  <TableHead>Requested At</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {verificationRequests.map((req: any) => (
+                  <TableRow key={req.id}>
+                    <TableCell>{req.userId}</TableCell>
+                    <TableCell>{req.requestedUsername}</TableCell>
+                    <TableCell>{new Date(req.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => handleVerify(req.id)}>
+                          Verify
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleReject(req.id)}>
+                          Reject
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="mb-6">
         <CardContent className="p-4">
