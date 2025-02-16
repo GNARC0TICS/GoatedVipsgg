@@ -138,4 +138,20 @@ async function updateUserPreferences(userId, preferences) {
     return null; // Replace with successful operation or error handling
 }
 
+function getVerificationEmailTemplate(verificationCode) {
+    // Implement your themed email template generation here.  This should return an HTML string.
+    // Example:
+    return `<!DOCTYPE html>
+    <html>
+    <head>
+        <title>Verification Email</title>
+    </head>
+    <body>
+        <h1>Verify Your GoatedVIPs Account</h1>
+        <p>Your verification code is: ${verificationCode}</p>
+    </body>
+    </html>`;
+}
+
+
 export default router;
