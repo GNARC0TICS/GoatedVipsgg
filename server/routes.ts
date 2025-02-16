@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
@@ -9,7 +8,7 @@ router.get("/health", async (_req, res) => {
   try {
     // Check database connection
     await db.execute(sql`SELECT 1`);
-    
+
     // System health status
     const health = {
       status: "ok",
@@ -17,7 +16,7 @@ router.get("/health", async (_req, res) => {
       db: "connected",
       telegramBot: global.botInstance ? "initialized" : "not initialized",
     };
-    
+
     res.json(health);
   } catch (error) {
     res.status(500).json({
