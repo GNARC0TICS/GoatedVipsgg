@@ -2,6 +2,7 @@ import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { useParallax } from "@/hooks/use-parallax";
 import { Crown } from "lucide-react";
 import {
   ArrowRight,
