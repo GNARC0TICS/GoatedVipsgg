@@ -59,10 +59,20 @@ function MainContent() {
 
   return (
     <AnimatePresence mode="wait">
-      {isInitialLoad ? (
-        <PreLoader onLoadComplete={() => setIsInitialLoad(false)} />
-      ) : (
-        <Suspense fallback={<LoadingSpinner />}>
+      <AnimatePresence mode="wait">
+        {isInitialLoad ? (
+          <PreLoader key="preloader" onLoadComplete={() => setIsInitialLoad(false)} />
+        ) : (
+          <Suspense fallback={
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 flex items-center justify-center bg-[#14151A] z-50"
+            >
+              <LoadingSpinner size="lg" />
+            </motion.div>
+          }>
           <TooltipProvider>
             <Layout>
               <ErrorBoundary FallbackComponent={ErrorFallback}>
