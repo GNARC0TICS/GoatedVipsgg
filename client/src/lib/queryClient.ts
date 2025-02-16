@@ -32,7 +32,7 @@ export function getQueryFn({ on401 = "throw" }: GetQueryFnOptions = {}) {
   return async ({ queryKey }: { queryKey: QueryKey }) => {
     try {
       const cacheKey = Array.isArray(queryKey) ? queryKey.join("-") : String(queryKey);
-      const cachedData = localStorage.getItem(cacheKey);
+      const cachedData = sessionStorage.getItem(cacheKey);
 
       if (cachedData) {
         const { data, timestamp } = JSON.parse(cachedData);
@@ -53,7 +53,7 @@ export function getQueryFn({ on401 = "throw" }: GetQueryFnOptions = {}) {
       }
 
       const data = await res.json();
-      localStorage.setItem(cacheKey, JSON.stringify({
+      sessionStorage.setItem(cacheKey, JSON.stringify({
         data,
         timestamp: Date.now()
       }));
@@ -85,9 +85,4 @@ export const queryClient = new QueryClient({
       },
     },
   },
-  queryCache: new QueryCache({
-    onError: (error) => {
-      console.error("Query error:", error)
-    }
-  })
 });

@@ -7,13 +7,8 @@ import App from "./App";
 import "./styles/fonts.css";
 import "./index.css";
 
-const root = document.getElementById("root");
-if (!root) throw new Error("Root element not found");
-
-createRoot(root).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
+    <App />
   </StrictMode>,
 );

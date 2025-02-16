@@ -149,22 +149,7 @@ html {
 
 .parallax-container {
   transform: translateY(var(--parallax-y));
-  transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1);
-  will-change: transform;
-}
-
-.parallax-card {
-  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.parallax-card:hover {
-  transform: translateY(-10px) scale(1.02);
-}
-
-.parallax-gradient {
-  background: linear-gradient(180deg, rgba(215, 255, 0, 0.15) 0%, transparent 100%);
-  filter: blur(100px);
-  pointer-events: none;
+  transition: transform 0.1s ease-out;
 }
 
 @layer base {
