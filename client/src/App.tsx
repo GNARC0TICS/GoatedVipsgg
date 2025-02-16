@@ -5,14 +5,12 @@ import { ErrorBoundary } from "react-error-boundary";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ErrorFallback } from "@/components/ErrorFallback";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { Layout } from "@/components/Layout";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { PreLoader } from "@/components/PreLoader";
-
-// Import all pages
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import AuthPage from "@/pages/auth-page";
@@ -59,25 +57,23 @@ function MainContent() {
 
   return (
     <AnimatePresence mode="wait">
-      <AnimatePresence mode="wait">
-        {isInitialLoad ? (
-          <PreLoader key="preloader" onLoadComplete={() => setIsInitialLoad(false)} />
-        ) : (
-          <Suspense fallback={
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 flex items-center justify-center bg-[#14151A] z-50"
-            >
-              <LoadingSpinner size="lg" />
-            </motion.div>
-          }>
+      {isInitialLoad ? (
+        <PreLoader key="preloader" onLoadComplete={() => setIsInitialLoad(false)} />
+      ) : (
+        <Suspense fallback={
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 flex items-center justify-center bg-[#14151A] z-50"
+          >
+            <LoadingSpinner size="lg" />
+          </motion.div>
+        }>
           <TooltipProvider>
             <Layout>
               <ErrorBoundary FallbackComponent={ErrorFallback}>
                 <Switch>
-                  {/* Public Routes */}
                   <Route path="/" component={Home} />
                   <Route path="/auth" component={AuthPage} />
                   <Route path="/wager-races" component={WagerRaces} />
@@ -93,7 +89,6 @@ function MainContent() {
                   <Route path="/vip-program" component={VipProgram} />
                   <Route path="/challenges" component={Challenges} />
 
-                  {/* Protected Routes */}
                   <ProtectedRoute path="/bonus-codes" component={BonusCodes} />
                   <ProtectedRoute path="/notification-preferences" component={NotificationPreferences} />
                   <ProtectedRoute path="/vip-transfer" component={VipTransfer} />
@@ -101,14 +96,12 @@ function MainContent() {
                   <ProtectedRoute path="/wheel-challenge" component={WheelChallenge} />
                   <ProtectedRoute path="/user/:id" component={UserProfile} />
 
-                  {/* Admin Routes */}
                   <AdminRoute path="/admin/user-management" component={UserManagement} />
                   <AdminRoute path="/admin/wager-races" component={WagerRaceManagement} />
                   <AdminRoute path="/admin/bonus-codes" component={BonusCodeManagement} />
                   <AdminRoute path="/admin/notifications" component={NotificationManagement} />
                   <AdminRoute path="/admin/support" component={SupportManagement} />
 
-                  {/* 404 Route */}
                   <Route component={NotFound} />
                 </Switch>
               </ErrorBoundary>
