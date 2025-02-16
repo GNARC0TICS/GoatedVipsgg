@@ -14,7 +14,7 @@ export const users = pgTable('users', {
   username: text('username').notNull().unique(),
   password: text('password').notNull(),
   email: text('email').notNull(),
-  telegramId: text('telegram_id'),
+  telegramId: text('telegram_id').unique(),
   isAdmin: boolean('is_admin').notNull().default(false),
   bio: text('bio'),
   profileColor: text('profile_color').default('#D7FF00'),
@@ -33,18 +33,6 @@ export const users = pgTable('users', {
   failedLoginAttempts: integer('failed_login_attempts').default(0),
   accountLocked: boolean('account_locked').default(false),
   lockoutUntil: timestamp('lockout_until'),
-  // IP tracking and analytics fields
-  lastLoginIp: text('last_login_ip'),
-  registrationIp: text('registration_ip'),
-  ipHistory: jsonb('ip_history').default([]).notNull(),
-  userAgent: text('user_agent'),
-  deviceInfo: jsonb('device_info').default({}).notNull(),
-  loginHistory: jsonb('login_history').default([]).notNull(),
-  // Location tracking fields
-  country: text('country'),
-  city: text('city'),
-  lastActive: timestamp('last_active'),
-  // Security and analytics fields
   twoFactorEnabled: boolean('two_factor_enabled').default(false),
   emailVerified: boolean('email_verified').default(false),
   suspiciousActivity: boolean('suspicious_activity').default(false),
@@ -54,30 +42,3 @@ export const users = pgTable('users', {
 export const userRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
 }));
-
-// Types for IP history and login history
-export type IpHistoryEntry = {
-  ip: string;
-  timestamp: string;
-  userAgent?: string;
-  country?: string;
-  city?: string;
-};
-
-export type LoginHistoryEntry = {
-  timestamp: string;
-  ip: string;
-  success: boolean;
-  userAgent?: string;
-  location?: {
-    country?: string;
-    city?: string;
-  };
-};
-
-export type ActivityLogEntry = {
-  type: string;
-  timestamp: string;
-  details: Record<string, any>;
-  ip?: string;
-};
