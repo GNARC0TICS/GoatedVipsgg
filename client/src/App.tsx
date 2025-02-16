@@ -1,14 +1,12 @@
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense } from "react";
 import { Switch, Route, useLocation } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "./lib/queryClient"; 
-import { AdminRoute } from "@/components/AdminRoute"; 
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/hooks/use-auth";
-import { AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "react-error-boundary";
-import { PreLoader } from "@/components/PreLoader";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ErrorFallback } from "@/components/ErrorFallback";
+import AppContent from "@/components/AppContent";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { AnimatePresence } from "framer-motion";
+import { Toaster } from "@/components/ui/toaster";
 import { Layout } from "@/components/Layout";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -40,27 +38,8 @@ import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
 import WheelChallenge from "@/pages/WheelChallenge";
+import { AdminRoute } from "@/components/AdminRoute";
 
-function ErrorFallback({ error }: { error: Error }) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="max-w-md w-full mx-4 p-6 text-center">
-        <h2 className="text-2xl font-bold text-destructive mb-4">
-          Something went wrong
-        </h2>
-        <pre className="text-sm bg-muted p-4 rounded-lg overflow-auto">
-          {error.message}
-        </pre>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg"
-        >
-          Reload page
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function AppContent() {
   const [isInitialLoad, setIsInitialLoad] = React.useState(() => {
@@ -136,11 +115,9 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </QueryClientProvider>
+      <AuthProvider>
+        <AppContent key={window.location.pathname} />
+      </AuthProvider>
     </ErrorBoundary>
   );
 }
