@@ -2,8 +2,8 @@ import { z } from "zod";
 import type { Express } from "express";
 import TelegramBot from "node-telegram-bot-api";
 import { db } from "@db";
-import { telegramUsers, verificationRequests } from "@db/schema/telegram";
-import { users } from "@db/schema/users";
+import { telegramUsers, verificationRequests } from "@db/schema";
+import { users } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { logError, logAction } from "./utils/logger";
 import { RateLimiterMemory } from "rate-limiter-flexible";
@@ -240,8 +240,8 @@ async function initializeBot(): Promise<TelegramBot | null> {
     return null;
   }
 
-  // Ensure admin user exists
   try {
+    // Ensure admin user exists without last_login_at
     await db.insert(users)
       .values({
         username: 'admin',
@@ -252,19 +252,23 @@ async function initializeBot(): Promise<TelegramBot | null> {
       })
       .onConflictDoUpdate({
         target: users.username,
-        set: { 
+        set: {
           isAdmin: true,
-          telegramId: process.env.ADMIN_TELEGRAM_ID 
+          telegramId: process.env.ADMIN_TELEGRAM_ID
         }
       });
-  } catch (error) {
-    log("error", `Admin setup error: ${error}`);
-  }
 
-  try {
-    const webhookUrl = process.env.REPL_SLUG ? 
-    `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/telegram/webhook` :
-    `${process.env.BOT_DOMAIN}/api/telegram/webhook`;
+    // Configure webhook URL based on environment
+    let webhookUrl: string;
+    if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+      webhookUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/telegram/webhook`;
+    } else if (process.env.BOT_DOMAIN) {
+      webhookUrl = `${process.env.BOT_DOMAIN}/api/telegram/webhook`;
+    } else {
+      log("error", "Neither REPL environment nor BOT_DOMAIN is configured!");
+      return null;
+    }
+
     const options: TelegramBot.ConstructorOptions = {
       webHook: {
         port: process.env.BOT_PORT ? parseInt(process.env.BOT_PORT) : 5001,
@@ -280,9 +284,18 @@ async function initializeBot(): Promise<TelegramBot | null> {
     const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, options);
     botInstance = bot;
 
-    // Set webhook
-    await bot.setWebHook(webhookUrl);
-    console.log(`Webhook set to: ${webhookUrl}`);
+    try {
+      // Set webhook with error handling
+      await bot.setWebHook(webhookUrl);
+      log("info", `Webhook set successfully to: ${webhookUrl}`);
+    } catch (webhookError) {
+      if (webhookError instanceof Error) {
+        log("error", `Failed to set webhook: ${webhookError.message}`);
+      } else {
+        log("error", "Unknown error setting webhook");
+      }
+      // Continue initialization even if webhook fails
+    }
 
     // Set commands for regular users first
     try {
@@ -303,9 +316,7 @@ async function initializeBot(): Promise<TelegramBot | null> {
         if (!admin.telegramId) continue;
 
         try {
-          // First check if the chat exists
           await bot.getChat(parseInt(admin.telegramId));
-
           await bot.setMyCommands([...BOT_COMMANDS, ...ADMIN_COMMANDS], {
             scope: {
               type: 'chat',
@@ -314,7 +325,7 @@ async function initializeBot(): Promise<TelegramBot | null> {
           });
           log("info", `Set admin commands for ${admin.telegramId}`);
         } catch (cmdError) {
-          if (cmdError.message.includes('chat not found')) {
+          if (cmdError instanceof Error && cmdError.message.includes('chat not found')) {
             log("info", `Admin ${admin.telegramId} hasn't started a chat with the bot yet`);
           } else {
             log("error", `Failed to set admin commands for ${admin.telegramId}: ${cmdError}`);
@@ -326,13 +337,13 @@ async function initializeBot(): Promise<TelegramBot | null> {
     }
 
     registerEventHandlers(bot);
-
     const botInfo = await bot.getMe();
     log("info", `Bot initialized successfully as @${botInfo.username}`);
-
     return bot;
+
   } catch (error) {
-    log("error", `Bot initialization error: ${error instanceof Error ? error.message : String(error)}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    log("error", `Bot initialization error: ${errorMessage}`);
     return null;
   }
 }
@@ -390,14 +401,14 @@ async function handlePlay(msg: TelegramBot.Message) {
 
 
 async function handleVerify(msg: TelegramBot.Message, username?: string) {
-  if (!msg.from?.id) return;
+  if (!msg.from?.id || !botInstance) return;
 
   const chatId = msg.chat.id;
   const telegramId = msg.from.id.toString();
 
   // If in group chat, direct to private chat
   if (msg.chat.type !== 'private') {
-    return bot.sendMessage(
+    return botInstance.sendMessage(
       chatId,
       'Please start a private chat with me to complete verification:\n' +
       'https://t.me/GoatedVIPsBot?start=verify'
@@ -405,33 +416,36 @@ async function handleVerify(msg: TelegramBot.Message, username?: string) {
   }
 
   if (!username) {
-    return bot.sendMessage(chatId, MESSAGES.verifyInstructions, {
+    return botInstance.sendMessage(chatId, MESSAGES.verifyInstructions, {
       parse_mode: "Markdown"
     });
   }
 
   try {
     // Check if user already has a pending verification
-    const existingRequest = await db.select()
+    const existingRequest = await db
+      .select()
       .from(verificationRequests)
       .where(eq(verificationRequests.telegramId, telegramId))
-      .execute();
+      .orderBy(verificationRequests.requestedAt)
+      .limit(1);
 
     if (existingRequest?.[0]?.status === 'pending') {
-      return bot.sendMessage(chatId,
+      return botInstance.sendMessage(chatId,
         '⏳ You already have a pending verification request.\n\n' +
         'Please wait for an admin to review your request.\n' +
         'If you need help, contact @xGoombas');
     }
 
     // Check if user is already verified
-    const existingUser = await db.select()
+    const existingUser = await db
+      .select()
       .from(telegramUsers)
       .where(eq(telegramUsers.telegramId, telegramId))
       .execute();
 
     if (existingUser?.[0]?.isVerified) {
-      return bot.sendMessage(chatId,
+      return botInstance.sendMessage(chatId,
         '✅ Your account is already verified!\n\n' +
         'Available commands:\n' +
         '/stats - Check your wager statistics\n' +
@@ -447,24 +461,28 @@ async function handleVerify(msg: TelegramBot.Message, username?: string) {
       .limit(1);
 
     if (!goatedUser[0]) {
-      return bot.sendMessage(chatId,
+      return botInstance.sendMessage(chatId,
         '❌ This username was not found in our system. Please make sure you\'ve entered your correct Goated username.');
     }
 
-    // Create verification request
-    await db.insert(verificationRequests).values({
+    // Create verification request with all required fields
+    const verificationData = {
+      userId: goatedUser[0].id,
       telegramId: telegramId,
       telegramUsername: msg.from.username || 'unknown',
       goatedUsername: username,
       status: 'pending',
-      requestedAt: new Date()
-    });
+      requestedAt: new Date(),
+    } as const;
 
-    await bot.sendMessage(chatId, MESSAGES.verificationSubmitted, {
+    await db.insert(verificationRequests)
+      .values(verificationData);
+
+    await botInstance.sendMessage(chatId, MESSAGES.verificationSubmitted, {
       parse_mode: "Markdown"
     });
 
-    // Notify admins with inline buttons
+    // Notify admins
     const admins = await db
       .select()
       .from(users)
@@ -477,26 +495,19 @@ async function handleVerify(msg: TelegramBot.Message, username?: string) {
         `Goated Username: ${username}\n` +
         `Requested: ${new Date().toLocaleString()}`;
 
-      await bot.sendMessage(admin.telegramId, message, {
+      await botInstance.sendMessage(admin.telegramId, message, {
         parse_mode: "Markdown",
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: '✅ Approve', callback_data: `approve_${msg.from.username}` },
-              { text: '❌ Reject', callback_data: `reject_${msg.from.username}` }
-            ]
-          ]
-        }
+        reply_markup: createVerificationButtons(msg.from.username || 'unknown')
       });
     }
   } catch (error) {
-    console.error('Verification error:', error);
-    await bot.sendMessage(chatId, '❌ Error submitting request. Please try again later.');
+    console.error('Verification error:', error instanceof Error ? error.message : String(error));
+    await botInstance.sendMessage(chatId, '❌ Error submitting request. Please try again later.');
   }
 }
 
 async function handleRace(msg: TelegramBot.Message) {
-  if (!msg.from?.id) return;
+  if (!msg.from?.id || !botInstance) return;
 
   try {
     const user = await db
@@ -531,7 +542,7 @@ async function handleBonusCodes(msg: TelegramBot.Message) {
 }
 
 async function handleStats(msg: TelegramBot.Message) {
-  if (!msg.from?.id) return;
+  if (!msg.from?.id || !botInstance) return;
 
   try {
     const user = await db
@@ -637,10 +648,12 @@ async function handleApprove(msg: TelegramBot.Message, username?: string) {
       return safeSendMessage(msg.chat.id, "❌ Please provide a username to approve.");
     }
 
+    // Get the most recent verification request for this telegram username
     const request = await db
       .select()
       .from(verificationRequests)
       .where(eq(verificationRequests.telegramUsername, username))
+      .orderBy(verificationRequests.requestedAt, "desc")
       .limit(1);
 
     if (!request[0]) {
@@ -657,37 +670,51 @@ async function handleApprove(msg: TelegramBot.Message, username?: string) {
       return safeSendMessage(msg.chat.id, "❌ Admin record not found");
     }
 
-    // Update verification request status with string ID
-    await db
-      .update(verificationRequests)
-      .set({
-        status: 'approved',
-        verifiedAt: new Date(),
-        verifiedBy: admin[0].id.toString(),
-        adminNotes: `Approved by @${msg.from.username}`
-      })
-      .where(eq(verificationRequests.telegramUsername, username));
+    // Begin atomic updates
+    await db.transaction(async (tx) => {
+      // Update verification request status
+      await tx
+        .update(verificationRequests)
+        .set({
+          status: 'approved',
+          verifiedAt: new Date(),
+          verifiedBy: admin[0].id.toString(),
+          adminNotes: `Approved by @${msg.from?.username || 'unknown'}`
+        })
+        .where(eq(verificationRequests.id, request[0].id));
 
-    // Create or update telegram user record
-    await db
-      .insert(telegramUsers)
-      .values({
-        telegramId: request[0].telegramId,
-        telegramUsername: request[0].telegramUsername,
-        userId: request[0].userId,
-        isVerified: true,
-        verifiedAt: new Date(),
-        verifiedBy: admin[0].id.toString(),
-        notificationsEnabled: true
-      });
+      // Create or update telegram user record
+      await tx
+        .insert(telegramUsers)
+        .values({
+          telegramId: request[0].telegramId,
+          telegramUsername: request[0].telegramUsername,
+          userId: request[0].userId,
+          isVerified: true,
+          verifiedAt: new Date(),
+          verifiedBy: admin[0].id.toString(),
+          notificationsEnabled: true
+        })
+        .onConflictDoUpdate({
+          target: telegramUsers.telegramId,
+          set: {
+            isVerified: true,
+            verifiedAt: new Date(),
+            verifiedBy: admin[0].id.toString(),
+            userId: request[0].userId,
+            telegramUsername: request[0].telegramUsername
+          }
+        });
 
-    // Update user record with telegram ID
-    await db
-      .update(users)
-      .set({
-        telegramId: request[0].telegramId
-      })
-      .where(eq(users.id, request[0].userId));
+      // Update user record
+      await tx
+        .update(users)
+        .set({
+          telegramId: request[0].telegramId,
+          telegramVerified: true
+        })
+        .where(eq(users.id, request[0].userId));
+    });
 
     await safeSendMessage(msg.chat.id, `✅ Approved @${username}`);
 
@@ -709,7 +736,7 @@ async function handleApprove(msg: TelegramBot.Message, username?: string) {
 }
 
 async function handleReject(msg: TelegramBot.Message, username?: string) {
-  if (!botInstance) return;
+  if (!botInstance || !msg.from?.id) return;
 
   try {
     const admin = await db
@@ -763,7 +790,7 @@ async function handleBroadcastPrompt(msg: TelegramBot.Message) {
 }
 
 async function handleBroadcast(msg: TelegramBot.Message, message?: string) {
-  if (!botInstance) return;
+  if (!botInstance || !msg.from?.id) return;
 
   try {
     const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
@@ -823,6 +850,7 @@ async function checkIsAdmin(telegramId?: string): Promise<boolean> {
 }
 
 async function handleLeaderboard(msg: TelegramBot.Message) {
+  if (!botInstance) return;
   try {
     const response = await fetch(`${process.env.INTERNAL_API_URL}/api/wager-races/current`);
     if (!response.ok) {
@@ -843,33 +871,38 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
 }
 
 async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
+  if (!botInstance) return;
+
   const chatId = callbackQuery.message?.chat.id;
   const messageId = callbackQuery.message?.message_id;
   const data = callbackQuery.data;
 
   if (!chatId || !messageId || !data) return;
 
-  if (data.startsWith('approve_') || data.startsWith('reject_')) {
-    const [action, username] = data.split('_');
+  if (data.startsWith('approve_') || data.startsWith('reject_')) {    const [action, username] = data.split('_');
     const isAdmin = await checkIsAdmin(callbackQuery.from.id.toString());
 
     if (!isAdmin) {
-      return bot.answerCallbackQuery(callbackQuery.id, {
+      return botInstance.answerCallbackQuery(callbackQuery.id, {
         text: '❌ Only admins can perform this action',
         show_alert: true
       });
     }
 
     if (action === 'approve') {
-      await handleApprove({ chat_id: chatId, from: callbackQuery.from }, username);
+      await handleApprove({ from: callbackQuery.from, chat: { id: chatId } } as TelegramBot.Message, username);
     } else {
-      await handleReject({ chat_id: chatId, from: callbackQuery.from }, username);
+      await handleReject({ from: callbackQuery.from, chat: { id: chatId } } as TelegramBot.Message, username);
     }
 
-    await bot.answerCallbackQuery(callbackQuery.id);
-    await bot.deleteMessage(chatId, messageId);
+    await botInstance.answerCallbackQuery(callbackQuery.id);
+    await botInstance.deleteMessage(chatId, messageId);
+  } else if (data === 'refresh_leaderboard') {
+    await handleLeaderboardRefresh(chatId, messageId);
+    await botInstance.answerCallbackQuery(callbackQuery.id);
   }
 }
+
 
 
 export { initializeBot };

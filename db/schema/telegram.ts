@@ -7,8 +7,11 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 export const telegramUsers = pgTable('telegram_users', {
   telegramId: text('telegram_id').primaryKey(),
   userId: integer('user_id').references(() => users.id),
+  telegramUsername: text('telegram_username'),
   isVerified: boolean('is_verified').default(false),
   verifiedAt: timestamp('verified_at'),
+  verifiedBy: text('verified_by'),
+  notificationsEnabled: boolean('notifications_enabled').default(true),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
 });
 

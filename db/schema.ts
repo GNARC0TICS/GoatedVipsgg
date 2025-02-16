@@ -11,6 +11,7 @@ import {
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { telegramUsers, telegramUserRelations, type InsertTelegramUser, type SelectTelegramUser } from "./schema/telegram";
+import { verificationRequests, verificationRequestRelations, type InsertVerificationRequest, type SelectVerificationRequest } from "./schema/verification";
 
 // Users table
 export const users = pgTable("users", {
@@ -23,7 +24,6 @@ export const users = pgTable("users", {
   telegramVerified: boolean("telegram_verified").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   emailVerified: boolean("email_verified").default(false),
-  lastLoginAt: timestamp("last_login_at"),
 });
 
 // Define relations
@@ -42,13 +42,17 @@ export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
 
-// Re-export telegram types
+// Re-export telegram and verification types
 export {
   telegramUsers,
   telegramUserRelations,
   type InsertTelegramUser,
   type SelectTelegramUser,
-} from "./schema/telegram";
+  verificationRequests,
+  verificationRequestRelations,
+  type InsertVerificationRequest,
+  type SelectVerificationRequest,
+};
 
 // Wheel spins table
 export const wheelSpins = pgTable("wheel_spins", {
