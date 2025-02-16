@@ -23,6 +23,16 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
   lastLogin: timestamp('last_login'),
   customization: jsonb('customization').default({}).notNull(),
+  profileImage: text('profile_image'),
+  preferences: jsonb('preferences').default({
+    emailNotifications: true,
+    telegramNotifications: true,
+    marketingEmails: false,
+  }).notNull(),
+  lastPasswordChange: timestamp('last_password_change'),
+  failedLoginAttempts: integer('failed_login_attempts').default(0),
+  accountLocked: boolean('account_locked').default(false),
+  lockoutUntil: timestamp('lockout_until'),
 });
 
 export const userRelations = relations(users, ({ many }) => ({
