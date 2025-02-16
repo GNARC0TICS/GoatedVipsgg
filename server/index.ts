@@ -21,6 +21,7 @@ import connectPg from "connect-pg-simple";
 
 const execAsync = promisify(exec);
 const PORT = parseInt(process.env.PORT || '5000', 10);
+const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -120,7 +121,7 @@ async function initializeServer() {
     });
 
     return new Promise((resolve, reject) => {
-      server.listen(PORT, "0.0.0.0", () => {
+      server.listen(PORT, HOST, () => {
         log("info", `Server is ready at http://0.0.0.0:${PORT}`);
         // Signal that all components are initialized and the port is ready
         console.log(`PORT=${PORT}`);
