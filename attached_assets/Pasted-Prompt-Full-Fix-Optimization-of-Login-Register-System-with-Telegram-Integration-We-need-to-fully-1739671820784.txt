@@ -1,0 +1,55 @@
+Prompt: Full Fix & Optimization of Login/Register System with Telegram Integration
+
+We need to fully fix and clean up our existing login/register system, state management, and account verification process while integrating a Telegram login option for a seamless user experience across our platform and Telegram bot.
+
+🔹 Core Fixes & Enhancements
+
+1️⃣ Fixing Existing Authentication & Profile Linking Issues
+	•	Resolve login/logout issues (e.g., “error, login successful” message, persistent sessions, admin role not reflecting properly after refresh).
+	•	Ensure profiles are linked to user UIDs correctly, including for admins.
+	•	Implement a state management system that properly maintains authentication across sessions.
+	•	Ensure profiles display properly, allowing users to edit information, update settings, and view notifications.
+
+🔹 2️⃣ Implementing Telegram Login & Account Linking
+
+Step 1: Enable Telegram Login via Widget
+	•	Add a “Login with Telegram” button on the login/register page.
+	•	Utilize Telegram’s OAuth 2.0 widget for seamless authentication.
+	•	Once authenticated, fetch the user’s Telegram ID, username, and profile picture.
+
+Step 2: Seamless Account Merging & Verification
+	•	If the user already has a verified account on our platform, they should see an option to “Link Telegram Account”.
+	•	If they log in via Telegram but don’t have an existing platform account, they should be prompted to register and verify via UID.
+	•	Upon linking, sync the Telegram ID with their existing database profile.
+
+Step 3: Instant Data Sync Between Platform & Telegram Bot
+	•	Once a Telegram account is linked:
+✅ Update our bot’s database instantly so the user is verified across all services.
+✅ Allow bidirectional updates, meaning any profile changes on the platform should reflect in Telegram bot data and vice versa.
+
+Step 4: Unified Verification Process
+	•	If the user has already been verified on Telegram, they should be instantly verified on the platform upon linking Telegram.
+	•	If they have not yet verified on Telegram, they can still manually request verification via our existing UID verification system.
+
+🔹 3️⃣ Final Optimization Steps
+
+✅ Improve session handling to ensure smooth authentication transitions between Telegram login and standard email/password login.
+✅ Ensure smooth logout handling, clearing session data across both Telegram and the platform.
+✅ Implement robust error handling and clear success/error messages throughout the entire process.
+✅ Test account merging scenarios to avoid duplicate accounts or conflicts.
+✅ Allow users to unlink Telegram if needed, with proper UI and confirmation steps.
+
+🔹 Final Implementation Plan
+	1.	Fix existing authentication issues (login/logout bugs, profile linking, verification issues).
+	2.	Implement Telegram login and authentication flow (OAuth integration, user data retrieval).
+	3.	Enable seamless account merging between Telegram and platform accounts.
+	4.	Ensure Telegram bot and platform sync for real-time verification updates.
+	5.	Optimize and test the entire flow to ensure a seamless, unified experience.
+
+End Result:
+
+🔹 Users can log in via email/password or Telegram with seamless verification.
+🔹 Linked Telegram accounts sync with our bot and database in real-time.
+🔹 A fully unified authentication system across both platform and Telegram.
+
+This will significantly improve user onboarding, security, and overall experience. 🚀 Let me know if you want any further refinements!
