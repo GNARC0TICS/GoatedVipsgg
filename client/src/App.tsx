@@ -138,7 +138,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary FallbackComponent={ErrorFallback}>
         <AuthProvider>
-          <AppContent />
+          <AppContent key={window.location.pathname} />
         </AuthProvider>
       </ErrorBoundary>
     </QueryClientProvider>
