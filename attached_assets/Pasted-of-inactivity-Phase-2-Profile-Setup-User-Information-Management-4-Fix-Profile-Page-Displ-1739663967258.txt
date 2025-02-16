@@ -1,0 +1,43 @@
+of inactivity.
+
+🔹 Phase 2: Profile Setup & User Information Management
+	4.	Fix Profile Page & Display Information
+	•	Ensure user details (username, email, profile picture, balance, etc.) are fetched correctly.
+	•	Fix inconsistencies in profile data updates.
+	•	Ensure editable fields work properly and save changes.
+	•	Check for profile image uploads, validate file formats, and ensure successful updates.
+	5.	Ensure Settings Page Works as Expected
+	•	Allow users to update passwords, email, and other preferences.
+	•	Implement necessary verification steps for security changes (e.g., email confirmation when changing passwords).
+	•	Ensure changes persist after a page reload.
+	6.	Notification System (If Applicable)
+	•	Ensure notifications (e.g., login success, profile changes, security warnings) are properly displayed.
+	•	Implement real-time notifications or a system where unread notifications are saved.
+	•	Allow users to clear or dismiss notifications.
+
+🔹 Phase 3: Seamless Logout, Security, & UI/UX Fixes
+	7.	Ensure Logout Works Properly
+	•	Logout should fully clear session or token storage.
+	•	Redirect users to the login page after logging out.
+	•	Ensure the user cannot access restricted pages after logout.
+	8.	Fix UI/UX for Authentication Components
+	•	Ensure proper loading indicators (e.g., when logging in or signing up).
+	•	Fix any inconsistent button states (e.g., disabled buttons that never re-enable).
+	•	Ensure error messages are clear and well-positioned.
+	9.	Handle Edge Cases & Security Enhancements
+	•	Prevent users from registering duplicate accounts.
+	•	Prevent session hijacking (e.g., using expired tokens).
+	•	Implement rate limiting on login attempts (to prevent brute-force attacks).
+	•	Ensure HTTPS is enforced if running on a server.
+
+🔹 Phase 4: Final Testing & Debugging
+	10.	Perform Full Test Cases
+
+	•	Login/Register Flow: Ensure smooth transitions and correct redirections.
+	•	State Management: Refresh page, log in/out multiple times, switch accounts.
+	•	Profile Updates: Change name, email, password, and check if it persists.
+	•	Security Check: Try accessing protected pages without logging in.
+
+How to Implement This?
+	•	Start with backend fixes (Phase 1) to ensure API/auth logic is working.
+	•	Move to frontend state management (Phase 2 & 3) once login/logout is stable.
