@@ -630,9 +630,9 @@ export function Layout({ children }: { children: ReactNode }) {
           <div className={headerClasses.userSection}>
             <div className="flex items-center gap-2 md:gap-4">
               {/* Debug info - remove in production */}
-              {user && (
+              {user?.isAdmin && (
                 <div className="text-xs text-[#8A8B91]">
-                  Admin: {user.isAdmin ? "Yes" : "No"}
+                  Admin: Yes
                 </div>
               )}
               {user?.isAdmin && (
