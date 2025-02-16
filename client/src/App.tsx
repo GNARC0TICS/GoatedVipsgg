@@ -135,13 +135,11 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ErrorBoundary FallbackComponent={ErrorFallback}>
-        <AuthProvider>
-          <AppContent key={window.location.pathname} />
-        </AuthProvider>
-      </ErrorBoundary>
-    </QueryClientProvider>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <AuthProvider>
+        <AppContent key={window.location.pathname} />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
