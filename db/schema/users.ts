@@ -2,7 +2,7 @@ import { pgTable, text, timestamp, integer, boolean, jsonb } from "drizzle-orm/p
 import { sql } from "drizzle-orm";
 import { relations } from 'drizzle-orm';
 
-export const sessions = pgTable('session', {
+export const sessions = pgTable('sessions', {
   id: text('id').primaryKey(),
   userId: integer('user_id').references(() => users.id),
   expiresAt: timestamp('expires_at').notNull(),
@@ -33,8 +33,51 @@ export const users = pgTable('users', {
   failedLoginAttempts: integer('failed_login_attempts').default(0),
   accountLocked: boolean('account_locked').default(false),
   lockoutUntil: timestamp('lockout_until'),
+  // IP tracking and analytics fields
+  lastLoginIp: text('last_login_ip'),
+  registrationIp: text('registration_ip'),
+  ipHistory: jsonb('ip_history').default([]).notNull(),
+  userAgent: text('user_agent'),
+  deviceInfo: jsonb('device_info').default({}).notNull(),
+  loginHistory: jsonb('login_history').default([]).notNull(),
+  // Location tracking fields
+  country: text('country'),
+  city: text('city'),
+  lastActive: timestamp('last_active'),
+  // Security and analytics fields
+  twoFactorEnabled: boolean('two_factor_enabled').default(false),
+  emailVerified: boolean('email_verified').default(false),
+  suspiciousActivity: boolean('suspicious_activity').default(false),
+  activityLogs: jsonb('activity_logs').default([]).notNull(),
 });
 
 export const userRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
 }));
+
+// Types for IP history and login history
+export type IpHistoryEntry = {
+  ip: string;
+  timestamp: string;
+  userAgent?: string;
+  country?: string;
+  city?: string;
+};
+
+export type LoginHistoryEntry = {
+  timestamp: string;
+  ip: string;
+  success: boolean;
+  userAgent?: string;
+  location?: {
+    country?: string;
+    city?: string;
+  };
+};
+
+export type ActivityLogEntry = {
+  type: string;
+  timestamp: string;
+  details: Record<string, any>;
+  ip?: string;
+};

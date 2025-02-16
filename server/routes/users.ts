@@ -1,47 +1,76 @@
 import { Router } from "express";
 import { db } from "../db";
 import { users } from "../db/schema";
-import { like } from "drizzle-orm";
+import type { SelectUser } from "../db/schema";
+import { like, desc } from "drizzle-orm";
 import rateLimit from 'express-rate-limit';
-
+import type { IpHistoryEntry, LoginHistoryEntry, ActivityLogEntry } from "../db/schema/users";
 
 const router = Router();
 
-// Rate limiter middleware (example - adjust settings as needed)
+// Rate limiter middleware
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-})
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-
+// User search endpoint with enhanced analytics for admins
 router.get("/search", async (req, res) => {
   const { username } = req.query;
+  const isAdminView = req.headers['x-admin-view'] === 'true';
 
   if (typeof username !== "string" || username.length < 3) {
     return res.status(400).json({ error: "Username must be at least 3 characters" });
   }
 
-  const results = await db
-    .select()
-    .from(users)
-    .where(like(users.username, `%${username}%`))
-    .limit(10);
+  try {
+    const results = await db
+      .select()
+      .from(users)
+      .where(like(users.username, `%${username}%`))
+      .orderBy(desc(users.lastActive))
+      .limit(10);
 
-  res.json(results.map(user => ({
-    username: user.username,
-    id: user.id,
-    email: user.email,
-    password: req.headers['x-admin-view'] === 'true' ? user.password : undefined,
-    isAdmin: user.isAdmin,
-    createdAt: user.createdAt
-  })));
+    // Map results based on admin view access
+    const mappedResults = results.map((user: SelectUser) => ({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      isAdmin: user.isAdmin,
+      createdAt: user.createdAt,
+      emailVerified: user.emailVerified,
+      // Only include sensitive data for admin view
+      ...(isAdminView && {
+        // Telegram related fields
+        telegramId: user.telegramId,
+        telegramVerifiedAt: user.telegramVerifiedAt,
+        // Location and activity fields
+        lastLoginIp: user.lastLoginIp,
+        registrationIp: user.registrationIp,
+        country: user.country,
+        city: user.city,
+        lastActive: user.lastActive,
+        // Analytics fields
+        ipHistory: (user.ipHistory || []) as IpHistoryEntry[],
+        loginHistory: (user.loginHistory || []) as LoginHistoryEntry[],
+        // Security fields
+        twoFactorEnabled: user.twoFactorEnabled,
+        suspiciousActivity: user.suspiciousActivity,
+        activityLogs: (user.activityLogs || []) as ActivityLogEntry[]
+      })
+    }));
+
+    res.json(mappedResults);
+  } catch (error) {
+    console.error("Error in user search:", error);
+    res.status(500).json({ error: "Failed to search users" });
+  }
 });
 
-
-// Placeholder for updated auth routes (requires significant implementation)
-router.post("/api/login", loginLimiter, async (req, res) => {
+// Authentication routes 
+router.post("/login", loginLimiter, async (req, res) => {
     try {
         const { username, password } = req.body;
         // Implement login logic here, including secure password handling
@@ -61,7 +90,7 @@ router.post("/api/login", loginLimiter, async (req, res) => {
 });
 
 
-// Placeholder for profile image handling route
+// Profile image handling route
 router.post('/api/profile/image', upload.single('image'), async (req, res) => {
     //Handle profile image upload.  Requires multer or similar middleware
     try {
@@ -74,8 +103,7 @@ router.post('/api/profile/image', upload.single('image'), async (req, res) => {
     }
 });
 
-
-// Placeholder for user preferences route
+// User preferences route
 router.put('/api/profile/preferences', async (req, res) => {
     try {
         const { preferences } = req.body;
@@ -87,7 +115,6 @@ router.put('/api/profile/preferences', async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
-
 
 
 // Placeholder functions (replace with actual implementation)
@@ -110,6 +137,5 @@ async function updateUserPreferences(userId, preferences) {
     // Implement user preference update logic
     return null; // Replace with successful operation or error handling
 }
-
 
 export default router;
