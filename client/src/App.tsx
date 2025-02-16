@@ -56,23 +56,23 @@ function MainContent() {
   }, [isInitialLoad]);
 
   return (
-    <AnimatePresence mode="wait">
-      {isInitialLoad ? (
-        <PreLoader key="preloader" onLoadComplete={() => setIsInitialLoad(false)} />
-      ) : (
-        <Suspense fallback={
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 flex items-center justify-center bg-[#14151A] z-50"
-          >
-            <LoadingSpinner size="lg" />
-          </motion.div>
-        }>
-          <TooltipProvider>
-            <Layout>
-              <ErrorBoundary FallbackComponent={ErrorFallback}>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <AnimatePresence mode="wait">
+        {isInitialLoad ? (
+          <PreLoader key="preloader" onLoadComplete={() => setIsInitialLoad(false)} />
+        ) : (
+          <Suspense fallback={
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 flex items-center justify-center bg-[#14151A] z-50"
+            >
+              <LoadingSpinner size="lg" />
+            </motion.div>
+          }>
+            <TooltipProvider>
+              <Layout>
                 <Switch>
                   <Route path="/" component={Home} />
                   <Route path="/auth" component={AuthPage} />
@@ -104,24 +104,24 @@ function MainContent() {
 
                   <Route component={NotFound} />
                 </Switch>
-              </ErrorBoundary>
-            </Layout>
-            <Toaster />
-          </TooltipProvider>
-        </Suspense>
-      )}
-    </AnimatePresence>
-  );
-}
-
-function App() {
-  return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <AuthProvider>
-        <MainContent key={window.location.pathname} />
-      </AuthProvider>
+              </Layout>
+              <Toaster />
+            </TooltipProvider>
+          </Suspense>
+        )}
+      </AnimatePresence>
     </ErrorBoundary>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <AuthProvider>
+        <TooltipProvider>
+          <MainContent />
+        </TooltipProvider>
+      </AuthProvider>
+    </ErrorBoundary>
+  );
+}
