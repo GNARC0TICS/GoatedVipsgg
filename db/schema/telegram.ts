@@ -1,31 +1,15 @@
-import { pgTable, text, timestamp, boolean, serial, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { users } from "@db/schema";
 import { relations } from "drizzle-orm";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 export const telegramUsers = pgTable('telegram_users', {
   telegramId: text('telegram_id').primaryKey(),
-  telegramUsername: text('telegram_username'),
-  userId: integer('user_id').notNull(),  // Changed to integer to match schema
+  userId: integer('user_id').references(() => users.id),
   isVerified: boolean('is_verified').default(false),
+  verifiedAt: timestamp('verified_at'),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
-  notificationsEnabled: boolean('notifications_enabled').default(true),
-  verifiedAt: timestamp('verified_at'),
-  verifiedBy: text('verified_by'),
-  updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`)
-});
-
-export const verificationRequests = pgTable('verification_requests', {
-  id: serial('id').primaryKey(),
-  telegramId: text('telegram_id').notNull(),
-  userId: integer('user_id').notNull(),  // Changed to integer to match schema
-  requestedAt: timestamp('requested_at').default(sql`CURRENT_TIMESTAMP`),
-  status: text('status').default('pending'),
-  adminNotes: text('admin_notes'),
-  telegramUsername: text('telegram_username'),
-  verifiedAt: timestamp('verified_at'),
-  verifiedBy: text('verified_by'),
-  updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`)
 });
 
 // Define relations
@@ -36,13 +20,10 @@ export const telegramUserRelations = relations(telegramUsers, ({ one }) => ({
   }),
 }));
 
-export const verificationRequestRelations = relations(verificationRequests, ({ one }) => ({
-  user: one(users, {
-    fields: [verificationRequests.userId],
-    references: [users.id],
-  }),
-  telegramUser: one(telegramUsers, {
-    fields: [verificationRequests.telegramId],
-    references: [telegramUsers.telegramId],
-  }),
-}));
+// Export schemas for Zod validation
+export const insertTelegramUserSchema = createInsertSchema(telegramUsers);
+export const selectTelegramUserSchema = createSelectSchema(telegramUsers);
+
+// Export types for TypeScript
+export type InsertTelegramUser = typeof telegramUsers.$inferInsert;
+export type SelectTelegramUser = typeof telegramUsers.$inferSelect;

@@ -10,6 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
+import { telegramUsers, telegramUserRelations, type InsertTelegramUser, type SelectTelegramUser } from "./schema/telegram";
 
 // Users table
 export const users = pgTable("users", {
@@ -18,10 +19,36 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   email: text("email").notNull().unique(),
   isAdmin: boolean("is_admin").default(false).notNull(),
+  telegramId: text("telegram_id").unique(),
+  telegramVerified: boolean("telegram_verified").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  emailVerificationToken: text("email_verification_token"),
   emailVerified: boolean("email_verified").default(false),
+  lastLoginAt: timestamp("last_login_at"),
 });
+
+// Define relations
+export const userRelations = relations(users, ({ one }) => ({
+  telegramUser: one(telegramUsers, {
+    fields: [users.telegramId],
+    references: [telegramUsers.telegramId],
+  }),
+}));
+
+// Export schemas for validation
+export const insertUserSchema = createInsertSchema(users);
+export const selectUserSchema = createSelectSchema(users);
+
+// Export types
+export type InsertUser = typeof users.$inferInsert;
+export type SelectUser = typeof users.$inferSelect;
+
+// Re-export telegram types
+export {
+  telegramUsers,
+  telegramUserRelations,
+  type InsertTelegramUser,
+  type SelectTelegramUser,
+} from "./schema/telegram";
 
 // Wheel spins table
 export const wheelSpins = pgTable("wheel_spins", {
@@ -148,8 +175,7 @@ export const insertWheelSpinSchema = createInsertSchema(wheelSpins);
 export const selectWheelSpinSchema = createSelectSchema(wheelSpins);
 export const insertBonusCodeSchema = createInsertSchema(bonusCodes);
 export const selectBonusCodeSchema = createSelectSchema(bonusCodes);
-export const insertUserSchema = createInsertSchema(users);
-export const selectUserSchema = createSelectSchema(users);
+
 export const insertWagerRaceSchema = createInsertSchema(wagerRaces);
 export const selectWagerRaceSchema = createSelectSchema(wagerRaces);
 export const insertWagerRaceParticipantSchema = createInsertSchema(
@@ -168,8 +194,7 @@ export type InsertWheelSpin = typeof wheelSpins.$inferInsert;
 export type SelectWheelSpin = typeof wheelSpins.$inferSelect;
 export type InsertBonusCode = typeof bonusCodes.$inferInsert;
 export type SelectBonusCode = typeof bonusCodes.$inferSelect;
-export type InsertUser = typeof users.$inferInsert;
-export type SelectUser = typeof users.$inferSelect;
+
 export type InsertWagerRace = typeof wagerRaces.$inferInsert;
 export type SelectWagerRace = typeof wagerRaces.$inferSelect;
 export type InsertWagerRaceParticipant = typeof wagerRaceParticipants.$inferInsert;
@@ -179,15 +204,8 @@ export type SelectSupportTicket = typeof supportTickets.$inferSelect;
 export type InsertTicketMessage = typeof ticketMessages.$inferInsert;
 export type SelectTicketMessage = typeof ticketMessages.$inferSelect;
 
-// Export all tables and schemas
-export { challenges, challengeEntries } from "./schema/challenges";
 
-export {
-  telegramUsers,
-  verificationRequests,
-  telegramUserRelations,
-  verificationRequestRelations,
-} from "./schema/telegram";
+export { challenges, challengeEntries } from "./schema/challenges";
 
 export const historicalRaces = pgTable("historical_races", {
   id: serial("id").primaryKey(),
@@ -285,6 +303,7 @@ export const insertHistoricalRaceSchema = createInsertSchema(historicalRaces);
 export const selectHistoricalRaceSchema = createSelectSchema(historicalRaces);
 export const insertAffiliateStatsSchema = createInsertSchema(affiliateStats);
 export const selectAffiliateStatsSchema = createSelectSchema(affiliateStats);
+
 
 export const insertMockWagerDataSchema = createInsertSchema(mockWagerData);
 export const selectMockWagerDataSchema = createSelectSchema(mockWagerData);
