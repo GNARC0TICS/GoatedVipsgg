@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { useParallax } from "@/hooks/use-parallax";
 import { ArrowLeft, Gift, Users, Link as LinkIcon, Zap, ArrowRight, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
