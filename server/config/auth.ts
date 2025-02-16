@@ -17,6 +17,13 @@ export const jwtPayloadSchema = z.object({
 const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret";
 const JWT_EXPIRES_IN = "7d";
 
+// Email configuration
+export const EMAIL_CONFIG = {
+  from: "noreply@goatedvips.com",
+  name: "GoatedVIPs Support",
+  subject: "Verify Your GoatedVIPs Account"
+};
+
 // Google OAuth Configuration
 export const googleClient = new OAuth2Client({
   clientId: process.env.GOOGLE_CLIENT_ID,
