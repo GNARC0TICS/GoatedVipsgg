@@ -27,23 +27,38 @@ import {
 import { useAuth } from "@/lib/auth";
 
 export default function Home() {
-    const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const mainParallax = useParallax(0.5);
+  const heroParallax = useParallax(0.3);
+  const cardsParallax = useParallax(0.2);
+
   return (
-    <div className="min-h-screen bg-[#14151A]">
-      <main className="container mx-auto px-4 py-12">
+    <div className="min-h-screen bg-[#14151A] overflow-x-hidden">
+      <div 
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `radial-gradient(circle at 50% ${50 + mainParallax * 0.1}%, rgba(215, 255, 0, 0.15), transparent 40%)`,
+          transform: `translateY(${mainParallax * 0.5}px)`,
+        }}
+      />
+      <main className="container mx-auto px-4 py-12 relative">
         <div className="text-center mb-24 max-w-6xl mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="mb-8"
+            className="mb-8 relative"
+            style={{
+              transform: `translateY(${heroParallax * 0.8}px)`
+            }}
           >
+            <div className="absolute inset-0 blur-3xl bg-gradient-to-b from-[#D7FF00]/20 to-transparent opacity-50 scale-110" />
             <video
               autoPlay
               loop
               muted
               playsInline
-              className="mx-auto h-64 md:h-80 w-auto object-contain"
+              className="mx-auto h-64 md:h-80 w-auto object-contain relative z-10"
             >
               <source src="/images/FINAL.mp4" type="video/mp4" />
             </video>
@@ -132,7 +147,10 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12 max-w-7xl mx-auto px-4"
+                className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12 max-w-7xl mx-auto px-4 relative"
+              style={{
+                transform: `translateY(${cardsParallax * 0.3}px)`
+              }}
               >
                 <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                   <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
