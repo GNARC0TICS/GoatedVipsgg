@@ -1,15 +1,16 @@
+
 import React, { Suspense } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { ErrorBoundary } from "react-error-boundary";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ErrorFallback } from "@/components/ErrorFallback";
-import AppContent from "@/components/AppContent";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { Layout } from "@/components/Layout";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { PreLoader } from "@/components/PreLoader";
 
 // Import all pages
 import NotFound from "@/pages/not-found";
@@ -26,27 +27,26 @@ import NotificationManagement from "@/pages/admin/NotificationManagement";
 import BonusCodeManagement from "@/pages/admin/BonusCodeManagement";
 import SupportManagement from "@/pages/admin/SupportManagement";
 import Leaderboard from "@/pages/Leaderboard";
-import Help from "./pages/Help";
+import Help from "@/pages/Help";
 import UserProfile from "@/pages/UserProfile";
 import Telegram from "@/pages/Telegram";
 import HowItWorks from "@/pages/HowItWorks";
 import GoatedToken from "@/pages/GoatedToken";
 import Support from "@/pages/support";
 import FAQ from "@/pages/faq";
-import VipProgram from "./pages/VipProgram";
+import VipProgram from "@/pages/VipProgram";
 import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
 import WheelChallenge from "@/pages/WheelChallenge";
 import { AdminRoute } from "@/components/AdminRoute";
 
-
-function AppContent() {
+function MainContent() {
   const [isInitialLoad, setIsInitialLoad] = React.useState(() => {
     return !sessionStorage.getItem('hasVisited');
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!isInitialLoad) return;
 
     const timeout = setTimeout(() => {
@@ -98,7 +98,6 @@ function AppContent() {
                   <AdminRoute path="/admin/notifications" component={NotificationManagement} />
                   <AdminRoute path="/admin/support" component={SupportManagement} />
 
-
                   {/* 404 Route */}
                   <Route component={NotFound} />
                 </Switch>
@@ -116,7 +115,7 @@ function App() {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <AuthProvider>
-        <AppContent key={window.location.pathname} />
+        <MainContent key={window.location.pathname} />
       </AuthProvider>
     </ErrorBoundary>
   );
