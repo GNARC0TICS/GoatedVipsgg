@@ -262,7 +262,9 @@ async function initializeBot(): Promise<TelegramBot | null> {
   }
 
   try {
-    const webhookUrl = `${process.env.PUBLIC_URL}/api/webhook`;
+    const webhookUrl = process.env.REPL_SLUG ? 
+    `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/telegram/webhook` :
+    `${process.env.BOT_DOMAIN}/api/telegram/webhook`;
     const options: TelegramBot.ConstructorOptions = {
       webHook: {
         port: process.env.BOT_PORT ? parseInt(process.env.BOT_PORT) : 5001,
@@ -277,7 +279,7 @@ async function initializeBot(): Promise<TelegramBot | null> {
 
     const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, options);
     botInstance = bot;
-    
+
     // Set webhook
     await bot.setWebHook(webhookUrl);
     console.log(`Webhook set to: ${webhookUrl}`);
@@ -299,11 +301,11 @@ async function initializeBot(): Promise<TelegramBot | null> {
 
       for (const admin of admins) {
         if (!admin.telegramId) continue;
-        
+
         try {
           // First check if the chat exists
           await bot.getChat(parseInt(admin.telegramId));
-          
+
           await bot.setMyCommands([...BOT_COMMANDS, ...ADMIN_COMMANDS], {
             scope: {
               type: 'chat',

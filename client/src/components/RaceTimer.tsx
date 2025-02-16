@@ -5,7 +5,7 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
-import Button from "@/components/Button"; // Assuming a Button component exists
+import { Button } from "@/components/ui/button"; // Assuming a Button component exists
 
 interface RaceParticipant {
   uid: string;
