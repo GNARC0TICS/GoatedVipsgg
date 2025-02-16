@@ -1,3 +1,4 @@
+
 import { pgTable, text, timestamp, integer, boolean, jsonb } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { relations } from 'drizzle-orm';
@@ -21,6 +22,7 @@ export const users = pgTable('users', {
   goatedAccountLinked: boolean('goated_account_linked').default(false),
   goatedUsername: text('goated_username'),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
+  lastActive: timestamp('last_active'),
   lastLogin: timestamp('last_login'),
   customization: jsonb('customization').default({}).notNull(),
   profileImage: text('profile_image'),
