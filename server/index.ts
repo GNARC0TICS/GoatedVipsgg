@@ -36,7 +36,7 @@ import { exec } from "child_process";
 import { sql } from "drizzle-orm";
 import { log } from "./utils/logger";
 import botUtils from "./telegram/bot";
-import { registerRoutes } from "./routes";
+import { registerRoutes as setupAPIRoutes } from "./routes"; // Renamed for clarity
 import { initializeAdmin } from "./middleware/admin";
 import { db } from "../db";
 import { setupAuth } from "./auth";
@@ -153,16 +153,15 @@ async function initializeServer() {
     log("info", "Database connection established");
 
     const app = express();
+
+    // Setup middleware first
     setupMiddleware(app);
     setupAuth(app);
-    registerRoutes(app);
 
-    // Initialize admin after routes
-    await initializeAdmin().catch(error => {
-      log("error", `Admin initialization error: ${error instanceof Error ? error.message : String(error)}`);
-    });
-
+    // Create HTTP server
     server = createServer(app);
+
+    // Setup WebSocket
     setupWebSocket(server);
 
     // Initialize Telegram bot integration
@@ -174,7 +173,10 @@ async function initializeServer() {
       log("info", "Telegram bot initialized successfully");
     }
 
-    // Setup development or production server based on environment
+    // Setup API routes before any static file handling
+    setupAPIRoutes(app);
+
+    // Setup development or production server
     if (app.get("env") === "development") {
       await setupVite(app, server);
     } else {
@@ -189,7 +191,7 @@ async function initializeServer() {
       });
     });
 
-    // Start server and handle graceful shutdown
+    // Start server
     return new Promise((resolve, reject) => {
       server.listen(PORT, HOST, () => {
         log("info", `Server is ready at http://0.0.0.0:${PORT}`);
@@ -200,41 +202,6 @@ async function initializeServer() {
         log("error", `Server failed to start: ${err.message}`);
         reject(err);
       });
-
-      // Graceful shutdown handler
-      const shutdown = async () => {
-        log("info", "Shutting down gracefully...");
-        // Clean up ports before shutdown
-        await forceKillPort(PORT);
-        await forceKillPort(parseInt(process.env.BOT_PORT || '5001', 10));
-        if (bot) {
-          try {
-            await bot.stopPolling();
-            log("info", "Telegram bot stopped");
-          } catch (error) {
-            log("error", "Error stopping Telegram bot");
-          }
-        }
-        if (wss) {
-          wss.close(() => {
-            log("info", "WebSocket server closed");
-          });
-        }
-        server.close(() => {
-          log("info", "HTTP server closed");
-          process.exit(0);
-        });
-
-        // Force exit if graceful shutdown fails
-        setTimeout(() => {
-          log("error", "Forced shutdown after timeout");
-          process.exit(1);
-        }, 10000);
-      };
-
-      // Register shutdown handlers for clean process termination
-      process.on("SIGTERM", shutdown);
-      process.on("SIGINT", shutdown);
     });
   } catch (error) {
     log("error", `Failed to start application: ${error instanceof Error ? error.message : String(error)}`);
@@ -317,7 +284,7 @@ function setupMiddleware(app: express.Application) {
       : process.env.ALLOWED_ORIGINS?.split(',') || ['*'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Telegram-Bot-Api-Secret-Token']
   }));
 
   // Session store configuration using PostgreSQL
@@ -333,12 +300,12 @@ function setupMiddleware(app: express.Application) {
     name: 'sid',
     secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
-    saveUninitialized: true, // Changed to true to allow anonymous sessions
+    saveUninitialized: true,
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      sameSite: 'lax' // Changed to lax for better compatibility
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      sameSite: 'lax'
     },
   }));
 
@@ -351,20 +318,18 @@ function setupMiddleware(app: express.Application) {
     next();
   });
 
-  // Security headers middleware
-  app.use((req, res, next) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    next();
-  });
-
   // Body parsing middleware
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
   app.use(cookieParser());
-  app.use(requestLogger);
+
+  // Logging middleware
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      log("info", `${req.method} ${req.path} request received`);
+    }
+    next();
+  });
 }
 
 /**
@@ -419,7 +384,7 @@ function serveStatic(app: express.Application) {
   
   // SPA fallback
   app.get("*", (_req, res, next) => {
-    if (req.path.startsWith('/api')) {
+    if (_req.path.startsWith('/api')) {
       return next();
     }
     res.sendFile(path.resolve(distPath, "index.html"), {
