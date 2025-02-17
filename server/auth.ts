@@ -273,22 +273,23 @@ export function setupAuth(app: Express) {
           message: "Logout failed",
         });
       }
-      
+
       res.clearCookie('token');
       res.clearCookie('connect.sid');
 
       req.logout((err) => {
-      if (err) {
-        console.error("Logout error:", err);
-        return res.status(500).json({
-          status: "error",
-          message: "Logout failed",
-        });
-      }
+        if (err) {
+          console.error("Logout error:", err);
+          return res.status(500).json({
+            status: "error",
+            message: "Logout failed",
+          });
+        }
 
-      res.json({
-        status: "success",
-        message: "Logout successful",
+        res.json({
+          status: "success",
+          message: "Logout successful",
+        });
       });
     });
   });
