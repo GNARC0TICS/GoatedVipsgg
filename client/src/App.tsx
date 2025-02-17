@@ -55,22 +55,20 @@ import { AdminRoute } from "@/components/AdminRoute";
 // MainContent Component
 // Handles the core application rendering logic including preloader and route management
 function MainContent() {
-  // Track if this is user's first visit using sessionStorage
-  const [isInitialLoad, setIsInitialLoad] = React.useState(() => {
-    return !sessionStorage.getItem('hasVisited');
-  });
+  const [isInitialLoad, setIsInitialLoad] = React.useState(true);
 
-  // Effect to handle preloader display timing
   React.useEffect(() => {
-    if (!isInitialLoad) return;
-
-    const timeout = setTimeout(() => {
-      sessionStorage.setItem('hasVisited', 'true');
+    const hasVisited = sessionStorage.getItem('hasVisited');
+    if (hasVisited) {
       setIsInitialLoad(false);
-    }, 100);
-
-    return () => clearTimeout(timeout);
-  }, [isInitialLoad]);
+    } else {
+      const timeout = setTimeout(() => {
+        sessionStorage.setItem('hasVisited', 'true');
+        setIsInitialLoad(false);
+      }, 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, []);
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
