@@ -98,7 +98,7 @@ export default function AuthModal() {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen} modal={false}>
       <DialogTrigger asChild>
         <Button 
           variant="outline" 
