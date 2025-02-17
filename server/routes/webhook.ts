@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
-import { bot, handleUpdate } from "../telegram/bot";
+import { getBot, handleUpdate } from "../telegram/bot";
 import type TelegramBot from "node-telegram-bot-api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 
@@ -24,6 +24,7 @@ router.post("/", express.json(), async (req: Request, res: Response, next: NextF
     // Apply rate limiting
     await webhookLimiter.consume(ip);
 
+    const bot = getBot();
     if (!bot) {
       console.error("Webhook error: Bot not initialized");
       return res.sendStatus(503); // Service Unavailable
@@ -36,24 +37,10 @@ router.post("/", express.json(), async (req: Request, res: Response, next: NextF
       return res.sendStatus(400); // Bad Request
     }
 
-    // Process all types of updates
-    try {
-      if (update.message) {
-        await bot.handleMessage(update.message);
-      } else if (update.callback_query) {
-        await bot.handleCallbackQuery(update.callback_query);
-      } else if (update.channel_post) {
-        await bot.handleChannelPost(update.channel_post);
-      } else {
-        console.error('Webhook: Unsupported update type', update);
-        return res.sendStatus(400);
-      }
-    } catch (error) {
-      console.error('Error processing webhook:', error);
-      return res.sendStatus(500);
-    }
-
+    // Process update using the handler
+    await handleUpdate(update);
     return res.sendStatus(200);
+
   } catch (error: any) {
     if (isRateLimiterError(error)) {
       // Rate limit exceeded

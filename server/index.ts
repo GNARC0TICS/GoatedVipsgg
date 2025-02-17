@@ -1,4 +1,3 @@
-
 /**
  * Main server entry point for the GoatedVIPs application
  * Handles server initialization, middleware setup, and core service bootstrapping
@@ -302,12 +301,12 @@ function setupWebSocket(server: any) {
  */
 function setupMiddleware(app: express.Application) {
   app.set('trust proxy', 1);
-  
+
   // CORS configuration for API routes
   app.use('/api', cors({
     origin: process.env.NODE_ENV === 'development'
       ? ['http://localhost:5000', 'http://0.0.0.0:5000']
-      : process.env.ALLOWED_ORIGINS?.split(',') || [],
+      : process.env.ALLOWED_ORIGINS?.split(',') || ['*'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
@@ -321,16 +320,28 @@ function setupMiddleware(app: express.Application) {
         connectionString: process.env.DATABASE_URL,
       },
       createTableIfMissing: true,
+      pruneSessionInterval: 60
     }),
+    name: 'sid',
     secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true, // Changed to true to allow anonymous sessions
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      sameSite: 'lax' // Changed to lax for better compatibility
     },
   }));
+
+  // Add session initialization middleware
+  app.use((req, res, next) => {
+    if (!req.session.initialized) {
+      req.session.initialized = true;
+      req.session.isAnonymous = true;
+    }
+    next();
+  });
 
   // Security headers middleware
   app.use((req, res, next) => {
