@@ -71,8 +71,16 @@ export const optionalAuth = async (
         req.user = user;
       }
     }
+    // Add debugging log
+    console.log(`[Auth Debug] User state:`, {
+      hasToken: !!token,
+      hasUser: !!req.user,
+      path: req.path
+    });
     next();
   } catch (error) {
+    // Don't fail on auth errors for optional auth
+    console.log(`[Auth Debug] Optional auth error:`, error);
     next();
   }
 };

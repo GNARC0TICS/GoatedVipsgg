@@ -264,12 +264,18 @@ export function setupAuth(app: Express) {
 
   // Logout endpoint
   app.post("/api/logout", (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(400).json({
-        status: "error",
-        message: "Not logged in",
-      });
-    }
+    // Allow logout even if not authenticated
+    req.session?.destroy((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({
+          status: "error",
+          message: "Logout failed",
+        });
+      }
+      
+      res.clearCookie('token');
+      res.clearCookie('connect.sid');
 
     req.logout((err) => {
       if (err) {
