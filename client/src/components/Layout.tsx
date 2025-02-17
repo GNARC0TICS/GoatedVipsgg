@@ -20,7 +20,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { SelectUser } from "@db/schema";
 import { ScrollToTop } from "./ScrollToTop";
 import {
@@ -151,6 +151,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const [isFooterVisible, setIsFooterVisible] = useState(false);
   const { toast } = useToast();
   const [openMobile, setOpenMobile] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: user } = useQuery<SelectUser>({ queryKey: ["/api/user"] });
   const isAuthenticated = !!user;
@@ -183,18 +184,18 @@ export function Layout({ children }: { children: ReactNode }) {
           "Content-Type": "application/json"
         }
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || "Logout failed");
       }
-      
+
       toast({
         title: "Success",
         description: "Logged out successfully"
       });
-      
+
       queryClient.clear();
       window.location.href = '/';
     } catch (error) {
@@ -205,7 +206,7 @@ export function Layout({ children }: { children: ReactNode }) {
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, queryClient]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#14151A]">
@@ -590,13 +591,13 @@ export function Layout({ children }: { children: ReactNode }) {
                     <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">HELP & SUPPORT</div>
                     <MobileNavLink href="/help" label="Help Center" onClose={() => setOpenMobile(false)} />
                     <MobileNavLink href="/faq" label="FAQ" onClose={() => setOpenMobile(false)} />
-                    <MobileNavLink 
-                      href="https://t.me/xGoombas" 
-                      label="Contact Support" 
+                    <MobileNavLink
+                      href="https://t.me/xGoombas"
+                      label="Contact Support"
                       onClose={() => {
                         setOpenMobile(false);
                         window.open("https://t.me/xGoombas", "_blank");
-                      }} 
+                      }}
                     />
 
                     {user?.isAdmin && (

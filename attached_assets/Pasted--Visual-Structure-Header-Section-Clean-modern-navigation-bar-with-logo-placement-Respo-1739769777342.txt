@@ -1,0 +1,176 @@
+
+### Visual Structure
+#### Header Section
+- Clean, modern navigation bar with logo placement
+- Responsive design that adapts to different screen sizes
+- Quick access to key features and user account
+#### Main Dashboard
+- Grid-based layout for optimal information display
+- Real-time leaderboard with auto-updating capabilities
+- Performance metrics displayed in card format
+- Interactive charts and graphs for data visualization
+#### Admin Interface
+- Sidebar navigation for quick access to admin tools
+- Monitoring panels for system health
+- User management interface
+- Verification queue display
+### Navigation Structure
+1. **Main Navigation**
+   - Dashboard
+   - Leaderboard
+   - Profile
+   - Admin Panel (for authorized users)
+   - Documentation
+2. **Secondary Navigation**
+   - Race History
+   - Analytics
+   - Settings
+   - Help Center
+### Design Elements
+- **Color Scheme**: Professional dark theme with accent colors
+- **Typography**: Clean, readable fonts optimized for data display
+- **Interactive Elements**: Smooth animations and transitions
+- **Responsive Design**: Mobile-first approach with breakpoints
+## Features & Functionality
+### 1. Race Tracking System
+**Purpose**: Monitor and manage affiliate performance competitions
+- Real-time wager tracking
+- Automated leaderboard updates
+- Prize pool management
+- Historical data access
+**User Flow**:
+1. User participates in race
+2. System tracks performance metrics
+3. Leaderboard updates in real-time
+4. Rewards distributed automatically
+### 2. Telegram Integration
+**Purpose**: Streamline user verification and communication
+- Automated user verification
+- Admin command system
+- Group management
+- Broadcast messaging
+**Verification Process**:
+1. User initiates verification request
+2. System validates user data
+3. Admin reviews request
+4. Automatic status update
+5. User notification
+### 3. Admin Dashboard
+**Purpose**: Centralized control and monitoring
+Features:
+- Real-time analytics
+- User management tools
+- System health monitoring
+- Broadcast messaging
+- Race administration
+### 4. Data Synchronization
+**Purpose**: Ensure data consistency across platforms
+Implementation:
+- WebSocket connections for real-time updates
+- Optimized data transformation
+- Multi-level caching
+- Rate limiting protection
+## Backend & Technical Architecture
+### Server Architecture
+1. **Main Server (Express.js)**
+   - Core application logic
+   - API endpoints
+   - Authentication handling
+   - Database operations
+2. **Webhook Server**
+   - Telegram bot integration
+   - External service callbacks
+   - Event processing
+### Database Structure
+- PostgreSQL with Drizzle ORM
+- Key tables:
+  - Users
+  - Races
+  - Wagers
+  - Verification
+  - TransformationLogs
+### API Integration
+1. **External APIs**
+   - Telegram Bot API
+   - Payment processing
+   - Analytics services
+2. **Internal APIs**
+   - User management
+   - Race tracking
+   - Analytics
+   - Admin operations
+## Development Rationale
+### Key Decisions
+1. **Multi-Server Architecture**
+   - Reason: Separation of concerns and scalability
+   - Benefit: Independent scaling of components
+   - Impact: Improved reliability and maintenance
+2. **Telegram Integration**
+   - Reason: User accessibility and verification
+   - Benefit: Streamlined user onboarding
+   - Impact: Reduced fraud and improved user trust
+3. **Real-time Updates**
+   - Reason: Immediate data synchronization
+   - Benefit: Enhanced user experience
+   - Impact: Increased engagement and retention
+### Technical Choices
+1. **Frontend**
+   - React with TypeScript for type safety
+   - TanStack Query for data fetching
+   - ShadcN + Tailwind for styling
+   - Reason: Modern, maintainable, and scalable
+2. **Backend**
+   - Express.js for API server
+   - WebSocket for real-time updates
+   - PostgreSQL for data persistence
+   - Reason: Robust and well-supported stack
+### Challenges & Solutions
+1. **Data Synchronization**
+   - Challenge: Real-time updates across platforms
+   - Solution: WebSocket implementation with fallback
+   - Result: Reliable real-time communication
+2. **User Verification**
+   - Challenge: Secure and efficient verification
+   - Solution: Telegram bot integration
+   - Result: Automated and trustworthy process
+## Additional Observations
+### Code Organization
+- Modular architecture
+- Clear separation of concerns
+- Consistent naming conventions
+- Comprehensive error handling
+### Future Improvements
+1. **Performance Optimization**
+   - Implement advanced caching
+   - Optimize database queries
+   - Add performance monitoring
+2. **Feature Enhancements**
+   - Advanced analytics dashboard
+   - Additional payment integrations
+   - Enhanced reporting tools
+3. **Documentation**
+   - API documentation
+   - Deployment guides
+   - Performance optimization guides
+### Security Considerations
+- Rate limiting implementation
+- Data encryption
+- Secure admin access
+- Regular security audits
+## Appendix
+### Technology Stack
+- Frontend: React, TypeScript, TanStack Query
+- Backend: Express.js, Node.js
+- Database: PostgreSQL, Drizzle ORM
+- Real-time: WebSocket, Server-Sent Events
+- Integration: Telegram Bot API
+### Development Tools
+- Version Control: Git
+- Package Management: npm
+- Testing: Vitest
+- Deployment: Replit
+### Support Resources
+- Technical documentation
+- API references
+- Troubleshooting guides
+- Development guidelines
