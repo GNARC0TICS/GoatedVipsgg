@@ -56,7 +56,7 @@ agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "BOT_PORT=5001 tsx --tsconfig tsconfig.json server/index.ts"
+args = "tsx --tsconfig tsconfig.json server/index.ts"
 wait_for_port = 5000
 
 # Authentication settings
