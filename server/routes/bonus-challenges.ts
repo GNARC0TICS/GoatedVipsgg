@@ -1,3 +1,11 @@
+
+/**
+ * @fileoverview Bonus Challenges Router
+ * Handles all bonus code and challenge related routes including creation, 
+ * management and redemption of bonus codes. Includes rate limiting and 
+ * authentication middleware.
+ */
+
 import { Router } from "express";
 import { db } from "@db";
 import { bonusCodes } from "@db/schema/bonus";
@@ -10,18 +18,19 @@ import type { SelectUser } from "@db/schema";
 
 const router = Router();
 
-// Rate limiter setup for public endpoints
+// Rate limiter configuration for public endpoints
+// Restricts to 60 requests per minute per IP address
 const publicLimiter = new RateLimiterMemory({
-  points: 60, // Number of requests
-  duration: 60, // Per minute
+  points: 60, // Number of requests allowed
+  duration: 60, // Time window in seconds
 });
 
-// Types for authenticated requests
+// Extended Request interface to include authenticated user
 interface AuthenticatedRequest extends Request {
   user?: SelectUser;
 }
 
-// Validation schemas
+// Validation schemas for bonus code operations
 const createBonusCodeSchema = z.object({
   code: z.string().min(1, "Code is required"),
   description: z.string().optional(),
@@ -41,7 +50,10 @@ const updateBonusCodeSchema = z.object({
   status: z.enum(["active", "inactive", "expired"]).optional(),
 });
 
-// Authentication middleware with enhanced logging
+/**
+ * Authentication middleware
+ * Verifies user is authenticated before proceeding
+ */
 const authenticate = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   if (!req.isAuthenticated()) {
     log("Authentication failed: User not authenticated");
@@ -50,7 +62,10 @@ const authenticate = async (req: AuthenticatedRequest, res: Response, next: Next
   next();
 };
 
-// Admin middleware
+/**
+ * Admin authorization middleware
+ * Checks if authenticated user has admin privileges
+ */
 const isAdmin = [authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   if (!req.user?.isAdmin) {
     log(`Unauthorized admin access attempt by user ID: ${req.user?.id}`);
@@ -59,7 +74,10 @@ const isAdmin = [authenticate, async (req: AuthenticatedRequest, res: Response, 
   next();
 }];
 
-// Error handling middleware
+/**
+ * Error handling middleware wrapper
+ * Provides consistent error handling for async routes
+ */
 const asyncHandler = (fn: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<any>) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch((error) => {
@@ -79,12 +97,17 @@ const asyncHandler = (fn: (req: AuthenticatedRequest, res: Response, next: NextF
   };
 };
 
-// Get active bonus codes (public)
+/**
+ * GET /bonus-codes
+ * Public endpoint to fetch active bonus codes
+ * Includes rate limiting and caching headers
+ */
 router.get("/bonus-codes", asyncHandler(async (req, res) => {
   log("Fetching active bonus codes - Starting query...");
   try {
     await publicLimiter.consume(req.ip || 'unknown');
 
+    // Set response headers
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('X-RateLimit-Limit', publicLimiter.points);
@@ -93,6 +116,7 @@ router.get("/bonus-codes", asyncHandler(async (req, res) => {
     const now = new Date();
     log(`Current time for comparison: ${now.toISOString()}`);
 
+    // Query active bonus codes
     const activeBonusCodes = await db
       .select()
       .from(bonusCodes)
@@ -123,7 +147,11 @@ router.get("/bonus-codes", asyncHandler(async (req, res) => {
   }
 }));
 
-// Get all bonus codes (admin only)
+/**
+ * GET /admin/bonus-codes
+ * Admin endpoint to fetch all bonus codes
+ * Requires admin authentication
+ */
 router.get("/admin/bonus-codes", isAdmin, asyncHandler(async (_req: AuthenticatedRequest, res) => {
   log("Admin: Fetching all bonus codes");
   try {
@@ -140,7 +168,11 @@ router.get("/admin/bonus-codes", isAdmin, asyncHandler(async (_req: Authenticate
   }
 }));
 
-// Create bonus code (admin only)
+/**
+ * POST /admin/bonus-codes
+ * Admin endpoint to create new bonus codes
+ * Validates input and enforces business rules
+ */
 router.post("/admin/bonus-codes", isAdmin, asyncHandler(async (req: AuthenticatedRequest, res) => {
   log("Admin: Creating new bonus code");
   try {
@@ -178,7 +210,11 @@ router.post("/admin/bonus-codes", isAdmin, asyncHandler(async (req: Authenticate
   }
 }));
 
-// Update bonus code (admin only)
+/**
+ * PUT /admin/bonus-codes/:id
+ * Admin endpoint to update existing bonus codes
+ * Validates input and handles partial updates
+ */
 router.put("/admin/bonus-codes/:id", isAdmin, asyncHandler(async (req: AuthenticatedRequest, res) => {
   const { id } = req.params;
   log(`Admin: Updating bonus code ${id}`);
@@ -220,7 +256,11 @@ router.put("/admin/bonus-codes/:id", isAdmin, asyncHandler(async (req: Authentic
   }
 }));
 
-// Deactivate bonus code (admin only)
+/**
+ * DELETE /admin/bonus-codes/:id
+ * Admin endpoint to deactivate bonus codes
+ * Soft deletes by setting status to inactive
+ */
 router.delete("/admin/bonus-codes/:id", isAdmin, asyncHandler(async (req: AuthenticatedRequest, res) => {
   const { id } = req.params;
   log(`Admin: Deactivating bonus code ${id}`);
