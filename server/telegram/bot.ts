@@ -333,15 +333,8 @@ async function initializeBot(): Promise<TelegramBot | null> {
       });
 
     // Configure webhook URL based on environment
-    let webhookUrl: string;
-    if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-      webhookUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/telegram/webhook`;
-    } else if (process.env.BOT_DOMAIN) {
-      webhookUrl = `${process.env.BOT_DOMAIN}/api/telegram/webhook`;
-    } else {
-      log("error", "Neither REPL environment nor BOT_DOMAIN is configured!");
-      return null;
-    }
+    const webhookUrl = `https://${process.env.REPL_SLUG}-${process.env.REPL_ID}.${process.env.REPL_OWNER}.repl.co/api/telegram/webhook`;
+    log("info", `Setting webhook URL to: ${webhookUrl}`);
 
     // Delete any existing webhook before setting new one
     try {
