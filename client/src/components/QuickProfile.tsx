@@ -6,7 +6,7 @@ import { LoadingSpinner } from "./LoadingSpinner";
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import {Button} from "@/components/ui/button";
 import {ArrowRight} from "lucide-react";
-import {VerificationBadge} from "@/components/ui/verification-badge";
+import {VerificationBadge} from "@/components/VerificationBadge";
 import { useLocation } from "wouter";
 import { useState } from "react";
 
