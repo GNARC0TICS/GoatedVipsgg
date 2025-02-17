@@ -152,8 +152,38 @@ export default function UserProfile({ params }: { params: { id: string } }) {
     );
   };
 
+  const [activeTab, setActiveTab] = useState('overview');
+  
   return (
-    <div className={`min-h-screen bg-[${user.profileColor || PROFILE_COLORS.yellow}] text-white`}> {/* Apply profile color */}
+    <div className="min-h-screen">
+      {/* Profile Banner */}
+      <div 
+        className="h-48 bg-cover bg-center relative"
+        style={{ 
+          backgroundImage: user.bannerImage ? `url(${user.bannerImage})` : `linear-gradient(to right, ${user.customTheme?.primary || '#D7FF00'}, ${user.customTheme?.secondary || '#1A1B21'})`
+        }}
+      >
+        <div className="absolute bottom-0 left-0 w-full h-full bg-gradient-to-t from-black/50 to-transparent" />
+      </div>
+      
+      {/* Quick Stats Bar */}
+      <div className="bg-black/20 backdrop-blur-sm border-b border-white/10">
+        <div className="container mx-auto px-4 py-2 flex justify-between items-center">
+          <div className="flex items-center space-x-8">
+            <span>Rank #{user.currentRank}</span>
+            <span>${user.totalWagered.toLocaleString()} Wagered</span>
+            <span>{user.races.won} Races Won</span>
+          </div>
+          <div className="flex items-center space-x-4">
+            {user.socialLinks?.telegram && (
+              <a href={user.socialLinks.telegram} target="_blank" rel="noopener" className="text-white/80 hover:text-white">
+                <MessageCircle className="h-5 w-5" />
+              </a>
+            )}
+            <Button variant="outline" size="sm">Share Profile</Button>
+          </div>
+        </div>
+      </div> {/* Apply profile color */}
       <div className="container mx-auto px-4 py-8 md:py-16">
         <motion.div
           variants={containerVariants}

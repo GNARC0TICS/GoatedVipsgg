@@ -12,6 +12,17 @@ interface QuickProfileProps {
 }
 
 export function QuickProfile({ userId, username, children }: QuickProfileProps) {
+  const { data: userData } = useQuery({
+    queryKey: [`/api/users/${userId}/quick-stats`],
+    staleTime: 30000,
+  });
+
+  const quickActions = [
+    { label: "View Profile", icon: User, href: `/profile/${userId}` },
+    { label: "Race History", icon: Trophy, href: `/profile/${userId}/races` },
+    { label: "Achievements", icon: Award, href: `/profile/${userId}/achievements` },
+    { label: "Settings", icon: Settings, href: `/profile/${userId}/settings` }
+  ];
   const { data: leaderboardData, isLoading } = useQuery({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,

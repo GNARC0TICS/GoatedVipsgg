@@ -19,6 +19,19 @@ export const users = pgTable('users', {
   isAdmin: boolean('is_admin').notNull().default(false),
   bio: text('bio'),
   profileColor: text('profile_color').default('#D7FF00'),
+  bannerImage: text('banner_image'),
+  socialLinks: jsonb('social_links').default({
+    telegram: null,
+    twitter: null,
+    discord: null
+  }).notNull(),
+  displayBadges: jsonb('display_badges').default([]).notNull(),
+  favoriteAchievements: jsonb('favorite_achievements').default([]).notNull(),
+  customTheme: jsonb('custom_theme').default({
+    primary: '#D7FF00',
+    secondary: '#1A1B21',
+    accent: '#2A2B31'
+  }).notNull(),
   goatedAccountLinked: boolean('goated_account_linked').default(false),
   goatedUsername: text('goated_username'),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
