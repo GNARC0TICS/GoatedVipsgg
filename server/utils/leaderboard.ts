@@ -12,6 +12,16 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "@db";
 import { users, transformationLogs } from "@db/schema";
 import { broadcastTransformationLog } from "../routes";
+import { broadcastPositionChange } from "../telegram/bot";
+
+// Add TypeScript global declaration
+declare global {
+  var previousLeaderboardState: {
+    monthly?: any[];
+    weekly?: any[];
+    daily?: any[];
+  };
+}
 
 type WageredData = {
   today: number;
@@ -78,11 +88,38 @@ export async function transformLeaderboardData(apiData: APIResponse) {
       }
     }));
 
+    // Get previous state from cache
+    const previousState = global.previousLeaderboardState || {};
+    
     // Sort data for each time period
     const todayData = sortByWagered(transformedEntries, 'today');
     const weeklyData = sortByWagered(transformedEntries, 'this_week');
     const monthlyData = sortByWagered(transformedEntries, 'this_month');
     const allTimeData = sortByWagered(transformedEntries, 'all_time');
+
+    // Check for position changes in monthly data
+    if (monthlyData.length > 0 && previousState.monthly) {
+      const prevTopUser = previousState.monthly[0];
+      const currentTopUser = monthlyData[0];
+
+      if (prevTopUser && currentTopUser && prevTopUser.uid !== currentTopUser.uid) {
+        // Broadcast position change via bot
+        const formattedAmount = new Intl.NumberFormat('en-US', {
+          minimumFractionDigits: 3,
+          maximumFractionDigits: 3
+        }).format(currentTopUser.wagered.this_month);
+
+        const message = `🚨 *New Race Leader!*\n\n${currentTopUser.name} has taken the lead with $${formattedAmount} wagered! 🏃‍♂️💨`;
+        broadcastPositionChange(message);
+      }
+    }
+
+    // Update previous state
+    global.previousLeaderboardState = {
+      monthly: monthlyData,
+      weekly: weeklyData,
+      daily: todayData
+    };
 
     // Log transformation stats
     const transformedStats = {

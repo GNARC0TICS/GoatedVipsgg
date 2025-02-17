@@ -888,6 +888,30 @@ async function handleBroadcastPrompt(msg: TelegramBot.Message) {
   await safeSendMessage(msg.chat.id, MESSAGES.broadcastPrompt, { parse_mode: "Markdown" });
 }
 
+export async function broadcastPositionChange(message: string) {
+  if (!botInstance) return;
+
+  try {
+    const verifiedUsers = await db
+      .select()
+      .from(telegramUsers)
+      .where(eq(telegramUsers.isVerified, true));
+
+    for (const user of verifiedUsers) {
+      try {
+        await safeSendMessage(parseInt(user.telegramId), message, { 
+          parse_mode: "Markdown",
+          disable_notification: false 
+        });
+      } catch (error) {
+        log("error", `Failed to send position change to user ${user.telegramId}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  } catch (error) {
+    log("error", `Position change broadcast error: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 async function handleBroadcast(msg: TelegramBot.Message, message?: string) {
   if (!botInstance || !msg.from?.id) return;
 
