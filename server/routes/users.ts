@@ -155,3 +155,52 @@ function getVerificationEmailTemplate(verificationCode) {
 
 
 export default router;
+import { createTransport } from 'nodemailer';
+
+const emailTransport = createTransport({
+  service: process.env.EMAIL_SERVICE || 'gmail',
+  auth: {
+    user: process.env.SUPPORT_EMAIL,
+    pass: process.env.SUPPORT_EMAIL_PASSWORD
+  }
+});
+
+// Support email response endpoint
+router.post("/support/email/respond", async (req, res) => {
+  const { userEmail, subject, message, ticketId } = req.body;
+  
+  if (!userEmail || !message) {
+    return res.status(400).json({ error: "Email and message are required" });
+  }
+
+  try {
+    await emailTransport.sendMail({
+      from: process.env.SUPPORT_EMAIL,
+      to: userEmail,
+      subject: `Re: ${subject || 'Support Ticket #' + ticketId}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <img src="${process.env.SITE_URL}/images/Goated%20Logo%20-%20Yellow.png" alt="GoatedVIPs Logo" style="max-width: 200px; margin-bottom: 20px;"/>
+          <div style="padding: 20px; background: #1A1B21; color: #ffffff; border-radius: 8px;">
+            ${message}
+          </div>
+          <p style="color: #8A8B91; font-size: 12px; margin-top: 20px;">
+            This is a response to your support inquiry. If you need further assistance, please reply to this email.
+          </p>
+        </div>
+      `
+    });
+
+    // Update ticket status if ticketId provided
+    if (ticketId) {
+      await db.update(supportTickets)
+        .set({ status: 'responded' })
+        .where(eq(supportTickets.id, ticketId));
+    }
+
+    res.json({ success: true, message: "Support response sent successfully" });
+  } catch (error) {
+    console.error("Failed to send support email:", error);
+    res.status(500).json({ error: "Failed to send support email" });
+  }
+});
