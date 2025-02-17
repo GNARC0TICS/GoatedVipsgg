@@ -333,7 +333,7 @@ async function initializeBot(): Promise<TelegramBot | null> {
       });
 
     // Configure webhook URL based on environment
-    const webhookUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/telegram/webhook`;
+    const webhookUrl = `https://${process.env.REPL_SLUG}-${process.env.REPL_ID}.${process.env.REPL_OWNER}.repl.co/api/telegram/webhook`;
     log("info", `Setting webhook URL to: ${webhookUrl}`);
 
     const options: TelegramBot.ConstructorOptions = {
