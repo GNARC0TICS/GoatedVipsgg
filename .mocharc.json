@@ -1,0 +1,10 @@
+{
+  "loader": "ts-node/esm",
+  "extensions": ["ts"],
+  "spec": "server/tests/**/*.test.ts",
+  "watch-files": ["server/tests/**/*.ts"],
+  "timeout": 5000,
+  "exit": true,
+  "require": ["server/tests/setup.ts"],
+  "experimental-specifier-resolution": "node"
+}

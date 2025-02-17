@@ -125,22 +125,28 @@ const CACHE_TIMES = {
   LONG: 300000     // 5 minutes
 };
 
-router.get("/health", async (_req: Request, res: Response) => {
+// Health check endpoint
+router.get("/health", async (_req, res) => {
   try {
+    // Test database connection
     await db.execute(sql`SELECT 1`);
+
     const health = {
       status: "ok",
       timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
       db: "connected",
-      telegramBot: global.botInstance ? "initialized" : "not initialized",
     };
+
     log("info", "Health check passed", health);
     res.json(health);
   } catch (error) {
     log("error", "Health check failed", { error });
     res.status(500).json({
       status: "error",
-      message: process.env.NODE_ENV === "production" ? "Health check failed" : (error as Error).message
+      message: process.env.NODE_ENV === "production"
+        ? "Health check failed"
+        : (error as Error).message
     });
   }
 });
