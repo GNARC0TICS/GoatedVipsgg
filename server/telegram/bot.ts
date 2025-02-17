@@ -339,11 +339,8 @@ async function initializeBot(): Promise<TelegramBot | null> {
     const options: TelegramBot.ConstructorOptions = {
       webHook: {
         port: parseInt(process.env.BOT_PORT || '5001'),
-        host: "0.0.0.0"
-      }
-      webHook: {
-        port: process.env.BOT_PORT ? parseInt(process.env.BOT_PORT) : 5001,
-        host: "0.0.0.0"
+        host: "0.0.0.0",
+        autoOpen: false // Prevent auto-opening connection before webhook is set
       }
     };
 
@@ -418,6 +415,18 @@ async function initializeBot(): Promise<TelegramBot | null> {
       }
     } catch (adminError) {
       log("error", `Error setting admin commands: ${adminError}`);
+    }
+
+    // Verify webhook is properly set
+    const webhookInfo = await bot.getWebHookInfo();
+    log("info", `Current webhook status: ${JSON.stringify(webhookInfo)}`);
+    
+    if (!webhookInfo.url || webhookInfo.url !== webhookUrl) {
+      log("info", "Webhook URL mismatch - updating webhook configuration");
+      await bot.deleteWebHook();
+      await bot.setWebHook(webhookUrl);
+      const updatedInfo = await bot.getWebHookInfo();
+      log("info", `Updated webhook status: ${JSON.stringify(updatedInfo)}`);
     }
 
     registerEventHandlers(bot);
