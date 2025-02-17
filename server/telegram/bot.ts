@@ -343,6 +343,14 @@ async function initializeBot(): Promise<TelegramBot | null> {
       return null;
     }
 
+    // Delete any existing webhook before setting new one
+    try {
+      await bot.deleteWebHook();
+      log("info", "Deleted existing webhook");
+    } catch (error) {
+      log("error", `Error deleting webhook: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
     const options: TelegramBot.ConstructorOptions = {
       webHook: {
         port: process.env.BOT_PORT ? parseInt(process.env.BOT_PORT) : 5001,

@@ -31,13 +31,19 @@ router.post("/", express.json(), async (req: Request, res: Response, next: NextF
 
     // Validate incoming update
     const update = req.body as TelegramBot.Update;
-    if (!update || (!update.message && !update.callback_query)) {
+    if (!update) {
       console.error("Webhook error: Invalid update payload", req.body);
       return res.sendStatus(400); // Bad Request
     }
 
-    // Process the update
-    await handleUpdate(update);
+    // Process all types of updates
+    if (update.message) {
+      await bot.handleMessage(update.message);
+    } else if (update.callback_query) {
+      await bot.handleCallbackQuery(update.callback_query);
+    } else if (update.channel_post) {
+      await bot.handleChannelPost(update.channel_post);
+    }
 
     return res.sendStatus(200);
   } catch (error: any) {
