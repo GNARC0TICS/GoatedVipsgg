@@ -332,11 +332,15 @@ async function initializeBot(): Promise<TelegramBot | null> {
         }
       });
 
-    // Configure webhook URL using custom domain
+    // Configure webhook URL using main server port since it handles the webhook endpoint
     const webhookUrl = `https://goatedvips.gg/api/telegram/webhook`;
     log("info", `Setting webhook URL to: ${webhookUrl}`);
 
     const options: TelegramBot.ConstructorOptions = {
+      webHook: {
+        port: parseInt(process.env.BOT_PORT || '5001'),
+        host: "0.0.0.0"
+      }
       webHook: {
         port: process.env.BOT_PORT ? parseInt(process.env.BOT_PORT) : 5001,
         host: "0.0.0.0"
