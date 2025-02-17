@@ -37,19 +37,16 @@ router.post("/", express.json(), async (req: Request, res: Response, next: NextF
     }
 
     // Process all types of updates
-    if (!update || !update.message?.from) {
-      return res.sendStatus(400);
-    }
-
     try {
-      const user = update.message.from;
-
       if (update.message) {
         await bot.handleMessage(update.message);
       } else if (update.callback_query) {
         await bot.handleCallbackQuery(update.callback_query);
       } else if (update.channel_post) {
         await bot.handleChannelPost(update.channel_post);
+      } else {
+        console.error('Webhook: Unsupported update type', update);
+        return res.sendStatus(400);
       }
     } catch (error) {
       console.error('Error processing webhook:', error);
