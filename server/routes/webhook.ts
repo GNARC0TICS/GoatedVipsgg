@@ -37,28 +37,23 @@ router.post("/", express.json(), async (req: Request, res: Response, next: NextF
     }
 
     // Process all types of updates
+    if (!update || !update.message?.from) {
+      return res.sendStatus(400);
+    }
+
     try {
+      const user = update.message.from;
+
       if (update.message) {
-        // Handle commands directly
-        const msg = update.message;
-        if (msg.text?.startsWith('/')) {
-          // This is a command
-          const command = msg.text.split(' ')[0]; // Get the command part
-          console.log(`Received command: ${command}`);
-          
-          // Pass to bot instance for processing
-          await bot.emit('message', msg);
-        } else {
-          // Regular message
-          await bot.emit('message', msg);
-        }
+        await bot.handleMessage(update.message);
       } else if (update.callback_query) {
-        await bot.emit('callback_query', update.callback_query);
+        await bot.handleCallbackQuery(update.callback_query);
       } else if (update.channel_post) {
-        await bot.emit('channel_post', update.channel_post);
+        await bot.handleChannelPost(update.channel_post);
       }
     } catch (error) {
-      console.error('Error processing update:', error);
+      console.error('Error processing webhook:', error);
+      return res.sendStatus(500);
     }
 
     return res.sendStatus(200);
