@@ -6,7 +6,8 @@ import { LoadingSpinner } from "./LoadingSpinner";
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import {Button} from "@/components/ui/button";
 import {ArrowRight} from "lucide-react";
-import {VerificationBadge} from "@/components/ui/verification-badge"; // Assumed import path
+import {VerificationBadge} from "@/components/ui/verification-badge";
+import { useLocation } from "wouter"; // Assumed import path
 import {useState} from "react";
 import {useLocation} from "react-router-dom"
 
