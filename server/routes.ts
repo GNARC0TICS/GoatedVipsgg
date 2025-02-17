@@ -1,74 +1,17 @@
-declare global {
-  var botInstance: any;
-}
-
-import botUtils from "./telegram/bot";
+import { z } from "zod";
 import { Router, type Express, type Request, type Response, type NextFunction } from "express";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
 import { createServer, type Server } from "http";
 import { WebSocket, WebSocketServer } from "ws";
-import { log } from "./vite";
 import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory, type RateLimiterRes } from 'rate-limiter-flexible';
 import bonusChallengesRouter from "./routes/bonus-challenges";
 import { wagerRaces, users, transformationLogs } from "@db/schema";
 import webhookRouter from "./routes/webhook";
+import { log } from "./utils/logger";
 
-type RateLimitTier = 'HIGH' | 'MEDIUM' | 'LOW';
-const rateLimits: Record<RateLimitTier, { points: number; duration: number }> = {
-  HIGH: { points: 30, duration: 60 },
-  MEDIUM: { points: 15, duration: 60 },
-  LOW: { points: 5, duration: 60 }
-};
-
-const rateLimiters = {
-  high: new RateLimiterMemory(rateLimits.HIGH),
-  medium: new RateLimiterMemory(rateLimits.MEDIUM),
-  low: new RateLimiterMemory(rateLimits.LOW),
-};
-
-const createRateLimiter = (tier: keyof typeof rateLimiters) => {
-  const limiter = rateLimiters[tier];
-  return async (req: any, res: any, next: any) => {
-    try {
-      const rateLimitRes = await limiter.consume(req.ip);
-      res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase() as RateLimitTier].points);
-      res.setHeader('X-RateLimit-Remaining', rateLimitRes.remainingPoints);
-      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateLimitRes.msBeforeNext).toISOString());
-      next();
-    } catch (rejRes) {
-      const rejection = rejRes as RateLimiterRes;
-      res.setHeader('Retry-After', Math.ceil(rejection.msBeforeNext / 1000));
-      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rejection.msBeforeNext).toISOString());
-      res.status(429).json({
-        status: 'error',
-        message: 'Too many requests',
-        retryAfter: Math.ceil(rejection.msBeforeNext / 1000)
-      });
-    }
-  };
-};
-
-const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) => {
-  const key = req.originalUrl;
-  const cachedResponse = cacheManager.get(key);
-  if (cachedResponse) {
-    res.setHeader('X-Cache', 'HIT');
-    return res.json(cachedResponse);
-  }
-  res.originalJson = res.json;
-  res.json = (body: any) => {
-    cacheManager.set(key, body);
-    return res.originalJson(body);
-  };
-  next();
-};
-import { eq } from "drizzle-orm";
-import { z } from "zod";
-import type { SelectUser } from "@db/schema";
-
-
+// Move CacheManager to its own file later
 class CacheManager {
   private cache: Map<string, { data: any; timestamp: number }>;
   private readonly defaultTTL: number;
@@ -78,7 +21,7 @@ class CacheManager {
     this.defaultTTL = defaultTTL;
   }
 
-  generateKey(req: any): string {
+  generateKey(req: Request): string {
     return `${req.method}-${req.originalUrl}-${JSON.stringify(req.query)}`;
   }
 
@@ -106,30 +49,95 @@ class CacheManager {
   }
 }
 
-// Router setup
+declare global {
+  var botInstance: any;
+}
+
+type RateLimitTier = 'HIGH' | 'MEDIUM' | 'LOW';
+const rateLimits: Record<RateLimitTier, { points: number; duration: number }> = {
+  HIGH: { points: 30, duration: 60 },
+  MEDIUM: { points: 15, duration: 60 },
+  LOW: { points: 5, duration: 60 }
+};
+
+const rateLimiters = {
+  high: new RateLimiterMemory(rateLimits.HIGH),
+  medium: new RateLimiterMemory(rateLimits.MEDIUM),
+  low: new RateLimiterMemory(rateLimits.LOW),
+};
+
+const createRateLimiter = (tier: keyof typeof rateLimiters) => {
+  const limiter = rateLimiters[tier];
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const rateLimitRes = await limiter.consume(req.ip || 'anonymous');
+      res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase() as RateLimitTier].points);
+      res.setHeader('X-RateLimit-Remaining', rateLimitRes.remainingPoints);
+      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateLimitRes.msBeforeNext).toISOString());
+      log("info", `Rate limit check passed for ${req.ip} on ${req.path}`);
+      next();
+    } catch (rejRes) {
+      const rejection = rejRes as RateLimiterRes;
+      log("warning", `Rate limit exceeded for ${req.ip} on ${req.path}`);
+      res.setHeader('Retry-After', Math.ceil(rejection.msBeforeNext / 1000));
+      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rejection.msBeforeNext).toISOString());
+      res.status(429).json({
+        status: 'error',
+        message: 'Too many requests',
+        retryAfter: Math.ceil(rejection.msBeforeNext / 1000)
+      });
+    }
+  };
+};
+
+// Extend Express.Response to include our custom json method
+declare global {
+  namespace Express {
+    interface Response {
+      originalJson?: Response['json'];
+    }
+  }
+}
+
+const cacheMiddleware = (ttl = 30000) => async (req: Request, res: Response, next: NextFunction) => {
+  const key = req.originalUrl;
+  const cachedResponse = cacheManager.get(key);
+  if (cachedResponse) {
+    log("info", `Cache hit for ${key}`);
+    res.setHeader('X-Cache', 'HIT');
+    return res.json(cachedResponse);
+  }
+  log("info", `Cache miss for ${key}`);
+  res.setHeader('X-Cache', 'MISS');
+  res.originalJson = res.json;
+  res.json = (body: any) => {
+    cacheManager.set(key, body);
+    return res.originalJson!(body);
+  };
+  next();
+};
+
 const router = Router();
 
-// Constants
 const CACHE_TIMES = {
   SHORT: 15000,    // 15 seconds
   MEDIUM: 60000,   // 1 minute
   LONG: 300000     // 5 minutes
 };
 
-// Health check endpoint
 router.get("/health", async (_req: Request, res: Response) => {
   try {
     await db.execute(sql`SELECT 1`);
-
     const health = {
       status: "ok",
       timestamp: new Date().toISOString(),
       db: "connected",
       telegramBot: global.botInstance ? "initialized" : "not initialized",
     };
-
+    log("info", "Health check passed", health);
     res.json(health);
   } catch (error) {
+    log("error", "Health check failed", { error });
     res.status(500).json({
       status: "error",
       message: process.env.NODE_ENV === "production" ? "Health check failed" : (error as Error).message
@@ -137,7 +145,6 @@ router.get("/health", async (_req: Request, res: Response) => {
   }
 });
 
-// Wager races endpoint
 router.get("/wager-races/current",
   createRateLimiter('high'),
   cacheMiddleware(CACHE_TIMES.SHORT),
@@ -169,7 +176,6 @@ router.get("/wager-races/current",
   }
 );
 
-// Helper functions
 function getDefaultRaceData() {
   const now = new Date();
   return {
@@ -204,37 +210,37 @@ function formatRaceData(stats: any) {
   };
 }
 
-// Export functions and router
 export { router };
 
 
-// API Routes configuration
 function setupAPIRoutes(app: Express) {
-  // API middleware - ensure these run before any API route
   app.use('/api', (req, res, next) => {
-    // Set common API headers
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-store');
+    log("info", `API request received: ${req.method} ${req.path}`);
     next();
   });
 
-  // Mount Telegram webhook route first
+  log("info", "Mounting Telegram webhook routes");
   app.use("/api/telegram", webhookRouter);
 
-  // Mount all other API routes
+  log("info", "Mounting bonus challenge routes");
   app.use("/api/bonus", bonusChallengesRouter);
+
+  log("info", "Mounting main API routes");
   app.use("/api", router);
 
-  // Error handling middleware should be last
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    console.error("API Error:", err);
+    log("error", "API Error", {
+      error: err.message,
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined
+    });
     res.status(500).json({
       status: "error",
       message: process.env.NODE_ENV === "production" ? "Internal server error" : err.message
     });
   });
 }
-
 
 let wss: WebSocketServer;
 
@@ -279,10 +285,8 @@ export function transformLeaderboardData(apiData: any) {
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
 
-  // Register API routes before setupVite is called
   setupAPIRoutes(app);
 
-  // Setup WebSocket after HTTP server is created but before Vite
   setupWebSocket(httpServer);
 
   return httpServer;
@@ -351,7 +355,6 @@ function handleTransformationLogsConnection(ws: WebSocket) {
   const clientId = Date.now().toString();
   log(`Transformation logs WebSocket client connected (${clientId})`);
 
-  // Send initial connection confirmation
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({
       type: "CONNECTED",
@@ -359,7 +362,6 @@ function handleTransformationLogsConnection(ws: WebSocket) {
       timestamp: Date.now()
     }));
 
-    // Send recent logs on connection
     db.select()
       .from(transformationLogs)
       .orderBy(sql`created_at DESC`)
@@ -380,7 +382,6 @@ function handleTransformationLogsConnection(ws: WebSocket) {
       });
   }
 
-  // Setup ping/pong for connection health check
   ws.isAlive = true;
   const pingInterval = setInterval(() => {
     if (ws.readyState === WebSocket.OPEN) {
@@ -521,15 +522,11 @@ function setupRESTRoutes(app: Express) {
           payload: log.payload ? JSON.stringify(log.payload) : ''
         }));
 
-        // Set headers for CSV download
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename=transformation_logs_${new Date().toISOString().split('T')[0]}.csv`);
 
-        // Convert to CSV format
         const csvData = [
-          // Header row
           Object.keys(formattedLogs[0] || {}).join(','),
-          // Data rows
           ...formattedLogs.map(log =>
             Object.values(log)
               .map(value => `"${String(value).replace(/"/g, '""')}"`)

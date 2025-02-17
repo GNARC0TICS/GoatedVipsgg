@@ -1,0 +1,75 @@
+Imagine your deployment as a grand stage where two acts perform simultaneously—a Telegram bot running on port 5000 and a website dazzling on port 80. The trick to making this show seamless is to use a reverse proxy (like Nginx) as your stage manager, elegantly directing traffic to the right act.
+
+Step 1: Run Each Service on Its Own Port
+	•	Telegram Bot: Configure it to run on port 5000.
+	•	Website: It naturally listens on port 80.
+
+Step 2: Set Up a Reverse Proxy with Nginx
+
+By using Nginx, you can have both services under the same domain, with incoming requests sorted by their URL paths or subdomains. Here’s a sample configuration:
+
+server {
+    listen 80;
+    server_name example.com;  # Replace with your domain
+
+    # Route traffic to your main website
+    location / {
+        proxy_pass http://127.0.0.1:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # Route traffic intended for your Telegram bot (e.g., webhook endpoint)
+    location /telegram/ {
+        proxy_pass http://127.0.0.1:5000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+
+How This Works:
+	•	location /: Directs general traffic to your website on port 80.
+	•	location /telegram/: Redirects requests (for example, webhook calls) to your Telegram bot on port 5000. Adjust this path as needed, and ensure your Telegram bot’s webhook URL matches (e.g., https://example.com/telegram/).
+
+Step 3: Deploy and Test
+	1.	Install and Configure Nginx:
+Make sure Nginx is installed on your server and drop your configuration into the appropriate file (e.g., /etc/nginx/sites-available/default).
+	2.	Reload Nginx:
+After saving your changes, reload Nginx with:
+
+sudo systemctl reload nginx
+
+
+	3.	Verify Your Setup:
+	•	Visit http://example.com to see your website.
+	•	Confirm that your Telegram bot’s webhook (e.g., https://example.com/telegram/) is reachable and functioning.
+
+Alternative Approach: Docker-Compose
+
+If containerization appeals to your creative edge, you could run both services in separate containers and use Docker Compose to manage the network routing. For instance:
+
+version: '3'
+services:
+  web:
+    image: your-website-image
+    ports:
+      - "80:80"
+  telegram_bot:
+    image: your-telegram-bot-image
+    ports:
+      - "5000:5000"
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - web
+      - telegram_bot
+
+In your nginx.conf, use a configuration similar to the one shown above. This containerized approach can simplify deployment and isolation.
+
+Final Thoughts
+
+This setup leverages the power of a reverse proxy to orchestrate your services in a single, cohesive deployment. Whether you’re handling sleek web content or the dynamic interplay of Telegram interactions, this method ensures every request is met with precision and flair. Enjoy the show!
