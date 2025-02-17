@@ -604,6 +604,19 @@ async function handleBonusCodes(msg: TelegramBot.Message) {
 async function handleStats(msg: TelegramBot.Message) {
   if (!msg.from?.id || !botInstance) return;
 
+  const isAdmin = await checkIsAdmin(msg.from.id.toString());
+  if (isAdmin && !msg.text.includes(' ')) {
+    // Fun admin responses array
+    const adminResponses = [
+      "🎉 You're the GOAT! You don't need stats, just bask in your greatness! 🌟",
+      "👑 Stats? Please... You write the stats, you ARE the stats! 💫",
+      "🚀 Admin stats loading... ERROR: Too legendary to compute! 🌠"
+    ];
+    // Pick a random response
+    const randomResponse = adminResponses[Math.floor(Math.random() * adminResponses.length)];
+    return await safeSendMessage(msg.chat.id, randomResponse);
+  }
+
   try {
     const user = await db
       .select()
