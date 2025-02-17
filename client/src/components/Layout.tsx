@@ -676,7 +676,7 @@ export function Layout({ children }: { children: ReactNode }) {
               )}
               <div className="flex items-center gap-2 md:gap-4">
                 <UtilityPanelButton />
-                {user?.id ? (
+                {user ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -685,7 +685,7 @@ export function Layout({ children }: { children: ReactNode }) {
                       >
                         <User className="h-5 w-5" />
                         <span className="hidden md:inline">
-                          {user?.username || 'Loading...'}
+                          {user.username}
                         </span>
                         <ChevronDown className="h-4 w-4" />
                       </Button>

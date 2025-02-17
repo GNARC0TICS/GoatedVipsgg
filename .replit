@@ -1,10 +1,10 @@
-# Specify the main entry point of your application
+# Main entry point for the web app
 entrypoint = "index.js"
 
-# Define the modules required for your project
+# Required modules for the project
 modules = ["nodejs-20", "web", "postgresql-16"]
 
-# List of files and directories to hide in the file explorer
+# Hide unnecessary files in the file explorer
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 # Nix package manager settings
@@ -15,25 +15,28 @@ channel = "stable-24_05"
 [deployment]
 deploymentTarget = "gce"
 build = ["sh", "-c", "npm run build"]
-run = ["sh", "-c", "node dist/index.js"]
+run = [
+  "sh", "-c", "node dist/index.js & BOT_PORT=5001 tsx --tsconfig tsconfig.json server/index.ts"
+]
 ignorePorts = false
 
-[[ports]]
-localPort = 3000
-externalPort = 3001
-
+# Port mappings for the web app and the Telegram bot
 [[ports]]
 localPort = 5000
 externalPort = 80
+protocol = "http"
 
 [[ports]]
-localPort = 5173
-externalPort = 3000
+localPort = 5001
+externalPort = 3001
+protocol = "http"
 
+# Server settings
 [server]
 host = "0.0.0.0"
 port = 5000
 
+# Define workflows for managing app execution
 [workflows]
 runButton = "Start application"
 
@@ -56,7 +59,7 @@ agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "tsx --tsconfig tsconfig.json server/index.ts"
+args = "node dist/index.js & BOT_PORT=5001 tsx --tsconfig tsconfig.json server/index.ts"
 wait_for_port = 5000
 
 # Authentication settings

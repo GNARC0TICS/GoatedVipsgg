@@ -1,78 +1,39 @@
-3. **Security Layers**
-   - Rate limiting per endpoint category
-   - Telegram webhook secret validation
-   - Session-based authentication
-   - CORS and security headers
 
-### Performance Optimizations
-1. **Caching Strategy**
-   - In-memory cache for API responses
-   - Session store using PostgreSQL
-   - Static file caching with proper headers
+# GoatedVIPs Platform Technical Overview
 
-2. **Load Management**
-   - Rate limiting tiers (HIGH/MEDIUM/LOW)
-   - WebSocket connection pooling
-   - Efficient static file serving
+## Platform Context
+GoatedVIPs is developed by an independent Goated.com affiliate partner who manages an active VIP community. This platform serves as a complementary service for players using the GoatedVips affiliate code, providing enhanced tracking and community features. While integrated with Goated.com's affiliate system, this is an independent initiative and not officially associated with or endorsed by Goated.com.
 
-3. **Monitoring & Logging**
-   - Structured logging for all API requests
-   - WebSocket connection tracking
-   - Performance metrics collection
-   - Error tracking and reporting
+The platform's purpose is to enhance the gaming experience for players who join through the GoatedVips affiliate code, offering additional community benefits, exclusive challenges, and detailed performance tracking.
 
-### Deployment Process
-1. **Environment Setup**
-   ```bash
-   # Required environment variables
-   NODE_ENV=production
-   PORT=5000
-   DATABASE_URL=postgresql://...
-   SESSION_SECRET=your_secret
-   TELEGRAM_BOT_TOKEN=your_bot_token
-   TELEGRAM_WEBHOOK_SECRET=your_webhook_secret
-   ```
+## Core Architecture
 
-2. **Application Structure**
-   ```
-   server/
-   ├── routes/
-   │   ├── challenges.ts
-   │   ├── webhook.ts
-   │   └── bonus-challenges.ts
-   ├── middleware/
-   │   └── auth.ts
-   ├── index.ts
-   └── routes.ts
-   ```
+### Database Schema
+```sql
+Table wager_races {
+  id UUID PRIMARY KEY
+  status VARCHAR
+  start_date TIMESTAMP
+  end_date TIMESTAMP
+  prize_pool DECIMAL
+}
 
-3. **Critical Components**
-   - Express application setup
-   - WebSocket server initialization
-   - Telegram bot integration
-   - Database connection pool
-   - Session management
-   - Rate limiting middleware
+Table users {
+  id UUID PRIMARY KEY
+  telegram_id VARCHAR UNIQUE
+  username VARCHAR
+  verification_status VARCHAR
+  created_at TIMESTAMP
+}
 
-### Testing & Verification
-1. **Health Checks**
-   - Database connectivity
-   - WebSocket server status
-   - Telegram bot initialization
-   - Session store availability
-
-2. **Security Verification**
-   - Rate limit effectiveness
-   - Session cookie security
-   - Webhook secret validation
-   - CORS policy compliance
-
-3. **Performance Monitoring**
-   - Response time tracking
-   - WebSocket connection stats
-   - Cache hit rates
-   - Error rate monitoring
-
+Table transformation_logs {
+  id UUID PRIMARY KEY
+  type VARCHAR
+  message TEXT
+  duration_ms INTEGER
+  created_at TIMESTAMP
+}
+```
 
 ## System Components & Dependencies
 
@@ -97,7 +58,7 @@
   - Connection stability in high-load scenarios
   - Reconnection logic needs improvement
   - Missing heartbeat mechanism
-
+  
 #### Required Improvements:
 ```typescript
 // Implement in server/index.ts
@@ -114,74 +75,6 @@ wss.on('connection', (ws) => {
   ws.on('close', () => clearInterval(heartbeat));
 });
 ```
-
-## WebSocket Implementation & Testing Strategy
-
-### WebSocket Architecture
-```mermaid
-graph TD
-    A[Express Server] --> B[HTTP Server]
-    B --> C[WebSocket Server]
-    C --> D[Client Connections]
-    D --> E[Connection Handlers]
-    E --> F[Message Processing]
-```
-
-### Implementation Components
-1. **Server Setup**
-   - Express application core
-   - HTTP server wrapper
-   - WebSocket server integration
-   - Session management
-
-2. **Connection Management**
-   - Client tracking
-   - Heartbeat mechanism
-   - Reconnection handling
-   - Error recovery
-
-3. **Message Handling**
-   - Type-safe message formats
-   - Validation middleware
-   - Response processing
-   - Error boundaries
-
-### Testing Strategy
-1. **Unit Testing**
-   ```typescript
-   // Example: Testing message format validation
-   describe('Message Validation', () => {
-     it('validates message format', () => {
-       const message = {type: 'UPDATE', data: {id: 1}};
-       expect(validateMessage(message)).toBeTruthy();
-     });
-   });
-   ```
-
-2. **Integration Testing**
-   ```typescript
-   // Example: Testing WebSocket connection lifecycle
-   describe('WebSocket Lifecycle', () => {
-     it('handles connection/disconnection', async () => {
-       const ws = new WebSocket(WS_URL);
-       // Test connection establishment
-       // Test message exchange
-       // Test disconnection
-     });
-   });
-   ```
-
-3. **Load Testing**
-   ```typescript
-   // Example: Testing concurrent connections
-   describe('Connection Load', () => {
-     it('handles multiple clients', async () => {
-       const clients = Array.from({length: 10}, 
-         () => new WebSocket(WS_URL));
-       // Test concurrent message handling
-     });
-   });
-   ```
 
 ### 3. Authentication Flow
 
@@ -226,41 +119,6 @@ graph TD
 3. Audit logging system
 4. Performance monitoring tools
 
-## Security Considerations
-1. **Webhook Security**
-   - Telegram secret token validation
-   - Rate limiting for webhook endpoints
-   - Request validation middleware
-
-2. **Session Management**
-   - Secure cookie configuration
-   - PostgreSQL session storage
-   - Session cleanup procedures
-
-3. **Access Control**
-   - CORS configuration
-   - IP-based rate limiting
-   - API authentication
-
-### Monitoring & Maintenance
-1. **Health Checks**
-   - API endpoint monitoring
-   - WebSocket connection status
-   - Database connectivity
-   - Telegram webhook status
-
-2. **Logging**
-   - Request logging
-   - Error tracking
-   - Performance metrics
-   - Webhook event logging
-
-3. **Backup Procedures**
-   - Database backups
-   - Configuration backups
-   - Log rotation
-
-
 ## Performance Considerations
 
 ### Current Bottlenecks
@@ -281,3 +139,99 @@ graph TD
 CREATE INDEX idx_users_telegram_id ON users(telegram_id);
 CREATE INDEX idx_wager_races_status ON wager_races(status);
 CREATE INDEX idx_transformation_logs_type ON transformation_logs(type);
+```
+
+2. **API Layer**
+- Implement response compression
+- Add API response caching
+- Optimize payload sizes
+
+## Security Implementation
+
+### Current Security Measures
+1. Rate limiting
+2. JWT validation
+3. Input sanitization
+
+### Required Security Enhancements
+1. Implement IP-based rate limiting
+2. Add request signing for sensitive operations
+3. Enhance input validation
+4. Implement audit logging
+
+## Deployment Considerations
+
+### Current Setup
+- Single instance deployment
+- Basic error handling
+- Limited monitoring
+
+### Required Improvements
+1. Implement health checks
+2. Add comprehensive logging
+3. Set up monitoring alerts
+4. Implement backup strategy
+
+## Best Practices & Guidelines
+
+### Code Structure
+1. Follow consistent file naming
+2. Use TypeScript strict mode
+3. Implement proper error boundaries
+4. Add comprehensive documentation
+
+### Testing Requirements
+1. Unit tests for core functionality
+2. Integration tests for API endpoints
+3. E2E tests for critical flows
+4. Performance testing suite
+
+## Immediate Action Items
+
+### High Priority
+1. Fix WebSocket reconnection logic
+2. Implement token refresh mechanism
+3. Add missing database indexes
+4. Enhance error handling
+
+### Medium Priority
+1. Implement caching layer
+2. Add audit logging
+3. Enhance admin dashboard
+4. Improve monitoring
+
+### Low Priority
+1. Implement advanced analytics
+2. Add bulk operations
+3. Enhance documentation
+4. Optimize asset delivery
+
+## Code Quality Guidelines
+
+### TypeScript Best Practices
+1. Use strict type checking
+2. Implement proper interfaces
+3. Avoid any type
+4. Use proper error types
+
+### React Component Structure
+1. Implement proper error boundaries
+2. Use React.memo for optimization
+3. Implement proper prop types
+4. Follow component composition patterns
+
+## Monitoring & Debugging
+
+### Required Tools
+1. Error tracking system
+2. Performance monitoring
+3. API analytics
+4. User behavior tracking
+
+### Implementation Priority
+1. Set up basic error tracking
+2. Implement performance monitoring
+3. Add user analytics
+4. Set up alerting system
+
+This overview provides a comprehensive look at the current state of the codebase and required improvements. Follow the priority order for implementations to ensure systematic improvement of the platform.

@@ -9,7 +9,6 @@ import { db } from "@db";
 import { eq } from "drizzle-orm";
 import express from 'express';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
-import { Resend } from 'resend'
 
 const scryptAsync = promisify(scrypt);
 
@@ -37,31 +36,18 @@ export function setupAuth(app: Express) {
 
   passport.deserializeUser(async (id: number, done) => {
     try {
-      // Handle anonymous users
-      if (id === -1) {
-        return done(null, { id: -1, isAnonymous: true });
-      }
-
       const [user] = await db
         .select()
         .from(users)
         .where(eq(users.id, id))
         .limit(1);
-
-      if (!user) {
-        // If user not found, treat as anonymous
-        return done(null, { id: -1, isAnonymous: true });
-      }
-
       done(null, user);
     } catch (error) {
-      console.error("Deserialize error:", error);
-      // On error, default to anonymous user
-      done(null, { id: -1, isAnonymous: true });
+      done(error);
     }
   });
 
-  // Local strategy setup with more relaxed authentication
+  // Local strategy setup
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
@@ -72,21 +58,15 @@ export function setupAuth(app: Express) {
               id: 1,
               username: process.env.ADMIN_USERNAME,
               isAdmin: true,
-              email: `${process.env.ADMIN_USERNAME}@admin.local`,
-              password: '',
-              telegramId: null,
-              telegramVerified: null,
-              createdAt: new Date(),
-              emailVerified: true
+              email: `${process.env.ADMIN_USERNAME}@admin.local`
             });
           } else {
             return done(null, false, { message: "Invalid admin password" });
           }
         }
 
-        // Allow anonymous access if no credentials
         if (!username || !password) {
-          return done(null, { id: -1, isAnonymous: true });
+          return done(null, false, { message: "Username and password are required" });
         }
 
         // Sanitize credentials for non-admin users
@@ -94,7 +74,7 @@ export function setupAuth(app: Express) {
         const sanitizedPassword = password.trim();
 
         if (!sanitizedUsername || !sanitizedPassword) {
-          return done(null, { id: -1, isAnonymous: true });
+          return done(null, false, { message: "Username and password cannot be empty" });
         }
 
         const [user] = await db
@@ -104,23 +84,22 @@ export function setupAuth(app: Express) {
           .limit(1);
 
         if (!user) {
-          return done(null, { id: -1, isAnonymous: true });
+          return done(null, false, { message: "Invalid username or password" });
         }
 
         const isMatch = await comparePasswords(sanitizedPassword, user.password);
         if (!isMatch) {
-          return done(null, { id: -1, isAnonymous: true });
+          return done(null, false, { message: "Invalid username or password" });
         }
 
         return done(null, user);
       } catch (err) {
-        console.error("Authentication error:", err);
-        return done(null, { id: -1, isAnonymous: true });
+        return done(err);
       }
     }),
   );
 
-  // Registration endpoint remains unchanged
+  // Registration endpoint
   app.post("/api/register", async (req, res) => {
     try {
       const result = insertUserSchema.safeParse(req.body);
@@ -224,14 +203,22 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Login endpoint with relaxed authentication
+  // Login endpoint with rate limiting
   app.post("/api/login", async (req, res, next) => {
     try {
+      // Rate limiting check
       await authLimiter.consume(req.ip || 'unknown');
     } catch (error) {
       return res.status(429).json({
         status: "error",
         message: "Too many login attempts. Please try again later.",
+      });
+    }
+
+    if (!req.body?.username || !req.body?.password) {
+      return res.status(400).json({
+        status: "error",
+        message: "Username and password are required"
       });
     }
 
@@ -247,19 +234,10 @@ export function setupAuth(app: Express) {
         }
 
         if (!user) {
-          // Instead of failing, create an anonymous session
-          req.login({ id: -1, isAnonymous: true }, (err) => {
-            if (err) {
-              console.error("Anonymous login error:", err);
-              return next(err);
-            }
-            return res.json({
-              status: "success",
-              message: "Anonymous access granted",
-              user: { id: -1, isAnonymous: true }
-            });
+          return res.status(401).json({
+            status: "error",
+            message: info.message ?? "Invalid credentials",
           });
-          return;
         }
 
         req.login(user, (err) => {
@@ -284,8 +262,15 @@ export function setupAuth(app: Express) {
     )(req, res, next);
   });
 
-  // Logout endpoint with anonymous fallback
+  // Logout endpoint
   app.post("/api/logout", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(400).json({
+        status: "error",
+        message: "Not logged in",
+      });
+    }
+
     req.logout((err) => {
       if (err) {
         console.error("Logout error:", err);
@@ -295,38 +280,32 @@ export function setupAuth(app: Express) {
         });
       }
 
-      // After logout, create an anonymous session
-      req.login({ id: -1, isAnonymous: true }, (err) => {
-        if (err) {
-          console.error("Anonymous session creation error:", err);
-          return res.status(500).json({
-            status: "error",
-            message: "Failed to create anonymous session",
-          });
-        }
-
-        res.json({
-          status: "success",
-          message: "Logged out successfully",
-        });
+      res.json({
+        status: "success",
+        message: "Logout successful",
       });
     });
   });
 
-  // Get current user endpoint with anonymous support
+  // Get current user endpoint
   app.get("/api/user", (req, res) => {
-    const user = req.user || { id: -1, isAnonymous: true };
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({
+        status: "error",
+        message: "Not logged in",
+      });
+    }
+
+    const user = req.user;
     res.json({
       status: "success",
-      data: user.isAnonymous ?
-        { id: -1, isAnonymous: true } :
-        {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          isAdmin: user.isAdmin,
-          createdAt: user.createdAt,
-        }
+      data: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        createdAt: user.createdAt,
+      }
     });
   });
 }
