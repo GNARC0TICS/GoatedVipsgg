@@ -225,9 +225,12 @@ export default function UserProfile({ params }: { params: { id: string } }) {
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h1 className="text-2xl md:text-3xl font-heading font-bold text-[#D7FF00] mb-2">
-                      {user.username}
-                    </h1>
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-2xl md:text-3xl font-heading font-bold text-[#D7FF00] mb-2">
+                        {user.username}
+                      </h1>
+                      {user.isVerified && <VerificationBadge size="lg" />}
+                    </div>
                     <p className="text-sm text-[#8A8B91] mb-2">{user.bio || "No bio provided"}</p> {/* Display bio */}
                     <div className="flex flex-wrap gap-4 text-sm text-[#8A8B91]">
                       <div className="flex items-center gap-2">

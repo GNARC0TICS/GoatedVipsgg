@@ -65,7 +65,10 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
                 alt="VIP Tier"
                 className="w-8 h-8"
               />
-              <span className="text-lg font-heading text-white">{username}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-heading text-white">{username}</span>
+                {userData?.isVerified && <VerificationBadge size="sm" />}
+              </div>
             </div>
             
             <div className="space-y-2">
