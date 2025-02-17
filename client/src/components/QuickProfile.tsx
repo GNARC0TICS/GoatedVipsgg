@@ -3,7 +3,7 @@ import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/h
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "./LoadingSpinner";
-import {Sheet, SheetContent} from '@radix-ui/react-sheet'
+import { Sheet, SheetContent } from "@/components/ui/sheet"
 import {Button} from "@/components/ui/button";
 import {ArrowRight} from "lucide-react";
 import {VerificationBadge} from "@/components/ui/verification-badge"; // Assumed import path
