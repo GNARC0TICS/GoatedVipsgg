@@ -24,12 +24,20 @@ import {
 } from "@/components/ui/form";
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  username: z.string()
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username cannot exceed 30 characters")
+    .regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, underscores and hyphens"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number"),
 });
 
 const registerSchema = loginSchema.extend({
-  email: z.string().email("Invalid email address"),
+  email: z.string()
+    .email("Invalid email address")
+    .max(100, "Email cannot exceed 100 characters")
+    .refine(email => email.toLowerCase() === email, "Email must be lowercase"),
 });
 
 type LoginData = z.infer<typeof loginSchema>;
@@ -61,13 +69,34 @@ export default function AuthPage() {
         await auth.loginMutation.mutateAsync(data);
         navigate("/");
       } else {
+        // Check if username is already taken before submitting
+        const usernameCheck = await fetch(`/api/check-username?username=${encodeURIComponent(data.username)}`);
+        if (!usernameCheck.ok) {
+          form.setError("username", { message: "Username is already taken" });
+          return;
+        }
+
+        // Check if email is already registered
+        const emailCheck = await fetch(`/api/check-email?email=${encodeURIComponent(data.email)}`);
+        if (!emailCheck.ok) {
+          form.setError("email", { message: "Email is already registered" });
+          return;
+        }
+
         await auth.registerMutation.mutateAsync(data);
         navigate("/");
       }
     } catch (error: any) {
-      form.setError("root", { 
-        message: error.message || "Authentication failed" 
-      });
+      const errorMessage = error?.response?.data?.message || error.message || "Authentication failed";
+      
+      // Handle specific error cases
+      if (errorMessage.includes("rate limit")) {
+        form.setError("root", { message: "Too many attempts. Please try again later." });
+      } else if (errorMessage.includes("credentials")) {
+        form.setError("root", { message: "Invalid username or password" });
+      } else {
+        form.setError("root", { message: errorMessage });
+      }
     }
   };
 
