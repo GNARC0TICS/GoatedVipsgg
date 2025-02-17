@@ -208,18 +208,29 @@ ${userStats ? `Wagered: $${userStats.wagered.toFixed(2)}` : 'Start playing to jo
     );
 
     const top10 = participants.slice(0, 10);
-    return `
-${CUSTOM_EMOJIS.vip} *Monthly Race Leaderboard*
-🏆 *Prize Pool: $500*
+    return `🏆 *Monthly Race Leaderboard*
+💵 *Prize Pool: $500*
+🏁 *Current Top 10:*
 
 ${top10.map((p, i) => {
       const telegramUsername = userIdToTelegramMap.get(p.uid);
       const displayName = telegramUsername ? `@${telegramUsername}` : p.name;
-      return `${i + 1}. ${displayName}: $${p.wagered.toFixed(2)}`;
-    }).join('\n')}
+      const formattedAmount = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 3,
+        maximumFractionDigits: 3
+      }).format(p.wagered);
+      return `${(i + 1).toString().padStart(2)}. ${displayName}\n    💰 $ ${formattedAmount}`;
+    }).join('\n\n')}
 
-⏰ Updated: ${new Date().toLocaleString()}
-`.trim();
+📊 Updated: ${new Date().toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      hour12: true
+    })}`.trim();
   },
   pendingRequests: (requests: any[]) => {
     if (requests.length === 0) {
