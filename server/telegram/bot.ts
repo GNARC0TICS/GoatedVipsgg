@@ -8,21 +8,52 @@ import { eq } from "drizzle-orm";
 import { logError, logAction } from "./utils/logger";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 
-// Custom emojis for consistent branding
+/**
+ * ============================================================================
+ * GOATEDVIPS TELEGRAM BOT - MESSAGE GUIDE
+ * ============================================================================
+ * 
+ * This file contains all message templates and configurations for the Telegram bot.
+ * Edit messages here to update bot responses platform-wide.
+ * 
+ * SECTIONS:
+ * 1. Emoji Constants
+ * 2. Button Templates
+ * 3. Message Templates
+ *    - Welcome & Help
+ *    - Verification Flow
+ *    - Statistics & Leaderboard
+ *    - Admin Commands
+ *    - General Messages
+ * 4. Command Handlers
+ * 5. Utility Functions
+ */
+
+/**
+ * ======================
+ * 1. CUSTOM EMOJI SET
+ * ======================
+ * Used for consistent branding across all bot messages
+ */
 const CUSTOM_EMOJIS = {
-  error: "❌",
-  success: "✅",
-  vip: "👑",
-  stats: "📊",
-  race: "🏃",
-  play: "🎮",
-  bonus: "🎁",
-  challenge: "🎯",
-  verify: "✨",
-  refresh: "🔄"
+  error: "❌",      // Error/failure indicators
+  success: "✅",    // Success/completion indicators
+  vip: "👑",       // VIP/premium features
+  stats: "📊",     // Statistics and data
+  race: "🏃",      // Wager races
+  play: "🎮",      // Gaming actions
+  bonus: "🎁",     // Bonus codes/rewards
+  challenge: "🎯", // Challenges/competitions
+  verify: "✨",    // Verification process
+  refresh: "🔄"    // Refresh/update actions
 };
 
-// Inline keyboard markup creators
+/**
+ * ======================
+ * 2. BUTTON TEMPLATES
+ * ======================
+ * Reusable keyboard markup creators for interactive elements
+ */
 const createLeaderboardButtons = () => ({
   inline_keyboard: [
     [
@@ -61,9 +92,22 @@ const ADMIN_COMMANDS = [
   { command: 'reject', description: '❌ Reject a verification request' }
 ];
 
-// Updated message templates
+/**
+ * ======================
+ * 3. MESSAGE TEMPLATES
+ * ======================
+ * Centralized message templates for consistent communication
+ * 
+ * Usage:
+ * - Edit messages here to update bot responses platform-wide
+ * - Use ${CUSTOM_EMOJIS.type} for consistent emoji usage
+ * - Maintain markdown formatting for better readability
+ */
 const MESSAGES = {
-  welcome: `
+  /**
+   * Welcome & Help Messages
+   * ----------------------
+   */
 ${CUSTOM_EMOJIS.vip} *Welcome to GoatedVIPs Bot*
 
 Your gateway to exclusive VIP benefits and rewards!
@@ -381,7 +425,23 @@ function registerEventHandlers(bot: TelegramBot) {
   bot.on('callback_query', handleCallbackQuery);
 }
 
-// Handler implementations
+/**
+ * ======================
+ * 4. COMMAND HANDLERS
+ * ======================
+ * Implementation of all bot commands and their business logic
+ * 
+ * Structure:
+ * - Each handler corresponds to a specific bot command
+ * - Handlers validate input and permissions
+ * - Use MESSAGES constant for responses
+ * - Implement proper error handling
+ */
+
+/**
+ * Start Command Handler
+ * Sends welcome message and initial instructions
+ */
 async function handleStart(msg: TelegramBot.Message) {
   await safeSendMessage(msg.chat.id, MESSAGES.welcome, { parse_mode: "Markdown" });
 }
