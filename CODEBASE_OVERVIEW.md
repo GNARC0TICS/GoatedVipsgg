@@ -1,12 +1,3 @@
-graph TD
-    A[Client Request] --> B[Nginx Reverse Proxy]
-    B --> C{Route Type}
-    C -->|API| D[Express API Handler]
-    C -->|WebSocket| E[WebSocket Server]
-    C -->|Static| F[Static File Server]
-    C -->|Telegram| G[Webhook Handler]
-```
-
 3. **Security Layers**
    - Rate limiting per endpoint category
    - Telegram webhook secret validation
@@ -106,7 +97,6 @@ graph TD
   - Connection stability in high-load scenarios
   - Reconnection logic needs improvement
   - Missing heartbeat mechanism
-  
 
 #### Required Improvements:
 ```typescript
@@ -124,6 +114,74 @@ wss.on('connection', (ws) => {
   ws.on('close', () => clearInterval(heartbeat));
 });
 ```
+
+## WebSocket Implementation & Testing Strategy
+
+### WebSocket Architecture
+```mermaid
+graph TD
+    A[Express Server] --> B[HTTP Server]
+    B --> C[WebSocket Server]
+    C --> D[Client Connections]
+    D --> E[Connection Handlers]
+    E --> F[Message Processing]
+```
+
+### Implementation Components
+1. **Server Setup**
+   - Express application core
+   - HTTP server wrapper
+   - WebSocket server integration
+   - Session management
+
+2. **Connection Management**
+   - Client tracking
+   - Heartbeat mechanism
+   - Reconnection handling
+   - Error recovery
+
+3. **Message Handling**
+   - Type-safe message formats
+   - Validation middleware
+   - Response processing
+   - Error boundaries
+
+### Testing Strategy
+1. **Unit Testing**
+   ```typescript
+   // Example: Testing message format validation
+   describe('Message Validation', () => {
+     it('validates message format', () => {
+       const message = {type: 'UPDATE', data: {id: 1}};
+       expect(validateMessage(message)).toBeTruthy();
+     });
+   });
+   ```
+
+2. **Integration Testing**
+   ```typescript
+   // Example: Testing WebSocket connection lifecycle
+   describe('WebSocket Lifecycle', () => {
+     it('handles connection/disconnection', async () => {
+       const ws = new WebSocket(WS_URL);
+       // Test connection establishment
+       // Test message exchange
+       // Test disconnection
+     });
+   });
+   ```
+
+3. **Load Testing**
+   ```typescript
+   // Example: Testing concurrent connections
+   describe('Connection Load', () => {
+     it('handles multiple clients', async () => {
+       const clients = Array.from({length: 10}, 
+         () => new WebSocket(WS_URL));
+       // Test concurrent message handling
+     });
+   });
+   ```
 
 ### 3. Authentication Flow
 
@@ -223,28 +281,3 @@ wss.on('connection', (ws) => {
 CREATE INDEX idx_users_telegram_id ON users(telegram_id);
 CREATE INDEX idx_wager_races_status ON wager_races(status);
 CREATE INDEX idx_transformation_logs_type ON transformation_logs(type);
-```
-
-Table wager_races {
-  id UUID PRIMARY KEY
-  status VARCHAR
-  start_date TIMESTAMP
-  end_date TIMESTAMP
-  prize_pool DECIMAL
-}
-
-Table users {
-  id UUID PRIMARY KEY
-  telegram_id VARCHAR UNIQUE
-  username VARCHAR
-  verification_status VARCHAR
-  created_at TIMESTAMP
-}
-
-Table transformation_logs {
-  id UUID PRIMARY KEY
-  type VARCHAR
-  message TEXT
-  duration_ms INTEGER
-  created_at TIMESTAMP
-}

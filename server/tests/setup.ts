@@ -2,8 +2,9 @@ import { resolve } from 'path';
 import { config } from 'dotenv';
 import { use } from 'chai';
 import chaiHttp from 'chai-http';
-import { db } from '@db';
+import { db } from '../../db';  // Changed from @db to relative import
 import { sql } from 'drizzle-orm';
+import { before, after } from 'mocha';
 
 // Load environment variables
 config();

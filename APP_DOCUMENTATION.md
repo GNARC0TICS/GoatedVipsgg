@@ -1,15 +1,3 @@
-
-# GoatedVIPs Platform Documentation
-
-## Overview
-GoatedVIPs is an independent platform created by an established Goated.com affiliate partner. The platform serves as a community hub for players referred under the GoatedVips affiliate code, offering enhanced statistics tracking, wager race participation, and exclusive rewards. While the creator maintains a successful VIP community on Goated.com, this platform is not officially affiliated with or endorsed by Goated.com - it operates independently as an affiliate marketing initiative.
-
-The platform's primary goal is to provide an exclusive experience for players who choose to play under the GoatedVips affiliate code, fostering a community-driven approach to rewards and competition. Through this platform, users can track their performance, participate in community challenges, and compete in wager races while enjoying additional community benefits.
-
-## System Architecture
-
-### Data Flow
-```
 External API -> Transform Service -> Database -> WebSocket -> UI Update
 ```
 
@@ -204,3 +192,108 @@ interface TransformationResult {
    - Enhanced security
    - Better scalability
    - Backup solutions
+
+
+## Testing Infrastructure
+
+### Overview
+The testing infrastructure is designed to verify the integrity of core system components:
+- WebSocket connections and real-time updates
+- Session handling and persistence
+- API endpoint functionality
+- Database operations
+
+### Test Environment Setup
+```typescript
+// Configuration (.mocharc.json)
+{
+  "loader": "ts-node/esm",        // ESM module support
+  "extensions": ["ts"],           // TypeScript files
+  "spec": "server/tests/**/*.test.ts",
+  "timeout": 5000,
+  "exit": true
+}
+```
+
+### Core Test Components
+
+1. **WebSocket Testing**
+   - Connection establishment
+   - Message handling
+   - Session persistence
+   - Concurrent connections
+   - Reconnection scenarios
+
+2. **Session Management Tests**
+   - Session initialization
+   - Data persistence
+   - Timeout handling
+   - Cross-request state management
+
+3. **Integration Testing**
+   - API endpoints
+   - Database operations
+   - WebSocket/HTTP interaction
+   - Error scenarios
+
+### Test Categories
+
+1. **Unit Tests**
+   ```typescript
+   describe('Component Tests', () => {
+     it('should perform specific function', async () => {
+       // Test implementation
+     });
+   });
+   ```
+
+2. **Integration Tests**
+   ```typescript
+   describe('Integration Scenarios', () => {
+     it('should handle complete workflow', async () => {
+       // Integration test implementation
+     });
+   });
+   ```
+
+3. **WebSocket Tests**
+   ```typescript
+   describe('WebSocket Tests', () => {
+     it('should maintain connection', (done) => {
+       const ws = new WebSocket(WS_URL);
+       // Connection test implementation
+     });
+   });
+   ```
+
+### Best Practices
+
+1. **Test Organization**
+   - Group related tests
+   - Use descriptive test names
+   - Maintain test isolation
+   - Clean up test data
+
+2. **Asynchronous Testing**
+   - Proper async/await usage
+   - Handle timeouts
+   - Clean connection closure
+   - Error handling
+
+3. **Database Testing**
+   - Use test database
+   - Clean state between tests
+   - Transaction rollback
+   - Proper cleanup
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test file
+npm test server/tests/websocket-test.ts
+
+# Watch mode for development
+npm test -- --watch

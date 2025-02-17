@@ -1,3 +1,13 @@
+/**
+ * WebSocket Integration Tests
+ * 
+ * This test suite verifies the WebSocket server functionality including:
+ * - Connection establishment and management
+ * - Message handling and echo capabilities
+ * - Session persistence across reconnections
+ * - Concurrent connection handling
+ */
+
 import { expect } from 'chai';
 import WebSocket from 'ws';
 import { createServer } from 'http';
@@ -7,19 +17,28 @@ import { describe, it, before, after } from 'mocha';
 import { setupWebSocket } from '../routes';
 
 describe('WebSocket and Session Integration Tests', () => {
+  // Test configuration and server setup
   let wss: WebSocketServer;
   let server: ReturnType<typeof createServer>;
   let app: Express;
   const PORT = parseInt(process.env.TEST_PORT || '5001', 10);
   const WS_URL = `ws://0.0.0.0:${PORT}/ws`;
 
+  /**
+   * Server Setup
+   * - Creates Express application
+   * - Initializes HTTP server
+   * - Sets up WebSocket server
+   * - Configures message handlers
+   */
   before((done) => {
     app = express();
     server = createServer(app);
     wss = new WebSocketServer({ server });
 
-    // Setup WebSocket handlers
+    // Setup WebSocket handlers for testing
     wss.on('connection', (ws) => {
+      // Echo handler for testing message exchange
       ws.on('message', (message) => {
         ws.send(JSON.stringify({
           type: 'ECHO',
@@ -27,7 +46,7 @@ describe('WebSocket and Session Integration Tests', () => {
         }));
       });
 
-      // Send connection established message
+      // Send connection confirmation
       ws.send(JSON.stringify({
         type: 'CONNECTION_ESTABLISHED',
         timestamp: Date.now()
@@ -37,6 +56,12 @@ describe('WebSocket and Session Integration Tests', () => {
     server.listen(PORT, '0.0.0.0', done);
   });
 
+  /**
+   * Cleanup
+   * - Closes WebSocket server
+   * - Closes HTTP server
+   * - Ensures clean state for next test run
+   */
   after((done) => {
     if (server) {
       server.close();
@@ -48,6 +73,13 @@ describe('WebSocket and Session Integration Tests', () => {
   });
 
   describe('WebSocket Connection Tests', () => {
+    /**
+     * Basic Connection Test
+     * Verifies that clients can:
+     * 1. Establish connection
+     * 2. Receive confirmation message
+     * 3. Close connection cleanly
+     */
     it('should establish connection and receive confirmation', (done) => {
       const ws = new WebSocket(WS_URL);
 
@@ -69,6 +101,13 @@ describe('WebSocket and Session Integration Tests', () => {
       });
     });
 
+    /**
+     * Message Echo Test
+     * Verifies that:
+     * 1. Server receives client messages
+     * 2. Server correctly echoes messages back
+     * 3. Message integrity is maintained
+     */
     it('should echo messages back', (done) => {
       const ws = new WebSocket(WS_URL);
       const testMessage = 'Hello WebSocket';
@@ -95,6 +134,13 @@ describe('WebSocket and Session Integration Tests', () => {
       });
     });
 
+    /**
+     * Concurrent Connections Test
+     * Verifies that the server can:
+     * 1. Handle multiple simultaneous connections
+     * 2. Manage connection state correctly
+     * 3. Clean up resources properly
+     */
     it('should handle multiple concurrent connections', (done) => {
       const connections = Array.from({ length: 3 }, () => new WebSocket(WS_URL));
       let connectedCount = 0;
@@ -118,6 +164,13 @@ describe('WebSocket and Session Integration Tests', () => {
   });
 
   describe('Session Handling Tests', () => {
+    /**
+     * Session Persistence Test
+     * Verifies that:
+     * 1. Sessions persist across disconnections
+     * 2. Reconnection works properly
+     * 3. Connection state is managed correctly
+     */
     it('should maintain session across reconnections', (done) => {
       let ws = new WebSocket(WS_URL);
       let connectionCount = 0;
