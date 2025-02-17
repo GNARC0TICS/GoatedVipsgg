@@ -2,7 +2,20 @@
 /**
  * Main server entry point for the GoatedVIPs application
  * Handles server initialization, middleware setup, and core service bootstrapping
+ * 
+ * Core responsibilities:
+ * - Server configuration and startup
+ * - Middleware integration
+ * - Database connection
+ * - WebSocket setup
+ * - Telegram bot initialization
+ * - Route registration
+ * - Error handling
+ * 
+ * @module server/index
  */
+
+// Core dependencies
 import express from "express";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
@@ -24,21 +37,25 @@ import cors from "cors";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
-// Convert callback-based exec to Promise-based
+// Convert callback-based exec to Promise-based for cleaner async/await usage
 const execAsync = promisify(exec);
+
+// Server configuration constants
 const PORT = parseInt(process.env.PORT || '5000', 10);
 const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Global server instance tracking
-let templateCache: string | null = null;
-let server: any = null;
-let bot: any = null;
-let wss: WebSocketServer | null = null;
+// Global server state management
+let templateCache: string | null = null;  // Caches HTML template for better performance
+let server: any = null;                   // HTTP server instance
+let bot: any = null;                      // Telegram bot instance
+let wss: WebSocketServer | null = null;   // WebSocket server instance
 
 /**
- * Checks if a port is available for use
+ * Checks if a specified port is available for use
+ * Used during server initialization to ensure clean startup
+ * 
  * @param port - The port number to check
  * @returns Promise<boolean> - True if port is available, false otherwise
  */
@@ -53,8 +70,11 @@ async function isPortAvailable(port: number): Promise<boolean> {
 
 /**
  * Waits for a port to become available with timeout
+ * Ensures clean server startup by waiting for port availability
+ * 
  * @param port - Port number to wait for
  * @param timeout - Maximum time to wait in milliseconds
+ * @throws Error if timeout is reached before port becomes available
  */
 async function waitForPort(port: number, timeout = 30000): Promise<void> {
   const start = Date.now();
@@ -72,6 +92,7 @@ async function waitForPort(port: number, timeout = 30000): Promise<void> {
 
 /**
  * Tests database connectivity
+ * Critical startup check to ensure database is accessible
  * Exits process if connection fails
  */
 async function testDbConnection() {
@@ -86,7 +107,15 @@ async function testDbConnection() {
 
 /**
  * Main server initialization function
- * Sets up Express app, middleware, routes, and all core services
+ * Orchestrates the complete server setup process including:
+ * - Port availability check
+ * - Database connection
+ * - Express app setup
+ * - Middleware configuration
+ * - Route registration
+ * - Admin initialization
+ * - WebSocket setup
+ * - Telegram bot initialization
  */
 async function initializeServer() {
   try {
@@ -175,7 +204,7 @@ async function initializeServer() {
         }, 10000);
       };
 
-      // Register shutdown handlers
+      // Register shutdown handlers for clean process termination
       process.on("SIGTERM", shutdown);
       process.on("SIGINT", shutdown);
     });
@@ -187,13 +216,15 @@ async function initializeServer() {
 
 /**
  * Sets up WebSocket server for real-time communication
- * @param server - HTTP server instance
+ * Handles client connections and message routing
+ * 
+ * @param server - HTTP server instance to attach WebSocket server to
  */
 function setupWebSocket(server: any) {
   wss = new WebSocketServer({ server, path: '/ws' });
 
   wss.on('connection', (ws: WebSocket, req: any) => {
-    // Skip Vite HMR connections
+    // Skip Vite HMR connections to avoid interference
     if (req.headers['sec-websocket-protocol']?.includes('vite-hmr')) {
       return;
     }
@@ -210,6 +241,8 @@ function setupWebSocket(server: any) {
 
 /**
  * Configures Express middleware stack
+ * Sets up core middleware for request handling, security, and session management
+ * 
  * @param app - Express application instance
  */
 function setupMiddleware(app: express.Application) {
@@ -225,7 +258,7 @@ function setupMiddleware(app: express.Application) {
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
   }));
 
-  // Session store configuration
+  // Session store configuration using PostgreSQL
   const PostgresSessionStore = connectPg(session);
   app.use(session({
     store: new PostgresSessionStore({
@@ -244,7 +277,7 @@ function setupMiddleware(app: express.Application) {
     },
   }));
 
-  // Security headers
+  // Security headers middleware
   app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
@@ -268,6 +301,7 @@ function setupMiddleware(app: express.Application) {
 
 /**
  * Request logging middleware with batched logging
+ * Improves performance by batching log writes
  */
 const requestLogger = (() => {
   const logQueue: string[] = [];
@@ -298,6 +332,8 @@ const requestLogger = (() => {
 
 /**
  * Serves static files in production mode
+ * Handles static asset serving and SPA fallback
+ * 
  * @param app - Express application instance
  */
 function serveStatic(app: express.Application) {
@@ -350,6 +386,8 @@ const viteConfig = defineConfig({
 
 /**
  * Sets up Vite development server
+ * Configures Vite for development mode with HMR
+ * 
  * @param app - Express application instance
  * @param server - HTTP server instance
  */
