@@ -1,3 +1,8 @@
+
+/**
+ * Main server entry point for the GoatedVIPs application
+ * Handles server initialization, middleware setup, and core service bootstrapping
+ */
 import express from "express";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
@@ -19,17 +24,24 @@ import cors from "cors";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
+// Convert callback-based exec to Promise-based
 const execAsync = promisify(exec);
 const PORT = parseInt(process.env.PORT || '5000', 10);
 const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Global server instance tracking
 let templateCache: string | null = null;
 let server: any = null;
 let bot: any = null;
 let wss: WebSocketServer | null = null;
 
+/**
+ * Checks if a port is available for use
+ * @param port - The port number to check
+ * @returns Promise<boolean> - True if port is available, false otherwise
+ */
 async function isPortAvailable(port: number): Promise<boolean> {
   try {
     await execAsync(`lsof -i:${port}`);
@@ -39,6 +51,11 @@ async function isPortAvailable(port: number): Promise<boolean> {
   }
 }
 
+/**
+ * Waits for a port to become available with timeout
+ * @param port - Port number to wait for
+ * @param timeout - Maximum time to wait in milliseconds
+ */
 async function waitForPort(port: number, timeout = 30000): Promise<void> {
   const start = Date.now();
 
@@ -51,17 +68,12 @@ async function waitForPort(port: number, timeout = 30000): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
   throw new Error(`Timeout waiting for port ${port}`);
-
-  while (Date.now() - start < timeout) {
-    if (await isPortAvailable(port)) {
-      return;
-    }
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
-  throw new Error(`Timeout waiting for port ${port} to become available`);
 }
 
-// Test database connection
+/**
+ * Tests database connectivity
+ * Exits process if connection fails
+ */
 async function testDbConnection() {
   try {
     await db.execute(sql`SELECT 1`);
@@ -72,15 +84,17 @@ async function testDbConnection() {
   }
 }
 
+/**
+ * Main server initialization function
+ * Sets up Express app, middleware, routes, and all core services
+ */
 async function initializeServer() {
   try {
     log("info", "Starting server initialization...");
 
-    // Wait for port to be available
     await waitForPort(PORT);
     log("info", "Port available, proceeding with initialization");
 
-    // Check database connection
     await testDbConnection();
     log("info", "Database connection established");
 
@@ -89,7 +103,7 @@ async function initializeServer() {
     setupAuth(app);
     registerRoutes(app);
 
-    // Initialize admin after routes are set up
+    // Initialize admin after routes
     await initializeAdmin().catch(error => {
       log("error", `Admin initialization error: ${error instanceof Error ? error.message : String(error)}`);
     });
@@ -97,7 +111,7 @@ async function initializeServer() {
     server = createServer(app);
     setupWebSocket(server);
 
-    // Initialize Telegram bot
+    // Initialize Telegram bot integration
     log("info", "Initializing Telegram bot...");
     bot = await initializeBot();
     if (!bot) {
@@ -106,13 +120,14 @@ async function initializeServer() {
       log("info", "Telegram bot initialized successfully");
     }
 
+    // Setup development or production server based on environment
     if (app.get("env") === "development") {
       await setupVite(app, server);
     } else {
       serveStatic(app);
     }
 
-    // Error handler
+    // Global error handler
     app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
       console.error("Server error:", err);
       res.status(500).json({
@@ -120,10 +135,10 @@ async function initializeServer() {
       });
     });
 
+    // Start server and handle graceful shutdown
     return new Promise((resolve, reject) => {
       server.listen(PORT, HOST, () => {
         log("info", `Server is ready at http://0.0.0.0:${PORT}`);
-        // Signal that all components are initialized and the port is ready
         console.log(`PORT=${PORT}`);
         console.log(`PORT_READY=${PORT}`);
         resolve(server);
@@ -132,6 +147,7 @@ async function initializeServer() {
         reject(err);
       });
 
+      // Graceful shutdown handler
       const shutdown = async () => {
         log("info", "Shutting down gracefully...");
         if (bot) {
@@ -152,13 +168,14 @@ async function initializeServer() {
           process.exit(0);
         });
 
-        // Force exit after 10 seconds if graceful shutdown fails
+        // Force exit if graceful shutdown fails
         setTimeout(() => {
           log("error", "Forced shutdown after timeout");
           process.exit(1);
         }, 10000);
       };
 
+      // Register shutdown handlers
       process.on("SIGTERM", shutdown);
       process.on("SIGINT", shutdown);
     });
@@ -168,11 +185,15 @@ async function initializeServer() {
   }
 }
 
+/**
+ * Sets up WebSocket server for real-time communication
+ * @param server - HTTP server instance
+ */
 function setupWebSocket(server: any) {
   wss = new WebSocketServer({ server, path: '/ws' });
 
   wss.on('connection', (ws: WebSocket, req: any) => {
-    // Ignore Vite HMR connections
+    // Skip Vite HMR connections
     if (req.headers['sec-websocket-protocol']?.includes('vite-hmr')) {
       return;
     }
@@ -187,8 +208,14 @@ function setupWebSocket(server: any) {
   return wss;
 }
 
+/**
+ * Configures Express middleware stack
+ * @param app - Express application instance
+ */
 function setupMiddleware(app: express.Application) {
   app.set('trust proxy', 1);
+  
+  // CORS configuration for API routes
   app.use('/api', cors({
     origin: process.env.NODE_ENV === 'development'
       ? ['http://localhost:5000', 'http://0.0.0.0:5000']
@@ -198,6 +225,7 @@ function setupMiddleware(app: express.Application) {
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
   }));
 
+  // Session store configuration
   const PostgresSessionStore = connectPg(session);
   app.use(session({
     store: new PostgresSessionStore({
@@ -212,7 +240,7 @@ function setupMiddleware(app: express.Application) {
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     },
   }));
 
@@ -225,6 +253,7 @@ function setupMiddleware(app: express.Application) {
     next();
   });
 
+  // Body parsing middleware
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
   app.use(cookieParser());
@@ -237,6 +266,9 @@ function setupMiddleware(app: express.Application) {
   });
 }
 
+/**
+ * Request logging middleware with batched logging
+ */
 const requestLogger = (() => {
   const logQueue: string[] = [];
   let flushTimeout: NodeJS.Timeout | null = null;
@@ -264,16 +296,24 @@ const requestLogger = (() => {
   };
 })();
 
+/**
+ * Serves static files in production mode
+ * @param app - Express application instance
+ */
 function serveStatic(app: express.Application) {
   const distPath = path.resolve(__dirname, "public");
   if (!fs.existsSync(distPath)) {
     throw new Error(`Could not find the build directory: ${distPath}. Please build the client first.`);
   }
+  
+  // Static file serving with caching
   app.use(express.static(distPath, {
     maxAge: '1d',
     etag: true,
     lastModified: true
   }));
+  
+  // SPA fallback
   app.get("*", (_req, res, next) => {
     if (req.path.startsWith('/api')) {
       return next();
@@ -287,6 +327,7 @@ function serveStatic(app: express.Application) {
   });
 }
 
+// Vite development server configuration
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
@@ -307,6 +348,11 @@ const viteConfig = defineConfig({
   },
 });
 
+/**
+ * Sets up Vite development server
+ * @param app - Express application instance
+ * @param server - HTTP server instance
+ */
 async function setupVite(app: express.Application, server: any) {
   const viteLogger = createLogger();
   const vite = await createViteServer({
@@ -328,6 +374,7 @@ async function setupVite(app: express.Application, server: any) {
 
   app.use(vite.middlewares);
 
+  // Template loading with caching
   const loadTemplate = async () => {
     if (!templateCache) {
       const clientTemplate = path.resolve(__dirname, "..", "client", "index.html");
@@ -336,6 +383,7 @@ async function setupVite(app: express.Application, server: any) {
     return templateCache;
   };
 
+  // Serve Vite-processed HTML
   app.use("*", async (req, res, next) => {
     try {
       let template = await loadTemplate();
@@ -353,6 +401,7 @@ async function setupVite(app: express.Application, server: any) {
   });
 }
 
+// Initialize server
 initializeServer().catch((error) => {
   log("error", `Server startup error: ${error instanceof Error ? error.message : String(error)}`);
   process.exit(1);
