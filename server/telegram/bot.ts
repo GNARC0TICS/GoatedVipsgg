@@ -703,7 +703,7 @@ async function handleStart(msg: TelegramBot.Message) {
   if (!botInstance) return;
   const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
   const welcomeMessage = await MESSAGES.welcome(isAdmin);
-  await sendStickerWithMessage(botInstance, msg.chat.id, CUSTOM_STICKERS.welcome, welcomeMessage, { parse_mode: "Markdown" });
+  await sendMessageWithEmoji(botInstance, msg.chat.id, CUSTOM_EMOJIS.welcome, welcomeMessage, { parse_mode: "Markdown" });
 }
 
 async function handleHelp(msg: TelegramBot.Message) {
