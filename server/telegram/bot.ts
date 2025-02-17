@@ -892,6 +892,7 @@ export async function broadcastPositionChange(message: string) {
   if (!botInstance) return;
 
   try {
+    // Send to verified users
     const verifiedUsers = await db
       .select()
       .from(telegramUsers)
@@ -906,6 +907,37 @@ export async function broadcastPositionChange(message: string) {
       } catch (error) {
         log("error", `Failed to send position change to user ${user.telegramId}: ${error instanceof Error ? error.message : String(error)}`);
       }
+    }
+
+    // Get all chats where bot is admin
+    try {
+      const updates = await botInstance.getUpdates();
+      const uniqueGroupIds = new Set<number>();
+      
+      for (const update of updates) {
+        if (update.message?.chat.type === 'group' || update.message?.chat.type === 'supergroup') {
+          uniqueGroupIds.add(update.message.chat.id);
+        }
+      }
+
+      // Send to all groups where bot is admin
+      for (const groupId of uniqueGroupIds) {
+        try {
+          const admins = await botInstance.getChatAdministrators(groupId);
+          const botIsMember = admins.some(admin => admin.user.id === botInstance?.options.polling?.params?.id);
+          
+          if (botIsMember) {
+            await safeSendMessage(groupId, message, {
+              parse_mode: "Markdown",
+              disable_notification: false
+            });
+          }
+        } catch (error) {
+          log("error", `Failed to send to group ${groupId}: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+    } catch (error) {
+      log("error", `Failed to get group list: ${error instanceof Error ? error.message : String(error)}`);
     }
   } catch (error) {
     log("error", `Position change broadcast error: ${error instanceof Error ? error.message : String(error)}`);
