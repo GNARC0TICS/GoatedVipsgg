@@ -1,10 +1,11 @@
+
 import { type Request, type Response, type NextFunction } from "express";
 import { verifyToken } from "../config/auth";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
 import { users } from "@db/schema";
 
-// Extend Express Request type
+// Type definitions
 declare global {
   namespace Express {
     interface Request {
@@ -13,55 +14,62 @@ declare global {
   }
 }
 
+// Constants
+const ERROR_MESSAGES = {
+  AUTH_REQUIRED: "Authentication required",
+  INVALID_TOKEN: "Invalid authentication token",
+  USER_NOT_FOUND: "User not found"
+} as const;
+
+/**
+ * Authentication middleware
+ * Verifies user token and attaches user to request
+ */
 export const requireAuth = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    // Check for session token in cookie first
-    const sessionToken = req.cookies?.token;
-    // Fallback to Bearer token if no session
-    const authHeader = req.headers.authorization;
-    const token = sessionToken || (authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null);
-
+    const token = extractToken(req);
+    
     if (!token) {
-      return res.status(401).json({ message: "Authentication required" });
+      return res.status(401).json({ message: ERROR_MESSAGES.AUTH_REQUIRED });
     }
 
-    const decoded = verifyToken(token);
-
-    // Get user from database
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, decoded.userId))
-      .limit(1);
-
+    const user = await validateAndGetUser(token);
+    
     if (!user) {
-      return res.status(401).json({ message: "User not found" });
+      return res.status(401).json({ message: ERROR_MESSAGES.USER_NOT_FOUND });
     }
 
     req.user = user;
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Invalid authentication token" });
+    return res.status(401).json({ message: ERROR_MESSAGES.INVALID_TOKEN });
   }
 };
 
-export const requireAdmin = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    await requireAuth(req, res, () => {
-      if (!req.user?.isAdmin && req.user?.username !== process.env.ADMIN_USERNAME) {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-      next();
-    });
-  } catch (error) {
-    return res.status(403).json({ message: "Admin access required" });
-  }
-};
+/**
+ * Extract token from request
+ * Checks both cookie and Authorization header
+ */
+function extractToken(req: Request): string | null {
+  const sessionToken = req.cookies?.token;
+  const authHeader = req.headers.authorization;
+  return sessionToken || (authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null);
+}
+
+/**
+ * Validate token and fetch associated user
+ */
+async function validateAndGetUser(token: string) {
+  const decoded = verifyToken(token);
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, decoded.userId))
+    .limit(1);
+  
+  return user;
+}

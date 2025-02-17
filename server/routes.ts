@@ -1,12 +1,12 @@
-import { Router } from "express";
+import { Router, type Express, type Request, type Response, type NextFunction } from "express";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
-import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocket, WebSocketServer } from "ws";
 import { log } from "./vite";
 import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory, type RateLimiterRes } from 'rate-limiter-flexible';
+import { createRateLimiter, cacheMiddleware } from './middleware/rate-limit';
 import bonusChallengesRouter from "./routes/bonus-challenges";
 import { wagerRaces, users, transformationLogs } from "@db/schema";
 import { eq } from "drizzle-orm";
@@ -14,14 +14,21 @@ import { z } from "zod";
 import type { SelectUser } from "@db/schema";
 import { initializeBot } from "./telegram/bot";
 
+// Router setup
 const router = Router();
 
-router.get("/health", async (_req, res) => {
+// Constants
+const CACHE_TIMES = {
+  SHORT: 15000,    // 15 seconds
+  MEDIUM: 60000,   // 1 minute
+  LONG: 300000     // 5 minutes
+};
+
+// Health check endpoint
+router.get("/health", async (_req: Request, res: Response) => {
   try {
-    // Check database connection
     await db.execute(sql`SELECT 1`);
 
-    // System health status
     const health = {
       status: "ok",
       timestamp: new Date().toISOString(),
@@ -33,14 +40,81 @@ router.get("/health", async (_req, res) => {
   } catch (error) {
     res.status(500).json({
       status: "error",
-      message: process.env.NODE_ENV === "production"
-        ? "Health check failed"
-        : error.message
+      message: process.env.NODE_ENV === "production" ? "Health check failed" : error.message
     });
   }
 });
 
-export { router };
+// Wager races endpoint
+router.get("/wager-races/current", 
+  createRateLimiter('high'),
+  cacheMiddleware(CACHE_TIMES.SHORT),
+  async (_req: Request, res: Response) => {
+    try {
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        return res.json(getDefaultRaceData());
+      }
+
+      const rawData = await response.json();
+      const stats = await transformLeaderboardData(rawData);
+      const raceData = formatRaceData(stats);
+
+      res.json(raceData);
+    } catch (error) {
+      console.error('Error in /wager-races/current:', error);
+      res.status(200).json(getDefaultRaceData());
+    }
+  }
+);
+
+// Helper functions
+function getDefaultRaceData() {
+  const now = new Date();
+  return {
+    id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
+    status: 'live',
+    startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+    endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString(),
+    prizePool: 500,
+    participants: []
+  };
+}
+
+function formatRaceData(stats: any) {
+  const now = new Date();
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  const monthlyData = stats?.data?.monthly?.data ?? [];
+
+  return {
+    id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
+    status: 'live',
+    startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+    endDate: endOfMonth.toISOString(),
+    prizePool: 500,
+    participants: monthlyData
+      .map((participant: any, index: number) => ({
+        uid: participant?.uid ?? "",
+        name: participant?.name ?? "Unknown",
+        wagered: Number(participant?.wagered?.this_month ?? 0),
+        position: index + 1
+      }))
+      .slice(0, 10)
+  };
+}
+
+// Export functions and router
+export { router, transformLeaderboardData };
+
 
 // API Routes configuration
 function setupAPIRoutes(app: Express) {
@@ -54,6 +128,8 @@ function setupAPIRoutes(app: Express) {
 
   // Mount all API routes under /api prefix
   app.use("/api/bonus", bonusChallengesRouter);
+  app.use("/api",router); //Added this line
+
 
   // Add other API routes here, ensuring they're all prefixed with /api
   app.get("/api/health", (_req, res) => {
@@ -62,93 +138,9 @@ function setupAPIRoutes(app: Express) {
 
   app.post("/api/batch", createRateLimiter('medium'), batchHandler);
 
-  app.get("/api/wager-races/current",
-    createRateLimiter('high'),
-    cacheMiddleware(15000),
-    async (_req, res) => {
-      try {
-        console.log('Fetching current race data...');
-        const response = await fetch(
-          `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-          {
-            headers: {
-              Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (!response.ok) {
-          console.log('API response not ok, returning default race data');
-          return res.json({
-            id: new Date().getFullYear() + (new Date().getMonth() + 1).toString().padStart(2, '0'),
-            status: 'live',
-            startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
-            endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).toISOString(),
-            prizePool: 500,
-            participants: []
-          });
-        }
-
-        const rawData = await response.json();
-        console.log('Raw data received:', {
-          hasData: Boolean(rawData),
-          structure: rawData ? Object.keys(rawData) : null
-        });
-
-        const stats = await transformLeaderboardData(rawData);
-        console.log('Transformed stats:', {
-          hasMonthlyData: Boolean(stats?.data?.monthly?.data),
-          monthlyDataLength: stats?.data?.monthly?.data?.length ?? 0
-        });
-
-        const now = new Date();
-        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-
-        // Ensure we have a valid stats object with monthly data
-        const monthlyData = stats?.data?.monthly?.data ?? [];
-
-        const raceData = {
-          id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
-          status: 'live',
-          startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
-          endDate: endOfMonth.toISOString(),
-          prizePool: 500,
-          participants: monthlyData
-            .map((participant: any, index: number) => ({
-              uid: participant?.uid ?? "",
-              name: participant?.name ?? "Unknown",
-              wagered: Number(participant?.wagered?.this_month ?? 0),
-              position: index + 1
-            }))
-            .slice(0, 10)
-        };
-
-        console.log('Sending race data:', {
-          participantsCount: raceData.participants.length,
-          startDate: raceData.startDate,
-          endDate: raceData.endDate
-        });
-
-        res.json(raceData);
-      } catch (error) {
-        console.error('Error in /api/wager-races/current:', error);
-        // Return a safe default response
-        res.status(200).json({
-          id: new Date().getFullYear() + (new Date().getMonth() + 1).toString().padStart(2, '0'),
-          status: 'live',
-          startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
-          endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).toISOString(),
-          prizePool: 500,
-          participants: []
-        });
-      }
-    }
-  );
-
   app.get("/api/affiliate/stats",
     createRateLimiter('medium'),
-    cacheMiddleware(60000),
+    cacheMiddleware(CACHE_TIMES.MEDIUM),
     async (req, res) => {
       try {
         const username = typeof req.query.username === 'string' ? req.query.username : undefined;
@@ -222,7 +214,7 @@ function setupAPIRoutes(app: Express) {
 
   app.get("/api/admin/analytics",
     createRateLimiter('low'),
-    cacheMiddleware(300000),
+    cacheMiddleware(CACHE_TIMES.LONG),
     async (_req, res) => {
       try {
         const response = await fetch(
@@ -390,7 +382,7 @@ function setupAPIRoutes(app: Express) {
   );
   app.get("/api/admin/transformation-metrics",
     createRateLimiter('medium'),
-    cacheMiddleware(30000),
+    cacheMiddleware(CACHE_TIMES.LONG),
     async (_req, res) => {
       try {
         console.log('Executing transformation metrics query...');
@@ -816,6 +808,7 @@ const wheelSpinSchema = z.object({
   reward: z.string().nullable(),
 });
 
+//This function was already in the original code.
 function setupRESTRoutes(app: Express) {
   app.get("/api/admin/export-logs",
     createRateLimiter('low'),
