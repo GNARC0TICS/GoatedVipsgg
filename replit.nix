@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.killall
     pkgs.mailman
     pkgs.jq
     pkgs.procps
