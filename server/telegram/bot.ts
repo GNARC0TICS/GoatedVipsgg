@@ -386,8 +386,8 @@ async function initializeBot(): Promise<TelegramBot | null> {
     return bot;
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    log("error", `Bot initialization error: ${errorMessage}`);
+    log("error", `Bot initialization error: ${error instanceof Error ? error.message : String(error)}`);
+    cleanup();
     return null;
   }
 }
