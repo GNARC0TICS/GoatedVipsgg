@@ -487,42 +487,184 @@ function registerEventHandlers(bot: TelegramBot) {
   bot.onText(/\/createbonus (.+)/, (msg, match) => handleCreateBonus(msg, match ? match[1] : undefined));
   bot.onText(/\/createchallenge (.+)/, (msg, match) => handleCreateChallenge(msg, match ? match[1] : undefined));
   
-  // Add help text for bonus creation
-  bot.onText(/\/createbonus$/, (msg) => {
-    safeSendMessage(msg.chat.id, 
-      "🎁 *Create Bonus Code*\n\n" +
-      "Format: /createbonus code|amount|claims|days|description\n" +
-      "Example: /createbonus WELCOME100|$100|50|7|Welcome bonus for new users\n\n" +
-      "• code: Bonus code (required)\n" +
-      "• amount: Bonus amount (required)\n" +
-      "• claims: Total allowed claims (required)\n" +
-      "• days: Days until expiration (required)\n" +
-      "• description: Bonus description (optional)",
-      { parse_mode: "Markdown" }
-    );
-  });
+  // Interactive creation states
+const creationStates = new Map();
 
-  // Add help text for challenge creation
-  bot.onText(/\/createchallenge$/, (msg) => {
-    safeSendMessage(msg.chat.id,
-      "🎯 *Create Challenge*\n\n" +
-      "Format: /createchallenge game|minBet|multiplier|prize|winners|days|description\n" +
-      "Example: /createchallenge Slots|$50|3x|$1000|5|7|Hit 3x multiplier on slots\n\n" +
-      "• game: Game type (required)\n" +
-      "• minBet: Minimum bet (required)\n" +
-      "• multiplier: Required multiplier\n" +
-      "• prize: Prize amount (required)\n" +
-      "• winners: Max winners (required)\n" +
-      "• days: Days until expiration (required)\n" +
-      "• description: Challenge description (optional)",
-      { parse_mode: "Markdown" }
-    );
-  });
+// Add help text for bonus creation
+bot.onText(/\/createbonus$/, async (msg) => {
+  if (msg.chat.type !== 'private') {
+    return safeSendMessage(msg.chat.id, "⚠️ Please use this command in private chat with the bot.");
+  }
+
+  const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
+  if (!isAdmin) {
+    return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
+  }
+
+  creationStates.set(msg.from.id, { type: 'bonus', step: 'start' });
+
+  const markup = {
+    inline_keyboard: [[
+      { text: "🎁 Start Creating Bonus Code", callback_data: "bonus_start" }
+    ]]
+  };
+
+  await safeSendMessage(msg.chat.id,
+    "🎁 *Welcome to Bonus Code Creation*\n\n" +
+    "This wizard will guide you through creating a new bonus code.\n" +
+    "Click the button below to begin.",
+    { 
+      parse_mode: "Markdown",
+      reply_markup: markup
+    }
+  );
+});
+
+// Add help text for challenge creation
+bot.onText(/\/createchallenge$/, async (msg) => {
+  if (msg.chat.type !== 'private') {
+    return safeSendMessage(msg.chat.id, "⚠️ Please use this command in private chat with the bot.");
+  }
+
+  const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
+  if (!isAdmin) {
+    return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
+  }
+
+  creationStates.set(msg.from.id, { type: 'challenge', step: 'start' });
+
+  const markup = {
+    inline_keyboard: [[
+      { text: "🎯 Start Creating Challenge", callback_data: "challenge_start" }
+    ]]
+  };
+
+  await safeSendMessage(msg.chat.id,
+    "🎯 *Welcome to Challenge Creation*\n\n" +
+    "This wizard will guide you through creating a new challenge.\n" +
+    "Click the button below to begin.",
+    { 
+      parse_mode: "Markdown",
+      reply_markup: markup
+    }
+  );
+});
 
   bot.on("message", async (msg) => {
     if (!msg.text || !msg.from?.id) return;
     try {
       await rateLimiter.consume(msg.from.id.toString());
+      
+      const state = creationStates.get(msg.from.id);
+      if (state) {
+        const isAdmin = await checkIsAdmin(msg.from.id.toString());
+        if (!isAdmin) return;
+
+        if (state.type === 'bonus') {
+          switch (state.step) {
+            case 'code':
+              creationStates.set(msg.from.id, { ...state, step: 'amount', code: msg.text });
+              await safeSendMessage(msg.chat.id,
+                "💰 *Enter Bonus Amount*\n\n" +
+                "Please enter the bonus amount (e.g., $100).\n" +
+                "Reply with the amount.",
+                { parse_mode: "Markdown" }
+              );
+              break;
+            case 'amount':
+              creationStates.set(msg.from.id, { ...state, step: 'claims', amount: msg.text });
+              await safeSendMessage(msg.chat.id,
+                "👥 *Enter Total Claims*\n\n" +
+                "How many times can this bonus be claimed?\n" +
+                "Reply with a number.",
+                { parse_mode: "Markdown" }
+              );
+              break;
+            case 'claims':
+              creationStates.set(msg.from.id, { ...state, step: 'days', claims: parseInt(msg.text) });
+              await safeSendMessage(msg.chat.id,
+                "📅 *Enter Expiration Days*\n\n" +
+                "How many days until this bonus expires?\n" +
+                "Reply with a number.",
+                { parse_mode: "Markdown" }
+              );
+              break;
+            case 'days':
+              creationStates.set(msg.from.id, { ...state, step: 'description', days: parseInt(msg.text) });
+              await safeSendMessage(msg.chat.id,
+                "📝 *Enter Description*\n\n" +
+                "Please enter a description for this bonus code.\n" +
+                "Reply with the description.",
+                { parse_mode: "Markdown" }
+              );
+              break;
+            case 'description':
+              const bonusData = {
+                ...state,
+                description: msg.text
+              };
+              await handleCreateBonus(msg, `${bonusData.code}|${bonusData.amount}|${bonusData.claims}|${bonusData.days}|${bonusData.description}`);
+              creationStates.delete(msg.from.id);
+              break;
+          }
+        } else if (state.type === 'challenge') {
+          switch (state.step) {
+            case 'minBet':
+              creationStates.set(msg.from.id, { ...state, step: 'multiplier', minBet: msg.text });
+              await safeSendMessage(msg.chat.id,
+                "✨ *Enter Required Multiplier*\n\n" +
+                "Please enter the required multiplier (e.g., 3x).\n" +
+                "Reply with the multiplier.",
+                { parse_mode: "Markdown" }
+              );
+              break;
+            case 'multiplier':
+              creationStates.set(msg.from.id, { ...state, step: 'prize', multiplier: msg.text });
+              await safeSendMessage(msg.chat.id,
+                "🏆 *Enter Prize Amount*\n\n" +
+                "Please enter the prize amount (e.g., $1000).\n" +
+                "Reply with the amount.",
+                { parse_mode: "Markdown" }
+              );
+              break;
+            case 'prize':
+              creationStates.set(msg.from.id, { ...state, step: 'winners', prize: msg.text });
+              await safeSendMessage(msg.chat.id,
+                "👥 *Enter Max Winners*\n\n" +
+                "How many winners can claim this prize?\n" +
+                "Reply with a number.",
+                { parse_mode: "Markdown" }
+              );
+              break;
+            case 'winners':
+              creationStates.set(msg.from.id, { ...state, step: 'days', winners: parseInt(msg.text) });
+              await safeSendMessage(msg.chat.id,
+                "📅 *Enter Duration Days*\n\n" +
+                "How many days should this challenge run?\n" +
+                "Reply with a number.",
+                { parse_mode: "Markdown" }
+              );
+              break;
+            case 'days':
+              creationStates.set(msg.from.id, { ...state, step: 'description', days: parseInt(msg.text) });
+              await safeSendMessage(msg.chat.id,
+                "📝 *Enter Description*\n\n" +
+                "Please enter a description for this challenge.\n" +
+                "Reply with the description.",
+                { parse_mode: "Markdown" }
+              );
+              break;
+            case 'description':
+              const challengeData = {
+                ...state,
+                description: msg.text
+              };
+              await handleCreateChallenge(msg, `${challengeData.game}|${challengeData.minBet}|${challengeData.multiplier}|${challengeData.prize}|${challengeData.winners}|${challengeData.days}|${challengeData.description}`);
+              creationStates.delete(msg.from.id);
+              break;
+          }
+        }
+      }
     } catch {
       await safeSendMessage(msg.chat.id, "⚠️ Please wait before sending more commands.");
     }
@@ -1216,8 +1358,77 @@ async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
   const chatId = callbackQuery.message?.chat.id;
   const messageId = callbackQuery.message?.message_id;
   const data = callbackQuery.data;
+  const userId = callbackQuery.from.id;
 
   if (!chatId || !messageId || !data) return;
+
+  // Handle bonus code creation
+  if (data === 'bonus_start') {
+    const state = creationStates.get(userId);
+    if (state?.type === 'bonus') {
+      creationStates.set(userId, { ...state, step: 'code' });
+      await botInstance.editMessageText(
+        "🎁 *Enter Bonus Code*\n\n" +
+        "Please enter the bonus code (e.g., WELCOME100).\n" +
+        "Reply to this message with the code.",
+        {
+          chat_id: chatId,
+          message_id: messageId,
+          parse_mode: "Markdown"
+        }
+      );
+    }
+  }
+
+  // Handle challenge creation
+  if (data === 'challenge_start') {
+    const state = creationStates.get(userId);
+    if (state?.type === 'challenge') {
+      creationStates.set(userId, { ...state, step: 'game' });
+      const markup = {
+        inline_keyboard: [
+          [
+            { text: "🎰 Slots", callback_data: "game_slots" },
+            { text: "🎲 Dice", callback_data: "game_dice" }
+          ],
+          [
+            { text: "🎯 Crash", callback_data: "game_crash" },
+            { text: "🃏 Blackjack", callback_data: "game_blackjack" }
+          ]
+        ]
+      };
+      
+      await botInstance.editMessageText(
+        "🎯 *Select Game Type*\n\n" +
+        "Choose the game type for this challenge:",
+        {
+          chat_id: chatId,
+          message_id: messageId,
+          parse_mode: "Markdown",
+          reply_markup: markup
+        }
+      );
+    }
+  }
+
+  // Handle game selection for challenge
+  if (data.startsWith('game_')) {
+    const state = creationStates.get(userId);
+    if (state?.type === 'challenge') {
+      const game = data.replace('game_', '');
+      creationStates.set(userId, { ...state, step: 'minBet', game });
+      await botInstance.editMessageText(
+        "💰 *Enter Minimum Bet*\n\n" +
+        "Please enter the minimum bet amount (e.g., $50).\n" +
+        "Reply to this message with the amount.",
+        {
+          chat_id: chatId,
+          message_id: messageId,
+          parse_mode: "Markdown"
+        }
+      );
+    }
+  }
 
   if (data.startsWith('approve_') || data.startsWith('reject_')) {    const [action, username] = data.split('_');
     const isAdmin = await checkIsAdmin(callbackQuery.from.id.toString());
