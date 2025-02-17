@@ -34,7 +34,13 @@ export const requireAuth = async (
     const token = extractToken(req);
     
     if (!token) {
+      req.user = null;
       return res.status(401).json({ message: ERROR_MESSAGES.AUTH_REQUIRED });
+    }
+    
+    if (!req.cookies && !req.headers.authorization) {
+      req.user = null;
+      return res.status(401).json({ message: "No authentication credentials found" });
     }
 
     const user = await validateAndGetUser(token);

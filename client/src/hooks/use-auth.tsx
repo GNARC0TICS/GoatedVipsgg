@@ -26,8 +26,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Effect to check authentication status on mount
   useEffect(() => {
-    checkAuth();
-  }, []);
+    if (!user && !error) {
+      checkAuth();
+    }
+  }, [user, error]);
 
   // Verify current authentication status
   const checkAuth = async () => {
