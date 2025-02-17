@@ -153,8 +153,12 @@ export function Layout({ children }: { children: ReactNode }) {
   const [openMobile, setOpenMobile] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery<SelectUser>({ queryKey: ["/api/user"] });
-  const isAuthenticated = !!user;
+  const { data: user, isError } = useQuery<SelectUser>({ 
+  queryKey: ["/api/user"],
+  retry: false,
+  refetchOnWindowFocus: false 
+});
+const isAuthenticated = !!user;
 
   // Scroll to top on location change
   useEffect(() => {

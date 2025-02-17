@@ -34,19 +34,47 @@ export const requireAuth = async (
     const token = extractToken(req);
     
     if (!token) {
-      return res.status(401).json({ message: ERROR_MESSAGES.AUTH_REQUIRED });
+      return res.status(401).json({ 
+        message: ERROR_MESSAGES.AUTH_REQUIRED,
+        isAuthenticated: false 
+      });
     }
 
     const user = await validateAndGetUser(token);
     
     if (!user) {
-      return res.status(401).json({ message: ERROR_MESSAGES.USER_NOT_FOUND });
+      return res.status(401).json({ 
+        message: ERROR_MESSAGES.USER_NOT_FOUND,
+        isAuthenticated: false 
+      });
     }
 
     req.user = user;
     next();
   } catch (error) {
-    return res.status(401).json({ message: ERROR_MESSAGES.INVALID_TOKEN });
+    return res.status(401).json({ 
+      message: ERROR_MESSAGES.INVALID_TOKEN,
+      isAuthenticated: false 
+    });
+  }
+};
+
+export const optionalAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const token = extractToken(req);
+    if (token) {
+      const user = await validateAndGetUser(token);
+      if (user) {
+        req.user = user;
+      }
+    }
+    next();
+  } catch (error) {
+    next();
   }
 };
 
