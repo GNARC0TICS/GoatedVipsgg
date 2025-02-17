@@ -1,4 +1,3 @@
-
 import { type Request, type Response, type NextFunction } from "express";
 import { verifyToken } from "../config/auth";
 import { db } from "@db";
@@ -32,7 +31,7 @@ export const requireAuth = async (
 ) => {
   try {
     const token = extractToken(req);
-    
+
     if (!token) {
       return res.status(401).json({ 
         message: ERROR_MESSAGES.AUTH_REQUIRED,
@@ -41,7 +40,7 @@ export const requireAuth = async (
     }
 
     const user = await validateAndGetUser(token);
-    
+
     if (!user) {
       return res.status(401).json({ 
         message: ERROR_MESSAGES.USER_NOT_FOUND,
@@ -98,6 +97,6 @@ async function validateAndGetUser(token: string) {
     .from(users)
     .where(eq(users.id, decoded.userId))
     .limit(1);
-  
+
   return user;
 }
