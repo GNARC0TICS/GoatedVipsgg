@@ -69,7 +69,7 @@ export default function HowItWorks() {
                     <h2 className="text-2xl font-heading text-white">Open Registration</h2>
                   </div>
                   <p className="text-[#8A8B91]">
-                    Start your journey by visiting our registration page. You can sign up using:
+                    After creating an account on Goatedvips.gg, head over to Goated and create an account under our code. From there, you can sign up using:
                   </p>
                   <ul className="space-y-2 text-[#8A8B91]">
                     <li className="flex items-center gap-2">
