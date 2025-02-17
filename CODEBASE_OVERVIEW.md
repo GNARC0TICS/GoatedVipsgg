@@ -1,3 +1,10 @@
+
+# GoatedVIPs Platform Technical Overview
+
+## Core Architecture
+
+### Database Schema
+```sql
 Table wager_races {
   id UUID PRIMARY KEY
   status VARCHAR
@@ -21,132 +28,205 @@ Table transformation_logs {
   duration_ms INTEGER
   created_at TIMESTAMP
 }
+```
 
-## Development Summary and Future Considerations
+## System Components & Dependencies
 
-### Application Overview
-The GoatedVIPs platform is a sophisticated affiliate marketing system with several key components:
+### 1. Server Architecture (Priority: High)
+- **Main Server (Port 5000)**
+  - Express.js REST API
+  - WebSocket server for real-time updates
+  - Rate limiting middleware
+  - PostgreSQL with Drizzle ORM
+  
+- **Telegram Bot (Port 5001)**
+  - Webhook handling
+  - User verification
+  - Admin commands
+  - Real-time notifications
 
-1. **Core Infrastructure**
-- Dual-server architecture (main + webhook) for scalability
-- Real-time data synchronization via WebSocket
-- Secure authentication with Telegram verification
-- PostgreSQL database with Drizzle ORM
-- React frontend with modern UI components
+### 2. Real-time Systems
 
-2. **Key Features**
-- Race tracking and leaderboard system
-- VIP program management
-- Admin dashboard and controls
-- Real-time notifications
-- User verification through Telegram
+#### WebSocket Implementation
+- **Current State**: Partially implemented
+- **Issues**:
+  - Connection stability in high-load scenarios
+  - Reconnection logic needs improvement
+  - Missing heartbeat mechanism
+  
+#### Required Improvements:
+```typescript
+// Implement in server/index.ts
+const HEARTBEAT_INTERVAL = 30000;
+const RECONNECT_TIMEOUT = 5000;
 
-### Development Workflow
-When adding new features or modifications:
+wss.on('connection', (ws) => {
+  const heartbeat = setInterval(() => {
+    if (ws.readyState === ws.OPEN) {
+      ws.ping();
+    }
+  }, HEARTBEAT_INTERVAL);
 
-1. **Initial Steps**
-- Review relevant components in `server/` and `client/src/`
-- Check existing implementations in similar features
-- Consider impact on real-time synchronization
-- Verify database schema compatibility
+  ws.on('close', () => clearInterval(heartbeat));
+});
+```
 
-2. **Implementation Guidelines**
-- Add new routes in `server/routes.ts`
-- Create UI components in `client/src/components`
-- Update types in `db/schema.ts`
-- Add new pages in `client/src/pages`
-- Implement API endpoints in appropriate route handlers
+### 3. Authentication Flow
 
-3. **Testing Considerations**
-- Test WebSocket connections for real-time features
-- Verify Telegram bot interactions
-- Check admin dashboard functionality
-- Ensure mobile responsiveness
-- Validate rate limiting and security measures
-
-### Pending Features and Improvements
-
-1. **Documentation Needs**
-- [ ] API documentation with endpoint descriptions
-- [ ] Sequence diagrams for key workflows
-- [ ] Performance optimization guide
-- [ ] Deployment and scaling documentation
-
-2. **Technical Improvements**
-- [ ] Enhanced error handling and logging
-- [ ] Improved cache implementation
-- [ ] Better TypeScript type coverage
-- [ ] Automated testing suite
-- [ ] Performance monitoring tools
-
-3. **Feature Enhancements**
-- [ ] Advanced analytics dashboard
-- [ ] Enhanced VIP program features
-- [ ] Improved user notification system
-- [ ] Extended admin controls
-- [ ] Additional payment integrations
-
-### Best Practices for New Features
-
-1. **Architecture Considerations**
-- Maintain separation of concerns
-- Follow established patterns for new components
-- Consider scalability in design
-- Implement proper error handling
-- Add appropriate logging
-
-2. **Performance Guidelines**
-- Implement caching where appropriate
-- Optimize database queries
-- Use proper indexing
-- Consider bulk operations
-- Monitor WebSocket connections
-
-3. **Security Checklist**
-- Implement rate limiting
-- Validate all inputs
-- Use proper authentication
-- Follow secure coding practices
-- Add audit logging
-
-### Critical Components to Consider
-
-1. **Real-time Systems**
-- WebSocket server in `server/index.ts`
-- Event handling system
-- Connection management
-- Fallback mechanisms
-
-2. **Authentication Flow**
-- Telegram verification process
+#### Current Implementation
+- JWT-based authentication
+- Telegram verification
 - Session management
-- Admin authentication
-- Role-based access control
 
-3. **Data Management**
-- Database schema updates
-- Data transformation logic
-- Caching strategy
-- Query optimization
+#### Known Issues
+1. Token refresh mechanism incomplete
+2. Missing password reset flow
+3. Session cleanup not implemented
 
-### Future Scalability Considerations
+#### Required Fixes:
+1. Implement token refresh endpoint
+2. Add password reset flow with email verification
+3. Set up session cleanup cron job
 
-1. **Infrastructure**
-- Consider microservices architecture
-- Implement load balancing
-- Add redundancy
-- Improve monitoring
+### 4. Data Transformation Pipeline
 
-2. **Database**
-- Plan for sharding
-- Implement read replicas
-- Optimize indexes
-- Add archival strategy
+#### Current State
+- Basic transformation implemented
+- Caching layer missing
+- Error handling needs improvement
 
-3. **Application**
-- Implement feature flags
-- Add A/B testing capability
-- Improve error recovery
-- Enhance monitoring
+#### Required Improvements:
+1. Add Redis caching layer
+2. Implement retry mechanism
+3. Add detailed error logging
+4. Optimize transformation algorithms
 
-This summary provides a comprehensive overview of the application's current state and future development path. When implementing new features, always consider the existing architecture and patterns to maintain consistency and reliability.
+### 5. Admin Dashboard
+
+#### Current Features
+- User management
+- Race configuration
+- System analytics
+
+#### Missing Features
+1. Bulk operations for user management
+2. Advanced analytics dashboard
+3. Audit logging system
+4. Performance monitoring tools
+
+## Performance Considerations
+
+### Current Bottlenecks
+1. **Database Queries**
+   - Missing indexes on frequently accessed columns
+   - N+1 query issues in leaderboard
+   - Inefficient JOIN operations
+
+2. **API Response Times**
+   - Large payload sizes
+   - Missing response compression
+   - Inefficient data transformation
+
+### Required Optimizations
+1. **Database**
+```sql
+-- Add missing indexes
+CREATE INDEX idx_users_telegram_id ON users(telegram_id);
+CREATE INDEX idx_wager_races_status ON wager_races(status);
+CREATE INDEX idx_transformation_logs_type ON transformation_logs(type);
+```
+
+2. **API Layer**
+- Implement response compression
+- Add API response caching
+- Optimize payload sizes
+
+## Security Implementation
+
+### Current Security Measures
+1. Rate limiting
+2. JWT validation
+3. Input sanitization
+
+### Required Security Enhancements
+1. Implement IP-based rate limiting
+2. Add request signing for sensitive operations
+3. Enhance input validation
+4. Implement audit logging
+
+## Deployment Considerations
+
+### Current Setup
+- Single instance deployment
+- Basic error handling
+- Limited monitoring
+
+### Required Improvements
+1. Implement health checks
+2. Add comprehensive logging
+3. Set up monitoring alerts
+4. Implement backup strategy
+
+## Best Practices & Guidelines
+
+### Code Structure
+1. Follow consistent file naming
+2. Use TypeScript strict mode
+3. Implement proper error boundaries
+4. Add comprehensive documentation
+
+### Testing Requirements
+1. Unit tests for core functionality
+2. Integration tests for API endpoints
+3. E2E tests for critical flows
+4. Performance testing suite
+
+## Immediate Action Items
+
+### High Priority
+1. Fix WebSocket reconnection logic
+2. Implement token refresh mechanism
+3. Add missing database indexes
+4. Enhance error handling
+
+### Medium Priority
+1. Implement caching layer
+2. Add audit logging
+3. Enhance admin dashboard
+4. Improve monitoring
+
+### Low Priority
+1. Implement advanced analytics
+2. Add bulk operations
+3. Enhance documentation
+4. Optimize asset delivery
+
+## Code Quality Guidelines
+
+### TypeScript Best Practices
+1. Use strict type checking
+2. Implement proper interfaces
+3. Avoid any type
+4. Use proper error types
+
+### React Component Structure
+1. Implement proper error boundaries
+2. Use React.memo for optimization
+3. Implement proper prop types
+4. Follow component composition patterns
+
+## Monitoring & Debugging
+
+### Required Tools
+1. Error tracking system
+2. Performance monitoring
+3. API analytics
+4. User behavior tracking
+
+### Implementation Priority
+1. Set up basic error tracking
+2. Implement performance monitoring
+3. Add user analytics
+4. Set up alerting system
+
+This overview provides a comprehensive look at the current state of the codebase and required improvements. Follow the priority order for implementations to ensure systematic improvement of the platform.
