@@ -1,12 +1,60 @@
 
-// Custom emoji configuration
+// Custom emoji configuration with Telegram custom emoji IDs
 export const CUSTOM_EMOJIS = {
-  welcome: '👋',  // Welcome wave
-  bonus: '🎁',    // Gift/bonus
-  error: '❌',     // Error X
-  success: '✅',   // Success checkmark
-  vip: '👑'       // VIP crown/royalty
+  // Branding
+  logo: '⭐️', // Fallback: [5956308779791291440]
+  
+  // Race & Competition
+  race: '🏃', // Fallback: [5222141780476046109]
+  raceFlag: '🏁', // Fallback: [5411520005386806155]
+  trophy: '🏆', // Fallback: [5280769763398671636]
+  
+  // Rankings
+  first: '🥇', // Fallback: [5440539497383087970]
+  second: '🥈', // Fallback: [5447203607294265305]
+  third: '🥉', // Fallback: [5453902265922376865]
+  
+  // Bonus & Rewards
+  bonus: '🎁', // Fallback: [6032605098528477151]
+  bonusAlt: '🎉', // Fallback: [6046260843966893372]
+  cash: '💰', // Fallback: [5215706742645599766]
+  moneyBag: '💵', // Fallback: [5213094908608392768]
+  
+  // Verification & Status
+  reject: '❌', // Fallback: [6113872536968104754]
+  approve: '✅', // Fallback: [6318741991656001135]
+  verified: '✨', // Fallback: [5366450216310416145]
+  goldVerified: '💫', // Fallback: [6086832243211242109]
+  banned: '🚫', // Fallback: [5213224006735376143]
+  
+  // Navigation & UI
+  website: '🌐', // Fallback: [5447410659077661506]
+  help: '❓', // Fallback: [5019413195186504264]
+  attention: '⚠️', // Fallback: [5213181173026533794]
+  refresh: '🔄', // Fallback: [6012661228910939253]
+  stats: '📊', // Fallback: [5231200819986047254]
+  clock: '⏰', // Fallback: [5285409457654737374]
+  bell: '🔔', // Fallback: [5267061559229687802]
+  play: '▶️', // Fallback: [5215229232476596064]
+  
+  // VIP & Special
+  vip: '👑', // Fallback: [5996899742611672774]
+  vipCert: '📜', // Fallback: [5431684550424011313]
+  admin: '🎩', // Fallback: [5339564150534200424]
+  live: '🔴', // Fallback: [4927197721900614739]
+  
+  // Decorative
+  goldBullet: '•', // Fallback: [5249224203567112577]
+  silverBullet: '•', // Fallback: [5249028709540701810]
+  sparkle: '✨', // Fallback: [5267389686141166350]
+  confetti: '🎊', // Fallback: [5201730588351945766]
+  loading: '⌛️', // Fallback: [5350752364246606166]
 };
+
+// Helper function to get Telegram custom emoji string
+export function getTelegramCustomEmoji(emojiId: string): string {
+  return `<tg-emoji emoji-id="${emojiId}"/>`;
+}
 
 // Future custom sticker configuration (commented out for now)
 export const CUSTOM_STICKERS = {
