@@ -700,9 +700,10 @@ bot.onText(/\/createchallenge$/, async (msg) => {
  * Sends welcome message and initial instructions
  */
 async function handleStart(msg: TelegramBot.Message) {
+  if (!botInstance) return;
   const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
   const welcomeMessage = await MESSAGES.welcome(isAdmin);
-  await safeSendMessage(msg.chat.id, welcomeMessage, { parse_mode: "Markdown" });
+  await sendStickerWithMessage(botInstance, msg.chat.id, CUSTOM_STICKERS.welcome, welcomeMessage, { parse_mode: "Markdown" });
 }
 
 async function handleHelp(msg: TelegramBot.Message) {

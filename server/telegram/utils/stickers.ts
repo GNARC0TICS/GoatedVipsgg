@@ -1,11 +1,11 @@
 
 // Define custom sticker file IDs
 export const CUSTOM_STICKERS = {
-  welcome: 'CAACAgUAAxkBAAEB..._ID',  // Replace with actual sticker ID
-  bonus: 'CAACAgUAAxkBAAEB..._ID',    // Replace with actual sticker ID
-  error: 'CAACAgUAAxkBAAEB..._ID',    // Replace with actual sticker ID
-  success: 'CAACAgUAAxkBAAEB..._ID',  // Replace with actual sticker ID
-  vip: 'CAACAgUAAxkBAAEB..._ID'       // Replace with actual sticker ID
+  welcome: 'CAACAgEAAxkBAAIQ7WXLBrQBnj3Q_YOUR_STICKER_ID_HERE',  // Replace with your Goated welcome sticker
+  bonus: 'CAACAgEAAxkBAAIQ7mXLBsIBnk4Q_YOUR_STICKER_ID_HERE',    // Replace with bonus sticker
+  error: 'CAACAgEAAxkBAAIQ72XLBtcBnl5Q_YOUR_STICKER_ID_HERE',    // Replace with error sticker
+  success: 'CAACAgEAAxkBAAIQ8GXLBukBnm6Q_YOUR_STICKER_ID_HERE',  // Replace with success sticker
+  vip: 'CAACAgEAAxkBAAIQ8WXLBv0Bnn7Q_YOUR_STICKER_ID_HERE'      // Replace with VIP sticker
 };
 
 // Function to send sticker with message
