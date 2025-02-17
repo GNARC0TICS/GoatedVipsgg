@@ -107,6 +107,11 @@ function MainContent() {
                   <Route path="/faq" component={FAQ} />
                   <Route path="/vip-program" component={VipProgram} />
                   <Route path="/challenges" component={Challenges} />
+                  <Route path="/wager-races" component={WagerRaces} />
+                  <Route path="/bonus-codes" component={BonusCodes} />
+                  <Route path="/provably-fair" component={ProvablyFair} />
+                  <Route path="/vip-transfer" component={VipTransfer} />
+                  <Route path="*" component={NotFound} />
 
                   {/* Protected Routes - Require Authentication */}
                   <ProtectedRoute path="/bonus-codes" component={BonusCodes} />
