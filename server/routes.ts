@@ -750,56 +750,7 @@ declare module 'ws' {
   }
 }
 
-const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) => {
-  const key = cacheManager.generateKey(req);
-  const cachedResponse = cacheManager.get(key);
-
-  if (cachedResponse) {
-    res.setHeader('X-Cache', 'HIT');
-    res.setHeader('Cache-Control', `public, max-age=${Math.floor(ttl/1000)}`);
-    return res.json(cachedResponse);
-  }
-
-  res.setHeader('X-Cache', 'MISS');
-  res.setHeader('Cache-Control', 'no-cache');
-  const originalJson = res.json;
-  res.json = (body: any) => {
-    cacheManager.set(key, body);
-    res.setHeader('Cache-Control', `public, max-age=${Math.floor(ttl/1000)}`);
-    return originalJson.call(res, body);
-  };
-  next();
-};
-
-const createRateLimiter = (tier: keyof typeof rateLimiters) => {
-  const limiter = rateLimiters[tier];
-  return async (req: any, res: any, next: any) => {
-    try {
-      const rateLimitRes = await limiter.consume(req.ip);
-
-      res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase() as RateLimitTier].points);
-      res.setHeader('X-RateLimit-Remaining', rateLimitRes.remainingPoints);
-      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateLimitRes.msBeforeNext).toISOString());
-
-      log(`Rate limit - ${tier}: ${rateLimitRes.remainingPoints} requests remaining`);
-      next();
-    } catch (rejRes) {
-      const rejection = rejRes as RateLimiterRes;
-      log(`Rate limit exceeded - ${tier}: IP ${req.ip}`);
-
-      res.setHeader('Retry-After', Math.ceil(rejection.msBeforeNext / 1000));
-      res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase() as RateLimitTier].points);
-      res.setHeader('X-RateLimit-Remaining', 0);
-      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rejection.msBeforeNext).toISOString());
-
-      res.status(429).json({
-        status: 'error',
-        message: 'Too many requests',
-        retryAfter: Math.ceil(rejection.msBeforeNext / 1000)
-      });
-    }
-  };
-};
+const cacheManager = new CacheManager();
 
 const batchHandler = async (req: any, res: any) => {
   try {
@@ -961,18 +912,3 @@ class CacheManager {
     this.cache.clear();
   }
 }
-
-type RateLimitTier = 'HIGH' | 'MEDIUM' | 'LOW';
-const rateLimits: Record<RateLimitTier, { points: number; duration: number }> = {
-  HIGH: { points: 30, duration: 60 },
-  MEDIUM: { points: 15, duration: 60 },
-  LOW: { points: 5, duration: 60 }
-};
-
-const rateLimiters = {
-  high: new RateLimiterMemory(rateLimits.HIGH),
-  medium: new RateLimiterMemory(rateLimits.MEDIUM),
-  low: new RateLimiterMemory(rateLimits.LOW),
-};
-
-const cacheManager = new CacheManager();
