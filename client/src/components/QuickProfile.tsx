@@ -1,9 +1,15 @@
-
 import React from "react";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "./LoadingSpinner";
+import {Sheet, SheetContent} from '@radix-ui/react-sheet'
+import {Button} from "@/components/ui/button";
+import {ArrowRight} from "lucide-react";
+import {VerificationBadge} from "@/components/ui/verification-badge"; // Assumed import path
+import {useState} from "react";
+import {useLocation} from "react-router-dom"
+
 
 interface QuickProfileProps {
   userId: string;
@@ -47,56 +53,117 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
     return { wagered: userStats, rankings };
   }, [leaderboardData, userId]);
 
+  const [open, setOpen] = useState(false);
+  const location = useLocation();
+  const setLocation = (path:string) => {
+    window.location.href = path;
+  }
+
   return (
-    <HoverCard>
-      <HoverCardTrigger asChild>
-        <span className="cursor-pointer">{children}</span>
-      </HoverCardTrigger>
-      <HoverCardContent className="w-80 bg-[#1A1B21] border border-[#2A2B31] p-4">
-        {isLoading ? (
-          <div className="flex justify-center p-4">
-            <LoadingSpinner />
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <img
-                src={getTierIcon(getTierFromWager(stats?.wagered.all_time || 0))}
-                alt="VIP Tier"
-                className="w-8 h-8"
-              />
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-heading text-white">{username}</span>
-                {userData?.isVerified && <VerificationBadge size="sm" />}
+    <>
+      <HoverCard>
+        <HoverCardTrigger asChild>
+          <span className="cursor-pointer">{children}</span>
+        </HoverCardTrigger>
+        <HoverCardContent className="w-80 bg-[#1A1B21] border border-[#2A2B31] p-4 z-50"> {/* Added z-50 for higher z-index */}
+          {isLoading ? (
+            <div className="flex justify-center p-4">
+              <LoadingSpinner />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <img
+                  src={getTierIcon(getTierFromWager(stats?.wagered.all_time || 0))}
+                  alt="VIP Tier"
+                  className="w-8 h-8"
+                />
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-heading text-white">{username}</span>
+                  {userData?.isVerified && <VerificationBadge size="sm" />}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center p-2 rounded bg-black/20">
+                  <span className="text-white/70 text-sm">Weekly Rank:</span>
+                  <span className="text-[#10B981] font-mono">#{stats?.rankings.weekly || '-'}</span>
+                </div>
+                <div className="flex justify-between items-center p-2 rounded bg-black/20">
+                  <span className="text-white/70 text-sm">Monthly Rank:</span>
+                  <span className="text-[#F59E0B] font-mono">#{stats?.rankings.monthly || '-'}</span>
+                </div>
+                <div className="flex justify-between items-center p-2 rounded bg-black/20">
+                  <span className="text-white/70 text-sm">All-Time Rank:</span>
+                  <span className="text-[#EC4899] font-mono">#{stats?.rankings.all_time || '-'}</span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded bg-[#D7FF00]/10 border border-[#D7FF00]/20">
+                <div className="flex justify-between items-center">
+                  <span className="text-[#D7FF00] text-sm font-semibold">All-Time Wagered:</span>
+                  <span className="text-white font-mono font-bold">
+                    ${stats?.wagered.all_time.toLocaleString() || '0'}
+                  </span>
+                </div>
               </div>
             </div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between items-center p-2 rounded bg-black/20">
-                <span className="text-white/70 text-sm">Weekly Rank:</span>
-                <span className="text-[#10B981] font-mono">#{stats?.rankings.weekly || '-'}</span>
+          )}
+        </HoverCardContent>
+      </HoverCard>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="right" className="w-full sm:w-[540px] bg-[#1A1B21] border-l border-[#2A2B31] p-6">
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-[#2A2B31] flex items-center justify-center">
+                <img
+                  src={getTierIcon(getTierFromWager(stats?.wagered.all_time || 0))}
+                  alt="VIP Tier"
+                  className="w-12 h-12"
+                />
               </div>
-              <div className="flex justify-between items-center p-2 rounded bg-black/20">
-                <span className="text-white/70 text-sm">Monthly Rank:</span>
-                <span className="text-[#F59E0B] font-mono">#{stats?.rankings.monthly || '-'}</span>
-              </div>
-              <div className="flex justify-between items-center p-2 rounded bg-black/20">
-                <span className="text-white/70 text-sm">All-Time Rank:</span>
-                <span className="text-[#EC4899] font-mono">#{stats?.rankings.all_time || '-'}</span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl font-heading text-white">{username}</h2>
+                  {userData?.isVerified && <VerificationBadge size="lg" />}
+                </div>
+                <Button
+                  variant="link"
+                  className="text-[#D7FF00] p-0 h-auto text-sm"
+                  onClick={() => setLocation(`/profile/${userId}`)}
+                >
+                  View Full Profile <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
               </div>
             </div>
 
-            <div className="p-3 rounded bg-[#D7FF00]/10 border border-[#D7FF00]/20">
-              <div className="flex justify-between items-center">
-                <span className="text-[#D7FF00] text-sm font-semibold">All-Time Wagered:</span>
-                <span className="text-white font-mono font-bold">
-                  ${stats?.wagered.all_time.toLocaleString() || '0'}
-                </span>
+            <div className="grid gap-4">
+              <div className="p-4 rounded-lg bg-black/20">
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70">Weekly Rank</span>
+                  <span className="text-[#D7FF00] font-mono font-bold">#{stats?.rankings.weekly || '-'}</span>
+                </div>
               </div>
+
+              <div className="p-4 rounded-lg bg-black/20">
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70">Total Wagered</span>
+                  <span className="text-[#D7FF00] font-mono font-bold">${stats?.wagered.all_time.toLocaleString() || '0'}</span>
+                </div>
+              </div>
+
+              {userData?.isVerified && (
+                <div className="p-4 rounded-lg bg-[#D7FF00]/10 border border-[#D7FF00]/20">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#D7FF00]">Verified Member</span>
+                    <span className="text-white font-mono">Since {new Date(userData.verifiedAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        )}
-      </HoverCardContent>
-    </HoverCard>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }
