@@ -93,7 +93,9 @@ const ADMIN_COMMANDS = [
   { command: 'pending', description: '📝 View pending verifications' },
   { command: 'broadcast', description: '📢 Send announcement to all users' },
   { command: 'approve', description: '✅ Approve a verification request' },
-  { command: 'reject', description: '❌ Reject a verification request' }
+  { command: 'reject', description: '❌ Reject a verification request' },
+  { command: 'createbonus', description: '🎁 Create a bonus code' },
+  { command: 'createchallenge', description: '🎯 Create a challenge' }
 ];
 
 /**
@@ -482,6 +484,40 @@ function registerEventHandlers(bot: TelegramBot) {
   bot.onText(/\/broadcast (.+)/, (msg, match) => handleBroadcast(msg, match ? match[1] : undefined));
   bot.onText(/\/approve (.+)/, (msg, match) => handleApprove(msg, match ? match[1] : undefined));
   bot.onText(/\/reject (.+)/, (msg, match) => handleReject(msg, match ? match[1] : undefined));
+  bot.onText(/\/createbonus (.+)/, (msg, match) => handleCreateBonus(msg, match ? match[1] : undefined));
+  bot.onText(/\/createchallenge (.+)/, (msg, match) => handleCreateChallenge(msg, match ? match[1] : undefined));
+  
+  // Add help text for bonus creation
+  bot.onText(/\/createbonus$/, (msg) => {
+    safeSendMessage(msg.chat.id, 
+      "🎁 *Create Bonus Code*\n\n" +
+      "Format: /createbonus code|amount|claims|days|description\n" +
+      "Example: /createbonus WELCOME100|$100|50|7|Welcome bonus for new users\n\n" +
+      "• code: Bonus code (required)\n" +
+      "• amount: Bonus amount (required)\n" +
+      "• claims: Total allowed claims (required)\n" +
+      "• days: Days until expiration (required)\n" +
+      "• description: Bonus description (optional)",
+      { parse_mode: "Markdown" }
+    );
+  });
+
+  // Add help text for challenge creation
+  bot.onText(/\/createchallenge$/, (msg) => {
+    safeSendMessage(msg.chat.id,
+      "🎯 *Create Challenge*\n\n" +
+      "Format: /createchallenge game|minBet|multiplier|prize|winners|days|description\n" +
+      "Example: /createchallenge Slots|$50|3x|$1000|5|7|Hit 3x multiplier on slots\n\n" +
+      "• game: Game type (required)\n" +
+      "• minBet: Minimum bet (required)\n" +
+      "• multiplier: Required multiplier\n" +
+      "• prize: Prize amount (required)\n" +
+      "• winners: Max winners (required)\n" +
+      "• days: Days until expiration (required)\n" +
+      "• description: Challenge description (optional)",
+      { parse_mode: "Markdown" }
+    );
+  });
 
   bot.on("message", async (msg) => {
     if (!msg.text || !msg.from?.id) return;
@@ -1069,6 +1105,108 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
   } catch (error) {
     log("error", `Leaderboard error: ${error instanceof Error ? error.message : String(error)}`);
     await safeSendMessage(msg.chat.id, "❌ Error fetching leaderboard data. Please try again later.");
+  }
+}
+
+async function handleCreateBonus(msg: TelegramBot.Message, params?: string) {
+  if (!msg.from?.id) return;
+  
+  const isAdmin = await checkIsAdmin(msg.from.id.toString());
+  if (!isAdmin) {
+    return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
+  }
+
+  if (!params) {
+    return safeSendMessage(msg.chat.id, "❌ Please provide bonus code parameters.");
+  }
+
+  try {
+    const [code, bonusAmount, totalClaims, days, description] = params.split('|');
+    
+    if (!code || !bonusAmount || !totalClaims || !days) {
+      return safeSendMessage(msg.chat.id, "❌ Missing required parameters.");
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + parseInt(days));
+
+    const [bonusCode] = await db
+      .insert(bonusCodes)
+      .values({
+        code,
+        bonusAmount,
+        totalClaims: parseInt(totalClaims),
+        currentClaims: 0,
+        expiresAt,
+        description: description || null,
+        status: 'active',
+        source: 'telegram',
+        createdBy: msg.from.id
+      })
+      .returning();
+
+    await safeSendMessage(msg.chat.id,
+      `✅ Bonus code created successfully!\n\n` +
+      `Code: ${bonusCode.code}\n` +
+      `Amount: ${bonusCode.bonusAmount}\n` +
+      `Claims: ${bonusCode.totalClaims}\n` +
+      `Expires: ${bonusCode.expiresAt.toLocaleDateString()}`
+    );
+  } catch (error) {
+    log("error", `Error creating bonus code: ${error instanceof Error ? error.message : String(error)}`);
+    await safeSendMessage(msg.chat.id, "❌ Error creating bonus code.");
+  }
+}
+
+async function handleCreateChallenge(msg: TelegramBot.Message, params?: string) {
+  if (!msg.from?.id) return;
+  
+  const isAdmin = await checkIsAdmin(msg.from.id.toString());
+  if (!isAdmin) {
+    return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
+  }
+
+  if (!params) {
+    return safeSendMessage(msg.chat.id, "❌ Please provide challenge parameters.");
+  }
+
+  try {
+    const [game, minBet, multiplier, prizeAmount, maxWinners, days, description] = params.split('|');
+    
+    if (!game || !minBet || !prizeAmount || !maxWinners || !days) {
+      return safeSendMessage(msg.chat.id, "❌ Missing required parameters.");
+    }
+
+    const timeframe = new Date();
+    timeframe.setDate(timeframe.getDate() + parseInt(days));
+
+    const [challenge] = await db
+      .insert(challenges)
+      .values({
+        game,
+        minBet,
+        multiplier: multiplier || null,
+        prizeAmount,
+        maxWinners: parseInt(maxWinners),
+        timeframe,
+        description: description || null,
+        status: 'active',
+        source: 'telegram',
+        createdBy: msg.from.id
+      })
+      .returning();
+
+    await safeSendMessage(msg.chat.id,
+      `✅ Challenge created successfully!\n\n` +
+      `Game: ${challenge.game}\n` +
+      `Min Bet: ${challenge.minBet}\n` +
+      `Prize: ${challenge.prizeAmount}\n` +
+      `Winners: ${challenge.maxWinners}\n` +
+      `Expires: ${challenge.timeframe.toLocaleDateString()}`
+    );
+  } catch (error) {
+    log("error", `Error creating challenge: ${error instanceof Error ? error.message : String(error)}`);
+    await safeSendMessage(msg.chat.id, "❌ Error creating challenge.");
   }
 }
 
