@@ -63,6 +63,43 @@ import { z } from "zod";
 import type { SelectUser } from "@db/schema";
 import { initializeBot } from "./telegram/bot";
 
+class CacheManager {
+  private cache: Map<string, { data: any; timestamp: number }>;
+  private readonly defaultTTL: number;
+
+  constructor(defaultTTL = 30000) {
+    this.cache = new Map();
+    this.defaultTTL = defaultTTL;
+  }
+
+  generateKey(req: any): string {
+    return `${req.method}-${req.originalUrl}-${JSON.stringify(req.query)}`;
+  }
+
+  get(key: string): any {
+    const cached = this.cache.get(key);
+    if (!cached) return null;
+
+    if (Date.now() - cached.timestamp > this.defaultTTL) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return cached.data;
+  }
+
+  set(key: string, data: any): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+    });
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
 // Router setup
 const router = Router();
 
