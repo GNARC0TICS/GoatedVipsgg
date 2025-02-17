@@ -6,9 +6,58 @@ import { WebSocket, WebSocketServer } from "ws";
 import { log } from "./vite";
 import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory, type RateLimiterRes } from 'rate-limiter-flexible';
-import { createRateLimiter, cacheMiddleware } from './middleware/rate-limit';
 import bonusChallengesRouter from "./routes/bonus-challenges";
 import { wagerRaces, users, transformationLogs } from "@db/schema";
+
+type RateLimitTier = 'HIGH' | 'MEDIUM' | 'LOW';
+const rateLimits: Record<RateLimitTier, { points: number; duration: number }> = {
+  HIGH: { points: 30, duration: 60 },
+  MEDIUM: { points: 15, duration: 60 },
+  LOW: { points: 5, duration: 60 }
+};
+
+const rateLimiters = {
+  high: new RateLimiterMemory(rateLimits.HIGH),
+  medium: new RateLimiterMemory(rateLimits.MEDIUM),
+  low: new RateLimiterMemory(rateLimits.LOW),
+};
+
+const createRateLimiter = (tier: keyof typeof rateLimiters) => {
+  const limiter = rateLimiters[tier];
+  return async (req: any, res: any, next: any) => {
+    try {
+      const rateLimitRes = await limiter.consume(req.ip);
+      res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase() as RateLimitTier].points);
+      res.setHeader('X-RateLimit-Remaining', rateLimitRes.remainingPoints);
+      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateLimitRes.msBeforeNext).toISOString());
+      next();
+    } catch (rejRes) {
+      const rejection = rejRes as RateLimiterRes;
+      res.setHeader('Retry-After', Math.ceil(rejection.msBeforeNext / 1000));
+      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rejection.msBeforeNext).toISOString());
+      res.status(429).json({
+        status: 'error',
+        message: 'Too many requests',
+        retryAfter: Math.ceil(rejection.msBeforeNext / 1000)
+      });
+    }
+  };
+};
+
+const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) => {
+  const key = req.originalUrl;
+  const cachedResponse = cacheManager.get(key);
+  if (cachedResponse) {
+    res.setHeader('X-Cache', 'HIT');
+    return res.json(cachedResponse);
+  }
+  res.originalJson = res.json;
+  res.json = (body: any) => {
+    cacheManager.set(key, body);
+    return res.originalJson(body);
+  };
+  next();
+};
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { SelectUser } from "@db/schema";
