@@ -333,7 +333,7 @@ async function initializeBot(): Promise<TelegramBot | null> {
       });
 
     // Configure webhook URL based on environment
-    const webhookUrl = `https://${process.env.REPL_SLUG}-${process.env.REPL_ID}.${process.env.REPL_OWNER}.repl.co/api/telegram/webhook`;
+    const webhookUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/telegram/webhook`;
     log("info", `Setting webhook URL to: ${webhookUrl}`);
 
     const options: TelegramBot.ConstructorOptions = {
@@ -342,6 +342,11 @@ async function initializeBot(): Promise<TelegramBot | null> {
         host: "0.0.0.0"
       }
     };
+
+    // Add debug logging for environment variables
+    log("info", `REPL_SLUG: ${process.env.REPL_SLUG}`);
+    log("info", `REPL_OWNER: ${process.env.REPL_OWNER}`);
+    log("info", `BOT_PORT: ${process.env.BOT_PORT}`);
 
     if (botInstance) {
       log("info", "Bot instance already exists, reusing existing instance");
