@@ -1,18 +1,31 @@
-
 import React, { Suspense } from "react";
+// Imports necessary components for routing and state management
 import { Switch, Route, useLocation } from "wouter";
+// Imports for error handling and boundary
 import { ErrorBoundary } from "react-error-boundary";
+// Imports the authentication provider
 import { AuthProvider } from "@/hooks/use-auth";
+// Imports a custom error fallback component
 import { ErrorFallback } from "@/components/ErrorFallback";
+// Imports the tooltip provider
 import { TooltipProvider } from "@/components/ui/tooltip";
+// Imports for animation
 import { AnimatePresence, motion } from "framer-motion";
+// Imports the toaster for notifications
 import { Toaster } from "@/components/ui/toaster";
+// Imports the main layout component
 import { Layout } from "@/components/Layout";
+// Imports a loading spinner component
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+// Imports a protected route component
 import { ProtectedRoute } from "@/lib/protected-route";
+// Imports a preloader component
 import { PreLoader } from "@/components/PreLoader";
+// Imports the not found component
 import NotFound from "@/pages/not-found";
+// Imports the home page component
 import Home from "@/pages/Home";
+// Imports the authentication page component
 import AuthPage from "@/pages/auth-page";
 import VipTransfer from "@/pages/VipTransfer";
 import ProvablyFair from "@/pages/ProvablyFair";
@@ -39,11 +52,15 @@ import Challenges from "@/pages/Challenges";
 import WheelChallenge from "@/pages/WheelChallenge";
 import { AdminRoute } from "@/components/AdminRoute";
 
+// MainContent Component
+// Handles the core application rendering logic including preloader and route management
 function MainContent() {
+  // Track if this is user's first visit using sessionStorage
   const [isInitialLoad, setIsInitialLoad] = React.useState(() => {
     return !sessionStorage.getItem('hasVisited');
   });
 
+  // Effect to handle preloader display timing
   React.useEffect(() => {
     if (!isInitialLoad) return;
 
@@ -59,8 +76,10 @@ function MainContent() {
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <AnimatePresence mode="wait">
         {isInitialLoad ? (
+          // Show preloader on initial visit
           <PreLoader key="preloader" onLoadComplete={() => setIsInitialLoad(false)} />
         ) : (
+          // Main application content with loading state
           <Suspense fallback={
             <motion.div
               initial={{ opacity: 0 }}
@@ -73,7 +92,9 @@ function MainContent() {
           }>
             <TooltipProvider>
               <Layout>
+                {/* Main routing configuration */}
                 <Switch>
+                  {/* Public Routes */}
                   <Route path="/" component={Home} />
                   <Route path="/auth" component={AuthPage} />
                   <Route path="/wager-races" component={WagerRaces} />
@@ -89,6 +110,7 @@ function MainContent() {
                   <Route path="/vip-program" component={VipProgram} />
                   <Route path="/challenges" component={Challenges} />
 
+                  {/* Protected Routes - Require Authentication */}
                   <ProtectedRoute path="/bonus-codes" component={BonusCodes} />
                   <ProtectedRoute path="/notification-preferences" component={NotificationPreferences} />
                   <ProtectedRoute path="/vip-transfer" component={VipTransfer} />
@@ -96,12 +118,14 @@ function MainContent() {
                   <ProtectedRoute path="/wheel-challenge" component={WheelChallenge} />
                   <ProtectedRoute path="/user/:id" component={UserProfile} />
 
+                  {/* Admin Routes - Require Admin Privileges */}
                   <AdminRoute path="/admin/user-management" component={UserManagement} />
                   <AdminRoute path="/admin/wager-races" component={WagerRaceManagement} />
                   <AdminRoute path="/admin/bonus-codes" component={BonusCodeManagement} />
                   <AdminRoute path="/admin/notifications" component={NotificationManagement} />
                   <AdminRoute path="/admin/support" component={SupportManagement} />
 
+                  {/* Fallback Route */}
                   <Route component={NotFound} />
                 </Switch>
               </Layout>
@@ -114,6 +138,8 @@ function MainContent() {
   );
 }
 
+// Main App Component
+// Provides global providers and error boundaries for the application
 export default function App() {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
