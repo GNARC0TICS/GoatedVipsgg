@@ -7,9 +7,8 @@ import { Sheet, SheetContent } from "@/components/ui/sheet"
 import {Button} from "@/components/ui/button";
 import {ArrowRight} from "lucide-react";
 import {VerificationBadge} from "@/components/ui/verification-badge";
-import { useLocation } from "wouter"; // Assumed import path
-import {useState} from "react";
-import {useLocation} from "react-router-dom"
+import { useLocation } from "wouter";
+import { useState } from "react";
 
 
 interface QuickProfileProps {
