@@ -108,19 +108,31 @@ const MESSAGES = {
    * Welcome & Help Messages
    * ----------------------
    */
-  welcome: `
-${CUSTOM_EMOJIS.vip} *Welcome to GoatedVIPs Bot*
+  welcome: async (isAdmin: boolean) => {
+    const adminSection = isAdmin ? `
+*Admin Commands:*
+• /broadcast - Send message to all users
+• /pending - View verification requests
+• /verify - Verify a user
+• /reject - Reject a verification
 
-Your gateway to exclusive VIP benefits and rewards!
+` : '';
 
-${CUSTOM_EMOJIS.verify} Use /verify to link your account
-${CUSTOM_EMOJIS.stats} Check /stats for your gaming stats
-${CUSTOM_EMOJIS.race} View /race for leaderboard
-${CUSTOM_EMOJIS.bonus} Get /bonuscodes for latest bonuses
-${CUSTOM_EMOJIS.challenge} Join /challenges for extra rewards
+    return `${CUSTOM_EMOJIS.vip} *Welcome to GoatedVIPs Bot*
 
-Type /help for all available commands
-`.trim(),
+${adminSection}*Available Commands:*
+• /start - Get started with the bot
+• /verify - Link your Goated account
+• /stats - View your wager statistics
+• /race - Check your race position
+• /leaderboard - See top players
+• /play - Play on Goated with our link
+• /website - Visit GoatedVIPs.gg
+• /bonuscodes - Get latest bonus codes
+• /challenges - Join exclusive challenges
+
+Need help? Contact @xGoombas for support.`.trim()
+  },
 
   help: (isAdmin: boolean) => `
 ${CUSTOM_EMOJIS.vip} *Available Commands*
@@ -455,7 +467,9 @@ function registerEventHandlers(bot: TelegramBot) {
  * Sends welcome message and initial instructions
  */
 async function handleStart(msg: TelegramBot.Message) {
-  await safeSendMessage(msg.chat.id, MESSAGES.welcome, { parse_mode: "Markdown" });
+  const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
+  const welcomeMessage = await MESSAGES.welcome(isAdmin);
+  await safeSendMessage(msg.chat.id, welcomeMessage, { parse_mode: "Markdown" });
 }
 
 async function handleHelp(msg: TelegramBot.Message) {
