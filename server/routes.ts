@@ -1,6 +1,18 @@
 import { Router } from "express";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { WebSocket, WebSocketServer } from "ws";
+import { log } from "./vite";
+import { API_CONFIG } from "./config/api";
+import { RateLimiterMemory, type RateLimiterRes } from 'rate-limiter-flexible';
+import bonusChallengesRouter from "./routes/bonus-challenges";
+import { wagerRaces, users, transformationLogs } from "@db/schema";
+import { eq } from "drizzle-orm";
+import { z } from "zod";
+import type { SelectUser } from "@db/schema";
+import { initializeBot } from "./telegram/bot";
 
 const router = Router();
 
@@ -21,27 +33,14 @@ router.get("/health", async (_req, res) => {
   } catch (error) {
     res.status(500).json({
       status: "error",
-      message: process.env.NODE_ENV === "production" 
-        ? "Health check failed" 
+      message: process.env.NODE_ENV === "production"
+        ? "Health check failed"
         : error.message
     });
   }
 });
 
 export { router };
-
-import type { Express } from "express";
-import { createServer, type Server } from "http";
-import { WebSocket, WebSocketServer } from "ws";
-import { log } from "./vite";
-import { API_CONFIG } from "./config/api";
-import { RateLimiterMemory } from 'rate-limiter-flexible';
-import bonusChallengesRouter from "./routes/bonus-challenges";
-import { db } from "@db";
-import { wagerRaces, users, transformationLogs } from "@db/schema";
-import { eq, sql } from "drizzle-orm";
-import { z } from "zod";
-import type { SelectUser } from "@db/schema";
 
 // API Routes configuration
 function setupAPIRoutes(app: Express) {
@@ -935,5 +934,3 @@ const rateLimiters = {
 };
 
 const cacheManager = new CacheManager();
-
-// Using initializeBot from telegram/bot.ts instead
