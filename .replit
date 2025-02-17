@@ -1,13 +1,13 @@
-# Main entry point for the web app
+# Specify the main entry point
 entrypoint = "index.js"
 
-# Required modules for the project
+# Required modules
 modules = ["nodejs-20", "web", "postgresql-16"]
 
-# Hide unnecessary files in the file explorer
+# Hide unnecessary files from Replit’s file explorer
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
-# Nix package manager settings
+# Nix package settings
 [nix]
 channel = "stable-24_05"
 
@@ -15,33 +15,33 @@ channel = "stable-24_05"
 [deployment]
 deploymentTarget = "gce"
 build = ["sh", "-c", "npm run build"]
-run = [
-  "sh", "-c", "node dist/index.js & BOT_PORT=5001 tsx --tsconfig tsconfig.json server/index.ts"
-]
+run = ["sh", "-c", "npm run start"]
 ignorePorts = false
 
-# Port mappings for the web app and the Telegram bot
+# Define ports for different services
 [[ports]]
-localPort = 5000
+localPort = 5173  # Frontend (Vite)
+externalPort = 443 # Secure Web Access
+
+[[ports]]
+localPort = 5000  # Backend API & WebSocket
 externalPort = 80
-protocol = "http"
 
 [[ports]]
-localPort = 5001
+localPort = 5001  # Telegram Bot Server
 externalPort = 3001
-protocol = "http"
 
-# Server settings
+# Set up the server configuration
 [server]
 host = "0.0.0.0"
 port = 5000
 
-# Define workflows for managing app execution
+# Define the workflows to run everything correctly
 [workflows]
 runButton = "Start application"
 
 [[workflows.workflow]]
-name = "Project"
+name = "Full Stack Project"
 mode = "parallel"
 author = "agent"
 
@@ -59,7 +59,7 @@ agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "node dist/index.js & BOT_PORT=5001 tsx --tsconfig tsconfig.json server/index.ts"
+args = "BOT_PORT=5001 VITE_PORT=5173 API_PORT=5000 npm run dev"
 wait_for_port = 5000
 
 # Authentication settings
