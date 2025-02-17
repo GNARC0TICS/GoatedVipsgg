@@ -336,13 +336,20 @@ async function initializeBot(): Promise<TelegramBot | null> {
     const webhookUrl = `https://goatedvips.gg/api/telegram/webhook`;
     log("info", `Setting webhook URL to: ${webhookUrl}`);
 
+    const botPort = parseInt(process.env.BOT_PORT || '5001');
     const options: TelegramBot.ConstructorOptions = {
       webHook: {
-        port: parseInt(process.env.BOT_PORT || '5001'),
+        port: botPort,
         host: "0.0.0.0",
         autoOpen: false // Prevent auto-opening connection before webhook is set
       }
     };
+
+    // Initialize express app for bot webhook
+    const app = express();
+    app.listen(botPort, "0.0.0.0", () => {
+      log("info", `Telegram bot webhook server running on port ${botPort}`);
+    });
 
     // Add debug logging for environment variables
     log("info", `REPL_SLUG: ${process.env.REPL_SLUG}`);
