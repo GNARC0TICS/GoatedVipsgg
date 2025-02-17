@@ -244,17 +244,51 @@ async function initializeServer() {
 function setupWebSocket(server: any) {
   wss = new WebSocketServer({ server, path: '/ws' });
 
+  const HEARTBEAT_INTERVAL = 30000;
+  const CLIENT_TIMEOUT = 35000;
+
   wss.on('connection', (ws: WebSocket, req: any) => {
-    // Skip Vite HMR connections to avoid interference
     if (req.headers['sec-websocket-protocol']?.includes('vite-hmr')) {
       return;
     }
 
+    ws.isAlive = true;
     log("info", "New WebSocket connection established");
+
+    ws.on('pong', () => {
+      ws.isAlive = true;
+    });
 
     ws.on('error', (error) => {
       log("error", `WebSocket error: ${error.message}`);
+      ws.terminate();
     });
+
+    ws.on('close', () => {
+      log("info", "WebSocket connection closed");
+      ws.isAlive = false;
+    });
+
+    // Send initial connection confirmation
+    ws.send(JSON.stringify({
+      type: 'CONNECTION_ESTABLISHED',
+      timestamp: Date.now()
+    }));
+  });
+
+  // Heartbeat to check for stale connections
+  const interval = setInterval(() => {
+    wss.clients.forEach((ws: WebSocket) => {
+      if (ws.isAlive === false) {
+        return ws.terminate();
+      }
+      ws.isAlive = false;
+      ws.ping();
+    });
+  }, HEARTBEAT_INTERVAL);
+
+  wss.on('close', () => {
+    clearInterval(interval);
   });
 
   return wss;
