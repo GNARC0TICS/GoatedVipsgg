@@ -42,7 +42,7 @@ const execAsync = promisify(exec);
 
 // Server configuration constants
 const PORT = parseInt(process.env.PORT || '5000', 10);
-const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+const HOST = '0.0.0.0';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
