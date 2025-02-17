@@ -108,6 +108,7 @@ const MESSAGES = {
    * Welcome & Help Messages
    * ----------------------
    */
+  welcome: `
 ${CUSTOM_EMOJIS.vip} *Welcome to GoatedVIPs Bot*
 
 Your gateway to exclusive VIP benefits and rewards!
