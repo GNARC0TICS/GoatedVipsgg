@@ -113,7 +113,7 @@ function formatRaceData(stats: any) {
 }
 
 // Export functions and router
-export { router, transformLeaderboardData };
+export { router };
 
 
 // API Routes configuration
