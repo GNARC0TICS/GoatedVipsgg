@@ -190,7 +190,7 @@ export default function HowItWorks() {
                 </li>
                 <li className="flex items-center gap-2 justify-center">
                   <Users className="h-5 w-5 text-[#D7FF00]" />
-                  <a href="https://t.me/goatedvips" target="_blank" rel="noopener noreferrer" className="text-[#D7FF00] hover:underline">
+                  <a href="https://t.me/+bnV67QwFmCFlMGFh" target="_blank" rel="noopener noreferrer" className="text-[#D7FF00] hover:underline">
                     Exclusive Telegram group
                   </a>
                 </li>
