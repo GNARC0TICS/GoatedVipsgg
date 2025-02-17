@@ -42,7 +42,9 @@ const execAsync = promisify(exec);
 
 // Server configuration constants
 const PORT = parseInt(process.env.PORT || '5000', 10);
+const BOT_PORT = parseInt(process.env.BOT_PORT || '5001', 10);
 const HOST = '0.0.0.0';
+let combinedPort = PORT; // We'll use the main port for everything
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

@@ -338,9 +338,9 @@ async function initializeBot(): Promise<TelegramBot | null> {
 
     const options: TelegramBot.ConstructorOptions = {
       webHook: {
-        port: parseInt(process.env.BOT_PORT || '5001'),
+        port: parseInt(process.env.PORT || '5000'),
         host: "0.0.0.0",
-        autoOpen: false // Prevent auto-opening connection before webhook is set
+        autoOpen: false
       }
     };
 
