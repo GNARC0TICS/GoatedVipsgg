@@ -56,6 +56,21 @@ export function getTelegramCustomEmoji(emojiId: string): string {
   return `<tg-emoji emoji-id="${emojiId}"/>`;
 }
 
+// Create a visual progress bar
+export function createProgressBar(current: number, max: number, length: number = 10): string {
+  const filled = Math.floor((current / max) * length);
+  const empty = length - filled;
+  return '▓'.repeat(filled) + '░'.repeat(empty);
+}
+
+// Format large numbers
+export function formatNumber(num: number): string {
+  return new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 2
+  }).format(num);
+}
+
 // Future custom sticker configuration (commented out for now)
 export const CUSTOM_STICKERS = {
   // welcome: 'CAACAgEAAxkBAAIQ7WXLBrQBnj3Q...',  // Future welcome sticker

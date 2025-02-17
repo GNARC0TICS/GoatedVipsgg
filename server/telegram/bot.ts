@@ -708,7 +708,28 @@ async function handleStart(msg: TelegramBot.Message) {
 
 async function handleHelp(msg: TelegramBot.Message) {
   const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
-  await safeSendMessage(msg.chat.id, MESSAGES.help(isAdmin), { parse_mode: "Markdown" });
+  const helpMessage = MESSAGES.help(isAdmin);
+  
+  const markup = {
+    inline_keyboard: [
+      [
+        { text: "🎮 Play Now", callback_data: "action_play" },
+        { text: "📊 My Stats", callback_data: "action_stats" }
+      ],
+      [
+        { text: "🏆 Leaderboard", callback_data: "action_leaderboard" },
+        { text: "🎁 Bonus Codes", callback_data: "action_bonus" }
+      ],
+      [
+        { text: "🌐 Website", url: "https://goatedvips.gg" }
+      ]
+    ]
+  };
+
+  await safeSendMessage(msg.chat.id, helpMessage, { 
+    parse_mode: "Markdown",
+    reply_markup: markup
+  });
 }
 
 async function handleWebsite(msg: TelegramBot.Message) {
@@ -888,7 +909,34 @@ async function handleStats(msg: TelegramBot.Message) {
       return safeSendMessage(msg.chat.id, "❌ Please verify your account first using /verify");
     }
 
-    await safeSendMessage(msg.chat.id, MESSAGES.stats(user[0]), { parse_mode: "Markdown" });
+    const userData = user[0];
+    const raceStats = await db
+      .select()
+      .from(wagerRaces)
+      .where(eq(wagerRaces.userId, userData.userId))
+      .orderBy(desc(wagerRaces.createdAt))
+      .limit(1);
+
+    const stats = raceStats[0];
+    const progress = stats ? createProgressBar(stats.currentWager || 0, stats.targetWager || 100000, 8) : '░'.repeat(8);
+    const formattedWager = formatNumber(stats?.currentWager || 0);
+    const formattedTarget = formatNumber(stats?.targetWager || 100000);
+
+    const enhancedStats = `
+${CUSTOM_EMOJIS.stats} *Your Stats*
+
+• Username: ${userData.username}
+• Verified: ${userData.isVerified ? CUSTOM_EMOJIS.success : CUSTOM_EMOJIS.error}
+• VIP Status: ${CUSTOM_EMOJIS.vip}
+
+*Race Progress*
+${progress}
+${formattedWager} / ${formattedTarget}
+
+${CUSTOM_EMOJIS.bell} Notifications: ${userData.notificationsEnabled ? 'On 🔔' : 'Off 🔕'}
+${userData.verifiedAt ? `${CUSTOM_EMOJIS.sparkle} Member since: ${new Date(userData.verifiedAt).toLocaleDateString()}` : ''}`;
+
+    await safeSendMessage(msg.chat.id, enhancedStats, { parse_mode: "Markdown" });
   } catch (error) {
     log("error", `Error fetching stats: ${error instanceof Error ? error.message : String(error)}`);
     await safeSendMessage(msg.chat.id, "❌ Error fetching your statistics.");
