@@ -59,10 +59,22 @@ let wss: WebSocketServer | null = null;   // WebSocket server instance
  * @param port - The port number to check
  * @returns Promise<boolean> - True if port is available, false otherwise
  */
+async function forceKillPort(port: number): Promise<void> {
+  try {
+    await execAsync(`lsof -ti:${port} | xargs kill -9`);
+  } catch {
+    // If no process is using the port, the command will fail silently
+  }
+}
+
 async function isPortAvailable(port: number): Promise<boolean> {
   try {
     await execAsync(`lsof -i:${port}`);
-    return false;
+    // Port is in use, attempt to force kill
+    await forceKillPort(port);
+    // Wait a moment for the port to be released
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return true;
   } catch {
     return true;
   }
@@ -78,13 +90,18 @@ async function isPortAvailable(port: number): Promise<boolean> {
  */
 async function waitForPort(port: number, timeout = 30000): Promise<void> {
   const start = Date.now();
-
+  
+  // Initial cleanup attempt
+  await forceKillPort(port);
+  
   while (Date.now() - start < timeout) {
     const isAvailable = await isPortAvailable(port);
     if (isAvailable) {
+      log("info", `Port ${port} is now available`);
       return;
     }
-    log("info", `Port ${port} is in use, waiting...`);
+    log("info", `Port ${port} is in use, attempting cleanup...`);
+    await forceKillPort(port);
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
   throw new Error(`Timeout waiting for port ${port}`);
@@ -179,6 +196,9 @@ async function initializeServer() {
       // Graceful shutdown handler
       const shutdown = async () => {
         log("info", "Shutting down gracefully...");
+        // Clean up ports before shutdown
+        await forceKillPort(PORT);
+        await forceKillPort(parseInt(process.env.BOT_PORT || '5001', 10));
         if (bot) {
           try {
             await bot.stopPolling();
