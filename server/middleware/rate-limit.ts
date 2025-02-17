@@ -1,4 +1,3 @@
-
 import rateLimit from 'express-rate-limit';
 import { Request, Response } from 'express';
 
@@ -10,7 +9,10 @@ export const loginLimiter = rateLimit({
 });
 
 export const apiLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100, // 100 requests per minute
-  message: { message: 'Too many requests, please try again later' },
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false,
+  keyGenerator: (req) => req.ip || req.headers['x-forwarded-for'] as string
 });

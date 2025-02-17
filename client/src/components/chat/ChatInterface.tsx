@@ -26,6 +26,7 @@ export function ChatInterface() {
   const [isConnecting, setIsConnecting] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  let reconnectAttempts = 0; // Initialize reconnectAttempts here
 
   const connectWebSocket = () => {
     try {
@@ -33,9 +34,6 @@ export function ChatInterface() {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const wsUrl = `${protocol}//${window.location.host}/ws/chat`;
       const websocket = new WebSocket(wsUrl);
-      let reconnectAttempts = 0;
-      const MAX_RECONNECT_ATTEMPTS = 5;
-      const RECONNECT_INTERVAL = 5000;
 
       websocket.onmessage = (event) => {
         const message = JSON.parse(event.data);
@@ -61,17 +59,17 @@ export function ChatInterface() {
         setIsConnecting(false);
         console.log("WebSocket connection closed");
 
-        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-          reconnectAttempts++;
-          const delay = RECONNECT_INTERVAL * Math.pow(2, reconnectAttempts - 1);
+        if (reconnectAttempts < 5) {
+          const delay = 5000 * Math.pow(2, reconnectAttempts);
           reconnectTimeoutRef.current = setTimeout(() => {
             connectWebSocket();
           }, delay);
+          reconnectAttempts++;
         } else {
           toast({
-            title: "Connection Failed",
-            description: "Unable to establish connection. Please refresh the page.",
-            variant: "destructive",
+            title: "Connection Lost",
+            description: "Unable to reconnect to server. Please refresh the page.",
+            variant: "destructive"
           });
         }
       };
