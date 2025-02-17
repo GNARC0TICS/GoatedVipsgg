@@ -1,6 +1,11 @@
 
 # GoatedVIPs Platform Technical Overview
 
+## Platform Context
+GoatedVIPs is developed by an independent Goated.com affiliate partner who manages an active VIP community. This platform serves as a complementary service for players using the GoatedVips affiliate code, providing enhanced tracking and community features. While integrated with Goated.com's affiliate system, this is an independent initiative and not officially associated with or endorsed by Goated.com.
+
+The platform's purpose is to enhance the gaming experience for players who join through the GoatedVips affiliate code, offering additional community benefits, exclusive challenges, and detailed performance tracking.
+
 ## Core Architecture
 
 ### Database Schema

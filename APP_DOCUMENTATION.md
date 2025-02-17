@@ -1,6 +1,11 @@
 
 # GoatedVIPs Platform Documentation
 
+## Overview
+GoatedVIPs is an independent platform created by an established Goated.com affiliate partner. The platform serves as a community hub for players referred under the GoatedVips affiliate code, offering enhanced statistics tracking, wager race participation, and exclusive rewards. While the creator maintains a successful VIP community on Goated.com, this platform is not officially affiliated with or endorsed by Goated.com - it operates independently as an affiliate marketing initiative.
+
+The platform's primary goal is to provide an exclusive experience for players who choose to play under the GoatedVips affiliate code, fostering a community-driven approach to rewards and competition. Through this platform, users can track their performance, participate in community challenges, and compete in wager races while enjoying additional community benefits.
+
 ## System Architecture
 
 ### Data Flow
