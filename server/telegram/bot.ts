@@ -336,14 +336,6 @@ async function initializeBot(): Promise<TelegramBot | null> {
     const webhookUrl = `https://${process.env.REPL_SLUG}-${process.env.REPL_ID}.${process.env.REPL_OWNER}.repl.co/api/telegram/webhook`;
     log("info", `Setting webhook URL to: ${webhookUrl}`);
 
-    // Delete any existing webhook before setting new one
-    try {
-      await bot.deleteWebHook();
-      log("info", "Deleted existing webhook");
-    } catch (error) {
-      log("error", `Error deleting webhook: ${error instanceof Error ? error.message : String(error)}`);
-    }
-
     const options: TelegramBot.ConstructorOptions = {
       webHook: {
         port: process.env.BOT_PORT ? parseInt(process.env.BOT_PORT) : 5001,
@@ -358,6 +350,14 @@ async function initializeBot(): Promise<TelegramBot | null> {
 
     const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, options);
     botInstance = bot;
+
+    // Delete any existing webhook before setting new one
+    try {
+      await bot.deleteWebHook();
+      log("info", "Deleted existing webhook");
+    } catch (error) {
+      log("error", `Error deleting webhook: ${error instanceof Error ? error.message : String(error)}`);
+    }
 
     try {
       // Set webhook with error handling
