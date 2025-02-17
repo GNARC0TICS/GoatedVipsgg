@@ -37,12 +37,28 @@ router.post("/", express.json(), async (req: Request, res: Response, next: NextF
     }
 
     // Process all types of updates
-    if (update.message) {
-      await bot.handleMessage(update.message);
-    } else if (update.callback_query) {
-      await bot.handleCallbackQuery(update.callback_query);
-    } else if (update.channel_post) {
-      await bot.handleChannelPost(update.channel_post);
+    try {
+      if (update.message) {
+        // Handle commands directly
+        const msg = update.message;
+        if (msg.text?.startsWith('/')) {
+          // This is a command
+          const command = msg.text.split(' ')[0]; // Get the command part
+          console.log(`Received command: ${command}`);
+          
+          // Pass to bot instance for processing
+          await bot.emit('message', msg);
+        } else {
+          // Regular message
+          await bot.emit('message', msg);
+        }
+      } else if (update.callback_query) {
+        await bot.emit('callback_query', update.callback_query);
+      } else if (update.channel_post) {
+        await bot.emit('channel_post', update.channel_post);
+      }
+    } catch (error) {
+      console.error('Error processing update:', error);
     }
 
     return res.sendStatus(200);
