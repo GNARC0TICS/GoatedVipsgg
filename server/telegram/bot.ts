@@ -1266,7 +1266,28 @@ async function handleBroadcast(msg: TelegramBot.Message, message?: string) {
 async function safeSendMessage(chatId: number, text: string, options: any = {}) {
   if (!botInstance) return;
   try {
-    await botInstance.sendMessage(chatId, text, options);
+    const sent = await botInstance.sendMessage(chatId, text, options);
+    
+    // Auto-delete lengthy command responses in group chats after delay
+    if (sent.chat.type === 'group' || sent.chat.type === 'supergroup') {
+      const isLongMessage = text.length > 200;
+      const isCommandResponse = text.includes('/') || 
+                               text.includes('Available commands') || 
+                               text.includes('Your stats') ||
+                               text.includes('Leaderboard');
+                               
+      if (isLongMessage && isCommandResponse) {
+        setTimeout(async () => {
+          try {
+            await botInstance?.deleteMessage(chatId, sent.message_id);
+          } catch (err) {
+            log("error", `Failed to delete message: ${err}`);
+          }
+        }, 30000); // Delete after 30 seconds
+      }
+    }
+    
+    return sent;
   } catch (error) {
     log("error", `Failed to send message: ${error instanceof Error ? error.message : String(error)}`);
   }
