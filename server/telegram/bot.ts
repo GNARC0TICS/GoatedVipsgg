@@ -73,6 +73,10 @@ const createVerificationButtons = (username: string) => ({
 });
 
 // Updated command list
+// Channels to monitor
+const MONITORED_CHANNELS = ['@Goatedcom']; // Add official channel username
+const AFFILIATE_LINK = 'https://www.Goated.com/r/REDEEM';
+
 const BOT_COMMANDS = [
   { command: 'start', description: '🚀 Start using the bot' },
   { command: 'verify', description: '🔐 Link your Goated account' },
@@ -417,6 +421,49 @@ async function initializeBot(): Promise<TelegramBot | null> {
 }
 
 function registerEventHandlers(bot: TelegramBot) {
+  // Monitor channel posts
+  bot.on('channel_post', async (msg) => {
+    if (!msg.chat.username || !MONITORED_CHANNELS.includes('@' + msg.chat.username)) return;
+    
+    try {
+      // Get all groups where bot is admin
+      const updates = await bot.getUpdates();
+      const uniqueGroupIds = new Set<number>();
+      
+      for (const update of updates) {
+        if (update.message?.chat.type === 'group' || update.message?.chat.type === 'supergroup') {
+          uniqueGroupIds.add(update.message.chat.id);
+        }
+      }
+
+      // Replace Goated links with affiliate link
+      let messageText = msg.text || '';
+      messageText = messageText.replace(
+        /https?:\/\/(?:www\.)?goated\.com\/[^\s]*/gi,
+        AFFILIATE_LINK
+      );
+
+      // Forward to all groups where bot is admin
+      for (const groupId of uniqueGroupIds) {
+        try {
+          const admins = await bot.getChatAdministrators(groupId);
+          const botIsMember = admins.some(admin => admin.user.id === botInstance?.options.polling?.params?.id);
+          
+          if (botIsMember) {
+            await safeSendMessage(groupId, `📢 *Announcement from Goated*\n\n${messageText}`, {
+              parse_mode: "Markdown",
+              disable_web_page_preview: false
+            });
+          }
+        } catch (error) {
+          log("error", `Failed to forward to group ${groupId}: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+    } catch (error) {
+      log("error", `Channel post forwarding error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+
   bot.onText(/\/start/, handleStart);
   bot.onText(/\/help/, handleHelp);
   bot.onText(/\/verify (.+)/, (msg, match) => handleVerify(msg, match ? match[1] : undefined));
