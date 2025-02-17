@@ -1,3 +1,8 @@
+declare global {
+  var botInstance: any;
+}
+
+import botUtils from "./telegram/bot";
 import { Router, type Express, type Request, type Response, type NextFunction } from "express";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
@@ -61,7 +66,8 @@ const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) =
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { SelectUser } from "@db/schema";
-import { initializeBot } from "./telegram/bot";
+
+
 
 class CacheManager {
   private cache: Map<string, { data: any; timestamp: number }>;
@@ -126,13 +132,13 @@ router.get("/health", async (_req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({
       status: "error",
-      message: process.env.NODE_ENV === "production" ? "Health check failed" : error.message
+      message: process.env.NODE_ENV === "production" ? "Health check failed" : (error as Error).message
     });
   }
 });
 
 // Wager races endpoint
-router.get("/wager-races/current", 
+router.get("/wager-races/current",
   createRateLimiter('high'),
   cacheMiddleware(CACHE_TIMES.SHORT),
   async (_req: Request, res: Response) => {
@@ -214,7 +220,7 @@ function setupAPIRoutes(app: Express) {
 
   // Mount all API routes under /api prefix
   app.use("/api/bonus", bonusChallengesRouter);
-  app.use("/api",router); //Added this line
+  app.use("/api", router); //Added this line
 
 
   // Add other API routes here, ensuring they're all prefixed with /api
@@ -256,7 +262,7 @@ function setupAPIRoutes(app: Express) {
         const rawData = await response.json();
 
         // More detailed logging of the raw data structure
-        log('Raw API response structure:', {
+        log(JSON.stringify({
           hasData: Boolean(rawData),
           dataStructure: typeof rawData,
           keys: Object.keys(rawData),
@@ -266,11 +272,11 @@ function setupAPIRoutes(app: Express) {
           successValue: rawData?.success,
           nestedData: Boolean(rawData?.data),
           nestedDataLength: rawData?.data?.length,
-        });
+        }));
 
         const transformedData = await transformLeaderboardData(rawData);
 
-        log('Transformed leaderboard data:', {
+        log(JSON.stringify({
           status: transformedData.status,
           totalUsers: transformedData.metadata?.totalUsers,
           dataLengths: {
@@ -279,7 +285,7 @@ function setupAPIRoutes(app: Express) {
             monthly: transformedData.data?.monthly?.data?.length,
             allTime: transformedData.data?.all_time?.data?.length,
           }
-        });
+        }));
 
         res.json(transformedData);
       } catch (error) {
@@ -355,7 +361,7 @@ function setupAPIRoutes(app: Express) {
     createRateLimiter('medium'),
     async (_req, res) => {
       try {
-        const bot = await initializeBot();
+        const bot = await botUtils.initializeBot();
         if (!bot) {
           return res.status(500).json({
             status: "error",
@@ -845,7 +851,6 @@ const wheelSpinSchema = z.object({
   reward: z.string().nullable(),
 });
 
-//This function was already in the original code.
 function setupRESTRoutes(app: Express) {
   app.get("/api/admin/export-logs",
     createRateLimiter('low'),

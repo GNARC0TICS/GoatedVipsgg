@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
-import { getBot, handleUpdate } from "../telegram/bot";
+import botUtils from "../telegram/bot";
 import type TelegramBot from "node-telegram-bot-api";
-import { RateLimiterMemory } from "rate-limiter-flexible";
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 const router = express.Router();
 
@@ -24,7 +24,7 @@ router.post("/", express.json(), async (req: Request, res: Response, next: NextF
     // Apply rate limiting
     await webhookLimiter.consume(ip);
 
-    const bot = getBot();
+    const bot = botUtils.getBot();
     if (!bot) {
       console.error("Webhook error: Bot not initialized");
       return res.sendStatus(503); // Service Unavailable
@@ -38,7 +38,7 @@ router.post("/", express.json(), async (req: Request, res: Response, next: NextF
     }
 
     // Process update using the handler
-    await handleUpdate(update);
+    await botUtils.handleUpdate(update);
     return res.sendStatus(200);
 
   } catch (error: any) {

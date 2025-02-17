@@ -1575,6 +1575,7 @@ async function sendMessageWithEmoji(bot: TelegramBot, chatId: number, emoji: str
 }
 
 
+
 async function handleMessage(msg: TelegramBot.Message) {
   // Add your message handling logic here
 
@@ -1585,7 +1586,11 @@ async function handleChannelPost(msg: TelegramBot.Message) {
 
 }
 
+// Remove duplicate exports and consolidate them
+const botUtils = {
+  getBot,
+  handleUpdate,
+  initializeBot
+};
 
-
-export { initializeBot, getBot, handleUpdate };
-export default initializeBot;
+export default botUtils;

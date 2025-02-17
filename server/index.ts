@@ -14,6 +14,14 @@
  * @module server/index
  */
 
+// Add type declarations at the top of the file
+declare module 'express-session' {
+  interface SessionData {
+    initialized: boolean;
+    isAnonymous: boolean;
+  }
+}
+
 // Core dependencies
 import express from "express";
 import cookieParser from "cookie-parser";
@@ -27,7 +35,7 @@ import { promisify } from "util";
 import { exec } from "child_process";
 import { sql } from "drizzle-orm";
 import { log } from "./utils/logger";
-import { initializeBot } from "./telegram/bot";
+import botUtils from "./telegram/bot";
 import { registerRoutes } from "./routes";
 import { initializeAdmin } from "./middleware/admin";
 import { db } from "../db";
@@ -159,7 +167,7 @@ async function initializeServer() {
 
     // Initialize Telegram bot integration
     log("info", "Initializing Telegram bot...");
-    bot = await initializeBot();
+    const bot = await botUtils.initializeBot();
     if (!bot) {
       log("error", "Failed to initialize Telegram bot - continuing without bot functionality");
     } else {
@@ -334,8 +342,8 @@ function setupMiddleware(app: express.Application) {
     },
   }));
 
-  // Add session initialization middleware
-  app.use((req, res, next) => {
+  // Add session initialization middleware for anonymous access
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (!req.session.initialized) {
       req.session.initialized = true;
       req.session.isAnonymous = true;
@@ -357,12 +365,6 @@ function setupMiddleware(app: express.Application) {
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
   app.use(cookieParser());
   app.use(requestLogger);
-
-  // Error handling middleware
-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error(err.stack);
-    res.status(500).send('Something broke!');
-  });
 }
 
 /**
