@@ -277,7 +277,7 @@ export function setupAuth(app: Express) {
       res.clearCookie('token');
       res.clearCookie('connect.sid');
 
-    req.logout((err) => {
+      req.logout((err) => {
       if (err) {
         console.error("Logout error:", err);
         return res.status(500).json({
