@@ -24,6 +24,8 @@ export const users = pgTable("users", {
   telegramVerified: boolean("telegram_verified").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   emailVerified: boolean("email_verified").default(false),
+  goatedUsername: text("goated_username").unique(),
+  goatedVerified: boolean("goated_verified").default(false),
 });
 
 // Define relations

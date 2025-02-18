@@ -1,4 +1,3 @@
-
 /**
  * Main server entry point for the GoatedVIPs application
  * Handles server initialization, middleware setup, and core service bootstrapping
@@ -32,10 +31,10 @@ import { initializeBot } from "./telegram/bot";
 import { registerRoutes } from "./routes";
 import { initializeAdmin } from "./middleware/admin";
 import { db } from "../db";
-import { setupAuth } from "./auth";
 import cors from "cors";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+import authRouter from './routes/auth';
 
 // Convert callback-based exec to Promise-based for cleaner async/await usage
 const execAsync = promisify(exec);
@@ -146,7 +145,11 @@ async function initializeServer() {
 
     const app = express();
     setupMiddleware(app);
-    setupAuth(app);
+
+    // Register auth routes first
+    app.use('/api/auth', authRouter);
+
+    // Register other routes
     registerRoutes(app);
 
     // Initialize admin after routes
@@ -267,7 +270,7 @@ function setupWebSocket(server: any) {
  */
 function setupMiddleware(app: express.Application) {
   app.set('trust proxy', 1);
-  
+
   // CORS configuration for API routes
   app.use('/api', cors({
     origin: process.env.NODE_ENV === 'development'
@@ -277,6 +280,9 @@ function setupMiddleware(app: express.Application) {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
   }));
+
+  // Cookie parser for JWT tokens
+  app.use(cookieParser(process.env.COOKIE_SECRET || 'your-secret-key'));
 
   // Session store configuration using PostgreSQL
   const PostgresSessionStore = connectPg(session);
@@ -309,14 +315,7 @@ function setupMiddleware(app: express.Application) {
   // Body parsing middleware
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
-  app.use(cookieParser());
   app.use(requestLogger);
-
-  // Error handling middleware
-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error(err.stack);
-    res.status(500).send('Something broke!');
-  });
 }
 
 /**
@@ -371,7 +370,7 @@ function serveStatic(app: express.Application) {
   
   // SPA fallback
   app.get("*", (_req, res, next) => {
-    if (req.path.startsWith('/api')) {
+    if (_req.path.startsWith('/api')) {
       return next();
     }
     res.sendFile(path.resolve(distPath, "index.html"), {
