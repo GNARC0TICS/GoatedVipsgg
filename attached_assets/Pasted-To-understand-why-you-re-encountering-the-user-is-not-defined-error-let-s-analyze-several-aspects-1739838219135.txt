@@ -1,0 +1,35 @@
+To understand why you're encountering the "user is not defined" error, let's analyze several aspects of your codebase.
+
+Potential Causes
+Authentication State:
+
+The issue may stem from the fact that the user object is potentially being accessed before it is defined or initialized. In your authentication context defined in use-auth.tsx, the user state is set to null initially, and it only updates after a successful fetch from /api/user. If a component tries to use user before the API response updates it, it will lead to the mentioned error.
+Fetch Handling:
+
+In the useEffect hook in the AuthProvider within use-auth.tsx, if the API call to /api/user is unsuccessful (e.g., user is not authenticated or there's an API error), the setUser function is called with null, indicating no user is logged in. If any component or function relies on a non-null user object, it will throw an error when accessing properties of null.
+Conditional Rendering:
+
+If components that depend on the user object do not check if the user is defined before rendering, they will attempt to access the user properties. This could be seen in components under UserProfile.tsx where direct property access on user is done without a null check. For instance:
+p className="text-2xl font-bold">
+  ${user.races.totalPrizes.toLocaleString()}
+</p>
+User Context Provision:
+
+In the context provider you setup, ensure every component consuming this context checks if isLoading is false and user is not null before accessing user data. Adding a loading or error state in your components will help control this flow better.
+Areas to Investigate
+Review how the user state is consumed in components like UserProfile.tsx. Ensure that there are proper checks for the existence of user before trying to access its properties.
+
+Ensure you are handling the loading state correctly. Here’s an example of how you can conditionally render based on user state:
+
+if (isLoading) {
+  return <div>Loading...</div>;
+}
+if (!user) {
+  return <div>User not authenticated.</div>;
+}
+return (
+  // Your normal rendering logic here, using user object
+);
+Ensure that all API calls related to user authentication have appropriate error handling and do not propagate undefined states.
+
+By addressing these areas and implementing better checks around user state access, you can prevent the "user is not defined" error. Once you've reviewed this and are ready, we can proceed with any necessary fixes.
