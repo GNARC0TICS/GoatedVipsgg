@@ -49,13 +49,7 @@ export function useLeaderboard(
 
     const connect = () => {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/ws/leaderboard`;
-      ws = new WebSocket(wsUrl);
-      
-      ws.addEventListener('error', (error) => {
-        console.error('WebSocket connection error:', error);
-        setTimeout(connect, 3000); // Retry connection after 3 seconds
-      });
+      ws = new WebSocket(`${protocol}//${window.location.host}/ws/leaderboard`);
 
       ws.onmessage = (event: MessageEvent) => {
         try {
