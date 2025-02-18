@@ -13,16 +13,14 @@ import {
   ChevronRight,
   Users,
 } from "lucide-react";
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo } from "react";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { QuickProfile } from "@/components/QuickProfile";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Constants
 const ITEMS_PER_PAGE = 10;
 
-// Types
 interface WagerData {
   today: number;
   this_week: number;
@@ -38,62 +36,14 @@ interface LeaderboardEntry {
   wagerChange?: number;
 }
 
-interface LeaderboardTableProps {
-  timePeriod: TimePeriod;
-}
-
-const getTableRowVariants = (index: number) => ({
-  initial: { 
-    opacity: 0,
-    y: 20,
-    scale: 0.95,
-    filter: "blur(4px)"
-  },
-  animate: { 
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    filter: "blur(0px)",
-    transition: {
-      duration: 0.4,
-      delay: index * 0.05,
-      ease: "easeOut"
-    }
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.9,
-    filter: "blur(4px)",
-    transition: { duration: 0.2 }
-  }
-});
-
-const getHighlightVariants = (rank: number) => ({
-  initial: { scale: 1 },
-  animate: {
-    scale: rank <= 3 ? [1, 1.02, 1] : 1,
-    transition: {
-      duration: 2,
-      repeat: Infinity,
-      ease: "easeInOut"
-    }
-  }
-});
-
-/**
- * LeaderboardTable Component
- * Displays a paginated table of users ranked by their wager amounts.
- * Includes search functionality and real-time updates.
- */
-export const LeaderboardTable = React.memo(function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
-  // State management
+export const LeaderboardTable = React.memo(function LeaderboardTable({ timePeriod }: { timePeriod: TimePeriod }) {
+  // All hooks at the top level
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch leaderboard data
-  const { data, isLoading, error, metadata } = useLeaderboard(timePeriod);
+  const { data, isLoading, metadata } = useLeaderboard(timePeriod);
 
-  // Filter data based on search query (memoized)
+  // Memoized values
   const filteredData = useMemo(() => {
     if (!data) return [];
     return data.filter((entry: LeaderboardEntry) =>
@@ -103,56 +53,8 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
 
   const totalPages = Math.ceil((filteredData.length || 0) / ITEMS_PER_PAGE);
 
-  /**
-   * Returns the appropriate trophy icon based on rank
-   */
-  const getTrophyIcon = useCallback((rank: number) => {
-    switch (rank) {
-      case 1:
-        return (
-          <motion.div
-            animate={{ scale: [1, 1.2, 1], rotate: [0, 5, -5, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <Crown className="h-8 w-8 text-yellow-400" />
-          </motion.div>
-        );
-      case 2:
-        return (
-          <motion.div
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            <Medal className="h-7 w-7 text-gray-400" />
-          </motion.div>
-        );
-      case 3:
-        return (
-          <motion.div
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            <Award className="h-7 w-7 text-amber-700" />
-          </motion.div>
-        );
-      default:
-        return <Star className="h-5 w-5 text-zinc-600" />;
-    }
-  }, []);
-
-  // Pagination handlers
-  const handlePrevPage = useCallback(() => {
-    setCurrentPage((prev) => Math.max(0, prev - 1));
-  }, []);
-
-  const handleNextPage = useCallback(() => {
-    setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1));
-  }, [totalPages]);
-
-  /**
-   * Gets the wager amount based on the selected time period
-   */
-  const getWagerAmount = useCallback((entry: LeaderboardEntry) => {
+  // Memoized functions
+  const getWagerAmount = useMemo(() => (entry: LeaderboardEntry) => {
     if (!entry?.wagered) return 0;
     switch (timePeriod) {
       case "weekly":
@@ -168,7 +70,19 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
     }
   }, [timePeriod]);
 
-  // Loading state
+  const getTrophyIcon = useMemo(() => (rank: number) => {
+    switch (rank) {
+      case 1:
+        return <Crown className="h-8 w-8 text-yellow-400" />;
+      case 2:
+        return <Medal className="h-7 w-7 text-gray-400" />;
+      case 3:
+        return <Award className="h-7 w-7 text-amber-700" />;
+      default:
+        return <Star className="h-5 w-5 text-zinc-600" />;
+    }
+  }, []);
+
   if (isLoading) {
     return (
       <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
@@ -206,7 +120,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
     );
   }
 
-  // Main render
+  // Main content render
   return (
     <div className="space-y-4">
       {/* Search and Live Status Bar */}
@@ -366,7 +280,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
             <Button
               variant="outline"
               size="icon"
-              onClick={handlePrevPage}
+              onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
               disabled={currentPage === 0}
               className="h-8 w-8 border-[#2A2B31] hover:bg-[#2A2B31] hover:text-[#D7FF00] transition-colors"
             >
@@ -378,7 +292,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
             <Button
               variant="outline"
               size="icon"
-              onClick={handleNextPage}
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
               disabled={currentPage >= totalPages - 1}
               className="h-8 w-8 border-[#2A2B31] hover:bg-[#2A2B31] hover:text-[#D7FF00] transition-colors"
             >
@@ -389,4 +303,42 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
       </motion.div>
     </div>
   );
+});
+
+const getTableRowVariants = (index: number) => ({
+  initial: { 
+    opacity: 0,
+    y: 20,
+    scale: 0.95,
+    filter: "blur(4px)"
+  },
+  animate: { 
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.4,
+      delay: index * 0.05,
+      ease: "easeOut"
+    }
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.9,
+    filter: "blur(4px)",
+    transition: { duration: 0.2 }
+  }
+});
+
+const getHighlightVariants = (rank: number) => ({
+  initial: { scale: 1 },
+  animate: {
+    scale: rank <= 3 ? [1, 1.02, 1] : 1,
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  }
 });

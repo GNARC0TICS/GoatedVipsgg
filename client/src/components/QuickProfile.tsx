@@ -37,7 +37,7 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
     { label: "Settings", icon: Settings, href: `/profile/${userId}/settings` }
   ];
 
-  const { data: leaderboardData, isLoading } = useQuery({
+  const { data: leaderboardData } = useQuery({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
   });
@@ -65,56 +65,50 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
     <>
       <HoverCard>
         <HoverCardTrigger asChild>
-          <span className="cursor-pointer">{children}</span>
+          <span className="cursor-pointer relative" style={{ zIndex: 40 }}>{children}</span>
         </HoverCardTrigger>
-        <HoverCardContent className="w-80 bg-[#1A1B21] border border-[#2A2B31] p-4 z-50">
-          {isLoading ? (
-            <div className="flex justify-center p-4">
-              <LoadingSpinner />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <img
-                  src={getTierIcon(getTierFromWager(stats?.wagered.all_time || 0))}
-                  alt="VIP Tier"
-                  className="w-8 h-8"
-                />
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-heading text-white">{username}</span>
-                  {userData?.isVerified && <VerificationBadge size="sm" />}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between items-center p-2 rounded bg-black/20">
-                  <span className="text-white/70 text-sm">Weekly Rank:</span>
-                  <span className="text-[#10B981] font-mono">#{stats?.rankings.weekly || '-'}</span>
-                </div>
-                <div className="flex justify-between items-center p-2 rounded bg-black/20">
-                  <span className="text-white/70 text-sm">Monthly Rank:</span>
-                  <span className="text-[#F59E0B] font-mono">#{stats?.rankings.monthly || '-'}</span>
-                </div>
-                <div className="flex justify-between items-center p-2 rounded bg-black/20">
-                  <span className="text-white/70 text-sm">All-Time Rank:</span>
-                  <span className="text-[#EC4899] font-mono">#{stats?.rankings.all_time || '-'}</span>
-                </div>
-              </div>
-
-              <div className="p-3 rounded bg-[#D7FF00]/10 border border-[#D7FF00]/20">
-                <div className="flex justify-between items-center">
-                  <span className="text-[#D7FF00] text-sm font-semibold">All-Time Wagered:</span>
-                  <span className="text-white font-mono font-bold">
-                    ${stats?.wagered.all_time.toLocaleString() || '0'}
-                  </span>
-                </div>
+        <HoverCardContent className="w-80 bg-[#1A1B21] border border-[#2A2B31] p-4" style={{ zIndex: 50 }}>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <img
+                src={getTierIcon(getTierFromWager(stats?.wagered.all_time || 0))}
+                alt="VIP Tier"
+                className="w-8 h-8"
+              />
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-heading text-white">{username}</span>
+                {userData?.isVerified && <VerificationBadge size="sm" />}
               </div>
             </div>
-          )}
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center p-2 rounded bg-black/20">
+                <span className="text-white/70 text-sm">Weekly Rank:</span>
+                <span className="text-[#10B981] font-mono">#{stats?.rankings.weekly || '-'}</span>
+              </div>
+              <div className="flex justify-between items-center p-2 rounded bg-black/20">
+                <span className="text-white/70 text-sm">Monthly Rank:</span>
+                <span className="text-[#F59E0B] font-mono">#{stats?.rankings.monthly || '-'}</span>
+              </div>
+              <div className="flex justify-between items-center p-2 rounded bg-black/20">
+                <span className="text-white/70 text-sm">All-Time Rank:</span>
+                <span className="text-[#EC4899] font-mono">#{stats?.rankings.all_time || '-'}</span>
+              </div>
+            </div>
+
+            <div className="p-3 rounded bg-[#D7FF00]/10 border border-[#D7FF00]/20">
+              <div className="flex justify-between items-center">
+                <span className="text-[#D7FF00] text-sm font-semibold">All-Time Wagered:</span>
+                <span className="text-white font-mono font-bold">
+                  ${stats?.wagered.all_time.toLocaleString() || '0'}
+                </span>
+              </div>
+            </div>
+          </div>
         </HoverCardContent>
       </HoverCard>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-full sm:w-[540px] bg-[#1A1B21] border-l border-[#2A2B31] p-6">
+        <SheetContent side="right" className="w-full sm:w-[540px] bg-[#1A1B21] border-l border-[#2A2B31] p-6" style={{ zIndex: 60 }}>
           <div className="space-y-6">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-[#2A2B31] flex items-center justify-center">

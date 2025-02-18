@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import React, { useState, useEffect, useCallback } from "react";
-import { useToast } from "@/hooks/use-toast";
+import React, { useState, useEffect } from "react";
 
 type WageredData = {
   today: number;
@@ -19,6 +18,7 @@ type LeaderboardEntry = {
 
 type LeaderboardPeriodData = {
   data: LeaderboardEntry[];
+  status?: "active" | "completed" | "transition";
 };
 
 type APIResponse = {
@@ -41,87 +41,9 @@ export function useLeaderboard(
   timePeriod: TimePeriod = "today",
   page: number = 0,
 ) {
-  const [ws, setWs] = useState<WebSocket | null>(null);
   const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const { toast } = useToast();
-  const maxRetries = 5;
-  const [retryCount, setRetryCount] = useState(0);
 
-  const connect = useCallback(() => {
-    if (isConnecting || retryCount >= maxRetries) return;
-
-    setIsConnecting(true);
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws/leaderboard`;
-
-    console.log(`Attempting WebSocket connection to ${wsUrl}`);
-
-    try {
-      const newWs = new WebSocket(wsUrl);
-
-      newWs.onopen = () => {
-        console.log('WebSocket connection established');
-        setIsConnecting(false);
-        setRetryCount(0);
-        setWs(newWs);
-      };
-
-      newWs.onmessage = (event: MessageEvent) => {
-        try {
-          const update = JSON.parse(event.data);
-          if (update.type === "CONNECTED") {
-            console.log('Received connection confirmation:', update);
-          } else if (update.type === "LEADERBOARD_UPDATE") {
-            console.log('Received leaderboard update');
-            refetch();
-          }
-        } catch (err) {
-          console.error('WebSocket message parsing error:', err);
-        }
-      };
-
-      newWs.onclose = (event) => {
-        console.log(`WebSocket connection closed: ${event.code} - ${event.reason}`);
-        setWs(null);
-        setIsConnecting(false);
-
-        if (retryCount < maxRetries) {
-          const timeout = Math.min(1000 * Math.pow(2, retryCount), 8000);
-          console.log(`Attempting to reconnect in ${timeout}ms (attempt ${retryCount + 1}/${maxRetries})`);
-          setTimeout(() => {
-            setRetryCount(prev => prev + 1);
-            connect();
-          }, timeout);
-        } else {
-          toast({
-            title: "Connection Error",
-            description: "Failed to connect to leaderboard updates. Please refresh the page.",
-            variant: "destructive",
-          });
-        }
-      };
-
-      newWs.onerror = (error: Event) => {
-        console.error('WebSocket connection error:', error);
-      };
-    } catch (error) {
-      console.error('WebSocket connection error:', error);
-      setIsConnecting(false);
-    }
-  }, [retryCount, isConnecting, toast, refetch]);
-
-  useEffect(() => {
-    connect();
-    return () => {
-      if (ws) {
-        ws.close();
-        setWs(null);
-      }
-    };
-  }, [connect]);
-
-  const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
+  const { data, isLoading, error, refetch } = useQuery<APIResponse>({
     queryKey: ["/api/affiliate/stats", timePeriod, page],
     queryFn: async () => {
       const response = await fetch(`/api/affiliate/stats?page=${page}&limit=10`, {
@@ -142,15 +64,7 @@ export function useLeaderboard(
     refetchOnWindowFocus: false
   });
 
-  const periodKey =
-    timePeriod === "weekly"
-      ? "weekly"
-      : timePeriod === "monthly"
-        ? "monthly"
-        : timePeriod === "today"
-          ? "today"
-          : "all_time";
-
+  const periodKey = timePeriod;
   const periodWagerKey =
     timePeriod === "weekly"
       ? "this_week"
@@ -160,17 +74,21 @@ export function useLeaderboard(
           ? "today"
           : "all_time";
 
-  const sortedData = data?.data[periodKey]?.data.map((entry: LeaderboardEntry) => {
-    const prevEntry = previousData.find((p) => p.uid === entry.uid);
-    const currentWager = entry.wagered[periodWagerKey];
-    const previousWager = prevEntry ? prevEntry.wagered[periodWagerKey] : 0;
+  const sortedData = React.useMemo(() => {
+    if (!data?.data[periodKey]?.data) return [];
 
-    return {
-      ...entry,
-      isWagering: currentWager > previousWager,
-      wagerChange: currentWager - previousWager,
-    };
-  }) || [];
+    return data.data[periodKey].data.map((entry: LeaderboardEntry) => {
+      const prevEntry = previousData.find((p) => p.uid === entry.uid);
+      const currentWager = entry.wagered[periodWagerKey];
+      const previousWager = prevEntry ? prevEntry.wagered[periodWagerKey] : 0;
+
+      return {
+        ...entry,
+        isWagering: currentWager > previousWager,
+        wagerChange: currentWager - previousWager,
+      };
+    });
+  }, [data, periodKey, periodWagerKey, previousData]);
 
   useEffect(() => {
     if (data?.data[periodKey]?.data) {
@@ -183,7 +101,6 @@ export function useLeaderboard(
     metadata: data?.metadata,
     isLoading,
     error,
-    refetch,
-    wsConnected: ws?.readyState === WebSocket.OPEN,
+    refetch
   };
 }

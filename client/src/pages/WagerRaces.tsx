@@ -185,7 +185,7 @@ const getTrophyIcon = (rank: number) => {
     );
   }
 
-  const top10Players = showCompletedRace 
+  const top10Players = showCompletedRace
     ? (previousRace?.data?.participants || [])
     : (leaderboardData || []).slice(0, 10);
   const currentLeader = top10Players[0];
@@ -275,6 +275,9 @@ const getTrophyIcon = (rank: number) => {
                             new Date().getFullYear(),
                             new Date().getMonth() + 1,
                             0,
+                            23,
+                            59,
+                            59
                           ).toISOString()}
                           large={true}
                           onComplete={() => setShowCompletedRace(true)}
@@ -291,8 +294,11 @@ const getTrophyIcon = (rank: number) => {
                         <CountdownTimer
                           endDate={new Date(
                             new Date().getFullYear(),
-                            new Date().getMonth() + 1,
+                            new Date().getMonth() + 2, //Corrected month to next month
                             1,
+                            0,
+                            0,
+                            0
                           ).toISOString()}
                           large={true}
                         />
@@ -434,7 +440,6 @@ const getTrophyIcon = (rank: number) => {
                   </div>
                 </div>
               </motion.div>
-
 
 
               {/* 3rd Place */}
