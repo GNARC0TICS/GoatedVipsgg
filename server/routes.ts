@@ -132,7 +132,7 @@ router.get("/health", async (_req: Request, res: Response) => {
 });
 
 // Wager races endpoint
-router.get("/wager-races/current", 
+router.get("/wager-races/current",
   createRateLimiter('high'),
   cacheMiddleware(CACHE_TIMES.SHORT),
   async (_req: Request, res: Response) => {
@@ -214,7 +214,7 @@ function setupAPIRoutes(app: Express) {
 
   // Mount all API routes under /api prefix
   app.use("/api/bonus", bonusChallengesRouter);
-  app.use("/api",router); //Added this line
+  app.use("/api", router); //Added this line
 
 
   // Add other API routes here, ensuring they're all prefixed with /api
@@ -640,22 +640,20 @@ function setupWebSocket(httpServer: Server) {
   wss = new WebSocketServer({ noServer: true });
 
   httpServer.on("upgrade", (request, socket, head) => {
-    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
+    // Skip Vite HMR connections
+    if (request.headers["sec-websocket-protocol"]?.includes("vite-hmr")) {
       return;
     }
 
-    if (request.url === "/ws/leaderboard") {
+    const pathname = new URL(request.url!, `http://${request.headers.host}`).pathname;
+
+    if (pathname === "/ws/leaderboard") {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit("connection", ws, request);
         handleLeaderboardConnection(ws);
       });
-    }
-
-    if (request.url === "/ws/transformation-logs") {
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit("connection", ws, request);
-        handleTransformationLogsConnection(ws);
-      });
+    } else {
+      socket.destroy();
     }
   });
 }
@@ -664,28 +662,39 @@ function handleLeaderboardConnection(ws: WebSocket) {
   const clientId = Date.now().toString();
   log(`Leaderboard WebSocket client connected (${clientId})`);
 
+  // Set up connection state
   ws.isAlive = true;
+
+  // Set up ping interval for connection health check
   const pingInterval = setInterval(() => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.ping();
+    if (!ws.isAlive) {
+      log(`Client ${clientId} not responding to pings, terminating connection`);
+      ws.terminate();
+      return;
     }
+    ws.isAlive = false;
+    ws.ping();
   }, 30000);
 
+  // Handle pong responses
   ws.on("pong", () => {
     ws.isAlive = true;
   });
 
+  // Handle connection close
+  ws.on("close", () => {
+    log(`Leaderboard WebSocket client disconnected (${clientId})`);
+    clearInterval(pingInterval);
+  });
+
+  // Handle errors
   ws.on("error", (error: Error) => {
     log(`WebSocket error (${clientId}): ${error.message}`);
     clearInterval(pingInterval);
     ws.terminate();
   });
 
-  ws.on("close", () => {
-    log(`Leaderboard WebSocket client disconnected (${clientId})`);
-    clearInterval(pingInterval);
-  });
-
+  // Send initial connection confirmation
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({
       type: "CONNECTED",
@@ -695,61 +704,11 @@ function handleLeaderboardConnection(ws: WebSocket) {
   }
 }
 
-function handleTransformationLogsConnection(ws: WebSocket) {
-  const clientId = Date.now().toString();
-  log(`Transformation logs WebSocket client connected (${clientId})`);
-
-  // Send initial connection confirmation
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({
-      type: "CONNECTED",
-      clientId,
-      timestamp: Date.now()
-    }));
-
-    // Send recent logs on connection
-    db.select()
-      .from(transformationLogs)
-      .orderBy(sql`created_at DESC`)
-      .limit(50)
-      .then(logs => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({
-            type: "INITIAL_LOGS",
-            logs: logs.map(log => ({
-              ...log,
-              timestamp: log.created_at.toISOString()
-            }))
-          }));
-        }
-      })
-      .catch(error => {
-        console.error("Error fetching initial logs:", error);
-      });
+// Add to WebSocket type definition
+declare module 'ws' {
+  interface WebSocket {
+    isAlive?: boolean;
   }
-
-  // Setup ping/pong for connection health check
-  ws.isAlive = true;
-  const pingInterval = setInterval(() => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.ping();
-    }
-  }, 30000);
-
-  ws.on("pong", () => {
-    ws.isAlive = true;
-  });
-
-  ws.on("close", () => {
-    clearInterval(pingInterval);
-    log(`Transformation logs WebSocket client disconnected (${clientId})`);
-  });
-
-  ws.on("error", (error: Error) => {
-    log(`WebSocket error (${clientId}): ${error.message}`);
-    clearInterval(pingInterval);
-    ws.terminate();
-  });
 }
 
 export function broadcastLeaderboardUpdate(data: any) {
@@ -845,7 +804,6 @@ const wheelSpinSchema = z.object({
   reward: z.string().nullable(),
 });
 
-//This function was already in the original code.
 function setupRESTRoutes(app: Express) {
   app.get("/api/admin/export-logs",
     createRateLimiter('low'),

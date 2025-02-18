@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 type WageredData = {
   today: number;
@@ -40,18 +41,31 @@ export function useLeaderboard(
   timePeriod: TimePeriod = "today",
   page: number = 0,
 ) {
-  const [ws, setWs] = React.useState<WebSocket | null>(null);
+  const [ws, setWs] = useState<WebSocket | null>(null);
   const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const { toast } = useToast();
+  const maxRetries = 5;
+  const [retryCount, setRetryCount] = useState(0);
 
-  React.useEffect(() => {
-    let reconnectTimer: NodeJS.Timeout;
-    let ws: WebSocket;
+  const connect = useCallback(() => {
+    if (isConnecting || retryCount >= maxRetries) return;
 
-    const connect = () => {
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      ws = new WebSocket(`${protocol}//${window.location.host}/ws/leaderboard`);
+    setIsConnecting(true);
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws/leaderboard`;
 
-      ws.onmessage = (event: MessageEvent) => {
+    try {
+      const newWs = new WebSocket(wsUrl);
+
+      newWs.onopen = () => {
+        console.log('WebSocket connection established');
+        setIsConnecting(false);
+        setRetryCount(0);
+        setWs(newWs);
+      };
+
+      newWs.onmessage = (event: MessageEvent) => {
         try {
           const update = JSON.parse(event.data);
           if (update.type === "LEADERBOARD_UPDATE") {
@@ -62,25 +76,46 @@ export function useLeaderboard(
         }
       };
 
-      ws.onclose = () => {
-        reconnectTimer = setTimeout(connect, 3000);
+      newWs.onclose = () => {
+        console.log('WebSocket connection closed');
+        setWs(null);
+        setIsConnecting(false);
+
+        if (retryCount < maxRetries) {
+          const timeout = Math.min(1000 * Math.pow(2, retryCount), 10000);
+          console.log(`Attempting to reconnect in ${timeout}ms (attempt ${retryCount + 1}/${maxRetries})`);
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+            connect();
+          }, timeout);
+        } else {
+          toast({
+            title: "Connection Error",
+            description: "Failed to connect to leaderboard updates. Please refresh the page.",
+            variant: "destructive",
+          });
+        }
       };
 
-      ws.onerror = (error: Event) => {
+      newWs.onerror = (error: Event) => {
         console.error('WebSocket error:', error);
-        ws.close();
+        newWs.close();
       };
+    } catch (error) {
+      console.error('WebSocket connection error:', error);
+      setIsConnecting(false);
+    }
+  }, [retryCount, isConnecting, toast]);
 
-      setWs(ws);
-    };
-
+  useEffect(() => {
     connect();
-
     return () => {
-      clearTimeout(reconnectTimer);
-      if (ws) ws.close();
+      if (ws) {
+        ws.close();
+        setWs(null);
+      }
     };
-  }, []);
+  }, [connect]);
 
   const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
     queryKey: ["/api/affiliate/stats", timePeriod, page],
@@ -145,5 +180,6 @@ export function useLeaderboard(
     isLoading,
     error,
     refetch,
+    wsConnected: ws?.readyState === WebSocket.OPEN,
   };
 }

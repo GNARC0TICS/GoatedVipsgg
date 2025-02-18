@@ -5,11 +5,15 @@ import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import {Button} from "@/components/ui/button";
-import {ArrowRight} from "lucide-react";
+import {ArrowRight, User as UserIcon, Trophy, Award, Settings} from "lucide-react";
 import {VerificationBadge} from "@/components/VerificationBadge";
 import { useLocation } from "wouter";
 import { useState } from "react";
 
+interface UserData {
+  isVerified?: boolean;
+  verifiedAt?: string;
+}
 
 interface QuickProfileProps {
   userId: string;
@@ -18,17 +22,21 @@ interface QuickProfileProps {
 }
 
 export function QuickProfile({ userId, username, children }: QuickProfileProps) {
-  const { data: userData } = useQuery({
+  const { data: userData } = useQuery<UserData>({
     queryKey: [`/api/users/${userId}/quick-stats`],
     staleTime: 30000,
   });
 
+  const [open, setOpen] = useState(false);
+  const [, setLocation] = useLocation();
+
   const quickActions = [
-    { label: "View Profile", icon: User, href: `/profile/${userId}` },
+    { label: "View Profile", icon: UserIcon, href: `/profile/${userId}` },
     { label: "Race History", icon: Trophy, href: `/profile/${userId}/races` },
     { label: "Achievements", icon: Award, href: `/profile/${userId}/achievements` },
     { label: "Settings", icon: Settings, href: `/profile/${userId}/settings` }
   ];
+
   const { data: leaderboardData, isLoading } = useQuery({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
@@ -38,26 +46,20 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
     if (!leaderboardData?.data) return null;
 
     const userStats = {
-      today: leaderboardData.data.today.data.find((p: any) => p.uid === userId)?.wagered?.today || 0,
-      this_week: leaderboardData.data.weekly.data.find((p: any) => p.uid === userId)?.wagered?.this_week || 0,
-      this_month: leaderboardData.data.monthly.data.find((p: any) => p.uid === userId)?.wagered?.this_month || 0,
-      all_time: leaderboardData.data.all_time.data.find((p: any) => p.uid === userId)?.wagered?.all_time || 0,
+      today: leaderboardData.data.today?.data?.find((p: any) => p.uid === userId)?.wagered?.today || 0,
+      this_week: leaderboardData.data.weekly?.data?.find((p: any) => p.uid === userId)?.wagered?.this_week || 0,
+      this_month: leaderboardData.data.monthly?.data?.find((p: any) => p.uid === userId)?.wagered?.this_month || 0,
+      all_time: leaderboardData.data.all_time?.data?.find((p: any) => p.uid === userId)?.wagered?.all_time || 0,
     };
 
     const rankings = {
-      weekly: (leaderboardData.data.weekly.data.findIndex((p: any) => p.uid === userId) + 1) || undefined,
-      monthly: (leaderboardData.data.monthly.data.findIndex((p: any) => p.uid === userId) + 1) || undefined,
-      all_time: (leaderboardData.data.all_time.data.findIndex((p: any) => p.uid === userId) + 1) || undefined,
+      weekly: (leaderboardData.data.weekly?.data?.findIndex((p: any) => p.uid === userId) + 1) || undefined,
+      monthly: (leaderboardData.data.monthly?.data?.findIndex((p: any) => p.uid === userId) + 1) || undefined,
+      all_time: (leaderboardData.data.all_time?.data?.findIndex((p: any) => p.uid === userId) + 1) || undefined,
     };
 
     return { wagered: userStats, rankings };
   }, [leaderboardData, userId]);
-
-  const [open, setOpen] = useState(false);
-  const location = useLocation();
-  const setLocation = (path:string) => {
-    window.location.href = path;
-  }
 
   return (
     <>
@@ -65,7 +67,7 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
         <HoverCardTrigger asChild>
           <span className="cursor-pointer">{children}</span>
         </HoverCardTrigger>
-        <HoverCardContent className="w-80 bg-[#1A1B21] border border-[#2A2B31] p-4 z-50"> {/* Added z-50 for higher z-index */}
+        <HoverCardContent className="w-80 bg-[#1A1B21] border border-[#2A2B31] p-4 z-50">
           {isLoading ? (
             <div className="flex justify-center p-4">
               <LoadingSpinner />
@@ -138,6 +140,20 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
             </div>
 
             <div className="grid gap-4">
+              {quickActions.map(({ label, icon: Icon, href }) => (
+                <Button
+                  key={label}
+                  variant="ghost"
+                  className="w-full justify-start gap-3"
+                  onClick={() => setLocation(href)}
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </Button>
+              ))}
+            </div>
+
+            <div className="grid gap-4">
               <div className="p-4 rounded-lg bg-black/20">
                 <div className="flex justify-between items-center">
                   <span className="text-white/70">Weekly Rank</span>
@@ -156,7 +172,7 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
                 <div className="p-4 rounded-lg bg-[#D7FF00]/10 border border-[#D7FF00]/20">
                   <div className="flex justify-between items-center">
                     <span className="text-[#D7FF00]">Verified Member</span>
-                    <span className="text-white font-mono">Since {new Date(userData.verifiedAt).toLocaleDateString()}</span>
+                    <span className="text-white font-mono">Since {new Date(userData?.verifiedAt || '').toLocaleDateString()}</span>
                   </div>
                 </div>
               )}
