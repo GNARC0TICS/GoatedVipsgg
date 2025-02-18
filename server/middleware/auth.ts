@@ -30,7 +30,7 @@ export const requireAuth = async (
   next: NextFunction,
 ) => {
   console.log('[Auth Middleware] Starting auth check for path:', req.path);
-  
+
   try {
     const token = extractToken(req);
     console.log('[Auth Middleware] Token present:', !!token);
@@ -53,7 +53,11 @@ export const requireAuth = async (
       return res.status(401).json({ 
         message: ERROR_MESSAGES.USER_NOT_FOUND,
         isAuthenticated: false,
-        debug: { tokenPresent: true }
+        debug: { 
+          tokenPresent: true,
+          tokenDecoded: decoded,
+          userLookupAttempted: true
+        }
       });
     }
 
