@@ -336,25 +336,11 @@ async function initializeBot(): Promise<TelegramBot | null> {
     const webhookUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/telegram/webhook`;
     log("info", `Setting webhook URL to: ${webhookUrl}`);
 
-    const botPort = parseInt(process.env.BOT_PORT || '5001');
     const options: TelegramBot.ConstructorOptions = {
-      webHook: {
-        port: botPort,
-        host: "0.0.0.0",
-        autoOpen: false // Prevent auto-opening connection before webhook is set
-      }
+      polling: true
     };
 
-    // Initialize express app for bot webhook
-    const app = express();
-    app.listen(botPort, "0.0.0.0", () => {
-      log("info", `Telegram bot webhook server running on port ${botPort}`);
-    });
-
-    // Add debug logging for environment variables
-    log("info", `REPL_SLUG: ${process.env.REPL_SLUG}`);
-    log("info", `REPL_OWNER: ${process.env.REPL_OWNER}`);
-    log("info", `BOT_PORT: ${process.env.BOT_PORT}`);
+    log("info", "Initializing bot in polling mode");
 
     if (botInstance) {
       log("info", "Bot instance already exists, reusing existing instance");
@@ -364,26 +350,7 @@ async function initializeBot(): Promise<TelegramBot | null> {
     const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, options);
     botInstance = bot;
 
-    // Delete any existing webhook before setting new one
-    try {
-      await bot.deleteWebHook();
-      log("info", "Deleted existing webhook");
-    } catch (error) {
-      log("error", `Error deleting webhook: ${error instanceof Error ? error.message : String(error)}`);
-    }
-
-    try {
-      // Set webhook with error handling
-      await bot.setWebHook(webhookUrl);
-      log("info", `Webhook set successfully to: ${webhookUrl}`);
-    } catch (webhookError) {
-      if (webhookError instanceof Error) {
-        log("error", `Failed to set webhook: ${webhookError.message}`);
-      } else {
-        log("error", "Unknown error setting webhook");
-      }
-      // Continue initialization even if webhook fails
-    }
+    log("info", "Bot initialized in polling mode");
 
     // Set commands for regular users first
     try {
