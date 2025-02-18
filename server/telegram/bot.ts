@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Express } from "express";
+import express, { type Express } from "express";
 import TelegramBot from "node-telegram-bot-api";
 import { db } from "@db";
 import { telegramUsers, verificationRequests } from "@db/schema";
