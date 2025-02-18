@@ -31,29 +31,23 @@ export const requireAuth = async (
 ) => {
   console.log('[Auth Middleware] Starting auth check for path:', req.path);
 
-  // List of public paths that don't require authentication
-  const publicPaths = [
-    '/api/affiliate/stats',
-    '/api/wager-races/current',
-    '/api/leaderboard'
-  ];
-
-  // Check if the current path is public
-  const isPublicPath = publicPaths.some(path => req.path.startsWith(path));
+  // Only protect admin routes
+  const isAdminRoute = req.path.startsWith('/api/admin');
 
   try {
     const token = extractToken(req);
     console.log('[Auth Middleware] Token present:', !!token);
 
-    if (!token && !isPublicPath) {
-      console.log('[Auth Middleware] No token found for protected route');
+    if (!token && isAdminRoute) {
+      console.log('[Auth Middleware] No token found for admin route');
       return res.status(401).json({ 
         message: ERROR_MESSAGES.AUTH_REQUIRED,
         isAuthenticated: false,
-        debug: { path: req.path, headers: req.headers }
+        debug: { path: req.path }
       });
-    } else if (!token && isPublicPath) {
-      // Allow public access without token
+    }
+
+    if (!isAdminRoute) {
       return next();
     }
 
