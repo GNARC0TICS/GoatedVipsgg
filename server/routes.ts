@@ -644,14 +644,16 @@ function setupWebSocket(httpServer: Server) {
       return;
     }
 
-    if (request.url === "/ws/leaderboard") {
+    const parsedUrl = new URL(request.url!, `http://${request.headers.host}`);
+    if (parsedUrl.pathname === "/ws/leaderboard") {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit("connection", ws, request);
         handleLeaderboardConnection(ws);
       });
+      return;
     }
 
-    if (request.url === "/ws/transformation-logs") {
+    if (parsedUrl.pathname === "/ws/transformation-logs") {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit("connection", ws, request);
         handleTransformationLogsConnection(ws);
