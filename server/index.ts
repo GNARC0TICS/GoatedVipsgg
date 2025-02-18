@@ -66,15 +66,20 @@ async function forceKillPort(port: number): Promise<void> {
   }
 }
 
+/**
+ * Checks if a specified port is available for use
+ * Used during server initialization to ensure clean startup
+ * 
+ * @param port - The port number to check
+ * @returns Promise<boolean> - True if port is available, false otherwise
+ */
 async function isPortAvailable(port: number): Promise<boolean> {
   try {
     await execAsync(`lsof -i:${port}`);
-    // Port is in use, attempt to force kill
-    await forceKillPort(port);
-    // Wait a moment for the port to be released
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return true;
+    // Port is in use
+    return false;
   } catch {
+    // No process is using the port
     return true;
   }
 }
@@ -89,21 +94,21 @@ async function isPortAvailable(port: number): Promise<boolean> {
  */
 async function waitForPort(port: number, timeout = 30000): Promise<void> {
   const start = Date.now();
-  
-  // Initial cleanup attempt
-  await forceKillPort(port);
-  
+
+  // Initial port check
+  log("info", `Checking availability of port ${port}...`);
+
   while (Date.now() - start < timeout) {
-    const isAvailable = await isPortAvailable(port);
-    if (isAvailable) {
-      log("info", `Port ${port} is now available`);
+    if (await isPortAvailable(port)) {
+      log("info", `Port ${port} is available`);
       return;
     }
-    log("info", `Port ${port} is in use, attempting cleanup...`);
+    log("info", `Port ${port} is in use, waiting...`);
     await forceKillPort(port);
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
-  throw new Error(`Timeout waiting for port ${port}`);
+
+  throw new Error(`Timeout waiting for port ${port} to become available`);
 }
 
 /**
@@ -137,8 +142,9 @@ async function initializeServer() {
   try {
     log("info", "Starting server initialization...");
 
+    // Wait for port availability
     await waitForPort(PORT);
-    log("info", "Port available, proceeding with initialization");
+    log("info", `Port ${PORT} is ready for use`);
 
     await testDbConnection();
     log("info", "Database connection established");
@@ -187,49 +193,14 @@ async function initializeServer() {
     // Start server and handle graceful shutdown
     return new Promise((resolve, reject) => {
       server.listen(PORT, HOST, () => {
-        log("info", `Server is ready at http://0.0.0.0:${PORT}`);
-        console.log(`PORT=${PORT}`);
+        // Signal port readiness first
         console.log(`PORT_READY=${PORT}`);
+        log("info", `Server is running at http://${HOST}:${PORT}`);
         resolve(server);
       }).on("error", (err: Error) => {
         log("error", `Server failed to start: ${err.message}`);
         reject(err);
       });
-
-      // Graceful shutdown handler
-      const shutdown = async () => {
-        log("info", "Shutting down gracefully...");
-        // Clean up ports before shutdown
-        await forceKillPort(PORT);
-        await forceKillPort(parseInt(process.env.BOT_PORT || '5001', 10));
-        if (bot) {
-          try {
-            await bot.stopPolling();
-            log("info", "Telegram bot stopped");
-          } catch (error) {
-            log("error", "Error stopping Telegram bot");
-          }
-        }
-        if (wss) {
-          wss.close(() => {
-            log("info", "WebSocket server closed");
-          });
-        }
-        server.close(() => {
-          log("info", "HTTP server closed");
-          process.exit(0);
-        });
-
-        // Force exit if graceful shutdown fails
-        setTimeout(() => {
-          log("error", "Forced shutdown after timeout");
-          process.exit(1);
-        }, 10000);
-      };
-
-      // Register shutdown handlers for clean process termination
-      process.on("SIGTERM", shutdown);
-      process.on("SIGINT", shutdown);
     });
   } catch (error) {
     log("error", `Failed to start application: ${error instanceof Error ? error.message : String(error)}`);
@@ -257,6 +228,9 @@ function setupWebSocket(server: any) {
     ws.on('error', (error) => {
       log("error", `WebSocket error: ${error.message}`);
     });
+
+    // Send initial connection confirmation
+    ws.send(JSON.stringify({ type: 'connection', status: 'connected' }));
   });
 
   return wss;

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
+import { useToast } from '@/hooks/use-toast';
 
 // Define user type based on our schema
 export interface User {
@@ -11,6 +12,8 @@ export interface User {
   telegramId?: string;
   telegramVerified: boolean;
   emailVerified: boolean;
+  goatedUsername?: string;
+  goatedVerified: boolean;
 }
 
 interface AuthContextType {
@@ -20,6 +23,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<void>;
+  linkGoatedAccount: (goatedUsername: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -30,15 +35,26 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+const registerSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+const goatedLinkSchema = z.object({
+  goatedUsername: z.string().min(1, "Goated username is required"),
+});
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [error, setError] = useState<Error | null>(null);
+  const { toast } = useToast();
 
   // User query
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ['user'],
     queryFn: async () => {
-      const res = await fetch('/api/user', {
+      const res = await fetch('/api/auth/user', {
         credentials: 'include',
       });
       if (!res.ok) {
@@ -70,9 +86,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
       setError(null);
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully logged in.",
+      });
     },
     onError: (error: Error) => {
       setError(error);
+      toast({
+        title: "Login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Register mutation
+  const registerMutation = useMutation({
+    mutationFn: async (data: { username: string; email: string; password: string }) => {
+      const validated = registerSchema.parse(data);
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(validated),
+      });
+
+      if (!res.ok) {
+        const error = await res.text();
+        throw new Error(error || 'Registration failed');
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Registration successful",
+        description: "Please log in with your new account.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Registration failed",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -88,9 +145,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     onSuccess: () => {
       queryClient.setQueryData(['user'], null);
       setError(null);
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
     },
     onError: (error: Error) => {
       setError(error);
+      toast({
+        title: "Logout failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Goated account linking mutation
+  const linkGoatedMutation = useMutation({
+    mutationFn: async (goatedUsername: string) => {
+      const validated = goatedLinkSchema.parse({ goatedUsername });
+      const res = await fetch('/api/auth/link-goated', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(validated),
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        const error = await res.text();
+        throw new Error(error || 'Failed to link Goated account');
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+      toast({
+        title: "Account linked",
+        description: "Your Goated account has been successfully linked.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to link account",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -102,6 +202,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await logoutMutation.mutateAsync();
   };
 
+  const register = async (username: string, email: string, password: string) => {
+    await registerMutation.mutateAsync({ username, email, password });
+  };
+
+  const linkGoatedAccount = async (goatedUsername: string) => {
+    await linkGoatedMutation.mutateAsync(goatedUsername);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -111,6 +219,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user,
         login,
         logout,
+        register,
+        linkGoatedAccount,
       }}
     >
       {children}

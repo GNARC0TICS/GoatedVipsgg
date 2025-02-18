@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/hooks/use-auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,6 +22,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { TelegramLoginWidget } from "@/components/TelegramLoginWidget";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
 
 const loginSchema = z.object({
   username: z.string()
@@ -46,10 +49,11 @@ type RegisterData = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [_, navigate] = useLocation();
-  const auth = useAuth();
+  const { user, login, register } = useAuth();
+  const { toast } = useToast();
 
   // Redirect if already logged in
-  if (auth.user) {
+  if (user) {
     navigate("/");
     return null;
   }
@@ -66,29 +70,46 @@ export default function AuthPage() {
   const onSubmit = async (data: RegisterData) => {
     try {
       if (isLogin) {
-        await auth.loginMutation.mutateAsync(data);
+        await login(data.username, data.password);
         navigate("/");
       } else {
-        // Check if username is already taken before submitting
-        const usernameCheck = await fetch(`/api/check-username?username=${encodeURIComponent(data.username)}`);
+        // Check if username is already taken
+        const usernameCheck = await fetch(`/api/auth/check-username?username=${encodeURIComponent(data.username)}`);
         if (!usernameCheck.ok) {
           form.setError("username", { message: "Username is already taken" });
           return;
         }
 
         // Check if email is already registered
-        const emailCheck = await fetch(`/api/check-email?email=${encodeURIComponent(data.email)}`);
+        const emailCheck = await fetch(`/api/auth/check-email?email=${encodeURIComponent(data.email)}`);
         if (!emailCheck.ok) {
           form.setError("email", { message: "Email is already registered" });
           return;
         }
 
-        await auth.registerMutation.mutateAsync(data);
-        navigate("/");
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(error || 'Registration failed');
+        }
+
+        toast({
+          title: "Account created",
+          description: "You have successfully registered. Please log in.",
+        });
+
+        // Switch to login mode after successful registration
+        setIsLogin(true);
+        form.reset();
       }
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || error.message || "Authentication failed";
-      
+
       // Handle specific error cases
       if (errorMessage.includes("rate limit")) {
         form.setError("root", { message: "Too many attempts. Please try again later." });
@@ -113,79 +134,100 @@ export default function AuthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Username</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                {!isLogin && (
+            <div className="space-y-4">
+              <TelegramLoginWidget
+                botName="GoatedVipsBot"
+                buttonSize="large"
+                showUserPic
+                cornerRadius={8}
+                requestAccess
+              />
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <Separator />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
                     control={form.control}
-                    name="email"
+                    name="username"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>Username</FormLabel>
                         <FormControl>
-                          <Input type="email" {...field} />
+                          <Input {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                )}
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                  {!isLogin && (
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   )}
-                />
-                {form.formState.errors.root && (
-                  <div className="text-sm text-red-500 mt-2">
-                    {form.formState.errors.root.message}
-                  </div>
-                )}
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {form.formState.errors.root && (
+                    <div className="text-sm text-red-500 mt-2">
+                      {form.formState.errors.root.message}
+                    </div>
+                  )}
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={form.formState.isSubmitting}
+                  >
+                    {form.formState.isSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : isLogin ? (
+                      "Sign In"
+                    ) : (
+                      "Sign Up"
+                    )}
+                  </Button>
+                </form>
+              </Form>
+              <div className="mt-4 text-center">
                 <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={form.formState.isSubmitting}
+                  variant="link"
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="text-sm"
                 >
-                  {form.formState.isSubmitting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : isLogin ? (
-                    "Sign In"
-                  ) : (
-                    "Sign Up"
-                  )}
+                  {isLogin
+                    ? "Don't have an account? Sign up"
+                    : "Already have an account? Sign in"}
                 </Button>
-              </form>
-            </Form>
-            <div className="mt-4 text-center">
-              <Button
-                variant="link"
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-sm"
-              >
-                {isLogin
-                  ? "Don't have an account? Sign up"
-                  : "Already have an account? Sign in"}
-              </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
