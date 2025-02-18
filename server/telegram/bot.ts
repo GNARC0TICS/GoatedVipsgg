@@ -332,8 +332,8 @@ async function initializeBot(): Promise<TelegramBot | null> {
         }
       });
 
-    // Configure webhook URL using main server port since it handles the webhook endpoint
-    const webhookUrl = `https://goatedvips.gg/api/telegram/webhook`;
+    // Configure webhook URL using Replit domain
+    const webhookUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/telegram/webhook`;
     log("info", `Setting webhook URL to: ${webhookUrl}`);
 
     const botPort = parseInt(process.env.BOT_PORT || '5001');
