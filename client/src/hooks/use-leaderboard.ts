@@ -55,6 +55,8 @@ export function useLeaderboard(
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws/leaderboard`;
 
+    console.log(`Attempting WebSocket connection to ${wsUrl}`);
+
     try {
       const newWs = new WebSocket(wsUrl);
 
@@ -68,7 +70,10 @@ export function useLeaderboard(
       newWs.onmessage = (event: MessageEvent) => {
         try {
           const update = JSON.parse(event.data);
-          if (update.type === "LEADERBOARD_UPDATE") {
+          if (update.type === "CONNECTED") {
+            console.log('Received connection confirmation:', update);
+          } else if (update.type === "LEADERBOARD_UPDATE") {
+            console.log('Received leaderboard update');
             refetch();
           }
         } catch (err) {
@@ -76,13 +81,13 @@ export function useLeaderboard(
         }
       };
 
-      newWs.onclose = () => {
-        console.log('WebSocket connection closed');
+      newWs.onclose = (event) => {
+        console.log(`WebSocket connection closed: ${event.code} - ${event.reason}`);
         setWs(null);
         setIsConnecting(false);
 
         if (retryCount < maxRetries) {
-          const timeout = Math.min(1000 * Math.pow(2, retryCount), 10000);
+          const timeout = Math.min(1000 * Math.pow(2, retryCount), 8000);
           console.log(`Attempting to reconnect in ${timeout}ms (attempt ${retryCount + 1}/${maxRetries})`);
           setTimeout(() => {
             setRetryCount(prev => prev + 1);
@@ -98,14 +103,13 @@ export function useLeaderboard(
       };
 
       newWs.onerror = (error: Event) => {
-        console.error('WebSocket error:', error);
-        newWs.close();
+        console.error('WebSocket connection error:', error);
       };
     } catch (error) {
       console.error('WebSocket connection error:', error);
       setIsConnecting(false);
     }
-  }, [retryCount, isConnecting, toast]);
+  }, [retryCount, isConnecting, toast, refetch]);
 
   useEffect(() => {
     connect();

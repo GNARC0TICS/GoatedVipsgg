@@ -1,40 +1,41 @@
 /**
  * Main server entry point for the GoatedVIPs application
- * Handles server initialization, middleware setup, and core service bootstrapping
- * 
- * Core responsibilities:
- * - Server configuration and startup
- * - Middleware integration
- * - Database connection
- * - WebSocket setup
- * - Telegram bot initialization
- * - Route registration
- * - Error handling
- * 
- * @module server/index
  */
-
-// Core dependencies
 import express from "express";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
-import { WebSocket, WebSocketServer } from "ws";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { createServer as createViteServer, createLogger } from "vite";
-import { promisify } from "util";
-import { exec } from "child_process";
-import { sql } from "drizzle-orm";
+import { WebSocket } from "ws";
 import { log } from "./utils/logger";
 import { initializeBot } from "./telegram/bot";
-import { registerRoutes } from "./routes";
+import { registerRoutes, setupWebSocket } from "./routes";
 import { initializeAdmin } from "./middleware/admin";
 import { db } from "../db";
 import cors from "cors";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import authRouter from './routes/auth';
+
+// Core dependencies
+//import express from "express";
+//import cookieParser from "cookie-parser";
+//import { createServer } from "http";
+//import { WebSocket, WebSocketServer } from "ws";
+//import fs from "fs";
+//import path from "path";
+//import { fileURLToPath } from "url";
+//import { createServer as createViteServer, createLogger } from "vite";
+//import { promisify } from "util";
+//import { exec } from "child_process";
+//import { sql } from "drizzle-orm";
+//import { log } from "./utils/logger";
+//import { initializeBot } from "./telegram/bot";
+//import { registerRoutes } from "./routes";
+//import { initializeAdmin } from "./middleware/admin";
+//import { db } from "../db";
+//import cors from "cors";
+//import session from "express-session";
+//import connectPg from "connect-pg-simple";
+//import authRouter from './routes/auth';
 
 // Convert callback-based exec to Promise-based for cleaner async/await usage
 const execAsync = promisify(exec);
@@ -128,15 +129,6 @@ async function testDbConnection() {
 
 /**
  * Main server initialization function
- * Orchestrates the complete server setup process including:
- * - Port availability check
- * - Database connection
- * - Express app setup
- * - Middleware configuration
- * - Route registration
- * - Admin initialization
- * - WebSocket setup
- * - Telegram bot initialization
  */
 async function initializeServer() {
   try {
@@ -155,6 +147,12 @@ async function initializeServer() {
     // Register auth routes first
     app.use('/api/auth', authRouter);
 
+    // Create HTTP server
+    const httpServer = createServer(app);
+
+    // Setup WebSocket after HTTP server is created but before Vite
+    setupWebSocket(httpServer);
+
     // Register other routes
     registerRoutes(app);
 
@@ -162,9 +160,6 @@ async function initializeServer() {
     await initializeAdmin().catch(error => {
       log("error", `Admin initialization error: ${error instanceof Error ? error.message : String(error)}`);
     });
-
-    server = createServer(app);
-    setupWebSocket(server);
 
     // Initialize Telegram bot integration
     log("info", "Initializing Telegram bot...");
@@ -177,7 +172,7 @@ async function initializeServer() {
 
     // Setup development or production server based on environment
     if (app.get("env") === "development") {
-      await setupVite(app, server);
+      await setupVite(app, httpServer);
     } else {
       serveStatic(app);
     }
@@ -192,11 +187,10 @@ async function initializeServer() {
 
     // Start server and handle graceful shutdown
     return new Promise((resolve, reject) => {
-      server.listen(PORT, HOST, () => {
-        // Signal port readiness first
+      httpServer.listen(PORT, HOST, () => {
         console.log(`PORT_READY=${PORT}`);
         log("info", `Server is running at http://${HOST}:${PORT}`);
-        resolve(server);
+        resolve(httpServer);
       }).on("error", (err: Error) => {
         log("error", `Server failed to start: ${err.message}`);
         reject(err);
@@ -215,7 +209,35 @@ async function initializeServer() {
  * @param server - HTTP server instance to attach WebSocket server to
  */
 function setupWebSocket(server: any) {
-  wss = new WebSocketServer({ server, path: '/ws' });
+  wss = new WebSocketServer({ noServer: true });
+
+  server.on('upgrade', (request: any, socket: any, head: any) => {
+    const url = new URL(request.url!, `http://${request.headers.host}`);
+
+    // Skip Vite HMR connections
+    if (request.headers['sec-websocket-protocol']?.includes('vite-hmr')) {
+      log("info", "Skipping Vite HMR WebSocket connection");
+      return;
+    }
+
+    log("info", `WebSocket upgrade request for path: ${url.pathname}`);
+
+    // Only handle /ws/leaderboard connections
+    if (url.pathname === "/ws/leaderboard") {
+      if (!wss) {
+        log("error", "WebSocket server not initialized");
+        socket.destroy();
+        return;
+      }
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        log("info", `New WebSocket connection established for ${url.pathname}`);
+        wss.emit("connection", ws, request);
+      });
+    } else {
+      log("info", `Rejected WebSocket connection to invalid path: ${url.pathname}`);
+      socket.destroy();
+    }
+  });
 
   wss.on('connection', (ws: WebSocket, req: any) => {
     // Skip Vite HMR connections to avoid interference
@@ -433,6 +455,16 @@ async function setupVite(app: express.Application, server: any) {
 }
 
 // Initialize server
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { createServer as createViteServer, createLogger } from "vite";
+import { promisify } from "util";
+import { exec } from "child_process";
+import { sql } from "drizzle-orm";
+import { WebSocketServer } from "ws";
+
+
 initializeServer().catch((error) => {
   log("error", `Server startup error: ${error instanceof Error ? error.message : String(error)}`);
   process.exit(1);

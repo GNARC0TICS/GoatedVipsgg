@@ -1,4 +1,4 @@
-import { Router, type Express, type Request, type Response, type NextFunction } from "express";
+import { Router, type Express, type Request, type Response } from "express";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
 import { createServer, type Server } from "http";
@@ -636,26 +636,43 @@ export function registerRoutes(app: Express): Server {
   return httpServer;
 }
 
-function setupWebSocket(httpServer: Server) {
-  wss = new WebSocketServer({ noServer: true });
+export function setupWebSocket(httpServer: Server) {
+  wss = new WebSocketServer({
+    noServer: true
+  });
 
   httpServer.on("upgrade", (request, socket, head) => {
+    const url = new URL(request.url!, `http://${request.headers.host}`);
+
     // Skip Vite HMR connections
     if (request.headers["sec-websocket-protocol"]?.includes("vite-hmr")) {
+      log("info", "Skipping Vite HMR WebSocket connection");
       return;
     }
 
-    const pathname = new URL(request.url!, `http://${request.headers.host}`).pathname;
+    log(`WebSocket upgrade request for path: ${url.pathname}`);
 
-    if (pathname === "/ws/leaderboard") {
+    if (url.pathname === "/ws/leaderboard") {
+      if (!wss) {
+        log("error", "WebSocket server not initialized");
+        socket.destroy();
+        return;
+      }
       wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit("connection", ws, request);
-        handleLeaderboardConnection(ws);
+        log(`New WebSocket connection established for ${url.pathname}`);
+        wss.emit('connection', ws, request);
       });
     } else {
+      log(`Rejected WebSocket connection to invalid path: ${url.pathname}`);
       socket.destroy();
     }
   });
+
+  wss.on('connection', (ws: WebSocket) => {
+    handleLeaderboardConnection(ws);
+  });
+
+  return wss;
 }
 
 function handleLeaderboardConnection(ws: WebSocket) {
@@ -665,10 +682,18 @@ function handleLeaderboardConnection(ws: WebSocket) {
   // Set up connection state
   ws.isAlive = true;
 
+  // Send initial connection confirmation
+  ws.send(JSON.stringify({
+    type: "CONNECTED",
+    clientId,
+    timestamp: Date.now()
+  }));
+
   // Set up ping interval for connection health check
   const pingInterval = setInterval(() => {
     if (!ws.isAlive) {
       log(`Client ${clientId} not responding to pings, terminating connection`);
+      clearInterval(pingInterval);
       ws.terminate();
       return;
     }
@@ -681,27 +706,18 @@ function handleLeaderboardConnection(ws: WebSocket) {
     ws.isAlive = true;
   });
 
-  // Handle connection close
-  ws.on("close", () => {
-    log(`Leaderboard WebSocket client disconnected (${clientId})`);
-    clearInterval(pingInterval);
-  });
-
   // Handle errors
-  ws.on("error", (error: Error) => {
+  ws.on("error", (error) => {
     log(`WebSocket error (${clientId}): ${error.message}`);
     clearInterval(pingInterval);
     ws.terminate();
   });
 
-  // Send initial connection confirmation
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({
-      type: "CONNECTED",
-      clientId,
-      timestamp: Date.now()
-    }));
-  }
+  // Handle connection close
+  ws.on("close", (code, reason) => {
+    log(`Leaderboard WebSocket client disconnected (${clientId}), code: ${code}, reason: ${reason}`);
+    clearInterval(pingInterval);
+  });
 }
 
 // Add to WebSocket type definition
