@@ -1,4 +1,3 @@
-
 /**
  * Main server entry point for the GoatedVIPs application
  * Handles server initialization, middleware setup, and core service bootstrapping
@@ -371,7 +370,7 @@ function serveStatic(app: express.Application) {
   
   // SPA fallback
   app.get("*", (_req, res, next) => {
-    if (req.path.startsWith('/api')) {
+    if (_req.path.startsWith('/api')) {
       return next();
     }
     res.sendFile(path.resolve(distPath, "index.html"), {
