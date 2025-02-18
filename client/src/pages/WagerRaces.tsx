@@ -273,8 +273,8 @@ const getTrophyIcon = (rank: number) => {
                         <CountdownTimer
                           endDate={new Date(
                             new Date().getFullYear(),
-                            new Date().getMonth() + 1,
-                            0,
+                            new Date().getMonth(), // Current month (February)
+                            new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate(), // Last day of February
                             23,
                             59,
                             59
@@ -294,7 +294,7 @@ const getTrophyIcon = (rank: number) => {
                         <CountdownTimer
                           endDate={new Date(
                             new Date().getFullYear(),
-                            new Date().getMonth() + 2, //Corrected month to next month
+                            new Date().getMonth() + 1, // Next month (March)
                             1,
                             0,
                             0,

@@ -101,6 +101,7 @@ export function useLeaderboard(
     metadata: data?.metadata,
     isLoading,
     error,
-    refetch
+    refetch,
+    status: data?.data[periodKey]?.status
   };
 }

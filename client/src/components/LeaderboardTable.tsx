@@ -53,7 +53,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
 
   const totalPages = Math.ceil((filteredData.length || 0) / ITEMS_PER_PAGE);
 
-  // Memoized functions
+  // Get wager amount based on time period
   const getWagerAmount = useMemo(() => (entry: LeaderboardEntry) => {
     if (!entry?.wagered) return 0;
     switch (timePeriod) {
