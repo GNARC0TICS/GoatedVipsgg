@@ -69,18 +69,23 @@ export const optionalAuth = async (
       const user = await validateAndGetUser(token);
       if (user) {
         req.user = user;
+      } else {
+        // Clear invalid token
+        res.clearCookie('token');
       }
     }
-    // Add debugging log
+    // Add debugging log with more details
     console.log(`[Auth Debug] User state:`, {
       hasToken: !!token,
       hasUser: !!req.user,
-      path: req.path
+      path: req.path,
+      timestamp: new Date().toISOString()
     });
     next();
   } catch (error) {
-    // Don't fail on auth errors for optional auth
-    console.log(`[Auth Debug] Optional auth error:`, error);
+    // Clear token on auth errors
+    res.clearCookie('token');
+    console.error(`[Auth Debug] Auth error:`, error);
     next();
   }
 };
