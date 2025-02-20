@@ -18,14 +18,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    fetch('/api/user')
+    setIsLoading(true);
+    fetch('/api/user', { credentials: 'include' })
       .then(async (res) => {
         if (res.ok) {
           const data = await res.json();
           setUser(data.data);
-        } else {
+        } else if (res.status === 401) {
           // Not authenticated - this is a valid state
           setUser(null);
+        } else {
+          throw new Error(`Authentication failed: ${res.status}`);
         }
       })
       .catch((err) => {

@@ -18,9 +18,14 @@ interface QuickProfileProps {
 }
 
 export function QuickProfile({ userId, username, children }: QuickProfileProps) {
-  const { data: userData } = useQuery({
+  const { data: userData, isError, isLoading } = useQuery({
     queryKey: [`/api/users/${userId}/quick-stats`],
     staleTime: 30000,
+    enabled: !!userId,
+    retry: false,
+    onError: (error) => {
+      console.error('QuickProfile fetch error:', error);
+    }
   });
 
   const quickActions = [
