@@ -1,4 +1,3 @@
-
 /**
  * Main server entry point for the GoatedVIPs application
  * Handles server initialization, middleware setup, and core service bootstrapping
@@ -90,19 +89,19 @@ async function isPortAvailable(port: number): Promise<boolean> {
  */
 async function waitForPort(port: number, timeout = 30000): Promise<void> {
   const start = Date.now();
-  
+
   try {
     // Kill any existing process on the port
     await forceKillPort(port);
-    
+
     // Wait for port to be fully released
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     const isAvailable = await isPortAvailable(port);
     if (!isAvailable) {
       throw new Error(`Port ${port} is still in use after cleanup attempt`);
     }
-    
+
     log("info", `Port ${port} is now available`);
   } catch (error) {
     log("error", `Failed to secure port ${port}: ${error instanceof Error ? error.message : String(error)}`);
@@ -270,7 +269,7 @@ function setupWebSocket(server: any) {
  */
 function setupMiddleware(app: express.Application) {
   app.set('trust proxy', 1);
-  
+
   // CORS configuration for API routes
   app.use('/api', cors({
     origin: process.env.NODE_ENV === 'development'
@@ -364,14 +363,14 @@ function serveStatic(app: express.Application) {
   if (!fs.existsSync(distPath)) {
     throw new Error(`Could not find the build directory: ${distPath}. Please build the client first.`);
   }
-  
+
   // Static file serving with caching
   app.use(express.static(distPath, {
     maxAge: '1d',
     etag: true,
     lastModified: true
   }));
-  
+
   // SPA fallback
   app.get("*", (_req, res, next) => {
     if (req.path.startsWith('/api')) {
