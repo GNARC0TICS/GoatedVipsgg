@@ -91,20 +91,23 @@ async function isPortAvailable(port: number): Promise<boolean> {
 async function waitForPort(port: number, timeout = 30000): Promise<void> {
   const start = Date.now();
   
-  // Initial cleanup attempt
-  await forceKillPort(port);
-  
-  while (Date.now() - start < timeout) {
-    const isAvailable = await isPortAvailable(port);
-    if (isAvailable) {
-      log("info", `Port ${port} is now available`);
-      return;
-    }
-    log("info", `Port ${port} is in use, attempting cleanup...`);
+  try {
+    // Kill any existing process on the port
     await forceKillPort(port);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Wait for port to be fully released
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const isAvailable = await isPortAvailable(port);
+    if (!isAvailable) {
+      throw new Error(`Port ${port} is still in use after cleanup attempt`);
+    }
+    
+    log("info", `Port ${port} is now available`);
+  } catch (error) {
+    log("error", `Failed to secure port ${port}: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
   }
-  throw new Error(`Timeout waiting for port ${port}`);
 }
 
 /**
