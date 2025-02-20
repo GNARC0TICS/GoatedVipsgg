@@ -92,13 +92,13 @@ async function waitForPort(port: number, timeout = 30000): Promise<void> {
 
   try {
     log("info", `Checking port ${port} availability...`);
-    
+
     // Kill any existing process on the port
     await forceKillPort(port);
 
     // Wait for port to be fully released
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     log("info", `Port ${port} cleared, waiting for bind...`);
 
     const isAvailable = await isPortAvailable(port);
@@ -181,10 +181,25 @@ async function initializeServer() {
 
     // Global error handler
     app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-      console.error("Server error:", err);
-      res.status(500).json({
-        error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message
+      const status = err.status || 500;
+      const message = err.message || 'Internal Server Error';
+
+      console.error(`[${status}] ${message}`, {
+        path: _req.path,
+        method: _req.method,
+        error: err.stack
       });
+
+      res.status(status).json({
+        error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : message,
+        code: err.code,
+        path: _req.path
+      });
+
+      // Alert monitoring system for 500 errors
+      if (status === 500) {
+        log("error", `Unhandled server error: ${message} at ${_req.path}`);
+      }
     });
 
     // Start server and handle graceful shutdown
