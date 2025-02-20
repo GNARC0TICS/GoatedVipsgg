@@ -1440,5 +1440,4 @@ async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
   }
 }
 
-export { initializeBot };
-export default initializeBot;
+export { initializeBot as default };
