@@ -36,10 +36,11 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
     },
     server: {
-      port: 5173, // Change if needed
+      host: '0.0.0.0',
+      port: 5173,
       proxy: {
         "/api": {
-          target: "http://localhost:5000", // Ensure backend is reachable
+          target: "http://0.0.0.0:5000",
           changeOrigin: true,
           secure: false,
         },
