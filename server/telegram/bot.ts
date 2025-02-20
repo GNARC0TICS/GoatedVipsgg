@@ -315,20 +315,13 @@ export async function initializeBot() {
     return null;
   }
 
-  // Initialize the bot with webhook mode
-  const bot = new TelegramBot(token, { polling: false });
+  // Initialize the bot with polling enabled
+  const bot = new TelegramBot(token, { polling: true });
 
-  // Configure webhook URL
-  const webhookUrl = 'https://goatedvips.replit.app/api/telegram/webhook';
-  log("info", `Setting webhook URL to: ${webhookUrl}`);
-
-  try {
-    await bot.setWebHook(webhookUrl);
-    log("info", "Webhook configured successfully");
-  } catch (error) {
-    logError("Error setting webhook:", error);
-    throw error;
-  }
+  // Explicitly delete any existing webhook to disable webhook mode
+  await bot.deleteWebHook().catch((error) => {
+    logError("Error deleting webhook:", error);
+  });
 
   // Log polling errors
   bot.on('polling_error', (error) => {
