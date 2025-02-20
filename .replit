@@ -18,27 +18,25 @@ build = ["sh", "-c", "npm run build"]
 run = ["sh", "-c", "npm run start"]
 ignorePorts = false
 
-# Define ports for different services
 [[ports]]
-localPort = 5173  # Frontend (Vite)
-externalPort = 443 # Secure Web Access
-
-[[ports]]
-localPort = 5000  # Backend API & WebSocket
+localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 5001  # Telegram Bot Server
+localPort = 5001
 externalPort = 3001
+
+[[ports]]
+localPort = 5173
+externalPort = 443
 
 # Set up the server configuration
 [server]
 host = "0.0.0.0"
 port = 5000
 
-# Define the workflows to run everything correctly
 [workflows]
-runButton = "Start application"
+runButton = "Full Stack Dev"
 
 [[workflows.workflow]]
 name = "Full Stack Project"
@@ -61,6 +59,14 @@ agentRequireRestartOnSave = false
 task = "shell.exec"
 args = "BOT_PORT=5001 VITE_PORT=5173 API_PORT=5000 npm run dev"
 wait_for_port = 5000
+
+[[workflows.workflow]]
+name = "Full Stack Dev"
+author = 38337569
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
 
 # Authentication settings
 [auth]

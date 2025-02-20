@@ -1,0 +1,16 @@
+ConnectTimeout=15","ssh -i ~/.ssh/replit -p 22 433d1d75-22db-495b-adbb-b2fbe6560657@433d1d75-22db-495b-adbb-b2fbe6560657-00-fb6wg2hmiclf.spock.replit.dev"],"serverDataFolderName":".cursor-server","dataFilePath":"/Users/gnarcotic/Library/Application Support/Cursor/User/globalStorage/ms-vscode-remote.remote-ssh/vscode-ssh-host-29ed6506-f5f18731406b73244e0558ee7716d77c8096d150-0.113.1-es/data.json"}
+[17:16:57.373] Local server env: {"SSH_AUTH_SOCK":"/private/tmp/com.apple.launchd.7RtsniZ4Hv/Listeners","SHELL":"/bin/zsh","DISPLAY":"1","ELECTRON_RUN_AS_NODE":"1","SSH_ASKPASS":"/Users/gnarcotic/.cursor/extensions/ms-vscode-remote.remote-ssh-0.113.1/out/local-server/askpass.sh","VSCODE_SSH_ASKPASS_NODE":"/Applications/Cursor.app/Contents/Frameworks/Cursor Helper (Plugin).app/Contents/MacOS/Cursor Helper (Plugin)","VSCODE_SSH_ASKPASS_EXTRA_ARGS":"","VSCODE_SSH_ASKPASS_MAIN":"/Users/gnarcotic/.cursor/extensions/ms-vscode-remote.remote-ssh-0.113.1/out/askpass-main.js","VSCODE_SSH_ASKPASS_HANDLE":"/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/vscode-ssh-askpass-78f0a85e5c575ece0c7d4dcf2aba847b06f2c69b.sock"}
+[17:16:57.375] Spawned 4146
+[17:16:57.767] > local-server-2> Running ssh connection command: ssh -v -T -D 51228 -o ConnectTimeout=15 ssh -i ~/.ssh/replit -p 22 433d1d75-22db-495b-adbb-b2fbe6560657@433d1d75-22db-495b-adbb-b2fbe6560657-00-fb6wg2hmiclf.spock.replit.dev
+> local-server-2> Spawned ssh, pid=4152
+> local-server-2> ssh child died, shutting down
+[17:16:57.768] stderr> remote username contains invalid characters
+[17:16:57.772] Local server exit: 0
+[17:16:57.773] Received install output: local-server-2> Running ssh connection command: ssh -v -T -D 51228 -o ConnectTimeout=15 ssh -i ~/.ssh/replit -p 22 433d1d75-22db-495b-adbb-b2fbe6560657@433d1d75-22db-495b-adbb-b2fbe6560657-00-fb6wg2hmiclf.spock.replit.dev
+local-server-2> Spawned ssh, pid=4152
+local-server-2> ssh child died, shutting down
+remote username contains invalid characters
+
+[17:16:57.773] Failed to parse remote port from server output
+[17:16:57.791] Exec server for ssh-remote+7b22686f73744e616d65223a2234333364316437352d323264622d343935622d616462622d6232666265363536303635372d30302d666236776732686d69636c662e73706f636b2e7265706c69742e646576222c2275736572223a22737368202d69207e2f2e7373682f7265706c6974202d702032322034333364316437352d323264622d343935622d616462622d623266626536353630363537227d failed: Error
+[17:16:57.794] Error opening exec server for ssh-remote+7b22686f73744e616d65223a2234333364316437352d323264622d343935622d616462622d6232666265363536303635372d30302d666236776732686d69636c662e73706f636b2e7265706c69742e646576222c2275736572223a22737368202d69207e2f2e7373682f7265706c6974202d702032322034333364316437352d323264622d343935622d616462622d623266626536353630363537227d: Error
