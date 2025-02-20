@@ -1,11 +1,7 @@
+export function logError(message: string, error?: any): void {
+  console.error(`[ERROR] ${message}`, error);
+}
 
-export function log(message: string, source = "express"): void {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-
-  console.log(`${formattedTime} [${source}] ${message}`);
+export function logAction(message: string, info?: any): void {
+  console.log(`[ACTION] ${message}`, info);
 }

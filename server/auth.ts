@@ -5,6 +5,7 @@ import type { IVerifyOptions } from "passport-local";
 import { Strategy as LocalStrategy } from "passport-local";
 import { type Express } from "express";
 import session from "express-session";
+import { Resend } from "resend";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { users, insertUserSchema, type SelectUser } from "@db/schema";
@@ -12,7 +13,7 @@ import { db } from "@db";
 import { eq } from "drizzle-orm";
 import { Request, Response, NextFunction } from 'express';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
-import { Resend } from "resend";
+import { logError, logAction } from "./utils/logger";
 
 const scryptAsync = promisify(scrypt);
 
@@ -76,6 +77,7 @@ export function setupAuth(app: Express) {
               email: `${process.env.ADMIN_USERNAME}@admin.local`
             });
           } else {
+            logError("Admin login failed: incorrect password", { username });
             return done(null, false, { message: "Invalid admin password" });
           }
         }
@@ -119,6 +121,7 @@ export function setupAuth(app: Express) {
     try {
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
+        logError("Validation error during registration", result.error);
         const errors = result.error.issues.map((i: any) => i.message).join(", ");
         return res.status(400).json({
           status: "error",
@@ -213,6 +216,7 @@ export function setupAuth(app: Express) {
       });
     } catch (error: any) {
       console.error("Registration error:", error);
+      logError("Registration error", error);
       return res.status(500).json({
         status: "error",
         message: "Registration failed",
@@ -244,7 +248,7 @@ export function setupAuth(app: Express) {
 
     const authHandler = passport.authenticate(
       "local",
-      (err: any, user: ExpressUser | false, info: IVerifyOptions) => {
+      (err: any, user: Express.User | false, info: IVerifyOptions) => {
         if (err) {
           console.error("Authentication error:", err);
           return res.status(500).json({
@@ -269,13 +273,6 @@ export function setupAuth(app: Express) {
           return res.json({
             status: "success",
             message: "Login successful",
-            user: {
-              id: user.id,
-              username: user.username,
-              email: user.email,
-              isAdmin: user.isAdmin,
-              createdAt: user.createdAt,
-            },
           });
         });
       }
