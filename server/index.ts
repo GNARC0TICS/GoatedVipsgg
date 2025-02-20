@@ -91,11 +91,15 @@ async function waitForPort(port: number, timeout = 30000): Promise<void> {
   const start = Date.now();
 
   try {
+    log("info", `Checking port ${port} availability...`);
+    
     // Kill any existing process on the port
     await forceKillPort(port);
 
     // Wait for port to be fully released
     await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    log("info", `Port ${port} cleared, waiting for bind...`);
 
     const isAvailable = await isPortAvailable(port);
     if (!isAvailable) {
