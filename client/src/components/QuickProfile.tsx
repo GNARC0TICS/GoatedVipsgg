@@ -9,7 +9,37 @@ import {ArrowRight} from "lucide-react";
 import {VerificationBadge} from "@/components/VerificationBadge";
 import { useLocation } from "wouter";
 import { useState } from "react";
+import { User, Trophy, Award, Settings } from "lucide-react";
+import { Portal } from '@radix-ui/react-portal';
 
+// Add these interfaces at the top with other imports
+interface VerificationBadgeProps {
+  size: 'sm' | 'lg';
+}
+
+interface LeaderboardEntry {
+  uid: string;
+  wagered: {
+    today: number;
+    this_week: number;
+    this_month: number;
+    all_time: number;
+  };
+}
+
+interface LeaderboardData {
+  data: {
+    today: { data: LeaderboardEntry[] };
+    weekly: { data: LeaderboardEntry[] };
+    monthly: { data: LeaderboardEntry[] };
+    all_time: { data: LeaderboardEntry[] };
+  };
+}
+
+interface UserData {
+  isVerified: boolean;
+  verifiedAt?: string;
+}
 
 interface QuickProfileProps {
   userId: string;
@@ -18,7 +48,7 @@ interface QuickProfileProps {
 }
 
 export function QuickProfile({ userId, username, children }: QuickProfileProps) {
-  const { data: userData, isError, isLoading } = useQuery({
+  const { data: userData, isError, isLoading: isUserLoading } = useQuery<UserData>({
     queryKey: [`/api/users/${userId}/quick-stats`],
     staleTime: 30000,
     enabled: !!userId,
@@ -29,7 +59,7 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
   });
 
   // Allow viewing profile without authentication
-  const isViewable = !isLoading && (userData || isError);
+  const isViewable = !isUserLoading && (userData || isError);
 
   const quickActions = [
     { label: "View Profile", icon: User, href: `/profile/${userId}` },
@@ -37,7 +67,7 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
     { label: "Achievements", icon: Award, href: `/profile/${userId}/achievements` },
     { label: "Settings", icon: Settings, href: `/profile/${userId}/settings` }
   ];
-  const { data: leaderboardData, isLoading } = useQuery({
+  const { data: leaderboardData, isLoading: isLeaderboardLoading } = useQuery<LeaderboardData>({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
   });
@@ -45,27 +75,35 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
   const stats = React.useMemo(() => {
     if (!leaderboardData?.data) return null;
 
+    // Add proper typing for leaderboard data
+    interface LeaderboardEntry {
+      uid: string;
+      wagered: {
+        today: number;
+        this_week: number;
+        this_month: number;
+        all_time: number;
+      };
+    }
+
     const userStats = {
-      today: leaderboardData.data.today.data.find((p: any) => p.uid === userId)?.wagered?.today || 0,
-      this_week: leaderboardData.data.weekly.data.find((p: any) => p.uid === userId)?.wagered?.this_week || 0,
-      this_month: leaderboardData.data.monthly.data.find((p: any) => p.uid === userId)?.wagered?.this_month || 0,
-      all_time: leaderboardData.data.all_time.data.find((p: any) => p.uid === userId)?.wagered?.all_time || 0,
+      today: leaderboardData.data.today.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.today || 0,
+      this_week: leaderboardData.data.weekly.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.this_week || 0,
+      this_month: leaderboardData.data.monthly.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.this_month || 0,
+      all_time: leaderboardData.data.all_time.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.all_time || 0,
     };
 
     const rankings = {
-      weekly: (leaderboardData.data.weekly.data.findIndex((p: any) => p.uid === userId) + 1) || undefined,
-      monthly: (leaderboardData.data.monthly.data.findIndex((p: any) => p.uid === userId) + 1) || undefined,
-      all_time: (leaderboardData.data.all_time.data.findIndex((p: any) => p.uid === userId) + 1) || undefined,
+      weekly: (leaderboardData.data.weekly.data.findIndex((p: LeaderboardEntry) => p.uid === userId) + 1) || undefined,
+      monthly: (leaderboardData.data.monthly.data.findIndex((p: LeaderboardEntry) => p.uid === userId) + 1) || undefined,
+      all_time: (leaderboardData.data.all_time.data.findIndex((p: LeaderboardEntry) => p.uid === userId) + 1) || undefined,
     };
 
     return { wagered: userStats, rankings };
   }, [leaderboardData, userId]);
 
   const [open, setOpen] = useState(false);
-  const location = useLocation();
-  const setLocation = (path:string) => {
-    window.location.href = path;
-  }
+  const [, setLocation] = useLocation();
 
   return (
     <>
@@ -73,51 +111,53 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
         <HoverCardTrigger asChild>
           <span className="cursor-pointer">{children}</span>
         </HoverCardTrigger>
-        <HoverCardContent className="w-80 bg-[#1A1B21] border border-[#2A2B31] p-4 z-50"> {/* Added z-50 for higher z-index */}
-          {isLoading ? (
-            <div className="flex justify-center p-4">
-              <LoadingSpinner />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <img
-                  src={getTierIcon(getTierFromWager(stats?.wagered.all_time || 0))}
-                  alt="VIP Tier"
-                  className="w-8 h-8"
-                />
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-heading text-white">{username}</span>
-                  {userData?.isVerified && <VerificationBadge size="sm" />}
-                </div>
+        <Portal>
+          <HoverCardContent side="top" align="center" className="w-80 bg-[#1A1B21] border border-[#2A2B31] p-4 z-50">
+            {isUserLoading ? (
+              <div className="flex justify-center p-4">
+                <LoadingSpinner />
               </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={getTierIcon(getTierFromWager(stats?.wagered.all_time || 0))}
+                    alt="VIP Tier"
+                    className="w-8 h-8"
+                  />
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-heading text-white">{username}</span>
+                    {userData?.isVerified && <VerificationBadge size="sm" />}
+                  </div>
+                </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between items-center p-2 rounded bg-black/20">
-                  <span className="text-white/70 text-sm">Weekly Rank:</span>
-                  <span className="text-[#10B981] font-mono">#{stats?.rankings.weekly || '-'}</span>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center p-2 rounded bg-black/20">
+                    <span className="text-white/70 text-sm">Weekly Rank:</span>
+                    <span className="text-[#10B981] font-mono">#{stats?.rankings.weekly || '-'}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-2 rounded bg-black/20">
+                    <span className="text-white/70 text-sm">Monthly Rank:</span>
+                    <span className="text-[#F59E0B] font-mono">#{stats?.rankings.monthly || '-'}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-2 rounded bg-black/20">
+                    <span className="text-white/70 text-sm">All-Time Rank:</span>
+                    <span className="text-[#EC4899] font-mono">#{stats?.rankings.all_time || '-'}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center p-2 rounded bg-black/20">
-                  <span className="text-white/70 text-sm">Monthly Rank:</span>
-                  <span className="text-[#F59E0B] font-mono">#{stats?.rankings.monthly || '-'}</span>
-                </div>
-                <div className="flex justify-between items-center p-2 rounded bg-black/20">
-                  <span className="text-white/70 text-sm">All-Time Rank:</span>
-                  <span className="text-[#EC4899] font-mono">#{stats?.rankings.all_time || '-'}</span>
-                </div>
-              </div>
 
-              <div className="p-3 rounded bg-[#D7FF00]/10 border border-[#D7FF00]/20">
-                <div className="flex justify-between items-center">
-                  <span className="text-[#D7FF00] text-sm font-semibold">All-Time Wagered:</span>
-                  <span className="text-white font-mono font-bold">
-                    ${stats?.wagered.all_time.toLocaleString() || '0'}
-                  </span>
+                <div className="p-3 rounded bg-[#D7FF00]/10 border border-[#D7FF00]/20">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#D7FF00] text-sm font-semibold">All-Time Wagered:</span>
+                    <span className="text-white font-mono font-bold">
+                      ${stats?.wagered.all_time.toLocaleString() || '0'}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </HoverCardContent>
+            )}
+          </HoverCardContent>
+        </Portal>
       </HoverCard>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="w-full sm:w-[540px] bg-[#1A1B21] border-l border-[#2A2B31] p-6">

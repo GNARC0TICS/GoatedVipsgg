@@ -1,5 +1,8 @@
+/// <reference path="../custom-modules.d.ts" />
+
 import passport from "passport";
-import { IVerifyOptions, Strategy as LocalStrategy } from "passport-local";
+import type { IVerifyOptions } from "passport-local";
+import { Strategy as LocalStrategy } from "passport-local";
 import { type Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
@@ -7,8 +10,9 @@ import { promisify } from "util";
 import { users, insertUserSchema, type SelectUser } from "@db/schema";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
-import express from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
+import { Resend } from "resend";
 
 const scryptAsync = promisify(scrypt);
 
@@ -19,22 +23,33 @@ const authLimiter = new RateLimiterMemory({
   blockDuration: 60 * 2, // Block for 2 minutes
 });
 
+// Type alias for Express.User from augmented global namespace
+type ExpressUser = Express.User;
+
 declare global {
   namespace Express {
-    interface User extends SelectUser {}
+    interface User {
+      id: number;
+      username: string;
+      isAdmin?: boolean;
+      email: string;
+      createdAt?: Date;
+    }
   }
 }
 
 export function setupAuth(app: Express) {
+  // Added session middleware configuration
+  app.use(session({ secret: process.env.SESSION_SECRET || "keyboard cat", resave: false, saveUninitialized: false }));
   app.use(passport.initialize());
   app.use(passport.session());
 
   // Session serialization
-  passport.serializeUser((user: Express.User, done) => {
+  passport.serializeUser((user: ExpressUser, done: (err: any, id?: number) => void) => {
     done(null, user.id);
   });
 
-  passport.deserializeUser(async (id: number, done) => {
+  passport.deserializeUser(async (id: number, done: (err: any, user?: ExpressUser) => void) => {
     try {
       const [user] = await db
         .select()
@@ -49,7 +64,7 @@ export function setupAuth(app: Express) {
 
   // Local strategy setup
   passport.use(
-    new LocalStrategy(async (username, password, done) => {
+    new LocalStrategy(async (username: string, password: string, done: (err: any, user?: ExpressUser | false, info?: IVerifyOptions) => void) => {
       try {
         // For admin login
         if (username === process.env.ADMIN_USERNAME) {
@@ -96,15 +111,15 @@ export function setupAuth(app: Express) {
       } catch (err) {
         return done(err);
       }
-    }),
+    })
   );
 
   // Registration endpoint
-  app.post("/api/register", async (req, res) => {
+  app.post("/api/register", async (req: Request, res: Response) => {
     try {
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
-        const errors = result.error.issues.map((i) => i.message).join(", ");
+        const errors = result.error.issues.map((i: any) => i.message).join(", ");
         return res.status(400).json({
           status: "error",
           message: "Validation failed",
@@ -113,8 +128,11 @@ export function setupAuth(app: Express) {
       }
 
       // Rate limiting check
+      const xForwarded = req.headers['x-forwarded-for'] as string | undefined;
+      const ip = typeof req.ip === 'string' ? req.ip : 'unknown';
+      const rateLimitKey = xForwarded || ip || 'unknown';
       try {
-        await authLimiter.consume(req.ip || 'unknown');
+        await authLimiter.consume(rateLimitKey);
       } catch (error) {
         return res.status(429).json({
           status: "error",
@@ -172,7 +190,7 @@ export function setupAuth(app: Express) {
       });
 
       // Log user in after registration
-      req.login(newUser, (err) => {
+      req.login(newUser, (err: any) => {
         if (err) {
           console.error("Login after registration failed:", err);
           return res.status(500).json({
@@ -204,10 +222,12 @@ export function setupAuth(app: Express) {
   });
 
   // Login endpoint with rate limiting
-  app.post("/api/login", async (req, res, next) => {
+  app.post("/api/login", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Rate limiting check
-      await authLimiter.consume(req.ip || 'unknown');
+      const xForwarded = req.headers['x-forwarded-for'] as string | undefined;
+      const ip = typeof req.ip === 'string' ? req.ip : 'unknown';
+      const rateLimitKey = xForwarded || ip || 'unknown';
+      await authLimiter.consume(rateLimitKey);
     } catch (error) {
       return res.status(429).json({
         status: "error",
@@ -222,9 +242,9 @@ export function setupAuth(app: Express) {
       });
     }
 
-    passport.authenticate(
+    const authHandler = passport.authenticate(
       "local",
-      (err: any, user: Express.User | false, info: IVerifyOptions) => {
+      (err: any, user: ExpressUser | false, info: IVerifyOptions) => {
         if (err) {
           console.error("Authentication error:", err);
           return res.status(500).json({
@@ -240,7 +260,7 @@ export function setupAuth(app: Express) {
           });
         }
 
-        req.login(user, (err) => {
+        req.login(user, (err: any) => {
           if (err) {
             console.error("Login error:", err);
             return next(err);
@@ -258,8 +278,10 @@ export function setupAuth(app: Express) {
             },
           });
         });
-      },
-    )(req, res, next);
+      }
+    ) as (req: Request, res: Response, next: NextFunction) => void;
+
+    authHandler(req, res, next);
   });
 
   // Logout endpoint
