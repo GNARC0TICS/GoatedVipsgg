@@ -22,11 +22,14 @@ export function QuickProfile({ userId, username, children }: QuickProfileProps) 
     queryKey: [`/api/users/${userId}/quick-stats`],
     staleTime: 30000,
     enabled: !!userId,
-    retry: false,
+    retry: 1,
     onError: (error) => {
       console.error('QuickProfile fetch error:', error);
     }
   });
+
+  // Allow viewing profile without authentication
+  const isViewable = !isLoading && (userData || isError);
 
   const quickActions = [
     { label: "View Profile", icon: User, href: `/profile/${userId}` },

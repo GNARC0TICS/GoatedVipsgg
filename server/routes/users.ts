@@ -116,6 +116,20 @@ router.put('/api/profile/preferences', async (req, res) => {
     }
 });
 
+// Added quick stats endpoint without authentication
+router.get('/users/:userId/quick-stats', async (req, res) => {
+    const userId = req.params.userId;
+    try {
+        const user = await db.select().from(users).where(users.id.equals(userId)).limit(1).then(r => r[0]);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        //Return relevant user data (customize as needed)
+        res.json({ username: user.username,  email: user.email,  createdAt: user.createdAt });
+    } catch (error) {
+        console.error("Error fetching quick stats:", error);
+        res.status(500).json({ error: 'Failed to fetch quick stats' });
+    }
+});
+
 
 // Placeholder functions (replace with actual implementation)
 async function authenticateUser(username, password) {
@@ -168,7 +182,7 @@ const emailTransport = createTransport({
 // Support email response endpoint
 router.post("/support/email/respond", async (req, res) => {
   const { userEmail, subject, message, ticketId } = req.body;
-  
+
   if (!userEmail || !message) {
     return res.status(400).json({ error: "Email and message are required" });
   }
