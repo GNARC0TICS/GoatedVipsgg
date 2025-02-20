@@ -50,7 +50,7 @@ args = "Start application"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "BOT_PORT=5001 API_PORT=5000 VITE_PORT=5173 npm run dev"
+args = "API_PORT=5000 VITE_PORT=5173 BOT_PORT=5001 npm run dev"
 
 [[workflows.workflow]]
 name = "Start application"
