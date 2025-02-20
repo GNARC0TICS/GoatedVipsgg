@@ -46,10 +46,10 @@ type RegisterData = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [_, navigate] = useLocation();
-  const auth = useAuth();
+  const { user, login, register } = useAuth();
 
   // Redirect if already logged in
-  if (auth.user) {
+  if (user) {
     navigate("/");
     return null;
   }
@@ -66,8 +66,12 @@ export default function AuthPage() {
   const onSubmit = async (data: RegisterData) => {
     try {
       if (isLogin) {
-        await auth.loginMutation.mutateAsync(data);
-        navigate("/");
+        const result = await login(data);
+        if (result.ok) {
+          navigate("/");
+        } else {
+          throw new Error(result.message);
+        }
       } else {
         // Check if username is already taken before submitting
         const usernameCheck = await fetch(`/api/check-username?username=${encodeURIComponent(data.username)}`);
@@ -83,8 +87,12 @@ export default function AuthPage() {
           return;
         }
 
-        await auth.registerMutation.mutateAsync(data);
-        navigate("/");
+        const result = await register(data);
+        if (result.ok) {
+          navigate("/");
+        } else {
+          throw new Error(result.message);
+        }
       }
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || error.message || "Authentication failed";
@@ -176,6 +184,25 @@ export default function AuthPage() {
                 </Button>
               </form>
             </Form>
+            
+            {isLogin && (
+              <div className="mt-4 text-center">
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="h-px w-10 bg-muted-foreground"></div>
+                  <span className="text-sm text-muted-foreground">Or</span>
+                  <div className="h-px w-10 bg-muted-foreground"></div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full mt-4"
+                  onClick={() => (window.location.href = '/api/auth/telegram')}
+                >
+                  <img src="/telegram-logo.svg" alt="Telegram Logo" className="h-5 mr-2" />
+                  Login with Telegram
+                </Button>
+              </div>
+            )}
+
             <div className="mt-4 text-center">
               <Button
                 variant="link"

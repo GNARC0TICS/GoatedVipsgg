@@ -308,144 +308,34 @@ process.on('SIGTERM', cleanup);
 process.on('SIGINT', cleanup);
 
 // Update the initializeBot function to handle admin command setup more gracefully
-async function initializeBot(): Promise<TelegramBot | null> {
-  if (!process.env.TELEGRAM_BOT_TOKEN) {
-    log("error", "TELEGRAM_BOT_TOKEN is not set!");
+export async function initializeBot() {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) {
+    logError("Telegram bot token is missing. Please set TELEGRAM_BOT_TOKEN in your environment variables.");
     return null;
   }
 
-  try {
-    // Ensure admin user exists without last_login_at
-    await db.insert(users)
-      .values({
-        username: 'admin',
-        password: process.env.ADMIN_PASSWORD || 'admin',
-        email: 'admin@goatedvips.gg',
-        isAdmin: true,
-        telegramId: process.env.ADMIN_TELEGRAM_ID
-      })
-      .onConflictDoUpdate({
-        target: users.username,
-        set: {
-          isAdmin: true,
-          telegramId: process.env.ADMIN_TELEGRAM_ID
-        }
-      });
+  // Initialize the bot with polling enabled
+  const bot = new TelegramBot(token, { polling: true });
 
-    // Configure webhook URL using Replit domain
-    const webhookUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/telegram/webhook`;
-    log("info", `Setting webhook URL to: ${webhookUrl}`);
+  // Explicitly delete any existing webhook to disable webhook mode
+  await bot.deleteWebHook().catch((error) => {
+    logError("Error deleting webhook:", error);
+  });
 
-    const botPort = parseInt(process.env.BOT_PORT || '5001');
-    const options: TelegramBot.ConstructorOptions = {
-      webHook: {
-        port: botPort,
-        host: "0.0.0.0",
-        autoOpen: false // Prevent auto-opening connection before webhook is set
-      }
-    };
+  // Log polling errors
+  bot.on('polling_error', (error) => {
+    logError("Telegram bot polling error:", error);
+  });
 
-    // Initialize express app for bot webhook
-    const app = express();
-    app.listen(botPort, "0.0.0.0", () => {
-      log("info", `Telegram bot webhook server running on port ${botPort}`);
-    });
+  // Log received messages for debugging
+  bot.on('message', (msg) => {
+    logAction("Telegram bot received message:", msg);
+  });
 
-    // Add debug logging for environment variables
-    log("info", `REPL_SLUG: ${process.env.REPL_SLUG}`);
-    log("info", `REPL_OWNER: ${process.env.REPL_OWNER}`);
-    log("info", `BOT_PORT: ${process.env.BOT_PORT}`);
+  logAction("Telegram bot initialized with polling and webhook deleted", { token: token.substring(0, 5) });
 
-    if (botInstance) {
-      log("info", "Bot instance already exists, reusing existing instance");
-      return botInstance;
-    }
-
-    const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, options);
-    botInstance = bot;
-
-    // Delete any existing webhook before setting new one
-    try {
-      await bot.deleteWebHook();
-      log("info", "Deleted existing webhook");
-    } catch (error) {
-      log("error", `Error deleting webhook: ${error instanceof Error ? error.message : String(error)}`);
-    }
-
-    try {
-      // Set webhook with error handling
-      await bot.setWebHook(webhookUrl);
-      log("info", `Webhook set successfully to: ${webhookUrl}`);
-    } catch (webhookError) {
-      if (webhookError instanceof Error) {
-        log("error", `Failed to set webhook: ${webhookError.message}`);
-      } else {
-        log("error", "Unknown error setting webhook");
-      }
-      // Continue initialization even if webhook fails
-    }
-
-    // Set commands for regular users first
-    try {
-      await bot.setMyCommands(BOT_COMMANDS);
-      log("info", "Set basic commands successfully");
-    } catch (error) {
-      log("error", `Error setting basic commands: ${error}`);
-    }
-
-    // Set admin commands for admin users
-    try {
-      const admins = await db
-        .select()
-        .from(users)
-        .where(eq(users.isAdmin, true));
-
-      for (const admin of admins) {
-        if (!admin.telegramId) continue;
-
-        try {
-          await bot.getChat(parseInt(admin.telegramId));
-          await bot.setMyCommands([...BOT_COMMANDS, ...ADMIN_COMMANDS], {
-            scope: {
-              type: 'chat',
-              chat_id: parseInt(admin.telegramId)
-            }
-          });
-          log("info", `Set admin commands for ${admin.telegramId}`);
-        } catch (cmdError) {
-          if (cmdError instanceof Error && cmdError.message.includes('chat not found')) {
-            log("info", `Admin ${admin.telegramId} hasn't started a chat with the bot yet`);
-          } else {
-            log("error", `Failed to set admin commands for ${admin.telegramId}: ${cmdError}`);
-          }
-        }
-      }
-    } catch (adminError) {
-      log("error", `Error setting admin commands: ${adminError}`);
-    }
-
-    // Verify webhook is properly set
-    const webhookInfo = await bot.getWebHookInfo();
-    log("info", `Current webhook status: ${JSON.stringify(webhookInfo)}`);
-    
-    if (!webhookInfo.url || webhookInfo.url !== webhookUrl) {
-      log("info", "Webhook URL mismatch - updating webhook configuration");
-      await bot.deleteWebHook();
-      await bot.setWebHook(webhookUrl);
-      const updatedInfo = await bot.getWebHookInfo();
-      log("info", `Updated webhook status: ${JSON.stringify(updatedInfo)}`);
-    }
-
-    registerEventHandlers(bot);
-    const botInfo = await bot.getMe();
-    log("info", `Bot initialized successfully as @${botInfo.username}`);
-    return bot;
-
-  } catch (error) {
-    log("error", `Bot initialization error: ${error instanceof Error ? error.message : String(error)}`);
-    cleanup();
-    return null;
-  }
+  return bot;
 }
 
 function registerEventHandlers(bot: TelegramBot) {
@@ -1549,8 +1439,6 @@ async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
     await botInstance.answerCallbackQuery(callbackQuery.id);
   }
 }
-
-
 
 export { initializeBot };
 export default initializeBot;

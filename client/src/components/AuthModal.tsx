@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Dialog,
@@ -46,7 +45,7 @@ export default function AuthModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [isLoading, setIsLoading] = useState(false);
-  const { loginMutation, registerMutation } = useAuth();
+  const { login, register } = useAuth();
   const { toast } = useToast();
 
   const loginForm = useForm<LoginFormData>({
@@ -70,8 +69,8 @@ export default function AuthModal() {
   const onSubmit = async (values: LoginFormData | RegisterFormData) => {
     setIsLoading(true);
     try {
-      const mutation = mode === "login" ? loginMutation : registerMutation;
-      const result = await mutation.mutateAsync(values);
+      const authFn = mode === "login" ? login : register;
+      const result = await authFn(values);
 
       if (result?.ok) {
         toast({
@@ -131,7 +130,12 @@ export default function AuthModal() {
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input {...field} className="bg-[#2A2B31]" />
+                      <Input 
+                        {...field} 
+                        className="bg-[#2A2B31]"
+                        autoComplete="username"
+                        inputMode="text"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -148,6 +152,7 @@ export default function AuthModal() {
                         {...field}
                         type="password"
                         className="bg-[#2A2B31]"
+                        autoComplete="current-password"
                       />
                     </FormControl>
                     <FormMessage />
@@ -186,7 +191,13 @@ export default function AuthModal() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input {...field} type="email" className="bg-[#2A2B31]" />
+                      <Input 
+                        {...field} 
+                        type="email" 
+                        className="bg-[#2A2B31]"
+                        autoComplete="email"
+                        inputMode="email"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -199,7 +210,12 @@ export default function AuthModal() {
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input {...field} className="bg-[#2A2B31]" />
+                      <Input 
+                        {...field} 
+                        className="bg-[#2A2B31]"
+                        autoComplete="username"
+                        inputMode="text"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -216,6 +232,7 @@ export default function AuthModal() {
                         {...field}
                         type="password"
                         className="bg-[#2A2B31]"
+                        autoComplete="new-password"
                       />
                     </FormControl>
                     <FormMessage />
@@ -233,6 +250,7 @@ export default function AuthModal() {
                         {...field}
                         type="password"
                         className="bg-[#2A2B31]"
+                        autoComplete="new-password"
                       />
                     </FormControl>
                     <FormMessage />

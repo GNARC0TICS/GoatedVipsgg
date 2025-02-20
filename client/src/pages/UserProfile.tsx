@@ -27,6 +27,9 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { AchievementCard } from '@/components/AchievementCard';
+import { AchievementService } from '@/lib/achievements/service';
+import { Achievement } from '@/lib/achievements/types';
 
 
 interface UserStats {
@@ -40,11 +43,10 @@ interface UserStats {
     won: number;
     totalPrizes: number;
   };
-  achievements: Array<{
-    name: string;
-    description: string;
-    earned: string;
-  }>;
+  achievements: {
+    unlocked: string[];
+    progress: Record<string, number>;
+  };
   history: Array<{
     period: string;
     wagered: number;
@@ -297,39 +299,29 @@ export default function UserProfile({ params }: { params: { id: string } }) {
             </Card>
           </motion.div>
 
-          {/* Achievements */}
+          {/* Achievements Section */}
           <motion.div variants={itemVariants}>
-            <h2 className="text-xl font-heading font-bold text-white mb-4">
-              Achievements
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {user.achievements.map((achievement) => (
-                <Card
-                  key={achievement.name}
-                  className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]"
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      <div className="mt-1">
-                        <Award className="h-6 w-6 text-[#D7FF00]" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-white mb-1">
-                          {achievement.name}
-                        </h3>
-                        <p className="text-sm text-[#8A8B91] mb-2">
-                          {achievement.description}
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-[#8A8B91]">
-                          <Clock className="h-3 w-3" />
-                          Earned: {achievement.earned}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-heading font-bold text-white">Achievements</h2>
+                  <div className="text-sm text-[#8A8B91]">
+                    {user.achievements?.unlocked?.length || 0} / {AchievementService.getInstance().getAllAchievements().length} Unlocked
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {AchievementService.getInstance().getAllAchievements().map((achievement) => (
+                    <AchievementCard
+                      key={achievement.id}
+                      achievement={achievement}
+                      isUnlocked={user.achievements?.unlocked?.includes(achievement.id)}
+                      progress={user.achievements?.progress?.[achievement.id] || 0}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
 
           {/* History Table */}
