@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect as ReactuseEffect } from "react";
 import { QuickProfile } from "./QuickProfile";
-import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
-import { Dialog, DialogContent, DialogPortal } from "./ui/dialog";
+import { getTierFromWager, getTierIcon } from "@/lib/tier-utils"; // Added import
+import { Dialog, DialogContent } from "./ui/dialog";
 
 type MVP = {
   username: string;
@@ -28,7 +28,7 @@ const timeframes = [
     title: "Daily MVP", 
     period: "daily", 
     colors: {
-      primary: "#8B5CF6", 
+      primary: "#8B5CF6", // violet
       accent: "#7C3AED",
       shine: "#A78BFA"
     }
@@ -37,7 +37,7 @@ const timeframes = [
     title: "Weekly MVP", 
     period: "weekly", 
     colors: {
-      primary: "#10B981", 
+      primary: "#10B981", // emerald
       accent: "#059669",
       shine: "#34D399"
     }
@@ -46,7 +46,7 @@ const timeframes = [
     title: "Monthly MVP", 
     period: "monthly", 
     colors: {
-      primary: "#F59E0B", 
+      primary: "#F59E0B", // amber
       accent: "#D97706",
       shine: "#FBBF24"
     }
@@ -68,6 +68,7 @@ function MVPCard({
 }) {
   const [showIncrease, setShowIncrease] = useState(false);
 
+  // Show increase indicator for 10 seconds when wager amount changes
   ReactuseEffect(() => {
     if (mvp?.lastWagerChange) {
       setShowIncrease(true);
@@ -91,8 +92,7 @@ function MVPCard({
         onClick={() => onOpenChange(true)}
       >
         <div className="relative h-full">
-          <div 
-            className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
+          <div className="absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" 
             style={{ 
               background: `linear-gradient(to bottom, ${timeframe.colors.primary}20, transparent)`,
             }}
@@ -107,7 +107,7 @@ function MVPCard({
             className="relative p-4 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm transition-all duration-300 shadow-lg card-hover h-full cursor-pointer"
             style={{
               '--hover-border-color': `${timeframe.colors.primary}80`,
-              '--hover-shadow-color': `${timeframe.colors.primary}40`,
+              '--hover-shadow-color': `${timeframe.colors.primary}40`
             } as React.CSSProperties}
           >
             <div className="flex items-center justify-between mb-3">
@@ -163,52 +163,50 @@ function MVPCard({
       </motion.div>
 
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogPortal>
-          <DialogContent className="fixed inset-0 flex items-center justify-center bg-[#1A1B21] border-[#2A2B31] max-w-[95vw] md:max-w-2xl w-full mx-4 md:mx-0 animate-in zoom-in-90 duration-300" style={{ zIndex: 50 }}>
-            <div className="relative p-6 rounded-xl bg-gradient-to-b from-[#1A1B21]/80 to-[#1A1B21]/50 backdrop-blur-sm">
-              <div className="absolute inset-0 bg-gradient-to-b from-[#2A2B31]/20 to-transparent opacity-50 rounded-xl" />
-              <div className="relative">
-                <div className="mb-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <img 
-                      src={getTierIcon(getTierFromWager(mvp.wagered.all_time))}
-                      alt="VIP Tier"
-                      className="w-8 h-8"
-                    />
-                    <h4 className="text-xl md:text-2xl font-heading text-white">{mvp.username}</h4>
-                  </div>
-                  <div className="flex items-center gap-2 text-xl font-heading text-white">
-                    <Trophy className="w-5 h-5 text-[#D7FF00]" />
-                    Player Statistics
-                  </div>
+        <DialogContent className="bg-[#1A1B21] border-[#2A2B31] max-w-[95vw] md:max-w-2xl w-full mx-4 md:mx-0 animate-in zoom-in-90 duration-300">
+          <div className="relative p-6 rounded-xl bg-gradient-to-b from-[#1A1B21]/80 to-[#1A1B21]/50 backdrop-blur-sm">
+            <div className="absolute inset-0 bg-gradient-to-b from-[#2A2B31]/20 to-transparent opacity-50 rounded-xl" />
+            <div className="relative">
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <img 
+                    src={getTierIcon(getTierFromWager(mvp.wagered.all_time))}
+                    alt="VIP Tier"
+                    className="w-8 h-8"
+                  />
+                  <h4 className="text-xl md:text-2xl font-heading text-white">{mvp.username}</h4>
                 </div>
-                <div className="space-y-4">
-                  {[
-                    { label: "Daily Rank", value: leaderboardData?.data?.today?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#8B5CF6" },
-                    { label: "Weekly Rank", value: leaderboardData?.data?.weekly?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#10B981" },
-                    { label: "Monthly Rank", value: leaderboardData?.data?.monthly?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#F59E0B" },
-                    { label: "All-Time Rank", value: leaderboardData?.data?.all_time?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#EC4899" }
-                  ].map((stat, index) => (
-                    <div key={index} className="flex justify-between items-center p-2 rounded-lg bg-black/20 hover:bg-black/30 transition-colors">
-                      <span className="text-white/80 text-sm">{stat.label}:</span>
-                      <span className="text-white font-mono font-bold" style={{ color: stat.color }}>
-                        #{stat.value}
-                      </span>
-                    </div>
-                  ))}
-                  <div className="mt-6 p-3 rounded-lg bg-[#D7FF00]/10 border border-[#D7FF00]/20">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[#D7FF00] text-sm font-semibold">All-Time Wagered:</span>
-                      <span className="text-white font-mono font-bold text-lg">
-                        ${mvp.wagered.all_time.toLocaleString()}
-                      </span>
-                    </div>
+                <div className="flex items-center gap-2 text-xl font-heading text-white">
+                  <Trophy className="w-5 h-5 text-[#D7FF00]" />
+                  Player Statistics
+                </div>
+              </div>
+              <div className="space-y-4">
+                {[
+                  { label: "Daily Rank", value: leaderboardData?.data?.today?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#8B5CF6" },
+                  { label: "Weekly Rank", value: leaderboardData?.data?.weekly?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#10B981" },
+                  { label: "Monthly Rank", value: leaderboardData?.data?.monthly?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#F59E0B" },
+                  { label: "All-Time Rank", value: leaderboardData?.data?.all_time?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#EC4899" }
+                ].map((stat, index) => (
+                  <div key={index} className="flex justify-between items-center p-2 rounded-lg bg-black/20 hover:bg-black/30 transition-colors">
+                    <span className="text-white/80 text-sm">{stat.label}:</span>
+                    <span className="text-white font-mono font-bold" style={{ color: stat.color }}>
+                      #{stat.value}
+                    </span>
+                  </div>
+                ))}
+                <div className="mt-6 p-3 rounded-lg bg-[#D7FF00]/10 border border-[#D7FF00]/20">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#D7FF00] text-sm font-semibold">All-Time Wagered:</span>
+                    <span className="text-white font-mono font-bold text-lg">
+                      ${mvp.wagered.all_time.toLocaleString()}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
-          </DialogContent>
-        </DialogPortal>
+          </div>
+        </DialogContent>
       </Dialog>
     </>
   );

@@ -1,41 +1,41 @@
+
 /**
  * Main server entry point for the GoatedVIPs application
+ * Handles server initialization, middleware setup, and core service bootstrapping
+ * 
+ * Core responsibilities:
+ * - Server configuration and startup
+ * - Middleware integration
+ * - Database connection
+ * - WebSocket setup
+ * - Telegram bot initialization
+ * - Route registration
+ * - Error handling
+ * 
+ * @module server/index
  */
+
+// Core dependencies
 import express from "express";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
-import { WebSocket } from "ws";
+import { WebSocket, WebSocketServer } from "ws";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { createServer as createViteServer, createLogger } from "vite";
+import { promisify } from "util";
+import { exec } from "child_process";
+import { sql } from "drizzle-orm";
 import { log } from "./utils/logger";
 import { initializeBot } from "./telegram/bot";
-import { registerRoutes, setupWebSocket } from "./routes";
+import { registerRoutes } from "./routes";
 import { initializeAdmin } from "./middleware/admin";
 import { db } from "../db";
+import { setupAuth } from "./auth";
 import cors from "cors";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import authRouter from './routes/auth';
-
-// Core dependencies
-//import express from "express";
-//import cookieParser from "cookie-parser";
-//import { createServer } from "http";
-//import { WebSocket, WebSocketServer } from "ws";
-//import fs from "fs";
-//import path from "path";
-//import { fileURLToPath } from "url";
-//import { createServer as createViteServer, createLogger } from "vite";
-//import { promisify } from "util";
-//import { exec } from "child_process";
-//import { sql } from "drizzle-orm";
-//import { log } from "./utils/logger";
-//import { initializeBot } from "./telegram/bot";
-//import { registerRoutes } from "./routes";
-//import { initializeAdmin } from "./middleware/admin";
-//import { db } from "../db";
-//import cors from "cors";
-//import session from "express-session";
-//import connectPg from "connect-pg-simple";
-//import authRouter from './routes/auth';
 
 // Convert callback-based exec to Promise-based for cleaner async/await usage
 const execAsync = promisify(exec);
@@ -67,20 +67,15 @@ async function forceKillPort(port: number): Promise<void> {
   }
 }
 
-/**
- * Checks if a specified port is available for use
- * Used during server initialization to ensure clean startup
- * 
- * @param port - The port number to check
- * @returns Promise<boolean> - True if port is available, false otherwise
- */
 async function isPortAvailable(port: number): Promise<boolean> {
   try {
     await execAsync(`lsof -i:${port}`);
-    // Port is in use
-    return false;
+    // Port is in use, attempt to force kill
+    await forceKillPort(port);
+    // Wait a moment for the port to be released
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return true;
   } catch {
-    // No process is using the port
     return true;
   }
 }
@@ -95,21 +90,21 @@ async function isPortAvailable(port: number): Promise<boolean> {
  */
 async function waitForPort(port: number, timeout = 30000): Promise<void> {
   const start = Date.now();
-
-  // Initial port check
-  log("info", `Checking availability of port ${port}...`);
-
+  
+  // Initial cleanup attempt
+  await forceKillPort(port);
+  
   while (Date.now() - start < timeout) {
-    if (await isPortAvailable(port)) {
-      log("info", `Port ${port} is available`);
+    const isAvailable = await isPortAvailable(port);
+    if (isAvailable) {
+      log("info", `Port ${port} is now available`);
       return;
     }
-    log("info", `Port ${port} is in use, waiting...`);
+    log("info", `Port ${port} is in use, attempting cleanup...`);
     await forceKillPort(port);
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
-
-  throw new Error(`Timeout waiting for port ${port} to become available`);
+  throw new Error(`Timeout waiting for port ${port}`);
 }
 
 /**
@@ -129,37 +124,38 @@ async function testDbConnection() {
 
 /**
  * Main server initialization function
+ * Orchestrates the complete server setup process including:
+ * - Port availability check
+ * - Database connection
+ * - Express app setup
+ * - Middleware configuration
+ * - Route registration
+ * - Admin initialization
+ * - WebSocket setup
+ * - Telegram bot initialization
  */
 async function initializeServer() {
   try {
     log("info", "Starting server initialization...");
 
-    // Wait for port availability
     await waitForPort(PORT);
-    log("info", `Port ${PORT} is ready for use`);
+    log("info", "Port available, proceeding with initialization");
 
     await testDbConnection();
     log("info", "Database connection established");
 
     const app = express();
     setupMiddleware(app);
-
-    // Register auth routes first
-    app.use('/api/auth', authRouter);
-
-    // Create HTTP server
-    const httpServer = createServer(app);
-
-    // Setup WebSocket after HTTP server is created but before Vite
-    setupWebSocket(httpServer);
-
-    // Register other routes
+    setupAuth(app);
     registerRoutes(app);
 
     // Initialize admin after routes
     await initializeAdmin().catch(error => {
       log("error", `Admin initialization error: ${error instanceof Error ? error.message : String(error)}`);
     });
+
+    server = createServer(app);
+    setupWebSocket(server);
 
     // Initialize Telegram bot integration
     log("info", "Initializing Telegram bot...");
@@ -172,7 +168,7 @@ async function initializeServer() {
 
     // Setup development or production server based on environment
     if (app.get("env") === "development") {
-      await setupVite(app, httpServer);
+      await setupVite(app, server);
     } else {
       serveStatic(app);
     }
@@ -187,14 +183,50 @@ async function initializeServer() {
 
     // Start server and handle graceful shutdown
     return new Promise((resolve, reject) => {
-      httpServer.listen(PORT, HOST, () => {
+      server.listen(PORT, HOST, () => {
+        log("info", `Server is ready at http://0.0.0.0:${PORT}`);
+        console.log(`PORT=${PORT}`);
         console.log(`PORT_READY=${PORT}`);
-        log("info", `Server is running at http://${HOST}:${PORT}`);
-        resolve(httpServer);
+        resolve(server);
       }).on("error", (err: Error) => {
         log("error", `Server failed to start: ${err.message}`);
         reject(err);
       });
+
+      // Graceful shutdown handler
+      const shutdown = async () => {
+        log("info", "Shutting down gracefully...");
+        // Clean up ports before shutdown
+        await forceKillPort(PORT);
+        await forceKillPort(parseInt(process.env.BOT_PORT || '5001', 10));
+        if (bot) {
+          try {
+            await bot.stopPolling();
+            log("info", "Telegram bot stopped");
+          } catch (error) {
+            log("error", "Error stopping Telegram bot");
+          }
+        }
+        if (wss) {
+          wss.close(() => {
+            log("info", "WebSocket server closed");
+          });
+        }
+        server.close(() => {
+          log("info", "HTTP server closed");
+          process.exit(0);
+        });
+
+        // Force exit if graceful shutdown fails
+        setTimeout(() => {
+          log("error", "Forced shutdown after timeout");
+          process.exit(1);
+        }, 10000);
+      };
+
+      // Register shutdown handlers for clean process termination
+      process.on("SIGTERM", shutdown);
+      process.on("SIGINT", shutdown);
     });
   } catch (error) {
     log("error", `Failed to start application: ${error instanceof Error ? error.message : String(error)}`);
@@ -209,35 +241,7 @@ async function initializeServer() {
  * @param server - HTTP server instance to attach WebSocket server to
  */
 function setupWebSocket(server: any) {
-  wss = new WebSocketServer({ noServer: true });
-
-  server.on('upgrade', (request: any, socket: any, head: any) => {
-    const url = new URL(request.url!, `http://${request.headers.host}`);
-
-    // Skip Vite HMR connections
-    if (request.headers['sec-websocket-protocol']?.includes('vite-hmr')) {
-      log("info", "Skipping Vite HMR WebSocket connection");
-      return;
-    }
-
-    log("info", `WebSocket upgrade request for path: ${url.pathname}`);
-
-    // Only handle /ws/leaderboard connections
-    if (url.pathname === "/ws/leaderboard") {
-      if (!wss) {
-        log("error", "WebSocket server not initialized");
-        socket.destroy();
-        return;
-      }
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        log("info", `New WebSocket connection established for ${url.pathname}`);
-        wss.emit("connection", ws, request);
-      });
-    } else {
-      log("info", `Rejected WebSocket connection to invalid path: ${url.pathname}`);
-      socket.destroy();
-    }
-  });
+  wss = new WebSocketServer({ server, path: '/ws' });
 
   wss.on('connection', (ws: WebSocket, req: any) => {
     // Skip Vite HMR connections to avoid interference
@@ -250,9 +254,6 @@ function setupWebSocket(server: any) {
     ws.on('error', (error) => {
       log("error", `WebSocket error: ${error.message}`);
     });
-
-    // Send initial connection confirmation
-    ws.send(JSON.stringify({ type: 'connection', status: 'connected' }));
   });
 
   return wss;
@@ -266,7 +267,7 @@ function setupWebSocket(server: any) {
  */
 function setupMiddleware(app: express.Application) {
   app.set('trust proxy', 1);
-
+  
   // CORS configuration for API routes
   app.use('/api', cors({
     origin: process.env.NODE_ENV === 'development'
@@ -276,9 +277,6 @@ function setupMiddleware(app: express.Application) {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
   }));
-
-  // Cookie parser for JWT tokens
-  app.use(cookieParser(process.env.COOKIE_SECRET || 'your-secret-key'));
 
   // Session store configuration using PostgreSQL
   const PostgresSessionStore = connectPg(session);
@@ -311,7 +309,14 @@ function setupMiddleware(app: express.Application) {
   // Body parsing middleware
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
+  app.use(cookieParser());
   app.use(requestLogger);
+
+  // Error handling middleware
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error(err.stack);
+    res.status(500).send('Something broke!');
+  });
 }
 
 /**
@@ -366,7 +371,7 @@ function serveStatic(app: express.Application) {
   
   // SPA fallback
   app.get("*", (_req, res, next) => {
-    if (_req.path.startsWith('/api')) {
+    if (req.path.startsWith('/api')) {
       return next();
     }
     res.sendFile(path.resolve(distPath, "index.html"), {
@@ -455,16 +460,6 @@ async function setupVite(app: express.Application, server: any) {
 }
 
 // Initialize server
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { createServer as createViteServer, createLogger } from "vite";
-import { promisify } from "util";
-import { exec } from "child_process";
-import { sql } from "drizzle-orm";
-import { WebSocketServer } from "ws";
-
-
 initializeServer().catch((error) => {
   log("error", `Server startup error: ${error instanceof Error ? error.message : String(error)}`);
   process.exit(1);

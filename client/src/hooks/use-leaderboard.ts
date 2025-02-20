@@ -18,7 +18,6 @@ type LeaderboardEntry = {
 
 type LeaderboardPeriodData = {
   data: LeaderboardEntry[];
-  status?: "active" | "completed" | "transition";
 };
 
 type APIResponse = {
@@ -41,9 +40,49 @@ export function useLeaderboard(
   timePeriod: TimePeriod = "today",
   page: number = 0,
 ) {
+  const [ws, setWs] = React.useState<WebSocket | null>(null);
   const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
 
-  const { data, isLoading, error, refetch } = useQuery<APIResponse>({
+  React.useEffect(() => {
+    let reconnectTimer: NodeJS.Timeout;
+    let ws: WebSocket;
+
+    const connect = () => {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      ws = new WebSocket(`${protocol}//${window.location.host}/ws/leaderboard`);
+
+      ws.onmessage = (event: MessageEvent) => {
+        try {
+          const update = JSON.parse(event.data);
+          if (update.type === "LEADERBOARD_UPDATE") {
+            refetch();
+          }
+        } catch (err) {
+          console.error('WebSocket message parsing error:', err);
+        }
+      };
+
+      ws.onclose = () => {
+        reconnectTimer = setTimeout(connect, 3000);
+      };
+
+      ws.onerror = (error: Event) => {
+        console.error('WebSocket error:', error);
+        ws.close();
+      };
+
+      setWs(ws);
+    };
+
+    connect();
+
+    return () => {
+      clearTimeout(reconnectTimer);
+      if (ws) ws.close();
+    };
+  }, []);
+
+  const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
     queryKey: ["/api/affiliate/stats", timePeriod, page],
     queryFn: async () => {
       const response = await fetch(`/api/affiliate/stats?page=${page}&limit=10`, {
@@ -64,7 +103,15 @@ export function useLeaderboard(
     refetchOnWindowFocus: false
   });
 
-  const periodKey = timePeriod;
+  const periodKey =
+    timePeriod === "weekly"
+      ? "weekly"
+      : timePeriod === "monthly"
+        ? "monthly"
+        : timePeriod === "today"
+          ? "today"
+          : "all_time";
+
   const periodWagerKey =
     timePeriod === "weekly"
       ? "this_week"
@@ -74,21 +121,17 @@ export function useLeaderboard(
           ? "today"
           : "all_time";
 
-  const sortedData = React.useMemo(() => {
-    if (!data?.data[periodKey]?.data) return [];
+  const sortedData = data?.data[periodKey]?.data.map((entry: LeaderboardEntry) => {
+    const prevEntry = previousData.find((p) => p.uid === entry.uid);
+    const currentWager = entry.wagered[periodWagerKey];
+    const previousWager = prevEntry ? prevEntry.wagered[periodWagerKey] : 0;
 
-    return data.data[periodKey].data.map((entry: LeaderboardEntry) => {
-      const prevEntry = previousData.find((p) => p.uid === entry.uid);
-      const currentWager = entry.wagered[periodWagerKey];
-      const previousWager = prevEntry ? prevEntry.wagered[periodWagerKey] : 0;
-
-      return {
-        ...entry,
-        isWagering: currentWager > previousWager,
-        wagerChange: currentWager - previousWager,
-      };
-    });
-  }, [data, periodKey, periodWagerKey, previousData]);
+    return {
+      ...entry,
+      isWagering: currentWager > previousWager,
+      wagerChange: currentWager - previousWager,
+    };
+  }) || [];
 
   useEffect(() => {
     if (data?.data[periodKey]?.data) {
@@ -101,6 +144,6 @@ export function useLeaderboard(
     metadata: data?.metadata,
     isLoading,
     error,
-    refetch
+    refetch,
   };
 }

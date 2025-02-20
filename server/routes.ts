@@ -1,4 +1,4 @@
-import { Router, type Express, type Request, type Response } from "express";
+import { Router, type Express, type Request, type Response, type NextFunction } from "express";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
 import { createServer, type Server } from "http";
@@ -132,7 +132,7 @@ router.get("/health", async (_req: Request, res: Response) => {
 });
 
 // Wager races endpoint
-router.get("/wager-races/current",
+router.get("/wager-races/current", 
   createRateLimiter('high'),
   cacheMiddleware(CACHE_TIMES.SHORT),
   async (_req: Request, res: Response) => {
@@ -214,7 +214,7 @@ function setupAPIRoutes(app: Express) {
 
   // Mount all API routes under /api prefix
   app.use("/api/bonus", bonusChallengesRouter);
-  app.use("/api", router); //Added this line
+  app.use("/api",router); //Added this line
 
 
   // Add other API routes here, ensuring they're all prefixed with /api
@@ -636,95 +636,120 @@ export function registerRoutes(app: Express): Server {
   return httpServer;
 }
 
-export function setupWebSocket(httpServer: Server) {
-  wss = new WebSocketServer({
-    noServer: true
-  });
+function setupWebSocket(httpServer: Server) {
+  wss = new WebSocketServer({ noServer: true });
 
   httpServer.on("upgrade", (request, socket, head) => {
-    const url = new URL(request.url!, `http://${request.headers.host}`);
-
-    // Skip Vite HMR connections
-    if (request.headers["sec-websocket-protocol"]?.includes("vite-hmr")) {
-      log("info", "Skipping Vite HMR WebSocket connection");
+    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
       return;
     }
 
-    log(`WebSocket upgrade request for path: ${url.pathname}`);
-
-    if (url.pathname === "/ws/leaderboard") {
-      if (!wss) {
-        log("error", "WebSocket server not initialized");
-        socket.destroy();
-        return;
-      }
+    if (request.url === "/ws/leaderboard") {
       wss.handleUpgrade(request, socket, head, (ws) => {
-        log(`New WebSocket connection established for ${url.pathname}`);
-        wss.emit('connection', ws, request);
+        wss.emit("connection", ws, request);
+        handleLeaderboardConnection(ws);
       });
-    } else {
-      log(`Rejected WebSocket connection to invalid path: ${url.pathname}`);
-      socket.destroy();
+    }
+
+    if (request.url === "/ws/transformation-logs") {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit("connection", ws, request);
+        handleTransformationLogsConnection(ws);
+      });
     }
   });
-
-  wss.on('connection', (ws: WebSocket) => {
-    handleLeaderboardConnection(ws);
-  });
-
-  return wss;
 }
 
 function handleLeaderboardConnection(ws: WebSocket) {
   const clientId = Date.now().toString();
   log(`Leaderboard WebSocket client connected (${clientId})`);
 
-  // Set up connection state
   ws.isAlive = true;
-
-  // Send initial connection confirmation
-  ws.send(JSON.stringify({
-    type: "CONNECTED",
-    clientId,
-    timestamp: Date.now()
-  }));
-
-  // Set up ping interval for connection health check
   const pingInterval = setInterval(() => {
-    if (!ws.isAlive) {
-      log(`Client ${clientId} not responding to pings, terminating connection`);
-      clearInterval(pingInterval);
-      ws.terminate();
-      return;
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.ping();
     }
-    ws.isAlive = false;
-    ws.ping();
   }, 30000);
 
-  // Handle pong responses
   ws.on("pong", () => {
     ws.isAlive = true;
   });
 
-  // Handle errors
-  ws.on("error", (error) => {
+  ws.on("error", (error: Error) => {
     log(`WebSocket error (${clientId}): ${error.message}`);
     clearInterval(pingInterval);
     ws.terminate();
   });
 
-  // Handle connection close
-  ws.on("close", (code, reason) => {
-    log(`Leaderboard WebSocket client disconnected (${clientId}), code: ${code}, reason: ${reason}`);
+  ws.on("close", () => {
+    log(`Leaderboard WebSocket client disconnected (${clientId})`);
     clearInterval(pingInterval);
   });
+
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: "CONNECTED",
+      clientId,
+      timestamp: Date.now()
+    }));
+  }
 }
 
-// Add to WebSocket type definition
-declare module 'ws' {
-  interface WebSocket {
-    isAlive?: boolean;
+function handleTransformationLogsConnection(ws: WebSocket) {
+  const clientId = Date.now().toString();
+  log(`Transformation logs WebSocket client connected (${clientId})`);
+
+  // Send initial connection confirmation
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: "CONNECTED",
+      clientId,
+      timestamp: Date.now()
+    }));
+
+    // Send recent logs on connection
+    db.select()
+      .from(transformationLogs)
+      .orderBy(sql`created_at DESC`)
+      .limit(50)
+      .then(logs => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: "INITIAL_LOGS",
+            logs: logs.map(log => ({
+              ...log,
+              timestamp: log.created_at.toISOString()
+            }))
+          }));
+        }
+      })
+      .catch(error => {
+        console.error("Error fetching initial logs:", error);
+      });
   }
+
+  // Setup ping/pong for connection health check
+  ws.isAlive = true;
+  const pingInterval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.ping();
+    }
+  }, 30000);
+
+  ws.on("pong", () => {
+    ws.isAlive = true;
+  });
+
+  ws.on("close", () => {
+    clearInterval(pingInterval);
+    log(`Transformation logs WebSocket client disconnected (${clientId})`);
+  });
+
+  ws.on("error", (error: Error) => {
+    log(`WebSocket error (${clientId}): ${error.message}`);
+    clearInterval(pingInterval);
+    ws.terminate();
+  });
 }
 
 export function broadcastLeaderboardUpdate(data: any) {
@@ -820,6 +845,7 @@ const wheelSpinSchema = z.object({
   reward: z.string().nullable(),
 });
 
+//This function was already in the original code.
 function setupRESTRoutes(app: Express) {
   app.get("/api/admin/export-logs",
     createRateLimiter('low'),

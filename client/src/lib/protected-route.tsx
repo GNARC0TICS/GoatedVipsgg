@@ -1,3 +1,4 @@
+
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 import { Redirect, Route } from 'wouter';
@@ -21,9 +22,8 @@ export function ProtectedRoute({
   path: string;
   component: React.ComponentType<any>;
 }) {
-  const { user, isLoading, isAuthenticated, error } = useAuth();
+  const { user, isLoading } = useAuth();
 
-  // Add proper loading state
   if (isLoading) {
     return (
       <Route path={path}>
@@ -34,9 +34,7 @@ export function ProtectedRoute({
     );
   }
 
-  // Handle authentication errors
-  if (error) {
-    console.error('Authentication error:', error);
+  if (!user) {
     return (
       <Route path={path}>
         <Redirect to="/auth" />
@@ -44,15 +42,5 @@ export function ProtectedRoute({
     );
   }
 
-  // Redirect to auth page if not authenticated
-  if (!isAuthenticated || !user) {
-    return (
-      <Route path={path}>
-        <Redirect to="/auth" />
-      </Route>
-    );
-  }
-
-  // Render protected component if authenticated
   return <Route path={path} component={Component} />;
 }

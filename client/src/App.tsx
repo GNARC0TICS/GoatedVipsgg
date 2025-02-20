@@ -1,17 +1,31 @@
 import React, { Suspense } from "react";
-import { Switch, Route } from "wouter";
+// Imports necessary components for routing and state management
+import { Switch, Route, useLocation } from "wouter";
+// Imports for error handling and boundary
 import { ErrorBoundary } from "react-error-boundary";
+// Imports the authentication provider
 import { AuthProvider } from "@/hooks/use-auth";
+// Imports a custom error fallback component
 import { ErrorFallback } from "@/components/ErrorFallback";
+// Imports the tooltip provider
 import { TooltipProvider } from "@/components/ui/tooltip";
+// Imports for animation
 import { AnimatePresence, motion } from "framer-motion";
+// Imports the toaster for notifications
 import { Toaster } from "@/components/ui/toaster";
+// Imports the main layout component
 import { Layout } from "@/components/Layout";
+// Imports a loading spinner component
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+// Imports a protected route component
 import { ProtectedRoute } from "@/lib/protected-route";
+// Imports a preloader component
 import { PreLoader } from "@/components/PreLoader";
+// Imports the not found component
 import NotFound from "@/pages/not-found";
+// Imports the home page component
 import Home from "@/pages/Home";
+// Imports the authentication page component
 import AuthPage from "@/pages/auth-page";
 import VipTransfer from "@/pages/VipTransfer";
 import ProvablyFair from "@/pages/ProvablyFair";
@@ -38,7 +52,8 @@ import Challenges from "@/pages/Challenges";
 import WheelChallenge from "@/pages/WheelChallenge";
 import { AdminRoute } from "@/components/AdminRoute";
 
-
+// MainContent Component
+// Handles the core application rendering logic including preloader and route management
 function MainContent() {
   const [isInitialLoad, setIsInitialLoad] = React.useState(true);
 
@@ -59,8 +74,10 @@ function MainContent() {
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <AnimatePresence mode="wait">
         {isInitialLoad ? (
+          // Show preloader on initial visit
           <PreLoader key="preloader" onLoadComplete={() => setIsInitialLoad(false)} />
         ) : (
+          // Main application content with loading state
           <Suspense fallback={
             <motion.div
               initial={{ opacity: 0 }}
@@ -73,6 +90,7 @@ function MainContent() {
           }>
             <TooltipProvider>
               <Layout>
+                {/* Main routing configuration */}
                 <Switch>
                   {/* Public Routes */}
                   <Route path="/" component={Home} />
@@ -93,7 +111,9 @@ function MainContent() {
                   <Route path="/bonus-codes" component={BonusCodes} />
                   <Route path="/provably-fair" component={ProvablyFair} />
                   <Route path="/vip-transfer" component={VipTransfer} />
-                  {/* Protected Routes */}
+                  <Route path="*" component={NotFound} />
+
+                  {/* Protected Routes - Require Authentication */}
                   <ProtectedRoute path="/bonus-codes" component={BonusCodes} />
                   <ProtectedRoute path="/notification-preferences" component={NotificationPreferences} />
                   <ProtectedRoute path="/vip-transfer" component={VipTransfer} />
@@ -101,7 +121,7 @@ function MainContent() {
                   <ProtectedRoute path="/wheel-challenge" component={WheelChallenge} />
                   <ProtectedRoute path="/user/:id" component={UserProfile} />
 
-                  {/* Admin Routes */}
+                  {/* Admin Routes - Require Admin Privileges */}
                   <AdminRoute path="/admin/user-management" component={UserManagement} />
                   <AdminRoute path="/admin/wager-races" component={WagerRaceManagement} />
                   <AdminRoute path="/admin/bonus-codes" component={BonusCodeManagement} />
@@ -122,11 +142,14 @@ function MainContent() {
 }
 
 // Main App Component
+// Provides global providers and error boundaries for the application
 export default function App() {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <AuthProvider>
-        <MainContent />
+        <TooltipProvider>
+          <MainContent />
+        </TooltipProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

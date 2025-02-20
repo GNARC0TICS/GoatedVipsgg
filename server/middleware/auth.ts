@@ -29,54 +29,31 @@ export const requireAuth = async (
   res: Response,
   next: NextFunction,
 ) => {
-  console.log('[Auth Middleware] Starting auth check for path:', req.path);
-
-  // Only protect admin routes
-  const isAdminRoute = req.path.startsWith('/api/admin');
-
   try {
     const token = extractToken(req);
-    console.log('[Auth Middleware] Token present:', !!token);
 
-    if (!token && isAdminRoute) {
-      console.log('[Auth Middleware] No token found for admin route');
+    if (!token) {
       return res.status(401).json({ 
         message: ERROR_MESSAGES.AUTH_REQUIRED,
-        isAuthenticated: false,
-        debug: { path: req.path }
+        isAuthenticated: false 
       });
     }
 
-    if (!isAdminRoute) {
-      return next();
-    }
-
-    console.log('[Auth Middleware] Validating token');
     const user = await validateAndGetUser(token);
-    console.log('[Auth Middleware] User found:', !!user);
 
     if (!user) {
-      console.log('[Auth Middleware] No user found for token');
       return res.status(401).json({ 
         message: ERROR_MESSAGES.USER_NOT_FOUND,
-        isAuthenticated: false,
-        debug: { 
-          tokenPresent: true,
-          tokenDecoded: decoded,
-          userLookupAttempted: true
-        }
+        isAuthenticated: false 
       });
     }
 
     req.user = user;
-    console.log('[Auth Middleware] Auth successful for user:', user.id);
     next();
   } catch (error) {
-    console.error('[Auth Middleware] Error:', error instanceof Error ? error.message : 'Unknown error');
     return res.status(401).json({ 
       message: ERROR_MESSAGES.INVALID_TOKEN,
-      isAuthenticated: false,
-      debug: { error: error instanceof Error ? error.message : 'Unknown error' }
+      isAuthenticated: false 
     });
   }
 };

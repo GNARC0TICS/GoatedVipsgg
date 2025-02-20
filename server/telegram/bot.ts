@@ -4,7 +4,7 @@ import TelegramBot from "node-telegram-bot-api";
 import { db } from "@db";
 import { telegramUsers, verificationRequests } from "@db/schema";
 import { users } from "@db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { logError, logAction } from "./utils/logger";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 
@@ -45,9 +45,7 @@ const CUSTOM_EMOJIS = {
   bonus: "🎁",     // Bonus codes/rewards
   challenge: "🎯", // Challenges/competitions
   verify: "✨",    // Verification process
-  refresh: "🔄",    // Refresh/update actions
-  bell: "🔔",
-  sparkle: "✨"
+  refresh: "🔄"    // Refresh/update actions
 };
 
 /**
@@ -334,11 +332,29 @@ async function initializeBot(): Promise<TelegramBot | null> {
         }
       });
 
+    // Configure webhook URL using Replit domain
+    const webhookUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/telegram/webhook`;
+    log("info", `Setting webhook URL to: ${webhookUrl}`);
+
+    const botPort = parseInt(process.env.BOT_PORT || '5001');
     const options: TelegramBot.ConstructorOptions = {
-      polling: true
+      webHook: {
+        port: botPort,
+        host: "0.0.0.0",
+        autoOpen: false // Prevent auto-opening connection before webhook is set
+      }
     };
 
-    log("info", "Initializing bot in polling mode");
+    // Initialize express app for bot webhook
+    const app = express();
+    app.listen(botPort, "0.0.0.0", () => {
+      log("info", `Telegram bot webhook server running on port ${botPort}`);
+    });
+
+    // Add debug logging for environment variables
+    log("info", `REPL_SLUG: ${process.env.REPL_SLUG}`);
+    log("info", `REPL_OWNER: ${process.env.REPL_OWNER}`);
+    log("info", `BOT_PORT: ${process.env.BOT_PORT}`);
 
     if (botInstance) {
       log("info", "Bot instance already exists, reusing existing instance");
@@ -348,7 +364,26 @@ async function initializeBot(): Promise<TelegramBot | null> {
     const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, options);
     botInstance = bot;
 
-    log("info", "Bot initialized in polling mode");
+    // Delete any existing webhook before setting new one
+    try {
+      await bot.deleteWebHook();
+      log("info", "Deleted existing webhook");
+    } catch (error) {
+      log("error", `Error deleting webhook: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    try {
+      // Set webhook with error handling
+      await bot.setWebHook(webhookUrl);
+      log("info", `Webhook set successfully to: ${webhookUrl}`);
+    } catch (webhookError) {
+      if (webhookError instanceof Error) {
+        log("error", `Failed to set webhook: ${webhookError.message}`);
+      } else {
+        log("error", "Unknown error setting webhook");
+      }
+      // Continue initialization even if webhook fails
+    }
 
     // Set commands for regular users first
     try {
@@ -389,6 +424,17 @@ async function initializeBot(): Promise<TelegramBot | null> {
       log("error", `Error setting admin commands: ${adminError}`);
     }
 
+    // Verify webhook is properly set
+    const webhookInfo = await bot.getWebHookInfo();
+    log("info", `Current webhook status: ${JSON.stringify(webhookInfo)}`);
+    
+    if (!webhookInfo.url || webhookInfo.url !== webhookUrl) {
+      log("info", "Webhook URL mismatch - updating webhook configuration");
+      await bot.deleteWebHook();
+      await bot.setWebHook(webhookUrl);
+      const updatedInfo = await bot.getWebHookInfo();
+      log("info", `Updated webhook status: ${JSON.stringify(updatedInfo)}`);
+    }
 
     registerEventHandlers(bot);
     const botInfo = await bot.getMe();
@@ -406,12 +452,12 @@ function registerEventHandlers(bot: TelegramBot) {
   // Monitor channel posts
   bot.on('channel_post', async (msg) => {
     if (!msg.chat.username || !MONITORED_CHANNELS.includes('@' + msg.chat.username)) return;
-
+    
     try {
       // Get all groups where bot is admin
       const updates = await bot.getUpdates();
       const uniqueGroupIds = new Set<number>();
-
+      
       for (const update of updates) {
         if (update.message?.chat.type === 'group' || update.message?.chat.type === 'supergroup') {
           uniqueGroupIds.add(update.message.chat.id);
@@ -430,7 +476,7 @@ function registerEventHandlers(bot: TelegramBot) {
         try {
           const admins = await bot.getChatAdministrators(groupId);
           const botIsMember = admins.some(admin => admin.user.id === botInstance?.options.polling?.params?.id);
-
+          
           if (botIsMember) {
             await safeSendMessage(groupId, `📢 *Announcement from Goated*\n\n${messageText}`, {
               parse_mode: "Markdown",
@@ -466,7 +512,7 @@ function registerEventHandlers(bot: TelegramBot) {
   bot.onText(/\/reject (.+)/, (msg, match) => handleReject(msg, match ? match[1] : undefined));
   bot.onText(/\/createbonus (.+)/, (msg, match) => handleCreateBonus(msg, match ? match[1] : undefined));
   bot.onText(/\/createchallenge (.+)/, (msg, match) => handleCreateChallenge(msg, match ? match[1] : undefined));
-
+  
   // Interactive creation states
 const creationStates = new Map();
 
@@ -534,7 +580,7 @@ bot.onText(/\/createchallenge$/, async (msg) => {
     if (!msg.text || !msg.from?.id) return;
     try {
       await rateLimiter.consume(msg.from.id.toString());
-
+      
       const state = creationStates.get(msg.from.id);
       if (state) {
         const isAdmin = await checkIsAdmin(msg.from.id.toString());
@@ -681,7 +727,7 @@ async function handleStart(msg: TelegramBot.Message) {
 async function handleHelp(msg: TelegramBot.Message) {
   const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
   const helpMessage = MESSAGES.help(isAdmin);
-
+  
   const markup = {
     inline_keyboard: [
       [
@@ -1167,7 +1213,7 @@ export async function broadcastPositionChange(message: string) {
     try {
       const updates = await botInstance.getUpdates();
       const uniqueGroupIds = new Set<number>();
-
+      
       for (const update of updates) {
         if (update.message?.chat.type === 'group' || update.message?.chat.type === 'supergroup') {
           uniqueGroupIds.add(update.message.chat.id);
@@ -1179,7 +1225,7 @@ export async function broadcastPositionChange(message: string) {
         try {
           const admins = await botInstance.getChatAdministrators(groupId);
           const botIsMember = admins.some(admin => admin.user.id === botInstance?.options.polling?.params?.id);
-
+          
           if (botIsMember) {
             await safeSendMessage(groupId, message, {
               parse_mode: "Markdown",
@@ -1239,7 +1285,7 @@ async function safeSendMessage(chatId: number, text: string, options: any = {}) 
   if (!botInstance) return;
   try {
     const sent = await botInstance.sendMessage(chatId, text, options);
-
+    
     // Auto-delete lengthy command responses in group chats after delay
     if (sent.chat.type === 'group' || sent.chat.type === 'supergroup') {
       const isLongMessage = text.length > 200;
@@ -1247,7 +1293,7 @@ async function safeSendMessage(chatId: number, text: string, options: any = {}) 
                                text.includes('Available commands') || 
                                text.includes('Your stats') ||
                                text.includes('Leaderboard');
-
+                               
       if (isLongMessage && isCommandResponse) {
         setTimeout(async () => {
           try {
@@ -1258,7 +1304,7 @@ async function safeSendMessage(chatId: number, text: string, options: any = {}) 
         }, 30000); // Delete after 30 seconds
       }
     }
-
+    
     return sent;
   } catch (error) {
     log("error", `Failed to send message: ${error instanceof Error ? error.message : String(error)}`);
@@ -1302,7 +1348,7 @@ async function handleLeaderboard(msg: TelegramBot.Message) {
 
 async function handleCreateBonus(msg: TelegramBot.Message, params?: string) {
   if (!msg.from?.id) return;
-
+  
   const isAdmin = await checkIsAdmin(msg.from.id.toString());
   if (!isAdmin) {
     return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
@@ -1314,7 +1360,7 @@ async function handleCreateBonus(msg: TelegramBot.Message, params?: string) {
 
   try {
     const [code, bonusAmount, totalClaims, days, description] = params.split('|');
-
+    
     if (!code || !bonusAmount || !totalClaims || !days) {
       return safeSendMessage(msg.chat.id, "❌ Missing required parameters.");
     }
@@ -1352,7 +1398,7 @@ async function handleCreateBonus(msg: TelegramBot.Message, params?: string) {
 
 async function handleCreateChallenge(msg: TelegramBot.Message, params?: string) {
   if (!msg.from?.id) return;
-
+  
   const isAdmin = await checkIsAdmin(msg.from.id.toString());
   if (!isAdmin) {
     return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
@@ -1364,7 +1410,7 @@ async function handleCreateChallenge(msg: TelegramBot.Message, params?: string) 
 
   try {
     const [game, minBet, multiplier, prizeAmount, maxWinners, days, description] = params.split('|');
-
+    
     if (!game || !minBet || !prizeAmount || !maxWinners || !days) {
       return safeSendMessage(msg.chat.id, "❌ Missing required parameters.");
     }
@@ -1447,7 +1493,7 @@ async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
           ]
         ]
       };
-
+      
       await botInstance.editMessageText(
         "🎯 *Select Game Type*\n\n" +
         "Choose the game type for this challenge:",
