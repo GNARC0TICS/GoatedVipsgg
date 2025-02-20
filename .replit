@@ -18,18 +18,16 @@ build = ["sh", "-c", "npm run build"]
 run = ["sh", "-c", "npm run start"]
 ignorePorts = false
 
-# Define ports for different services
 [[ports]]
-localPort = 5173  # Frontend (Vite)
-externalPort = 443 # Secure Web Access
+localPort = 5000
+externalPort = 5000
 
 [[ports]]
-localPort = 5000  # Backend API & WebSocket
+localPort = 5001
 externalPort = 80
 
 [[ports]]
-localPort = 5001  # Telegram Bot Server
-externalPort = 3001
+localPort = 5173
 
 # Set up the server configuration
 [server]
