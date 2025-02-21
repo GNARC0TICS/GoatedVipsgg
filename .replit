@@ -18,9 +18,8 @@ build = ["sh", "-c", "npm run build"]
 run = ["sh", "-c", "VITE_PORT=5173 API_PORT=5000 BOT_PORT=5001 npm run start"]
 ignorePorts = false
 
-# Simple workflow configuration
 [workflows]
-runButton = "Start Development Server"
+runButton = "Development Server"
 
 [[workflows.workflow]]
 name = "Development Server"
@@ -36,3 +35,7 @@ wait_for_port = 5173
 [auth]
 pageEnabled = false
 buttonEnabled = false
+
+[[ports]]
+localPort = 3000
+externalPort = 5000
