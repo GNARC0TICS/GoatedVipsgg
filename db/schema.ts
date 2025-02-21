@@ -19,7 +19,8 @@ export const users = pgTable("users", {
   email: text("email").unique().notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  lastLogin: timestamp("last_login"),
+  lastLogin: timestamp("last_login").default(sql`CURRENT_TIMESTAMP`),
+  lastLoginIp: text("last_login_ip"),
 });
 
 export const wagerRaces = pgTable("wager_races", {
