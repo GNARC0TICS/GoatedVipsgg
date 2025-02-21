@@ -13,6 +13,7 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { challenges, challengeEntries, telegramUsers, verificationRequests, verificationHistory } from './schema/telegram';
 import { historicalRaces } from './schema/races';
+import { supportTickets, ticketMessages } from './schema/support';
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -154,11 +155,13 @@ export type SelectWagerRace = typeof wagerRaces.$inferSelect;
 export type InsertWagerRaceParticipant = typeof wagerRaceParticipants.$inferInsert;
 export type SelectWagerRaceParticipant = typeof wagerRaceParticipants.$inferSelect;
 
-export { 
-  telegramUsers, 
-  verificationRequests, 
-  verificationHistory, 
-  challenges, 
+export {
+  telegramUsers,
+  verificationRequests,
+  verificationHistory,
+  challenges,
   challengeEntries,
-  historicalRaces 
+  historicalRaces,
+  supportTickets,
+  ticketMessages
 };
