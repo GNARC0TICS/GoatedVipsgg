@@ -7,8 +7,8 @@ import {
   boolean,
   decimal,
   jsonb,
-  sql,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { challenges, challengeEntries } from './schema/telegram';
