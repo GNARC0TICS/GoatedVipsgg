@@ -1,4 +1,3 @@
-
 import { pgTable, text, timestamp, integer, boolean, jsonb } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -23,5 +22,5 @@ export const users = pgTable('users', {
   lastActive: timestamp('last_active'),
   telegramVerified: boolean('telegram_verified').default(false),
   goatedUsername: text('goated_username'),
-  goatedVerified: boolean('goated_verified').default(false),
+  goatedVerified: boolean('goated_verified').default(false)
 });

@@ -113,6 +113,38 @@ export const bonusCodes = pgTable("bonus_codes", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   expired: boolean("expired").default(false).notNull(),
   createdBy: integer("created_by").references(() => users.id),
+  userId: integer("user_id").references(() => users.id),
+  claimedAt: timestamp("claimed_at")
+});
+
+export const verificationRequests = pgTable("verification_requests", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  token: text("token").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const telegramUsers = pgTable("telegram_users", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  telegramId: text("telegram_id").notNull().unique(),
+  username: text("username"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const mockWagerData = pgTable("mock_wager_data", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  amount: decimal("amount", { precision: 18, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const sessions = pgTable("session", {
+  id: text("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
 export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
