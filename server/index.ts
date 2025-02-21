@@ -1,17 +1,6 @@
 /**
  * Main server entry point for the GoatedVIPs application
  * Handles server initialization, middleware setup, and core service bootstrapping
- * 
- * Core responsibilities:
- * - Server configuration and startup
- * - Middleware integration
- * - Database connection
- * - WebSocket setup
- * - Telegram bot initialization
- * - Route registration
- * - Error handling
- * 
- * @module server/index
  */
 
 // Core dependencies
@@ -53,101 +42,31 @@ let wss: WebSocketServer | null = null;   // WebSocket server instance
 
 /**
  * Checks if a specified port is available for use
- * Used during server initialization to ensure clean startup
- * 
- * @param port - The port number to check
- * @returns Promise<boolean> - True if port is available, false otherwise
  */
-async function forceKillPort(port: number): Promise<void> {
-  try {
-    await execAsync(`lsof -ti:${port} | xargs kill -9`);
-  } catch {
-    // If no process is using the port, the command will fail silently
-  }
-}
-
 async function isPortAvailable(port: number): Promise<boolean> {
   try {
     await execAsync(`lsof -i:${port}`);
-    // Port is in use, attempt to force kill
-    await forceKillPort(port);
-    // Wait a moment for the port to be released
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return true;
+    return false;
   } catch {
     return true;
-  }
-}
-
-/**
- * Waits for a port to become available with timeout
- * Ensures clean server startup by waiting for port availability
- * 
- * @param port - Port number to wait for
- * @param timeout - Maximum time to wait in milliseconds
- * @throws Error if timeout is reached before port becomes available
- */
-async function waitForPort(port: number, timeout = 30000): Promise<void> {
-  const start = Date.now();
-
-  try {
-    log("info", `Checking port ${port} availability...`);
-
-    // Kill any existing process on the port
-    await forceKillPort(port);
-
-    // Wait for port to be fully released
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    log("info", `Port ${port} cleared, waiting for bind...`);
-
-    const isAvailable = await isPortAvailable(port);
-    if (!isAvailable) {
-      throw new Error(`Port ${port} is still in use after cleanup attempt`);
-    }
-
-    log("info", `Port ${port} is now available`);
-  } catch (error) {
-    log("error", `Failed to secure port ${port}: ${error instanceof Error ? error.message : String(error)}`);
-    throw error;
-  }
-}
-
-/**
- * Tests database connectivity
- * Critical startup check to ensure database is accessible
- * Exits process if connection fails
- */
-async function testDbConnection() {
-  try {
-    await db.execute(sql`SELECT 1`);
-    console.log("Database connection successful");
-  } catch (error) {
-    console.error("Database connection failed:", error);
-    process.exit(1);
   }
 }
 
 /**
  * Main server initialization function
- * Orchestrates the complete server setup process including:
- * - Port availability check
- * - Database connection
- * - Express app setup
- * - Middleware configuration
- * - Route registration
- * - Admin initialization
- * - WebSocket setup
- * - Telegram bot initialization
  */
 async function initializeServer() {
   try {
     log("info", "Starting server initialization...");
 
-    await waitForPort(PORT);
+    // Ensure port is available
+    if (!await isPortAvailable(PORT)) {
+      throw new Error(`Port ${PORT} is already in use`);
+    }
     log("info", "Port available, proceeding with initialization");
 
-    await testDbConnection();
+    // Test database connection
+    await db.execute(sql`SELECT 1`);
     log("info", "Database connection established");
 
     const app = express();
@@ -163,9 +82,9 @@ async function initializeServer() {
     server = createServer(app);
     setupWebSocket(server);
 
-    // Initialize Telegram bot integration
+    // Initialize Telegram bot integration with the Express app
     log("info", "Initializing Telegram bot...");
-    bot = await initializeBot();
+    bot = await initializeBot(app);
     if (!bot) {
       log("error", "Failed to initialize Telegram bot - continuing without bot functionality");
     } else {
@@ -173,7 +92,7 @@ async function initializeServer() {
     }
 
     // Setup development or production server based on environment
-    if (app.get("env") === "development") {
+    if (process.env.NODE_ENV === "development") {
       await setupVite(app, server);
     } else {
       serveStatic(app);
@@ -196,7 +115,6 @@ async function initializeServer() {
         path: _req.path
       });
 
-      // Alert monitoring system for 500 errors
       if (status === 500) {
         log("error", `Unhandled server error: ${message} at ${_req.path}`);
       }
@@ -205,9 +123,7 @@ async function initializeServer() {
     // Start server and handle graceful shutdown
     return new Promise((resolve, reject) => {
       server.listen(PORT, HOST, () => {
-        log("info", `Server is ready at http://0.0.0.0:${PORT}`);
-        console.log(`PORT=${PORT}`);
-        console.log(`PORT_READY=${PORT}`);
+        log("info", `Server is ready at http://${HOST}:${PORT}`);
         resolve(server);
       }).on("error", (err: Error) => {
         log("error", `Server failed to start: ${err.message}`);
@@ -217,22 +133,24 @@ async function initializeServer() {
       // Graceful shutdown handler
       const shutdown = async () => {
         log("info", "Shutting down gracefully...");
-        // Clean up ports before shutdown
-        await forceKillPort(PORT);
-        await forceKillPort(parseInt(process.env.BOT_PORT || '5001', 10));
+
         if (bot) {
           try {
-            await bot.stopPolling();
+            if (process.env.NODE_ENV !== 'production') {
+              await bot.stopPolling();
+            }
             log("info", "Telegram bot stopped");
           } catch (error) {
             log("error", "Error stopping Telegram bot");
           }
         }
+
         if (wss) {
           wss.close(() => {
             log("info", "WebSocket server closed");
           });
         }
+
         server.close(() => {
           log("info", "HTTP server closed");
           process.exit(0);
@@ -245,7 +163,7 @@ async function initializeServer() {
         }, 10000);
       };
 
-      // Register shutdown handlers for clean process termination
+      // Register shutdown handlers
       process.on("SIGTERM", shutdown);
       process.on("SIGINT", shutdown);
     });
@@ -257,15 +175,12 @@ async function initializeServer() {
 
 /**
  * Sets up WebSocket server for real-time communication
- * Handles client connections and message routing
- * 
- * @param server - HTTP server instance to attach WebSocket server to
  */
 function setupWebSocket(server: any) {
   wss = new WebSocketServer({ server, path: '/ws' });
 
   wss.on('connection', (ws: WebSocket, req: any) => {
-    // Skip Vite HMR connections to avoid interference
+    // Skip Vite HMR connections
     if (req.headers['sec-websocket-protocol']?.includes('vite-hmr')) {
       return;
     }
@@ -392,7 +307,7 @@ function serveStatic(app: express.Application) {
 
   // SPA fallback
   app.get("*", (_req, res, next) => {
-    if (req.path.startsWith('/api')) {
+    if (_req.path.startsWith('/api')) {
       return next();
     }
     res.sendFile(path.resolve(distPath, "index.html"), {

@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const CUSTOM_EMOJIS = {
   logo: "[5956308779791291440]",
   goat_race: "[5222141780476046109]",
@@ -64,3 +66,44 @@ export const FORWARD_FROM_CHANNELS = [
   "@PublicChannel1",
   "@PublicChannel2"
 ]; 
+
+// Bot configuration schema
+export const botConfigSchema = z.object({
+  token: z.string(),
+  webhookUrl: z.string().optional(),
+  isProduction: z.boolean(),
+  baseUrl: z.string(),
+  cacheTimeout: z.number().default(300), // 5 minutes default cache
+});
+
+export type BotConfig = z.infer<typeof botConfigSchema>;
+
+// Environment-based configuration
+export function getBotConfig(): BotConfig {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const baseUrl = isProduction 
+    ? 'https://goatedvips.replit.app'
+    : `http://localhost:${process.env.PORT || 5000}`;
+
+  return {
+    token: process.env.TELEGRAM_BOT_TOKEN || '',
+    webhookUrl: isProduction ? `${baseUrl}/api/telegram/webhook` : undefined,
+    isProduction,
+    baseUrl,
+    cacheTimeout: parseInt(process.env.CACHE_TIMEOUT || '300'),
+  };
+}
+
+// Cache configuration
+export const CACHE_KEYS = {
+  CURRENT_RACE: 'current_race',
+  LEADERBOARD: 'leaderboard',
+  USER_STATS: (userId: string) => `user_stats:${userId}`,
+} as const;
+
+// API endpoints for data fetching
+export const API_ENDPOINTS = {
+  CURRENT_RACE: '/api/wager-races/current',
+  LEADERBOARD: '/api/leaderboard',
+  USER_STATS: (userId: string) => `/api/users/${userId}/stats`,
+} as const;

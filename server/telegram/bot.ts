@@ -3,10 +3,12 @@ import express, { type Express } from "express";
 import TelegramBot from "node-telegram-bot-api";
 import { db } from "@db";
 import { telegramUsers, verificationRequests } from "@db/schema";
-import { users } from "@db/schema";
-import { eq } from "drizzle-orm";
+import { users, wagerRaces } from "@db/schema";
+import { eq, desc } from "drizzle-orm";
 import { logError, logAction } from "./utils/logger";
 import { RateLimiterMemory } from "rate-limiter-flexible";
+import { getBotConfig, CUSTOM_EMOJIS } from './config';
+import { cache } from './services/cache';
 
 /**
  * ============================================================================
@@ -45,7 +47,9 @@ const CUSTOM_EMOJIS = {
   bonus: "🎁",     // Bonus codes/rewards
   challenge: "🎯", // Challenges/competitions
   verify: "✨",    // Verification process
-  refresh: "🔄"    // Refresh/update actions
+  refresh: "🔄",    // Refresh/update actions
+  bell: "🔔",
+  sparkle: "✨"
 };
 
 /**
@@ -307,36 +311,68 @@ function cleanup() {
 process.on('SIGTERM', cleanup);
 process.on('SIGINT', cleanup);
 
-// Update the initializeBot function to handle admin command setup more gracefully
-export async function initializeBot() {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!token) {
+// Update the initializeBot function to support both modes
+export async function initializeBot(app?: express.Express) {
+  const config = getBotConfig();
+
+  if (!config.token) {
     logError("Telegram bot token is missing. Please set TELEGRAM_BOT_TOKEN in your environment variables.");
     return null;
   }
 
-  // Initialize the bot with polling enabled
-  const bot = new TelegramBot(token, { polling: true });
+  let bot: TelegramBot;
 
-  // Explicitly delete any existing webhook to disable webhook mode
-  await bot.deleteWebHook().catch((error) => {
-    logError("Error deleting webhook:", error);
-  });
+  if (config.isProduction && config.webhookUrl) {
+    // Webhook mode for production
+    bot = new TelegramBot(config.token, {
+      webHook: {
+        port: process.env.PORT ? parseInt(process.env.PORT) : 5000
+      }
+    });
 
-  // Log polling errors
-  bot.on('polling_error', (error) => {
-    logError("Telegram bot polling error:", error);
-  });
+    // Set webhook
+    await bot.setWebHook(`${config.webhookUrl}?token=${config.token}`);
+    logAction("Telegram bot initialized in webhook mode", { url: config.webhookUrl });
 
-  // Log received messages for debugging
-  bot.on('message', (msg) => {
-    logAction("Telegram bot received message:", msg);
-  });
+    // Setup webhook endpoint
+    if (app) {
+      app.post(`/api/telegram/webhook`, (req, res) => {
+        if (req.query.token !== config.token) {
+          return res.sendStatus(401);
+        }
+        bot.handleUpdate(req.body);
+        res.sendStatus(200);
+      });
+    }
+  } else {
+    // Polling mode for development
+    bot = new TelegramBot(config.token, { polling: true });
+    await bot.deleteWebHook();
+    logAction("Telegram bot initialized in polling mode");
+  }
 
-  logAction("Telegram bot initialized with polling and webhook deleted", { token: token.substring(0, 5) });
+  // Register event handlers
+  registerEventHandlers(bot);
+  setupErrorHandling(bot);
 
   return bot;
 }
+
+// Add error handling setup
+function setupErrorHandling(bot: TelegramBot) {
+  bot.on('error', (error) => {
+    logError("Telegram bot error:", error.toString());
+  });
+
+  bot.on('webhook_error', (error) => {
+    logError("Telegram webhook error:", error.toString());
+  });
+
+  bot.on('polling_error', (error) => {
+    logError("Telegram polling error:", error.toString());
+  });
+}
+
 
 function registerEventHandlers(bot: TelegramBot) {
   // Monitor channel posts
@@ -403,68 +439,69 @@ function registerEventHandlers(bot: TelegramBot) {
   bot.onText(/\/createbonus (.+)/, (msg, match) => handleCreateBonus(msg, match ? match[1] : undefined));
   bot.onText(/\/createchallenge (.+)/, (msg, match) => handleCreateChallenge(msg, match ? match[1] : undefined));
   
+
   // Interactive creation states
-const creationStates = new Map();
+  const creationStates = new Map();
 
-// Add help text for bonus creation
-bot.onText(/\/createbonus$/, async (msg) => {
-  if (msg.chat.type !== 'private') {
-    return safeSendMessage(msg.chat.id, "⚠️ Please use this command in private chat with the bot.");
-  }
-
-  const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
-  if (!isAdmin) {
-    return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
-  }
-
-  creationStates.set(msg.from.id, { type: 'bonus', step: 'start' });
-
-  const markup = {
-    inline_keyboard: [[
-      { text: "🎁 Start Creating Bonus Code", callback_data: "bonus_start" }
-    ]]
-  };
-
-  await safeSendMessage(msg.chat.id,
-    "🎁 *Welcome to Bonus Code Creation*\n\n" +
-    "This wizard will guide you through creating a new bonus code.\n" +
-    "Click the button below to begin.",
-    { 
-      parse_mode: "Markdown",
-      reply_markup: markup
+  // Add help text for bonus creation
+  bot.onText(/\/createbonus$/, async (msg) => {
+    if (msg.chat.type !== 'private') {
+      return safeSendMessage(msg.chat.id, "⚠️ Please use this command in private chat with the bot.");
     }
-  );
-});
 
-// Add help text for challenge creation
-bot.onText(/\/createchallenge$/, async (msg) => {
-  if (msg.chat.type !== 'private') {
-    return safeSendMessage(msg.chat.id, "⚠️ Please use this command in private chat with the bot.");
-  }
-
-  const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
-  if (!isAdmin) {
-    return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
-  }
-
-  creationStates.set(msg.from.id, { type: 'challenge', step: 'start' });
-
-  const markup = {
-    inline_keyboard: [[
-      { text: "🎯 Start Creating Challenge", callback_data: "challenge_start" }
-    ]]
-  };
-
-  await safeSendMessage(msg.chat.id,
-    "🎯 *Welcome to Challenge Creation*\n\n" +
-    "This wizard will guide you through creating a new challenge.\n" +
-    "Click the button below to begin.",
-    { 
-      parse_mode: "Markdown",
-      reply_markup: markup
+    const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
+    if (!isAdmin) {
+      return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
     }
-  );
-});
+
+    creationStates.set(msg.from.id, { type: 'bonus', step: 'start' });
+
+    const markup = {
+      inline_keyboard: [[
+        { text: "🎁 Start Creating Bonus Code", callback_data: "bonus_start" }
+      ]]
+    };
+
+    await safeSendMessage(msg.chat.id,
+      "🎁 *Welcome to Bonus Code Creation*\n\n" +
+      "This wizard will guide you through creating a new bonus code.\n" +
+      "Click the button below to begin.",
+      { 
+        parse_mode: "Markdown",
+        reply_markup: markup
+      }
+    );
+  });
+
+  // Add help text for challenge creation
+  bot.onText(/\/createchallenge$/, async (msg) => {
+    if (msg.chat.type !== 'private') {
+      return safeSendMessage(msg.chat.id, "⚠️ Please use this command in private chat with the bot.");
+    }
+
+    const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
+    if (!isAdmin) {
+      return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
+    }
+
+    creationStates.set(msg.from.id, { type: 'challenge', step: 'start' });
+
+    const markup = {
+      inline_keyboard: [[
+        { text: "🎯 Start Creating Challenge", callback_data: "challenge_start" }
+      ]]
+    };
+
+    await safeSendMessage(msg.chat.id,
+      "🎯 *Welcome to Challenge Creation*\n\n" +
+      "This wizard will guide you through creating a new challenge.\n" +
+      "Click the button below to begin.",
+      { 
+        parse_mode: "Markdown",
+        reply_markup: markup
+      }
+    );
+  });
 
   bot.on("message", async (msg) => {
     if (!msg.text || !msg.from?.id) return;
@@ -1215,24 +1252,35 @@ async function checkIsAdmin(telegramId?: string): Promise<boolean> {
   }
 }
 
+// Update the existing command handlers to use cache
 async function handleLeaderboard(msg: TelegramBot.Message) {
-  if (!botInstance) return;
+  const chatId = msg.chat.id;
+
   try {
-    const response = await fetch(`${process.env.INTERNAL_API_URL}/api/wager-races/current`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch race data: ${response.status}`);
+    // Try to get from cache first
+    let leaderboardData = await cache.get('leaderboard');
+
+    if (!leaderboardData) {
+      // If not in cache, fetch from API
+      const response = await fetch(`${getBotConfig().baseUrl}/api/wager-races/current`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch leaderboard: ${response.status}`);
+      }
+      leaderboardData = await response.json();
+
+      // Cache the result
+      await cache.set('leaderboard', leaderboardData);
     }
 
-    const data = await response.json();
-    const leaderboardMessage = await MESSAGES.leaderboard(data.participants);
-
-    await safeSendMessage(msg.chat.id, leaderboardMessage, {
+    // Use existing message formatting
+    const leaderboardMessage = await MESSAGES.leaderboard(leaderboardData.participants);
+    await safeSendMessage(chatId, leaderboardMessage, { 
       parse_mode: "Markdown",
       reply_markup: createLeaderboardButtons()
     });
   } catch (error) {
-    log("error", `Leaderboard error: ${error instanceof Error ? error.message : String(error)}`);
-    await safeSendMessage(msg.chat.id, "❌ Error fetching leaderboard data. Please try again later.");
+    logError(`Error in handleLeaderboard: ${error}`);
+    await safeSendMessage(chatId, "❌ Error fetching leaderboard data. Please try again later.");
   }
 }
 

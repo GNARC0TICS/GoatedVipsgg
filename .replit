@@ -18,18 +18,6 @@ build = ["sh", "-c", "npm run build"]
 run = ["sh", "-c", "VITE_PORT=5173 API_PORT=5000 BOT_PORT=5001 npm run start"]
 ignorePorts = false
 
-# Port configuration - Simplified and standardized
-[[ports]]
-localPort = 5173
-externalPort = 80  # Main public-facing port for the frontend
-
-[[ports]]
-localPort = 5000
-externalPort = 5000  # Backend API
-
-[[ports]]
-localPort = 5001  # Bot service (internal only)
-
 # Simple workflow configuration
 [workflows]
 runButton = "Start Development Server"
