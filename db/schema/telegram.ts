@@ -28,8 +28,6 @@ export const verificationRequests = pgTable('verification_requests', {
   verifiedBy: text('verified_by'),
   updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`),
   goatedUsername: text('goated_username'),
-  // Add a unique constraint to prevent duplicate requests
-  // This ensures only one active verification request per telegram user
   uniqueRequest: text('unique_request').unique()
     .default(sql`CONCAT(telegram_id, '_', EXTRACT(EPOCH FROM CURRENT_TIMESTAMP)::text)`)
 });
