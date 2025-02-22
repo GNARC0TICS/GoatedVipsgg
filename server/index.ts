@@ -22,8 +22,7 @@ import { initializeAdmin } from "./middleware/admin";
 import { db } from "../db";
 import { setupAuth } from "./auth";
 import cors from "cors";
-import session from "express-session";
-import connectPg from "connect-pg-simple";
+import fetch from "node-fetch";
 
 // Convert callback-based exec to Promise-based for cleaner async/await usage
 const execAsync = promisify(exec);
@@ -53,23 +52,52 @@ async function isPortAvailable(port: number): Promise<boolean> {
 }
 
 /**
+ * Waits for server to be ready on the specified port
+ */
+async function waitForServer(port: number, retries = 10, delay = 1000): Promise<void> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await fetch(`http://${HOST}:${port}/health`);
+      log("info", `Server is ready on port ${port}`);
+      return;
+    } catch (error) {
+      if (i === retries - 1) {
+        throw new Error(`Server failed to start after ${retries} attempts`);
+      }
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+
+/**
  * Main server initialization function
  */
 async function initializeServer() {
   try {
     log("info", "Starting server initialization...");
 
-    // Ensure port is available
-    if (!await isPortAvailable(PORT)) {
-      throw new Error(`Port ${PORT} is already in use`);
+    // Find an available port
+    let currentPort = PORT;
+    while (!await isPortAvailable(currentPort)) {
+      currentPort++;
+      if (currentPort > PORT + 10) {
+        throw new Error(`Unable to find an available port after trying ${PORT} through ${currentPort-1}`);
+      }
     }
-    log("info", "Port available, proceeding with initialization");
+
+    log("info", `Selected port ${currentPort}, proceeding with initialization`);
 
     // Test database connection
     await db.execute(sql`SELECT 1`);
     log("info", "Database connection established");
 
     const app = express();
+
+    // Add health check endpoint
+    app.get('/health', (_req, res) => {
+      res.status(200).json({ status: 'ok' });
+    });
+
     setupMiddleware(app);
     setupAuth(app);
     registerRoutes(app);
@@ -98,33 +126,16 @@ async function initializeServer() {
       serveStatic(app);
     }
 
-    // Global error handler
-    app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-      const status = err.status || 500;
-      const message = err.message || 'Internal Server Error';
-
-      console.error(`[${status}] ${message}`, {
-        path: _req.path,
-        method: _req.method,
-        error: err.stack
-      });
-
-      res.status(status).json({
-        error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : message,
-        code: err.code,
-        path: _req.path
-      });
-
-      if (status === 500) {
-        log("error", `Unhandled server error: ${message} at ${_req.path}`);
-      }
-    });
-
     // Start server and handle graceful shutdown
     return new Promise((resolve, reject) => {
-      server.listen(PORT, HOST, () => {
-        log("info", `Server is ready at http://${HOST}:${PORT}`);
-        resolve(server);
+      server.listen(currentPort, HOST, async () => {
+        log("info", `Server is listening at http://${HOST}:${currentPort}`);
+        try {
+          await waitForServer(currentPort);
+          resolve(server);
+        } catch (error) {
+          reject(error);
+        }
       }).on("error", (err: Error) => {
         log("error", `Server failed to start: ${err.message}`);
         reject(err);
