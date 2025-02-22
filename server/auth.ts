@@ -36,7 +36,7 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
-  // Session configuration
+  // Session configuration with PostgreSQL store
   app.use(
     session({
       store: new PostgresSessionStore({
@@ -44,6 +44,7 @@ export function setupAuth(app: Express) {
           connectionString: process.env.DATABASE_URL,
         },
         createTableIfMissing: true,
+        tableName: 'user_sessions'
       }),
       secret: process.env.SESSION_SECRET || "keyboard cat",
       resave: false,

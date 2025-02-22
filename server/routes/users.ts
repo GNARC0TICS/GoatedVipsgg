@@ -2,11 +2,15 @@ import { Router } from "express";
 import { db } from "../db";
 import { users } from "../db/schema";
 import type { SelectUser } from "../db/schema";
-import { like, desc } from "drizzle-orm";
+import { like, desc, eq } from "drizzle-orm";
 import rateLimit from 'express-rate-limit';
 import type { IpHistoryEntry, LoginHistoryEntry, ActivityLogEntry } from "../db/schema/users";
+import { z } from "zod";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { promisify } from "util";
 
 const router = Router();
+const scryptAsync = promisify(scrypt);
 
 // Rate limiter middleware
 const loginLimiter = rateLimit({
@@ -16,7 +20,122 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// User search endpoint with enhanced analytics for admins
+// User validation schema
+const userSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Invalid email address"),
+});
+
+// Password utilities
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
+
+async function comparePasswords(supplied: string, stored: string) {
+  const [hashed, salt] = stored.split(".");
+  const hashedBuf = Buffer.from(hashed, "hex");
+  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  return timingSafeEqual(hashedBuf, suppliedBuf);
+}
+
+// Registration endpoint
+router.post("/register", loginLimiter, async (req, res) => {
+  try {
+    const result = userSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ error: result.error.message });
+    }
+
+    const { username, password, email } = result.data;
+
+    // Check if username already exists
+    const existingUser = await db.select()
+      .from(users)
+      .where(eq(users.username, username.toLowerCase()))
+      .limit(1);
+
+    if (existingUser.length > 0) {
+      return res.status(400).json({ error: "Username already exists" });
+    }
+
+    // Create new user
+    const [user] = await db.insert(users)
+      .values({
+        username: username.toLowerCase(),
+        password: await hashPassword(password),
+        email: email.toLowerCase(),
+        isAdmin: false,
+        createdAt: new Date(),
+        emailVerified: false
+      })
+      .returning();
+
+    // Log in the user after registration
+    req.login(user, (err) => {
+      if (err) {
+        return res.status(500).json({ error: "Failed to login after registration" });
+      }
+      return res.status(201).json({ user });
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
+    res.status(500).json({ error: "Failed to register user" });
+  }
+});
+
+// Login endpoint
+router.post("/login", loginLimiter, async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // Find user
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.username, username.toLowerCase()))
+      .limit(1);
+
+    if (!user || !(await comparePasswords(password, user.password))) {
+      return res.status(401).json({ error: "Invalid username or password" });
+    }
+
+    // Log in the user
+    req.login(user, (err) => {
+      if (err) {
+        return res.status(500).json({ error: "Failed to login" });
+      }
+      const { password: _, ...safeUser } = user;
+      return res.json({ user: safeUser });
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Failed to login" });
+  }
+});
+
+// Logout endpoint
+router.post("/logout", (req, res) => {
+  req.logout((err) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to logout" });
+    }
+    res.json({ message: "Logged out successfully" });
+  });
+});
+
+// Get current user
+router.get("/me", (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  const { password: _, ...safeUser } = req.user;
+  res.json({ user: safeUser });
+});
+
+
+// User search endpoint (remains unchanged)
 router.get("/search", async (req, res) => {
   const { username } = req.query;
   const isAdminView = req.headers['x-admin-view'] === 'true';
@@ -33,7 +152,6 @@ router.get("/search", async (req, res) => {
       .orderBy(desc(users.lastActive))
       .limit(10);
 
-    // Map results based on admin view access
     const mappedResults = results.map((user: SelectUser) => ({
       id: user.id,
       username: user.username,
@@ -41,21 +159,16 @@ router.get("/search", async (req, res) => {
       isAdmin: user.isAdmin,
       createdAt: user.createdAt,
       emailVerified: user.emailVerified,
-      // Only include sensitive data for admin view
       ...(isAdminView && {
-        // Telegram related fields
         telegramId: user.telegramId,
         telegramVerifiedAt: user.telegramVerifiedAt,
-        // Location and activity fields
         lastLoginIp: user.lastLoginIp,
         registrationIp: user.registrationIp,
         country: user.country,
         city: user.city,
         lastActive: user.lastActive,
-        // Analytics fields
         ipHistory: (user.ipHistory || []) as IpHistoryEntry[],
         loginHistory: (user.loginHistory || []) as LoginHistoryEntry[],
-        // Security fields
         twoFactorEnabled: user.twoFactorEnabled,
         suspiciousActivity: user.suspiciousActivity,
         activityLogs: (user.activityLogs || []) as ActivityLogEntry[]
@@ -68,27 +181,6 @@ router.get("/search", async (req, res) => {
     res.status(500).json({ error: "Failed to search users" });
   }
 });
-
-// Authentication routes 
-router.post("/login", loginLimiter, async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        // Implement login logic here, including secure password handling
-        // and potentially using JWT for authentication.
-        const user = await authenticateUser(username, password); // Placeholder function
-        if (user) {
-            // Generate and send JWT or other authentication token
-            const token = generateToken(user); // Placeholder function
-            res.json({ token });
-        } else {
-            res.status(401).json({ error: 'Invalid credentials' });
-        }
-    } catch (error) {
-        console.error("Login error:", error);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
 
 // Profile image handling route
 router.post('/api/profile/image', upload.single('image'), async (req, res) => {
@@ -132,16 +224,6 @@ router.get('/users/:userId/quick-stats', async (req, res) => {
 
 
 // Placeholder functions (replace with actual implementation)
-async function authenticateUser(username, password) {
-    // Implement authentication logic here
-    return null; // Replace with user object or null if authentication fails
-}
-
-function generateToken(user) {
-    // Implement JWT token generation or other authentication token generation here
-    return null; // Replace with generated token
-}
-
 async function saveProfileImage(file) {
     // Implement image saving logic (e.g., cloudinary, local storage)
     return null; // Replace with image URL
@@ -166,7 +248,6 @@ function getVerificationEmailTemplate(verificationCode) {
     </body>
     </html>`;
 }
-
 
 export default router;
 import { createTransport } from 'nodemailer';
