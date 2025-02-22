@@ -13,192 +13,131 @@ Status: IN PROGRESS 🟡
    - Simplified user schema to essential fields
    - Configured PostgreSQL session store
    - Removed JWT complexity in favor of pure session-based auth
+   - Added dynamic port selection for development server
+   - Implemented server health check endpoint
+   - Added server readiness verification
 
 #### Current Step 🔄
-- Setting up proper development server configuration
-- Fixing port availability issues
-- Preparing for testing of simplified auth system
+Development Server Configuration:
+- Implemented dynamic port selection (5000-5010 range)
+- Added health check endpoint for server verification
+- Set up server readiness check with retry mechanism
+- Next: Need to test the server configuration changes
 
-#### Next Steps 📋
-1. Frontend Changes (Pending):
+#### Immediate Next Steps 📋
+1. Server Configuration Testing:
+   - Verify dynamic port selection
+   - Test health check endpoint
+   - Validate server readiness check
+   - Confirm proper error handling
+
+2. Authentication Implementation:
+   - Complete session store setup
+   - Test session persistence
+   - Verify user serialization
+   - Implement rate limiting
+
+3. Frontend Changes:
    - Consolidate useAuth and useUser hooks
    - Unify AuthPage and AuthModal components
    - Update protected route implementation
+   - Implement proper loading states
 
-2. Testing (Pending):
-   - Verify session-based authentication
-   - Test user login/logout flow
-   - Validate protected routes
+### Future Phases
 
-### Upcoming Phases
-1. Server Architecture Consolidation
-2. Form Handling Optimization
+#### Phase 2: Server Architecture Consolidation
+1. WebSocket Implementation:
+   - Simplify WebSocket server setup
+   - Implement reconnection logic
+   - Add proper error handling
+   - Set up event handling system
 
-## Implementation Steps
-### Step 1: Backend Auth Simplification
-1. Remove JWT-related code
-2. Simplify session configuration
-3. Update user serialization
-4. Consolidate auth routes
+2. Route Organization:
+   - Consolidate route handlers
+   - Implement consistent error responses
+   - Add request validation
+   - Set up proper logging
 
-### Step 2: Frontend Hook Consolidation
-1. Merge useAuth and useUser hooks
-2. Simplify API calls
-3. Update state management
+#### Phase 3: Form Handling Optimization
+1. Form Components:
+   - Unify form validation logic
+   - Implement consistent error handling
+   - Add loading states
+   - Create reusable form components
 
-### Step 3: UI Component Unification
-1. Combine AuthPage and AuthModal
-2. Standardize form validation
-3. Implement consistent error handling
+2. Data Management:
+   - Optimize React Query usage
+   - Implement proper cache invalidation
+   - Add optimistic updates
+   - Set up proper error boundaries
 
-## Testing Strategy
-1. Backend Tests
-   - Session management
-   - Authentication flow
-   - Error handling
+## Implementation Details
 
-2. Frontend Tests
-   - Hook functionality
-   - Component rendering
-   - Form validation
-
-3. Integration Tests
-   - End-to-end auth flow
-   - Error scenarios
-   - Session persistence
-
-## Rollback Plan
-1. Database backup before changes
-2. Version control checkpoints
-3. Monitoring strategy
-4. Fallback procedures
-
-## Benefits
-1. Simplified maintenance
-2. Reduced error surface
-3. Consistent user experience
-4. Better performance
-
-## Risks and Mitigations
-1. Session management
-   - Use secure session store
-   - Implement proper cleanup
-2. State transitions
-   - Graceful degradation
-   - Clear error messages
-3. Data migration
-   - Careful schema updates
-   - Data validation
-
-Would you like to proceed with implementing Step 1: Backend Auth Simplification?
-
-## Phase 2: Server Architecture Consolidation
-
-### Current Issues
-- Multiple server instances causing deployment complexity
-- Complex WebSocket implementation
-- Redundant route handlers
-
-### Migration Steps
-1. Consolidate Server Setup
+### Current Implementation (Server Configuration)
 ```typescript
-// Single server setup
-const app = express();
-const server = createServer(app);
-const wss = new WebSocket.Server({ server });
+// Dynamic port selection
+async function isPortAvailable(port: number): Promise<boolean> {
+  try {
+    await execAsync(`lsof -i:${port}`);
+    return false;
+  } catch {
+    return true;
+  }
+}
 
-// Simple WebSocket handler
-wss.on('connection', (ws) => {
-  ws.on('message', handleWebSocketMessage);
-});
-
-server.listen(process.env.PORT || 3000);
-```
-
-2. Simplified Route Structure
-```typescript
-// Main routes file
-import { Router } from 'express';
-import { authRoutes } from './routes/auth';
-import { apiRoutes } from './routes/api';
-
-const router = Router();
-router.use('/auth', authRoutes);
-router.use('/api', apiRoutes);
-
-export default router;
-```
-
-## Phase 3: Form Handling Optimization
-
-### Current Issues
-- Overly complex form validation
-- Redundant error handling
-- Complex form state management
-
-### Migration Steps
-1. Simplified Form Validation
-```typescript
-// Basic Zod schema
-const userSchema = z.object({
-  username: z.string().min(3),
-  email: z.string().email(),
-  password: z.string().min(8)
-});
-
-// Simple form component
-export function LoginForm() {
-  const form = useForm({
-    resolver: zodResolver(userSchema)
-  });
-
-  return (
-    <Form {...form}>
-      <FormField name="username" />
-      <FormField name="password" type="password" />
-      <Button type="submit">Login</Button>
-    </Form>
-  );
+// Server readiness check
+async function waitForServer(port: number, retries = 10): Promise<void> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await fetch(`http://${HOST}:${port}/health`);
+      return;
+    } catch (error) {
+      if (i === retries - 1) throw new Error('Server failed to start');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
 }
 ```
 
-## Implementation Order
-
-1. Authentication System (2-3 days)
-   - Update user schema
-   - Implement new session configuration
-   - Update auth routes
-   - Test auth flow
-
-2. Server Consolidation (1-2 days)
-   - Merge servers
-   - Update WebSocket implementation
-   - Test real-time features
-
-3. Form Optimization (1-2 days)
-   - Update validation schemas
-   - Simplify form components
-   - Test form submissions
-
 ## Testing Strategy
+1. Server Configuration:
+   - Port availability detection
+   - Health check endpoint
+   - Server readiness verification
+   - Error handling scenarios
 
-For each phase:
-1. Unit tests for core functionality
-2. Integration tests for auth flows
-3. End-to-end testing for critical paths
-4. Performance comparison with previous version
+2. Authentication System:
+   - Session management
+   - User authentication flow
+   - Rate limiting
+   - Error scenarios
+
+3. Frontend Integration:
+   - Authentication hooks
+   - Protected routes
+   - Form validation
+   - Error handling
 
 ## Rollback Plan
+1. Code Versioning:
+   - Maintain clear commit points
+   - Document configuration changes
+   - Keep backup of original files
 
-Each phase includes:
-1. Database backup before changes
-2. Code versioning with clear commit points
-3. Documentation of changes
-4. Monitoring period after deployment
+2. Database:
+   - No destructive changes
+   - Use Drizzle for migrations
+   - Keep original schema backup
 
-## Additional Notes
+3. Server Configuration:
+   - Document all changes
+   - Keep original server setup
+   - Test rollback procedures
 
-- Keep V2's improved UI components and styling
-- Maintain current database structure where beneficial
-- Preserve existing API endpoints for compatibility
-- Document all simplified configurations
+## Next Session Tasks
+1. Test server configuration changes
+2. Complete session store implementation
+3. Begin frontend hook consolidation
+4. Update relevant tests
+
+Would you like to proceed with testing the server configuration changes in the next session?
