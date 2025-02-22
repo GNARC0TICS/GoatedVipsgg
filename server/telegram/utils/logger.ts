@@ -1,3 +1,4 @@
+import { z } from 'zod';
 
 /**
  * Telegram Bot Logging Utility
@@ -5,14 +6,17 @@
  * with support for different log levels and action tracking
  */
 
-import { z } from 'zod';
+/**
+ * Logging level type
+ */
+type LogLevel = 'info' | 'error' | 'debug';
 
 /**
  * Standard logging function with emoji indicators for log levels
  * @param message The message to log
  * @param level The log level (info, error, or debug)
  */
-export function log(message: string, level: 'info' | 'error' | 'debug' = 'info'): void {
+export function log(message: string, level: LogLevel = 'info'): void {
   const timestamp = new Date().toLocaleTimeString();
   const prefix = level === 'error' ? '❌' : level === 'debug' ? '🔍' : '✨';
   console.log(`[Telegram Bot] ${timestamp} - ${prefix} ${message}`);
@@ -23,42 +27,56 @@ export function log(message: string, level: 'info' | 'error' | 'debug' = 'info')
  * @param error The error object or unknown error
  * @param context Description of where/when the error occurred
  */
-export function logError(error: unknown, context: string): void {
+export function logError(error: unknown, context: string = 'Unknown context'): void {
   if (error instanceof Error) {
     log(`${context}: ${error.message}`, 'error');
     if (error.stack) {
       log(`Stack trace: ${error.stack}`, 'debug');
     }
   } else {
-    log(`${context}: Unknown error type`, 'error');
+    log(`${context}: ${String(error)}`, 'error');
   }
 }
 
 /**
  * Schema for structured action logging
  */
-const LogPayloadSchema = z.object({
-  action: z.string(),
-  userId: z.string().optional(),
-  success: z.boolean(),
-  details: z.string().optional()
-});
+export const LogPayloadSchema = z.union([
+  z.string(),
+  z.object({
+    action: z.string(),
+    userId: z.string().optional(),
+    success: z.boolean(),
+    details: z.string().optional()
+  })
+]);
 
-type LogPayload = z.infer<typeof LogPayloadSchema>;
+export type LogPayload = z.infer<typeof LogPayloadSchema>;
 
 /**
  * Structured action logging with validation
- * @param payload The action log payload
+ * @param payload The action log payload or message string
  */
 export function logAction(payload: LogPayload): void {
   try {
     const validPayload = LogPayloadSchema.parse(payload);
+
+    if (typeof validPayload === 'string') {
+      log(validPayload);
+      return;
+    }
+
+    // Handle structured payloads
     const status = validPayload.success ? '✅' : '❌';
     const userInfo = validPayload.userId ? `[User: ${validPayload.userId}]` : '';
     const details = validPayload.details ? `: ${validPayload.details}` : '';
 
     log(`${status} ${validPayload.action} ${userInfo}${details}`);
   } catch (error) {
-    logError(error, 'Invalid log payload');
+    if (error instanceof z.ZodError) {
+      logError(error, 'Invalid log payload');
+    } else {
+      logError(error, 'Unknown logging error');
+    }
   }
 }

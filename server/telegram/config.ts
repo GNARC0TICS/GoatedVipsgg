@@ -59,7 +59,20 @@ export const CUSTOM_EMOJIS = {
   sign_up: "[5197269100878907942]",
   click_below: "[5231102735817918643]",
   refresh: "[6012661228910939253]",
-  play_button: "[5215229232476596064]"
+  play_button: "[5215229232476596064]",
+  error: "❌",      // Error/failure indicators
+  success: "✅",    // Success/completion indicators
+  vip: "👑",       // VIP/premium features
+  stats: "📊",     // Statistics and data
+  race: "🏃",      // Wager races
+  play: "🎮",      // Gaming actions
+  bonus: "🎁",     // Bonus codes/rewards
+  challenge: "🎯", // Challenges/competitions
+  verify: "✨",    // Verification process
+  refresh_action: "🔄",    // Refresh/update actions
+  bell: "🔔",
+  sparkle: "✨",
+  welcome: "👋"
 };
 
 export const FORWARD_FROM_CHANNELS = [

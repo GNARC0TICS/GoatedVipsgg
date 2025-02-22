@@ -19,7 +19,7 @@ import cors from "cors";
 import fetch from "node-fetch";
 
 // Local imports
-import { logAction as log } from "./utils/logger";
+import { logAction } from "./telegram/utils/logger";
 import { initializeBot } from "./telegram/bot";
 import { registerRoutes } from "./routes";
 import { initializeAdmin } from "./middleware/admin";
@@ -66,7 +66,11 @@ async function waitForServer(port: number): Promise<void> {
       const response = await fetch(`http://${HOST}:${port}/health`);
       if (response.ok) {
         const data = await response.json();
-        log("info", `Server is ready on port ${port} at ${data.timestamp}`);
+        logAction({ 
+          action: "Server ready",
+          success: true,
+          details: `Port ${port} at ${data.timestamp}`
+        });
         return;
       }
     } catch (error) {
@@ -97,18 +101,32 @@ async function findAvailablePort(startPort: number): Promise<number> {
  */
 async function initializeServer() {
   try {
-    log("info", "Starting server initialization...");
+    logAction({
+      action: "Starting server initialization",
+      success: true
+    });
 
     // Find an available port
     const port = await findAvailablePort(API_PORT);
-    log("info", `Selected port ${port}, proceeding with initialization`);
+    logAction({
+      action: "Port selection",
+      success: true,
+      details: `Selected port ${port}`
+    });
 
     // Test database connection
     try {
       await db.execute(sql`SELECT 1`);
-      log("info", "Database connection established");
+      logAction({
+        action: "Database connection",
+        success: true
+      });
     } catch (error) {
-      log("error", `Database connection error: ${error instanceof Error ? error.message : String(error)}`);
+      logAction({
+        action: "Database connection",
+        success: false,
+        details: error instanceof Error ? error.message : String(error)
+      });
       throw error;
     }
 
@@ -130,7 +148,11 @@ async function initializeServer() {
 
     // Initialize admin after routes
     await initializeAdmin().catch(error => {
-      log("error", `Admin initialization error: ${error instanceof Error ? error.message : String(error)}`);
+      logAction({
+        action: "Admin initialization",
+        success: false,
+        details: error instanceof Error ? error.message : String(error)
+      });
     });
 
     // Create HTTP server and WebSocket server
@@ -139,15 +161,29 @@ async function initializeServer() {
 
     // Initialize Telegram bot with error handling
     try {
-      log("info", "Initializing Telegram bot...");
+      logAction({
+        action: "Initializing Telegram bot",
+        success: true
+      });
       bot = await initializeBot(app);
       if (!bot) {
-        log("warn", "Telegram bot initialization skipped - continuing without bot functionality");
+        logAction({
+          action: "Telegram bot initialization",
+          success: false,
+          details: "Bot initialization skipped"
+        });
       } else {
-        log("info", "Telegram bot initialized successfully");
+        logAction({
+          action: "Telegram bot initialization",
+          success: true
+        });
       }
     } catch (error) {
-      log("error", `Telegram bot initialization error: ${error instanceof Error ? error.message : String(error)}`);
+      logAction({
+        action: "Telegram bot initialization",
+        success: false,
+        details: error instanceof Error ? error.message : String(error)
+      });
       // Continue without bot functionality
     }
 
@@ -161,7 +197,11 @@ async function initializeServer() {
     // Start server with proper error handling and port waiting
     return new Promise((resolve, reject) => {
       const serverInstance = server.listen(port, HOST, async () => {
-        log("info", `Server is attempting to start on http://${HOST}:${port}`);
+        logAction({
+          action: "Server startup",
+          success: true,
+          details: `Attempting to start on http://${HOST}:${port}`
+        });
         try {
           await waitForServer(port);
           resolve(serverInstance);
@@ -171,39 +211,64 @@ async function initializeServer() {
       });
 
       serverInstance.on("error", (err: Error) => {
-        log("error", `Server failed to start: ${err.message}`);
+        logAction({
+          action: "Server startup",
+          success: false,
+          details: err.message
+        });
         reject(err);
       });
 
       // Graceful shutdown handler
       const shutdown = async (signal: string) => {
-        log("info", `Received ${signal}, shutting down gracefully...`);
+        logAction({
+          action: "Server shutdown",
+          success: true,
+          details: `Received ${signal}`
+        });
 
         if (bot) {
           try {
             if (process.env.NODE_ENV !== 'production') {
               await bot.stopPolling();
             }
-            log("info", "Telegram bot stopped");
+            logAction({
+              action: "Bot shutdown",
+              success: true
+            });
           } catch (error) {
-            log("error", "Error stopping Telegram bot");
+            logAction({
+              action: "Bot shutdown",
+              success: false,
+              details: error instanceof Error ? error.message : String(error)
+            });
           }
         }
 
         if (wss) {
           wss.close(() => {
-            log("info", "WebSocket server closed");
+            logAction({
+              action: "WebSocket shutdown",
+              success: true
+            });
           });
         }
 
         serverInstance.close(() => {
-          log("info", "HTTP server closed");
+          logAction({
+            action: "HTTP server shutdown",
+            success: true
+          });
           process.exit(0);
         });
 
         // Force exit if graceful shutdown fails
         setTimeout(() => {
-          log("error", "Forced shutdown after timeout");
+          logAction({
+            action: "Forced shutdown",
+            success: false,
+            details: "Timeout exceeded"
+          });
           process.exit(1);
         }, 10000);
       };
@@ -213,7 +278,11 @@ async function initializeServer() {
       process.on("SIGINT", () => shutdown("SIGINT"));
     });
   } catch (error) {
-    log("error", `Failed to start application: ${error instanceof Error ? error.message : String(error)}`);
+    logAction({
+      action: "Application startup",
+      success: false,
+      details: error instanceof Error ? error.message : String(error)
+    });
     throw error; // Let the caller handle the error
   }
 }
@@ -230,10 +299,17 @@ function setupWebSocket(server: any) {
       return;
     }
 
-    log("info", "New WebSocket connection established");
+    logAction({
+      action: "New WebSocket connection",
+      success: true
+    });
 
     ws.on('error', (error) => {
-      log("error", `WebSocket error: ${error.message}`);
+      logAction({
+        action: "WebSocket error",
+        success: false,
+        details: error.message
+      });
     });
   });
 
@@ -421,6 +497,10 @@ async function setupVite(app: express.Application, server: any) {
 
 // Initialize server
 initializeServer().catch((error) => {
-  log("error", `Server startup error: ${error instanceof Error ? error.message : String(error)}`);
+  logAction({
+    action: "Server startup",
+    success: false,
+    details: error instanceof Error ? error.message : String(error)
+  });
   process.exit(1);
 });

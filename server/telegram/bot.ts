@@ -9,6 +9,22 @@ import { logError, logAction } from "./utils/logger";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { getBotConfig, CUSTOM_EMOJIS } from './config';
 import { cache } from './services/cache';
+import { formatNumber, createProgressBar } from './utils/formatting';
+
+// Add sendMessageWithEmoji helper
+async function sendMessageWithEmoji(
+  bot: TelegramBot,
+  chatId: number,
+  emoji: string,
+  message: string,
+  options?: TelegramBot.SendMessageOptions
+): Promise<TelegramBot.Message | void> {
+  try {
+    return await bot.sendMessage(chatId, `${emoji} ${message}`, options);
+  } catch (error) {
+    logError(error, "Error sending message with emoji");
+  }
+}
 
 /**
  * ============================================================================
@@ -37,20 +53,21 @@ import { cache } from './services/cache';
  * ======================
  * Used for consistent branding across all bot messages
  */
-const CUSTOM_EMOJIS = {
-  error: "❌",      // Error/failure indicators
-  success: "✅",    // Success/completion indicators
-  vip: "👑",       // VIP/premium features
-  stats: "📊",     // Statistics and data
-  race: "🏃",      // Wager races
-  play: "🎮",      // Gaming actions
-  bonus: "🎁",     // Bonus codes/rewards
-  challenge: "🎯", // Challenges/competitions
-  verify: "✨",    // Verification process
-  refresh: "🔄",    // Refresh/update actions
-  bell: "🔔",
-  sparkle: "✨"
-};
+
+//const CUSTOM_EMOJIS = { // Removed duplicate definition
+  //error: "❌",      // Error/failure indicators
+  //success: "✅",    // Success/completion indicators
+  //vip: "👑",       // VIP/premium features
+  //stats: "📊",     // Statistics and data
+  //race: "🏃",      // Wager races
+  //play: "🎮",      // Gaming actions
+  //bonus: "🎁",     // Bonus codes/rewards
+  //challenge: "🎯", // Challenges/competitions
+  //verify: "✨",    // Verification process
+  //refresh: "🔄",    // Refresh/update actions
+  //bell: "🔔",
+  //sparkle: "✨"
+//};
 
 /**
  * ======================
@@ -287,10 +304,22 @@ const rateLimiter = new RateLimiterMemory({
   duration: 60
 });
 
-let botInstance: TelegramBot | null = null;
+// Add proper type for bot options
+interface ExtendedTelegramBot extends TelegramBot {
+  options: {
+    polling?: {
+      params?: {
+        id: number;
+      };
+    };
+  };
+}
+
+let botInstance: ExtendedTelegramBot | null = null;
 let isPolling = false;
 
-function log(level: "error" | "info" | "debug", message: string) {
+// Update logging to fix Zod validation error
+function log(level: "error" | "info" | "debug", message: any) {
   console.log(`[${level.toUpperCase()}] ${message}`);
 }
 
@@ -313,6 +342,12 @@ process.on('SIGINT', cleanup);
 
 // Update the initializeBot function to support both modes
 export async function initializeBot(app?: express.Express) {
+  // Don't create multiple instances
+  if (botInstance) {
+    log("info", "Bot instance already exists, reusing existing instance");
+    return botInstance;
+  }
+
   const config = getBotConfig();
 
   if (!config.token) {
@@ -320,56 +355,52 @@ export async function initializeBot(app?: express.Express) {
     return null;
   }
 
-  let bot: TelegramBot;
+  try {
+    // Initialize bot with polling disabled initially
+    const bot = new TelegramBot(config.token, { polling: false });
 
-  if (config.isProduction && config.webhookUrl) {
-    // Webhook mode for production
-    bot = new TelegramBot(config.token, {
-      webHook: {
-        port: process.env.PORT ? parseInt(process.env.PORT) : 5000
-      }
-    });
+    // Register event handlers before starting polling
+    registerEventHandlers(bot);
+    setupErrorHandling(bot);
 
-    // Set webhook
-    await bot.setWebHook(`${config.webhookUrl}?token=${config.token}`);
-    logAction("Telegram bot initialized in webhook mode", { url: config.webhookUrl });
-
-    // Setup webhook endpoint
-    if (app) {
-      app.post(`/api/telegram/webhook`, (req, res) => {
-        if (req.query.token !== config.token) {
-          return res.sendStatus(401);
-        }
-        bot.handleUpdate(req.body);
-        res.sendStatus(200);
-      });
-    }
-  } else {
-    // Polling mode for development
-    bot = new TelegramBot(config.token, { polling: true });
+    // Start polling
     await bot.deleteWebHook();
-    logAction("Telegram bot initialized in polling mode");
+    bot.startPolling();
+    isPolling = true;
+    botInstance = bot;
+
+    log("info", "Telegram bot initialized successfully");
+    return bot;
+  } catch (error) {
+    log("error", `Failed to initialize bot: ${error instanceof Error ? error.message : String(error)}`);
+    cleanup();
+    return null;
   }
-
-  // Register event handlers
-  registerEventHandlers(bot);
-  setupErrorHandling(bot);
-
-  return bot;
 }
 
 // Add error handling setup
 function setupErrorHandling(bot: TelegramBot) {
   bot.on('error', (error) => {
-    logError("Telegram bot error:", error.toString());
+    log("error", "Telegram bot error:", error.toString());
   });
 
   bot.on('webhook_error', (error) => {
-    logError("Telegram webhook error:", error.toString());
+    log("error", "Telegram webhook error:", error.toString());
   });
 
   bot.on('polling_error', (error) => {
-    logError("Telegram polling error:", error.toString());
+    if (error.message.includes('409 Conflict')) {
+      // Handle polling conflicts by stopping and restarting
+      cleanup();
+      setTimeout(() => {
+        if (botInstance) {
+          botInstance.startPolling();
+          isPolling = true;
+        }
+      }, 5000); // Wait 5 seconds before retrying
+    } else {
+      log("error", "Telegram polling error:", error.toString());
+    }
   });
 }
 
@@ -378,19 +409,11 @@ function registerEventHandlers(bot: TelegramBot) {
   // Monitor channel posts
   bot.on('channel_post', async (msg) => {
     if (!msg.chat.username || !MONITORED_CHANNELS.includes('@' + msg.chat.username)) return;
-    
-    try {
-      // Get all groups where bot is admin
-      const updates = await bot.getUpdates();
-      const uniqueGroupIds = new Set<number>();
-      
-      for (const update of updates) {
-        if (update.message?.chat.type === 'group' || update.message?.chat.type === 'supergroup') {
-          uniqueGroupIds.add(update.message.chat.id);
-        }
-      }
 
-      // Replace Goated links with affiliate link
+    try {
+      const updates = await bot.getUpdates();
+      const uniqueGroupIds = getUniqueGroupIds(updates);
+
       let messageText = msg.text || '';
       messageText = messageText.replace(
         /https?:\/\/(?:www\.)?goated\.com\/[^\s]*/gi,
@@ -401,8 +424,10 @@ function registerEventHandlers(bot: TelegramBot) {
       for (const groupId of uniqueGroupIds) {
         try {
           const admins = await bot.getChatAdministrators(groupId);
-          const botIsMember = admins.some(admin => admin.user.id === botInstance?.options.polling?.params?.id);
-          
+          const botIsMember = admins.some(admin => 
+            admin.user.id === (botInstance?.options?.polling?.params?.id || 0)
+          );
+
           if (botIsMember) {
             await safeSendMessage(groupId, `📢 *Announcement from Goated*\n\n${messageText}`, {
               parse_mode: "Markdown",
@@ -410,11 +435,11 @@ function registerEventHandlers(bot: TelegramBot) {
             });
           }
         } catch (error) {
-          log("error", `Failed to forward to group ${groupId}: ${error instanceof Error ? error.message : String(error)}`);
+          logError(error, `Failed to forward to group ${groupId}`);
         }
       }
     } catch (error) {
-      log("error", `Channel post forwarding error: ${error instanceof Error ? error.message : String(error)}`);
+      logError(error, "Channel post forwarding error");
     }
   });
 
@@ -438,7 +463,7 @@ function registerEventHandlers(bot: TelegramBot) {
   bot.onText(/\/reject (.+)/, (msg, match) => handleReject(msg, match ? match[1] : undefined));
   bot.onText(/\/createbonus (.+)/, (msg, match) => handleCreateBonus(msg, match ? match[1] : undefined));
   bot.onText(/\/createchallenge (.+)/, (msg, match) => handleCreateChallenge(msg, match ? match[1] : undefined));
-  
+
 
   // Interactive creation states
   const creationStates = new Map();
@@ -827,18 +852,49 @@ async function handleBonusCodes(msg: TelegramBot.Message) {
   await safeSendMessage(msg.chat.id, "🎁 Bonus codes coming soon!", { parse_mode: "Markdown" });
 }
 
+// Update the existing command handlers to use cache
+async function handleLeaderboard(msg: TelegramBot.Message) {
+  const chatId = msg.chat.id;
+
+  try {
+    // Try to get from cache first
+    let leaderboardData = await cache.get('leaderboard');
+
+    if (!leaderboardData) {
+      // If not in cache, fetch from API
+      const response = await fetch(`${getBotConfig().baseUrl}/api/wager-races/current`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch leaderboard: ${response.status}`);
+      }
+      leaderboardData = await response.json();
+
+      // Cache the result
+      await cache.set('leaderboard', leaderboardData);
+    }
+
+    // Use existing message formatting
+    const leaderboardMessage = await MESSAGES.leaderboard(leaderboardData.participants);
+    await safeSendMessage(chatId, leaderboardMessage, { 
+      parse_mode: "Markdown",
+      reply_markup: createLeaderboardButtons()
+    });
+  } catch (error) {
+    logError(`Errorin handleLeaderboard: ${error}`);
+    await safeSendMessage(chatId, "❌ Error fetching leaderboard data. Please try again later.");
+  }
+}
+
+// Update handleStats function to use helper functions
 async function handleStats(msg: TelegramBot.Message) {
   if (!msg.from?.id || !botInstance) return;
 
   const isAdmin = await checkIsAdmin(msg.from.id.toString());
-  if (isAdmin && !msg.text.includes(' ')) {
-    // Fun admin responses array
+  if (isAdmin && msg.text && !msg.text.includes(' ')) {
     const adminResponses = [
       "🎉 You're the GOAT! You don't need stats, just bask in your greatness! 🌟",
       "👑 Stats? Please... You write the stats, you ARE the stats! 💫",
       "🚀 Admin stats loading... ERROR: Too legendary to compute! 🌠"
     ];
-    // Pick a random response
     const randomResponse = adminResponses[Math.floor(Math.random() * adminResponses.length)];
     return await safeSendMessage(msg.chat.id, randomResponse);
   }
@@ -855,22 +911,30 @@ async function handleStats(msg: TelegramBot.Message) {
     }
 
     const userData = user[0];
-    const raceStats = await db
-      .select()
+
+    // Get race stats using proper column references and type-safe SQL
+    const raceData = await db
+      .select({
+        currentWager: wagerRaces.minWager,
+        targetWager: wagerRaces.prizePool
+      })
       .from(wagerRaces)
       .where(eq(wagerRaces.userId, userData.userId))
       .orderBy(desc(wagerRaces.createdAt))
       .limit(1);
 
-    const stats = raceStats[0];
-    const progress = stats ? createProgressBar(stats.currentWager || 0, stats.targetWager || 100000, 8) : '░'.repeat(8);
-    const formattedWager = formatNumber(stats?.currentWager || 0);
-    const formattedTarget = formatNumber(stats?.targetWager || 100000);
+    const stats = raceData[0];
+    const currentWager = parseFloat(stats?.currentWager || '0');
+    const targetWager = parseFloat(stats?.targetWager || '100000');
+
+    const progress = createProgressBar(currentWager, targetWager, 8);
+    const formattedWager = formatNumber(currentWager);
+    const formattedTarget = formatNumber(targetWager);
 
     const enhancedStats = `
 ${CUSTOM_EMOJIS.stats} *Your Stats*
 
-• Username: ${userData.username}
+• Username: ${userData.telegramUsername || 'Unknown'}
 • Verified: ${userData.isVerified ? CUSTOM_EMOJIS.success : CUSTOM_EMOJIS.error}
 • VIP Status: ${CUSTOM_EMOJIS.vip}
 
@@ -883,8 +947,314 @@ ${userData.verifiedAt ? `${CUSTOM_EMOJIS.sparkle} Member since: ${new Date(userD
 
     await safeSendMessage(msg.chat.id, enhancedStats, { parse_mode: "Markdown" });
   } catch (error) {
-    log("error", `Error fetching stats: ${error instanceof Error ? error.message : String(error)}`);
+    logError(error, "Error fetching stats");
     await safeSendMessage(msg.chat.id, "❌ Error fetching your statistics.");
+  }
+}
+
+// Fix Set handling in group updates
+function getUniqueGroupIds(updates: TelegramBot.Update[]): number[] {
+  const groupIds = new Set<number>();
+  for (const update of updates) {
+    if (update.message?.chat.type === 'group' || update.message?.chat.type === 'supergroup') {
+      if (update.message.chat.id) {
+        groupIds.add(update.message.chat.id);
+      }
+    }
+  }
+  return Array.from(groupIds);
+}
+
+// Update the channel post handler to use the new getUniqueGroupIds function
+bot.on('channel_post', async (msg) => {
+  if (!msg.chat.username || !MONITORED_CHANNELS.includes('@' + msg.chat.username)) return;
+
+  try {
+    const updates = await bot.getUpdates();
+    const uniqueGroupIds = getUniqueGroupIds(updates);
+
+    let messageText = msg.text || '';
+    messageText = messageText.replace(
+      /https?:\/\/(?:www\.)?goated\.com\/[^\s]*/gi,
+      AFFILIATE_LINK
+    );
+
+    for (const groupId of uniqueGroupIds) {
+      try {
+        const admins = await bot.getChatAdministrators(groupId);
+        const botIsMember = admins.some(admin => 
+          admin.user.id === (botInstance?.options?.polling?.params?.id || 0)
+        );
+
+        if (botIsMember) {
+          await safeSendMessage(groupId, `📢 *Announcement from Goated*\n\n${messageText}`, {
+            parse_mode: "Markdown",
+            disable_web_page_preview: false
+          });
+        }
+      } catch (error) {
+        logError(error, `Failed to forward to group ${groupId}`);
+      }
+    }
+  } catch (error) {
+    logError(error, "Channel post forwarding error");
+  }
+});
+
+// Update broadcast function to use getUniqueGroupIds
+export async function broadcastPositionChange(message: string) {
+  if (!botInstance) return;
+
+  try {
+    // Send to verified users
+    const verifiedUsers = await db
+      .select()
+      .from(telegramUsers)
+      .where(eq(telegramUsers.isVerified, true));
+
+    for (const user of verifiedUsers) {
+      try {
+        await safeSendMessage(parseInt(user.telegramId), message, { 
+          parse_mode: "Markdown",
+          disable_notification: false 
+        });
+      } catch (error) {
+        logError(error, `Failed to send position change to user ${user.telegramId}`);
+      }
+    }
+
+    // Get all chats where bot is admin
+    try {
+      const updates = await botInstance.getUpdates();
+      const uniqueGroupIds = getUniqueGroupIds(updates);
+
+      // Send to all groups where bot is admin
+      for (const groupId of uniqueGroupIds) {
+        try {
+          const admins = await botInstance.getChatAdministrators(groupId);
+          const botIsMember = admins.some(admin => 
+            admin.user.id === (botInstance?.options?.polling?.params?.id || 0)
+          );
+
+          if (botIsMember) {
+            await safeSendMessage(groupId, message, {
+              parse_mode: "Markdown",
+              disable_notification: false
+            });
+          }
+        } catch (error) {
+          logError(error, `Failed to send to group ${groupId}`);
+        }
+      }
+    } catch (error) {
+      logError(error, "Failed to get group list");
+    }
+  } catch (error) {
+    logError(error, "Position change broadcast error");
+  }
+}
+
+async function handleCreateBonus(msg: TelegramBot.Message, params?: string) {
+  if (!msg.from?.id) return;
+  
+  const isAdmin = await checkIsAdmin(msg.from.id.toString());
+  if (!isAdmin) {
+    return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
+  }
+
+  if (!params) {
+    return safeSendMessage(msg.chat.id, "❌ Please provide bonus code parameters.");
+  }
+
+  try {
+    const [code, bonusAmount, totalClaims, days, description] = params.split('|');
+    
+    if (!code || !bonusAmount || !totalClaims || !days) {
+      return safeSendMessage(msg.chat.id, "❌ Missing required parameters.");
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + parseInt(days));
+
+    const [bonusCode] = await db
+      .insert(bonusCodes)
+      .values({
+        code,
+        bonusAmount,
+        totalClaims: parseInt(totalClaims),
+        currentClaims: 0,
+        expiresAt,
+        description: description || null,
+        status: 'active',
+        source: 'telegram',
+        createdBy: msg.from.id
+      })
+      .returning();
+
+    await safeSendMessage(msg.chat.id,
+      `✅ Bonus code created successfully!\n\n` +
+      `Code: ${bonusCode.code}\n` +
+      `Amount: ${bonusCode.bonusAmount}\n` +
+      `Claims: ${bonusCode.totalClaims}\n` +
+      `Expires: ${bonusCode.expiresAt.toLocaleDateString()}`
+    );
+  } catch (error) {
+    log("error", `Error creating bonus code: ${error instanceof Error ? error.message : String(error)}`);
+    await safeSendMessage(msg.chat.id, "❌ Error creating bonus code.");
+  }
+}
+
+async function handleCreateChallenge(msg: TelegramBot.Message, params?: string) {
+  if (!msg.from?.id) return;
+  
+  const isAdmin = await checkIsAdmin(msg.from.id.toString());
+  if (!isAdmin) {
+    return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
+  }
+
+  if (!params) {
+    return safeSendMessage(msg.chat.id, "❌ Please provide challenge parameters.");
+  }
+
+  try {
+    const [game, minBet, multiplier, prizeAmount, maxWinners, days, description] = params.split('|');
+    
+    if (!game || !minBet || !prizeAmount || !maxWinners || !days) {
+      return safeSendMessage(msg.chat.id, "❌ Missing required parameters.");
+    }
+
+    const timeframe = new Date();
+    timeframe.setDate(timeframe.getDate() + parseInt(days));
+
+    const [challenge] = await db
+      .insert(challenges)
+      .values({
+        game,
+        minBet,
+        multiplier: multiplier || null,
+        prizeAmount,
+        maxWinners: parseInt(maxWinners),
+        timeframe,
+        description: description || null,
+        status: 'active',
+        source: 'telegram',
+        createdBy: msg.from.id
+      })
+      .returning();
+
+    await safeSendMessage(msg.chat.id,
+      `✅ Challenge created successfully!\n\n` +
+      `Game: ${challenge.game}\n` +
+      `Min Bet: ${challenge.minBet}\n` +
+      `Prize: ${challenge.prizeAmount}\n` +
+      `Winners: ${challenge.maxWinners}\n` +
+      `Expires: ${challenge.timeframe.toLocaleDateString()}`
+    );
+  } catch (error) {
+    log("error", `Error creating challenge: ${error instanceof Error ? error.message : String(error)}`);
+    await safeSendMessage(msg.chat.id, "❌ Error creating challenge.");
+  }
+}
+
+async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
+  if (!botInstance) return;
+
+  const chatId = callbackQuery.message?.chat.id;
+  const messageId = callbackQuery.message?.message_id;
+  const data = callbackQuery.data;
+  const userId = callbackQuery.from.id;
+
+  if (!chatId || !messageId || !data) return;
+
+  // Handle bonus code creation
+  if (data === 'bonus_start') {
+    const state = creationStates.get(userId);
+    if (state?.type === 'bonus') {
+      creationStates.set(userId, { ...state, step: 'code' });
+      await botInstance.editMessageText(
+        "🎁 *Enter Bonus Code*\n\n" +
+        "Please enter the bonus code (e.g., WELCOME100).\n" +
+        "Reply to this message with the code.",
+        {
+          chat_id: chatId,
+          message_id: messageId,
+          parse_mode: "Markdown"
+        }
+      );
+    }
+  }
+
+  // Handle challenge creation
+  if (data === 'challenge_start') {
+    const state = creationStates.get(userId);
+    if (state?.type === 'challenge') {
+      creationStates.set(userId, { ...state, step: 'game' });
+      const markup = {
+        inline_keyboard: [
+          [
+            { text: "🎰 Slots", callback_data: "game_slots" },
+            { text: "🎲 Dice", callback_data: "game_dice" }
+          ],
+          [
+            { text: "🎯 Crash", callback_data: "game_crash" },
+            { text: "🃏 Blackjack", callback_data: "game_blackjack" }
+          ]
+        ]
+      };
+      
+      await botInstance.editMessageText(
+        "🎯 *Select Game Type*\n\n" +
+        "Choose the game type for this challenge:",
+        {
+          chat_id: chatId,
+          message_id: messageId,
+          parse_mode: "Markdown",
+          reply_markup: markup
+        }
+      );
+    }
+  }
+
+  // Handle game selection for challenge
+  if (data.startsWith('game_')) {
+    const state = creationStates.get(userId);
+    if (state?.type === 'challenge') {
+      const game = data.replace('game_', '');
+      creationStates.set(userId, { ...state, step: 'minBet', game });
+      await botInstance.editMessageText(
+        "💰 *Enter Minimum Bet*\n\n" +
+        "Please enter the minimum bet amount (e.g., $50).\n" +
+        "Reply to this message with the amount.",
+        {
+          chat_id: chatId,
+          message_id: messageId,
+          parse_mode: "Markdown"
+        }
+      );
+    }
+  }
+
+  if (data.startsWith('approve_') || data.startsWith('reject_')) {    const [action, username] = data.split('_');
+    const isAdmin = await checkIsAdmin(callbackQuery.from.id.toString());
+
+    if (!isAdmin) {
+      return botInstance.answerCallbackQuery(callbackQuery.id, {
+        text: '❌ Only admins can perform this action',
+        show_alert: true
+      });
+    }
+
+    if (action === 'approve') {
+      await handleApprove({ from: callbackQuery.from, chat: { id: chatId } } as TelegramBot.Message, username);
+    } else {
+      await handleReject({ from: callbackQuery.from, chat: { id: chatId } } as TelegramBot.Message, username);
+    }
+
+    await botInstance.answerCallbackQuery(callbackQuery.id);
+    await botInstance.deleteMessage(chatId, messageId);
+  } else if (data === 'refresh_leaderboard') {
+    await handleLeaderboardRefresh(chatId, messageId);
+    await botInstance.answerCallbackQuery(callbackQuery.id);
   }
 }
 
@@ -1132,27 +1502,23 @@ export async function broadcastPositionChange(message: string) {
           disable_notification: false 
         });
       } catch (error) {
-        log("error", `Failed to send position change to user ${user.telegramId}: ${error instanceof Error ? error.message : String(error)}`);
+        logError(error, `Failed to send position change to user ${user.telegramId}`);
       }
     }
 
     // Get all chats where bot is admin
     try {
       const updates = await botInstance.getUpdates();
-      const uniqueGroupIds = new Set<number>();
-      
-      for (const update of updates) {
-        if (update.message?.chat.type === 'group' || update.message?.chat.type === 'supergroup') {
-          uniqueGroupIds.add(update.message.chat.id);
-        }
-      }
+      const uniqueGroupIds = getUniqueGroupIds(updates);
 
       // Send to all groups where bot is admin
       for (const groupId of uniqueGroupIds) {
         try {
           const admins = await botInstance.getChatAdministrators(groupId);
-          const botIsMember = admins.some(admin => admin.user.id === botInstance?.options.polling?.params?.id);
-          
+          const botIsMember = admins.some(admin => 
+            admin.user.id === (botInstance?.options?.polling?.params?.id || 0)
+          );
+
           if (botIsMember) {
             await safeSendMessage(groupId, message, {
               parse_mode: "Markdown",
@@ -1160,14 +1526,14 @@ export async function broadcastPositionChange(message: string) {
             });
           }
         } catch (error) {
-          log("error", `Failed to send to group ${groupId}: ${error instanceof Error ? error.message : String(error)}`);
+          logError(error, `Failed to send to group ${groupId}`);
         }
       }
     } catch (error) {
-      log("error", `Failed to get group list: ${error instanceof Error ? error.message : String(error)}`);
+      logError(error, "Failed to get group list");
     }
   } catch (error) {
-    log("error", `Position change broadcast error: ${error instanceof Error ? error.message : String(error)}`);
+    logError(error, "Position change broadcast error");
   }
 }
 
@@ -1249,242 +1615,6 @@ async function checkIsAdmin(telegramId?: string): Promise<boolean> {
     return !!admin[0]?.isAdmin;
   } catch {
     return false;
-  }
-}
-
-// Update the existing command handlers to use cache
-async function handleLeaderboard(msg: TelegramBot.Message) {
-  const chatId = msg.chat.id;
-
-  try {
-    // Try to get from cache first
-    let leaderboardData = await cache.get('leaderboard');
-
-    if (!leaderboardData) {
-      // If not in cache, fetch from API
-      const response = await fetch(`${getBotConfig().baseUrl}/api/wager-races/current`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch leaderboard: ${response.status}`);
-      }
-      leaderboardData = await response.json();
-
-      // Cache the result
-      await cache.set('leaderboard', leaderboardData);
-    }
-
-    // Use existing message formatting
-    const leaderboardMessage = await MESSAGES.leaderboard(leaderboardData.participants);
-    await safeSendMessage(chatId, leaderboardMessage, { 
-      parse_mode: "Markdown",
-      reply_markup: createLeaderboardButtons()
-    });
-  } catch (error) {
-    logError(`Error in handleLeaderboard: ${error}`);
-    await safeSendMessage(chatId, "❌ Error fetching leaderboard data. Please try again later.");
-  }
-}
-
-async function handleCreateBonus(msg: TelegramBot.Message, params?: string) {
-  if (!msg.from?.id) return;
-  
-  const isAdmin = await checkIsAdmin(msg.from.id.toString());
-  if (!isAdmin) {
-    return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
-  }
-
-  if (!params) {
-    return safeSendMessage(msg.chat.id, "❌ Please provide bonus code parameters.");
-  }
-
-  try {
-    const [code, bonusAmount, totalClaims, days, description] = params.split('|');
-    
-    if (!code || !bonusAmount || !totalClaims || !days) {
-      return safeSendMessage(msg.chat.id, "❌ Missing required parameters.");
-    }
-
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + parseInt(days));
-
-    const [bonusCode] = await db
-      .insert(bonusCodes)
-      .values({
-        code,
-        bonusAmount,
-        totalClaims: parseInt(totalClaims),
-        currentClaims: 0,
-        expiresAt,
-        description: description || null,
-        status: 'active',
-        source: 'telegram',
-        createdBy: msg.from.id
-      })
-      .returning();
-
-    await safeSendMessage(msg.chat.id,
-      `✅ Bonus code created successfully!\n\n` +
-      `Code: ${bonusCode.code}\n` +
-      `Amount: ${bonusCode.bonusAmount}\n` +
-      `Claims: ${bonusCode.totalClaims}\n` +
-      `Expires: ${bonusCode.expiresAt.toLocaleDateString()}`
-    );
-  } catch (error) {
-    log("error", `Error creating bonus code: ${error instanceof Error ? error.message : String(error)}`);
-    await safeSendMessage(msg.chat.id, "❌ Error creating bonus code.");
-  }
-}
-
-async function handleCreateChallenge(msg: TelegramBot.Message, params?: string) {
-  if (!msg.from?.id) return;
-  
-  const isAdmin = await checkIsAdmin(msg.from.id.toString());
-  if (!isAdmin) {
-    return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
-  }
-
-  if (!params) {
-    return safeSendMessage(msg.chat.id, "❌ Please provide challenge parameters.");
-  }
-
-  try {
-    const [game, minBet, multiplier, prizeAmount, maxWinners, days, description] = params.split('|');
-    
-    if (!game || !minBet || !prizeAmount || !maxWinners || !days) {
-      return safeSendMessage(msg.chat.id, "❌ Missing required parameters.");
-    }
-
-    const timeframe = new Date();
-    timeframe.setDate(timeframe.getDate() + parseInt(days));
-
-    const [challenge] = await db
-      .insert(challenges)
-      .values({
-        game,
-        minBet,
-        multiplier: multiplier || null,
-        prizeAmount,
-        maxWinners: parseInt(maxWinners),
-        timeframe,
-        description: description || null,
-        status: 'active',
-        source: 'telegram',
-        createdBy: msg.from.id
-      })
-      .returning();
-
-    await safeSendMessage(msg.chat.id,
-      `✅ Challenge created successfully!\n\n` +
-      `Game: ${challenge.game}\n` +
-      `Min Bet: ${challenge.minBet}\n` +
-      `Prize: ${challenge.prizeAmount}\n` +
-      `Winners: ${challenge.maxWinners}\n` +
-      `Expires: ${challenge.timeframe.toLocaleDateString()}`
-    );
-  } catch (error) {
-    log("error", `Error creating challenge: ${error instanceof Error ? error.message : String(error)}`);
-    await safeSendMessage(msg.chat.id, "❌ Error creating challenge.");
-  }
-}
-
-async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
-  if (!botInstance) return;
-
-  const chatId = callbackQuery.message?.chat.id;
-  const messageId = callbackQuery.message?.message_id;
-  const data = callbackQuery.data;
-  const userId = callbackQuery.from.id;
-
-  if (!chatId || !messageId || !data) return;
-
-  // Handle bonus code creation
-  if (data === 'bonus_start') {
-    const state = creationStates.get(userId);
-    if (state?.type === 'bonus') {
-      creationStates.set(userId, { ...state, step: 'code' });
-      await botInstance.editMessageText(
-        "🎁 *Enter Bonus Code*\n\n" +
-        "Please enter the bonus code (e.g., WELCOME100).\n" +
-        "Reply to this message with the code.",
-        {
-          chat_id: chatId,
-          message_id: messageId,
-          parse_mode: "Markdown"
-        }
-      );
-    }
-  }
-
-  // Handle challenge creation
-  if (data === 'challenge_start') {
-    const state = creationStates.get(userId);
-    if (state?.type === 'challenge') {
-      creationStates.set(userId, { ...state, step: 'game' });
-      const markup = {
-        inline_keyboard: [
-          [
-            { text: "🎰 Slots", callback_data: "game_slots" },
-            { text: "🎲 Dice", callback_data: "game_dice" }
-          ],
-          [
-            { text: "🎯 Crash", callback_data: "game_crash" },
-            { text: "🃏 Blackjack", callback_data: "game_blackjack" }
-          ]
-        ]
-      };
-      
-      await botInstance.editMessageText(
-        "🎯 *Select Game Type*\n\n" +
-        "Choose the game type for this challenge:",
-        {
-          chat_id: chatId,
-          message_id: messageId,
-          parse_mode: "Markdown",
-          reply_markup: markup
-        }
-      );
-    }
-  }
-
-  // Handle game selection for challenge
-  if (data.startsWith('game_')) {
-    const state = creationStates.get(userId);
-    if (state?.type === 'challenge') {
-      const game = data.replace('game_', '');
-      creationStates.set(userId, { ...state, step: 'minBet', game });
-      await botInstance.editMessageText(
-        "💰 *Enter Minimum Bet*\n\n" +
-        "Please enter the minimum bet amount (e.g., $50).\n" +
-        "Reply to this message with the amount.",
-        {
-          chat_id: chatId,
-          message_id: messageId,
-          parse_mode: "Markdown"
-        }
-      );
-    }
-  }
-
-  if (data.startsWith('approve_') || data.startsWith('reject_')) {    const [action, username] = data.split('_');
-    const isAdmin = await checkIsAdmin(callbackQuery.from.id.toString());
-
-    if (!isAdmin) {
-      return botInstance.answerCallbackQuery(callbackQuery.id, {
-        text: '❌ Only admins can perform this action',
-        show_alert: true
-      });
-    }
-
-    if (action === 'approve') {
-      await handleApprove({ from: callbackQuery.from, chat: { id: chatId } } as TelegramBot.Message, username);
-    } else {
-      await handleReject({ from: callbackQuery.from, chat: { id: chatId } } as TelegramBot.Message, username);
-    }
-
-    await botInstance.answerCallbackQuery(callbackQuery.id);
-    await botInstance.deleteMessage(chatId, messageId);
-  } else if (data === 'refresh_leaderboard') {
-    await handleLeaderboardRefresh(chatId, messageId);
-    await botInstance.answerCallbackQuery(callbackQuery.id);
   }
 }
 
