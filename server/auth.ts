@@ -24,40 +24,52 @@ const authLimiter = new RateLimiterMemory({
   blockDuration: 60 * 2, // Block for 2 minutes
 });
 
-// Type alias for Express.User from augmented global namespace
-type ExpressUser = Express.User;
-
+// Update Express.User interface to match SelectUser type
 declare global {
   namespace Express {
-    interface User {
+    interface User extends Omit<SelectUser, 'password'> {
       id: number;
       username: string;
-      isAdmin?: boolean;
       email: string;
-      createdAt?: Date;
+      isAdmin: boolean;
+      createdAt: Date;
+      telegramId?: string | null;
+      telegramVerified?: boolean | null;
+      emailVerified?: boolean | null;
     }
   }
 }
 
 export function setupAuth(app: Express) {
   // Added session middleware configuration
-  app.use(session({ secret: process.env.SESSION_SECRET || "keyboard cat", resave: false, saveUninitialized: false }));
+  app.use(session({ 
+    secret: process.env.SESSION_SECRET || "keyboard cat", 
+    resave: false, 
+    saveUninitialized: false 
+  }));
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Session serialization
-  passport.serializeUser((user: ExpressUser, done: (err: any, id?: number) => void) => {
+  // Update serialization to handle the extended user type
+  passport.serializeUser((user: Express.User, done: (err: any, id?: number) => void) => {
     done(null, user.id);
   });
 
-  passport.deserializeUser(async (id: number, done: (err: any, user?: ExpressUser) => void) => {
+  passport.deserializeUser(async (id: number, done: (err: any, user?: Express.User) => void) => {
     try {
       const [user] = await db
         .select()
         .from(users)
         .where(eq(users.id, id))
         .limit(1);
-      done(null, user);
+
+      if (!user) {
+        return done(new Error('User not found'));
+      }
+
+      // Omit password from user object
+      const { password, ...userWithoutPassword } = user;
+      done(null, userWithoutPassword as Express.User);
     } catch (error) {
       done(error);
     }
