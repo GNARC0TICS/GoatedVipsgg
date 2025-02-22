@@ -1,7 +1,6 @@
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
-import * as schema from "@db/schema";
-import { log } from "../server/vite";
+import * as schema from "./schema";
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -18,10 +17,10 @@ export const db = drizzle(sql, { schema });
 // Verify connection on startup
 sql`SELECT 1`
   .then(() => {
-    log("Database connection established successfully");
+    console.log("Database connection established successfully");
   })
   .catch((error) => {
-    log(`Database connection error: ${error.message}`);
+    console.error(`Database connection error: ${error.message}`);
     // Don't throw here - let the application continue but log the error
   });
 

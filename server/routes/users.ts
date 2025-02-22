@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { db } from "../db";
-import { users } from "../db/schema";
-import type { SelectUser } from "../db/schema";
+import { db } from "@db";
+import { users } from "@db/schema";
+import type { SelectUser } from "@db/schema";
 import { like, desc, eq } from "drizzle-orm";
 import rateLimit from 'express-rate-limit';
-import type { IpHistoryEntry, LoginHistoryEntry, ActivityLogEntry } from "../db/schema/users";
+import type { IpHistoryEntry, LoginHistoryEntry, ActivityLogEntry } from "@db/schema/users";
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";

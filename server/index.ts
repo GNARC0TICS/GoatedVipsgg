@@ -13,13 +13,12 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer, createLogger } from "vite";
 import { promisify } from "util";
-import { exec } from "child_process";
 import { sql } from "drizzle-orm";
 import { logAction as log } from "./utils/logger";
 import { initializeBot } from "./telegram/bot";
 import { registerRoutes } from "./routes";
 import { initializeAdmin } from "./middleware/admin";
-import { db } from "../db";
+import { db } from "@db";  // Updated import path
 import { setupAuth } from "./auth";
 import cors from "cors";
 import fetch from "node-fetch";
@@ -28,7 +27,7 @@ import fetch from "node-fetch";
 const execAsync = promisify(exec);
 
 // Server configuration constants
-const PORT = parseInt(process.env.PORT || '5000', 10);
+const API_PORT = parseInt(process.env.API_PORT || '5000', 10);
 const HOST = '0.0.0.0';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -77,11 +76,11 @@ async function initializeServer() {
     log("info", "Starting server initialization...");
 
     // Find an available port
-    let currentPort = PORT;
+    let currentPort = API_PORT;
     while (!await isPortAvailable(currentPort)) {
       currentPort++;
-      if (currentPort > PORT + 10) {
-        throw new Error(`Unable to find an available port after trying ${PORT} through ${currentPort-1}`);
+      if (currentPort > API_PORT + 10) {
+        throw new Error(`Unable to find an available port after trying ${API_PORT} through ${currentPort-1}`);
       }
     }
 
@@ -218,7 +217,7 @@ function setupMiddleware(app: express.Application) {
   // CORS configuration for API routes
   app.use('/api', cors({
     origin: process.env.NODE_ENV === 'development'
-      ? ['http://localhost:5000', 'http://0.0.0.0:5000']
+      ? [`http://${HOST}:${API_PORT}`]
       : process.env.ALLOWED_ORIGINS?.split(',') || [],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
