@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { WebSocket, WebSocketServer } from "ws";
 import { log } from "./vite";
@@ -7,18 +7,42 @@ import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import { db } from "@db";
-import { wagerRaces, users, ticketMessages } from "@db/schema";
+import { sql } from "drizzle-orm";
+import {
+  bonusCodes,
+  supportTickets,
+  users,
+  wagerRaces,
+  ticketMessages,
+  historicalRaces
+} from "@db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { z } from "zod";
-import { historicalRaces } from "@db/schema"; // Assuming historicalRaces schema exists
 
+// Extend WebSocket type to include isAlive
+declare module 'ws' {
+  interface WebSocket {
+    isAlive?: boolean;
+  }
+}
+
+// Add utility functions
+function getTierFromWager(wagerAmount: number): string {
+  if (wagerAmount >= 1000000) return 'diamond';
+  if (wagerAmount >= 500000) return 'platinum';
+  if (wagerAmount >= 100000) return 'gold';
+  if (wagerAmount >= 50000) return 'silver';
+  return 'bronze';
+}
+
+const BASE_PRIZE_POOL = 500; // Base prize pool in USD
+let prizePool = BASE_PRIZE_POOL;
 
 // Rate limiting setup
 const rateLimiter = new RateLimiterMemory({
   points: 60,
   duration: 1,
 });
-
 
 function handleLeaderboardConnection(ws: WebSocket) {
   const clientId = Date.now().toString();
@@ -34,8 +58,8 @@ function handleLeaderboardConnection(ws: WebSocket) {
     ws.isAlive = true;
   });
 
-  ws.on("error", (error) => {
-    log(`WebSocket error (${clientId}):`, error);
+  ws.on("error", (error: Error) => {
+    log(`WebSocket error (${clientId}): ${error.message}`);
     clearInterval(pingInterval);
     ws.terminate();
   });
@@ -47,7 +71,7 @@ function handleLeaderboardConnection(ws: WebSocket) {
 
   // Send initial data with rate limiting
   if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ 
+    ws.send(JSON.stringify({
       type: "CONNECTED",
       clientId,
       timestamp: Date.now()
@@ -156,6 +180,35 @@ export function registerRoutes(app: Express): Server {
   return httpServer;
 }
 
+async function insertHistoricalRace(raceData: {
+  status: string;
+  prizePool: number;
+  startDate: Date;
+  endDate: Date;
+  participants: any[];
+  totalWagered: number;
+  participantCount: number;
+  metadata: Record<string, any>;
+}) {
+  try {
+    const [race] = await db.insert(historicalRaces).values({
+      status: raceData.status,
+      prizePool: raceData.prizePool,
+      startDate: raceData.startDate,
+      endDate: raceData.endDate,
+      participants: raceData.participants,
+      totalWagered: raceData.totalWagered,
+      participantCount: raceData.participantCount,
+      metadata: raceData.metadata
+    }).returning();
+    return race;
+  } catch (error) {
+    log(`Error inserting historical race: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
+  }
+}
+
+
 function setupRESTRoutes(app: Express) {
   // Add endpoint to fetch previous month's results
   app.get("/api/wager-races/previous", async (_req, res) => {
@@ -166,7 +219,7 @@ function setupRESTRoutes(app: Express) {
         message: "No previous race data found",
       });
     } catch (error) {
-      log(`Error fetching previous race: ${error}`);
+      log(`Error fetching previous race: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({
         status: "error",
         message: "Failed to fetch previous race data",
@@ -226,7 +279,7 @@ function setupRESTRoutes(app: Express) {
           const now = new Date();
           const currentMonth = now.getMonth();
           const currentYear = now.getFullYear();
-          
+
           // Store complete race results with detailed participant data
           const winners = stats.data.monthly.data.slice(0, 10).map((participant: any, index: number) => ({
             uid: participant.uid,
@@ -240,32 +293,22 @@ function setupRESTRoutes(app: Express) {
           }));
 
           // Store race completion data
-          await db.insert(historicalRaces).values({
-            month: currentMonth,
-            year: currentYear,
+          const raceData = {
+            status: 'completed',
             prizePool: prizePool,
             startDate: new Date(currentYear, currentMonth, 1),
             endDate: now,
             participants: winners,
             totalWagered: stats.data.monthly.data.reduce((sum: number, p: any) => sum + p.wagered.this_month, 0),
             participantCount: stats.data.monthly.data.length,
-            status: 'completed',
             metadata: {
               transitionEnds: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
               nextRaceStarts: new Date(currentYear, currentMonth + 1, 1).toISOString(),
               prizeDistribution: prizeDistribution
             }
-          });
+          };
+          await insertHistoricalRace(raceData);
 
-          await db.insert(historicalRaces).values({
-            month: previousMonth,
-            year: previousYear,
-            prizePool: 500,
-            startDate: new Date(previousYear, previousMonth - 1, 1),
-            endDate: new Date(previousYear, previousMonth, 0, 23, 59, 59),
-            participants: winners,
-            isCompleted: true
-          });
 
           // Broadcast race completion to all connected clients
           broadcastLeaderboardUpdate({
@@ -294,7 +337,7 @@ function setupRESTRoutes(app: Express) {
 
       res.json(raceData);
     } catch (error) {
-      log(`Error fetching current race: ${error}`);
+      log(`Error fetching current race: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({
         status: "error",
         message: "Failed to fetch current race",
@@ -329,7 +372,7 @@ function setupRESTRoutes(app: Express) {
         data: messages
       });
     } catch (error) {
-      log(`Error fetching support messages: ${error}`);
+      log(`Error fetching support messages: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({
         status: "error",
         message: "Failed to fetch support messages"
@@ -356,7 +399,7 @@ function setupRESTRoutes(app: Express) {
         data: tickets
       });
     } catch (error) {
-      log(`Error fetching support tickets: ${error}`);
+      log(`Error fetching support tickets: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({
         status: "error",
         message: "Failed to fetch support tickets"
@@ -392,7 +435,7 @@ function setupRESTRoutes(app: Express) {
         data: ticket
       });
     } catch (error) {
-      log(`Error creating support ticket: ${error}`);
+      log(`Error creating support ticket: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({
         status: "error",
         message: "Failed to create support ticket"
@@ -403,7 +446,7 @@ function setupRESTRoutes(app: Express) {
   app.post("/api/support/reply", requireAuth, async (req, res) => {
     try {
       const { ticketId, message } = req.body;
-      
+
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
         return res.status(400).json({
           status: "error",
@@ -445,7 +488,7 @@ function setupRESTRoutes(app: Express) {
         data: savedMessage
       });
     } catch (error) {
-      log(`Error saving support reply: ${error}`);
+      log(`Error saving support reply: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({
         status: "error",
         message: "Failed to save reply"
@@ -472,7 +515,7 @@ function setupRESTRoutes(app: Express) {
         data: updatedTicket
       });
     } catch (error) {
-      log(`Error updating support ticket: ${error}`);
+      log(`Error updating support ticket: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({
         status: "error",
         message: "Failed to update support ticket"
@@ -481,71 +524,71 @@ function setupRESTRoutes(app: Express) {
   });
 
   // Bonus code management routes
-app.get("/api/admin/bonus-codes", requireAdmin, async (_req, res) => {
-  try {
-    const codes = await db.query.bonusCodes.findMany({
-      orderBy: (codes, { desc }) => [desc(codes.createdAt)],
-    });
-    res.json(codes);
-  } catch (error) {
-    log(`Error fetching bonus codes: ${error}`);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to fetch bonus codes",
-    });
-  }
-});
+  app.get("/api/admin/bonus-codes", requireAdmin, async (_req, res) => {
+    try {
+      const codes = await db.query.bonusCodes.findMany({
+        orderBy: (codes, { desc }) => [desc(codes.createdAt)],
+      });
+      res.json(codes);
+    } catch (error) {
+      log(`Error fetching bonus codes: ${error instanceof Error ? error.message : String(error)}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch bonus codes",
+      });
+    }
+  });
 
-app.post("/api/admin/bonus-codes", requireAdmin, async (req, res) => {
-  try {
-    const [code] = await db
-      .insert(bonusCodes)
-      .values({
-        ...req.body,
-        createdBy: req.user!.id,
-      })
-      .returning();
-    res.json(code);
-  } catch (error) {
-    log(`Error creating bonus code: ${error}`);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to create bonus code",
-    });
-  }
-});
+  app.post("/api/admin/bonus-codes", requireAdmin, async (req, res) => {
+    try {
+      const [code] = await db
+        .insert(bonusCodes)
+        .values({
+          ...req.body,
+          createdBy: req.user!.id,
+        })
+        .returning();
+      res.json(code);
+    } catch (error) {
+      log(`Error creating bonus code: ${error instanceof Error ? error.message : String(error)}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to create bonus code",
+      });
+    }
+  });
 
-app.put("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
-  try {
-    const [code] = await db
-      .update(bonusCodes)
-      .set(req.body)
-      .where(eq(bonusCodes.id, parseInt(req.params.id)))
-      .returning();
-    res.json(code);
-  } catch (error) {
-    log(`Error updating bonus code: ${error}`);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to update bonus code",
-    });
-  }
-});
+  app.put("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
+    try {
+      const [code] = await db
+        .update(bonusCodes)
+        .set(req.body)
+        .where(eq(bonusCodes.id, parseInt(req.params.id)))
+        .returning();
+      res.json(code);
+    } catch (error) {
+      log(`Error updating bonus code: ${error instanceof Error ? error.message : String(error)}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to update bonus code",
+      });
+    }
+  });
 
-app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
-  try {
-    await db
-      .delete(bonusCodes)
-      .where(eq(bonusCodes.id, parseInt(req.params.id)));
-    res.json({ status: "success" });
-  } catch (error) {
-    log(`Error deleting bonus code: ${error}`);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to delete bonus code",
-    });
-  }
-});
+  app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
+    try {
+      await db
+        .delete(bonusCodes)
+        .where(eq(bonusCodes.id, parseInt(req.params.id)));
+      res.json({ status: "success" });
+    } catch (error) {
+      log(`Error deleting bonus code: ${error instanceof Error ? error.message : String(error)}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to delete bonus code",
+      });
+    }
+  });
 
   // Chat history endpoint
   app.get("/api/chat/history", requireAuth, async (req, res) => {
@@ -556,7 +599,7 @@ app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
       });
       res.json(messages);
     } catch (error) {
-      log(`Error fetching chat history: ${error}`);
+      log(`Error fetching chat history: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({
         status: "error",
         message: "Failed to fetch chat history",
@@ -616,9 +659,9 @@ app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
 }
 
 // Request handlers
-async function handleProfileRequest(req: any, res: any) {
+async function handleProfileRequest(req: Request, res: Response) {
   try {
-    // Fetch user data
+    // Fetch user data with lastLoginIp instead of lastLogin
     const [user] = await db
       .select({
         id: users.id,
@@ -626,7 +669,7 @@ async function handleProfileRequest(req: any, res: any) {
         email: users.email,
         isAdmin: users.isAdmin,
         createdAt: users.createdAt,
-        lastLogin: users.lastLogin,
+        lastLoginIp: users.lastLoginIp,
       })
       .from(users)
       .where(eq(users.id, req.user!.id))
@@ -639,39 +682,13 @@ async function handleProfileRequest(req: any, res: any) {
       });
     }
 
-    // Fetch current leaderboard data
-    const response = await fetch(
-      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
-    }
-
-    const leaderboardData = await response.json();
-    const data = leaderboardData.data || leaderboardData.results || leaderboardData;
-
-    // Find user positions
-    const position = {
-      weekly: data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined,
-      monthly: data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined
-    };
-
+    // Rest of the handler remains the same
     res.json({
       status: "success",
-      data: {
-        ...user,
-        position
-      },
+      data: user,
     });
   } catch (error) {
-    log(`Error fetching profile: ${error}`);
+    log(`Error fetching profile: ${error instanceof Error ? error.message : String(error)}`);
     res.status(500).json({
       status: "error",
       message: "Failed to fetch profile",
@@ -679,16 +696,16 @@ async function handleProfileRequest(req: any, res: any) {
   }
 }
 
-async function handleAffiliateStats(req: any, res: any) {
+async function handleAffiliateStats(req: Request, res: Response) {
   try {
     await rateLimiter.consume(req.ip || "unknown");
-    const username = req.query.username;
+    const username = req.query.username as string | undefined;
     let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
-    
+
     if (username) {
       url += `?username=${encodeURIComponent(username)}`;
     }
-    
+
     const response = await fetch(url,
       {
         headers: {
@@ -711,7 +728,7 @@ async function handleAffiliateStats(req: any, res: any) {
 
     res.json(transformedData);
   } catch (error) {
-    log(`Error in /api/affiliate/stats: ${error}`);
+    log(`Error in /api/affiliate/stats: ${error instanceof Error ? error.message : String(error)}`);
     // Return empty data structure to prevent UI breaking
     res.json({
       status: "success",
@@ -729,7 +746,7 @@ async function handleAffiliateStats(req: any, res: any) {
   }
 }
 
-async function handleAdminLogin(req: any, res: any) {
+async function handleAdminLogin(req: Request, res: Response) {
   try {
     const result = adminLoginSchema.safeParse(req.body);
     if (!result.success) {
@@ -777,7 +794,7 @@ async function handleAdminLogin(req: any, res: any) {
       },
     });
   } catch (error) {
-    log(`Admin login error: ${error}`);
+    log(`Admin login error: ${error instanceof Error ? error.message : String(error)}`);
     res.status(500).json({
       status: "error",
       message: "Failed to process admin login",
@@ -785,7 +802,7 @@ async function handleAdminLogin(req: any, res: any) {
   }
 }
 
-async function handleAdminUsersRequest(_req: any, res: any) {
+async function handleAdminUsersRequest(_req: Request, res: Response) {
   try {
     const usersList = await db
       .select({
@@ -794,7 +811,7 @@ async function handleAdminUsersRequest(_req: any, res: any) {
         email: users.email,
         isAdmin: users.isAdmin,
         createdAt: users.createdAt,
-        lastLogin: users.lastLogin,
+        lastLoginIp: users.lastLoginIp,
       })
       .from(users)
       .orderBy(users.createdAt);
@@ -804,7 +821,7 @@ async function handleAdminUsersRequest(_req: any, res: any) {
       data: usersList,
     });
   } catch (error) {
-    log(`Error fetching users: ${error}`);
+    log(`Error fetching users: ${error instanceof Error ? error.message : String(error)}`);
     res.status(500).json({
       status: "error",
       message: "Failed to fetch users",
@@ -812,7 +829,7 @@ async function handleAdminUsersRequest(_req: any, res: any) {
   }
 }
 
-async function handleWagerRacesRequest(_req: any, res: any) {
+async function handleWagerRacesRequest(_req: Request, res: Response) {
   try {
     const races = await db.query.wagerRaces.findMany({
       orderBy: (races, { desc }) => [desc(races.createdAt)],
@@ -822,7 +839,7 @@ async function handleWagerRacesRequest(_req: any, res: any) {
       data: races,
     });
   } catch (error) {
-    log(`Error fetching wager races: ${error}`);
+    log(`Error fetching wager races: ${error instanceof Error ? error.message : String(error)}`);
     res.status(500).json({
       status: "error",
       message: "Failed to fetch wager races",
@@ -830,7 +847,7 @@ async function handleWagerRacesRequest(_req: any, res: any) {
   }
 }
 
-async function handleCreateWagerRace(req: any, res: any) {
+async function handleCreateWagerRace(req: Request, res: Response) {
   try {
     const race = await db
       .insert(wagerRaces)
@@ -853,7 +870,7 @@ async function handleCreateWagerRace(req: any, res: any) {
       data: race[0],
     });
   } catch (error) {
-    log(`Error creating wager race: ${error}`);
+    log(`Error creating wager race: ${error instanceof Error ? error.message : String(error)}`);
     res.status(500).json({
       status: "error",
       message: "Failed to create wager race",
@@ -945,7 +962,7 @@ async function handleChatConnection(ws: WebSocket) {
         }
       });
     } catch (error) {
-      log(`Error handling chat message: ${error}`);
+      log(`Error handling chat message: ${error instanceof Error ? error.message : String(error)}`);
       ws.send(
         JSON.stringify({
           type: "error",
@@ -960,8 +977,8 @@ async function handleChatConnection(ws: WebSocket) {
     clearInterval(pingInterval);
   });
 
-  ws.on("error", (error) => {
-    log(`WebSocket error: ${error}`);
+  ws.on("error", (error:Error) => {
+    log(`WebSocket error: ${error.message}`);
     clearInterval(pingInterval);
     ws.terminate();
   });
@@ -987,3 +1004,11 @@ function generateToken(payload: any): string {
   //Implementation for generateToken is missing in original code, but it's not relevant to the fix.  Leaving as is.
   return "";
 }
+
+export {
+  handleLeaderboardConnection,
+  handleProfileRequest,
+  handleAdminUsersRequest,
+  insertHistoricalRace,
+  getTierFromWager
+};

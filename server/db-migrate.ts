@@ -20,16 +20,18 @@ async function migrateVerificationData() {
 
       // 2. Insert all existing requests into verification history
       for (const request of existingRequests) {
-        await tx.insert(verificationHistory).values({
-          telegramId: request.telegramId,
-          userId: request.userId,
-          status: request.status,
-          goatedUsername: request.goatedUsername,
-          verifiedBy: request.verifiedBy,
-          verifiedAt: request.verifiedAt,
-          adminNotes: request.adminNotes,
-          createdAt: request.requestedAt
-        });
+        if (request) {
+          await tx.insert(verificationHistory).values({
+            telegramId: request.telegramId,
+            userId: request.userId,
+            status: request.status || 'pending',
+            goatedUsername: request.goatedUsername || null,
+            verifiedBy: request.verifiedBy || null,
+            verifiedAt: request.verifiedAt || null,
+            adminNotes: request.adminNotes || null,
+            createdAt: request.requestedAt || new Date()
+          });
+        }
       }
 
       // 3. Get the latest verification status for each telegram user
@@ -37,8 +39,9 @@ async function migrateVerificationData() {
         WITH ranked_requests AS (
           SELECT 
             *,
-            ROW_NUMBER() OVER (PARTITION BY telegram_id ORDER BY requested_at DESC) as rn
+            ROW_NUMBER() OVER (PARTITION BY "telegram_id" ORDER BY "requested_at" DESC) as rn
           FROM verification_requests
+          WHERE status = 'approved'
         )
         SELECT * FROM ranked_requests WHERE rn = 1
       `);
@@ -47,33 +50,39 @@ async function migrateVerificationData() {
       await tx.execute(sql`TRUNCATE TABLE verification_requests`);
 
       // 5. Insert only the latest status for each user
-      for (const status of latestStatuses) {
-        await tx.insert(verificationRequests).values({
-          telegramId: status.telegram_id,
-          userId: status.user_id,
-          status: status.status,
-          goatedUsername: status.goated_username,
-          requestedAt: status.requested_at,
-          verifiedAt: status.verified_at,
-          verifiedBy: status.verified_by,
-          adminNotes: status.admin_notes,
-          telegramUsername: status.telegram_username,
-          updatedAt: status.updated_at
-        });
+      if (Array.isArray(latestStatuses)) {
+        for (const status of latestStatuses) {
+          if (status) {
+            await tx.insert(verificationRequests).values({
+              telegramId: status.telegram_id,
+              userId: status.user_id,
+              status: 'approved',
+              goatedUsername: status.goated_username || null,
+              requestedAt: status.requested_at || new Date(),
+              verifiedAt: status.verified_at || null,
+              verifiedBy: status.verified_by || null,
+              adminNotes: status.admin_notes || null,
+              telegramUsername: status.telegram_username || null,
+              updatedAt: new Date()
+            });
+          }
+        }
       }
 
       // 6. Update telegram_users table with latest verification status
-      for (const status of latestStatuses) {
-        if (status.status === 'approved') {
-          await tx
-            .update(telegramUsers)
-            .set({
-              isVerified: true,
-              verifiedAt: status.verified_at,
-              verifiedBy: status.verified_by,
-              updatedAt: new Date()
-            })
-            .where(sql`telegram_id = ${status.telegram_id}`);
+      if (Array.isArray(latestStatuses)) {
+        for (const status of latestStatuses) {
+          if (status && status.telegram_id) {
+            await tx
+              .update(telegramUsers)
+              .set({
+                isVerified: true,
+                verifiedAt: status.verified_at || new Date(),
+                verifiedBy: status.verified_by || null,
+                updatedAt: new Date()
+              })
+              .where(sql`telegram_id = ${status.telegram_id}`);
+          }
         }
       }
     });

@@ -7,7 +7,7 @@ This document provides a comprehensive overview of the database schema for our a
 
 ### 1. User Management System
 #### users
-```
+```sql
 Table Structure:
 ├── Basic Info
 │   ├── id (PK)
@@ -15,9 +15,9 @@ Table Structure:
 │   ├── email (unique)
 │   └── password
 ├── Status & Permissions
-│   └── isAdmin
+│   ├── isAdmin
+│   └── emailVerified
 ├── Security & Tracking
-│   ├── emailVerified
 │   ├── emailVerificationToken
 │   ├── lastLoginIp
 │   ├── registrationIp
@@ -36,16 +36,57 @@ Table Structure:
 
 Relationships:
 - One-to-One: notificationPreferences
-- One-to-One: telegramUsers
-- One-to-One: verificationRequests
+- One-to-One: telegramUser
+- One-to-One: verificationRequest
 - One-to-Many: verificationHistory
 - One-to-Many: createdRaces
 - One-to-Many: raceParticipations
+- One-to-Many: supportTickets
 ```
 
-### 2. Telegram Integration System
-#### telegramUsers
+### 2. Support System
+#### supportTickets
+```sql
+Table Structure:
+├── Ticket Info
+│   ├── id (PK)
+│   ├── userId (FK -> users)
+│   ├── subject
+│   └── description
+├── Status
+│   ├── status (open/closed)
+│   └── priority (low/medium/high)
+└── Management
+    ├── assignedTo (FK -> users)
+    ├── createdAt
+    └── updatedAt
+
+Relationships:
+- Many-to-One: user
+- One-to-Many: messages
+- One-to-One: assignedStaff
 ```
+
+#### ticketMessages
+```sql
+Table Structure:
+├── Message Info
+│   ├── id (PK)
+│   ├── ticketId (FK -> supportTickets)
+│   ├── userId (FK -> users)
+│   └── message
+├── Metadata
+│   ├── isStaffReply
+│   └── createdAt
+
+Relationships:
+- Many-to-One: ticket
+- Many-to-One: user
+```
+
+### 3. Telegram Integration System
+#### telegramUsers
+```sql
 Table Structure:
 ├── Core Details
 │   ├── id (PK)
@@ -60,10 +101,13 @@ Table Structure:
 └── Settings
     ├── notificationsEnabled
     └── updatedAt
+
+Relationships:
+- One-to-One: user
 ```
 
 #### verificationRequests
-```
+```sql
 Table Structure:
 ├── Request Details
 │   ├── id (PK)
@@ -79,11 +123,15 @@ Table Structure:
 │   └── goatedUsername
 └── Admin
     ├── adminNotes
-    └── uniqueRequest (unique constraint)
+    ├── updatedAt
+    └── uniqueRequest (unique)
+
+Relationships:
+- Many-to-One: user
 ```
 
 #### verificationHistory
-```
+```sql
 Table Structure:
 ├── History Details
 │   ├── id (PK)
@@ -97,11 +145,14 @@ Table Structure:
     ├── verifiedAt
     ├── adminNotes
     └── createdAt
+
+Relationships:
+- Many-to-One: user
 ```
 
-### 3. Wager Racing System
+### 4. Wager Racing System
 #### wagerRaces
-```
+```sql
 Table Structure:
 ├── Race Info
 │   ├── id (PK)
@@ -109,37 +160,48 @@ Table Structure:
 │   ├── type
 │   └── status
 ├── Prize Structure
-│   ├── prizePool
+│   ├── prizePool (decimal)
 │   └── prizeDistribution (jsonb)
 ├── Requirements
-│   └── minWager
+│   └── minWager (decimal)
 ├── Timing
 │   ├── startDate
 │   └── endDate
 └── Additional Info
     ├── rules
-    └── description
+    ├── description
+    ├── createdBy (FK -> users)
+    ├── createdAt
+    └── updatedAt
+
+Relationships:
+- Many-to-One: creator
+- One-to-Many: participants
 ```
 
 #### wagerRaceParticipants
-```
+```sql
 Table Structure:
 ├── Participation
 │   ├── id (PK)
 │   ├── raceId (FK -> wagerRaces)
 │   └── userId (FK -> users)
 ├── Performance
-│   ├── totalWager
+│   ├── totalWager (decimal)
 │   └── rank
 └── Tracking
     ├── joinedAt
     ├── updatedAt
     └── wagerHistory (jsonb)
+
+Relationships:
+- Many-to-One: race
+- Many-to-One: user
 ```
 
-### 4. Challenge System
+### 5. Challenge System
 #### challenges
-```
+```sql
 Table Structure:
 ├── Game Details
 │   ├── id (PK)
@@ -153,11 +215,16 @@ Table Structure:
     ├── timeframe
     ├── description
     ├── status
-    └── createdBy
+    ├── createdBy
+    ├── createdAt
+    └── updatedAt
+
+Relationships:
+- One-to-Many: entries
 ```
 
 #### challengeEntries
-```
+```sql
 Table Structure:
 ├── Entry Info
 │   ├── id (PK)
@@ -171,23 +238,14 @@ Table Structure:
     ├── submittedAt
     ├── verifiedAt
     └── verifiedBy
+
+Relationships:
+- Many-to-One: challenge
 ```
 
-### 5. Additional Features
-#### affiliateStats
-```
-Table Structure:
-├── Performance Metrics
-│   ├── id (PK)
-│   ├── userId (FK -> users)
-│   ├── totalWager
-│   └── commission
-└── Timing
-    └── timestamp
-```
-
+### 6. Additional Features
 #### bonusCodes
-```
+```sql
 Table Structure:
 ├── Code Details
 │   ├── id (PK)
@@ -202,10 +260,14 @@ Table Structure:
     ├── createdBy (FK -> users)
     ├── userId (FK -> users)
     └── claimedAt
+
+Relationships:
+- Many-to-One: creator
+- Many-to-One: claimant
 ```
 
 #### notificationPreferences
-```
+```sql
 Table Structure:
 ├── User Settings
 │   ├── id (PK)
@@ -217,45 +279,26 @@ Table Structure:
 │   └── monthlyStatements
 └── Delivery Methods
     ├── emailNotifications
-    └── pushNotifications
+    ├── pushNotifications
+    └── updatedAt
+
+Relationships:
+- One-to-One: user
 ```
 
-## Key Workflows
+## Schema Changes and Migrations
+1. The verification system now maintains a history of all verification attempts
+2. Support system has been added with ticket management
+3. Race tracking system has been enhanced with participant history
+4. Challenge system has been implemented for game-specific competitions
 
-### 1. User Verification Process
-1. User registration in platform (users)
-2. Telegram account linking (telegramUsers)
-3. Verification request submission (verificationRequests)
-4. Admin verification via Telegram bot
-5. Verification history logging (verificationHistory)
-
-### 2. Race and Challenge Management
-1. Admin race/challenge creation
-2. User participation through Telegram
-3. Performance tracking
-4. Automated prize distribution
-
-### 3. Affiliate System
-1. Wager tracking
-2. Commission calculation
-3. Bonus code management
-4. Real-time statistics
-
-## Data Integrity Features
+## Security Features
+- All sensitive fields use appropriate data types
 - Foreign key constraints ensure referential integrity
-- Unique constraints prevent duplicate records
-- Default values ensure data consistency
 - Timestamps track all changes
-- JSON fields for flexible data storage
 - Audit trails for important operations
-
-## Security Considerations
-- Passwords are hashed
-- IP tracking for security
+- IP tracking and history for security
 - Admin actions are logged
-- Verification process is tracked
-- Rate limiting implemented
-- Session management
 
 ## Maintenance Notes
 - Regular backups recommended

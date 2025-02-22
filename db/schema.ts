@@ -145,6 +145,30 @@ export const selectWagerRaceSchema = createSelectSchema(wagerRaces);
 export const insertWagerRaceParticipantSchema = createInsertSchema(wagerRaceParticipants);
 export const selectWagerRaceParticipantSchema = createSelectSchema(wagerRaceParticipants);
 
+// Add schema validation for support system
+export const insertSupportTicketSchema = createInsertSchema(supportTickets);
+export const selectSupportTicketSchema = createSelectSchema(supportTickets);
+export const insertTicketMessageSchema = createInsertSchema(ticketMessages);
+export const selectTicketMessageSchema = createSelectSchema(ticketMessages);
+
+// Add schema validation for telegram system
+export const insertTelegramUserSchema = createInsertSchema(telegramUsers);
+export const selectTelegramUserSchema = createSelectSchema(telegramUsers);
+export const insertVerificationRequestSchema = createInsertSchema(verificationRequests);
+export const selectVerificationRequestSchema = createSelectSchema(verificationRequests);
+export const insertVerificationHistorySchema = createInsertSchema(verificationHistory);
+export const selectVerificationHistorySchema = createSelectSchema(verificationHistory);
+
+// Add schema validation for challenges
+export const insertChallengeSchema = createInsertSchema(challenges);
+export const selectChallengeSchema = createSelectSchema(challenges);
+export const insertChallengeEntrySchema = createInsertSchema(challengeEntries);
+export const selectChallengeEntrySchema = createSelectSchema(challengeEntries);
+
+// Add schema validation for bonus codes
+export const insertBonusCodeSchema = createInsertSchema(bonusCodes);
+export const selectBonusCodeSchema = createSelectSchema(bonusCodes);
+
 // Types
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
@@ -154,6 +178,30 @@ export type InsertWagerRace = typeof wagerRaces.$inferInsert;
 export type SelectWagerRace = typeof wagerRaces.$inferSelect;
 export type InsertWagerRaceParticipant = typeof wagerRaceParticipants.$inferInsert;
 export type SelectWagerRaceParticipant = typeof wagerRaceParticipants.$inferSelect;
+
+// Add types for support system
+export type InsertSupportTicket = typeof supportTickets.$inferInsert;
+export type SelectSupportTicket = typeof supportTickets.$inferSelect;
+export type InsertTicketMessage = typeof ticketMessages.$inferInsert;
+export type SelectTicketMessage = typeof ticketMessages.$inferSelect;
+
+// Add types for telegram system
+export type InsertTelegramUser = typeof telegramUsers.$inferInsert;
+export type SelectTelegramUser = typeof telegramUsers.$inferSelect;
+export type InsertVerificationRequest = typeof verificationRequests.$inferInsert;
+export type SelectVerificationRequest = typeof verificationRequests.$inferSelect;
+export type InsertVerificationHistory = typeof verificationHistory.$inferInsert;
+export type SelectVerificationHistory = typeof verificationHistory.$inferSelect;
+
+// Add types for challenges
+export type InsertChallenge = typeof challenges.$inferInsert;
+export type SelectChallenge = typeof challenges.$inferSelect;
+export type InsertChallengeEntry = typeof challengeEntries.$inferInsert;
+export type SelectChallengeEntry = typeof challengeEntries.$inferSelect;
+
+// Add types for bonus codes
+export type InsertBonusCode = typeof bonusCodes.$inferInsert;
+export type SelectBonusCode = typeof bonusCodes.$inferSelect;
 
 export {
   telegramUsers,
