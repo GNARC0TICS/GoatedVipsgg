@@ -42,145 +42,13 @@ export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
 
-// Re-export all schema components
+// Re-export everything from schema modules
 export * from "./schema/users";
 export * from "./schema/telegram";
 export * from "./schema/verification";
+export * from "./schema/challenges";
 
-// Export additional schemas and relations as needed
-export {
-  wheelSpins,
-  bonusCodes,
-  wagerRaces,
-  wagerRaceParticipants,
-  supportTickets,
-  ticketMessages,
-  historicalRaces,
-  newsletterSubscriptions,
-  notificationPreferences,
-  affiliateStats,
-  mockWagerData,
-  transformationLogs,
-  wheelSpinRelations,
-  bonusCodeRelations,
-  wagerRaceRelations,
-  wagerRaceParticipantRelations,
-  supportTicketRelations,
-  ticketMessageRelations,
-  insertWheelSpinSchema,
-  selectWheelSpinSchema,
-  insertBonusCodeSchema,
-  selectBonusCodeSchema,
-  insertWagerRaceSchema,
-  selectWagerRaceSchema,
-  insertWagerRaceParticipantSchema,
-  selectWagerRaceParticipantSchema,
-  insertSupportTicketSchema,
-  selectSupportTicketSchema,
-  insertTicketMessageSchema,
-  selectTicketMessageSchema,
-  insertNewsletterSubscriptionSchema,
-  selectNewsletterSubscriptionSchema,
-  insertHistoricalRaceSchema,
-  selectHistoricalRaceSchema,
-  insertAffiliateStatsSchema,
-  selectAffiliateStatsSchema,
-  insertMockWagerDataSchema,
-  selectMockWagerDataSchema,
-  mockWagerDataRelations,
-  insertTransformationLogSchema,
-  selectTransformationLogSchema,
-
-} from "./schema/challenges";
-
-
-// Re-export types
-export type {
-  InsertUser,
-  SelectUser,
-  InsertWheelSpin,
-  SelectWheelSpin,
-  InsertBonusCode,
-  SelectBonusCode,
-  InsertWagerRace,
-  SelectWagerRace,
-  InsertWagerRaceParticipant,
-  SelectWagerRaceParticipant,
-  InsertSupportTicket,
-  SelectSupportTicket,
-  InsertTicketMessage,
-  SelectTicketMessage,
-  InsertNewsletterSubscription,
-  SelectNewsletterSubscription,
-  InsertHistoricalRace,
-  SelectHistoricalRace,
-  InsertAffiliateStats,
-  SelectAffiliateStats,
-  InsertMockWagerData,
-  SelectMockWagerData,
-  InsertTransformationLog,
-  SelectTransformationLog,
-  InsertTelegramUser,
-  SelectTelegramUser,
-  InsertVerificationRequest,
-  SelectVerificationRequest,
-} from "./schema/challenges";
-
-// Wheel spins table
-export const insertWheelSpinSchema = createInsertSchema(wheelSpins);
-export const selectWheelSpinSchema = createSelectSchema(wheelSpins);
-
-// Bonus codes table
-export const insertBonusCodeSchema = createInsertSchema(bonusCodes);
-export const selectBonusCodeSchema = createSelectSchema(bonusCodes);
-
-// Wager races and related tables
-export const insertWagerRaceSchema = createInsertSchema(wagerRaces);
-export const selectWagerRaceSchema = createSelectSchema(wagerRaces);
-export const insertWagerRaceParticipantSchema = createInsertSchema(
-  wagerRaceParticipants,
-);
-export const selectWagerRaceParticipantSchema = createSelectSchema(
-  wagerRaceParticipants,
-);
-
-// Support System tables
-export const insertSupportTicketSchema = createInsertSchema(supportTickets);
-export const selectSupportTicketSchema = createSelectSchema(supportTickets);
-export const insertTicketMessageSchema = createInsertSchema(ticketMessages);
-export const selectTicketMessageSchema = createSelectSchema(ticketMessages);
-
-export const insertNewsletterSubscriptionSchema = createInsertSchema(
-  newsletterSubscriptions,
-);
-export const selectNewsletterSubscriptionSchema = createSelectSchema(
-  newsletterSubscriptions,
-);
-export const insertHistoricalRaceSchema = createInsertSchema(historicalRaces);
-export const selectHistoricalRaceSchema = createSelectSchema(historicalRaces);
-export const insertAffiliateStatsSchema = createInsertSchema(affiliateStats);
-export const selectAffiliateStatsSchema = createSelectSchema(affiliateStats);
-
-export const insertMockWagerDataSchema = createInsertSchema(mockWagerData);
-export const selectMockWagerDataSchema = createSelectSchema(mockWagerData);
-export type InsertMockWagerData = typeof mockWagerData.$inferInsert;
-export type SelectMockWagerData = typeof mockWagerData.$inferSelect;
-
-export type InsertNewsletterSubscription = typeof newsletterSubscriptions.$inferInsert;
-export type SelectNewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
-export type InsertHistoricalRace = typeof historicalRaces.$inferInsert;
-export type SelectHistoricalRace = typeof historicalRaces.$inferSelect;
-export type InsertAffiliateStats = typeof affiliateStats.$inferInsert;
-export type SelectAffiliateStats = typeof affiliateStats.$inferSelect;
-
-export const insertTransformationLogSchema = createInsertSchema(transformationLogs);
-export const selectTransformationLogSchema = createSelectSchema(transformationLogs);
-
-export type InsertTransformationLog = typeof transformationLogs.$inferInsert;
-export type SelectTransformationLog = typeof transformationLogs.$inferSelect;
-
-export { challenges, challengeEntries } from "./schema/challenges";
-
+// Additional tables that don't fit into other modules
 export const historicalRaces = pgTable("historical_races", {
   id: serial("id").primaryKey(),
   month: text("month").notNull(),
@@ -258,7 +126,7 @@ export const mockWagerDataRelations = relations(mockWagerData, ({ one }) => ({
 
 export const transformationLogs = pgTable("transformation_logs", {
   id: serial("id").primaryKey(),
-  type: text("type").notNull(), // 'info' | 'error' | 'warning'
+  type: text("type").notNull(),
   message: text("message").notNull(),
   payload: jsonb("payload"),
   duration_ms: decimal("duration_ms", { precision: 10, scale: 2 }),
@@ -267,4 +135,26 @@ export const transformationLogs = pgTable("transformation_logs", {
   error_message: text("error_message"),
 });
 
-export { wheelSpins, bonusCodes, wagerRaces, wagerRaceParticipants, supportTickets, ticketMessages }
+// Create schemas for validation
+export const insertHistoricalRaceSchema = createInsertSchema(historicalRaces);
+export const selectHistoricalRaceSchema = createSelectSchema(historicalRaces);
+export const insertNewsletterSubscriptionSchema = createInsertSchema(newsletterSubscriptions);
+export const selectNewsletterSubscriptionSchema = createSelectSchema(newsletterSubscriptions);
+export const insertAffiliateStatsSchema = createInsertSchema(affiliateStats);
+export const selectAffiliateStatsSchema = createSelectSchema(affiliateStats);
+export const insertMockWagerDataSchema = createInsertSchema(mockWagerData);
+export const selectMockWagerDataSchema = createSelectSchema(mockWagerData);
+export const insertTransformationLogSchema = createInsertSchema(transformationLogs);
+export const selectTransformationLogSchema = createSelectSchema(transformationLogs);
+
+// Export types for the additional tables
+export type InsertHistoricalRace = typeof historicalRaces.$inferInsert;
+export type SelectHistoricalRace = typeof historicalRaces.$inferSelect;
+export type InsertNewsletterSubscription = typeof newsletterSubscriptions.$inferInsert;
+export type SelectNewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
+export type InsertAffiliateStats = typeof affiliateStats.$inferInsert;
+export type SelectAffiliateStats = typeof affiliateStats.$inferSelect;
+export type InsertMockWagerData = typeof mockWagerData.$inferInsert;
+export type SelectMockWagerData = typeof mockWagerData.$inferSelect;
+export type InsertTransformationLog = typeof transformationLogs.$inferInsert;
+export type SelectTransformationLog = typeof transformationLogs.$inferSelect;

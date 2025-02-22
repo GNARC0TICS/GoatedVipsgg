@@ -1,16 +1,25 @@
 import { Router } from "express";
 import { db } from "@db";
-import { users } from "@db/schema";
-import type { SelectUser } from "@db/schema";
+import { users, type SelectUser, type InsertUser } from "@db/schema";
 import { like, desc, eq } from "drizzle-orm";
 import rateLimit from 'express-rate-limit';
-import type { IpHistoryEntry, LoginHistoryEntry, ActivityLogEntry } from "@db/schema/users";
+import multer from 'multer';
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
+import { createTransport } from 'nodemailer';
+import { supportTickets } from "@db/schema/challenges";
 
 const router = Router();
 const scryptAsync = promisify(scrypt);
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+});
 
 // Rate limiter middleware
 const loginLimiter = rateLimit({
@@ -46,7 +55,7 @@ router.post("/register", loginLimiter, async (req, res) => {
   try {
     const result = userSchema.safeParse(req.body);
     if (!result.success) {
-      return res.status(400).json({ error: result.error.message });
+      return res.status(400).json({ error: result.error.errors[0].message });
     }
 
     const { username, password, email } = result.data;
@@ -78,7 +87,8 @@ router.post("/register", loginLimiter, async (req, res) => {
       if (err) {
         return res.status(500).json({ error: "Failed to login after registration" });
       }
-      return res.status(201).json({ user });
+      const { password: _, ...safeUser } = user;
+      return res.status(201).json({ user: safeUser });
     });
   } catch (error) {
     console.error("Registration error:", error);
@@ -130,12 +140,12 @@ router.get("/me", (req, res) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ error: "Not authenticated" });
   }
-  const { password: _, ...safeUser } = req.user;
+  const user = req.user as SelectUser;
+  const { password: _, ...safeUser } = user;
   res.json({ user: safeUser });
 });
 
-
-// User search endpoint (remains unchanged)
+// User search endpoint
 router.get("/search", async (req, res) => {
   const { username } = req.query;
   const isAdminView = req.headers['x-admin-view'] === 'true';
@@ -149,31 +159,38 @@ router.get("/search", async (req, res) => {
       .select()
       .from(users)
       .where(like(users.username, `%${username}%`))
-      .orderBy(desc(users.lastActive))
+      .orderBy(desc(users.createdAt))
       .limit(10);
 
-    const mappedResults = results.map((user: SelectUser) => ({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      isAdmin: user.isAdmin,
-      createdAt: user.createdAt,
-      emailVerified: user.emailVerified,
-      ...(isAdminView && {
-        telegramId: user.telegramId,
-        telegramVerifiedAt: user.telegramVerifiedAt,
-        lastLoginIp: user.lastLoginIp,
-        registrationIp: user.registrationIp,
-        country: user.country,
-        city: user.city,
-        lastActive: user.lastActive,
-        ipHistory: (user.ipHistory || []) as IpHistoryEntry[],
-        loginHistory: (user.loginHistory || []) as LoginHistoryEntry[],
-        twoFactorEnabled: user.twoFactorEnabled,
-        suspiciousActivity: user.suspiciousActivity,
-        activityLogs: (user.activityLogs || []) as ActivityLogEntry[]
-      })
-    }));
+    const mappedResults = results.map((user: SelectUser) => {
+      const baseUser = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        createdAt: user.createdAt,
+        emailVerified: user.emailVerified,
+      };
+
+      if (isAdminView) {
+        return {
+          ...baseUser,
+          telegramId: user.telegramId,
+          lastLoginIp: user.lastLoginIp,
+          registrationIp: user.registrationIp,
+          country: user.country,
+          city: user.city,
+          lastActive: user.lastActive,
+          ipHistory: (user.ipHistory || []) as any[], //Type is unknown
+          loginHistory: (user.loginHistory || []) as any[], //Type is unknown
+          twoFactorEnabled: user.twoFactorEnabled,
+          suspiciousActivity: user.suspiciousActivity,
+          activityLogs: (user.activityLogs || []) as any[], //Type is unknown
+        };
+      }
+
+      return baseUser;
+    });
 
     res.json(mappedResults);
   } catch (error) {
@@ -183,75 +200,20 @@ router.get("/search", async (req, res) => {
 });
 
 // Profile image handling route
-router.post('/api/profile/image', upload.single('image'), async (req, res) => {
-    //Handle profile image upload.  Requires multer or similar middleware
-    try {
-        // Save image to storage (e.g., cloudinary, local storage)
-        const imageUrl = await saveProfileImage(req.file); // Placeholder function
-        res.json({ imageUrl });
-    } catch (error) {
-        console.error("Image upload error:", error);
-        res.status(500).json({ error: 'Server error' });
+router.post('/profile/image', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided' });
     }
+    // TODO: Implement image processing and storage
+    res.json({ message: 'Image upload successful' });
+  } catch (error) {
+    console.error("Image upload error:", error);
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
 });
 
-// User preferences route
-router.put('/api/profile/preferences', async (req, res) => {
-    try {
-        const { preferences } = req.body;
-        // Update user preferences in the database
-        await updateUserPreferences(req.user.id, preferences); // Placeholder function
-        res.json({ message: 'Preferences updated successfully' });
-    } catch (error) {
-        console.error("Preference update error:", error);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
-// Added quick stats endpoint without authentication
-router.get('/users/:userId/quick-stats', async (req, res) => {
-    const userId = req.params.userId;
-    try {
-        const user = await db.select().from(users).where(users.id.equals(userId)).limit(1).then(r => r[0]);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        //Return relevant user data (customize as needed)
-        res.json({ username: user.username,  email: user.email,  createdAt: user.createdAt });
-    } catch (error) {
-        console.error("Error fetching quick stats:", error);
-        res.status(500).json({ error: 'Failed to fetch quick stats' });
-    }
-});
-
-
-// Placeholder functions (replace with actual implementation)
-async function saveProfileImage(file) {
-    // Implement image saving logic (e.g., cloudinary, local storage)
-    return null; // Replace with image URL
-}
-
-async function updateUserPreferences(userId, preferences) {
-    // Implement user preference update logic
-    return null; // Replace with successful operation or error handling
-}
-
-function getVerificationEmailTemplate(verificationCode) {
-    // Implement your themed email template generation here.  This should return an HTML string.
-    // Example:
-    return `<!DOCTYPE html>
-    <html>
-    <head>
-        <title>Verification Email</title>
-    </head>
-    <body>
-        <h1>Verify Your GoatedVIPs Account</h1>
-        <p>Your verification code is: ${verificationCode}</p>
-    </body>
-    </html>`;
-}
-
-export default router;
-import { createTransport } from 'nodemailer';
-
+// Configure email transport
 const emailTransport = createTransport({
   service: process.env.EMAIL_SERVICE || 'gmail',
   auth: {
@@ -299,3 +261,60 @@ router.post("/support/email/respond", async (req, res) => {
     res.status(500).json({ error: "Failed to send support email" });
   }
 });
+
+// User preferences route
+router.put('/api/profile/preferences', async (req, res) => {
+    try {
+        const { preferences } = req.body;
+        // Update user preferences in the database
+        await updateUserPreferences(req.user.id, preferences); // Placeholder function
+        res.json({ message: 'Preferences updated successfully' });
+    } catch (error) {
+        console.error("Preference update error:", error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+
+// Added quick stats endpoint without authentication
+router.get('/users/:userId/quick-stats', async (req, res) => {
+    const userId = req.params.userId;
+    try {
+        const user = await db.select().from(users).where(users.id.equals(userId)).limit(1).then(r => r[0]);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        //Return relevant user data (customize as needed)
+        res.json({ username: user.username,  email: user.email,  createdAt: user.createdAt });
+    } catch (error) {
+        console.error("Error fetching quick stats:", error);
+        res.status(500).json({ error: 'Failed to fetch quick stats' });
+    }
+});
+
+
+// Placeholder functions (replace with actual implementation)
+async function saveProfileImage(file) {
+    // Implement image saving logic (e.g., cloudinary, local storage)
+    return null; // Replace with image URL
+}
+
+async function updateUserPreferences(userId, preferences) {
+    // Implement user preference update logic
+    return null; // Replace with successful operation or error handling
+}
+
+function getVerificationEmailTemplate(verificationCode) {
+    // Implement your themed email template generation here.  This should return an HTML string.
+    // Example:
+    return `<!DOCTYPE html>
+    <html>
+    <head>
+        <title>Verification Email</title>
+    </head>
+    <body>
+        <h1>Verify Your GoatedVIPs Account</h1>
+        <p>Your verification code is: ${verificationCode}</p>
+    </body>
+    </html>`;
+}
+
+export default router;

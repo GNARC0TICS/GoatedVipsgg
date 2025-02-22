@@ -3,7 +3,7 @@
  * Handles server initialization, middleware setup, and core service bootstrapping
  */
 
-// Core dependencies
+// Import order optimized to avoid circular dependencies
 import express from "express";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
@@ -13,17 +13,20 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer, createLogger } from "vite";
 import { promisify } from "util";
+import { exec } from "child_process";
 import { sql } from "drizzle-orm";
+import cors from "cors";
+import fetch from "node-fetch";
+
+// Local imports
 import { logAction as log } from "./utils/logger";
 import { initializeBot } from "./telegram/bot";
 import { registerRoutes } from "./routes";
 import { initializeAdmin } from "./middleware/admin";
-import { db } from "@db";  // Updated import path
+import { db } from "@db";
 import { setupAuth } from "./auth";
-import cors from "cors";
-import fetch from "node-fetch";
 
-// Convert callback-based exec to Promise-based for cleaner async/await usage
+// Convert callback-based exec to Promise-based
 const execAsync = promisify(exec);
 
 // Server configuration constants
@@ -31,12 +34,14 @@ const API_PORT = parseInt(process.env.API_PORT || '5000', 10);
 const HOST = '0.0.0.0';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const MAX_PORT_RETRIES = 10;
+const SERVER_STARTUP_TIMEOUT = 30000; // 30 seconds
 
 // Global server state management
-let templateCache: string | null = null;  // Caches HTML template for better performance
-let server: any = null;                   // HTTP server instance
-let bot: any = null;                      // Telegram bot instance
-let wss: WebSocketServer | null = null;   // WebSocket server instance
+let templateCache: string | null = null;
+let server: any = null;
+let bot: any = null;
+let wss: WebSocketServer | null = null;
 
 /**
  * Checks if a specified port is available for use
@@ -53,19 +58,38 @@ async function isPortAvailable(port: number): Promise<boolean> {
 /**
  * Waits for server to be ready on the specified port
  */
-async function waitForServer(port: number, retries = 10, delay = 1000): Promise<void> {
-  for (let i = 0; i < retries; i++) {
+async function waitForServer(port: number): Promise<void> {
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < SERVER_STARTUP_TIMEOUT) {
     try {
-      await fetch(`http://${HOST}:${port}/health`);
-      log("info", `Server is ready on port ${port}`);
-      return;
-    } catch (error) {
-      if (i === retries - 1) {
-        throw new Error(`Server failed to start after ${retries} attempts`);
+      const response = await fetch(`http://${HOST}:${port}/health`);
+      if (response.ok) {
+        const data = await response.json();
+        log("info", `Server is ready on port ${port} at ${data.timestamp}`);
+        return;
       }
-      await new Promise(resolve => setTimeout(resolve, delay));
+    } catch (error) {
+      // Wait 1 second before next attempt
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
+
+  throw new Error(`Server failed to start within ${SERVER_STARTUP_TIMEOUT}ms`);
+}
+
+/**
+ * Finds an available port starting from the specified port
+ */
+async function findAvailablePort(startPort: number): Promise<number> {
+  let port = startPort;
+  while (!await isPortAvailable(port)) {
+    port++;
+    if (port > startPort + MAX_PORT_RETRIES) {
+      throw new Error(`Unable to find an available port after trying ${startPort} through ${port-1}`);
+    }
+  }
+  return port;
 }
 
 /**
@@ -76,29 +100,32 @@ async function initializeServer() {
     log("info", "Starting server initialization...");
 
     // Find an available port
-    let currentPort = API_PORT;
-    while (!await isPortAvailable(currentPort)) {
-      currentPort++;
-      if (currentPort > API_PORT + 10) {
-        throw new Error(`Unable to find an available port after trying ${API_PORT} through ${currentPort-1}`);
-      }
-    }
-
-    log("info", `Selected port ${currentPort}, proceeding with initialization`);
+    const port = await findAvailablePort(API_PORT);
+    log("info", `Selected port ${port}, proceeding with initialization`);
 
     // Test database connection
-    await db.execute(sql`SELECT 1`);
-    log("info", "Database connection established");
+    try {
+      await db.execute(sql`SELECT 1`);
+      log("info", "Database connection established");
+    } catch (error) {
+      log("error", `Database connection error: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
 
     const app = express();
 
-    // Add health check endpoint
+    // Basic health check endpoint (must be first)
     app.get('/health', (_req, res) => {
-      res.status(200).json({ status: 'ok' });
+      res.status(200).json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+      });
     });
 
+    // Setup middleware and routes
     setupMiddleware(app);
-    setupAuth(app);
+    setupAuth(app); // Initialize authentication
     registerRoutes(app);
 
     // Initialize admin after routes
@@ -106,43 +133,51 @@ async function initializeServer() {
       log("error", `Admin initialization error: ${error instanceof Error ? error.message : String(error)}`);
     });
 
+    // Create HTTP server and WebSocket server
     server = createServer(app);
     setupWebSocket(server);
 
-    // Initialize Telegram bot integration with the Express app
-    log("info", "Initializing Telegram bot...");
-    bot = await initializeBot(app);
-    if (!bot) {
-      log("error", "Failed to initialize Telegram bot - continuing without bot functionality");
-    } else {
-      log("info", "Telegram bot initialized successfully");
+    // Initialize Telegram bot with error handling
+    try {
+      log("info", "Initializing Telegram bot...");
+      bot = await initializeBot(app);
+      if (!bot) {
+        log("warn", "Telegram bot initialization skipped - continuing without bot functionality");
+      } else {
+        log("info", "Telegram bot initialized successfully");
+      }
+    } catch (error) {
+      log("error", `Telegram bot initialization error: ${error instanceof Error ? error.message : String(error)}`);
+      // Continue without bot functionality
     }
 
-    // Setup development or production server based on environment
+    // Setup development or production server
     if (process.env.NODE_ENV === "development") {
       await setupVite(app, server);
     } else {
       serveStatic(app);
     }
 
-    // Start server and handle graceful shutdown
+    // Start server with proper error handling and port waiting
     return new Promise((resolve, reject) => {
-      server.listen(currentPort, HOST, async () => {
-        log("info", `Server is listening at http://${HOST}:${currentPort}`);
+      const serverInstance = server.listen(port, HOST, async () => {
+        log("info", `Server is attempting to start on http://${HOST}:${port}`);
         try {
-          await waitForServer(currentPort);
-          resolve(server);
+          await waitForServer(port);
+          resolve(serverInstance);
         } catch (error) {
           reject(error);
         }
-      }).on("error", (err: Error) => {
+      });
+
+      serverInstance.on("error", (err: Error) => {
         log("error", `Server failed to start: ${err.message}`);
         reject(err);
       });
 
       // Graceful shutdown handler
-      const shutdown = async () => {
-        log("info", "Shutting down gracefully...");
+      const shutdown = async (signal: string) => {
+        log("info", `Received ${signal}, shutting down gracefully...`);
 
         if (bot) {
           try {
@@ -161,7 +196,7 @@ async function initializeServer() {
           });
         }
 
-        server.close(() => {
+        serverInstance.close(() => {
           log("info", "HTTP server closed");
           process.exit(0);
         });
@@ -174,12 +209,12 @@ async function initializeServer() {
       };
 
       // Register shutdown handlers
-      process.on("SIGTERM", shutdown);
-      process.on("SIGINT", shutdown);
+      process.on("SIGTERM", () => shutdown("SIGTERM"));
+      process.on("SIGINT", () => shutdown("SIGINT"));
     });
   } catch (error) {
     log("error", `Failed to start application: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
+    throw error; // Let the caller handle the error
   }
 }
 
@@ -224,7 +259,6 @@ function setupMiddleware(app: express.Application) {
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
   }));
 
-
   // Body parsing middleware
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
@@ -247,10 +281,7 @@ function setupMiddleware(app: express.Application) {
   });
 }
 
-/**
- * Request logging middleware with batched logging
- * Improves performance by batching log writes
- */
+// Request logger (unchanged)
 const requestLogger = (() => {
   const logQueue: string[] = [];
   let flushTimeout: NodeJS.Timeout | null = null;
@@ -278,12 +309,8 @@ const requestLogger = (() => {
   };
 })();
 
-/**
- * Serves static files in production mode
- * Handles static asset serving and SPA fallback
- * 
- * @param app - Express application instance
- */
+
+// serveStatic function (unchanged)
 function serveStatic(app: express.Application) {
   const distPath = path.resolve(__dirname, "..", "dist", "public");
   if (!fs.existsSync(distPath)) {
@@ -316,7 +343,7 @@ function serveStatic(app: express.Application) {
   });
 }
 
-// Vite development server configuration
+// Vite development server configuration (unchanged)
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
