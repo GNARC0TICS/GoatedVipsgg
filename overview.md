@@ -1,0 +1,457 @@
+# GoatedVIPs Affiliate Platform - Technical Overview
+
+## 1. System Architecture
+
+### 1.1 Core Technologies
+- Frontend: TypeScript + React (v18+)
+- Backend: Express.js + Node.js
+- Database: PostgreSQL with Drizzle ORM
+- Real-time: WebSocket + HTTP polling for data sync
+- Authentication: Custom JWT implementation
+- Bot Integration: Telegram Bot API (polling mode)
+- Validation: Zod schema validation
+- Routing: Wouter for frontend routing
+- Styling: Tailwind CSS + shadcn/ui components
+
+### 1.2 Infrastructure Overview
+```
+├── Client (React + TypeScript)
+│   ├── Components (shadcn/ui + custom)
+│   ├── Pages (Route-based components)
+│   ├── Hooks (Custom React hooks)
+│   └── Lib (Utility functions)
+├── Server (Express.js)
+│   ├── Routes (API endpoints)
+│   ├── Middleware (Auth, validation)
+│   ├── Telegram (Bot integration)
+│   └── Config (Environment setup)
+└── Database (PostgreSQL)
+    ├── Schema (Drizzle models)
+    ├── Migrations (Version control)
+    └── Relations (Table connections)
+```
+
+## 2. Database Architecture
+
+### 2.1 Core Tables
+1. `users`
+   ```typescript
+   {
+     id: serial('id').primaryKey(),
+     username: text('username').unique().notNull(),
+     password: text('password').notNull(),
+     email: text('email').unique().notNull(),
+     isAdmin: boolean('is_admin').default(false),
+     telegramId: text('telegram_id'),
+     telegramVerified: boolean('telegram_verified'),
+     goatedUsername: text('goated_username')
+   }
+   ```
+
+2. `telegram_users`
+   ```typescript
+   {
+     id: serial('id').primaryKey(),
+     telegramId: text('telegram_id').unique().notNull(),
+     telegramUsername: text('telegram_username'),
+     userId: integer('user_id').notNull(),
+     isVerified: boolean('is_verified').default(false),
+     notificationsEnabled: boolean('notifications_enabled')
+   }
+   ```
+
+3. `wager_races`
+   ```typescript
+   {
+     id: serial('id').primaryKey(),
+     title: text('title').notNull(),
+     type: text('type').notNull(),
+     prizePool: decimal('prize_pool').notNull(),
+     startDate: timestamp('start_date').notNull(),
+     endDate: timestamp('end_date').notNull(),
+     minWager: decimal('min_wager').notNull(),
+     prizeDistribution: jsonb('prize_distribution')
+   }
+   ```
+
+### 2.2 Relations and Constraints
+```typescript
+// User to TelegramUser (One-to-One)
+export const userRelations = relations(users, ({ one }) => ({
+  telegramUser: one(telegramUsers, {
+    fields: [users.id],
+    references: [telegramUsers.userId],
+  })
+}));
+
+// User to WagerRaces (One-to-Many)
+export const wagerRaceRelations = relations(wagerRaces, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [wagerRaces.createdBy],
+    references: [users.id],
+  }),
+  participants: many(wagerRaceParticipants)
+}));
+```
+
+## 3. Frontend Implementation
+
+### 3.1 Core Components
+```typescript
+// Layout.tsx - Main application structure
+export function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      <main className="container mx-auto py-6">
+        {children}
+      </main>
+    </div>
+  );
+}
+
+// Navigation.tsx - Dynamic routing with wouter
+export function Navigation() {
+  const [location] = useLocation();
+  return (
+    <nav className="border-b">
+      <Link href="/">Home</Link>
+      <Link href="/wager-races">Races</Link>
+      <Link href="/challenges">Challenges</Link>
+    </nav>
+  );
+}
+```
+
+### 3.2 State Management
+```typescript
+// Example of React Query usage
+export function useWagerRaces() {
+  return useQuery({
+    queryKey: ['wager-races'],
+    queryFn: async () => {
+      const response = await fetch('/api/races/active');
+      return response.json();
+    }
+  });
+}
+
+// Form state with react-hook-form + zod
+export function VerificationForm() {
+  const form = useForm<VerificationSchema>({
+    resolver: zodResolver(verificationSchema)
+  });
+}
+```
+
+## 4. Backend Services
+
+### 4.1 API Endpoints
+```typescript
+// Authentication
+POST   /api/auth/login
+POST   /api/auth/register
+
+// Wager Races
+GET    /api/races/active
+POST   /api/races/join
+GET    /api/races/:id/leaderboard
+
+// Verification
+POST   /api/verification/request
+PUT    /api/verification/:id/approve
+```
+
+### 4.2 Middleware Stack
+```typescript
+// Request logging middleware
+function requestLogger(req: Request, res: Response, next: NextFunction) {
+  const start = Date.now();
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    log(`${req.method} ${req.path} ${res.statusCode} in ${duration}ms`);
+  });
+  next();
+}
+
+// Error handling middleware
+function errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
+  console.error("Server error:", err);
+  res.status(500).json({ error: err.message });
+}
+```
+
+## 5. Telegram Bot Integration
+
+### 5.1 Bot Implementation
+```typescript
+// Bot initialization
+const bot = new TelegramBot(token, { polling: false });
+bot.startPolling();
+
+// Command handlers
+bot.onText(/\/start/, async (msg) => {
+  const chatId = msg.chat.id;
+  await bot.sendMessage(chatId, 'Welcome to GoatedVIPs Bot!');
+});
+
+bot.onText(/\/verify (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const username = match?.[1]?.trim();
+  // Verification logic
+});
+```
+
+### 5.2 Known Issues
+1. TypeScript Errors:
+   - Property 'deleteMyCommands' deprecation
+   - Missing 'goatedUsername' type definitions
+   - Undefined checks needed for optional fields
+
+2. Rate Limiting:
+   ```typescript
+   const rateLimiter = new Map<string, { count: number; timestamp: number }>();
+   const RATE_LIMIT = 5; // requests per user
+   const TIME_WINDOW = 10000; // 10 seconds
+   ```
+
+## 6. Performance Optimizations
+
+### 6.1 Database
+```typescript
+// Connection pooling
+const db = drizzle(new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 20
+}));
+
+// Indexed queries
+export const telegramUsers = pgTable('telegram_users', {
+  telegramId: text('telegram_id').unique().notNull(),
+  userId: integer('user_id').notNull().references(() => users.id)
+});
+```
+
+### 6.2 API
+```typescript
+// Response compression
+app.use(compression());
+
+// Cache headers
+app.use((req, res, next) => {
+  if (req.method === 'GET') {
+    res.setHeader('Cache-Control', 'private, max-age=300');
+  }
+  next();
+});
+```
+
+## 7. Known Limitations
+
+### 7.1 Scalability Constraints
+1. Polling-based Telegram bot:
+   - Limited by Telegram's rate limits
+   - No real-time updates
+   - Potential message delays
+
+2. Database connections:
+   - Max pool size of 20
+   - No read replicas
+   - Single database instance
+
+### 7.2 Technical Debt
+1. Type Definitions:
+   ```typescript
+   // Missing or incorrect types
+   interface TelegramUser {
+     goatedUsername?: string; // Should be required
+     lastActive?: Date; // Missing in schema
+   }
+   ```
+
+2. API Error Handling:
+   ```typescript
+   // Inconsistent error responses
+   app.use((err, req, res, next) => {
+     res.status(500).json({ error: err.message }); // Too generic
+   });
+   ```
+
+## 8. Critical Dependencies
+
+### 8.1 Environment Variables
+```typescript
+DATABASE_URL         // PostgreSQL connection string
+TELEGRAM_BOT_TOKEN   // Bot API token
+JWT_SECRET          // Authentication secret
+```
+
+### 8.2 External Services
+1. Telegram Bot API:
+   - Required for all bot operations
+   - Rate limits: 30 messages/second
+   - Webhook not supported (polling only)
+
+2. PostgreSQL Database:
+   - Required for all data persistence
+   - Connection limits enforced
+   - Backup strategy needed
+
+## 9. Deployment Architecture
+
+### 9.1 Server Configuration
+```typescript
+const app = express();
+const PORT = 5000;
+
+app.listen(PORT, "0.0.0.0", () => {
+  log(`Server running on port ${PORT}`);
+});
+```
+
+### 9.2 Startup Sequence
+1. Environment validation
+2. Database connection
+3. Express middleware setup
+4. Telegram bot initialization
+5. Route registration
+
+## 10. Recovery Procedures
+
+### 10.1 Database Recovery
+```sql
+-- Backup current state
+pg_dump -U $PGUSER -d $PGDATABASE > backup.sql
+
+-- Restore from backup
+psql -U $PGUSER -d $PGDATABASE < backup.sql
+```
+
+### 10.2 Bot Recovery
+```typescript
+// Reset bot webhook and polling
+await bot.stopPolling();
+await bot.deleteWebhook();
+await bot.startPolling();
+```
+
+## 11. Security Considerations
+
+### 11.1 Authentication Flow
+```typescript
+// JWT token generation
+const token = jwt.sign(
+  { userId: user.id },
+  process.env.JWT_SECRET,
+  { expiresIn: '24h' }
+);
+
+// Token verification middleware
+const verifyToken = (req: Request, res: Response, next: NextFunction) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'No token provided' });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+};
+```
+
+### 11.2 Rate Limiting
+```typescript
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+
+app.use('/api/', limiter);
+```
+
+## 12. Future Improvements
+
+### 12.1 Planned Features
+1. WebSocket upgrade for real-time updates
+2. Automated verification system
+3. Enhanced admin dashboard
+
+### 12.2 Technical Improvements
+1. Type safety enhancements:
+   - Strict null checks
+   - Complete interface definitions
+   - Runtime type validation
+
+2. Error handling:
+   - Structured error responses
+   - Error tracking integration
+   - Better logging
+
+### 12.3 Security Enhancements
+1. 2FA implementation
+2. Enhanced rate limiting
+3. Audit logging
+4. Security headers
+5. DDOS protection
+
+## 13. Maintenance Guidelines
+
+### 13.1 Regular Tasks
+1. Database maintenance:
+   ```sql
+   VACUUM ANALYZE;
+   REINDEX DATABASE goated_vips;
+   ```
+
+2. Log rotation:
+   - Implement Winston logger
+   - Configure log retention
+
+3. Backup procedures:
+   - Daily database snapshots
+   - Configuration backups
+
+### 13.2 Monitoring
+1. Key metrics:
+   - API response times
+   - Database connection pool
+   - Bot command latency
+   - Memory usage
+
+2. Alert thresholds:
+   - Response time > 500ms
+   - Error rate > 1%
+   - Pool exhaustion > 80%
+
+## 14. Documentation Standards
+
+### 14.1 Code Documentation
+```typescript
+/**
+ * Handles user verification requests
+ * @param {string} telegramId - User's Telegram ID
+ * @param {string} goatedUsername - User's Goated platform username
+ * @returns {Promise<VerificationRequest>} Created verification request
+ * @throws {Error} If user is already verified or has pending request
+ */
+async function handleVerification(
+  telegramId: string,
+  goatedUsername: string
+): Promise<VerificationRequest> {
+  // Implementation
+}
+```
+
+### 14.2 API Documentation
+```typescript
+/**
+ * @api {post} /api/verification/request Request Verification
+ * @apiName RequestVerification
+ * @apiGroup Verification
+ * @apiParam {String} telegramId User's Telegram ID
+ * @apiParam {String} goatedUsername User's Goated username
+ * @apiSuccess {Object} request Created verification request
+ * @apiError {Object} error Error message
+ */
