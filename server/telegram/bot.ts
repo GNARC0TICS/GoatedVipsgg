@@ -407,11 +407,11 @@ function setupErrorHandling(bot: TelegramBot) {
 
 function registerEventHandlers(bot: TelegramBot) {
   // Monitor channel posts
-  bot.on('channel_post', async (msg) => {
+  botInstance?.on('channel_post', async (msg) => {
     if (!msg.chat.username || !MONITORED_CHANNELS.includes('@' + msg.chat.username)) return;
 
     try {
-      const updates = await bot.getUpdates();
+      const updates = await botInstance.getUpdates();
       const uniqueGroupIds = getUniqueGroupIds(updates);
 
       let messageText = msg.text || '';
@@ -423,7 +423,7 @@ function registerEventHandlers(bot: TelegramBot) {
       // Forward to all groups where bot is admin
       for (const groupId of uniqueGroupIds) {
         try {
-          const admins = await bot.getChatAdministrators(groupId);
+          const admins = await botInstance.getChatAdministrators(groupId);
           const botIsMember = admins.some(admin => 
             admin.user.id === (botInstance?.options?.polling?.params?.id || 0)
           );
@@ -966,42 +966,8 @@ function getUniqueGroupIds(updates: TelegramBot.Update[]): number[] {
 }
 
 // Update the channel post handler to use the new getUniqueGroupIds function
-bot.on('channel_post', async (msg) => {
-  if (!msg.chat.username || !MONITORED_CHANNELS.includes('@' + msg.chat.username)) return;
+// Removed duplicate handler
 
-  try {
-    const updates = await bot.getUpdates();
-    const uniqueGroupIds = getUniqueGroupIds(updates);
-
-    let messageText = msg.text || '';
-    messageText = messageText.replace(
-      /https?:\/\/(?:www\.)?goated\.com\/[^\s]*/gi,
-      AFFILIATE_LINK
-    );
-
-    for (const groupId of uniqueGroupIds) {
-      try {
-        const admins = await bot.getChatAdministrators(groupId);
-        const botIsMember = admins.some(admin => 
-          admin.user.id === (botInstance?.options?.polling?.params?.id || 0)
-        );
-
-        if (botIsMember) {
-          await safeSendMessage(groupId, `📢 *Announcement from Goated*\n\n${messageText}`, {
-            parse_mode: "Markdown",
-            disable_web_page_preview: false
-          });
-        }
-      } catch (error) {
-        logError(error, `Failed to forward to group ${groupId}`);
-      }
-    }
-  } catch (error) {
-    logError(error, "Channel post forwarding error");
-  }
-});
-
-// Update broadcast function to use getUniqueGroupIds
 export async function broadcastPositionChange(message: string) {
   if (!botInstance) return;
 
@@ -1583,9 +1549,9 @@ async function safeSendMessage(chatId: number, text: string, options: any = {}) 
     if (sent.chat.type === 'group' || sent.chat.type === 'supergroup') {
       const isLongMessage = text.length > 200;
       const isCommandResponse = text.includes('/') || 
-                               text.includes('Available commands') || 
-                               text.includes('Your stats') ||
-                               text.includes('Leaderboard');
+                                text.includes('Available commands') || 
+                                text.includes('Your stats') ||
+                                text.includes('Leaderboard');
                                
       if (isLongMessage && isCommandResponse) {
         setTimeout(async () => {
