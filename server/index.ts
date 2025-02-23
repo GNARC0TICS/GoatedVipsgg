@@ -31,6 +31,7 @@ const execAsync = promisify(exec);
 
 // Server configuration constants
 const API_PORT = parseInt(process.env.API_PORT || '5000', 10);
+const WS_PATH = '/ws/leaderboard';
 const HOST = '0.0.0.0';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
