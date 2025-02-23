@@ -5,13 +5,13 @@ import { like, desc, eq } from "drizzle-orm";
 import rateLimit from 'express-rate-limit';
 import multer from 'multer';
 import { z } from "zod";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { promisify } from "util";
 import { createTransport } from 'nodemailer';
 import { supportTickets } from "@db/schema/challenges";
-import passport from "passport";
-import { hashPassword } from "../auth";
-import { log } from "../vite";
 
 const router = Router();
+const scryptAsync = promisify(scrypt);
 
 // Configure multer for file uploads
 const upload = multer({
@@ -29,15 +29,55 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Authentication routes
+// Extended user interface to include all properties
+interface ExtendedUser extends SelectUser {
+  lastLoginIp?: string;
+  registrationIp?: string;
+  country?: string;
+  city?: string;
+  lastActive?: Date;
+  ipHistory?: string[];
+  loginHistory?: any[];
+  twoFactorEnabled?: boolean;
+  suspiciousActivity?: boolean;
+  activityLogs?: any[];
+}
+
+// Type guard for ExtendedUser
+function isExtendedUser(user: any): user is ExtendedUser {
+  return user && typeof user.id === 'number';
+}
+
+// User validation schema
+const userSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Invalid email address"),
+});
+
+// Password utilities
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
+
+async function comparePasswords(supplied: string, stored: string) {
+  const [hashed, salt] = stored.split(".");
+  const hashedBuf = Buffer.from(hashed, "hex");
+  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  return timingSafeEqual(hashedBuf, suppliedBuf);
+}
+
+// Registration endpoint
 router.post("/register", loginLimiter, async (req, res) => {
   try {
-    log("[Users] Registration attempt");
-    const { username, password, email } = req.body;
-
-    if (!username || !password || !email) {
-      return res.status(400).json({ error: "Missing required fields" });
+    const result = userSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ error: result.error.errors[0].message });
     }
+
+    const { username, password, email } = result.data;
 
     // Check if username already exists
     const existingUser = await db.select()
@@ -46,7 +86,6 @@ router.post("/register", loginLimiter, async (req, res) => {
       .limit(1);
 
     if (existingUser.length > 0) {
-      log(`[Users] Registration failed: Username ${username} already exists`);
       return res.status(400).json({ error: "Username already exists" });
     }
 
@@ -62,47 +101,71 @@ router.post("/register", loginLimiter, async (req, res) => {
       })
       .returning();
 
-    log(`[Users] User registered successfully: ${username}`);
-
     // Log in the user after registration
+    if (!req.login) {
+      return res.status(500).json({ error: "Session handling not available" });
+    }
+
     req.login(user, (err) => {
       if (err) {
-        log(`[Users] Login after registration failed: ${err}`);
         return res.status(500).json({ error: "Failed to login after registration" });
       }
       const { password: _, ...safeUser } = user;
       return res.status(201).json({ user: safeUser });
     });
   } catch (error) {
-    log(`[Users] Registration error: ${error}`);
+    console.error("Registration error:", error);
     res.status(500).json({ error: "Failed to register user" });
   }
 });
 
-router.post("/login", loginLimiter, passport.authenticate("local"), (req, res) => {
-  log(`[Users] Login successful: ${req.user?.username}`);
-  res.json({ user: req.user });
+// Login endpoint
+router.post("/login", loginLimiter, async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // Find user
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.username, username.toLowerCase()))
+      .limit(1);
+
+    if (!user || !(await comparePasswords(password, user.password))) {
+      return res.status(401).json({ error: "Invalid username or password" });
+    }
+
+    // Log in the user
+    req.login(user, (err) => {
+      if (err) {
+        return res.status(500).json({ error: "Failed to login" });
+      }
+      const { password: _, ...safeUser } = user;
+      return res.json({ user: safeUser });
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Failed to login" });
+  }
 });
 
+// Logout endpoint
 router.post("/logout", (req, res) => {
-  const username = req.user?.username;
   req.logout((err) => {
     if (err) {
-      log(`[Users] Logout error for ${username}: ${err}`);
-      return res.status(500).json({ error: "Logout failed" });
+      return res.status(500).json({ error: "Failed to logout" });
     }
-    log(`[Users] Logout successful: ${username}`);
     res.json({ message: "Logged out successfully" });
   });
 });
 
+// Get current user
 router.get("/me", (req, res) => {
   if (!req.isAuthenticated()) {
-    log("[Users] Unauthenticated user request");
     return res.status(401).json({ error: "Not authenticated" });
   }
-  log(`[Users] Current user request: ${req.user?.username}`);
-  res.json({ user: req.user });
+  const user = req.user as SelectUser;
+  const { password: _, ...safeUser } = user;
+  res.json({ user: safeUser });
 });
 
 // User search endpoint with proper type checking
@@ -262,25 +325,6 @@ async function updateUserPreferences(userId: number, preferences: Record<string,
   await db.update(users)
     .set({ preferences })
     .where(eq(users.id, userId));
-}
-
-// Extended user interface to include all properties
-interface ExtendedUser extends SelectUser {
-  lastLoginIp?: string;
-  registrationIp?: string;
-  country?: string;
-  city?: string;
-  lastActive?: Date;
-  ipHistory?: string[];
-  loginHistory?: any[];
-  twoFactorEnabled?: boolean;
-  suspiciousActivity?: boolean;
-  activityLogs?: any[];
-}
-
-// Type guard for ExtendedUser
-function isExtendedUser(user: any): user is ExtendedUser {
-  return user && typeof user.id === 'number';
 }
 
 export default router;

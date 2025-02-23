@@ -1,24 +1,25 @@
-import { Router, type Express, type Request, type Response, type NextFunction } from "express";
-import { WebSocketServer, type WebSocket } from "ws";
-import { type Server } from "http";
+import { Router, type Express } from "express";
+import { setupAuth } from "./auth";
+import usersRouter from "./routes/users";
+import bonusChallengesRouter from "./routes/bonus-challenges";
+import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
+import { log } from "./vite";
 import { RateLimiterMemory, type RateLimiterRes } from 'rate-limiter-flexible';
-import { transformLeaderboardData } from "./utils/leaderboard";
+import { z } from "zod";
+import type { SelectUser } from "@db/schema";
+import { initializeBot } from "./telegram/bot";
 import { db } from "@db";
-import { transformationLogs } from "@db/schema";
+import { sql } from "drizzle-orm";
+import { wagerRaces, transformationLogs } from "@db/schema";
+import { API_CONFIG } from "./config/api";
 
-const LEADERBOARD_API_URL = 'https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard/2RW440E';
-const API_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsInNlc3Npb24iOiJEVVQ2Vkh1S3pNMjIiLCJpYXQiOjE3Mzc0MjQ3ODMsImV4cCI6MTczNzUxMTE4M30.ozh12z5PbT9vkZHb8x8d3BI4dUxe6KCyH8cYPUAMxGo';
+// Extend WebSocket interface with our custom properties
+interface CustomWebSocket extends WebSocket {
+  isAlive?: boolean;
+}
 
-// Common cache times
-const CACHE_TIMES = {
-  SHORT: 15000,    // 15 seconds
-  MEDIUM: 60000,   // 1 minute
-  LONG: 300000     // 5 minutes
-};
-
-// Rate limiting setup
 type RateLimitTier = 'HIGH' | 'MEDIUM' | 'LOW';
-
 const rateLimits: Record<RateLimitTier, { points: number; duration: number }> = {
   HIGH: { points: 30, duration: 60 },
   MEDIUM: { points: 15, duration: 60 },
@@ -28,19 +29,12 @@ const rateLimits: Record<RateLimitTier, { points: number; duration: number }> = 
 const rateLimiters = {
   high: new RateLimiterMemory(rateLimits.HIGH),
   medium: new RateLimiterMemory(rateLimits.MEDIUM),
-  low: new RateLimiterMemory(rateLimits.LOW)
+  low: new RateLimiterMemory(rateLimits.LOW),
 };
-
-// WebSocket setup
-let wsServer: WebSocketServer;
-
-interface CustomWebSocket extends WebSocket {
-  isAlive: boolean;
-}
 
 const createRateLimiter = (tier: keyof typeof rateLimiters) => {
   const limiter = rateLimiters[tier];
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: any, res: any, next: any) => {
     try {
       const rateLimitRes = await limiter.consume(req.ip);
       res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase() as RateLimitTier].points);
@@ -60,7 +54,6 @@ const createRateLimiter = (tier: keyof typeof rateLimiters) => {
   };
 };
 
-// Cache manager implementation
 class CacheManager {
   private cache: Map<string, { data: any; timestamp: number }>;
   private readonly defaultTTL: number;
@@ -96,7 +89,7 @@ class CacheManager {
 
 const cacheManager = new CacheManager();
 
-const cacheMiddleware = (ttl = 30000) => async (req: Request, res: Response, next: NextFunction) => {
+const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) => {
   const key = req.originalUrl;
   const cachedResponse = cacheManager.get(key);
   if (cachedResponse) {
@@ -111,107 +104,67 @@ const cacheMiddleware = (ttl = 30000) => async (req: Request, res: Response, nex
   next();
 };
 
-async function fetchLeaderboardData() {
-  console.log('Fetching leaderboard data from API...');
+// Router setup
+const router = Router();
+
+// Constants
+const CACHE_TIMES = {
+  SHORT: 15000,    // 15 seconds
+  MEDIUM: 60000,   // 1 minute
+  LONG: 300000     // 5 minutes
+};
+
+// Health check endpoint
+router.get("/health", async (_req, res) => {
   try {
-    const response = await fetch(LEADERBOARD_API_URL, {
-      headers: {
-        'Authorization': `Bearer ${API_TOKEN}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      console.error('API request failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-      throw new Error(`API request failed with status ${response.status}`);
-    }
-
-    const rawText = await response.text();
-    console.log('[DEBUG] Raw API Response Text:', rawText);
-
-    let data;
-    try {
-      data = JSON.parse(rawText);
-      console.log('[DEBUG] Parsed API Response:', JSON.stringify(data, null, 2));
-      return data;
-    } catch (parseError) {
-      console.error('Failed to parse API response:', parseError);
-      throw new Error('Invalid JSON response from API');
-    }
+    await db.execute(sql`SELECT 1`);
+    const health = {
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      db: "connected",
+      telegramBot: global.botInstance ? "initialized" : "not initialized",
+    };
+    res.json(health);
   } catch (error) {
-    console.error('Error fetching leaderboard data:', error);
-    throw error;
-  }
-}
-
-function setupWebSocketHandlers(ws: CustomWebSocket) {
-  ws.isAlive = true;
-
-  const pingInterval = setInterval(() => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.ping();
-    }
-  }, 30000);
-
-  ws.on("pong", () => {
-    ws.isAlive = true;
-  });
-
-  ws.on("close", () => {
-    console.log('WebSocket connection closed');
-    clearInterval(pingInterval);
-  });
-
-  ws.on("error", (error: Error) => {
-    console.error('WebSocket error:', error);
-    clearInterval(pingInterval);
-    ws.terminate();
-  });
-
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({
-      type: "CONNECTED",
-      timestamp: new Date().toISOString()
-    }));
-  }
-}
-
-function setupWebSocket(httpServer: Server) {
-  wsServer = new WebSocketServer({
-    noServer: true,
-    path: "/ws"
-  });
-
-  httpServer.on("upgrade", (request, socket, head) => {
-    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
-      return;
-    }
-
-    wsServer.handleUpgrade(request, socket, head, (ws) => {
-      wsServer.emit("connection", ws, request);
-      setupWebSocketHandlers(ws as CustomWebSocket);
+    res.status(500).json({
+      status: "error",
+      message: process.env.NODE_ENV === "production" ? "Health check failed" : (error as Error).message
     });
-  });
-}
+  }
+});
 
-function broadcastTransformationLog(data: any) {
-  if (!wsServer) return;
+// Wager races endpoint
+router.get("/wager-races/current",
+  createRateLimiter('high'),
+  cacheMiddleware(CACHE_TIMES.SHORT),
+  async (_req, res) => {
+    try {
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-  wsServer.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({
-        type: "LEADERBOARD_UPDATE",
-        data,
-        timestamp: new Date().toISOString()
-      }));
+      if (!response.ok) {
+        return res.json(getDefaultRaceData());
+      }
+
+      const rawData = await response.json();
+      const raceData = formatRaceData(transformLeaderboardData(rawData));
+
+      res.json(raceData);
+    } catch (error) {
+      console.error('Error in /wager-races/current:', error);
+      res.status(200).json(getDefaultRaceData());
     }
-  });
-}
+  }
+);
 
+// Helper functions
 function getDefaultRaceData() {
   const now = new Date();
   return {
@@ -246,99 +199,215 @@ function formatRaceData(stats: any) {
   };
 }
 
-function storeLeaderboardData(data: any) {
-  const now = new Date();
+export function transformLeaderboardData(apiData: any) {
+  const data = apiData.data || apiData.results || apiData;
+  if (!Array.isArray(data)) {
+    return {
+      status: "success",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    };
+  }
 
-  // Store transformation log without transaction
-  db.insert(transformationLogs).values({
-    type: 'info',
-    message: 'Leaderboard data stored',
-    payload: JSON.stringify(data),
-    duration_ms: '0',
-    created_at: now,
-    resolved: true
-  });
+  const todayData = [...data].sort((a, b) => (b.wagered.today || 0) - (a.wagered.today || 0));
+  const weeklyData = [...data].sort((a, b) => (b.wagered.this_week || 0) - (a.wagered.this_week || 0));
+  const monthlyData = [...data].sort((a, b) => (b.wagered.this_month || 0) - (a.wagered.this_month || 0));
+  const allTimeData = [...data].sort((a, b) => (b.wagered.all_time || 0) - (a.wagered.all_time || 0));
 
-  // Broadcast the update
-  broadcastTransformationLog(data);
+  return {
+    status: "success",
+    metadata: {
+      totalUsers: data.length,
+      lastUpdated: new Date().toISOString(),
+    },
+    data: {
+      today: { data: todayData },
+      weekly: { data: weeklyData },
+      monthly: { data: monthlyData },
+      all_time: { data: allTimeData },
+    },
+  };
 }
 
-function registerRoutes(app: Express) {
-  const apiRouter = Router();
+// Export functions and router
+export { router };
 
-  // Health check endpoint
-  apiRouter.get("/health", (_req, res) => {
-    res.json({
-      status: "ok",
-      timestamp: new Date().toISOString()
-    });
-  });
+//This is the new registerRoutes function.
+export function registerRoutes(app: Express): Server {
+  const httpServer = createServer(app);
 
-  // Affiliate stats endpoint - no authentication required
-  apiRouter.get("/affiliate/stats", async (_req, res) => {
-    try {
-      console.log('Fetching leaderboard data...');
-      const rawData = await fetchLeaderboardData();
-      console.log('Transforming leaderboard data...');
-      const transformedData = await transformLeaderboardData(rawData);
+  // Setup authentication first
+  setupAuth(app);
 
-      res.json(transformedData);
-    } catch (error) {
-      console.error('Error in /affiliate/stats:', error);
-      res.status(500).json({
-        status: "error",
-        message: error instanceof Error ? error.message : "Failed to fetch leaderboard data",
-        timestamp: new Date().toISOString()
-      });
-    }
-  });
-
-  // Mount API router with security headers
-  app.use("/api", (req, res, next) => {
+  // API Routes configuration
+  app.use('/api', (req, res, next) => {
+    // Set common API headers
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-store');
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
     next();
-  }, apiRouter);
+  });
 
-  // Wager races endpoint
-  apiRouter.get("/wager-races/current",
-    createRateLimiter('high'),
-    cacheMiddleware(CACHE_TIMES.SHORT),
-    async (_req, res) => {
-      try {
-        const response = await fetch(LEADERBOARD_API_URL, {
-          headers: {
-            'Authorization': `Bearer ${API_TOKEN}`,
-            'Content-Type': 'application/json'
-          }
-        });
+  // Mount all API routes under /api prefix
+  app.use("/api/users", usersRouter);
+  app.use("/api/bonus", bonusChallengesRouter);
+  app.use("/api", router);
 
-        if (!response.ok) {
-          return res.json(getDefaultRaceData());
-        }
+  // Setup WebSocket after HTTP server is created but before Vite
+  setupWebSocket(httpServer);
 
-        const rawData = await response.json();
-        const raceData = formatRaceData(await transformLeaderboardData(rawData));
+  return httpServer;
+}
 
-        res.json(raceData);
-      } catch (error) {
-        console.error('Error in /wager-races/current:', error);
-        res.status(200).json(getDefaultRaceData());
-      }
+let wsServer: WebSocketServer;
+
+function setupWebSocket(httpServer: Server) {
+  wsServer = new WebSocketServer({ noServer: true });
+
+  httpServer.on("upgrade", (request, socket, head) => {
+    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
+      return;
     }
-  );
 
-  // Error handling middleware
-  app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    console.error(`[Error] ${err.stack}`);
-    res.status(500).json({
-      error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
-      stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
-    });
+    const url = request.url;
+
+    if (url === "/ws/leaderboard" || url === "/ws/transformation-logs") {
+      wsServer.handleUpgrade(request, socket, head, (ws) => {
+        wsServer.emit("connection", ws, request);
+        if (url === "/ws/leaderboard") {
+          handleLeaderboardConnection(ws as CustomWebSocket);
+        } else {
+          handleTransformationLogsConnection(ws as CustomWebSocket);
+        }
+      });
+    } else {
+      socket.destroy();
+    }
   });
 }
 
-export { setupWebSocket, setupWebSocketHandlers, broadcastTransformationLog, registerRoutes };
+function handleLeaderboardConnection(ws: CustomWebSocket) {
+  const clientId = Date.now().toString();
+  log(`Leaderboard WebSocket client connected (${clientId})`);
+
+  ws.isAlive = true;
+  const pingInterval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.ping();
+    }
+  }, 30000);
+
+  ws.on("pong", () => {
+    ws.isAlive = true;
+  });
+
+  ws.on("error", (error: Error) => {
+    log(`WebSocket error (${clientId}): ${error.message}`);
+    clearInterval(pingInterval);
+    ws.terminate();
+  });
+
+  ws.on("close", () => {
+    log(`Leaderboard WebSocket client disconnected (${clientId})`);
+    clearInterval(pingInterval);
+  });
+
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: "CONNECTED",
+      clientId,
+      timestamp: Date.now()
+    }));
+  }
+}
+
+function handleTransformationLogsConnection(ws: CustomWebSocket) {
+  const clientId = Date.now().toString();
+  log(`Transformation logs WebSocket client connected (${clientId})`);
+
+  ws.isAlive = true;
+  const pingInterval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.ping();
+    }
+  }, 30000);
+
+  ws.on("pong", () => {
+    ws.isAlive = true;
+  });
+
+  ws.on("close", () => {
+    clearInterval(pingInterval);
+    log(`Transformation logs WebSocket client disconnected (${clientId})`);
+  });
+
+  ws.on("error", (error: Error) => {
+    log(`WebSocket error (${clientId}): ${error.message}`);
+    clearInterval(pingInterval);
+    ws.terminate();
+  });
+
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: "CONNECTED",
+      clientId,
+      timestamp: Date.now()
+    }));
+
+    // Send recent logs on connection
+    db.select()
+      .from(transformationLogs)
+      .orderBy(sql`created_at DESC`)
+      .limit(50)
+      .then(logs => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: "INITIAL_LOGS",
+            logs: logs.map(log => ({
+              ...log,
+              timestamp: log.created_at.toISOString()
+            }))
+          }));
+        }
+      })
+      .catch(error => {
+        console.error("Error fetching initial logs:", error);
+      });
+  }
+}
+
+export function broadcastLeaderboardUpdate(data: any) {
+  wsServer.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: "LEADERBOARD_UPDATE",
+        data
+      }));
+    }
+  });
+}
+
+export function broadcastTransformationLog(log: {
+  type: 'info' | 'error' | 'warning';
+  message: string;
+  data?: any;
+}) {
+  wsServer.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: "TRANSFORMATION_LOG",
+        log: {
+          ...log,
+          timestamp: new Date().toISOString()
+        }
+      }));
+    }
+  });
+}

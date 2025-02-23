@@ -10,7 +10,18 @@ import {
 } from "drizzle-orm/pg-core";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@db";
-import { transformationLogs } from "@db/schema";
+import { users, transformationLogs } from "@db/schema";
+import { broadcastTransformationLog } from "../routes";
+import { broadcastPositionChange } from "../telegram/bot";
+
+// Add TypeScript global declaration
+declare global {
+  var previousLeaderboardState: {
+    monthly?: any[];
+    weekly?: any[];
+    daily?: any[];
+  };
+}
 
 type WageredData = {
   today: number;
@@ -25,172 +36,141 @@ type LeaderboardEntry = {
   wagered: WageredData;
 };
 
+type APIResponse = {
+  data?: any;
+  results?: any;
+  success?: boolean;
+};
+
 /**
- * Transforms and stores leaderboard data
+ * Utility function to sort data by wagered amount
  */
-export async function transformLeaderboardData(apiResponse: any) {
+function sortByWagered(data: LeaderboardEntry[], period: keyof WageredData): LeaderboardEntry[] {
+  return [...data].sort((a, b) => {
+    const bValue = Number(b.wagered[period]) || 0;
+    const aValue = Number(a.wagered[period]) || 0;
+    return bValue - aValue;
+  });
+}
+
+/**
+ * Transforms raw leaderboard data into standardized format
+ */
+export async function transformLeaderboardData(apiData: APIResponse) {
   const startTime = Date.now();
-  const logId = `transform_${startTime}`;
 
   try {
-    console.log('[DEBUG] Starting transformation of API Response');
-    console.log('[DEBUG] Raw API Response:', JSON.stringify(apiResponse, null, 2));
+    console.log('Starting leaderboard transformation:', { 
+      hasData: Boolean(apiData),
+      structure: Object.keys(apiData)
+    });
 
-    if (!apiResponse) {
-      throw new Error('API response is empty');
-    }
+    // Extract data from API response, handling potential nested structures
+    const rawData = Array.isArray(apiData) ? apiData : 
+                   Array.isArray(apiData?.data) ? apiData.data :
+                   Array.isArray(apiData?.results) ? apiData.results : [];
 
-    // Handle both array and object responses
-    let entries: any[] = [];
-    if (Array.isArray(apiResponse)) {
-      entries = apiResponse;
-    } else if (typeof apiResponse === 'object' && apiResponse !== null) {
-      // Handle the specific API response format we're receiving
-      if (Array.isArray(apiResponse.entries)) {
-        entries = apiResponse.entries;
-      } else if (apiResponse.today !== undefined && apiResponse.this_week !== undefined) {
-        // Extract entries from the specific response format
-        entries = Object.entries(apiResponse)
-          .filter(([key]) => !['today', 'this_week'].includes(key))
-          .map(([_, value]) => value);
-      } else {
-        console.error('Unexpected API response structure:', apiResponse);
-        throw new Error('Invalid API response format');
+    console.log('Raw data structure:', {
+      isArray: Array.isArray(rawData),
+      length: rawData.length,
+      availablePeriods: rawData.length > 0 ? Object.keys(rawData[0]?.wagered || {}) : []
+    });
+
+    // Transform each entry, preserving all available data
+    const transformedEntries = rawData.map((entry: any): LeaderboardEntry => ({
+      uid: String(entry?.uid || ""),
+      name: String(entry?.name || "Unknown"),
+      wagered: {
+        today: Number(entry?.wagered?.today || 0),
+        this_week: Number(entry?.wagered?.this_week || 0),
+        this_month: Number(entry?.wagered?.this_month || 0),
+        all_time: Number(entry?.wagered?.all_time || 0)
+      }
+    }));
+
+    // Get previous state from cache
+    const previousState = global.previousLeaderboardState || {};
+    
+    // Sort data for each time period
+    const todayData = sortByWagered(transformedEntries, 'today');
+    const weeklyData = sortByWagered(transformedEntries, 'this_week');
+    const monthlyData = sortByWagered(transformedEntries, 'this_month');
+    const allTimeData = sortByWagered(transformedEntries, 'all_time');
+
+    // Check for position changes in monthly data
+    if (monthlyData.length > 0 && previousState.monthly) {
+      const prevTopUser = previousState.monthly[0];
+      const currentTopUser = monthlyData[0];
+
+      if (prevTopUser && currentTopUser && prevTopUser.uid !== currentTopUser.uid) {
+        // Broadcast position change via bot
+        const formattedAmount = new Intl.NumberFormat('en-US', {
+          minimumFractionDigits: 3,
+          maximumFractionDigits: 3
+        }).format(currentTopUser.wagered.this_month);
+
+        const message = `🚨 *New Race Leader!*\n\n${currentTopUser.name} has taken the lead with $${formattedAmount} wagered! 🏃‍♂️💨`;
+        broadcastPositionChange(message);
       }
     }
 
-    if (!entries.length) {
-      console.warn('No entries found in API response');
-      entries = [];
-    }
+    // Update previous state
+    global.previousLeaderboardState = {
+      monthly: monthlyData,
+      weekly: weeklyData,
+      daily: todayData
+    };
 
-    console.log('[DEBUG] Extracted entries:', entries.length);
+    // Log transformation stats
+    const transformedStats = {
+      totalEntries: transformedEntries.length,
+      availableData: {
+        today: todayData.some(e => e.wagered.today > 0),
+        weekly: weeklyData.some(e => e.wagered.this_week > 0),
+        monthly: monthlyData.some(e => e.wagered.this_month > 0),
+        allTime: allTimeData.some(e => e.wagered.all_time > 0)
+      }
+    };
 
-    // Transform entries with flexible validation
-    const transformedEntries = entries
-      .map((entry: Record<string, any>): LeaderboardEntry | null => {
-        try {
-          // Extract identifier with fallbacks
-          const uid = entry.uid || entry.id || entry.userId || entry.user_id;
-          if (!uid) {
-            console.warn(`[${logId}] Entry missing identifier:`, entry);
-            return null;
-          }
+    console.log('Transformation stats:', transformedStats);
 
-          // Extract name with fallbacks
-          const name = entry.name || entry.username || entry.user_name || 'Anonymous';
-
-          // Extract wager data with careful type conversion
-          const extractNumber = (value: any): number => {
-            if (typeof value === 'number') return value;
-            if (typeof value === 'string') return parseFloat(value) || 0;
-            return 0;
-          };
-
-          const wagered = {
-            today: extractNumber(entry.wagered?.today || entry.today || 0),
-            this_week: extractNumber(entry.wagered?.this_week || entry.week || 0),
-            this_month: extractNumber(entry.wagered?.this_month || entry.month || 0),
-            all_time: extractNumber(entry.wagered?.all_time || entry.total || 0)
-          };
-
-          return {
-            uid: String(uid),
-            name: String(name),
-            wagered
-          };
-        } catch (error) {
-          console.error(`[${logId}] Error transforming entry:`, error);
-          return null;
-        }
-      })
-      .filter((entry: LeaderboardEntry | null): entry is LeaderboardEntry => entry !== null);
-
-    if (!transformedEntries.length) {
-      console.warn('[DEBUG] No valid entries after transformation');
-      throw new Error('No valid entries after transformation');
-    }
-
-    console.log('[DEBUG] Successfully transformed entries:', transformedEntries.length);
-
-    // Sort data for each period
-    const todayData = [...transformedEntries].sort((a, b) => 
-      (b.wagered.today || 0) - (a.wagered.today || 0)
-    );
-
-    const weeklyData = [...transformedEntries].sort((a, b) => 
-      (b.wagered.this_week || 0) - (a.wagered.this_week || 0)
-    );
-
-    const monthlyData = [...transformedEntries].sort((a, b) => 
-      (b.wagered.this_month || 0) - (a.wagered.this_month || 0)
-    );
-
-    const allTimeData = [...transformedEntries].sort((a, b) => 
-      (b.wagered.all_time || 0) - (a.wagered.all_time || 0)
-    );
-
-    // Create transformation log
-    await db.insert(transformationLogs).values({
-      type: 'info',
-      message: 'Leaderboard transformation completed',
-      payload: JSON.stringify({
-        totalEntries: transformedEntries.length,
-        periods: {
-          today: {
-            count: todayData.length,
-            topWagered: todayData[0]?.wagered.today || 0,
-          },
-          weekly: {
-            count: weeklyData.length,
-            topWagered: weeklyData[0]?.wagered.this_week || 0,
-          },
-          monthly: {
-            count: monthlyData.length,
-            topWagered: monthlyData[0]?.wagered.this_month || 0
-          },
-          allTime: {
-            count: allTimeData.length,
-            topWagered: allTimeData[0]?.wagered.all_time || 0
-          }
-        },
-        timestamp: new Date().toISOString()
-      }),
-      duration_ms: (Date.now() - startTime).toString(),
-      created_at: new Date(),
-      resolved: true,
-      error_message: null
-    });
-
-    const result = {
+    // Create the final response
+    const response = {
       status: "success",
       metadata: {
         totalUsers: transformedEntries.length,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
       },
       data: {
         today: { data: todayData },
         weekly: { data: weeklyData },
         monthly: { data: monthlyData },
         all_time: { data: allTimeData }
-      }
+      },
     };
 
-    return result;
+    // Log successful transformation
+    await db.insert(transformationLogs).values({
+      type: 'info',
+      message: 'Leaderboard transformation completed',
+      payload: JSON.stringify(transformedStats),
+      duration_ms: (Date.now() - startTime).toString(),
+      created_at: new Date(),
+      resolved: true,
+      error_message: null
+    });
 
+    return response;
   } catch (error) {
-    console.error(`[${logId}] Error transforming leaderboard data:`, error);
+    console.error('Error transforming leaderboard data:', error);
 
-    // Log error details
+    // Log error
     await db.insert(transformationLogs).values({
       type: 'error',
       message: error instanceof Error ? error.message : String(error),
       payload: JSON.stringify({
         error: error instanceof Error ? error.stack : undefined,
-        input: apiResponse ? { 
-          type: typeof apiResponse, 
-          keys: Object.keys(apiResponse) 
-        } : null
+        input: apiData ? { type: typeof apiData, keys: Object.keys(apiData) } : null
       }),
       duration_ms: (Date.now() - startTime).toString(),
       created_at: new Date(),
@@ -198,14 +178,15 @@ export async function transformLeaderboardData(apiResponse: any) {
       error_message: error instanceof Error ? error.message : String(error)
     });
 
-    throw error;
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "An unexpected error occurred",
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    };
   }
-}
-
-function sortByWagered(data: LeaderboardEntry[], period: keyof WageredData): LeaderboardEntry[] {
-  return [...data].sort((a, b) => {
-    const bValue = Number(b.wagered[period]) || 0;
-    const aValue = Number(a.wagered[period]) || 0;
-    return bValue - aValue;
-  });
 }

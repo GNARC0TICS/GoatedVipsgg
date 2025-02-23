@@ -9,7 +9,6 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 import connectPg from "connect-pg-simple";
-import { log } from "./vite";
 
 const PostgresSessionStore = connectPg(session);
 const scryptAsync = promisify(scrypt);
@@ -28,63 +27,43 @@ async function hashPassword(password: string) {
 }
 
 async function comparePasswords(supplied: string, stored: string) {
-  try {
-    const [hashedPassword, salt] = stored.split(".");
-    const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
-    const suppliedPasswordBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-    return timingSafeEqual(hashedPasswordBuf, suppliedPasswordBuf);
-  } catch (error) {
-    log(`[Auth] Password comparison error: ${error}`);
-    return false;
-  }
+  const [hashedPassword, salt] = stored.split(".");
+  const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
+  const suppliedPasswordBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  return timingSafeEqual(hashedPasswordBuf, suppliedPasswordBuf);
 }
 
 export function setupAuth(app: Express) {
-  log("[Auth] Setting up authentication middleware...");
-
   // Session configuration with PostgreSQL store
-  const sessionStore = new PostgresSessionStore({
-    conObject: {
-      connectionString: process.env.DATABASE_URL,
-    },
-    createTableIfMissing: true,
-    tableName: 'user_sessions'
-  });
-
-  // Log session store setup
-  sessionStore.on('error', (error) => {
-    log(`[Auth] Session store error: ${error.message}`);
-  });
-
   app.use(
     session({
-      store: sessionStore,
-      secret: process.env.SESSION_SECRET || "development_secret_key",
+      store: new PostgresSessionStore({
+        conObject: {
+          connectionString: process.env.DATABASE_URL,
+        },
+        createTableIfMissing: true,
+        tableName: 'user_sessions'
+      }),
+      secret: process.env.SESSION_SECRET || "keyboard cat",
       resave: false,
       saveUninitialized: false,
       cookie: {
         secure: process.env.NODE_ENV === "production",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        httpOnly: true,
-        sameSite: 'lax'
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
       }
     })
   );
-
-  log("[Auth] Session middleware configured");
 
   app.use(passport.initialize());
   app.use(passport.session());
 
   // User serialization
   passport.serializeUser((user: Express.User, done) => {
-    log(`[Auth] Serializing user: ${user.id}`);
     done(null, user.id);
   });
 
   passport.deserializeUser(async (id: number, done) => {
     try {
-      log(`[Auth] Deserializing user: ${id}`);
       const [user] = await db
         .select()
         .from(users)
@@ -92,33 +71,27 @@ export function setupAuth(app: Express) {
         .limit(1);
 
       if (!user) {
-        log(`[Auth] User not found during deserialization: ${id}`);
         return done(null, false);
       }
 
-      const { password: _, ...safeUser } = user;
+      const { password, ...safeUser } = user;
       done(null, safeUser);
     } catch (error) {
-      log(`[Auth] Error deserializing user: ${error}`);
       done(error);
     }
   });
 
-  // Local strategy setup with enhanced logging
+  // Local strategy setup
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
-        log(`[Auth] Attempting authentication for user: ${username}`);
-
         // Rate limiting check
         try {
           await authLimiter.consume(username);
         } catch (error) {
-          log(`[Auth] Rate limit exceeded for user: ${username}`);
           return done(null, false, { message: "Too many attempts. Please try again later." });
         }
 
-        // Find user and verify password
         const [user] = await db
           .select()
           .from(users)
@@ -126,28 +99,40 @@ export function setupAuth(app: Express) {
           .limit(1);
 
         if (!user) {
-          log(`[Auth] User not found: ${username}`);
           return done(null, false, { message: "Invalid username or password" });
         }
 
         const isMatch = await comparePasswords(password, user.password);
         if (!isMatch) {
-          log(`[Auth] Invalid password for user: ${username}`);
           return done(null, false, { message: "Invalid username or password" });
         }
 
-        log(`[Auth] Successfully authenticated user: ${username}`);
         const { password: _, ...safeUser } = user;
         return done(null, safeUser);
       } catch (error) {
-        log(`[Auth] Authentication error: ${error}`);
         return done(error);
       }
     })
   );
 
-  log("[Auth] Authentication setup completed");
-}
+  // Auth routes
+  app.post("/api/login", passport.authenticate("local"), (req, res) => {
+    res.json({ user: req.user });
+  });
 
-// Export password utilities for use in user routes
-export { hashPassword, comparePasswords };
+  app.post("/api/logout", (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Logout failed" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  });
+
+  app.get("/api/user", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ user: null });
+    }
+    res.json({ user: req.user });
+  });
+}
