@@ -1,3 +1,4 @@
+import React from "react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -13,10 +14,19 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  isAdmin: boolean;
+  createdAt: string;
+  lastLogin: string | null;
+}
+
 export default function UserManagement() {
   const [search, setSearch] = useState("");
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
   });
 

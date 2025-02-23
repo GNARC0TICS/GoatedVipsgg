@@ -1,4 +1,33 @@
-<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+interface WagerTotals {
+  dailyTotal: number;
+  weeklyTotal: number;
+  monthlyTotal: number;
+  allTimeTotal: number;
+}
+
+interface DashboardStats {
+  totalUsers: number;
+  activeRaces: number;
+  wagerTotals: WagerTotals;
+}
+
+export default function AnalyticsDashboard() {
+  const { data: stats } = useQuery<DashboardStats>({
+    queryKey: ["/api/admin/stats"],
+  });
+
+  return (
+    <div className="container mx-auto py-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <Card>
           <CardHeader>
             <CardTitle>Total Users</CardTitle>
@@ -55,3 +84,6 @@
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}

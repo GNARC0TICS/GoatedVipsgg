@@ -1,3 +1,4 @@
+import React from "react";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
@@ -8,29 +9,37 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Bell, Mail, Trophy, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { SelectNotificationPreferences } from "@db/schema";
+import { type SelectNotificationPreferences } from "@db/schema";
+
+interface NotificationPreferencesResponse {
+  preferences: SelectNotificationPreferences;
+}
 
 export default function NotificationPreferences() {
   const { toast } = useToast();
-  const [preferences, setPreferences] =
-    useState<SelectNotificationPreferences | null>(null);
+  const [preferences, setPreferences] = useState<SelectNotificationPreferences | null>(null);
 
   // Fetch current preferences
-  const { data, isLoading } = useQuery<SelectNotificationPreferences>({
+  const { data, isLoading } = useQuery<NotificationPreferencesResponse>({
     queryKey: ["/api/notification-preferences"],
-    onSuccess: (data) => {
-      setPreferences(data);
+    queryFn: async () => {
+      const response = await fetch("/api/notification-preferences", {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch preferences");
+      }
+      const data = await response.json();
+      setPreferences(data.preferences);
+      return data;
     },
   });
 
   // Update preferences mutation
   const updatePreferences = useMutation({
-    mutationFn: async (
-      newPreferences: Partial<SelectNotificationPreferences>,
-    ) => {
+    mutationFn: async (newPreferences: Partial<SelectNotificationPreferences>) => {
       const response = await fetch("/api/notification-preferences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -47,17 +56,13 @@ export default function NotificationPreferences() {
     onSuccess: () => {
       toast({
         title: "Preferences Updated",
-        description:
-          "Your notification preferences have been saved successfully.",
+        description: "Your notification preferences have been saved successfully.",
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to update preferences",
+        description: error instanceof Error ? error.message : "Failed to update preferences",
         variant: "destructive",
       });
     },
