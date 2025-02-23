@@ -1,7 +1,7 @@
-import { pgTable, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+
+import { pgTable, text, timestamp, integer, boolean, jsonb } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { relations } from 'drizzle-orm';
-import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 export const sessions = pgTable('sessions', {
   id: text('id').primaryKey(),
@@ -17,52 +17,43 @@ export const users = pgTable('users', {
   email: text('email').notNull(),
   telegramId: text('telegram_id').unique(),
   isAdmin: boolean('is_admin').notNull().default(false),
+  bio: text('bio'),
+  profileColor: text('profile_color').default('#D7FF00'),
+  bannerImage: text('banner_image'),
+  socialLinks: jsonb('social_links').default({
+    telegram: null,
+    twitter: null,
+    discord: null
+  }).notNull(),
+  displayBadges: jsonb('display_badges').default([]).notNull(),
+  favoriteAchievements: jsonb('favorite_achievements').default([]).notNull(),
+  customTheme: jsonb('custom_theme').default({
+    primary: '#D7FF00',
+    secondary: '#1A1B21',
+    accent: '#2A2B31'
+  }).notNull(),
+  goatedAccountLinked: boolean('goated_account_linked').default(false),
+  goatedUsername: text('goated_username'),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
   lastActive: timestamp('last_active'),
   lastLogin: timestamp('last_login'),
+  customization: jsonb('customization').default({}).notNull(),
+  profileImage: text('profile_image'),
+  preferences: jsonb('preferences').default({
+    emailNotifications: true,
+    telegramNotifications: true,
+    marketingEmails: false,
+  }).notNull(),
+  lastPasswordChange: timestamp('last_password_change'),
   failedLoginAttempts: integer('failed_login_attempts').default(0),
   accountLocked: boolean('account_locked').default(false),
   lockoutUntil: timestamp('lockout_until'),
-  lastLoginIp: text('last_login_ip'),
-  registrationIp: text('registration_ip'),
-  country: text('country'),
-  city: text('city'),
-  ipHistory: text('ip_history').array(),
-  loginHistory: text('login_history').array(),
   twoFactorEnabled: boolean('two_factor_enabled').default(false),
+  emailVerified: boolean('email_verified').default(false),
   suspiciousActivity: boolean('suspicious_activity').default(false),
-  activityLogs: text('activity_logs').array(),
+  activityLogs: jsonb('activity_logs').default([]).notNull(),
 });
 
 export const userRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
 }));
-
-// Export schemas for Zod validation
-export const insertUserSchema = createInsertSchema(users);
-export const selectUserSchema = createSelectSchema(users);
-
-// Export types
-export type InsertUser = typeof users.$inferInsert;
-export type SelectUser = typeof users.$inferSelect;
-
-// Export additional types for user history
-export interface IpHistoryEntry {
-  ip: string;
-  timestamp: string;
-  userAgent?: string;
-}
-
-export interface LoginHistoryEntry {
-  timestamp: string;
-  success: boolean;
-  ip?: string;
-  userAgent?: string;
-}
-
-export interface ActivityLogEntry {
-  type: string;
-  description: string;
-  timestamp: string;
-  metadata?: Record<string, unknown>;
-}

@@ -153,11 +153,14 @@ export function Layout({ children }: { children: ReactNode }) {
   const [openMobile, setOpenMobile] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery<Express.User>({
+  const { data: user, isError } = useQuery<SelectUser>({ 
     queryKey: ["/api/user"],
     retry: false,
     refetchOnWindowFocus: false,
-    staleTime: 300000, // 5 minutes
+    onError: () => {
+      // Silently handle auth errors
+      return null;
+    }
   });
   const isAuthenticated = !!user;
 
@@ -693,7 +696,8 @@ export function Layout({ children }: { children: ReactNode }) {
                           </Link>
                           <Link href="/admin/bonus-codes">
                             <DropdownMenuItem className="cursor-pointer text-white">
-                              Bonus Codes</DropdownMenuItem>
+                              Bonus Codes
+                            </DropdownMenuItem>
                           </Link>
                           <Link href="/admin/notifications">
                             <DropdownMenuItem className="cursor-pointer text-white">

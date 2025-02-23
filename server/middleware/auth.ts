@@ -2,13 +2,13 @@ import { type Request, type Response, type NextFunction } from "express";
 import { verifyToken } from "../config/auth";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
-import { users, type SelectUser } from "@db/schema";
+import { users } from "@db/schema";
 
 // Type definitions
 declare global {
   namespace Express {
     interface Request {
-      user?: SelectUser;
+      user?: typeof users.$inferSelect;
     }
   }
 }
@@ -69,16 +69,18 @@ export const optionalAuth = async (
       const user = await validateAndGetUser(token);
       if (user) {
         req.user = user;
-      } else {
-        // Clear invalid token
-        res.clearCookie('token');
       }
     }
+    // Add debugging log
+    console.log(`[Auth Debug] User state:`, {
+      hasToken: !!token,
+      hasUser: !!req.user,
+      path: req.path
+    });
     next();
   } catch (error) {
-    // Clear token on auth errors
-    res.clearCookie('token');
-    console.error(`[Auth Debug] Auth error:`, error);
+    // Don't fail on auth errors for optional auth
+    console.log(`[Auth Debug] Optional auth error:`, error);
     next();
   }
 };

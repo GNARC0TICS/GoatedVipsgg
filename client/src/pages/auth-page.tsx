@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useUser } from "@/hooks/use-user";
+import { useAuth } from "@/lib/auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,7 +22,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useToast } from "@/hooks/use-toast";
 
 const loginSchema = z.object({
   username: z.string()
@@ -47,11 +46,10 @@ type RegisterData = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [_, navigate] = useLocation();
-  const { user, login, register } = useUser();
-  const { toast } = useToast();
+  const auth = useAuth();
 
   // Redirect if already logged in
-  if (user) {
+  if (auth.user) {
     navigate("/");
     return null;
   }
@@ -68,12 +66,8 @@ export default function AuthPage() {
   const onSubmit = async (data: RegisterData) => {
     try {
       if (isLogin) {
-        const result = await login(data);
-        if (result.ok) {
-          navigate("/");
-        } else {
-          throw new Error(result.message);
-        }
+        await auth.loginMutation.mutateAsync(data);
+        navigate("/");
       } else {
         // Check if username is already taken before submitting
         const usernameCheck = await fetch(`/api/check-username?username=${encodeURIComponent(data.username)}`);
@@ -83,44 +77,25 @@ export default function AuthPage() {
         }
 
         // Check if email is already registered
-        if (data.email) {
-          const emailCheck = await fetch(`/api/check-email?email=${encodeURIComponent(data.email)}`);
-          if (!emailCheck.ok) {
-            form.setError("email", { message: "Email is already registered" });
-            return;
-          }
+        const emailCheck = await fetch(`/api/check-email?email=${encodeURIComponent(data.email)}`);
+        if (!emailCheck.ok) {
+          form.setError("email", { message: "Email is already registered" });
+          return;
         }
 
-        const result = await register(data);
-        if (result.ok) {
-          navigate("/");
-        } else {
-          throw new Error(result.message);
-        }
+        await auth.registerMutation.mutateAsync(data);
+        navigate("/");
       }
     } catch (error: any) {
-      console.error("Auth error:", error);
-      const errorMessage = error?.message || "Authentication failed";
-
+      const errorMessage = error?.response?.data?.message || error.message || "Authentication failed";
+      
       // Handle specific error cases
       if (errorMessage.includes("rate limit")) {
-        toast({
-          title: "Too many attempts",
-          description: "Please try again later",
-          variant: "destructive",
-        });
+        form.setError("root", { message: "Too many attempts. Please try again later." });
       } else if (errorMessage.includes("credentials")) {
-        toast({
-          title: "Authentication failed",
-          description: "Invalid username or password",
-          variant: "destructive",
-        });
+        form.setError("root", { message: "Invalid username or password" });
       } else {
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
+        form.setError("root", { message: errorMessage });
       }
     }
   };
@@ -147,7 +122,7 @@ export default function AuthPage() {
                     <FormItem>
                       <FormLabel>Username</FormLabel>
                       <FormControl>
-                        <Input {...field} autoComplete={isLogin ? "username" : "new-username"} />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -161,11 +136,7 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="email" 
-                            {...field} 
-                            autoComplete="email"
-                          />
+                          <Input type="email" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -179,16 +150,17 @@ export default function AuthPage() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="password" 
-                          {...field}
-                          autoComplete={isLogin ? "current-password" : "new-password"}
-                        />
+                        <Input type="password" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+                {form.formState.errors.root && (
+                  <div className="text-sm text-red-500 mt-2">
+                    {form.formState.errors.root.message}
+                  </div>
+                )}
                 <Button
                   type="submit"
                   className="w-full"
@@ -204,25 +176,6 @@ export default function AuthPage() {
                 </Button>
               </form>
             </Form>
-
-            {isLogin && (
-              <div className="mt-4 text-center">
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="h-px w-10 bg-muted-foreground"></div>
-                  <span className="text-sm text-muted-foreground">Or</span>
-                  <div className="h-px w-10 bg-muted-foreground"></div>
-                </div>
-                <Button
-                  variant="outline"
-                  className="w-full mt-4"
-                  onClick={() => (window.location.href = '/api/auth/telegram')}
-                >
-                  <img src="/telegram-logo.svg" alt="Telegram Logo" className="h-5 mr-2" />
-                  Login with Telegram
-                </Button>
-              </div>
-            )}
-
             <div className="mt-4 text-center">
               <Button
                 variant="link"
