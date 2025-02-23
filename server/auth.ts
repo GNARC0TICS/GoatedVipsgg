@@ -1,5 +1,3 @@
-/// <reference path="../custom-modules.d.ts" />
-
 import { Express } from "express";
 import session from "express-session";
 import passport from "passport";

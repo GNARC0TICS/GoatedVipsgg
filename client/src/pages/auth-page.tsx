@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/lib/auth";
+import { useUser } from "@/hooks/use-user";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,6 +22,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useToast } from "@/hooks/use-toast";
 
 const loginSchema = z.object({
   username: z.string()
@@ -46,7 +47,8 @@ type RegisterData = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [_, navigate] = useLocation();
-  const { user, login, register } = useAuth();
+  const { user, login, register } = useUser();
+  const { toast } = useToast();
 
   // Redirect if already logged in
   if (user) {
@@ -81,10 +83,12 @@ export default function AuthPage() {
         }
 
         // Check if email is already registered
-        const emailCheck = await fetch(`/api/check-email?email=${encodeURIComponent(data.email)}`);
-        if (!emailCheck.ok) {
-          form.setError("email", { message: "Email is already registered" });
-          return;
+        if (data.email) {
+          const emailCheck = await fetch(`/api/check-email?email=${encodeURIComponent(data.email)}`);
+          if (!emailCheck.ok) {
+            form.setError("email", { message: "Email is already registered" });
+            return;
+          }
         }
 
         const result = await register(data);
@@ -95,15 +99,28 @@ export default function AuthPage() {
         }
       }
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error.message || "Authentication failed";
-      
+      console.error("Auth error:", error);
+      const errorMessage = error?.message || "Authentication failed";
+
       // Handle specific error cases
       if (errorMessage.includes("rate limit")) {
-        form.setError("root", { message: "Too many attempts. Please try again later." });
+        toast({
+          title: "Too many attempts",
+          description: "Please try again later",
+          variant: "destructive",
+        });
       } else if (errorMessage.includes("credentials")) {
-        form.setError("root", { message: "Invalid username or password" });
+        toast({
+          title: "Authentication failed",
+          description: "Invalid username or password",
+          variant: "destructive",
+        });
       } else {
-        form.setError("root", { message: errorMessage });
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
       }
     }
   };
@@ -130,7 +147,7 @@ export default function AuthPage() {
                     <FormItem>
                       <FormLabel>Username</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} autoComplete={isLogin ? "username" : "new-username"} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -144,7 +161,11 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input type="email" {...field} />
+                          <Input 
+                            type="email" 
+                            {...field} 
+                            autoComplete="email"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -158,17 +179,16 @@ export default function AuthPage() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input type="password" {...field} />
+                        <Input 
+                          type="password" 
+                          {...field}
+                          autoComplete={isLogin ? "current-password" : "new-password"}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                {form.formState.errors.root && (
-                  <div className="text-sm text-red-500 mt-2">
-                    {form.formState.errors.root.message}
-                  </div>
-                )}
                 <Button
                   type="submit"
                   className="w-full"
@@ -184,7 +204,7 @@ export default function AuthPage() {
                 </Button>
               </form>
             </Form>
-            
+
             {isLogin && (
               <div className="mt-4 text-center">
                 <div className="flex items-center justify-center space-x-2">

@@ -29,6 +29,25 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Extended user interface to include all properties
+interface ExtendedUser extends SelectUser {
+  lastLoginIp?: string;
+  registrationIp?: string;
+  country?: string;
+  city?: string;
+  lastActive?: Date;
+  ipHistory?: string[];
+  loginHistory?: any[];
+  twoFactorEnabled?: boolean;
+  suspiciousActivity?: boolean;
+  activityLogs?: any[];
+}
+
+// Type guard for ExtendedUser
+function isExtendedUser(user: any): user is ExtendedUser {
+  return user && typeof user.id === 'number';
+}
+
 // User validation schema
 const userSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -83,6 +102,10 @@ router.post("/register", loginLimiter, async (req, res) => {
       .returning();
 
     // Log in the user after registration
+    if (!req.login) {
+      return res.status(500).json({ error: "Session handling not available" });
+    }
+
     req.login(user, (err) => {
       if (err) {
         return res.status(500).json({ error: "Failed to login after registration" });
@@ -145,7 +168,7 @@ router.get("/me", (req, res) => {
   res.json({ user: safeUser });
 });
 
-// User search endpoint
+// User search endpoint with proper type checking
 router.get("/search", async (req, res) => {
   const { username } = req.query;
   const isAdminView = req.headers['x-admin-view'] === 'true';
@@ -162,7 +185,7 @@ router.get("/search", async (req, res) => {
       .orderBy(desc(users.createdAt))
       .limit(10);
 
-    const mappedResults = results.map((user: SelectUser) => {
+    const mappedResults = results.map((user: ExtendedUser) => {
       const baseUser = {
         id: user.id,
         username: user.username,
@@ -172,7 +195,7 @@ router.get("/search", async (req, res) => {
         emailVerified: user.emailVerified,
       };
 
-      if (isAdminView) {
+      if (isAdminView && isExtendedUser(user)) {
         return {
           ...baseUser,
           telegramId: user.telegramId,
@@ -181,11 +204,11 @@ router.get("/search", async (req, res) => {
           country: user.country,
           city: user.city,
           lastActive: user.lastActive,
-          ipHistory: (user.ipHistory || []) as any[], //Type is unknown
-          loginHistory: (user.loginHistory || []) as any[], //Type is unknown
+          ipHistory: user.ipHistory || [],
+          loginHistory: user.loginHistory || [],
           twoFactorEnabled: user.twoFactorEnabled,
           suspiciousActivity: user.suspiciousActivity,
-          activityLogs: (user.activityLogs || []) as any[], //Type is unknown
+          activityLogs: user.activityLogs || [],
         };
       }
 
@@ -202,7 +225,8 @@ router.get("/search", async (req, res) => {
 // Profile image handling route
 router.post('/profile/image', upload.single('image'), async (req, res) => {
   try {
-    if (!req.file) {
+    const uploadedFile = req.file;
+    if (!uploadedFile) {
       return res.status(400).json({ error: 'No image file provided' });
     }
     // TODO: Implement image processing and storage
@@ -235,17 +259,7 @@ router.post("/support/email/respond", async (req, res) => {
       from: process.env.SUPPORT_EMAIL,
       to: userEmail,
       subject: `Re: ${subject || 'Support Ticket #' + ticketId}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <img src="${process.env.SITE_URL}/images/Goated%20Logo%20-%20Yellow.png" alt="GoatedVIPs Logo" style="max-width: 200px; margin-bottom: 20px;"/>
-          <div style="padding: 20px; background: #1A1B21; color: #ffffff; border-radius: 8px;">
-            ${message}
-          </div>
-          <p style="color: #8A8B91; font-size: 12px; margin-top: 20px;">
-            This is a response to your support inquiry. If you need further assistance, please reply to this email.
-          </p>
-        </div>
-      `
+      html: getEmailTemplate(message)
     });
 
     // Update ticket status if ticketId provided
@@ -267,7 +281,7 @@ router.put('/api/profile/preferences', async (req, res) => {
     try {
         const { preferences } = req.body;
         // Update user preferences in the database
-        await updateUserPreferences(req.user.id, preferences); // Placeholder function
+        await updateUserPreferences(req.user.id, preferences); 
         res.json({ message: 'Preferences updated successfully' });
     } catch (error) {
         console.error("Preference update error:", error);
@@ -291,30 +305,26 @@ router.get('/users/:userId/quick-stats', async (req, res) => {
 });
 
 
-// Placeholder functions (replace with actual implementation)
-async function saveProfileImage(file) {
-    // Implement image saving logic (e.g., cloudinary, local storage)
-    return null; // Replace with image URL
+// Helper functions
+function getEmailTemplate(message: string): string {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <img src="${process.env.SITE_URL}/images/Goated%20Logo%20-%20Yellow.png" alt="GoatedVIPs Logo" style="max-width: 200px; margin-bottom: 20px;"/>
+      <div style="padding: 20px; background: #1A1B21; color: #ffffff; border-radius: 8px;">
+        ${message}
+      </div>
+      <p style="color: #8A8B91; font-size: 12px; margin-top: 20px;">
+        This is a response to your support inquiry. If you need further assistance, please reply to this email.
+      </p>
+    </div>
+  `;
 }
 
-async function updateUserPreferences(userId, preferences) {
-    // Implement user preference update logic
-    return null; // Replace with successful operation or error handling
-}
-
-function getVerificationEmailTemplate(verificationCode) {
-    // Implement your themed email template generation here.  This should return an HTML string.
-    // Example:
-    return `<!DOCTYPE html>
-    <html>
-    <head>
-        <title>Verification Email</title>
-    </head>
-    <body>
-        <h1>Verify Your GoatedVIPs Account</h1>
-        <p>Your verification code is: ${verificationCode}</p>
-    </body>
-    </html>`;
+async function updateUserPreferences(userId: number, preferences: Record<string, any>) {
+  // Implement user preference update logic
+  await db.update(users)
+    .set({ preferences })
+    .where(eq(users.id, userId));
 }
 
 export default router;

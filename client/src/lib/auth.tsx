@@ -1,5 +1,5 @@
-
 import { requiresAuth } from './protected-route';
-import { useAuth } from '@/hooks/use-auth';
+import { useUser } from '@/hooks/use-user';
 
-export { requiresAuth, useAuth };
+// Re-export the auth utilities for consistency
+export { requiresAuth, useUser as useAuth };
