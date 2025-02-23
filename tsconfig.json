@@ -25,6 +25,7 @@
       "@components/*": ["./client/src/components/*"],
       "@lib/*": ["./client/src/lib/*"],
       "@hooks/*": ["./client/src/hooks/*"]
-    }
+    },
+    "typeRoots": ["./node_modules/@types", "./db/types.d.ts"]
   }
 }

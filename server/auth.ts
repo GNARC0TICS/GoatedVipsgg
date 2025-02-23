@@ -172,7 +172,8 @@ export function setupAuth(app: Express) {
 
       // Apply rate limiting
       try {
-        await rateLimiter.consume(req.ip);
+        const ipAddress = req.ip || 'unknown';
+        await rateLimiter.consume(ipAddress);
       } catch (error) {
         return res.status(429).json({
           status: "error",
