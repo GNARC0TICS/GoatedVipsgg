@@ -241,7 +241,8 @@ router.get("/wager-races/current",
       }
 
       const rawData = await response.json();
-      const raceData = formatRaceData(transformLeaderboardData(rawData));
+      const stats = await transformLeaderboardData(rawData);
+      const raceData = formatRaceData(stats);
 
       res.json(raceData);
     } catch (error) {
@@ -254,13 +255,36 @@ router.get("/wager-races/current",
 // Helper functions
 function getDefaultRaceData() {
   const now = new Date();
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   return {
     id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
     status: 'live',
     startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
-    endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString(),
+    endDate: endOfMonth.toISOString(),
     prizePool: 500,
     participants: []
+  };
+}
+
+function formatRaceData(stats: any) {
+  const now = new Date();
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  const monthlyData = stats?.data?.monthly?.data ?? [];
+
+  return {
+    id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
+    status: 'live',
+    startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+    endDate: endOfMonth.toISOString(),
+    prizePool: 500,
+    participants: monthlyData
+      .map((participant: any, index: number) => ({
+        uid: participant?.uid ?? "",
+        name: participant?.name ?? "Unknown",
+        wagered: Number(participant?.wagered?.this_month ?? 0),
+        position: index + 1
+      }))
+      .slice(0, 10)
   };
 }
 
