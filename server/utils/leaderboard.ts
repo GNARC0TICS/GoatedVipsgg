@@ -41,7 +41,7 @@ export async function transformLeaderboardData(apiResponse: any) {
   const logId = `transform_${startTime}`;
 
   try {
-    console.log('Raw API Response:', JSON.stringify(apiResponse, null, 2));
+    console.log('[DEBUG] Raw API Response:', JSON.stringify(apiResponse, null, 2));
 
     // Extract data from various possible response formats
     let rawData;
@@ -74,7 +74,7 @@ export async function transformLeaderboardData(apiResponse: any) {
     }
 
     // Add more detailed logging for data structure
-    console.log('Data structure of first entry:', rawData[0]);
+    console.log('[DEBUG] First entry data structure:', rawData[0]);
 
     // Transform entries with strict type checking and data validation
     const transformedEntries = rawData
@@ -100,48 +100,66 @@ export async function transformLeaderboardData(apiResponse: any) {
       .filter((entry): entry is LeaderboardEntry => entry !== null);
 
     if (!transformedEntries.length) {
-      console.warn('No valid entries after transformation');
+      console.warn('[DEBUG] No valid entries after transformation');
       throw new Error('No valid entries after transformation');
     }
 
-    // Sort data for each period
+    // Sort data for each period and log the sorting results
+    console.log('[DEBUG] Starting data sorting...');
+
     const todayData = [...transformedEntries].sort((a, b) => 
       (b.wagered.today || 0) - (a.wagered.today || 0)
     );
+    console.log('[DEBUG] Today top 3:', todayData.slice(0, 3));
+
     const weeklyData = [...transformedEntries].sort((a, b) => 
       (b.wagered.this_week || 0) - (a.wagered.this_week || 0)
     );
+    console.log('[DEBUG] Weekly top 3:', weeklyData.slice(0, 3));
+
     const monthlyData = [...transformedEntries].sort((a, b) => 
       (b.wagered.this_month || 0) - (a.wagered.this_month || 0)
     );
+    console.log('[DEBUG] Monthly top 3:', monthlyData.slice(0, 3));
+
     const allTimeData = [...transformedEntries].sort((a, b) => 
       (b.wagered.all_time || 0) - (a.wagered.all_time || 0)
     );
+    console.log('[DEBUG] All-time top 3:', allTimeData.slice(0, 3));
 
-    // Log transformation results
-    console.log('Transformed entries count:', transformedEntries.length);
-    console.log('Sample transformed entry:', transformedEntries[0]);
-
-    // Create transformation log record
+    // Create transformation log record with detailed stats
     const transformationLogRecord = {
       type: 'info',
       message: 'Leaderboard transformation completed',
       payload: JSON.stringify({
         totalEntries: transformedEntries.length,
         periods: {
-          today: todayData.length,
-          weekly: weeklyData.length,
-          monthly: monthlyData.length,
-          allTime: allTimeData.length
-        }
+          today: {
+            count: todayData.length,
+            topWagered: todayData[0]?.wagered.today || 0
+          },
+          weekly: {
+            count: weeklyData.length,
+            topWagered: weeklyData[0]?.wagered.this_week || 0
+          },
+          monthly: {
+            count: monthlyData.length,
+            topWagered: monthlyData[0]?.wagered.this_month || 0
+          },
+          allTime: {
+            count: allTimeData.length,
+            topWagered: allTimeData[0]?.wagered.all_time || 0
+          }
+        },
+        timestamp: new Date().toISOString()
       }),
-      duration_ms: Date.now() - startTime,
+      duration_ms: (Date.now() - startTime).toString(),
       created_at: new Date(),
       resolved: true,
       error_message: null
     };
 
-    // Insert transformation log as an array to match Drizzle's expected type
+    // Store the transformation log
     await db.insert(transformationLogs).values([transformationLogRecord]);
 
     const result = {
@@ -158,7 +176,7 @@ export async function transformLeaderboardData(apiResponse: any) {
       }
     };
 
-    console.log('Transformed Result:', JSON.stringify(result, null, 2));
+    console.log('[DEBUG] Final transformed result:', JSON.stringify(result, null, 2));
     return result;
 
   } catch (error) {
@@ -175,7 +193,7 @@ export async function transformLeaderboardData(apiResponse: any) {
           keys: Object.keys(apiResponse) 
         } : null
       }),
-      duration_ms: Date.now() - startTime,
+      duration_ms: (Date.now() - startTime).toString(),
       created_at: new Date(),
       resolved: false,
       error_message: error instanceof Error ? error.message : String(error)
