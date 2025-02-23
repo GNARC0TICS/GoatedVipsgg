@@ -3,9 +3,8 @@ import { db } from '@db';
 import { eq, and, or } from 'drizzle-orm';
 import { telegramUsers, verificationRequests } from '@db/schema/telegram';
 import { API_CONFIG } from '../config/api';
-import { users, challenges, challengeEntries } from '@db/schema';
+import { users } from '@db/schema';
 import crypto from 'crypto';
-import { and } from 'drizzle-orm';
 import { scheduleJob } from 'node-schedule';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -43,7 +42,7 @@ function logDebug(message: string, data?: any) {
 }
 
 // Add new constants for moderation
-const GOATED_STICKER_ID = '5956308779791291440';
+const GOATED_STICKER_ID = 'CAACAgEAAxkBAAEN4n5nu549rJiy7usESgyJM86xXqi2UQACPQUAAqD44UWvpbXSA0wGzzYE';
 const COMMAND_COOLDOWN = 3000; // 3 seconds cooldown between commands
 const MUTE_DURATIONS = {
   SHORT: 300, // 5 minutes
@@ -67,25 +66,11 @@ const BEGGING_KEYWORDS = [
 const commandCooldowns = new Map<string, { command: string; timestamp: number }>();
 
 // Helper function for sticker support
-async function sendStickerOrEmoji(chatId: number | string, type: 'success' | 'warning' | 'error' | 'goated') {
+async function sendSticker(chatId: number | string) {
   try {
-    if (type === 'goated') {
-      await bot.sendSticker(chatId, GOATED_STICKER_ID);
-    } else {
-      // Fallback emojis
-      const emoji = {
-        success: '✅',
-        warning: '⚠️',
-        error: '❌',
-        goated: '🐐',
-      }[type];
-      await bot.sendMessage(chatId, emoji);
-    }
+    await bot.sendSticker(chatId, GOATED_STICKER_ID);
   } catch (error) {
     console.error('Error sending sticker:', error);
-    // Fallback to standard emoji
-    const fallbackEmoji = type === 'goated' ? '🐐' : '❓';
-    await bot.sendMessage(chatId, fallbackEmoji);
   }
 }
 
@@ -852,9 +837,9 @@ bot.onText(/\/reject_user (.+)/, async (msg, match) => {
     }
 
     // Notify the user
-    awaitbot.sendMessage(telegramId, '❌ Your verification request has been rejected. Please ensure you provided the correct Goated username and try again.');
+    await bot.sendMessage(telegramId, '❌ Your verification request has been rejected. Please ensure you provided the correct Goated username and try again.');
     return bot.sendMessage(chatId, `❌ Rejected verification request for ${request.goatedUsername}.`);
-  } catch (error) {
+  } catch(error) {
     console.error('Error rejecting user:', error);
     return bot.sendMessage(chatId, '❌ Error rejecting user.');
   }
@@ -863,9 +848,9 @@ bot.onText(/\/reject_user (.+)/, async (msg, match) => {
 
 // Add prize pool constants to match web interface
 const PRIZE_POOL = 500;
-const PRIZE_DISTRIBUTION: Record<number, number> = {
+const PRIZEDISTRIBUTION: Record<number, number> = {
   1: 0.425, // $212.50
-  2: 0.2,   // $100
+  2:0.2,   // $100
   3: 0.15,  // $60
   4: 0.075, // $30
   5: 0.06,  // $24
@@ -1805,12 +1790,12 @@ bot.onText(/\/adminpanel/, async (msg) => {
   const username = msg.from?.username;
 
   if (!userId || username !== 'xGoombas') {
-    await sendStickerOrEmoji(chatId, 'error');
-    return bot.sendMessage(chatId, '❌ Only authorized users can access the admin panel.');
+    await sendSticker(chatId);
+    return bot.sendMessage(chatId, `Only authorized users can access the admin panel.');
   }
 
   if (!checkCommandCooldown(userId, 'adminpanel')) {
-    return bot.sendMessage(chatId, '⚠️ Please wait before using this command again.');
+    return bot.sendMessage(chatId, 'Please wait before using this command again.');
   }
 
   const keyboard = {
@@ -1824,7 +1809,7 @@ bot.onText(/\/adminpanel/, async (msg) => {
         { text: '👢 Bootfuck User', callback_data: 'admin_bootfuck' }
       ],
       [
-        { text: '📊 Stats', callback_data: 'admin_stats' },
+        { text: '📢 Broadcast', callback_data: 'admin_broadcast' },
         { text: '🔄 Recurring Messages', callback_data: 'admin_recurring' }
       ],
       [
@@ -1833,9 +1818,9 @@ bot.onText(/\/adminpanel/, async (msg) => {
     ]
   };
 
-  await sendStickerOrEmoji(chatId, 'goated');
+  await sendSticker(chatId);
   await bot.sendMessage(chatId,
-    '🎮 *Admin Control Panel*\n\n' +
+    'Admin Control Panel\n\n' +
     'Select an action from the menu below:',
     {
       parse_mode: 'Markdown',
@@ -1844,14 +1829,82 @@ bot.onText(/\/adminpanel/, async (msg) => {
   );
 });
 
-// Mute command implementation
+// Update the callback query handler to include broadcast
+bot.on('callback_query', async (query) => {
+  if (!query.message || !query.from) return;
+
+  const chatId = query.message.chat.id;
+  const userId = query.from.id.toString();
+  const username = query.from.username;
+
+  if (username !== 'xGoombas') {
+    await bot.answerCallbackQuery(query.id, {
+      text: 'Only authorized users can use these controls.',
+      show_alert: true
+    });
+    return;
+  }
+
+  switch (query.data) {
+    case 'admin_mute':
+      await bot.sendMessage(chatId,
+        'To mute a user:\n/mute @username duration_in_seconds');
+      break;
+    case 'admin_warn':
+      await bot.sendMessage(chatId,
+        'To warn a user:\n/warn @username reason');
+      break;
+    case 'admin_ban':
+      await bot.sendMessage(chatId,
+        'To ban a user:\n/ban @username reason');
+      break;
+    case 'admin_bootfuck':
+      await bot.sendMessage(chatId,
+        'To bootfuck a user:\n/bootfuck @username');
+      break;
+    case 'admin_broadcast':
+      await bot.sendMessage(chatId,
+        'To broadcast a message:\n/broadcast Your message here\n' +
+        'To send to specific group:\n/group_message GROUP_ID Your message here');
+      break;
+    case 'admin_recurring':
+      const recurringKeyboard = {
+        inline_keyboard: [
+          [
+            { text: '➕ Add Message', callback_data: 'recurring_add' },
+            { text: '📋 List Messages', callback_data: 'recurring_list' }
+          ],
+          [
+            { text: '❌ Remove Message', callback_data: 'recurring_remove' }
+          ]
+        ]
+      };
+      await bot.editMessageText(
+        'Recurring Message Management\n\n' +
+        'Select an action:',
+        {
+          chat_id: chatId,
+          message_id: query.message.message_id,
+          reply_markup: recurringKeyboard
+        }
+      );
+      break;
+    case 'admin_users':
+      await bot.sendMessage(chatId, '/pending - View pending verification requests');
+      break;
+  }
+
+  await bot.answerCallbackQuery(query.id);
+});
+
+// Handle mute command
 bot.onText(/\/mute (@?\w+) (\d+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const userId = msg.from?.id.toString();
   const username = msg.from?.username;
 
   if (!userId || username !== 'xGoombas') {
-    await sendStickerOrEmoji(chatId, 'error');
+    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Only authorized users can mute members.');
   }
 
@@ -1874,25 +1927,25 @@ bot.onText(/\/mute (@?\w+) (\d+)/, async (msg, match) => {
       }
     });
 
-    await sendStickerOrEmoji(chatId, 'success');
+    await sendSticker(chatId);
     await bot.sendMessage(chatId,
       `🔇 ${targetUser} has been muted for ${duration} seconds.`);
   } catch (error) {
     console.error('Error muting user:', error);
-    await sendStickerOrEmoji(chatId, 'error');
+    await sendSticker(chatId);
     await bot.sendMessage(chatId,
       '❌ Failed to mute user. Make sure the bot has admin privileges.');
   }
 });
 
-// Warning system implementation
+// Handle warn command
 bot.onText(/\/warn (@?\w+) (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const userId = msg.from?.id.toString();
   const username = msg.from?.username;
 
   if (!userId || username !== 'xGoombas') {
-    await sendStickerOrEmoji(chatId, 'error');
+    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Only authorized users can warn members.');
   }
 
@@ -1904,25 +1957,25 @@ bot.onText(/\/warn (@?\w+) (.+)/, async (msg, match) => {
   const reason = match?.[2];
 
   try {
-    await sendStickerOrEmoji(chatId, 'warning');
+    await sendSticker(chatId);
     await bot.sendMessage(chatId,
       `⚠️ Warning issued to ${targetUser}\n` +
       `Reason: ${reason}`);
   } catch (error) {
     console.error('Error warning user:', error);
-    await sendStickerOrEmoji(chatId, 'error');
+    await sendSticker(chatId);
     await bot.sendMessage(chatId, '❌ Failed to issue warning.');
   }
 });
 
-// Ban command implementation
+// Handle ban command
 bot.onText(/\/ban (@?\w+) (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const userId = msg.from?.id.toString();
   const username = msg.from?.username;
 
   if (!userId || username !== 'xGoombas') {
-    await sendStickerOrEmoji(chatId, 'error');
+    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Only authorized users can ban members.');
   }
 
@@ -1935,26 +1988,26 @@ bot.onText(/\/ban (@?\w+) (.+)/, async (msg, match) => {
 
   try {
     await bot.banChatMember(chatId, targetUser);
-    await sendStickerOrEmoji(chatId, 'success');
+    await sendSticker(chatId);
     await bot.sendMessage(chatId,
       `🚫 ${targetUser} has been banned\n` +
       `Reason: ${reason}`);
   } catch (error) {
     console.error('Error banning user:', error);
-    await sendStickerOrEmoji(chatId, 'error');
+    await sendSticker(chatId);
     await bot.sendMessage(chatId,
       '❌ Failed to ban user. Make sure the bot has admin privileges.');
   }
 });
 
-// Bootfuck command implementation
+// Handle bootfuck command
 bot.onText(/\/bootfuck (@?\w+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const userId = msg.from?.id.toString();
   const username = msg.from?.username;
 
   if (!userId || username !== 'xGoombas') {
-    await sendStickerOrEmoji(chatId, 'error');
+    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Only authorized users can bootfuck members.');
   }
 
@@ -1966,12 +2019,12 @@ bot.onText(/\/bootfuck (@?\w+)/, async (msg, match) => {
 
   try {
     await bot.banChatMember(chatId, targetUser);
-    await sendStickerOrEmoji(chatId, 'goated');
+    await sendSticker(chatId);
     await bot.sendMessage(chatId,
       `👢 ${targetUser} has been bootfucked from the group!`);
   } catch (error) {
     console.error('Error bootfucking user:', error);
-    await sendStickerOrEmoji(chatId, 'error');
+    await sendSticker(chatId);
     await bot.sendMessage(chatId,
       '❌ Failed to bootfuck user. Make sure the bot has admin privileges.');
   }
@@ -2010,9 +2063,10 @@ bot.on('callback_query', async (query) => {
       await bot.sendMessage(chatId,
         'To bootfuck a user:\n/bootfuck @username');
       break;
-    case 'admin_stats':
-      // Reuse existing stats functionality
-      await handleStats({ chat: { id: chatId }, from: { id: Number(userId) } } as TelegramBot.Message);
+    case 'admin_broadcast':
+      await bot.sendMessage(chatId,
+        'To broadcast a message:\n/broadcast Your message here\n' +
+        'To send to specific group:\n/group_message GROUP_ID Your message here');
       break;
     case 'admin_recurring':
       const recurringKeyboard = {
@@ -2027,7 +2081,7 @@ bot.on('callback_query', async (query) => {
         ]
       };
       await bot.editMessageText(
-        '🔄 Recurring Message Management\n\n' +
+        'Recurring Message Management\n\n' +
         'Select an action:',
         {
           chat_id: chatId,
@@ -2037,7 +2091,6 @@ bot.on('callback_query', async (query) => {
       );
       break;
     case 'admin_users':
-      // Show pending verifications
       await bot.sendMessage(chatId, '/pending - View pending verification requests');
       break;
     case 'recurring_add':
@@ -2109,7 +2162,7 @@ bot.onText(/\/add_recurring_message (.+) (.+)/, async (msg, match) => {
   const username = msg.from?.username;
 
   if (username !== 'xGoombas') {
-    await sendStickerOrEmoji(chatId, 'error');
+    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Only authorized users can manage recurring messages.');
   }
 
@@ -2146,7 +2199,7 @@ bot.onText(/\/add_recurring_message (.+) (.+)/, async (msg, match) => {
       }
     });
 
-    await sendStickerOrEmoji(chatId, 'success');
+    await sendSticker(chatId);
     return bot.sendMessage(chatId,
       `✅ Recurring message added successfully!\n` +
       `ID: ${messageId}\n` +
@@ -2154,7 +2207,7 @@ bot.onText(/\/add_recurring_message (.+) (.+)/, async (msg, match) => {
       `Target Groups: ${recurringMessage.targetGroups.length}`);
   } catch (error) {
     console.error('Error adding recurring message:', error);
-    await sendStickerOrEmoji(chatId, 'error');
+    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Error setting up recurring message.');
   }
 });
@@ -2165,7 +2218,7 @@ bot.onText(/\/list_recurring_messages/, async (msg) => {
   const username = msg.from?.username;
 
   if (username !== 'xGoombas') {
-    await sendStickerOrEmoji(chatId, 'error');
+    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Only authorized users can view recurring messages.');
   }
 
@@ -2192,7 +2245,7 @@ bot.onText(/\/remove_recurring_message (.+)/, async (msg, match) => {
   const username = msg.from?.username;
 
   if (username !== 'xGoombas') {
-    await sendStickerOrEmoji(chatId, 'error');
+    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Only authorized users can remove recurring messages.');
   }
 
@@ -2202,10 +2255,10 @@ bot.onText(/\/remove_recurring_message (.+)/, async (msg, match) => {
   }
 
   if (recurringMessages.delete(messageId)) {
-    await sendStickerOrEmoji(chatId, 'success');
+    await sendSticker(chatId);
     return bot.sendMessage(chatId, '✅ Recurring message removed successfully!');
   } else {
-    await sendStickerOrEmoji(chatId, 'error');
+    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Message not found.');
   }
 });
@@ -2231,7 +2284,7 @@ bot.on('message', async (msg) => {
         }
       });
 
-      await sendStickerOrEmoji(chatId, 'warning');
+      await sendSticker(chatId);
       await bot.sendMessage(chatId,
         `⚠️ @${msg.from.username} has been muted for ${SPAM_DETECTION.MUTE_DURATION / 60} minutes due to spamming.`);
     } catch (error) {
@@ -2244,11 +2297,40 @@ bot.on('message', async (msg) => {
   if (containsBegging(messageText)) {
     try {
       await bot.deleteMessage(chatId, msg.message_id.toString());
-      await sendStickerOrEmoji(chatId, 'warning');
+      await sendSticker(chatId);
       await bot.sendMessage(chatId,
         `⚠️ @${msg.from.username} begging is not allowed in this group.`);
     } catch (error) {
       console.error('Error handling begging message:', error);
     }
   }
+});
+// Add sticker message handler with more detailed logging
+bot.on('sticker', async (msg) => {
+  if (!msg.sticker) return;
+
+  // More detailed logging for sticker information
+  const stickerInfo = {
+    file_id: msg.sticker.file_id,
+    file_unique_id: msg.sticker.file_unique_id,
+    set_name: msg.sticker.set_name,
+    is_animated: msg.sticker.is_animated,
+    is_video: msg.sticker.is_video,
+    type: msg.sticker.type,
+    emoji: msg.sticker.emoji
+  };
+
+  // Use process.stdout.write for immediate logging
+  process.stdout.write('\n=====================================\n');
+  process.stdout.write('[STICKER RECEIVED] Details:\n');
+  process.stdout.write(JSON.stringify(stickerInfo, null, 2) + '\n');
+  process.stdout.write('To use this sticker, copy this file_id:\n');
+  process.stdout.write(stickerInfo.file_id + '\n');
+  process.stdout.write('=====================================\n');
+
+  // Also send the file_id back to the chat for easy copying
+  await bot.sendMessage(msg.chat.id, 
+    `Sticker file_id:\n\`${stickerInfo.file_id}\``, 
+    { parse_mode: 'Markdown' }
+  );
 });
