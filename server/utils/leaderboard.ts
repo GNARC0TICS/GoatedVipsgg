@@ -35,15 +35,25 @@ type APIResponse = {
 /**
  * Transforms and stores leaderboard data
  */
-export async function transformLeaderboardData(apiData: APIResponse) {
+export async function transformLeaderboardData(apiResponse: any) {
   const startTime = Date.now();
   const logId = `transform_${startTime}`;
 
   try {
-    // Extract and validate raw data with more robust type checking
-    const rawData = Array.isArray(apiData?.data) ? apiData.data :
-                   Array.isArray(apiData?.results) ? apiData.results :
-                   Array.isArray(apiData) ? apiData : [];
+    console.log('Raw API Response:', JSON.stringify(apiResponse, null, 2));
+
+    // Extract data from various possible response formats
+    let rawData;
+    if (Array.isArray(apiResponse)) {
+      rawData = apiResponse;
+    } else if (apiResponse?.data && Array.isArray(apiResponse.data)) {
+      rawData = apiResponse.data;
+    } else if (apiResponse?.results && Array.isArray(apiResponse.results)) {
+      rawData = apiResponse.results;
+    } else {
+      console.error(`[${logId}] Invalid API response format:`, apiResponse);
+      throw new Error('Invalid API response format');
+    }
 
     if (!rawData.length) {
       console.warn(`[${logId}] No valid data received from API`);
@@ -70,34 +80,45 @@ export async function transformLeaderboardData(apiData: APIResponse) {
           return null;
         }
 
+        const wagered = {
+          today: Math.max(0, Number(entry?.wagered?.today || 0)),
+          this_week: Math.max(0, Number(entry?.wagered?.this_week || 0)),
+          this_month: Math.max(0, Number(entry?.wagered?.this_month || 0)),
+          all_time: Math.max(0, Number(entry?.wagered?.all_time || 0))
+        };
+
         return {
           uid: String(entry.uid),
           name: String(entry.name),
-          wagered: {
-            today: Math.max(0, Number(entry?.wagered?.today || 0)),
-            this_week: Math.max(0, Number(entry?.wagered?.this_week || 0)),
-            this_month: Math.max(0, Number(entry?.wagered?.this_month || 0)),
-            all_time: Math.max(0, Number(entry?.wagered?.all_time || 0))
-          }
+          wagered
         };
       })
-      .filter(Boolean);
+      .filter((entry): entry is LeaderboardEntry => entry !== null);
 
     if (!transformedEntries.length) {
+      console.warn('No valid entries after transformation');
       throw new Error('No valid entries after transformation');
     }
 
     // Sort data for each period
-    const todayData = [...transformedEntries].sort((a, b) => b.wagered.today - a.wagered.today);
-    const weeklyData = [...transformedEntries].sort((a, b) => b.wagered.this_week - a.wagered.this_week);
-    const monthlyData = [...transformedEntries].sort((a, b) => b.wagered.this_month - a.wagered.this_month);
-    const allTimeData = [...transformedEntries].sort((a, b) => b.wagered.all_time - a.wagered.all_time);
+    const todayData = [...transformedEntries].sort((a, b) => 
+      (b.wagered.today || 0) - (a.wagered.today || 0)
+    );
+    const weeklyData = [...transformedEntries].sort((a, b) => 
+      (b.wagered.this_week || 0) - (a.wagered.this_week || 0)
+    );
+    const monthlyData = [...transformedEntries].sort((a, b) => 
+      (b.wagered.this_month || 0) - (a.wagered.this_month || 0)
+    );
+    const allTimeData = [...transformedEntries].sort((a, b) => 
+      (b.wagered.all_time || 0) - (a.wagered.all_time || 0)
+    );
 
     // Log success
-    await db.insert(transformationLogs).values({
+    const transformationLog = {
       type: 'info',
       message: 'Leaderboard transformation completed',
-      payload: JSON.stringify({
+      payload: {
         totalEntries: transformedEntries.length,
         periods: {
           today: todayData.length,
@@ -105,14 +126,17 @@ export async function transformLeaderboardData(apiData: APIResponse) {
           monthly: monthlyData.length,
           allTime: allTimeData.length
         }
-      }),
-      duration_ms: (Date.now() - startTime).toString(),
+      },
+      duration_ms: Date.now() - startTime,
       created_at: new Date(),
       resolved: true,
       error_message: null
-    });
+    };
 
-    return {
+    console.log('Transformation Log:', transformationLog);
+    await db.insert(transformationLogs).values(transformationLog);
+
+    const result = {
       status: "success",
       metadata: {
         totalUsers: transformedEntries.length,
@@ -125,6 +149,10 @@ export async function transformLeaderboardData(apiData: APIResponse) {
         all_time: { data: allTimeData }
       }
     };
+
+    console.log('Transformed Result:', JSON.stringify(result, null, 2));
+    return result;
+
   } catch (error) {
     console.error(`[${logId}] Error transforming leaderboard data:`, error);
 
@@ -134,7 +162,10 @@ export async function transformLeaderboardData(apiData: APIResponse) {
       message: error instanceof Error ? error.message : String(error),
       payload: JSON.stringify({
         error: error instanceof Error ? error.stack : undefined,
-        input: apiData ? { type: typeof apiData, keys: Object.keys(apiData) } : null
+        input: apiResponse ? { 
+          type: typeof apiResponse, 
+          keys: Object.keys(apiResponse) 
+        } : null
       }),
       duration_ms: (Date.now() - startTime).toString(),
       created_at: new Date(),

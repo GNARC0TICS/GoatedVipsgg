@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 
@@ -16,6 +16,7 @@ type LeaderboardEntry = {
   wagered: WageredData;
   wagerChange?: number;
   isWagering?: boolean;
+  lastUpdate?: string;
 };
 
 type LeaderboardPeriodData = {
@@ -49,21 +50,21 @@ const defaultData = {
   }
 };
 
-export function useLeaderboard(
-  timePeriod: TimePeriod = "today",
-  page: number = 0,
-) {
+export function useLeaderboard(timePeriod: TimePeriod = "today", page: number = 0) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [ws, setWs] = React.useState<WebSocket | null>(null);
   const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
   const reconnectTimeoutRef = React.useRef<NodeJS.Timeout>();
-  const wsReconnectAttempts = useRef(0);
+  const wsReconnectAttempts = React.useRef(0);
   const MAX_RECONNECT_ATTEMPTS = 5;
 
   // WebSocket connection management
   React.useEffect(() => {
-    if (!user) return; // Don't connect if not authenticated
+    if (!user) {
+      console.log('No user authenticated, skipping WebSocket connection');
+      return;
+    }
 
     const connect = () => {
       if (wsReconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) {
@@ -73,11 +74,13 @@ export function useLeaderboard(
 
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const host = window.location.host;
+      console.log(`Connecting to WebSocket at ${protocol}//${host}/ws`);
       const ws = new WebSocket(`${protocol}//${host}/ws`);
 
       ws.onmessage = (event: MessageEvent) => {
         try {
           const update = JSON.parse(event.data);
+          console.log('WebSocket message received:', update);
           if (update.type === "LEADERBOARD_UPDATE") {
             console.log('Received leaderboard update:', update);
             refetch();
@@ -99,7 +102,7 @@ export function useLeaderboard(
       };
 
       ws.onopen = () => {
-        wsReconnectAttempts.current = 0; // Reset counter on successful connection
+        wsReconnectAttempts.current = 0;
         console.log('WebSocket connection established');
       };
 
@@ -123,9 +126,11 @@ export function useLeaderboard(
     queryFn: async () => {
       try {
         if (!user) {
-          throw new Error("Please log in to view leaderboard data");
+          console.log('No authenticated user, skipping leaderboard fetch');
+          return defaultData;
         }
 
+        console.log('Fetching leaderboard data...');
         const response = await fetch(`/api/affiliate/stats?page=${page}&limit=10`, {
           headers: {
             'Accept': 'application/json',
@@ -136,13 +141,15 @@ export function useLeaderboard(
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
+          console.error('Leaderboard fetch failed:', response.status, errorData);
           if (response.status === 401) {
-            throw new Error("Please log in to view leaderboard data");
+            return defaultData;
           }
           throw new Error(errorData.message || `Failed to load leaderboard data`);
         }
 
         const data = await response.json();
+        console.log('Received leaderboard data:', data);
 
         // Validate and normalize data structure
         if (!data?.data || !data.data[timePeriod]?.data) {
@@ -158,7 +165,7 @@ export function useLeaderboard(
           description: error instanceof Error ? error.message : "Failed to load leaderboard data",
           variant: "destructive",
         });
-        throw error;
+        return defaultData;
       }
     },
     enabled: !!user, // Only run query if user is authenticated
@@ -193,7 +200,8 @@ export function useLeaderboard(
         wagered: {
           ...entry.wagered,
           [periodWagerKey]: currentWager
-        }
+        },
+        lastUpdate: entry.lastUpdate
       };
     });
   }, [data, periodKey, periodWagerKey, previousData]);

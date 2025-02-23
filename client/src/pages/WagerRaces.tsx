@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { queryClient } from "@/lib/queryClient";
@@ -13,22 +13,17 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   Trophy,
-  CircleDot,
   Crown,
   Medal,
   Award,
   Star,
-  Timer,
   TrendingUp,
-  ArrowRight,
 } from "lucide-react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { useLeaderboard } from "@/hooks/use-leaderboard";
-import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { QuickProfile } from "@/components/QuickProfile";
 import { Link } from "wouter";
-import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { useAuth } from "@/lib/auth";
 
 type WageredData = {
@@ -49,32 +44,9 @@ export default function WagerRaces() {
   const { user, isLoading: authLoading } = useAuth();
   const [raceType] = useState<"weekly" | "monthly" | "weekend">("monthly");
   const [showCompletedRace, setShowCompletedRace] = useState(false);
+
+  // Only fetch leaderboard data if user is authenticated
   const { data: leaderboardData, isLoading, error } = useLeaderboard("monthly");
-  const ws = useRef<WebSocket | null>(null);
-
-  // Only attempt WebSocket connection if authenticated
-  useEffect(() => {
-    if (!user) return;
-
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    ws.current = new WebSocket(`${protocol}//${host}/ws`);
-
-    const handleError = (error: Event) => {
-      console.error('WebSocket connection error:', error);
-    };
-
-    if (ws.current) {
-      ws.current.addEventListener('error', handleError);
-    }
-
-    return () => {
-      if (ws.current) {
-        ws.current.removeEventListener('error', handleError);
-        ws.current.close();
-      }
-    };
-  }, [user]);
 
   // Show login prompt if not authenticated
   if (!user && !authLoading) {
@@ -99,7 +71,7 @@ export default function WagerRaces() {
           <h2 className="text-xl text-red-500 mb-4">Error loading race data</h2>
           <p className="text-white/60">{error.message}</p>
           <button 
-            onClick={() => window.location.reload()}
+            onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/affiliate/stats"] })}
             className="mt-4 px-4 py-2 bg-[#D7FF00] text-black rounded hover:bg-[#D7FF00]/90"
           >
             Retry
@@ -169,72 +141,8 @@ export default function WagerRaces() {
   const getPrizeAmount = (rank: number) => {
     return Math.round(prizePool * (prizeDistribution[rank] || 0) * 100) / 100;
   };
-  const previousRaceQuery = useQuery<any>({
-    queryKey: ["/api/wager-races/previous"],
-    enabled: showCompletedRace,
-    staleTime: Infinity,
-    select: (data) => {
-      if (!data) return null;
 
-      const transitionEnds = new Date(data.metadata?.transitionEnds);
-      const now = new Date();
-
-      // Auto-hide completed race view after transition period
-      if (transitionEnds < now && showCompletedRace) {
-        setTimeout(() => setShowCompletedRace(false), 1000);
-      }
-
-      return {
-        ...data,
-        participants: data.participants?.map((p: any) => ({
-          ...p,
-          wagered: {
-            this_month: p.wagered || 0,
-            today: 0,
-            this_week: 0,
-            all_time: p.allTimeWagered || 0
-          }
-        })),
-        isTransition: now < transitionEnds
-      };
-    }
-  });
-
-  // Auto-show completed race when race ends
-  useEffect(() => {
-    const now = new Date();
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-
-    if (now >= endOfMonth && !showCompletedRace) {
-      setShowCompletedRace(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Listen for race completion events
-    const handleRaceComplete = (event: any) => {
-      if (event.type === "RACE_COMPLETED") {
-        setShowCompletedRace(true);
-        // Auto-hide after 1 hour
-        setTimeout(() => setShowCompletedRace(false), 3600000);
-      }
-    };
-
-    // Add WebSocket listener
-    if (ws?.current) {
-      ws.current.addEventListener("message", handleRaceComplete);
-    }
-
-    return () => {
-      if (ws?.current) {
-        ws.current.removeEventListener("message", handleRaceComplete);
-      }
-    };
-  }, []);
-
-  const top10Players = showCompletedRace
-    ? (previousRaceQuery?.data?.data?.participants || [])
-    : (leaderboardData || []).slice(0, 10);
+  const top10Players = (leaderboardData || []).slice(0, 10);
   const currentLeader = top10Players[0];
 
   return (
@@ -555,7 +463,7 @@ export default function WagerRaces() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(showCompletedRace ? (previousRaceQuery?.data?.data?.participants || []).slice(0, 10) : top10Players).map((player: LeaderboardEntry, index: number) => (
+                {top10Players.map((player: LeaderboardEntry, index: number) => (
                   <TableRow
                     key={player.uid}
                     className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]"
@@ -589,7 +497,7 @@ export default function WagerRaces() {
                         ${getWagerAmount(player)?.toLocaleString()}
                       </motion.span>
                     </TableCell>
-                    <TableCell className={`text-right font-sans text-[#D7FF00] ${showCompletedRace ? 'font-bold' : ''}`}>
+                    <TableCell className={`text-right font-sans text-[#D7FF00] `}>
                       ${getPrizeAmount(index + 1).toLocaleString()}
                     </TableCell>
                   </TableRow>

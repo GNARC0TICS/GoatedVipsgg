@@ -218,6 +218,45 @@ function formatRaceData(stats: any) {
   };
 }
 
+async function fetchLeaderboardData() {
+  console.log('Fetching leaderboard data from API...');
+
+  const token = process.env.API_TOKEN || API_CONFIG.token;
+  if (!token) {
+    console.error('API token not configured');
+    throw new Error('API token not configured');
+  }
+
+  console.log(`Using API endpoint: ${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`);
+
+  try {
+    const response = await fetch(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error(`API request failed with status ${response.status}`);
+      console.error('Response headers:', response.headers);
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
+      throw new Error(`API request failed with status ${response.status}, ${errorText}`);
+    }
+
+    const rawData = await response.json();
+    console.log('Raw API response:', JSON.stringify(rawData, null, 2));
+    return rawData;
+  } catch (error) {
+    console.error('Error fetching leaderboard data:', error);
+    throw error;
+  }
+}
+
 function registerRoutes(app: Express): Server {
   // Basic middleware setup
   app.use(express.json());
@@ -239,6 +278,9 @@ function registerRoutes(app: Express): Server {
 
   // Add auth-related routes to API router
   apiRouter.get("/user", (req, res) => {
+    console.log('User authentication status:', req.isAuthenticated());
+    console.log('Session data:', req.session);
+
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: "Not authenticated" });
     }
@@ -268,27 +310,20 @@ function registerRoutes(app: Express): Server {
 
   // Affiliate stats endpoint with auth check and error handling
   apiRouter.get("/affiliate/stats", async (req, res) => {
+    console.log('Received request for affiliate stats');
+    console.log('User authentication status:', req.isAuthenticated());
+
     if (!req.isAuthenticated()) {
+      console.log('User not authenticated, returning 401');
       return res.status(401).json({ error: "Not authenticated" });
     }
 
     try {
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-
-      const rawData = await response.json();
+      console.log('Fetching leaderboard data...');
+      const rawData = await fetchLeaderboardData();
+      console.log('Transforming leaderboard data...');
       const transformedData = await transformLeaderboardData(rawData);
+      console.log('Transformed data:', JSON.stringify(transformedData, null, 2));
 
       // Store and broadcast the update
       await storeLeaderboardData(transformedData);
@@ -347,9 +382,10 @@ function registerRoutes(app: Express): Server {
 
   // Error handling middleware
   app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error(`[Error] ${err.message}`);
+    console.error(`[Error] ${err.stack}`);
     res.status(500).json({
-      error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message
+      error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
+      stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
     });
   });
 
