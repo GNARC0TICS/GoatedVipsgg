@@ -44,18 +44,24 @@ export async function transformLeaderboardData(apiResponse: any) {
     let entries: any[] = [];
     if (Array.isArray(apiResponse)) {
       entries = apiResponse;
-    } else if (typeof apiResponse === 'object') {
-      // Check for common response wrapper patterns
-      if (Array.isArray(apiResponse.data)) {
-        entries = apiResponse.data;
-      } else if (Array.isArray(apiResponse.users)) {
-        entries = apiResponse.users;
-      } else if (Array.isArray(apiResponse.results)) {
-        entries = apiResponse.results;
+    } else if (typeof apiResponse === 'object' && apiResponse !== null) {
+      // Handle the specific API response format we're receiving
+      if (Array.isArray(apiResponse.entries)) {
+        entries = apiResponse.entries;
+      } else if (apiResponse.today !== undefined && apiResponse.this_week !== undefined) {
+        // Extract entries from the specific response format
+        entries = Object.entries(apiResponse)
+          .filter(([key]) => !['today', 'this_week'].includes(key))
+          .map(([_, value]) => value);
       } else {
-        // If no obvious array found, try to extract user data from the object itself
-        entries = [apiResponse];
+        console.error('Unexpected API response structure:', apiResponse);
+        throw new Error('Invalid API response format');
       }
+    }
+
+    if (!entries.length) {
+      console.warn('No entries found in API response');
+      entries = [];
     }
 
     console.log('[DEBUG] Extracted entries:', entries.length);
