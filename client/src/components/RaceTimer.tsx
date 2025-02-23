@@ -13,12 +13,6 @@ interface RaceParticipant {
   position: number;
 }
 
-interface RaceMetadata {
-  transitionEnds: string;
-  nextRaceStarts: string;
-  prizeDistribution: number[];
-}
-
 interface RaceData {
   id: string;
   status: 'live' | 'ended' | 'upcoming';
@@ -26,9 +20,6 @@ interface RaceData {
   endDate: string;
   prizePool: number;
   participants: RaceParticipant[];
-  totalWagered: number;
-  participantCount: number;
-  metadata: RaceMetadata;
 }
 
 export function RaceTimer() {
@@ -41,45 +32,54 @@ export function RaceTimer() {
     data: currentRaceData, 
     error: currentError, 
     isLoading: isCurrentLoading 
-  } = useQuery<RaceData>({
+  } = useQuery<RaceData, Error>({
     queryKey: ["/api/wager-races/current"],
     queryFn: async () => {
-      const response = await fetch('/api/wager-races/current');
+      const response = await fetch('/api/wager-races/current', {
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch current race data');
       }
-      const data = await response.json();
-      return {
-        ...data,
-        prizePool: 500, // Fixed prize pool as specified
-        startDate: "2025-02-01T00:00:00.000Z", // February 2025
-        endDate: "2025-02-28T23:59:59.999Z"
-      };
+      return response.json();
     },
     refetchInterval: 30000,
     retry: 3,
     enabled: !showPrevious,
-    staleTime: 60000
+    staleTime: 60000,
+    onError: (error: Error) => {
+      console.error('Race data fetch error:', error);
+      toast({
+        title: "Error loading race data",
+        description: error.message || "Please try again later",
+        variant: "destructive"
+      });
+    }
   });
 
   const { 
     data: previousRaceData, 
     error: previousError, 
     isLoading: isPreviousLoading 
-  } = useQuery<RaceData>({
+  } = useQuery<RaceData | null, Error>({
     queryKey: ["/api/wager-races/previous"],
     queryFn: async () => {
-      const response = await fetch('/api/wager-races/previous');
+      const response = await fetch('/api/wager-races/previous', {
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch previous race data');
       }
       const data = await response.json();
-      return {
+      return data ? {
         ...data,
-        prizePool: 500,
-        startDate: "2025-01-01T00:00:00.000Z",
-        endDate: "2025-01-31T23:59:59.999Z"
-      };
+        startDate: data.startDate || new Date().toISOString(),
+        endDate: data.endDate || new Date().toISOString()
+      } : null;
     },
     enabled: showPrevious
   });

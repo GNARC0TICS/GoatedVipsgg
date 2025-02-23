@@ -8,12 +8,9 @@ import {
   decimal,
   jsonb,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
-import { challenges, challengeEntries, telegramUsers, verificationRequests, verificationHistory } from './schema/telegram';
-import { historicalRaces } from './schema/races';
-import { supportTickets, ticketMessages } from './schema/support';
+import { challenges, challengeEntries } from './schema/telegram';
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -22,37 +19,24 @@ export const users = pgTable("users", {
   email: text("email").unique().notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  lastLoginIp: text("last_login_ip"),
-  registrationIp: text("registration_ip"),
-  ipHistory: jsonb("ip_history"),
-  loginHistory: jsonb("login_history"),
-  emailVerified: boolean("email_verified"),
-  emailVerificationToken: text("email_verification_token"),
-  country: text("country"),
-  city: text("city"),
-  lastActive: timestamp("last_active"),
-  telegramId: text("telegram_id"),
-  telegramVerified: boolean("telegram_verified"),
-  telegramVerifiedAt: timestamp("telegram_verified_at"),
-  goatedUsername: text("goated_username"),
-  goatedVerified: boolean("goated_verified")
+  lastLogin: timestamp("last_login"),
 });
 
 export const wagerRaces = pgTable("wager_races", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
-  type: text("type").notNull(),
-  status: text("status").notNull(),
+  type: text("type").notNull(), // 'weekly' | 'monthly' | 'weekend'
+  status: text("status").notNull(), // 'upcoming' | 'live' | 'completed'
   prizePool: decimal("prize_pool", { precision: 18, scale: 2 }).notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
   minWager: decimal("min_wager", { precision: 18, scale: 2 }).notNull(),
-  prizeDistribution: jsonb("prize_distribution").notNull(),
+  prizeDistribution: jsonb("prize_distribution").notNull(), // { "1": 25, "2": 15, ... }
   createdBy: integer("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   rules: text("rules"),
-  description: text("description").default(''),
+  description: text("description"),
 });
 
 export const wagerRaceParticipants = pgTable("wager_race_participants", {
@@ -63,7 +47,7 @@ export const wagerRaceParticipants = pgTable("wager_race_participants", {
   rank: integer("rank"),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  wagerHistory: jsonb("wager_history").default([]),
+  wagerHistory: jsonb("wager_history"), // Track wager progress over time
 });
 
 export const notificationPreferences = pgTable("notification_preferences", {
@@ -88,43 +72,80 @@ export const affiliateStats = pgTable("affiliate_stats", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
+export const affiliateStatsRelations = relations(affiliateStats, ({ one }) => ({
+  user: one(users, {
+    fields: [affiliateStats.userId],
+    references: [users.id],
+  }),
+}));
+
+// New tables for additional features
+
+export const supportTickets = pgTable("support_tickets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  subject: text("subject").notNull(),
+  description: text("description").notNull(),
+  status: text("status").notNull().default("open"), // 'open' | 'in_progress' | 'closed'
+  priority: text("priority").notNull().default("medium"), // 'low' | 'medium' | 'high'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  assignedTo: integer("assigned_to").references(() => users.id),
+});
+
+export const ticketMessages = pgTable("ticket_messages", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").references(() => supportTickets.id),
+  userId: integer("user_id").references(() => users.id),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isStaffReply: boolean("is_staff_reply").default(false).notNull(),
+});
+
 export const bonusCodes = pgTable("bonus_codes", {
   id: serial("id").primaryKey(),
   code: text("code").unique().notNull(),
-  description: text("description").default('').notNull(),
-  value: text("value").default('0').notNull(),
+  description: text("description").notNull(),
+  value: text("value").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   expired: boolean("expired").default(false).notNull(),
   createdBy: integer("created_by").references(() => users.id),
-  userId: integer("user_id").references(() => users.id),
-  claimedAt: timestamp("claimed_at"),
 });
 
-export const sessions = pgTable("session", {
-  id: text("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull()
+export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
+  id: serial("id").primaryKey(),
+  email: text("email").unique().notNull(),
+  isSubscribed: boolean("is_subscribed").default(true).notNull(),
+  subscribedAt: timestamp("subscribed_at").defaultNow().notNull(),
+  unsubscribedAt: timestamp("unsubscribed_at"),
+  source: text("source"), // Track where the subscription came from
 });
 
-// Relations setup
+export const historicalRaces = pgTable("historical_races", {
+  id: serial("id").primaryKey(),
+  month: integer("month").notNull(),
+  year: integer("year").notNull(),
+  prizePool: decimal("prize_pool", { precision: 10, scale: 2 }).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  participants: jsonb("participants").notNull(), // Store all participants
+  totalWagered: decimal("total_wagered", { precision: 18, scale: 2 }).notNull(),
+  participantCount: integer("participant_count").notNull(),
+  status: text("status").notNull().default('completed'),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  metadata: jsonb("metadata").default({}).notNull() // For future extensibility
+});
+
 export const userRelations = relations(users, ({ one, many }) => ({
   preferences: one(notificationPreferences, {
     fields: [users.id],
     references: [notificationPreferences.userId],
   }),
-  telegramUser: one(telegramUsers, {
-    fields: [users.id],
-    references: [telegramUsers.userId],
-  }),
-  verificationRequest: one(verificationRequests, {
-    fields: [users.id],
-    references: [verificationRequests.userId],
-  }),
-  verificationHistory: many(verificationHistory),
   createdRaces: many(wagerRaces),
   raceParticipations: many(wagerRaceParticipants),
+  supportTickets: many(supportTickets),
+  assignedTickets: many(supportTickets, { relationName: "assignedTickets" }),
 }));
 
 export const wagerRaceRelations = relations(wagerRaces, ({ one, many }) => ({
@@ -135,81 +156,69 @@ export const wagerRaceRelations = relations(wagerRaces, ({ one, many }) => ({
   participants: many(wagerRaceParticipants),
 }));
 
-// Schema validation
+export const supportTicketRelations = relations(
+  supportTickets,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [supportTickets.userId],
+      references: [users.id],
+    }),
+    assignedStaff: one(users, {
+      fields: [supportTickets.assignedTo],
+      references: [users.id],
+    }),
+    messages: many(ticketMessages),
+  }),
+);
+
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
-export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences);
-export const selectNotificationPreferencesSchema = createSelectSchema(notificationPreferences);
+export const insertNotificationPreferencesSchema = createInsertSchema(
+  notificationPreferences,
+);
+export const selectNotificationPreferencesSchema = createSelectSchema(
+  notificationPreferences,
+);
 export const insertWagerRaceSchema = createInsertSchema(wagerRaces);
 export const selectWagerRaceSchema = createSelectSchema(wagerRaces);
-export const insertWagerRaceParticipantSchema = createInsertSchema(wagerRaceParticipants);
-export const selectWagerRaceParticipantSchema = createSelectSchema(wagerRaceParticipants);
-
-// Add schema validation for support system
+export const insertWagerRaceParticipantSchema = createInsertSchema(
+  wagerRaceParticipants,
+);
+export const selectWagerRaceParticipantSchema = createSelectSchema(
+  wagerRaceParticipants,
+);
 export const insertSupportTicketSchema = createInsertSchema(supportTickets);
 export const selectSupportTicketSchema = createSelectSchema(supportTickets);
-export const insertTicketMessageSchema = createInsertSchema(ticketMessages);
-export const selectTicketMessageSchema = createSelectSchema(ticketMessages);
+export const insertNewsletterSubscriptionSchema = createInsertSchema(
+  newsletterSubscriptions,
+);
+export const selectNewsletterSubscriptionSchema = createSelectSchema(
+  newsletterSubscriptions,
+);
 
-// Add schema validation for telegram system
-export const insertTelegramUserSchema = createInsertSchema(telegramUsers);
-export const selectTelegramUserSchema = createSelectSchema(telegramUsers);
-export const insertVerificationRequestSchema = createInsertSchema(verificationRequests);
-export const selectVerificationRequestSchema = createSelectSchema(verificationRequests);
-export const insertVerificationHistorySchema = createInsertSchema(verificationHistory);
-export const selectVerificationHistorySchema = createSelectSchema(verificationHistory);
+export const insertHistoricalRaceSchema = createInsertSchema(historicalRaces);
+export const selectHistoricalRaceSchema = createSelectSchema(historicalRaces);
 
-// Add schema validation for challenges
-export const insertChallengeSchema = createInsertSchema(challenges);
-export const selectChallengeSchema = createSelectSchema(challenges);
-export const insertChallengeEntrySchema = createInsertSchema(challengeEntries);
-export const selectChallengeEntrySchema = createSelectSchema(challengeEntries);
-
-// Add schema validation for bonus codes
-export const insertBonusCodeSchema = createInsertSchema(bonusCodes);
-export const selectBonusCodeSchema = createSelectSchema(bonusCodes);
-
-// Types
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
-export type InsertNotificationPreferences = typeof notificationPreferences.$inferInsert;
-export type SelectNotificationPreferences = typeof notificationPreferences.$inferSelect;
+export type InsertNotificationPreferences =
+  typeof notificationPreferences.$inferInsert;
+export type SelectNotificationPreferences =
+  typeof notificationPreferences.$inferSelect;
 export type InsertWagerRace = typeof wagerRaces.$inferInsert;
 export type SelectWagerRace = typeof wagerRaces.$inferSelect;
-export type InsertWagerRaceParticipant = typeof wagerRaceParticipants.$inferInsert;
-export type SelectWagerRaceParticipant = typeof wagerRaceParticipants.$inferSelect;
-
-// Add types for support system
+export type InsertWagerRaceParticipant =
+  typeof wagerRaceParticipants.$inferInsert;
+export type SelectWagerRaceParticipant =
+  typeof wagerRaceParticipants.$inferSelect;
 export type InsertSupportTicket = typeof supportTickets.$inferInsert;
 export type SelectSupportTicket = typeof supportTickets.$inferSelect;
-export type InsertTicketMessage = typeof ticketMessages.$inferInsert;
-export type SelectTicketMessage = typeof ticketMessages.$inferSelect;
+export type InsertNewsletterSubscription =
+  typeof newsletterSubscriptions.$inferInsert;
+export type SelectNewsletterSubscription =
+  typeof newsletterSubscriptions.$inferSelect;
 
-// Add types for telegram system
-export type InsertTelegramUser = typeof telegramUsers.$inferInsert;
-export type SelectTelegramUser = typeof telegramUsers.$inferSelect;
-export type InsertVerificationRequest = typeof verificationRequests.$inferInsert;
-export type SelectVerificationRequest = typeof verificationRequests.$inferSelect;
-export type InsertVerificationHistory = typeof verificationHistory.$inferInsert;
-export type SelectVerificationHistory = typeof verificationHistory.$inferSelect;
+export type InsertHistoricalRace = typeof historicalRaces.$inferInsert;
+export type SelectHistoricalRace = typeof historicalRaces.$inferSelect;
 
-// Add types for challenges
-export type InsertChallenge = typeof challenges.$inferInsert;
-export type SelectChallenge = typeof challenges.$inferSelect;
-export type InsertChallengeEntry = typeof challengeEntries.$inferInsert;
-export type SelectChallengeEntry = typeof challengeEntries.$inferSelect;
-
-// Add types for bonus codes
-export type InsertBonusCode = typeof bonusCodes.$inferInsert;
-export type SelectBonusCode = typeof bonusCodes.$inferSelect;
-
-export {
-  telegramUsers,
-  verificationRequests,
-  verificationHistory,
-  challenges,
-  challengeEntries,
-  historicalRaces,
-  supportTickets,
-  ticketMessages
-};
+export { challenges, challengeEntries };

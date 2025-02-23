@@ -8,28 +8,11 @@ import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
 import { initializeAdmin } from "./middleware/admin";
-import { bot } from './telegram/bot';
+import { bot } from './telegram/bot'; // Import the Telegram bot
 
 const execAsync = promisify(exec);
 const app = express();
 const PORT = 5000;
-
-// Validate critical environment variables
-function validateEnvironment() {
-  const requiredEnvVars = [
-    'DATABASE_URL',
-    'TELEGRAM_BOT_TOKEN',
-  ];
-
-  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-
-  if (missingVars.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missingVars.join(', ')}\n` +
-      'Please ensure all required environment variables are set before starting the server.'
-    );
-  }
-}
 
 async function setupMiddleware() {
   app.use(express.json());
@@ -112,51 +95,44 @@ async function cleanupPort() {
 async function startServer() {
   try {
     log("Starting server initialization...");
-
-    // Validate environment variables before proceeding
-    validateEnvironment();
-
     await checkDatabase();
-    await cleanupPort();
+    await cleanupPort(); 
 
     registerRoutes(app);
     initializeAdmin().catch(console.error);
 
-    // Initialize Telegram bot with proper error handling
+    // Initialize Telegram bot
     log("Initializing Telegram bot...");
-    try {
-      const server = createServer(app);
-
-      if (app.get("env") === "development") {
-        await setupVite(app, server);
-      } else {
-        serveStatic(app);
-      }
-
-      await setupMiddleware();
-
-      server
-        .listen(PORT, "0.0.0.0")
-        .on("error", async (err: NodeJS.ErrnoException) => {
-          if (err.code === 'EADDRINUSE') {
-            log(`Port ${PORT} is in use, attempting to free it...`);
-            await cleanupPort();
-            server.listen(PORT, "0.0.0.0");
-          } else {
-            console.error(`Failed to start server: ${err.message}`);
-            process.exit(1);
-          }
-        })
-        .on("listening", () => {
-          log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-          log('Telegram bot started successfully');
-        });
-
-    } catch (botError) {
-      console.error("Failed to initialize Telegram bot:", botError);
-      // Continue server startup even if bot fails
-      log("Warning: Telegram bot failed to initialize. Some features may be unavailable.");
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+      throw new Error('TELEGRAM_BOT_TOKEN must be provided');
     }
+
+    const server = createServer(app);
+
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
+
+    await setupMiddleware();
+
+    server
+      .listen(PORT, "0.0.0.0")
+      .on("error", async (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EADDRINUSE') {
+          log(`Port ${PORT} is in use, attempting to free it...`);
+          await cleanupPort();
+          server.listen(PORT, "0.0.0.0");
+        } else {
+          console.error(`Failed to start server: ${err.message}`);
+          process.exit(1);
+        }
+      })
+      .on("listening", () => {
+        log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+        log('Telegram bot started successfully');
+      });
 
   } catch (error) {
     console.error("Failed to start application:", error);

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { useLocation, useRoute } from "wouter";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
   Trophy,
@@ -24,8 +24,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
-import { useToast } from "@/hooks/use-toast";
 
 interface UserStats {
   username: string;
@@ -50,49 +48,14 @@ interface UserStats {
   }>;
 }
 
-export default function UserProfile() {
+export default function UserProfile({ userId }: { userId: string }) {
   const [, setLocation] = useLocation();
-  const [, params] = useRoute<{ id: string }>("/user/:id");
-  const { toast } = useToast();
 
-  const userId = params?.id;
-
-  // Show error if no userId is provided
-  if (!userId) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="w-full max-w-md mx-4">
-          <CardContent className="p-6 text-center">
-            <h2 className="text-2xl font-bold text-destructive mb-4">
-              Invalid User Profile
-            </h2>
-            <p className="text-muted-foreground mb-4">
-              No user ID was provided. Please try again.
-            </p>
-            <Button onClick={() => setLocation("/wager-races")}>
-              Back to Races
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const { data: user, isLoading, error } = useQuery<UserStats>({
+  const { data: user, isLoading } = useQuery<UserStats>({
     queryKey: [`/api/users/${userId}`],
   });
 
   if (isLoading) return <LoadingSpinner />;
-
-  if (error) {
-    toast({
-      title: "Error",
-      description: "Failed to load user profile. Please try again later.",
-      variant: "destructive",
-    });
-    return null;
-  }
-
   if (!user) return null;
 
   const containerVariants = {
