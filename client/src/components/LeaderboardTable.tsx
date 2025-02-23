@@ -91,6 +91,11 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
     }
   };
 
+  const totalDailyWager = useMemo(() => {
+    if (!data) return 0;
+    return data.reduce((total, entry) => total + getWagerAmount(entry), 0);
+  }, [data, timePeriod]);
+
   if (isLoading) {
     return (
       <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
@@ -251,6 +256,11 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
             </Button>
           </div>
         </div>
+        {timePeriod === "today" && (
+          <div className="text-right mt-4 text-[#D7FF00] font-mono text-lg">
+            Total Wagered Today: ${totalDailyWager.toLocaleString()}
+          </div>
+        )}
       </div>
     </div>
   );
