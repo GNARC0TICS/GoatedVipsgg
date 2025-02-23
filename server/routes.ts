@@ -133,6 +133,36 @@ router.get("/health", async (_req, res) => {
   }
 });
 
+// Affiliate stats endpoint
+router.get("/affiliate/stats",
+  createRateLimiter('high'),
+  cacheMiddleware(CACHE_TIMES.SHORT),
+  async (_req, res) => {
+    try {
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        return res.json(getDefaultRaceData());
+      }
+
+      const rawData = await response.json();
+      const transformedData = transformLeaderboardData(rawData);
+      res.json(transformedData);
+    } catch (error) {
+      console.error('Error in /affiliate/stats:', error);
+      res.status(200).json(getDefaultRaceData());
+    }
+  }
+);
+
 // Wager races endpoint
 router.get("/wager-races/current",
   createRateLimiter('high'),
