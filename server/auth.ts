@@ -28,10 +28,15 @@ async function hashPassword(password: string) {
 }
 
 async function comparePasswords(supplied: string, stored: string) {
-  const [hashedPassword, salt] = stored.split(".");
-  const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
-  const suppliedPasswordBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedPasswordBuf, suppliedPasswordBuf);
+  try {
+    const [hashedPassword, salt] = stored.split(".");
+    const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
+    const suppliedPasswordBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    return timingSafeEqual(hashedPasswordBuf, suppliedPasswordBuf);
+  } catch (error) {
+    log(`[Auth] Password comparison error: ${error}`);
+    return false;
+  }
 }
 
 export function setupAuth(app: Express) {
@@ -99,7 +104,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Local strategy setup
+  // Local strategy setup with enhanced logging
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
@@ -113,6 +118,7 @@ export function setupAuth(app: Express) {
           return done(null, false, { message: "Too many attempts. Please try again later." });
         }
 
+        // Find user and verify password
         const [user] = await db
           .select()
           .from(users)

@@ -16,7 +16,10 @@ import { API_CONFIG } from "./config/api";
 import express from "express";
 import cors from "cors";
 
-//This is the new registerRoutes function with corrected setup order.
+interface CustomWebSocket extends WebSocket {
+  isAlive: boolean;
+}
+
 export function registerRoutes(app: Express): Server {
   log("[Server] Starting route registration...");
 
@@ -40,6 +43,14 @@ export function registerRoutes(app: Express): Server {
 
   // API Routes configuration with enhanced logging
   const apiRouter = Router();
+
+  // Add auth-related routes to API router
+  apiRouter.get("/user", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    res.json({ user: req.user });
+  });
 
   // Mount user routes first to handle auth endpoints
   apiRouter.use("/", usersRouter);
@@ -67,7 +78,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Mount the combined API router
+  // Mount the combined API router with security headers
   app.use("/api", (req, res, next) => {
     log(`[API] ${req.method} ${req.path}`);
     // Set common API headers
