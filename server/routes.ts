@@ -10,17 +10,56 @@ import { initializeBot } from "./telegram/bot";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
 import { wagerRaces, transformationLogs } from "@db/schema";
-import { API_CONFIG } from "./config/api";
 import express from "express";
 import cors from "cors";
 import { transformLeaderboardData } from "./utils/leaderboard";
-import { RateLimiterMemory, type RateLimiterRes } from 'rate-limiter-flexible';
+
+// Use direct API URL without token requirement
+const LEADERBOARD_API_URL = 'https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard/2RW440E';
+
+function setupWebSocket(httpServer: Server) {
+  wsServer = new WebSocketServer({
+    noServer: true,
+    path: "/ws"
+  });
+
+  httpServer.on("upgrade", (request, socket, head) => {
+    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
+      return;
+    }
+
+    wsServer.handleUpgrade(request, socket, head, (ws) => {
+      wsServer.emit("connection", ws, request);
+      setupWebSocketHandlers(ws as CustomWebSocket);
+    });
+  });
+}
+
+async function fetchLeaderboardData() {
+  console.log('Fetching leaderboard data from API...');
+  console.log('Using API URL:', LEADERBOARD_API_URL);
+
+  try {
+    const response = await fetch(LEADERBOARD_API_URL);
+
+    if (!response.ok) {
+      console.error(`API request failed with status ${response.status}`);
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const rawData = await response.json();
+    console.log('Raw API response:', JSON.stringify(rawData, null, 2));
+    return rawData;
+  } catch (error) {
+    console.error('Error fetching leaderboard data:', error);
+    throw error;
+  }
+}
 
 interface CustomWebSocket extends WebSocket {
   isAlive: boolean;
 }
 
-// Setup WebSocket handlers
 let wsServer: WebSocketServer;
 
 // Common cache times
@@ -116,24 +155,6 @@ const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) =
   next();
 };
 
-function setupWebSocket(httpServer: Server) {
-  wsServer = new WebSocketServer({
-    noServer: true,
-    path: "/ws"
-  });
-
-  httpServer.on("upgrade", (request, socket, head) => {
-    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
-      return;
-    }
-
-    wsServer.handleUpgrade(request, socket, head, (ws) => {
-      wsServer.emit("connection", ws, request);
-      setupWebSocketHandlers(ws as CustomWebSocket);
-    });
-  });
-}
-
 function setupWebSocketHandlers(ws: CustomWebSocket) {
   ws.isAlive = true;
 
@@ -217,34 +238,6 @@ function formatRaceData(stats: any) {
   };
 }
 
-// Update the config from the environment variable or use the static URL
-const LEADERBOARD_API_URL = process.env.LEADERBOARD_API_URL || 'https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard/2RW440E';
-const LEADERBOARD_API_TOKEN = process.env.LEADERBOARD_API_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsInNlc3Npb24iOiJEVVQ2Vkh1S3pNMjIiLCJpYXQiOjE3Mzc0MjQ3ODMsImV4cCI6MTczNzUxMTE4M30.ozh12z5PbT9vkZHb8x8d3BI4dUxe6KCyH8cYPUAMxGo';
-
-// Update fetchLeaderboardData to use the correct URL and token
-async function fetchLeaderboardData() {
-  console.log('Fetching leaderboard data from API...');
-  try {
-    const response = await fetch(LEADERBOARD_API_URL, {
-      headers: {
-        Authorization: `Bearer ${LEADERBOARD_API_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      console.error(`API request failed with status ${response.status}`);
-      throw new Error(`API request failed with status ${response.status}`);
-    }
-
-    const rawData = await response.json();
-    console.log('Raw API response:', JSON.stringify(rawData, null, 2));
-    return rawData;
-  } catch (error) {
-    console.error('Error fetching leaderboard data:', error);
-    throw error;
-  }
-}
 
 function registerRoutes(app: Express): Server {
   // Basic middleware setup
@@ -337,10 +330,9 @@ function registerRoutes(app: Express): Server {
     async (_req, res) => {
       try {
         const response = await fetch(
-          `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+          `${LEADERBOARD_API_URL}`, 
           {
             headers: {
-              Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
               "Content-Type": "application/json",
             },
           }
@@ -391,3 +383,4 @@ export function broadcastTransformationLog(data: any) {
 }
 
 export { setupWebSocket, registerRoutes };
+import { RateLimiterMemory, type RateLimiterRes } from 'rate-limiter-flexible';

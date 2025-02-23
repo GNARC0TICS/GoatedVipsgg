@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-//import { useAuth } from "@/lib/auth"; //Removed useAuth import
 
 type WageredData = {
   today: number;
@@ -56,7 +55,6 @@ const defaultData: APIResponse = {
 
 export function useLeaderboard(timePeriod: TimePeriod = "today", page: number = 0) {
   const { toast } = useToast();
-  //const { user } = useAuth(); //Removed useAuth
   const [ws, setWs] = React.useState<WebSocket | null>(null);
   const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
   const reconnectTimeoutRef = React.useRef<NodeJS.Timeout>();

@@ -27,10 +27,9 @@ type LeaderboardEntry = {
 };
 
 type APIResponse = {
-  status: "success" | "error";
-  data?: any;
-  results?: any;
-  success?: boolean;
+  participants: LeaderboardEntry[];
+  today: number;
+  this_week: number;
 };
 
 /**
@@ -43,41 +42,13 @@ export async function transformLeaderboardData(apiResponse: any) {
   try {
     console.log('[DEBUG] Raw API Response:', JSON.stringify(apiResponse, null, 2));
 
-    // Extract data from various possible response formats
-    let rawData;
-    if (Array.isArray(apiResponse)) {
-      rawData = apiResponse;
-    } else if (apiResponse?.data && Array.isArray(apiResponse.data)) {
-      rawData = apiResponse.data;
-    } else if (apiResponse?.results && Array.isArray(apiResponse.results)) {
-      rawData = apiResponse.results;
-    } else {
+    if (!apiResponse?.participants || !Array.isArray(apiResponse.participants)) {
       console.error(`[${logId}] Invalid API response format:`, apiResponse);
       throw new Error('Invalid API response format');
     }
 
-    if (!rawData.length) {
-      console.warn(`[${logId}] No valid data received from API`);
-      return {
-        status: "success",
-        metadata: {
-          totalUsers: 0,
-          lastUpdated: new Date().toISOString(),
-        },
-        data: {
-          today: { data: [] },
-          weekly: { data: [] },
-          monthly: { data: [] },
-          all_time: { data: [] }
-        }
-      };
-    }
-
-    // Add more detailed logging for data structure
-    console.log('[DEBUG] First entry data structure:', rawData[0]);
-
     // Transform entries with strict type checking and data validation
-    const transformedEntries = rawData
+    const transformedEntries = apiResponse.participants
       .map((entry: Record<string, any>): LeaderboardEntry | null => {
         if (!entry?.uid || !entry?.name) {
           console.warn(`[${logId}] Invalid entry detected:`, entry);
@@ -104,30 +75,26 @@ export async function transformLeaderboardData(apiResponse: any) {
       throw new Error('No valid entries after transformation');
     }
 
-    // Sort data for each period and log the sorting results
+    // Sort data for each period
     console.log('[DEBUG] Starting data sorting...');
 
     const todayData = [...transformedEntries].sort((a, b) => 
       (b.wagered.today || 0) - (a.wagered.today || 0)
     );
-    console.log('[DEBUG] Today top 3:', todayData.slice(0, 3));
 
     const weeklyData = [...transformedEntries].sort((a, b) => 
       (b.wagered.this_week || 0) - (a.wagered.this_week || 0)
     );
-    console.log('[DEBUG] Weekly top 3:', weeklyData.slice(0, 3));
 
     const monthlyData = [...transformedEntries].sort((a, b) => 
       (b.wagered.this_month || 0) - (a.wagered.this_month || 0)
     );
-    console.log('[DEBUG] Monthly top 3:', monthlyData.slice(0, 3));
 
     const allTimeData = [...transformedEntries].sort((a, b) => 
       (b.wagered.all_time || 0) - (a.wagered.all_time || 0)
     );
-    console.log('[DEBUG] All-time top 3:', allTimeData.slice(0, 3));
 
-    // Create transformation log record without transaction
+    // Create transformation log
     await db.insert(transformationLogs).values({
       type: 'info',
       message: 'Leaderboard transformation completed',
@@ -136,11 +103,13 @@ export async function transformLeaderboardData(apiResponse: any) {
         periods: {
           today: {
             count: todayData.length,
-            topWagered: todayData[0]?.wagered.today || 0
+            topWagered: todayData[0]?.wagered.today || 0,
+            totalWagered: apiResponse.today || 0
           },
           weekly: {
             count: weeklyData.length,
-            topWagered: weeklyData[0]?.wagered.this_week || 0
+            topWagered: weeklyData[0]?.wagered.this_week || 0,
+            totalWagered: apiResponse.this_week || 0
           },
           monthly: {
             count: monthlyData.length,
@@ -164,6 +133,10 @@ export async function transformLeaderboardData(apiResponse: any) {
       metadata: {
         totalUsers: transformedEntries.length,
         lastUpdated: new Date().toISOString(),
+        summary: {
+          today: apiResponse.today || 0,
+          this_week: apiResponse.this_week || 0
+        }
       },
       data: {
         today: { data: todayData },
@@ -179,7 +152,7 @@ export async function transformLeaderboardData(apiResponse: any) {
   } catch (error) {
     console.error(`[${logId}] Error transforming leaderboard data:`, error);
 
-    // Log error details without transaction
+    // Log error details
     await db.insert(transformationLogs).values({
       type: 'error',
       message: error instanceof Error ? error.message : String(error),
