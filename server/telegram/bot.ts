@@ -532,7 +532,7 @@ function registerEventHandlers(bot: TelegramBot) {
     if (!msg.text || !msg.from?.id) return;
     try {
       await rateLimiter.consume(msg.from.id.toString());
-      
+
       const state = creationStates.get(msg.from.id);
       if (state) {
         const isAdmin = await checkIsAdmin(msg.from.id.toString());
@@ -679,7 +679,7 @@ async function handleStart(msg: TelegramBot.Message) {
 async function handleHelp(msg: TelegramBot.Message) {
   const isAdmin = await checkIsAdmin(msg.from?.id?.toString());
   const helpMessage = MESSAGES.help(isAdmin);
-  
+
   const markup = {
     inline_keyboard: [
       [
@@ -894,7 +894,7 @@ async function handleStats(msg: TelegramBot.Message) {
       "🎉 You're the GOAT! You don't need stats, just bask in your greatness! 🌟",
       "👑 Stats? Please... You write the stats, you ARE the stats! 💫",
       "🚀 Admin stats loading... ERROR: Too legendary to compute! 🌠"
-    ];
+        ];
     const randomResponse = adminResponses[Math.floor(Math.random() * adminResponses.length)];
     return await safeSendMessage(msg.chat.id, randomResponse);
   }
@@ -968,61 +968,11 @@ function getUniqueGroupIds(updates: TelegramBot.Update[]): number[] {
 // Update the channel post handler to use the new getUniqueGroupIds function
 // Removed duplicate handler
 
-export async function broadcastPositionChange(message: string) {
-  if (!botInstance) return;
-
-  try {
-    // Send to verified users
-    const verifiedUsers = await db
-      .select()
-      .from(telegramUsers)
-      .where(eq(telegramUsers.isVerified, true));
-
-    for (const user of verifiedUsers) {
-      try {
-        await safeSendMessage(parseInt(user.telegramId), message, { 
-          parse_mode: "Markdown",
-          disable_notification: false 
-        });
-      } catch (error) {
-        logError(error, `Failed to send position change to user ${user.telegramId}`);
-      }
-    }
-
-    // Get all chats where bot is admin
-    try {
-      const updates = await botInstance.getUpdates();
-      const uniqueGroupIds = getUniqueGroupIds(updates);
-
-      // Send to all groups where bot is admin
-      for (const groupId of uniqueGroupIds) {
-        try {
-          const admins = await botInstance.getChatAdministrators(groupId);
-          const botIsMember = admins.some(admin => 
-            admin.user.id === (botInstance?.options?.polling?.params?.id || 0)
-          );
-
-          if (botIsMember) {
-            await safeSendMessage(groupId, message, {
-              parse_mode: "Markdown",
-              disable_notification: false
-            });
-          }
-        } catch (error) {
-          logError(error, `Failed to send to group ${groupId}`);
-        }
-      }
-    } catch (error) {
-      logError(error, "Failed to get group list");
-    }
-  } catch (error) {
-    logError(error, "Position change broadcast error");
-  }
-}
+// Removed duplicate function
 
 async function handleCreateBonus(msg: TelegramBot.Message, params?: string) {
   if (!msg.from?.id) return;
-  
+
   const isAdmin = await checkIsAdmin(msg.from.id.toString());
   if (!isAdmin) {
     return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
@@ -1034,7 +984,7 @@ async function handleCreateBonus(msg: TelegramBot.Message, params?: string) {
 
   try {
     const [code, bonusAmount, totalClaims, days, description] = params.split('|');
-    
+
     if (!code || !bonusAmount || !totalClaims || !days) {
       return safeSendMessage(msg.chat.id, "❌ Missing required parameters.");
     }
@@ -1072,7 +1022,7 @@ async function handleCreateBonus(msg: TelegramBot.Message, params?: string) {
 
 async function handleCreateChallenge(msg: TelegramBot.Message, params?: string) {
   if (!msg.from?.id) return;
-  
+
   const isAdmin = await checkIsAdmin(msg.from.id.toString());
   if (!isAdmin) {
     return safeSendMessage(msg.chat.id, "❌ This command is for admins only.");
@@ -1084,7 +1034,7 @@ async function handleCreateChallenge(msg: TelegramBot.Message, params?: string) 
 
   try {
     const [game, minBet, multiplier, prizeAmount, maxWinners, days, description] = params.split('|');
-    
+
     if (!game || !minBet || !prizeAmount || !maxWinners || !days) {
       return safeSendMessage(msg.chat.id, "❌ Missing required parameters.");
     }
@@ -1167,7 +1117,7 @@ async function handleCallbackQuery(callbackQuery: TelegramBot.CallbackQuery) {
           ]
         ]
       };
-      
+
       await botInstance.editMessageText(
         "🎯 *Select Game Type*\n\n" +
         "Choose the game type for this challenge:",
@@ -1451,58 +1401,6 @@ async function handleBroadcastPrompt(msg: TelegramBot.Message) {
   await safeSendMessage(msg.chat.id, MESSAGES.broadcastPrompt, { parse_mode: "Markdown" });
 }
 
-export async function broadcastPositionChange(message: string) {
-  if (!botInstance) return;
-
-  try {
-    // Send to verified users
-    const verifiedUsers = await db
-      .select()
-      .from(telegramUsers)
-      .where(eq(telegramUsers.isVerified, true));
-
-    for (const user of verifiedUsers) {
-      try {
-        await safeSendMessage(parseInt(user.telegramId), message, { 
-          parse_mode: "Markdown",
-          disable_notification: false 
-        });
-      } catch (error) {
-        logError(error, `Failed to send position change to user ${user.telegramId}`);
-      }
-    }
-
-    // Get all chats where bot is admin
-    try {
-      const updates = await botInstance.getUpdates();
-      const uniqueGroupIds = getUniqueGroupIds(updates);
-
-      // Send to all groups where bot is admin
-      for (const groupId of uniqueGroupIds) {
-        try {
-          const admins = await botInstance.getChatAdministrators(groupId);
-          const botIsMember = admins.some(admin => 
-            admin.user.id === (botInstance?.options?.polling?.params?.id || 0)
-          );
-
-          if (botIsMember) {
-            await safeSendMessage(groupId, message, {
-              parse_mode: "Markdown",
-              disable_notification: false
-            });
-          }
-        } catch (error) {
-          logError(error, `Failed to send to group ${groupId}`);
-        }
-      }
-    } catch (error) {
-      logError(error, "Failed to get group list");
-    }
-  } catch (error) {
-    logError(error, "Position change broadcast error");
-  }
-}
-
 async function handleBroadcast(msg: TelegramBot.Message, message?: string) {
   if (!botInstance || !msg.from?.id) return;
 
@@ -1544,7 +1442,7 @@ async function safeSendMessage(chatId: number, text: string, options: any = {}) 
   if (!botInstance) return;
   try {
     const sent = await botInstance.sendMessage(chatId, text, options);
-    
+
     // Auto-delete lengthy command responses in group chats after delay
     if (sent.chat.type === 'group' || sent.chat.type === 'supergroup') {
       const isLongMessage = text.length > 200;
@@ -1552,7 +1450,7 @@ async function safeSendMessage(chatId: number, text: string, options: any = {}) 
                                 text.includes('Available commands') || 
                                 text.includes('Your stats') ||
                                 text.includes('Leaderboard');
-                               
+
       if (isLongMessage && isCommandResponse) {
         setTimeout(async () => {
           try {
@@ -1563,7 +1461,7 @@ async function safeSendMessage(chatId: number, text: string, options: any = {}) 
         }, 30000); // Delete after 30 seconds
       }
     }
-    
+
     return sent;
   } catch (error) {
     log("error", `Failed to send message: ${error instanceof Error ? error.message : String(error)}`);
