@@ -59,8 +59,14 @@ export function useUser() {
     queryKey: ["/api/user"],
     queryFn: async () => {
       const response = await fetch('/api/user', { credentials: 'include' });
-      if (!response.ok) throw new Error('Not authenticated');
-      return response.json();
+      if (!response.ok) {
+        if (response.status === 401) {
+          return null; // Return null for unauthenticated users instead of throwing
+        }
+        throw new Error('Failed to fetch user');
+      }
+      const data = await response.json();
+      return data.user;
     },
     staleTime: 30000, // Data considered fresh for 30 seconds
     gcTime: 60000, // Keep in cache for 1 minute (replaces deprecated cacheTime)
