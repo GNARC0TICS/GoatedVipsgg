@@ -21,10 +21,8 @@ import fetch from "node-fetch";
 // Local imports
 import { logAction } from "./telegram/utils/logger";
 import { initializeBot } from "./telegram/bot";
-import { registerRoutes } from "./routes";
-import { initializeAdmin } from "./middleware/admin";
 import { db } from "@db";
-import { setupAuth } from "./auth";
+import { initializeAdmin } from "./middleware/admin";
 
 // Convert callback-based exec to Promise-based
 const execAsync = promisify(exec);
@@ -131,6 +129,7 @@ async function initializeServer() {
     }
 
     const app = express();
+    const router = express.Router();
 
     // Basic health check endpoint (must be first)
     app.get('/health', (_req, res) => {
@@ -143,8 +142,8 @@ async function initializeServer() {
 
     // Setup middleware and routes
     setupMiddleware(app);
-    setupAuth(app); // Initialize authentication
-    registerRoutes(app);
+    app.use('/api', router);
+
 
     // Initialize admin after routes
     await initializeAdmin().catch(error => {
@@ -297,7 +296,7 @@ function setupWebSocket(server: any) {
     if (request.url === '/ws/leaderboard') {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit('connection', ws, request);
-        
+
         ws.isAlive = true;
         const pingInterval = setInterval(() => {
           if (ws.isAlive === false) {
