@@ -8,16 +8,25 @@ import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
 import { initializeAdmin } from "./middleware/admin";
-import { bot } from './telegram/bot'; // Import the Telegram bot
+import { bot } from './telegram/bot';
+import { apiRateLimiter, affiliateRateLimiter, raceRateLimiter } from './middleware/rate-limiter';
 
 const execAsync = promisify(exec);
 const app = express();
 const PORT = 5000;
 
 async function setupMiddleware() {
+  // Basic middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
+
+  // Rate limiters - apply before routes but after basic middleware
+  app.use('/api', apiRateLimiter);
+  app.use('/api/affiliate/stats', affiliateRateLimiter);
+  app.use('/api/races', raceRateLimiter);
+
+  // Logging and error handling
   app.use(requestLogger);
   app.use(errorHandler);
 
@@ -98,6 +107,12 @@ async function startServer() {
     await checkDatabase();
     await cleanupPort(); 
 
+    const server = createServer(app);
+
+    // Setup middleware first
+    await setupMiddleware();
+
+    // Then register routes
     registerRoutes(app);
     initializeAdmin().catch(console.error);
 
@@ -107,15 +122,11 @@ async function startServer() {
       throw new Error('TELEGRAM_BOT_TOKEN must be provided');
     }
 
-    const server = createServer(app);
-
     if (app.get("env") === "development") {
       await setupVite(app, server);
     } else {
       serveStatic(app);
     }
-
-    await setupMiddleware();
 
     server
       .listen(PORT, "0.0.0.0")
