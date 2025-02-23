@@ -24,7 +24,7 @@ type LeaderboardPeriodData = {
 };
 
 type APIResponse = {
-  status: "success" | "error";
+  status: "success" | "error" | "transition";
   metadata?: {
     totalUsers: number;
     lastUpdated: string;
@@ -40,8 +40,12 @@ type APIResponse = {
 
 export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
 
-const defaultData = {
+const defaultData: APIResponse = {
   status: "success",
+  metadata: {
+    totalUsers: 0,
+    lastUpdated: new Date().toISOString()
+  },
   data: {
     today: { data: [] },
     weekly: { data: [] },
@@ -148,16 +152,16 @@ export function useLeaderboard(timePeriod: TimePeriod = "today", page: number = 
           throw new Error(errorData.message || `Failed to load leaderboard data`);
         }
 
-        const data = await response.json();
-        console.log('Received leaderboard data:', data);
+        const responseData = await response.json();
+        console.log('Received leaderboard data:', responseData);
 
         // Validate and normalize data structure
-        if (!data?.data || !data.data[timePeriod]?.data) {
-          console.error('Invalid data structure received:', data);
+        if (!responseData?.data || !responseData.data[timePeriod]?.data) {
+          console.error('Invalid data structure received:', responseData);
           return defaultData;
         }
 
-        return data;
+        return responseData;
       } catch (error) {
         console.error('Error fetching leaderboard data:', error);
         toast({
@@ -168,10 +172,10 @@ export function useLeaderboard(timePeriod: TimePeriod = "today", page: number = 
         return defaultData;
       }
     },
-    enabled: !!user, // Only run query if user is authenticated
-    refetchInterval: 60000, // Refetch every minute
-    staleTime: 30000, // Consider data fresh for 30 seconds
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    enabled: !!user,
+    refetchInterval: 60000,
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false
   });
 
@@ -215,6 +219,7 @@ export function useLeaderboard(timePeriod: TimePeriod = "today", page: number = 
   return {
     data: sortedData,
     metadata: data?.metadata,
+    status: data?.status,
     isLoading,
     error,
     refetch,

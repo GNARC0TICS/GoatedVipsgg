@@ -27,6 +27,7 @@ type LeaderboardEntry = {
 };
 
 type APIResponse = {
+  status: "success" | "error";
   data?: any;
   results?: any;
   success?: boolean;
@@ -72,9 +73,12 @@ export async function transformLeaderboardData(apiResponse: any) {
       };
     }
 
+    // Add more detailed logging for data structure
+    console.log('Data structure of first entry:', rawData[0]);
+
     // Transform entries with strict type checking and data validation
     const transformedEntries = rawData
-      .map((entry: any): LeaderboardEntry | null => {
+      .map((entry: Record<string, any>): LeaderboardEntry | null => {
         if (!entry?.uid || !entry?.name) {
           console.warn(`[${logId}] Invalid entry detected:`, entry);
           return null;
@@ -114,11 +118,15 @@ export async function transformLeaderboardData(apiResponse: any) {
       (b.wagered.all_time || 0) - (a.wagered.all_time || 0)
     );
 
-    // Log success
-    const transformationLog = {
+    // Log transformation results
+    console.log('Transformed entries count:', transformedEntries.length);
+    console.log('Sample transformed entry:', transformedEntries[0]);
+
+    // Create transformation log record
+    const transformationLogRecord = {
       type: 'info',
       message: 'Leaderboard transformation completed',
-      payload: {
+      payload: JSON.stringify({
         totalEntries: transformedEntries.length,
         periods: {
           today: todayData.length,
@@ -126,15 +134,15 @@ export async function transformLeaderboardData(apiResponse: any) {
           monthly: monthlyData.length,
           allTime: allTimeData.length
         }
-      },
+      }),
       duration_ms: Date.now() - startTime,
       created_at: new Date(),
       resolved: true,
       error_message: null
     };
 
-    console.log('Transformation Log:', transformationLog);
-    await db.insert(transformationLogs).values(transformationLog);
+    // Insert transformation log as an array to match Drizzle's expected type
+    await db.insert(transformationLogs).values([transformationLogRecord]);
 
     const result = {
       status: "success",
@@ -156,8 +164,8 @@ export async function transformLeaderboardData(apiResponse: any) {
   } catch (error) {
     console.error(`[${logId}] Error transforming leaderboard data:`, error);
 
-    // Log error details
-    await db.insert(transformationLogs).values({
+    // Log error details with correct typing for Drizzle insert
+    await db.insert(transformationLogs).values([{
       type: 'error',
       message: error instanceof Error ? error.message : String(error),
       payload: JSON.stringify({
@@ -167,11 +175,11 @@ export async function transformLeaderboardData(apiResponse: any) {
           keys: Object.keys(apiResponse) 
         } : null
       }),
-      duration_ms: (Date.now() - startTime).toString(),
+      duration_ms: Date.now() - startTime,
       created_at: new Date(),
       resolved: false,
       error_message: error instanceof Error ? error.message : String(error)
-    });
+    }]);
 
     throw error;
   }
