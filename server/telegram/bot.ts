@@ -11,6 +11,23 @@ const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_TELEGRAM_IDS = ['1689953605'];
 const ALLOWED_GROUP_IDS = process.env.ALLOWED_GROUP_IDS?.split(',') || [];
 
+// Add constants for AI conversation
+const CONVERSATION_COOLDOWN = 10000; // 10 seconds between AI responses
+const LEARNING_PATTERNS = {
+  POSITIVE: ['thank', 'thanks', 'helpful', 'good bot'],
+  NEGATIVE: ['stop', 'shut up', 'bad bot'],
+  BEGGING: ['give me', 'send me', 'need money', 'spare some'],
+  SHARING: ['airdrop', 'giving away', 'sharing']
+};
+
+// Bot personality traits
+const BOT_PERSONALITY = {
+  FRIENDLY: ['Hey!', 'Hi there!', 'Hello!', 'Sup!'],
+  HELPFUL: ['Let me help you with that!', 'I can assist with that!', 'I got you!'],
+  PLAYFUL: ['😎', '🎮', '🎲'],
+  CONGRATULATORY: ['Well done!', 'Amazing!', 'Great job!', 'Fantastic!']
+};
+
 if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
@@ -41,8 +58,7 @@ function logDebug(message: string, data?: any) {
   console.log(`[Telegram Bot] ${message}`, data ? JSON.stringify(data, null, 2) : '');
 }
 
-// Add new constants for moderation
-const GOATED_STICKER_ID = 'CAACAgEAAxkBAAEN4n5nu549rJiy7usESgyJM86xXqi2UQACPQUAAqD44UWvpbXSA0wGzzYE';
+
 const COMMAND_COOLDOWN = 3000; // 3 seconds cooldown between commands
 const MUTE_DURATIONS = {
   SHORT: 300, // 5 minutes
@@ -65,15 +81,6 @@ const BEGGING_KEYWORDS = [
 // Command cooldown tracking
 const commandCooldowns = new Map<string, { command: string; timestamp: number }>();
 
-// Helper function for sticker support
-async function sendSticker(chatId: number | string) {
-  try {
-    await bot.sendSticker(chatId, GOATED_STICKER_ID);
-  } catch (error) {
-    console.error('Error sending sticker:', error);
-  }
-}
-
 // Helper function to check command cooldown
 function checkCommandCooldown(userId: string, command: string): boolean {
   const now = Date.now();
@@ -86,7 +93,6 @@ function checkCommandCooldown(userId: string, command: string): boolean {
 
   return false;
 }
-
 
 // Set up bot commands with proper descriptions
 async function setupBotCommands() {
@@ -838,19 +844,17 @@ bot.onText(/\/reject_user (.+)/, async (msg, match) => {
 
     // Notify the user
     await bot.sendMessage(telegramId, '❌ Your verification request has been rejected. Please ensure you provided the correct Goated username and try again.');
-    return bot.sendMessage(chatId, `❌ Rejected verification request for ${request.goatedUsername}.`);
-  } catch(error) {
+    return bot.sendMessage(chatId, `❌ Rejected verification request for ${request.goatedUsername}`);
+  } catch (error) {
     console.error('Error rejecting user:', error);
     return bot.sendMessage(chatId, '❌ Error rejecting user.');
   }
-});
-
 
 // Add prize pool constants to match web interface
 const PRIZE_POOL = 500;
 const PRIZEDISTRIBUTION: Record<number, number> = {
   1: 0.425, // $212.50
-  2:0.2,   // $100
+  2: 0.2,   // $100
   3: 0.15,  // $60
   4: 0.075, // $30
   5: 0.06,  // $24
@@ -941,6 +945,35 @@ function checkRateLimit(userId: string): boolean {
 
   userLimit.count++;
   return true;
+}
+
+// Add AI conversation cooldown tracking
+const conversationCooldowns = new Map<string, number>();
+
+// Helper function to check conversation cooldown
+function canRespond(userId: string): boolean {
+  const now = Date.now();
+  const lastResponse = conversationCooldowns.get(userId);
+
+  if (!lastResponse || (now - lastResponse) > CONVERSATION_COOLDOWN) {
+    conversationCooldowns.set(userId, now);
+    return true;
+  }
+  return false;
+}
+
+// Helper function to generate natural responses
+function generateResponse(type: string, context: any = {}): string {
+  switch (type) {
+    case 'stats_redirect':
+      return `${BOT_PERSONALITY.FRIENDLY[Math.floor(Math.random() * BOT_PERSONALITY.FRIENDLY.length)]} You can check your stats using the /stats command! Make sure you're verified first! ${BOT_PERSONALITY.PLAYFUL[Math.floor(Math.random() * BOT_PERSONALITY.PLAYFUL.length)]}`;
+    case 'leaderboard_info':
+      return `Currently in our monthly race, ${context.topUser} is leading with $${context.topAmount.toLocaleString()} wagered! ${context.timeLeft} days left until we crown our winner! How's everyone doing? 🏆`;
+    case 'verification_help':
+      return `To get verified, just use the /verify command followed by your Goated username. Once you're verified, you'll have access to all the stats and features! Need help? Contact @xGoombas!`;
+    default:
+      return BOT_PERSONALITY.HELPFUL[Math.floor(Math.random() * BOT_PERSONALITY.HELPFUL.length)];
+  }
 }
 
 // Handle callback queries (button clicks)
@@ -1732,7 +1765,7 @@ bot.onText(/\/verifychallenge (\d+) (.+)/, async (msg, match) => {
       return bot.sendMessage(chatId, '❌ Entry not found.');
     }
 
-    // Notify user
+    //    // Notify user
     await bot.sendMessage(entry.telegramId,
       '🎉 Your challenge entry has been verified!\n' +
       'Use /claim in private chat with me to get your bonus code.');
@@ -1790,8 +1823,7 @@ bot.onText(/\/adminpanel/, async (msg) => {
   const username = msg.from?.username;
 
   if (!userId || username !== 'xGoombas') {
-    await sendSticker(chatId);
-    return bot.sendMessage(chatId, `Only authorized users can access the admin panel.');
+    return bot.sendMessage(chatId, `Only authorized users can access the admin panel.`);
   }
 
   if (!checkCommandCooldown(userId, 'adminpanel')) {
@@ -1818,7 +1850,6 @@ bot.onText(/\/adminpanel/, async (msg) => {
     ]
   };
 
-  await sendSticker(chatId);
   await bot.sendMessage(chatId,
     'Admin Control Panel\n\n' +
     'Select an action from the menu below:',
@@ -1904,7 +1935,6 @@ bot.onText(/\/mute (@?\w+) (\d+)/, async (msg, match) => {
   const username = msg.from?.username;
 
   if (!userId || username !== 'xGoombas') {
-    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Only authorized users can mute members.');
   }
 
@@ -1927,12 +1957,10 @@ bot.onText(/\/mute (@?\w+) (\d+)/, async (msg, match) => {
       }
     });
 
-    await sendSticker(chatId);
     await bot.sendMessage(chatId,
       `🔇 ${targetUser} has been muted for ${duration} seconds.`);
   } catch (error) {
     console.error('Error muting user:', error);
-    await sendSticker(chatId);
     await bot.sendMessage(chatId,
       '❌ Failed to mute user. Make sure the bot has admin privileges.');
   }
@@ -1945,7 +1973,6 @@ bot.onText(/\/warn (@?\w+) (.+)/, async (msg, match) => {
   const username = msg.from?.username;
 
   if (!userId || username !== 'xGoombas') {
-    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Only authorized users can warn members.');
   }
 
@@ -1957,13 +1984,11 @@ bot.onText(/\/warn (@?\w+) (.+)/, async (msg, match) => {
   const reason = match?.[2];
 
   try {
-    await sendSticker(chatId);
     await bot.sendMessage(chatId,
       `⚠️ Warning issued to ${targetUser}\n` +
       `Reason: ${reason}`);
   } catch (error) {
     console.error('Error warning user:', error);
-    await sendSticker(chatId);
     await bot.sendMessage(chatId, '❌ Failed to issue warning.');
   }
 });
@@ -1975,7 +2000,6 @@ bot.onText(/\/ban (@?\w+) (.+)/, async (msg, match) => {
   const username = msg.from?.username;
 
   if (!userId || username !== 'xGoombas') {
-    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Only authorized users can ban members.');
   }
 
@@ -1988,13 +2012,11 @@ bot.onText(/\/ban (@?\w+) (.+)/, async (msg, match) => {
 
   try {
     await bot.banChatMember(chatId, targetUser);
-    await sendSticker(chatId);
     await bot.sendMessage(chatId,
       `🚫 ${targetUser} has been banned\n` +
       `Reason: ${reason}`);
   } catch (error) {
     console.error('Error banning user:', error);
-    await sendSticker(chatId);
     await bot.sendMessage(chatId,
       '❌ Failed to ban user. Make sure the bot has admin privileges.');
   }
@@ -2007,7 +2029,6 @@ bot.onText(/\/bootfuck (@?\w+)/, async (msg, match) => {
   const username = msg.from?.username;
 
   if (!userId || username !== 'xGoombas') {
-    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Only authorized users can bootfuck members.');
   }
 
@@ -2019,12 +2040,10 @@ bot.onText(/\/bootfuck (@?\w+)/, async (msg, match) => {
 
   try {
     await bot.banChatMember(chatId, targetUser);
-    await sendSticker(chatId);
     await bot.sendMessage(chatId,
       `👢 ${targetUser} has been bootfucked from the group!`);
   } catch (error) {
     console.error('Error bootfucking user:', error);
-    await sendSticker(chatId);
     await bot.sendMessage(chatId,
       '❌ Failed to bootfuck user. Make sure the bot has admin privileges.');
   }
@@ -2162,7 +2181,6 @@ bot.onText(/\/add_recurring_message (.+) (.+)/, async (msg, match) => {
   const username = msg.from?.username;
 
   if (username !== 'xGoombas') {
-    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Only authorized users can manage recurring messages.');
   }
 
@@ -2199,7 +2217,6 @@ bot.onText(/\/add_recurring_message (.+) (.+)/, async (msg, match) => {
       }
     });
 
-    await sendSticker(chatId);
     return bot.sendMessage(chatId,
       `✅ Recurring message added successfully!\n` +
       `ID: ${messageId}\n` +
@@ -2207,7 +2224,6 @@ bot.onText(/\/add_recurring_message (.+) (.+)/, async (msg, match) => {
       `Target Groups: ${recurringMessage.targetGroups.length}`);
   } catch (error) {
     console.error('Error adding recurring message:', error);
-    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Error setting up recurring message.');
   }
 });
@@ -2218,7 +2234,6 @@ bot.onText(/\/list_recurring_messages/, async (msg) => {
   const username = msg.from?.username;
 
   if (username !== 'xGoombas') {
-    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Only authorized users can view recurring messages.');
   }
 
@@ -2245,7 +2260,6 @@ bot.onText(/\/remove_recurring_message (.+)/, async (msg, match) => {
   const username = msg.from?.username;
 
   if (username !== 'xGoombas') {
-    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Only authorized users can remove recurring messages.');
   }
 
@@ -2255,13 +2269,55 @@ bot.onText(/\/remove_recurring_message (.+)/, async (msg, match) => {
   }
 
   if (recurringMessages.delete(messageId)) {
-    await sendSticker(chatId);
     return bot.sendMessage(chatId, '✅ Recurring message removed successfully!');
   } else {
-    await sendSticker(chatId);
     return bot.sendMessage(chatId, '❌ Message not found.');
   }
 });
+
+// Add more sophisticated AI conversation patterns
+const CONVERSATION_PATTERNS = {
+  STATS: {
+    triggers: ['stats', 'wager', 'numbers', 'earnings'],
+    responses: [
+      "Hey there! Want to see your stats? Just use /stats - make sure you're verified first! 👀",
+      "I can help with that! Use /stats to check your numbers. Need to verify first? Just let me know! 📊",
+      "Easy peasy! Get verified and use /stats to see all your juicy stats! 🎯"
+    ]
+  },
+  LEADERBOARD: {
+    triggers: ['leaderboard', 'race', 'winning', 'leader', 'top'],
+    responses: [
+      "Let me check who's crushing it right now! 🏆",
+      "Want to see who's in the lead? I'll fetch that for you! 🎮",
+      "Race standings coming right up! Let's see who's on top! 🚀"
+    ]
+  },
+  VERIFICATION: {
+    triggers: ['verify', 'verification', 'how to verify', 'get verified'],
+    responses: [
+      "Getting verified is easy! Just use /verify followed by your Goated username. Need help? @xGoombas is your guy! 🔐",
+      "Want to get verified? Use /verify [your Goated username] and we'll get you set up! 👍",
+      "Verification is your key to all the features! Use /verify with your username to get started! ✨"
+    ]
+  },
+  SHARING: {
+    triggers: ['airdrop', 'giving away', 'sharing', 'giveaway'],
+    responses: [
+      "Now that's the spirit! Love seeing the community support! 🎁",
+      "You're what makes this community great! Keep it up! 🌟",
+      "Sharing is caring! This is what GoatedVIPs is all about! 💫"
+    ]
+  },
+  BEGGING: {
+    triggers: ['give me', 'need money', 'spare some', 'broke'],
+    responses: [
+      "Hey, let's keep it classy! No begging in our community. 🚫",
+      "Sorry, begging isn't allowed here. Why not participate in our races instead? 🏁",
+      "Begging isn't cool! Join our races and competitions to earn rewards! 💪"
+    ]
+  }
+};
 
 // Add anti-spam and anti-begging handler
 bot.on('message', async (msg) => {
@@ -2284,7 +2340,6 @@ bot.on('message', async (msg) => {
         }
       });
 
-      await sendSticker(chatId);
       await bot.sendMessage(chatId,
         `⚠️ @${msg.from.username} has been muted for ${SPAM_DETECTION.MUTE_DURATION / 60} minutes due to spamming.`);
     } catch (error) {
@@ -2297,7 +2352,6 @@ bot.on('message', async (msg) => {
   if (containsBegging(messageText)) {
     try {
       await bot.deleteMessage(chatId, msg.message_id.toString());
-      await sendSticker(chatId);
       await bot.sendMessage(chatId,
         `⚠️ @${msg.from.username} begging is not allowed in this group.`);
     } catch (error) {
@@ -2305,32 +2359,101 @@ bot.on('message', async (msg) => {
     }
   }
 });
-// Add sticker message handler with more detailed logging
-bot.on('sticker', async (msg) => {
-  if (!msg.sticker) return;
 
-  // More detailed logging for sticker information
-  const stickerInfo = {
-    file_id: msg.sticker.file_id,
-    file_unique_id: msg.sticker.file_unique_id,
-    set_name: msg.sticker.set_name,
-    is_animated: msg.sticker.is_animated,
-    is_video: msg.sticker.is_video,
-    type: msg.sticker.type,
-    emoji: msg.sticker.emoji
-  };
+// Improved conversation handler
+bot.on('message', async (msg) => {
+  // Skip if no text or not a mention of the bot
+  if (!msg.text || !msg.entities?.some(entity =>
+    entity.type === 'mention' &&
+    msg.text.slice(entity.offset, entity.offset + entity.length).toLowerCase() === '@goatedvipsbot'
+  )) return;
 
-  // Use process.stdout.write for immediate logging
-  process.stdout.write('\n=====================================\n');
-  process.stdout.write('[STICKER RECEIVED] Details:\n');
-  process.stdout.write(JSON.stringify(stickerInfo, null, 2) + '\n');
-  process.stdout.write('To use this sticker, copy this file_id:\n');
-  process.stdout.write(stickerInfo.file_id + '\n');
-  process.stdout.write('=====================================\n');
+  const chatId = msg.chat.id;
+  const userId = msg.from?.id.toString();
+  const messageText = msg.text.toLowerCase();
 
-  // Also send the file_id back to the chat for easy copying
-  await bot.sendMessage(msg.chat.id, 
-    `Sticker file_id:\n\`${stickerInfo.file_id}\``, 
-    { parse_mode: 'Markdown' }
-  );
+  try {
+    // Check rate limits and cooldowns
+    if (!userId || !canRespond(userId)) return;
+
+    // Log incoming message for debugging
+    console.log(`[AI Conversation] Received message from ${userId}: ${messageText}`);
+
+    // Extract the question (remove the bot mention)
+    const question = messageText.replace(/@goatedvipsbot/i, '').trim();
+
+    // Handle different conversation patterns
+    let response: string | null = null;
+
+    // Check for stats/wager related questions
+    if (CONVERSATION_PATTERNS.STATS.triggers.some(trigger => question.includes(trigger))) {
+      const randomResponse = CONVERSATION_PATTERNS.STATS.responses[
+        Math.floor(Math.random() * CONVERSATION_PATTERNS.STATS.responses.length)
+      ];
+      response = randomResponse;
+    }
+    // Check for leaderboard/race related questions
+    else if (CONVERSATION_PATTERNS.LEADERBOARD.triggers.some(trigger => question.includes(trigger))) {
+      try {
+        const apiResponse = await fetch(
+          `http://0.0.0.0:5000/api/affiliate/stats`,
+          {
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (!apiResponse.ok) throw new Error('Failed to fetch leaderboard data');
+
+        const data = await apiResponse.json();
+        const topUser = data?.data?.monthly?.data?.[0];
+
+        if (topUser) {
+          response = `${CONVERSATION_PATTERNS.LEADERBOARD.responses[
+            Math.floor(Math.random() * CONVERSATION_PATTERNS.LEADERBOARD.responses.length)
+          ]}\n\n🥇 ${topUser.name} is leading with $${topUser.wagered.this_month.toLocaleString()} wagered this month!`;
+        } else {
+          response = "Hmm, looks like I'm having trouble getting the latest race data. Try /leaderboard for the full standings! 🏁";
+        }
+      } catch (error) {
+        console.error('[AI Conversation] Error fetching leaderboard:', error);
+        response = "Sorry, I couldn't fetch the race data right now. Use /leaderboard to check the standings! 🏁";
+      }
+    }
+    // Handle verification questions
+    else if (CONVERSATION_PATTERNS.VERIFICATION.triggers.some(trigger => question.includes(trigger))) {
+      response = CONVERSATION_PATTERNS.VERIFICATION.responses[
+        Math.floor(Math.random() * CONVERSATION_PATTERNS.VERIFICATION.responses.length)
+      ];
+    }
+    // Respond to sharing/giveaways positively
+    else if (CONVERSATION_PATTERNS.SHARING.triggers.some(trigger => question.includes(trigger))) {
+      response = CONVERSATION_PATTERNS.SHARING.responses[
+        Math.floor(Math.random() * CONVERSATION_PATTERNS.SHARING.responses.length)
+      ];
+    }
+    // Handle begging attempts
+    else if (CONVERSATION_PATTERNS.BEGGING.triggers.some(trigger => question.includes(trigger))) {
+      response = CONVERSATION_PATTERNS.BEGGING.responses[
+        Math.floor(Math.random() * CONVERSATION_PATTERNS.BEGGING.responses.length)
+      ];
+    }
+
+    // Send response if we have one
+    if (response) {
+      await bot.sendMessage(chatId, response);
+      console.log(`[AI Conversation] Sent response to ${userId}: ${response}`);
+    }
+
+  } catch (error) {
+    console.error('[AI Conversation] Error handling message:', error);
+  }
 });
+
+// Export for testing
+export const __testing = {
+  CONVERSATION_PATTERNS,
+  canRespond
+};
