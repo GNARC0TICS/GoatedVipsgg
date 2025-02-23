@@ -19,6 +19,7 @@ interface RaceData {
   startDate: string;
   endDate: string;
   prizePool: number;
+  title: string;
   participants: RaceParticipant[];
 }
 
@@ -32,14 +33,10 @@ export function RaceTimer() {
     data: currentRaceData, 
     error: currentError, 
     isLoading: isCurrentLoading 
-  } = useQuery<RaceData, Error>({
+  } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/current"],
     queryFn: async () => {
-      const response = await fetch('/api/wager-races/current', {
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
+      const response = await fetch('/api/wager-races/current');
       if (!response.ok) {
         throw new Error('Failed to fetch current race data');
       }
@@ -48,12 +45,11 @@ export function RaceTimer() {
     refetchInterval: 30000,
     retry: 3,
     enabled: !showPrevious,
-    staleTime: 60000,
-    onError: (error: Error) => {
+    onError: (error) => {
       console.error('Race data fetch error:', error);
       toast({
         title: "Error loading race data",
-        description: error.message || "Please try again later",
+        description: error instanceof Error ? error.message : "Please try again later",
         variant: "destructive"
       });
     }
@@ -63,29 +59,28 @@ export function RaceTimer() {
     data: previousRaceData, 
     error: previousError, 
     isLoading: isPreviousLoading 
-  } = useQuery<RaceData | null, Error>({
+  } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/previous"],
     queryFn: async () => {
-      const response = await fetch('/api/wager-races/previous', {
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
+      const response = await fetch('/api/wager-races/previous');
       if (!response.ok) {
         throw new Error('Failed to fetch previous race data');
       }
       const data = await response.json();
-      return data ? {
+      if (!data) return null;
+
+      return {
         ...data,
         startDate: data.startDate || new Date().toISOString(),
         endDate: data.endDate || new Date().toISOString()
-      } : null;
+      };
     },
     enabled: showPrevious
   });
 
   const raceData = showPrevious ? previousRaceData : currentRaceData;
   const error = showPrevious ? previousError : currentError;
+  const isLoading = showPrevious ? isPreviousLoading : isCurrentLoading;
 
   useEffect(() => {
     if (!currentRaceData?.endDate) return;
@@ -137,7 +132,6 @@ export function RaceTimer() {
     );
   }
 
-  const isLoading = showPrevious ? isPreviousLoading : isCurrentLoading;
   if (isLoading) {
     return (
       <motion.div 
@@ -172,7 +166,7 @@ export function RaceTimer() {
             <div className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-[#D7FF00]" />
               <span className="font-heading text-white">
-                {showPrevious ? 'Previous Race' : 'Monthly Race'}
+                {raceData.title || (showPrevious ? 'Previous Race' : 'Monthly Race')}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -222,7 +216,7 @@ export function RaceTimer() {
                     Prize Pool: ${raceData.prizePool.toLocaleString()}
                   </span>
                 </div>
-                {raceData.participants.map((participant: RaceParticipant, index: number) => (
+                {raceData.participants.map((participant, index) => (
                   <div 
                     key={participant.uid}
                     className="flex items-center justify-between py-2"
