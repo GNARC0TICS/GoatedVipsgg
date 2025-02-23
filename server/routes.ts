@@ -1,15 +1,7 @@
 import { Router, type Express } from "express";
 import { setupAuth } from "./auth";
-import usersRouter from "./routes/users";
-import bonusChallengesRouter from "./routes/bonus-challenges";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { z } from "zod";
-import type { SelectUser } from "@db/schema";
-import { initializeBot } from "./telegram/bot";
-import { db } from "@db";
-import { sql } from "drizzle-orm";
-import { wagerRaces, transformationLogs } from "@db/schema";
 import express from "express";
 import cors from "cors";
 import { transformLeaderboardData } from "./utils/leaderboard";
@@ -17,27 +9,8 @@ import { transformLeaderboardData } from "./utils/leaderboard";
 // Use direct API URL without token requirement
 const LEADERBOARD_API_URL = 'https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard/2RW440E';
 
-function setupWebSocket(httpServer: Server) {
-  wsServer = new WebSocketServer({
-    noServer: true,
-    path: "/ws"
-  });
-
-  httpServer.on("upgrade", (request, socket, head) => {
-    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
-      return;
-    }
-
-    wsServer.handleUpgrade(request, socket, head, (ws) => {
-      wsServer.emit("connection", ws, request);
-      setupWebSocketHandlers(ws as CustomWebSocket);
-    });
-  });
-}
-
 async function fetchLeaderboardData() {
   console.log('Fetching leaderboard data from API...');
-  console.log('Using API URL:', LEADERBOARD_API_URL);
 
   try {
     const response = await fetch(LEADERBOARD_API_URL);
@@ -61,99 +34,6 @@ interface CustomWebSocket extends WebSocket {
 }
 
 let wsServer: WebSocketServer;
-
-// Common cache times
-const CACHE_TIMES = {
-  SHORT: 15000,    // 15 seconds
-  MEDIUM: 60000,   // 1 minute
-  LONG: 300000     // 5 minutes
-};
-
-// Rate limiting setup
-type RateLimitTier = 'HIGH' | 'MEDIUM' | 'LOW';
-const rateLimits: Record<RateLimitTier, { points: number; duration: number }> = {
-  HIGH: { points: 30, duration: 60 },
-  MEDIUM: { points: 15, duration: 60 },
-  LOW: { points: 5, duration: 60 }
-};
-
-const rateLimiters = {
-  high: new RateLimiterMemory(rateLimits.HIGH),
-  medium: new RateLimiterMemory(rateLimits.MEDIUM),
-  low: new RateLimiterMemory(rateLimits.LOW),
-};
-
-const createRateLimiter = (tier: keyof typeof rateLimiters) => {
-  const limiter = rateLimiters[tier];
-  return async (req: any, res: any, next: any) => {
-    try {
-      const rateLimitRes = await limiter.consume(req.ip);
-      res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase() as RateLimitTier].points);
-      res.setHeader('X-RateLimit-Remaining', rateLimitRes.remainingPoints);
-      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateLimitRes.msBeforeNext).toISOString());
-      next();
-    } catch (rejRes) {
-      const rejection = rejRes as RateLimiterRes;
-      res.setHeader('Retry-After', Math.ceil(rejection.msBeforeNext / 1000));
-      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rejection.msBeforeNext).toISOString());
-      res.status(429).json({
-        status: 'error',
-        message: 'Too many requests',
-        retryAfter: Math.ceil(rejection.msBeforeNext / 1000)
-      });
-    }
-  };
-};
-
-class CacheManager {
-  private cache: Map<string, { data: any; timestamp: number }>;
-  private readonly defaultTTL: number;
-
-  constructor(defaultTTL = 30000) {
-    this.cache = new Map();
-    this.defaultTTL = defaultTTL;
-  }
-
-  get(key: string): any {
-    const cached = this.cache.get(key);
-    if (!cached) return null;
-
-    if (Date.now() - cached.timestamp > this.defaultTTL) {
-      this.cache.delete(key);
-      return null;
-    }
-
-    return cached.data;
-  }
-
-  set(key: string, data: any): void {
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-    });
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-}
-
-const cacheManager = new CacheManager();
-
-const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) => {
-  const key = req.originalUrl;
-  const cachedResponse = cacheManager.get(key);
-  if (cachedResponse) {
-    res.setHeader('X-Cache', 'HIT');
-    return res.json(cachedResponse);
-  }
-  res.originalJson = res.json;
-  res.json = (body: any) => {
-    cacheManager.set(key, body);
-    return res.originalJson(body);
-  };
-  next();
-};
 
 function setupWebSocketHandlers(ws: CustomWebSocket) {
   ws.isAlive = true;
@@ -187,57 +67,23 @@ function setupWebSocketHandlers(ws: CustomWebSocket) {
   }
 }
 
-async function storeLeaderboardData(data: any) {
-  const now = new Date();
-
-  // Store transformation log without transaction
-  await db.insert(transformationLogs).values({
-    type: 'info',
-    message: 'Leaderboard data stored',
-    payload: JSON.stringify(data),
-    duration_ms: '0',
-    created_at: now,
-    resolved: true
+function setupWebSocket(httpServer: Server) {
+  wsServer = new WebSocketServer({
+    noServer: true,
+    path: "/ws"
   });
 
-  // Broadcast the update
-  broadcastTransformationLog(data);
+  httpServer.on("upgrade", (request, socket, head) => {
+    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
+      return;
+    }
+
+    wsServer.handleUpgrade(request, socket, head, (ws) => {
+      wsServer.emit("connection", ws, request);
+      setupWebSocketHandlers(ws as CustomWebSocket);
+    });
+  });
 }
-
-function getDefaultRaceData() {
-  const now = new Date();
-  return {
-    id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
-    status: 'live',
-    startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
-    endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString(),
-    prizePool: 500,
-    participants: []
-  };
-}
-
-function formatRaceData(stats: any) {
-  const now = new Date();
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-  const monthlyData = stats?.data?.monthly?.data ?? [];
-
-  return {
-    id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
-    status: 'live',
-    startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
-    endDate: endOfMonth.toISOString(),
-    prizePool: 500,
-    participants: monthlyData
-      .map((participant: any, index: number) => ({
-        uid: participant?.uid ?? "",
-        name: participant?.name ?? "Unknown",
-        wagered: Number(participant?.wagered?.this_month ?? 0),
-        position: index + 1
-      }))
-      .slice(0, 10)
-  };
-}
-
 
 function registerRoutes(app: Express): Server {
   // Basic middleware setup
@@ -249,48 +95,31 @@ function registerRoutes(app: Express): Server {
     allowedHeaders: ['Content-Type', 'Authorization']
   }));
 
-  // Create HTTP server first
+  // Create HTTP server
   const httpServer = createServer(app);
 
   // Setup auth before routes
   setupAuth(app);
 
-  // API Routes configuration with enhanced logging
+  // API Routes configuration
   const apiRouter = Router();
-
-  // Add auth-related routes to API router
-  apiRouter.get("/user", (req, res) => {
-    console.log('User authentication status:', req.isAuthenticated());
-    console.log('Session data:', req.session);
-
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-    res.json({ user: req.user });
-  });
-
-  // Mount user routes first to handle auth endpoints
-  apiRouter.use("/", usersRouter);
-  apiRouter.use("/bonus", bonusChallengesRouter);
 
   // Health check endpoint
   apiRouter.get("/health", async (_req, res) => {
     try {
-      await db.execute(sql`SELECT 1`);
       res.json({
         status: "ok",
-        timestamp: new Date().toISOString(),
-        db: "connected",
+        timestamp: new Date().toISOString()
       });
     } catch (error) {
       res.status(500).json({
         status: "error",
-        message: process.env.NODE_ENV === "production" ? "Health check failed" : (error as Error).message
+        message: "Health check failed"
       });
     }
   });
 
-  // Affiliate stats endpoint with auth check and error handling
+  // Affiliate stats endpoint - no authentication required
   apiRouter.get("/affiliate/stats", async (_req, res) => {
     try {
       console.log('Fetching leaderboard data...');
@@ -298,9 +127,6 @@ function registerRoutes(app: Express): Server {
       console.log('Transforming leaderboard data...');
       const transformedData = await transformLeaderboardData(rawData);
       console.log('Transformed data:', JSON.stringify(transformedData, null, 2));
-
-      // Store and broadcast the update
-      await storeLeaderboardData(transformedData);
 
       res.json(transformedData);
     } catch (error) {
@@ -313,7 +139,7 @@ function registerRoutes(app: Express): Server {
     }
   });
 
-  // Mount the combined API router with security headers
+  // Mount the API router with security headers
   app.use("/api", (req, res, next) => {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-store');
@@ -322,7 +148,6 @@ function registerRoutes(app: Express): Server {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     next();
   }, apiRouter);
-
   // Wager races endpoint
   apiRouter.get("/wager-races/current",
     createRateLimiter('high'),
@@ -330,7 +155,7 @@ function registerRoutes(app: Express): Server {
     async (_req, res) => {
       try {
         const response = await fetch(
-          `${LEADERBOARD_API_URL}`, 
+          `${LEADERBOARD_API_URL}`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -384,3 +209,151 @@ export function broadcastTransformationLog(data: any) {
 
 export { setupWebSocket, registerRoutes };
 import { RateLimiterMemory, type RateLimiterRes } from 'rate-limiter-flexible';
+const rateLimits: Record<RateLimitTier, { points: number; duration: number }> = {
+  HIGH: { points: 30, duration: 60 },
+  MEDIUM: { points: 15, duration: 60 },
+  LOW: { points: 5, duration: 60 }
+};
+
+const rateLimiters = {
+  high: new RateLimiterMemory(rateLimits.HIGH),
+  medium: new RateLimiterMemory(rateLimits.MEDIUM),
+  low: new RateLimiterMemory(rateLimits.LOW),
+};
+
+const createRateLimiter = (tier: keyof typeof rateLimiters) => {
+  const limiter = rateLimiters[tier];
+  return async (req: any, res: any, next: any) => {
+    try {
+      const rateLimitRes = await limiter.consume(req.ip);
+      res.setHeader('X-RateLimit-Limit', rateLimits[tier.toUpperCase() as RateLimitTier].points);
+      res.setHeader('X-RateLimit-Remaining', rateLimitRes.remainingPoints);
+      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateLimitRes.msBeforeNext).toISOString());
+      next();
+    } catch (rejRes) {
+      const rejection = rejRes as RateLimiterRes;
+      res.setHeader('Retry-After', Math.ceil(rejection.msBeforeNext / 1000));
+      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rejection.msBeforeNext).toISOString());
+      res.status(429).json({
+        status: 'error',
+        message: 'Too many requests',
+        retryAfter: Math.ceil(rejection.msBeforeNext / 1000)
+      });
+    }
+  };
+};
+
+type RateLimitTier = 'HIGH' | 'MEDIUM' | 'LOW';
+
+class CacheManager {
+  private cache: Map<string, { data: any; timestamp: number }>;
+  private readonly defaultTTL: number;
+
+  constructor(defaultTTL = 30000) {
+    this.cache = new Map();
+    this.defaultTTL = defaultTTL;
+  }
+
+  get(key: string): any {
+    const cached = this.cache.get(key);
+    if (!cached) return null;
+
+    if (Date.now() - cached.timestamp > this.defaultTTL) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return cached.data;
+  }
+
+  set(key: string, data: any): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+    });
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+const cacheManager = new CacheManager();
+
+const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) => {
+  const key = req.originalUrl;
+  const cachedResponse = cacheManager.get(key);
+  if (cachedResponse) {
+    res.setHeader('X-Cache', 'HIT');
+    return res.json(cachedResponse);
+  }
+  res.originalJson = res.json;
+  res.json = (body: any) => {
+    cacheManager.set(key, body);
+    return res.originalJson(body);
+  };
+  next();
+};
+
+// Common cache times
+const CACHE_TIMES = {
+  SHORT: 15000,    // 15 seconds
+  MEDIUM: 60000,   // 1 minute
+  LONG: 300000     // 5 minutes
+};
+
+async function storeLeaderboardData(data: any) {
+  const now = new Date();
+
+  // Store transformation log without transaction
+  await db.insert(transformationLogs).values({
+    type: 'info',
+    message: 'Leaderboard data stored',
+    payload: JSON.stringify(data),
+    duration_ms: '0',
+    created_at: now,
+    resolved: true
+  });
+
+  // Broadcast the update
+  broadcastTransformationLog(data);
+}
+
+function getDefaultRaceData() {
+  const now = new Date();
+  return {
+    id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
+    status: 'live',
+    startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+    endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString(),
+    prizePool: 500,
+    participants: []
+  };
+}
+
+function formatRaceData(stats: any) {
+  const now = new Date();
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  const monthlyData = stats?.data?.monthly?.data ?? [];
+
+  return {
+    id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
+    status: 'live',
+    startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+    endDate: endOfMonth.toISOString(),
+    prizePool: 500,
+    participants: monthlyData
+      .map((participant: any, index: number) => ({
+        uid: participant?.uid ?? "",
+        name: participant?.name ?? "Unknown",
+        wagered: Number(participant?.wagered?.this_month ?? 0),
+        position: index + 1
+      }))
+      .slice(0, 10)
+  };
+}
+import type { SelectUser } from "@db/schema";
+import { initializeBot } from "./telegram/bot";
+import { db } from "@db";
+import { sql } from "drizzle-orm";
+import { wagerRaces, transformationLogs } from "@db/schema";
