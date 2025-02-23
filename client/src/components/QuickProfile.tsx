@@ -50,170 +50,170 @@ interface QuickProfileProps {
 }
 
 export function QuickProfile({ userId, username, children }: QuickProfileProps) {
-  const { data: userData, isError, isLoading: isUserLoading } = useQuery<UserData>({
-    queryKey: [`/api/users/${userId}/quick-stats`],
-    staleTime: 30000,
-    enabled: !!userId,
-    retry: 1,
-    onError: (error) => {
-      console.error('QuickProfile fetch error:', error);
-    }
-  });
+    const {data: quickStats} = useQuery({
+        queryKey: [`/api/users/${userId}/quick-stats`],
+        staleTime: 30000,
+        enabled: !!userId,
+        retry: 1,
+        onError: (error) => {
+          console.error('QuickProfile fetch error:', error);
+        }
+    });
 
-  // Allow viewing profile without authentication
-  const isViewable = !isUserLoading && (userData || isError);
+    // Allow viewing profile without authentication
+    const isViewable = !quickStats.isLoading && (quickStats.data || quickStats.isError);
 
-  const quickActions = [
-    { label: "View Profile", icon: User, href: `/profile/${userId}` },
-    { label: "Race History", icon: Trophy, href: `/profile/${userId}/races` },
-    { label: "Achievements", icon: Award, href: `/profile/${userId}/achievements` },
-    { label: "Settings", icon: Settings, href: `/profile/${userId}/settings` }
-  ];
-  const { data: leaderboardData, isLoading: isLeaderboardLoading } = useQuery<LeaderboardData>({
-    queryKey: ["/api/affiliate/stats"],
-    staleTime: 30000,
-  });
+    const quickActions = [
+        { icon: User, label: "Profile", href: `/profile/${userId}` },
+        { icon: Trophy, label: "Race History", href: `/profile/${userId}/races` },
+        { icon: Award, label: "Achievements", href: `/profile/${userId}/achievements` },
+        { icon: Settings, label: "Settings", href: `/profile/${userId}/settings` }
+    ];
+    const { data: leaderboardData, isLoading: isLeaderboardLoading } = useQuery<LeaderboardData>({
+        queryKey: ["/api/affiliate/stats"],
+        staleTime: 30000,
+    });
 
-  const stats = React.useMemo(() => {
-    if (!leaderboardData?.data) return null;
+    const stats = React.useMemo(() => {
+        if (!leaderboardData?.data) return null;
 
-    // Add proper typing for leaderboard data
-    interface LeaderboardEntry {
-      uid: string;
-      wagered: {
-        today: number;
-        this_week: number;
-        this_month: number;
-        all_time: number;
-      };
-    }
+        // Add proper typing for leaderboard data
+        interface LeaderboardEntry {
+          uid: string;
+          wagered: {
+            today: number;
+            this_week: number;
+            this_month: number;
+            all_time: number;
+          };
+        }
 
-    const userStats = {
-      today: leaderboardData.data.today.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.today || 0,
-      this_week: leaderboardData.data.weekly.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.this_week || 0,
-      this_month: leaderboardData.data.monthly.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.this_month || 0,
-      all_time: leaderboardData.data.all_time.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.all_time || 0,
-    };
+        const userStats = {
+            today: leaderboardData.data.today.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.today || 0,
+            this_week: leaderboardData.data.weekly.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.this_week || 0,
+            this_month: leaderboardData.data.monthly.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.this_month || 0,
+            all_time: leaderboardData.data.all_time.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.all_time || 0,
+        };
 
-    const rankings = {
-      weekly: (leaderboardData.data.weekly.data.findIndex((p: LeaderboardEntry) => p.uid === userId) + 1) || undefined,
-      monthly: (leaderboardData.data.monthly.data.findIndex((p: LeaderboardEntry) => p.uid === userId) + 1) || undefined,
-      all_time: (leaderboardData.data.all_time.data.findIndex((p: LeaderboardEntry) => p.uid === userId) + 1) || undefined,
-    };
+        const rankings = {
+            weekly: (leaderboardData.data.weekly.data.findIndex((p: LeaderboardEntry) => p.uid === userId) + 1) || undefined,
+            monthly: (leaderboardData.data.monthly.data.findIndex((p: LeaderboardEntry) => p.uid === userId) + 1) || undefined,
+            all_time: (leaderboardData.data.all_time.data.findIndex((p: LeaderboardEntry) => p.uid === userId) + 1) || undefined,
+        };
 
-    return { wagered: userStats, rankings };
-  }, [leaderboardData, userId]);
+        return { wagered: userStats, rankings };
+    }, [leaderboardData, userId]);
 
-  const [open, setOpen] = useState(false);
-  const [, setLocation] = useLocation();
+    const [open, setOpen] = useState(false);
+    const [, setLocation] = useLocation();
 
-  return (
-    <>
-      <HoverCard>
-        <HoverCardTrigger asChild>
-          <span className="cursor-pointer">{children}</span>
-        </HoverCardTrigger>
-        <Portal>
-          <HoverCardContent side="top" align="center" className="w-80 bg-[#1A1B21] border border-[#2A2B31] p-4 z-50">
-            {isUserLoading ? (
-              <div className="flex justify-center p-4">
-                <LoadingSpinner />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={getTierIcon(getTierFromWager(stats?.wagered.all_time || 0))}
-                    alt="VIP Tier"
-                    className="w-8 h-8"
-                  />
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-heading text-white">{username}</span>
-                    {userData?.isVerified && <VerificationBadge size="sm" />}
-                  </div>
-                </div>
+    return (
+        <>
+            <HoverCard>
+                <HoverCardTrigger asChild>
+                    <span className="cursor-pointer">{children}</span>
+                </HoverCardTrigger>
+                <Portal>
+                    <HoverCardContent side="top" align="center" className="w-80 bg-[#1A1B21] border border-[#2A2B31] p-4 z-50">
+                        {quickStats.isLoading ? (
+                            <div className="flex justify-center p-4">
+                                <LoadingSpinner />
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <img
+                                        src={getTierIcon(getTierFromWager(stats?.wagered.all_time || 0))}
+                                        alt="VIP Tier"
+                                        className="w-8 h-8"
+                                    />
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-lg font-heading text-white">{username}</span>
+                                        {quickStats.data?.isVerified && <VerificationBadge size="sm" />}
+                                    </div>
+                                </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center p-2 rounded bg-black/20">
-                    <span className="text-white/70 text-sm">Weekly Rank:</span>
-                    <span className="text-[#10B981] font-mono">#{stats?.rankings.weekly || '-'}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded bg-black/20">
-                    <span className="text-white/70 text-sm">Monthly Rank:</span>
-                    <span className="text-[#F59E0B] font-mono">#{stats?.rankings.monthly || '-'}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded bg-black/20">
-                    <span className="text-white/70 text-sm">All-Time Rank:</span>
-                    <span className="text-[#EC4899] font-mono">#{stats?.rankings.all_time || '-'}</span>
-                  </div>
-                </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center p-2 rounded bg-black/20">
+                                        <span className="text-white/70 text-sm">Weekly Rank:</span>
+                                        <span className="text-[#10B981] font-mono">#{stats?.rankings.weekly || '-'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center p-2 rounded bg-black/20">
+                                        <span className="text-white/70 text-sm">Monthly Rank:</span>
+                                        <span className="text-[#F59E0B] font-mono">#{stats?.rankings.monthly || '-'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center p-2 rounded bg-black/20">
+                                        <span className="text-white/70 text-sm">All-Time Rank:</span>
+                                        <span className="text-[#EC4899] font-mono">#{stats?.rankings.all_time || '-'}</span>
+                                    </div>
+                                </div>
 
-                <div className="p-3 rounded bg-[#D7FF00]/10 border border-[#D7FF00]/20">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#D7FF00] text-sm font-semibold">All-Time Wagered:</span>
-                    <span className="text-white font-mono font-bold">
-                      ${stats?.wagered.all_time.toLocaleString() || '0'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </HoverCardContent>
-        </Portal>
-      </HoverCard>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-full sm:w-[540px] bg-[#1A1B21] border-l border-[#2A2B31] p-6">
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-[#2A2B31] flex items-center justify-center">
-                <img
-                  src={getTierIcon(getTierFromWager(stats?.wagered.all_time || 0))}
-                  alt="VIP Tier"
-                  className="w-12 h-12"
-                />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-heading text-white">{username}</h2>
-                  {userData?.isVerified && <VerificationBadge size="lg" />}
-                </div>
-                <Button
-                  variant="link"
-                  className="text-[#D7FF00] p-0 h-auto text-sm"
-                  onClick={() => setLocation(`/profile/${userId}`)}
-                >
-                  View Full Profile <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
-            </div>
+                                <div className="p-3 rounded bg-[#D7FF00]/10 border border-[#D7FF00]/20">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[#D7FF00] text-sm font-semibold">All-Time Wagered:</span>
+                                        <span className="text-white font-mono font-bold">
+                                            ${stats?.wagered.all_time.toLocaleString() || '0'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </HoverCardContent>
+                </Portal>
+            </HoverCard>
+            <Sheet open={open} onOpenChange={setOpen}>
+                <SheetContent side="right" className="w-full sm:w-[540px] bg-[#1A1B21] border-l border-[#2A2B31] p-6">
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 rounded-full bg-[#2A2B31] flex items-center justify-center">
+                                <img
+                                    src={getTierIcon(getTierFromWager(stats?.wagered.all_time || 0))}
+                                    alt="VIP Tier"
+                                    className="w-12 h-12"
+                                />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-2xl font-heading text-white">{username}</h2>
+                                    {quickStats.data?.isVerified && <VerificationBadge size="lg" />}
+                                </div>
+                                <Button
+                                    variant="link"
+                                    className="text-[#D7FF00] p-0 h-auto text-sm"
+                                    onClick={() => setLocation(`/profile/${userId}`)}
+                                >
+                                    View Full Profile <ArrowRight className="w-4 h-4 ml-1" />
+                                </Button>
+                            </div>
+                        </div>
 
-            <div className="grid gap-4">
-              <div className="p-4 rounded-lg bg-black/20">
-                <div className="flex justify-between items-center">
-                  <span className="text-white/70">Weekly Rank</span>
-                  <span className="text-[#D7FF00] font-mono font-bold">#{stats?.rankings.weekly || '-'}</span>
-                </div>
-              </div>
+                        <div className="grid gap-4">
+                            <div className="p-4 rounded-lg bg-black/20">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-white/70">Weekly Rank</span>
+                                    <span className="text-[#D7FF00] font-mono font-bold">#{stats?.rankings.weekly || '-'}</span>
+                                </div>
+                            </div>
 
-              <div className="p-4 rounded-lg bg-black/20">
-                <div className="flex justify-between items-center">
-                  <span className="text-white/70">Total Wagered</span>
-                  <span className="text-[#D7FF00] font-mono font-bold">${stats?.wagered.all_time.toLocaleString() || '0'}</span>
-                </div>
-              </div>
+                            <div className="p-4 rounded-lg bg-black/20">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-white/70">Total Wagered</span>
+                                    <span className="text-[#D7FF00] font-mono font-bold">${stats?.wagered.all_time.toLocaleString() || '0'}</span>
+                                </div>
+                            </div>
 
-              {userData?.isVerified && (
-                <div className="p-4 rounded-lg bg-[#D7FF00]/10 border border-[#D7FF00]/20">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#D7FF00]">Verified Member</span>
-                    <span className="text-white font-mono">Since {new Date(userData.verifiedAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
-    </>
-  );
+                            {quickStats.data?.isVerified && (
+                                <div className="p-4 rounded-lg bg-[#D7FF00]/10 border border-[#D7FF00]/20">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[#D7FF00]">Verified Member</span>
+                                        <span className="text-white font-mono">Since {new Date(quickStats.data.verifiedAt).toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </SheetContent>
+            </Sheet>
+        </>
+    );
 }
