@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
   Trophy,
@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 
 interface UserStats {
   username: string;
@@ -48,11 +49,12 @@ interface UserStats {
   }>;
 }
 
-export default function UserProfile({ userId }: { userId: string }) {
+export default function UserProfile() {
   const [, setLocation] = useLocation();
+  const { id } = useParams<{ id: string }>();
 
   const { data: user, isLoading } = useQuery<UserStats>({
-    queryKey: [`/api/users/${userId}`],
+    queryKey: [`/api/users/${id}`],
   });
 
   if (isLoading) return <LoadingSpinner />;

@@ -30,6 +30,11 @@ import { QuickProfile } from "@/components/QuickProfile";
 import { Link } from "wouter";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 
+interface LeaderboardData {
+  data: LeaderboardEntry[];
+  status?: 'active' | 'transition';
+}
+
 type WageredData = {
   today: number;
   this_week: number;
@@ -183,9 +188,9 @@ const getTrophyIcon = (rank: number) => {
     );
   }
 
-  const top10Players = showCompletedRace 
+  const top10Players = showCompletedRace
     ? (previousRace?.data?.participants || [])
-    : (leaderboardData || []).slice(0, 10);
+    : (leaderboardData?.data || []).slice(0, 10);
   const currentLeader = top10Players[0];
 
   return (
@@ -342,7 +347,7 @@ const getTrophyIcon = (rank: number) => {
               </div>
             </motion.div>
 
-            </div>
+          </div>
 
           {/* Podium Section */}
           <motion.div
@@ -355,7 +360,7 @@ const getTrophyIcon = (rank: number) => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ 
+                whileHover={{
                   scale: 1.05,
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
@@ -397,7 +402,7 @@ const getTrophyIcon = (rank: number) => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ 
+                whileHover={{
                   scale: 1.05,
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
@@ -434,13 +439,11 @@ const getTrophyIcon = (rank: number) => {
               </motion.div>
 
 
-
-
               {/* 3rd Place */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ 
+                whileHover={{
                   scale: 1.05,
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
@@ -509,7 +512,7 @@ const getTrophyIcon = (rank: number) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(showCompletedRace ? (previousRace?.data?.participants || []).slice(0, 10) : top10Players).map((player, index) => (
+                {(showCompletedRace ? (previousRace?.data?.participants || []).slice(0, 10) : top10Players).map((player: LeaderboardEntry, index: number) => (
                   <TableRow
                     key={player.uid}
                     className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]"

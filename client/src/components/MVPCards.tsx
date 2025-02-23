@@ -1,10 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Trophy, TrendingUp } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect as ReactuseEffect } from "react";
 import { QuickProfile } from "./QuickProfile";
-import { getTierFromWager, getTierIcon } from "@/lib/tier-utils"; // Added import
+import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
+import { Dialog, DialogContent } from "./ui/dialog";
+
+interface LeaderboardData {
+  data: {
+    today: { data: MVP[] };
+    weekly: { data: MVP[] };
+    monthly: { data: MVP[] };
+    all_time: { data: MVP[] };
+  };
+}
 
 type MVP = {
   username: string;
@@ -20,6 +29,7 @@ type MVP = {
     this_month: number;
     all_time: number;
   };
+  name?: string;
 };
 
 const timeframes = [
@@ -27,7 +37,7 @@ const timeframes = [
     title: "Daily MVP", 
     period: "daily", 
     colors: {
-      primary: "#8B5CF6", // violet
+      primary: "#8B5CF6", 
       accent: "#7C3AED",
       shine: "#A78BFA"
     }
@@ -36,7 +46,7 @@ const timeframes = [
     title: "Weekly MVP", 
     period: "weekly", 
     colors: {
-      primary: "#10B981", // emerald
+      primary: "#10B981", 
       accent: "#059669",
       shine: "#34D399"
     }
@@ -45,14 +55,12 @@ const timeframes = [
     title: "Monthly MVP", 
     period: "monthly", 
     colors: {
-      primary: "#F59E0B", // amber
+      primary: "#F59E0B", 
       accent: "#D97706",
       shine: "#FBBF24"
     }
   }
 ];
-
-import { Dialog, DialogContent } from "./ui/dialog";
 
 function MVPCard({ 
   timeframe, 
@@ -65,12 +73,11 @@ function MVPCard({
   mvp: MVP | undefined,
   isOpen: boolean,
   onOpenChange: (open: boolean) => void,
-  leaderboardData: any
+  leaderboardData: LeaderboardData
 }) {
   const [showIncrease, setShowIncrease] = useState(false);
 
-  // Show increase indicator for 10 seconds when wager amount changes
-  ReactuseEffect(() => {
+  useEffect(() => {
     if (mvp?.lastWagerChange) {
       setShowIncrease(true);
       const timer = setTimeout(() => setShowIncrease(false), 10000);
@@ -183,10 +190,10 @@ function MVPCard({
               </div>
               <div className="space-y-4">
                 {[
-                  { label: "Daily Rank", value: leaderboardData?.data?.today?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#8B5CF6" },
-                  { label: "Weekly Rank", value: leaderboardData?.data?.weekly?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#10B981" },
-                  { label: "Monthly Rank", value: leaderboardData?.data?.monthly?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#F59E0B" },
-                  { label: "All-Time Rank", value: leaderboardData?.data?.all_time?.data.findIndex((p: any) => p.uid === mvp.uid) + 1 || '-', color: "#EC4899" }
+                  { label: "Daily Rank", value: leaderboardData?.data?.today?.data.findIndex((p: MVP) => p.uid === mvp.uid) + 1 || '-', color: "#8B5CF6" },
+                  { label: "Weekly Rank", value: leaderboardData?.data?.weekly?.data.findIndex((p: MVP) => p.uid === mvp.uid) + 1 || '-', color: "#10B981" },
+                  { label: "Monthly Rank", value: leaderboardData?.data?.monthly?.data.findIndex((p: MVP) => p.uid === mvp.uid) + 1 || '-', color: "#F59E0B" },
+                  { label: "All-Time Rank", value: leaderboardData?.data?.all_time?.data.findIndex((p: MVP) => p.uid === mvp.uid) + 1 || '-', color: "#EC4899" }
                 ].map((stat, index) => (
                   <div key={index} className="flex justify-between items-center p-2 rounded-lg bg-black/20 hover:bg-black/30 transition-colors">
                     <span className="text-white/80 text-sm">{stat.label}:</span>
@@ -214,9 +221,9 @@ function MVPCard({
 
 export function MVPCards() {
   const [openCard, setOpenCard] = useState<string | null>(null);
-  const dialogTimeoutRef = React.useRef<NodeJS.Timeout>();
+  const dialogTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const { data: leaderboardData, isLoading } = useQuery({
+  const { data: leaderboardData, isLoading } = useQuery<LeaderboardData>({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
   });
@@ -227,7 +234,7 @@ export function MVPCards() {
     monthly: leaderboardData?.data?.monthly?.data[0]
   };
 
-  const handleDialogChange = React.useCallback((open: boolean, period: string) => {
+  const handleDialogChange = useCallback((open: boolean, period: string) => {
     if (dialogTimeoutRef.current) {
       clearTimeout(dialogTimeoutRef.current);
     }
@@ -241,7 +248,7 @@ export function MVPCards() {
     }
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (dialogTimeoutRef.current) {
         clearTimeout(dialogTimeoutRef.current);
@@ -252,7 +259,6 @@ export function MVPCards() {
   if (isLoading || !mvps?.daily) {
     return (
       <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
-        {/* Placeholder loading state -  consider more sophisticated loading indicators */}
         {timeframes.map((timeframe) => (
           <motion.div
             key={timeframe.period}
@@ -287,11 +293,13 @@ export function MVPCards() {
           <MVPCard 
             timeframe={timeframe}
             mvp={mvps[timeframe.period as keyof typeof mvps] ? {
+              name: mvps[timeframe.period as keyof typeof mvps]?.name || '', 
               username: mvps[timeframe.period as keyof typeof mvps]?.name || '',
               uid: mvps[timeframe.period as keyof typeof mvps]?.uid || '',
               wagerAmount: mvps[timeframe.period as keyof typeof mvps]?.wagered[timeframe.period === 'daily' ? 'today' : timeframe.period === 'weekly' ? 'this_week' : 'this_month'] || 0,
               wagered: mvps[timeframe.period as keyof typeof mvps]?.wagered || {today:0, this_week:0, this_month:0, all_time:0},
-              avatarUrl: mvps[timeframe.period as keyof typeof mvps]?.avatarUrl
+              avatarUrl: mvps[timeframe.period as keyof typeof mvps]?.avatarUrl,
+              rank: (leaderboardData?.data[timeframe.period]?.data || []).findIndex((p:MVP)=> p.uid === mvps[timeframe.period as keyof typeof mvps]?.uid) +1
             } : undefined}
             isOpen={openCard === timeframe.period}
             onOpenChange={(open) => handleDialogChange(open, timeframe.period)}
