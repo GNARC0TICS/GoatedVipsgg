@@ -10,6 +10,7 @@ import { db } from "@db";
 import { wagerRaces, users, ticketMessages, supportTickets, bonusCodes } from "@db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
+import { affiliateRateLimiter, raceRateLimiter } from "./middleware/rate-limiter"; // Import rate limiters with correct path
 
 // Add missing type definitions
 interface ExtendedWebSocket extends WebSocket {
@@ -60,7 +61,7 @@ function handleLeaderboardConnection(ws: ExtendedWebSocket) {
 
   // Send initial data with rate limiting
   if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ 
+    ws.send(JSON.stringify({
       type: "CONNECTED",
       clientId,
       timestamp: Date.now()
@@ -188,9 +189,8 @@ function setupRESTRoutes(app: Express) {
   });
 
   // Modified current race endpoint to handle month end
-  app.get("/api/wager-races/current", async (_req, res) => {
+  app.get("/api/wager-races/current", raceRateLimiter, async (_req, res) => {
     try {
-      await rateLimiter.consume(_req.ip || "unknown");
       const response = await fetch(
         `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
         {
@@ -320,7 +320,7 @@ function setupRESTRoutes(app: Express) {
   app.get("/api/admin/users", requireAdmin, handleAdminUsersRequest);
   app.get("/api/admin/wager-races", requireAdmin, handleWagerRacesRequest);
   app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);
-  app.get("/api/affiliate/stats", handleAffiliateStats);
+  app.get("/api/affiliate/stats", affiliateRateLimiter, handleAffiliateStats);
 
   // Support system endpoints
   app.get("/api/support/messages", requireAuth, async (req, res) => {
@@ -416,7 +416,7 @@ function setupRESTRoutes(app: Express) {
   app.post("/api/support/reply", requireAuth, async (req, res) => {
     try {
       const { ticketId, message } = req.body;
-      
+
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
         return res.status(400).json({
           status: "error",
@@ -694,14 +694,13 @@ async function handleProfileRequest(req: any, res: any) {
 
 async function handleAffiliateStats(req: any, res: any) {
   try {
-    await rateLimiter.consume(req.ip || "unknown");
     const username = req.query.username;
     let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
-    
+
     if (username) {
       url += `?username=${encodeURIComponent(username)}`;
     }
-    
+
     const response = await fetch(url,
       {
         headers: {
@@ -983,7 +982,7 @@ async function handleChatConnection(ws: WebSocket) {
   const welcomeMessage = {
     id: Date.now(),
     message:
-      "Welcome to VIP Support! How can we assist you today? Our team is here to help with any questions or concerns you may have.",
+      "Welcome to VIP Support! How can we assist you today? Our team is here to help with any questions or concerns youmay have.",
     userId: null,
     createdAt: new Date(),
     isStaffReply: true,

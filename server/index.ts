@@ -10,6 +10,7 @@ import { createServer } from "http";
 import { initializeAdmin } from "./middleware/admin";
 import { bot } from './telegram/bot';
 import { apiRateLimiter, affiliateRateLimiter, raceRateLimiter } from './middleware/rate-limiter';
+import fetch from 'node-fetch';
 
 const execAsync = promisify(exec);
 const app = express();
@@ -31,7 +32,7 @@ async function setupMiddleware() {
   app.use(errorHandler);
 
   app.get("/api/health", (_req, res) => {
-    res.json({ status: "healthy" });
+    res.json({ status: "healthy", timestamp: new Date().toISOString() });
   });
 }
 
@@ -78,34 +79,60 @@ async function checkDatabase() {
   try {
     await db.execute(sql`SELECT 1`);
     log("Database connection successful");
+    return true;
   } catch (error: any) {
     if (error.message?.includes("endpoint is disabled")) {
       log(
         "Database endpoint is disabled. Please enable the database in the Replit Database tab.",
       );
     } else {
-      throw error;
+      console.error("Database connection error:", error);
     }
+    return false;
   }
 }
 
 async function cleanupPort() {
   try {
-    // Try to kill existing process on port 5000
     await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
-    // Wait a moment for the port to be released
+    // Wait for port to be released
     await new Promise(resolve => setTimeout(resolve, 1000));
+    log(`Port ${PORT} is now available`);
+    return true;
   } catch (error) {
-    // If no process was found or killed, that's fine
     log("No existing process found on port " + PORT);
+    return true;
   }
+}
+
+async function waitForPort(port: number, retries = 5): Promise<boolean> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(`http://0.0.0.0:${port}/api/health`);
+      if (response.ok) {
+        log(`Server is ready on port ${port}`);
+        return true;
+      }
+    } catch (error) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+  return false;
 }
 
 async function startServer() {
   try {
     log("Starting server initialization...");
-    await checkDatabase();
-    await cleanupPort(); 
+
+    // Ensure database is ready
+    if (!await checkDatabase()) {
+      throw new Error("Database connection failed");
+    }
+
+    // Ensure port is available
+    if (!await cleanupPort()) {
+      throw new Error("Failed to clean up port");
+    }
 
     const server = createServer(app);
 
@@ -128,22 +155,31 @@ async function startServer() {
       serveStatic(app);
     }
 
-    server
-      .listen(PORT, "0.0.0.0")
-      .on("error", async (err: NodeJS.ErrnoException) => {
-        if (err.code === 'EADDRINUSE') {
-          log(`Port ${PORT} is in use, attempting to free it...`);
-          await cleanupPort();
-          server.listen(PORT, "0.0.0.0");
-        } else {
-          console.error(`Failed to start server: ${err.message}`);
-          process.exit(1);
-        }
-      })
-      .on("listening", () => {
-        log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-        log('Telegram bot started successfully');
-      });
+    // Start server with proper error handling
+    await new Promise<void>((resolve, reject) => {
+      server
+        .listen(PORT, "0.0.0.0")
+        .once('error', (err: NodeJS.ErrnoException) => {
+          if (err.code === 'EADDRINUSE') {
+            log(`Port ${PORT} is in use, attempting to free it...`);
+            cleanupPort().then(() => {
+              server.listen(PORT, "0.0.0.0");
+            });
+          } else {
+            reject(err);
+          }
+        })
+        .once('listening', () => {
+          log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+          log('Telegram bot started successfully');
+          resolve();
+        });
+    });
+
+    // Wait for server to be ready
+    if (!await waitForPort(PORT)) {
+      throw new Error("Server failed to become ready");
+    }
 
   } catch (error) {
     console.error("Failed to start application:", error);

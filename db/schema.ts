@@ -41,13 +41,13 @@ export const wagerRaces = pgTable("wager_races", {
 
 export const wagerRaceParticipants = pgTable("wager_race_participants", {
   id: serial("id").primaryKey(),
-  raceId: integer("race_id").references(() => wagerRaces.id),
-  userId: integer("user_id").references(() => users.id),
-  totalWager: decimal("total_wager", { precision: 18, scale: 2 }).notNull(),
+  race_id: integer("race_id").references(() => wagerRaces.id),
+  user_id: integer("user_id").references(() => users.id),
+  total_wager: decimal("total_wager", { precision: 18, scale: 2 }).notNull(),
   rank: integer("rank"),
-  joinedAt: timestamp("joined_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  wagerHistory: jsonb("wager_history"), // Track wager progress over time
+  joined_at: timestamp("joined_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+  wager_history: jsonb("wager_history"), // Track wager progress over time
 });
 
 export const notificationPreferences = pgTable("notification_preferences", {
