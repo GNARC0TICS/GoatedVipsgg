@@ -1,4 +1,4 @@
-
+import { useState, useMemo, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,10 @@ import {
   ChevronRight,
   Users,
 } from "lucide-react";
-import React, { useState, useMemo } from "react";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { QuickProfile } from "@/components/QuickProfile";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -26,15 +25,29 @@ interface LeaderboardTableProps {
   timePeriod: TimePeriod;
 }
 
-export const LeaderboardTable = React.memo(function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
+interface LeaderboardEntry {
+  uid: string;
+  name: string;
+  wagered: {
+    today: number;
+    this_week: number;
+    this_month: number;
+    all_time: number;
+  };
+  isWagering?: boolean;
+  wagerChange?: number;
+}
+
+// Use named function instead of React.memo
+export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  
-  const { data, isLoading, error, metadata, refetch } = useLeaderboard(timePeriod);
+
+  const { data = [], isLoading, error } = useLeaderboard(timePeriod);
 
   const filteredData = useMemo(() => {
     if (!data) return [];
-    return data.filter((entry) =>
+    return data.filter((entry: LeaderboardEntry) =>
       entry.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [data, searchQuery]);
@@ -62,7 +75,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
     setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1));
   };
 
-  const getWagerAmount = (entry: any) => {
+  const getWagerAmount = (entry: LeaderboardEntry) => {
     if (!entry?.wagered) return 0;
     switch (timePeriod) {
       case "weekly":
@@ -105,6 +118,14 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
             ))}
           </TableBody>
         </Table>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-red-500">
+        Error loading leaderboard data
       </div>
     );
   }
@@ -202,7 +223,7 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
           <div className="flex items-center gap-2 text-[#8A8B91]">
             <Users className="h-4 w-4" />
             <span className="text-sm">
-              {metadata?.totalUsers || filteredData.length} Players
+              {filteredData.length} Players
             </span>
           </div>
 
@@ -233,4 +254,4 @@ export const LeaderboardTable = React.memo(function LeaderboardTable({ timePerio
       </div>
     </div>
   );
-});
+}
