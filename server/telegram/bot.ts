@@ -1,11 +1,12 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { db } from '@db';
+import { eq, and, or } from 'drizzle-orm';
 import { telegramUsers, verificationRequests } from '@db/schema/telegram';
-import { eq } from 'drizzle-orm';
 import { API_CONFIG } from '../config/api';
 import { users, challenges, challengeEntries } from '@db/schema';
 import crypto from 'crypto';
 import { and } from 'drizzle-orm';
+import { scheduleJob } from 'node-schedule';
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_TELEGRAM_IDS = ['1689953605'];
@@ -41,6 +42,67 @@ function logDebug(message: string, data?: any) {
   console.log(`[Telegram Bot] ${message}`, data ? JSON.stringify(data, null, 2) : '');
 }
 
+// Add new constants for moderation
+const GOATED_STICKER_ID = '5956308779791291440';
+const COMMAND_COOLDOWN = 3000; // 3 seconds cooldown between commands
+const MUTE_DURATIONS = {
+  SHORT: 300, // 5 minutes
+  MEDIUM: 3600, // 1 hour
+  LONG: 86400, // 24 hours
+};
+
+const SPAM_DETECTION = {
+  TIME_WINDOW: 60000, // 1 minute
+  MAX_MESSAGES: 5,
+  MUTE_DURATION: 300 // 5 minutes
+};
+
+const BEGGING_KEYWORDS = [
+  'give me', 'please give', 'need money', 'send me',
+  'deposit', 'broke', 'need help', 'money please',
+  'spare some', 'donation', 'help me'
+];
+
+// Command cooldown tracking
+const commandCooldowns = new Map<string, { command: string; timestamp: number }>();
+
+// Helper function for sticker support
+async function sendStickerOrEmoji(chatId: number | string, type: 'success' | 'warning' | 'error' | 'goated') {
+  try {
+    if (type === 'goated') {
+      await bot.sendSticker(chatId, GOATED_STICKER_ID);
+    } else {
+      // Fallback emojis
+      const emoji = {
+        success: '✅',
+        warning: '⚠️',
+        error: '❌',
+        goated: '🐐',
+      }[type];
+      await bot.sendMessage(chatId, emoji);
+    }
+  } catch (error) {
+    console.error('Error sending sticker:', error);
+    // Fallback to standard emoji
+    const fallbackEmoji = type === 'goated' ? '🐐' : '❓';
+    await bot.sendMessage(chatId, fallbackEmoji);
+  }
+}
+
+// Helper function to check command cooldown
+function checkCommandCooldown(userId: string, command: string): boolean {
+  const now = Date.now();
+  const userCooldown = commandCooldowns.get(userId);
+
+  if (!userCooldown || (now - userCooldown.timestamp) > COMMAND_COOLDOWN) {
+    commandCooldowns.set(userId, { command, timestamp: now });
+    return true;
+  }
+
+  return false;
+}
+
+
 // Set up bot commands with proper descriptions
 async function setupBotCommands() {
   try {
@@ -64,7 +126,11 @@ async function setupBotCommands() {
       { command: 'pending', description: '📝 View pending verifications' },
       { command: 'verify_user', description: '✅ Verify a user' },
       { command: 'reject_user', description: '❌ Reject a user' },
-      { command: 'makeadmin', description: '👑 Grant admin privileges' }
+      { command: 'makeadmin', description: '👑 Grant admin privileges' },
+      { command: 'adminpanel', description: 'Admin Control Panel' },
+      { command: 'add_recurring_message', description: '➕ Add recurring message'},
+      { command: 'list_recurring_messages', description: '📋 List recurring messages'},
+      { command: 'remove_recurring_message', description: '❌ Remove recurring message'}
     ];
 
     // Set base commands globally
@@ -136,7 +202,16 @@ bot.onText(/\/help/, async (msg) => {
     message += `• /user\\_info \\- Get user information\n`;
     message += `• /pending \\- View verification requests\n`;
     message += `• /verify\\_user \\- Verify a user\n`;
-    message += `• /reject\\_user \\- Reject a verification\n\n`;
+    message += `• /reject\\_user \\- Reject a verification\n`;
+    message += `• /makeadmin \\- Grant admin privileges\n`;
+    message += `• /adminpanel \\- Access the admin panel\n`;
+    message += `• /mute @username duration \\- Mute a user\n`;
+    message += `• /warn @username reason \\- Warn a user\n`;
+    message += `• /ban @username reason \\- Ban a user\n`;
+    message += `• /bootfuck @username \\- Bootfuck a user\n\n`;
+    message += `• /add_recurring_message \\- Add a recurring message\n`;
+    message += `• /list_recurring_messages \\- List recurring messages\n`;
+    message += `• /remove_recurring_message \\- Remove a recurring message\n\n`;
   }
 
   message += `*Available Commands:*\n`;
@@ -777,7 +852,7 @@ bot.onText(/\/reject_user (.+)/, async (msg, match) => {
     }
 
     // Notify the user
-    await bot.sendMessage(telegramId, '❌ Your verification request has been rejected. Please ensure you provided the correct Goated username and try again.');
+    awaitbot.sendMessage(telegramId, '❌ Your verification request has been rejected. Please ensure you provided the correct Goated username and try again.');
     return bot.sendMessage(chatId, `❌ Rejected verification request for ${request.goatedUsername}.`);
   } catch (error) {
     console.error('Error rejecting user:', error);
@@ -794,8 +869,7 @@ const PRIZE_DISTRIBUTION: Record<number, number> = {
   3: 0.15,  // $60
   4: 0.075, // $30
   5: 0.06,  // $24
-  6: 0.04,  // $16
-  7: 0.0275, // $11
+  6: 0.04,  // $16  7: 0.0275, // $11
   8: 0.0225, // $9
   9: 0.0175, // $7
   10: 0.0175, // $7
@@ -1724,5 +1798,457 @@ bot.onText(/\/claim/, async (msg) => {
   }
 });
 
+// Admin panel command handler
+bot.onText(/\/adminpanel/, async (msg) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from?.id.toString();
+  const username = msg.from?.username;
+
+  if (!userId || username !== 'xGoombas') {
+    await sendStickerOrEmoji(chatId, 'error');
+    return bot.sendMessage(chatId, '❌ Only authorized users can access the admin panel.');
+  }
+
+  if (!checkCommandCooldown(userId, 'adminpanel')) {
+    return bot.sendMessage(chatId, '⚠️ Please wait before using this command again.');
+  }
+
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: '🔇 Mute User', callback_data: 'admin_mute' },
+        { text: '⚠️ Warn User', callback_data: 'admin_warn' }
+      ],
+      [
+        { text: '🚫 Ban User', callback_data: 'admin_ban' },
+        { text: '👢 Bootfuck User', callback_data: 'admin_bootfuck' }
+      ],
+      [
+        { text: '📊 Stats', callback_data: 'admin_stats' },
+        { text: '🔄 Recurring Messages', callback_data: 'admin_recurring' }
+      ],
+      [
+        { text: '👥 User Management', callback_data: 'admin_users' }
+      ]
+    ]
+  };
+
+  await sendStickerOrEmoji(chatId, 'goated');
+  await bot.sendMessage(chatId,
+    '🎮 *Admin Control Panel*\n\n' +
+    'Select an action from the menu below:',
+    {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    }
+  );
+});
+
+// Mute command implementation
+bot.onText(/\/mute (@?\w+) (\d+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from?.id.toString();
+  const username = msg.from?.username;
+
+  if (!userId || username !== 'xGoombas') {
+    await sendStickerOrEmoji(chatId, 'error');
+    return bot.sendMessage(chatId, '❌ Only authorized users can mute members.');
+  }
+
+  if (!checkCommandCooldown(userId, 'mute')) {
+    return bot.sendMessage(chatId, '⚠️ Please wait before using this command again.');
+  }
+
+  const targetUser = match?.[1];
+  const duration = parseInt(match?.[2] || '300'); // Default 5 minutes
+
+  try {
+    // Implementation to mute user
+    await bot.restrictChatMember(chatId, targetUser, {
+      until_date: Math.floor(Date.now() / 1000) + duration,
+      permissions: {
+        can_send_messages: false,
+        can_send_media_messages: false,
+        can_send_other_messages: false,
+        can_add_web_page_previews: false
+      }
+    });
+
+    await sendStickerOrEmoji(chatId, 'success');
+    await bot.sendMessage(chatId,
+      `🔇 ${targetUser} has been muted for ${duration} seconds.`);
+  } catch (error) {
+    console.error('Error muting user:', error);
+    await sendStickerOrEmoji(chatId, 'error');
+    await bot.sendMessage(chatId,
+      '❌ Failed to mute user. Make sure the bot has admin privileges.');
+  }
+});
+
+// Warning system implementation
+bot.onText(/\/warn (@?\w+) (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from?.id.toString();
+  const username = msg.from?.username;
+
+  if (!userId || username !== 'xGoombas') {
+    await sendStickerOrEmoji(chatId, 'error');
+    return bot.sendMessage(chatId, '❌ Only authorized users can warn members.');
+  }
+
+  if (!checkCommandCooldown(userId, 'warn')) {
+    return bot.sendMessage(chatId, '⚠️ Please wait before using this command again.');
+  }
+
+  const targetUser = match?.[1];
+  const reason = match?.[2];
+
+  try {
+    await sendStickerOrEmoji(chatId, 'warning');
+    await bot.sendMessage(chatId,
+      `⚠️ Warning issued to ${targetUser}\n` +
+      `Reason: ${reason}`);
+  } catch (error) {
+    console.error('Error warning user:', error);
+    await sendStickerOrEmoji(chatId, 'error');
+    await bot.sendMessage(chatId, '❌ Failed to issue warning.');
+  }
+});
+
+// Ban command implementation
+bot.onText(/\/ban (@?\w+) (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from?.id.toString();
+  const username = msg.from?.username;
+
+  if (!userId || username !== 'xGoombas') {
+    await sendStickerOrEmoji(chatId, 'error');
+    return bot.sendMessage(chatId, '❌ Only authorized users can ban members.');
+  }
+
+  if (!checkCommandCooldown(userId, 'ban')) {
+    return bot.sendMessage(chatId, '⚠️ Please wait before using this command again.');
+  }
+
+  const targetUser = match?.[1];
+  const reason = match?.[2];
+
+  try {
+    await bot.banChatMember(chatId, targetUser);
+    await sendStickerOrEmoji(chatId, 'success');
+    await bot.sendMessage(chatId,
+      `🚫 ${targetUser} has been banned\n` +
+      `Reason: ${reason}`);
+  } catch (error) {
+    console.error('Error banning user:', error);
+    await sendStickerOrEmoji(chatId, 'error');
+    await bot.sendMessage(chatId,
+      '❌ Failed to ban user. Make sure the bot has admin privileges.');
+  }
+});
+
+// Bootfuck command implementation
+bot.onText(/\/bootfuck (@?\w+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from?.id.toString();
+  const username = msg.from?.username;
+
+  if (!userId || username !== 'xGoombas') {
+    await sendStickerOrEmoji(chatId, 'error');
+    return bot.sendMessage(chatId, '❌ Only authorized users can bootfuck members.');
+  }
+
+  if (!checkCommandCooldown(userId, 'bootfuck')) {
+    return bot.sendMessage(chatId, '⚠️ Please wait before using this command again.');
+  }
+
+  const targetUser = match?.[1];
+
+  try {
+    await bot.banChatMember(chatId, targetUser);
+    await sendStickerOrEmoji(chatId, 'goated');
+    await bot.sendMessage(chatId,
+      `👢 ${targetUser} has been bootfucked from the group!`);
+  } catch (error) {
+    console.error('Error bootfucking user:', error);
+    await sendStickerOrEmoji(chatId, 'error');
+    await bot.sendMessage(chatId,
+      '❌ Failed to bootfuck user. Make sure the bot has admin privileges.');
+  }
+});
+
+// Handle admin panel button clicks
+bot.on('callback_query', async (query) => {
+  if (!query.message || !query.from) return;
+
+  const chatId = query.message.chat.id;
+  const userId = query.from.id.toString();
+  const username = query.from.username;
+
+  if (username !== 'xGoombas') {
+    await bot.answerCallbackQuery(query.id, {
+      text: '❌ Only authorized users can use these controls.',
+      show_alert: true
+    });
+    return;
+  }
+
+  switch (query.data) {
+    case 'admin_mute':
+      await bot.sendMessage(chatId,
+        'To mute a user:\n/mute @username duration_in_seconds');
+      break;
+    case 'admin_warn':
+      await bot.sendMessage(chatId,
+        'To warn a user:\n/warn @username reason');
+      break;
+    case 'admin_ban':
+      await bot.sendMessage(chatId,
+        'To ban a user:\n/ban @username reason');
+      break;
+    case 'admin_bootfuck':
+      await bot.sendMessage(chatId,
+        'To bootfuck a user:\n/bootfuck @username');
+      break;
+    case 'admin_stats':
+      // Reuse existing stats functionality
+      await handleStats({ chat: { id: chatId }, from: { id: Number(userId) } } as TelegramBot.Message);
+      break;
+    case 'admin_recurring':
+      const recurringKeyboard = {
+        inline_keyboard: [
+          [
+            { text: '➕ Add Message', callback_data: 'recurring_add' },
+            { text: '📋 List Messages', callback_data: 'recurring_list' }
+          ],
+          [
+            { text: '❌ Remove Message', callback_data: 'recurring_remove' }
+          ]
+        ]
+      };
+      await bot.editMessageText(
+        '🔄 Recurring Message Management\n\n' +
+        'Select an action:',
+        {
+          chat_id: chatId,
+          message_id: query.message.message_id,
+          reply_markup: recurringKeyboard
+        }
+      );
+      break;
+    case 'admin_users':
+      // Show pending verifications
+      await bot.sendMessage(chatId, '/pending - View pending verification requests');
+      break;
+    case 'recurring_add':
+      await bot.sendMessage(chatId, 'To add a recurring message:\n/add_recurring_message "schedule" "message"');
+      break;
+    case 'recurring_list':
+      await bot.sendMessage(chatId, '/list_recurring_messages');
+      break;
+    case 'recurring_remove':
+      await bot.sendMessage(chatId, 'To remove a recurring message:\n/remove_recurring_message messageId');
+      break;
+  }
+
+  await bot.answerCallbackQuery(query.id);
+});
+
 // Export bot instance for use in main server
 export { bot, handleStart, handleVerify, handleStats, handleRace, handleLeaderboard, handleCallbackQuery };
+
+// Add these new interfaces
+interface RecurringMessage {
+  message: string;
+  schedule: string; // cron expression
+  targetGroups: string[];
+  enabled: boolean;
+}
+
+// Add this new Map to store recurring messages
+const recurringMessages = new Map<string, RecurringMessage>();
+
+// Add these new helper functions
+
+// Function to check if a message contains begging
+function containsBegging(message: string): boolean {
+  return BEGGING_KEYWORDS.some(keyword =>
+    message.toLowerCase().includes(keyword.toLowerCase())
+  );
+}
+
+// Message spam tracking
+const messageTracker = new Map<string, { count: number; timestamp: number }>();
+
+// Function to check for spam
+function isSpamming(userId: string): boolean {
+  const now = Date.now();
+  const userMessages = messageTracker.get(userId);
+
+  if (!userMessages) {
+    messageTracker.set(userId, { count: 1, timestamp: now });
+    return false;
+  }
+
+  if (now - userMessages.timestamp > SPAM_DETECTION.TIME_WINDOW) {
+    messageTracker.set(userId, { count: 1, timestamp: now });
+    return false;
+  }
+
+  userMessages.count++;
+  if (userMessages.count > SPAM_DETECTION.MAX_MESSAGES) {
+    return true;
+  }
+
+  return false;
+}
+
+// Add recurring message management commands
+bot.onText(/\/add_recurring_message (.+) (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const username = msg.from?.username;
+
+  if (username !== 'xGoombas') {
+    await sendStickerOrEmoji(chatId, 'error');
+    return bot.sendMessage(chatId, '❌ Only authorized users can manage recurring messages.');
+  }
+
+  const schedule = match?.[1]; // cron expression
+  const message = match?.[2];
+
+  if (!schedule || !message) {
+    return bot.sendMessage(chatId,
+      '❌ Please provide both schedule and message.\n' +
+      'Format: /add_recurring_message "*/5 * * * *" "Your message here"');
+  }
+
+  try {
+    const messageId = crypto.randomBytes(8).toString('hex');
+    const recurringMessage: RecurringMessage = {
+      message,
+      schedule,
+      targetGroups: ALLOWED_GROUP_IDS,
+      enabled: true
+    };
+
+    recurringMessages.set(messageId, recurringMessage);
+
+    // Schedule the message
+    scheduleJob(schedule, async () => {
+      if (recurringMessage.enabled) {
+        for (const groupId of recurringMessage.targetGroups) {
+          try {
+            await bot.sendMessage(groupId, message);
+          } catch (error) {
+            console.error(`Error sending recurring message to group ${groupId}:`, error);
+          }
+        }
+      }
+    });
+
+    await sendStickerOrEmoji(chatId, 'success');
+    return bot.sendMessage(chatId,
+      `✅ Recurring message added successfully!\n` +
+      `ID: ${messageId}\n` +
+      `Schedule: ${schedule}\n` +
+      `Target Groups: ${recurringMessage.targetGroups.length}`);
+  } catch (error) {
+    console.error('Error adding recurring message:', error);
+    await sendStickerOrEmoji(chatId, 'error');
+    return bot.sendMessage(chatId, '❌ Error setting up recurring message.');
+  }
+});
+
+// List recurring messages
+bot.onText(/\/list_recurring_messages/, async (msg) => {
+  const chatId = msg.chat.id;
+  const username = msg.from?.username;
+
+  if (username !== 'xGoombas') {
+    await sendStickerOrEmoji(chatId, 'error');
+    return bot.sendMessage(chatId, '❌ Only authorized users can view recurring messages.');
+  }
+
+  if (recurringMessages.size === 0) {
+    return bot.sendMessage(chatId, '📝 No recurring messages set up.');
+  }
+
+  let message = '📋 *Recurring Messages:*\n\n';
+  for (const [id, msg] of recurringMessages) {
+    message += `ID: \`${id}\`\n` +
+      `Schedule: \`${msg.schedule}\`\n` +
+      `Status: ${msg.enabled ? '✅' : '❌'}\n` +
+      `Groups: ${msg.targetGroups.length}\n` +
+      `Message: ${msg.message}\n` +
+      `───────────────────\n`;
+  }
+
+  return bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+});
+
+// Remove recurring message
+bot.onText(/\/remove_recurring_message (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const username = msg.from?.username;
+
+  if (username !== 'xGoombas') {
+    await sendStickerOrEmoji(chatId, 'error');
+    return bot.sendMessage(chatId, '❌ Only authorized users can remove recurring messages.');
+  }
+
+  const messageId = match?.[1];
+  if (!messageId) {
+    return bot.sendMessage(chatId, '❌ Please provide the message ID to remove.');
+  }
+
+  if (recurringMessages.delete(messageId)) {
+    await sendStickerOrEmoji(chatId, 'success');
+    return bot.sendMessage(chatId, '✅ Recurring message removed successfully!');
+  } else {
+    await sendStickerOrEmoji(chatId, 'error');
+    return bot.sendMessage(chatId, '❌ Message not found.');
+  }
+});
+
+// Add anti-spam and anti-begging handler
+bot.on('message', async (msg) => {
+  if (!msg.text || !msg.from || msg.chat.type === 'private') return;
+
+  const userId = msg.from.id.toString();
+  const chatId = msg.chat.id;
+  const messageText = msg.text;
+
+  // Check for spam
+  if (isSpamming(userId)) {
+    try {
+      await bot.restrictChatMember(chatId, userId, {
+        until_date: Math.floor(Date.now() / 1000) + SPAM_DETECTION.MUTE_DURATION,
+        permissions: {
+          can_send_messages: false,
+          can_send_media_messages: false,
+          can_send_other_messages: false,
+          can_add_web_page_previews: false
+        }
+      });
+
+      await sendStickerOrEmoji(chatId, 'warning');
+      await bot.sendMessage(chatId,
+        `⚠️ @${msg.from.username} has been muted for ${SPAM_DETECTION.MUTE_DURATION / 60} minutes due to spamming.`);
+    } catch (error) {
+      console.error('Error muting spammer:', error);
+    }
+    return;
+  }
+
+  // Check for begging
+  if (containsBegging(messageText)) {
+    try {
+      await bot.deleteMessage(chatId, msg.message_id.toString());
+      await sendStickerOrEmoji(chatId, 'warning');
+      await bot.sendMessage(chatId,
+        `⚠️ @${msg.from.username} begging is not allowed in this group.`);
+    } catch (error) {
+      console.error('Error handling begging message:', error);
+    }
+  }
+});
