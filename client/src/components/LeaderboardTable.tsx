@@ -256,11 +256,12 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
             </Button>
           </div>
         </div>
-        {timePeriod === "today" && (
-          <div className="text-right mt-4 text-[#D7FF00] font-mono text-lg">
-            Total Wagered Today: ${totalDailyWager.toLocaleString()}
-          </div>
-        )}
+        <div className="text-right mt-4 text-[#D7FF00] font-mono text-lg">
+          Total Wagered {timePeriod === "all_time" ? "All Time" : 
+            timePeriod === "monthly" ? "This Month" : 
+            timePeriod === "weekly" ? "This Week" : 
+            "Today"}: ${totalDailyWager.toLocaleString()}
+        </div>
       </div>
     </div>
   );
