@@ -13,10 +13,283 @@ import { db } from "@db";
 import { sql } from "drizzle-orm";
 import { wagerRaces, transformationLogs } from "@db/schema";
 import { API_CONFIG } from "./config/api";
+import express from "express";
+import cors from "cors";
 
-// Extend WebSocket interface with our custom properties
-interface CustomWebSocket extends WebSocket {
-  isAlive?: boolean;
+//This is the new registerRoutes function with corrected setup order.
+export function registerRoutes(app: Express): Server {
+  log("[Server] Starting route registration...");
+
+  // Basic middleware setup
+  app.use(express.json());
+  app.use(cors({ 
+    origin: true, 
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+
+  log("[Server] Basic middleware configured");
+
+  // Create HTTP server first
+  const httpServer = createServer(app);
+
+  // Setup auth before routes
+  setupAuth(app);
+  log("[Server] Authentication middleware setup complete");
+
+  // API Routes configuration with enhanced logging
+  const apiRouter = Router();
+
+  // Mount user routes first to handle auth endpoints
+  apiRouter.use("/", usersRouter);
+  log("[Server] User routes mounted");
+
+  apiRouter.use("/bonus", bonusChallengesRouter);
+  log("[Server] Bonus challenge routes mounted");
+
+  // Health check endpoint
+  apiRouter.get("/health", async (_req, res) => {
+    try {
+      await db.execute(sql`SELECT 1`);
+      const health = {
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        db: "connected",
+        telegramBot: global.botInstance ? "initialized" : "not initialized",
+      };
+      res.json(health);
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        message: process.env.NODE_ENV === "production" ? "Health check failed" : (error as Error).message
+      });
+    }
+  });
+
+  // Mount the combined API router
+  app.use("/api", (req, res, next) => {
+    log(`[API] ${req.method} ${req.path}`);
+    // Set common API headers
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'no-store');
+    // Add security headers
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    next();
+  }, apiRouter);
+
+  log("[Server] API routes mounted at /api");
+
+  // Wager races endpoint
+  apiRouter.get("/wager-races/current",
+    createRateLimiter('high'),
+    cacheMiddleware(CACHE_TIMES.SHORT),
+    async (_req, res) => {
+      try {
+        const response = await fetch(
+          `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          return res.json(getDefaultRaceData());
+        }
+
+        const rawData = await response.json();
+        const raceData = formatRaceData(transformLeaderboardData(rawData));
+
+        res.json(raceData);
+      } catch (error) {
+        console.error('Error in /wager-races/current:', error);
+        res.status(200).json(getDefaultRaceData());
+      }
+    }
+  );
+
+
+  // Error handling middleware
+  app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    log(`[Error] ${err.message}`);
+    res.status(500).json({ 
+      error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message 
+    });
+  });
+
+  // Setup WebSocket after routes but before server starts
+  setupWebSocket(httpServer);
+
+  return httpServer;
+}
+
+let wsServer: WebSocketServer;
+
+function setupWebSocket(httpServer: Server) {
+  log("[WebSocket] Initializing WebSocket server...");
+  wsServer = new WebSocketServer({ noServer: true });
+
+  httpServer.on("upgrade", (request, socket, head) => {
+    // Skip Vite HMR requests
+    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
+      log("[WebSocket] Skipping Vite HMR WebSocket request");
+      return;
+    }
+
+    const url = request.url;
+    if (!url) {
+      log("[WebSocket] Invalid WebSocket request: missing URL");
+      socket.destroy();
+      return;
+    }
+
+    log(`[WebSocket] Upgrade request received for: ${url}`);
+
+    if (url === "/ws/leaderboard" || url === "/ws/transformation-logs") {
+      wsServer.handleUpgrade(request, socket, head, (ws) => {
+        wsServer.emit("connection", ws, request);
+        if (url === "/ws/leaderboard") {
+          handleLeaderboardConnection(ws as CustomWebSocket);
+        } else {
+          handleTransformationLogsConnection(ws as CustomWebSocket);
+        }
+      });
+    } else {
+      log(`[WebSocket] Invalid WebSocket path: ${url}`);
+      socket.destroy();
+    }
+  });
+
+  log("[WebSocket] WebSocket server initialized");
+}
+
+function handleLeaderboardConnection(ws: CustomWebSocket) {
+  const clientId = Date.now().toString();
+  log(`[WebSocket] Leaderboard client connected (${clientId})`);
+
+  ws.isAlive = true;
+  const pingInterval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      log(`[WebSocket] Sending ping to leaderboard client (${clientId})`);
+      ws.ping();
+    }
+  }, 30000);
+
+  ws.on("pong", () => {
+    log(`[WebSocket] Received pong from leaderboard client (${clientId})`);
+    ws.isAlive = true;
+  });
+
+  ws.on("error", (error: Error) => {
+    log(`[WebSocket] Leaderboard client error (${clientId}): ${error.message}`);
+    clearInterval(pingInterval);
+    ws.terminate();
+  });
+
+  ws.on("close", () => {
+    log(`[WebSocket] Leaderboard client disconnected (${clientId})`);
+    clearInterval(pingInterval);
+  });
+
+  if (ws.readyState === WebSocket.OPEN) {
+    const message = {
+      type: "CONNECTED",
+      clientId,
+      timestamp: Date.now()
+    };
+    ws.send(JSON.stringify(message));
+    log(`[WebSocket] Sent connection confirmation to leaderboard client (${clientId})`);
+  }
+}
+
+function handleTransformationLogsConnection(ws: CustomWebSocket) {
+  const clientId = Date.now().toString();
+  log(`Transformation logs WebSocket client connected (${clientId})`);
+
+  ws.isAlive = true;
+  const pingInterval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.ping();
+    }
+  }, 30000);
+
+  ws.on("pong", () => {
+    ws.isAlive = true;
+  });
+
+  ws.on("close", () => {
+    clearInterval(pingInterval);
+    log(`Transformation logs WebSocket client disconnected (${clientId})`);
+  });
+
+  ws.on("error", (error: Error) => {
+    log(`WebSocket error (${clientId}): ${error.message}`);
+    clearInterval(pingInterval);
+    ws.terminate();
+  });
+
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: "CONNECTED",
+      clientId,
+      timestamp: Date.now()
+    }));
+
+    // Send recent logs on connection
+    db.select()
+      .from(transformationLogs)
+      .orderBy(sql`created_at DESC`)
+      .limit(50)
+      .then(logs => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: "INITIAL_LOGS",
+            logs: logs.map(log => ({
+              ...log,
+              timestamp: log.created_at.toISOString()
+            }))
+          }));
+        }
+      })
+      .catch(error => {
+        console.error("Error fetching initial logs:", error);
+      });
+  }
+}
+
+export function broadcastLeaderboardUpdate(data: any) {
+  wsServer.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: "LEADERBOARD_UPDATE",
+        data
+      }));
+    }
+  });
+}
+
+export function broadcastTransformationLog(log: {
+  type: 'info' | 'error' | 'warning';
+  message: string;
+  data?: any;
+}) {
+  wsServer.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: "TRANSFORMATION_LOG",
+        log: {
+          ...log,
+          timestamp: new Date().toISOString()
+        }
+      }));
+    }
+  });
 }
 
 type RateLimitTier = 'HIGH' | 'MEDIUM' | 'LOW';
@@ -104,67 +377,6 @@ const cacheMiddleware = (ttl = 30000) => async (req: any, res: any, next: any) =
   next();
 };
 
-// Router setup
-const router = Router();
-
-// Constants
-const CACHE_TIMES = {
-  SHORT: 15000,    // 15 seconds
-  MEDIUM: 60000,   // 1 minute
-  LONG: 300000     // 5 minutes
-};
-
-// Health check endpoint
-router.get("/health", async (_req, res) => {
-  try {
-    await db.execute(sql`SELECT 1`);
-    const health = {
-      status: "ok",
-      timestamp: new Date().toISOString(),
-      db: "connected",
-      telegramBot: global.botInstance ? "initialized" : "not initialized",
-    };
-    res.json(health);
-  } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: process.env.NODE_ENV === "production" ? "Health check failed" : (error as Error).message
-    });
-  }
-});
-
-// Wager races endpoint
-router.get("/wager-races/current",
-  createRateLimiter('high'),
-  cacheMiddleware(CACHE_TIMES.SHORT),
-  async (_req, res) => {
-    try {
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        return res.json(getDefaultRaceData());
-      }
-
-      const rawData = await response.json();
-      const raceData = formatRaceData(transformLeaderboardData(rawData));
-
-      res.json(raceData);
-    } catch (error) {
-      console.error('Error in /wager-races/current:', error);
-      res.status(200).json(getDefaultRaceData());
-    }
-  }
-);
-
-// Helper functions
 function getDefaultRaceData() {
   const now = new Date();
   return {
@@ -237,177 +449,11 @@ export function transformLeaderboardData(apiData: any) {
   };
 }
 
-// Export functions and router
+
+const CACHE_TIMES = {
+  SHORT: 15000,    // 15 seconds
+  MEDIUM: 60000,   // 1 minute
+  LONG: 300000     // 5 minutes
+};
+
 export { router };
-
-//This is the new registerRoutes function.
-export function registerRoutes(app: Express): Server {
-  const httpServer = createServer(app);
-
-  // Setup authentication first
-  setupAuth(app);
-
-  // API Routes configuration
-  app.use('/api', (req, res, next) => {
-    // Set common API headers
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Cache-Control', 'no-store');
-    next();
-  });
-
-  // Mount all API routes under /api prefix
-  app.use("/api/users", usersRouter);
-  app.use("/api/bonus", bonusChallengesRouter);
-  app.use("/api", router);
-
-  // Setup WebSocket after HTTP server is created but before Vite
-  setupWebSocket(httpServer);
-
-  return httpServer;
-}
-
-let wsServer: WebSocketServer;
-
-function setupWebSocket(httpServer: Server) {
-  wsServer = new WebSocketServer({ noServer: true });
-
-  httpServer.on("upgrade", (request, socket, head) => {
-    if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
-      return;
-    }
-
-    const url = request.url;
-
-    if (url === "/ws/leaderboard" || url === "/ws/transformation-logs") {
-      wsServer.handleUpgrade(request, socket, head, (ws) => {
-        wsServer.emit("connection", ws, request);
-        if (url === "/ws/leaderboard") {
-          handleLeaderboardConnection(ws as CustomWebSocket);
-        } else {
-          handleTransformationLogsConnection(ws as CustomWebSocket);
-        }
-      });
-    } else {
-      socket.destroy();
-    }
-  });
-}
-
-function handleLeaderboardConnection(ws: CustomWebSocket) {
-  const clientId = Date.now().toString();
-  log(`Leaderboard WebSocket client connected (${clientId})`);
-
-  ws.isAlive = true;
-  const pingInterval = setInterval(() => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.ping();
-    }
-  }, 30000);
-
-  ws.on("pong", () => {
-    ws.isAlive = true;
-  });
-
-  ws.on("error", (error: Error) => {
-    log(`WebSocket error (${clientId}): ${error.message}`);
-    clearInterval(pingInterval);
-    ws.terminate();
-  });
-
-  ws.on("close", () => {
-    log(`Leaderboard WebSocket client disconnected (${clientId})`);
-    clearInterval(pingInterval);
-  });
-
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({
-      type: "CONNECTED",
-      clientId,
-      timestamp: Date.now()
-    }));
-  }
-}
-
-function handleTransformationLogsConnection(ws: CustomWebSocket) {
-  const clientId = Date.now().toString();
-  log(`Transformation logs WebSocket client connected (${clientId})`);
-
-  ws.isAlive = true;
-  const pingInterval = setInterval(() => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.ping();
-    }
-  }, 30000);
-
-  ws.on("pong", () => {
-    ws.isAlive = true;
-  });
-
-  ws.on("close", () => {
-    clearInterval(pingInterval);
-    log(`Transformation logs WebSocket client disconnected (${clientId})`);
-  });
-
-  ws.on("error", (error: Error) => {
-    log(`WebSocket error (${clientId}): ${error.message}`);
-    clearInterval(pingInterval);
-    ws.terminate();
-  });
-
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({
-      type: "CONNECTED",
-      clientId,
-      timestamp: Date.now()
-    }));
-
-    // Send recent logs on connection
-    db.select()
-      .from(transformationLogs)
-      .orderBy(sql`created_at DESC`)
-      .limit(50)
-      .then(logs => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({
-            type: "INITIAL_LOGS",
-            logs: logs.map(log => ({
-              ...log,
-              timestamp: log.created_at.toISOString()
-            }))
-          }));
-        }
-      })
-      .catch(error => {
-        console.error("Error fetching initial logs:", error);
-      });
-  }
-}
-
-export function broadcastLeaderboardUpdate(data: any) {
-  wsServer.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({
-        type: "LEADERBOARD_UPDATE",
-        data
-      }));
-    }
-  });
-}
-
-export function broadcastTransformationLog(log: {
-  type: 'info' | 'error' | 'warning';
-  message: string;
-  data?: any;
-}) {
-  wsServer.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({
-        type: "TRANSFORMATION_LOG",
-        log: {
-          ...log,
-          timestamp: new Date().toISOString()
-        }
-      }));
-    }
-  });
-}
