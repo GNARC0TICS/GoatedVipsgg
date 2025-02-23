@@ -133,32 +133,89 @@ router.get("/health", async (_req, res) => {
   }
 });
 
-// Affiliate stats endpoint
+// Affiliate stats endpoint with transformation logging
 router.get("/affiliate/stats",
-  createRateLimiter('high'),
-  cacheMiddleware(CACHE_TIMES.SHORT),
-  async (_req, res) => {
+  createRateLimiter('medium'),
+  cacheMiddleware(CACHE_TIMES.MEDIUM),
+  async (req, res) => {
     try {
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const username = typeof req.query.username === 'string' ? req.query.username : undefined;
+      let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
+
+      if (username) {
+        url += `?username=${encodeURIComponent(username)}`;
+      }
+
+      log('Fetching affiliate stats from:', url);
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
-        return res.json(getDefaultRaceData());
+        if (response.status === 401) {
+          log("API Authentication failed - check API token");
+          throw new ApiError("API Authentication failed", { status: 401 });
+        }
+        throw new ApiError(`API request failed: ${response.status}`, { status: response.status });
       }
 
       const rawData = await response.json();
-      const transformedData = transformLeaderboardData(rawData);
+      const startTime = Date.now();
+
+      // Log raw data structure
+      log('Raw API response structure:', {
+        hasData: Boolean(rawData),
+        dataStructure: typeof rawData,
+        keys: Object.keys(rawData),
+        hasResults: Boolean(rawData?.results),
+        resultsLength: rawData?.results?.length,
+      });
+
+      const transformedData = await transformLeaderboardData(rawData);
+      const duration = Date.now() - startTime;
+
+      // Log transformation metrics
+      broadcastTransformationLog({
+        type: 'info',
+        message: 'Data transformation completed',
+        data: {
+          duration_ms: duration,
+          total_entries: transformedData.metadata?.totalUsers,
+        }
+      });
+
+      log('Transformed leaderboard data:', {
+        status: transformedData.status,
+        totalUsers: transformedData.metadata?.totalUsers,
+        dataLengths: {
+          today: transformedData.data?.today?.data?.length,
+          weekly: transformedData.data?.weekly?.data?.length,
+          monthly: transformedData.data?.monthly?.data?.length,
+          allTime: transformedData.data?.all_time?.data?.length,
+        }
+      });
+
       res.json(transformedData);
     } catch (error) {
-      console.error('Error in /affiliate/stats:', error);
-      res.status(200).json(getDefaultRaceData());
+      log(`Error in /api/affiliate/stats: ${error}`);
+      broadcastTransformationLog({
+        type: 'error',
+        message: `Transformation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+      res.status(error instanceof ApiError ? error.status || 500 : 500).json({
+        status: "error",
+        message: error instanceof Error ? error.message : "An unexpected error occurred",
+        data: {
+          today: { data: [] },
+          weekly: { data: [] },
+          monthly: { data: [] },
+          all_time: { data: [] },
+        },
+      });
     }
   }
 );
