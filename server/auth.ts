@@ -9,8 +9,15 @@ import { users, insertUserSchema, type SelectUser } from "@db/schema";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
 import express from 'express';
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 const scryptAsync = promisify(scrypt);
+
+// Set up rate limiter
+const rateLimiter = new RateLimiterMemory({
+  points: 5, // 5 attempts
+  duration: 60 * 15, // per 15 min
+});
 
 // Crypto utilities
 const crypto = {
@@ -59,7 +66,7 @@ export function setupAuth(app: Express) {
   app.use(passport.session());
 
   // Session configuration
-  passport.serializeUser((user: any, done) => {
+  passport.serializeUser((user: Express.User, done) => {
     done(null, user.id);
   });
 
@@ -87,30 +94,33 @@ export function setupAuth(app: Express) {
         const sanitizedUsername = username.trim();
         const sanitizedPassword = password.trim();
 
-        // Trim whitespace
-        username = username.trim();
-        password = password.trim();
-
-        if (!username || !password) {
+        if (!sanitizedUsername || !sanitizedPassword) {
           return done(null, false, { message: "Username and password cannot be empty" });
         }
 
         // Check if this is an admin login attempt
-        if (username === process.env.ADMIN_USERNAME && 
-            password === process.env.ADMIN_PASSWORD) {
-          // Create admin user if doesn't exist
-          let [adminUser] = await db
+        const adminUsername = process.env.ADMIN_USERNAME;
+        const adminPassword = process.env.ADMIN_PASSWORD;
+
+        if (adminUsername && adminPassword && 
+            sanitizedUsername === adminUsername && 
+            sanitizedPassword === adminPassword) {
+
+          // Create or update admin user
+          let adminUser = await db
             .select()
             .from(users)
-            .where(eq(users.isAdmin, true))
-            .limit(1);
+            .where(eq(users.username, adminUsername))
+            .limit(1)
+            .then(results => results[0]);
 
           if (!adminUser) {
+            // Create new admin user
             [adminUser] = await db
               .insert(users)
               .values({
-                username: username,
-                password: await crypto.hash(password),
+                username: adminUsername,
+                password: await crypto.hash(adminPassword),
                 email: 'admin@goatedvips.com',
                 isAdmin: true,
               })
@@ -119,19 +129,28 @@ export function setupAuth(app: Express) {
           return done(null, adminUser);
         }
 
+        // Regular user login
         const [user] = await db
           .select()
           .from(users)
-          .where(eq(users.username, username))
+          .where(eq(users.username, sanitizedUsername))
           .limit(1);
 
         if (!user) {
           return done(null, false, { message: "Invalid username or password" });
         }
-        const isMatch = await crypto.compare(password, user.password);
+
+        const isMatch = await crypto.compare(sanitizedPassword, user.password);
         if (!isMatch) {
           return done(null, false, { message: "Invalid username or password" });
         }
+
+        // Update last login time
+        await db
+          .update(users)
+          .set({ lastLogin: new Date() })
+          .where(eq(users.id, user.id));
+
         return done(null, user);
       } catch (err) {
         return done(err);
@@ -139,24 +158,7 @@ export function setupAuth(app: Express) {
     }),
   );
 
-  passport.serializeUser((user, done) => {
-    done(null, user.id);
-  });
-
-  passport.deserializeUser(async (id: number, done) => {
-    try {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, id))
-        .limit(1);
-      done(null, user);
-    } catch (err) {
-      done(err);
-    }
-  });
-
-  app.post("/api/register", async (req, res, next) => {
+  app.post("/api/register", async (req, res) => {
     try {
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
@@ -168,10 +170,10 @@ export function setupAuth(app: Express) {
         });
       }
 
-      // Rate limiting check
-      const ipAddress = req.ip;
-      const registrationAttempts = await rateLimiter.get(ipAddress);
-      if (registrationAttempts > 5) {
+      // Apply rate limiting
+      try {
+        await rateLimiter.consume(req.ip);
+      } catch (error) {
         return res.status(429).json({
           status: "error",
           message: "Too many registration attempts. Please try again later.",
@@ -225,7 +227,10 @@ export function setupAuth(app: Express) {
       // Log the user in after registration
       req.login(newUser, (err) => {
         if (err) {
-          return next(err);
+          return res.status(500).json({
+            status: "error",
+            message: "Error logging in after registration",
+          });
         }
         return res.json({
           status: "success",
@@ -239,30 +244,15 @@ export function setupAuth(app: Express) {
         });
       });
     } catch (error: any) {
-      // Handle database-level errors
-      if (error.code === "23505") {
-        // Unique constraint violation
-        return res.status(400).json({
-          status: "error",
-          message: "Username or email already exists",
-        });
-      }
-      if (error.errors) {
-        return res.status(400).json({ 
-          ok: false,
-          message: "Validation failed",
-          errors: error.errors
-        });
-      }
-      return res.status(400).json({ 
-        ok: false,
-        message: error.message || "Invalid request",
+      console.error('Registration error:', error);
+      return res.status(500).json({ 
+        status: "error",
+        message: "Internal server error",
       });
     }
   });
 
   app.post("/api/login", express.json(), (req, res, next) => {
-    // Validate request body exists
     if (!req.body || !req.body.username || !req.body.password) {
       return res.status(400).json({
         status: "error",
@@ -270,16 +260,12 @@ export function setupAuth(app: Express) {
       });
     }
 
-    // Validate credentials
-    const { username, password } = req.body;
-
-
     passport.authenticate(
       "local",
       (err: any, user: Express.User | false, info: IVerifyOptions) => {
         if (err) {
+          console.error('Login error:', err);
           return res.status(500).json({
-            ok: false,
             status: "error",
             message: "Internal server error",
           });
@@ -287,7 +273,6 @@ export function setupAuth(app: Express) {
 
         if (!user) {
           return res.status(401).json({
-            ok: false,
             status: "error",
             message: info.message ?? "Invalid credentials",
           });
@@ -295,7 +280,11 @@ export function setupAuth(app: Express) {
 
         req.logIn(user, (err) => {
           if (err) {
-            return next(err);
+            console.error('Login session error:', err);
+            return res.status(500).json({
+              status: "error",
+              message: "Error creating login session",
+            });
           }
 
           return res.json({

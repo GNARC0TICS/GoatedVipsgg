@@ -1,4 +1,3 @@
-
 import { Request, Response, NextFunction } from "express";
 import { db } from "@db";
 import { users } from "@db/schema";
@@ -41,21 +40,24 @@ if (!ADMIN_USERNAME || !ADMIN_PASSWORD || !ADMIN_KEY) {
 }
 
 export async function initializeAdmin(
-  username: string = ADMIN_USERNAME,
-  password: string = ADMIN_PASSWORD,
-  adminKey: string = ADMIN_KEY,
+  username: string = ADMIN_USERNAME ?? '',
+  password: string = ADMIN_PASSWORD ?? '',
+  adminKey: string = ADMIN_KEY ?? '',
 ) {
   try {
     // Check if required credentials exist
     if (!username || !password || !adminKey) {
-      throw new Error("Missing admin credentials");
+      console.warn("Skipping admin initialization - missing credentials");
+      return null;
     }
 
     // Verify admin key
     if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-      throw new Error("Invalid admin key");
+      console.warn("Skipping admin initialization - invalid admin key");
+      return null;
     }
 
+    // First check if admin user exists
     const [existingAdmin] = await db
       .select()
       .from(users)
@@ -63,18 +65,36 @@ export async function initializeAdmin(
       .limit(1);
 
     if (existingAdmin) {
-      const [updatedAdmin] = await db
-        .update(users)
-        .set({
-          username,
-          password,
-          email: `${username}@admin.local`,
-        })
-        .where(eq(users.id, existingAdmin.id))
-        .returning();
-      return updatedAdmin;
+      // Only update if username matches to avoid duplicate key error
+      if (existingAdmin.username === username) {
+        const [updatedAdmin] = await db
+          .update(users)
+          .set({
+            password,
+            email: `${username}@admin.local`,
+          })
+          .where(eq(users.id, existingAdmin.id))
+          .returning();
+        console.log("Admin user updated successfully");
+        return updatedAdmin;
+      }
+      console.log("Admin user already exists with different username");
+      return existingAdmin;
     }
 
+    // Check if username is already taken by non-admin
+    const [existingUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
+
+    if (existingUser) {
+      console.warn(`Username ${username} already exists as non-admin user`);
+      return null;
+    }
+
+    // Create new admin user
     const [newAdmin] = await db
       .insert(users)
       .values({
@@ -85,9 +105,11 @@ export async function initializeAdmin(
       })
       .returning();
 
+    console.log("New admin user created successfully");
     return newAdmin;
   } catch (error) {
     console.error("Error initializing admin:", error);
-    throw error;
+    // Don't throw, just return null to allow application to continue
+    return null;
   }
 }
