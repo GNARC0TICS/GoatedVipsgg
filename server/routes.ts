@@ -1,21 +1,16 @@
-import type { Express, Request, Response, NextFunction } from "express";
-import { createServer, type Server } from "http";
+import type { Express, Request, Response } from "express";
 import { WebSocket, WebSocketServer } from "ws";
 import { log } from "./vite";
-import { setupAuth } from "./auth";
 import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
-import { requireAdmin, requireAuth } from "./middleware/auth";
-import { db } from "@db";
-import { sql } from "drizzle-orm";
-import {
-  bonusCodes,
-  supportTickets,
-  users,
-  wagerRaces,
-  ticketMessages,
-  historicalRaces
-} from "@db/schema";
+
+// Rate limiting setup
+const rateLimiter = new RateLimiterMemory({
+  points: 60,
+  duration: 1,
+});
+
+let wss: WebSocketServer;
 import { eq, and, gte, lte } from "drizzle-orm";
 import { z } from "zod";
 
@@ -172,12 +167,91 @@ function transformLeaderboardData(apiData: any) {
   };
 }
 
-export function registerRoutes(app: Express): Server {
-  const httpServer = createServer(app);
-  setupAuth(app);
-  setupRESTRoutes(app);
-  setupWebSocket(httpServer);
-  return httpServer;
+export function registerRoutes(app: Express) {
+  // Current race endpoint
+  app.get("/api/wager-races/current", async (_req, res) => {
+    try {
+      await rateLimiter.consume(_req.ip || "unknown");
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        return res.json(getDefaultRaceData());
+      }
+
+      const rawData = await response.json();
+      const stats = transformLeaderboardData(rawData);
+      const raceData = formatRaceData(stats);
+
+      res.json(raceData);
+    } catch (error) {
+      log(`Error fetching current race: ${error instanceof Error ? error.message : String(error)}`);
+      res.json(getDefaultRaceData());
+    }
+  });
+
+  // Affiliate stats endpoint
+  app.get("/api/affiliate/stats", async (req, res) => {
+    try {
+      await rateLimiter.consume(req.ip || "unknown");
+      const username = req.query.username as string | undefined;
+      let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
+
+      if (username) {
+        url += `?username=${encodeURIComponent(username)}`;
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        return res.json({
+          status: "success",
+          metadata: {
+            totalUsers: 0,
+            lastUpdated: new Date().toISOString(),
+          },
+          data: {
+            today: { data: [] },
+            weekly: { data: [] },
+            monthly: { data: [] },
+            all_time: { data: [] },
+          },
+        });
+      }
+
+      const apiData = await response.json();
+      const transformedData = transformLeaderboardData(apiData);
+
+      res.json(transformedData);
+    } catch (error) {
+      log(`Error in /api/affiliate/stats: ${error instanceof Error ? error.message : String(error)}`);
+      res.json({
+        status: "success",
+        metadata: {
+          totalUsers: 0,
+          lastUpdated: new Date().toISOString(),
+        },
+        data: {
+          today: { data: [] },
+          weekly: { data: [] },
+          monthly: { data: [] },
+          all_time: { data: [] },
+        },
+      });
+    }
+  });
 }
 
 async function insertHistoricalRace(raceData: {
