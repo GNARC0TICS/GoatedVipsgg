@@ -148,6 +148,7 @@ function setupWebSocketHandlers(ws: CustomWebSocket) {
   });
 
   ws.on("close", () => {
+    console.log('WebSocket connection closed');
     clearInterval(pingInterval);
   });
 
@@ -178,16 +179,8 @@ async function storeLeaderboardData(data: any) {
       resolved: true
     });
 
-    // Broadcast the update
-    wsServer.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: "LEADERBOARD_UPDATE",
-          data,
-          timestamp: now.toISOString()
-        }));
-      }
-    });
+    // Broadcast the update using the new function
+    broadcastTransformationLog(data);
   });
 }
 
@@ -364,6 +357,20 @@ function registerRoutes(app: Express): Server {
   setupWebSocket(httpServer);
 
   return httpServer;
+}
+
+export function broadcastTransformationLog(data: any) {
+  if (!wsServer) return;
+
+  wsServer.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: "LEADERBOARD_UPDATE",
+        data,
+        timestamp: new Date().toISOString()
+      }));
+    }
+  });
 }
 
 export { setupWebSocket, registerRoutes };

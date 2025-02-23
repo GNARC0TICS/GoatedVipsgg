@@ -39,6 +39,16 @@ type APIResponse = {
 
 export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
 
+const defaultData = {
+  status: "success",
+  data: {
+    today: { data: [] },
+    weekly: { data: [] },
+    monthly: { data: [] },
+    all_time: { data: [] }
+  }
+};
+
 export function useLeaderboard(
   timePeriod: TimePeriod = "today",
   page: number = 0,
@@ -69,6 +79,7 @@ export function useLeaderboard(
         try {
           const update = JSON.parse(event.data);
           if (update.type === "LEADERBOARD_UPDATE") {
+            console.log('Received leaderboard update:', update);
             refetch();
           }
         } catch (err) {
@@ -107,10 +118,14 @@ export function useLeaderboard(
     };
   }, [user]);
 
-  const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
+  const { data, isLoading, error, refetch } = useQuery<APIResponse>({
     queryKey: ["/api/affiliate/stats", timePeriod, page],
     queryFn: async () => {
       try {
+        if (!user) {
+          throw new Error("Please log in to view leaderboard data");
+        }
+
         const response = await fetch(`/api/affiliate/stats?page=${page}&limit=10`, {
           headers: {
             'Accept': 'application/json',
@@ -132,15 +147,7 @@ export function useLeaderboard(
         // Validate and normalize data structure
         if (!data?.data || !data.data[timePeriod]?.data) {
           console.error('Invalid data structure received:', data);
-          return {
-            status: "success",
-            data: {
-              today: { data: [] },
-              weekly: { data: [] },
-              monthly: { data: [] },
-              all_time: { data: [] }
-            }
-          };
+          return defaultData;
         }
 
         return data;
