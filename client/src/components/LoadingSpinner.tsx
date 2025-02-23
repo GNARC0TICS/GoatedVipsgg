@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { Gem } from "lucide-react";
+import { FC } from "react";
 
-export function LoadingSpinner() {
+export const LoadingSpinner: FC = () => {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -53,4 +54,4 @@ export function LoadingSpinner() {
       </motion.div>
     </motion.div>
   );
-}
+};

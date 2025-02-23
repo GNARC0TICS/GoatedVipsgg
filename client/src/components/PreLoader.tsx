@@ -1,15 +1,14 @@
-
+import * as React from "react";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
 
 interface PreLoaderProps {
   onLoadComplete: () => void;
 }
 
 export function PreLoader({ onLoadComplete }: PreLoaderProps) {
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = React.useState(0);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const timer = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {

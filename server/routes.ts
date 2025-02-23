@@ -7,35 +7,48 @@ import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import { db } from "@db";
-import { wagerRaces, users, ticketMessages } from "@db/schema";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { wagerRaces, users, ticketMessages, supportTickets, bonusCodes } from "@db/schema";
+import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
-import { historicalRaces } from "@db/schema"; // Assuming historicalRaces schema exists
 
+// Add missing type definitions
+interface ExtendedWebSocket extends WebSocket {
+  isAlive: boolean;
+}
 
-// Rate limiting setup
-const rateLimiter = new RateLimiterMemory({
-  points: 60,
-  duration: 1,
-});
+// Add utility functions
+function getTierFromWager(wagerAmount: number): string {
+  if (wagerAmount >= 1000000) return 'Diamond';
+  if (wagerAmount >= 500000) return 'Platinum';
+  if (wagerAmount >= 100000) return 'Gold';
+  if (wagerAmount >= 50000) return 'Silver';
+  return 'Bronze';
+}
 
+// Constants
+const PRIZE_POOL_BASE = 500; // Base prize pool amount
+const prizePool = PRIZE_POOL_BASE;
 
-function handleLeaderboardConnection(ws: WebSocket) {
+function handleLeaderboardConnection(ws: ExtendedWebSocket) {
   const clientId = Date.now().toString();
   log(`Leaderboard WebSocket client connected (${clientId})`);
 
+  ws.isAlive = true;
   const pingInterval = setInterval(() => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.ping();
+    if (!ws.isAlive) {
+      clearInterval(pingInterval);
+      return ws.terminate();
     }
+    ws.isAlive = false;
+    ws.ping();
   }, 30000);
 
   ws.on("pong", () => {
     ws.isAlive = true;
   });
 
-  ws.on("error", (error) => {
-    log(`WebSocket error (${clientId}):`, error);
+  ws.on("error", (error: Error) => {
+    log(`WebSocket error (${clientId}): ${error.message}`);
     clearInterval(pingInterval);
     ws.terminate();
   });
@@ -226,7 +239,7 @@ function setupRESTRoutes(app: Express) {
           const now = new Date();
           const currentMonth = now.getMonth();
           const currentYear = now.getFullYear();
-          
+
           // Store complete race results with detailed participant data
           const winners = stats.data.monthly.data.slice(0, 10).map((participant: any, index: number) => ({
             uid: participant.uid,
@@ -481,71 +494,71 @@ function setupRESTRoutes(app: Express) {
   });
 
   // Bonus code management routes
-app.get("/api/admin/bonus-codes", requireAdmin, async (_req, res) => {
-  try {
-    const codes = await db.query.bonusCodes.findMany({
-      orderBy: (codes, { desc }) => [desc(codes.createdAt)],
-    });
-    res.json(codes);
-  } catch (error) {
-    log(`Error fetching bonus codes: ${error}`);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to fetch bonus codes",
-    });
-  }
-});
+  app.get("/api/admin/bonus-codes", requireAdmin, async (_req, res) => {
+    try {
+      const codes = await db.query.bonusCodes.findMany({
+        orderBy: (codes, { desc }) => [desc(codes.createdAt)],
+      });
+      res.json(codes);
+    } catch (error) {
+      log(`Error fetching bonus codes: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch bonus codes",
+      });
+    }
+  });
 
-app.post("/api/admin/bonus-codes", requireAdmin, async (req, res) => {
-  try {
-    const [code] = await db
-      .insert(bonusCodes)
-      .values({
-        ...req.body,
-        createdBy: req.user!.id,
-      })
-      .returning();
-    res.json(code);
-  } catch (error) {
-    log(`Error creating bonus code: ${error}`);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to create bonus code",
-    });
-  }
-});
+  app.post("/api/admin/bonus-codes", requireAdmin, async (req, res) => {
+    try {
+      const [code] = await db
+        .insert(bonusCodes)
+        .values({
+          ...req.body,
+          createdBy: req.user!.id,
+        })
+        .returning();
+      res.json(code);
+    } catch (error) {
+      log(`Error creating bonus code: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to create bonus code",
+      });
+    }
+  });
 
-app.put("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
-  try {
-    const [code] = await db
-      .update(bonusCodes)
-      .set(req.body)
-      .where(eq(bonusCodes.id, parseInt(req.params.id)))
-      .returning();
-    res.json(code);
-  } catch (error) {
-    log(`Error updating bonus code: ${error}`);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to update bonus code",
-    });
-  }
-});
+  app.put("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
+    try {
+      const [code] = await db
+        .update(bonusCodes)
+        .set(req.body)
+        .where(eq(bonusCodes.id, parseInt(req.params.id)))
+        .returning();
+      res.json(code);
+    } catch (error) {
+      log(`Error updating bonus code: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to update bonus code",
+      });
+    }
+  });
 
-app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
-  try {
-    await db
-      .delete(bonusCodes)
-      .where(eq(bonusCodes.id, parseInt(req.params.id)));
-    res.json({ status: "success" });
-  } catch (error) {
-    log(`Error deleting bonus code: ${error}`);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to delete bonus code",
-    });
-  }
-});
+  app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
+    try {
+      await db
+        .delete(bonusCodes)
+        .where(eq(bonusCodes.id, parseInt(req.params.id)));
+      res.json({ status: "success" });
+    } catch (error) {
+      log(`Error deleting bonus code: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to delete bonus code",
+      });
+    }
+  });
 
   // Chat history endpoint
   app.get("/api/chat/history", requireAuth, async (req, res) => {
