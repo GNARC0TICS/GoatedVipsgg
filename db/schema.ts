@@ -124,7 +124,7 @@ export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
 
 export const historicalRaces = pgTable("historical_races", {
   id: serial("id").primaryKey(),
-  month: integer("month").notNull(),
+  month: integer("month", { mode: "number" }).notNull(),
   year: integer("year").notNull(),
   prizePool: decimal("prize_pool", { precision: 10, scale: 2 }).notNull(),
   startDate: timestamp("start_date").notNull(),
