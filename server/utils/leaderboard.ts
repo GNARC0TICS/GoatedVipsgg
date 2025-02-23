@@ -97,7 +97,7 @@ export async function transformLeaderboardData(apiResponse: any) {
           wagered
         };
       })
-      .filter((entry): entry is LeaderboardEntry => entry !== null);
+      .filter((entry: LeaderboardEntry | null): entry is LeaderboardEntry => entry !== null);
 
     if (!transformedEntries.length) {
       console.warn('[DEBUG] No valid entries after transformation');
@@ -127,8 +127,8 @@ export async function transformLeaderboardData(apiResponse: any) {
     );
     console.log('[DEBUG] All-time top 3:', allTimeData.slice(0, 3));
 
-    // Create transformation log record with detailed stats
-    const transformationLogRecord = {
+    // Create transformation log record without transaction
+    await db.insert(transformationLogs).values({
       type: 'info',
       message: 'Leaderboard transformation completed',
       payload: JSON.stringify({
@@ -157,10 +157,7 @@ export async function transformLeaderboardData(apiResponse: any) {
       created_at: new Date(),
       resolved: true,
       error_message: null
-    };
-
-    // Store the transformation log
-    await db.insert(transformationLogs).values([transformationLogRecord]);
+    });
 
     const result = {
       status: "success",
@@ -182,8 +179,8 @@ export async function transformLeaderboardData(apiResponse: any) {
   } catch (error) {
     console.error(`[${logId}] Error transforming leaderboard data:`, error);
 
-    // Log error details with correct typing for Drizzle insert
-    await db.insert(transformationLogs).values([{
+    // Log error details without transaction
+    await db.insert(transformationLogs).values({
       type: 'error',
       message: error instanceof Error ? error.message : String(error),
       payload: JSON.stringify({
@@ -197,7 +194,7 @@ export async function transformLeaderboardData(apiResponse: any) {
       created_at: new Date(),
       resolved: false,
       error_message: error instanceof Error ? error.message : String(error)
-    }]);
+    });
 
     throw error;
   }

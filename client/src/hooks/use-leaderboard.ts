@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/lib/auth";
+//import { useAuth } from "@/lib/auth"; //Removed useAuth import
 
 type WageredData = {
   today: number;
@@ -56,7 +56,7 @@ const defaultData: APIResponse = {
 
 export function useLeaderboard(timePeriod: TimePeriod = "today", page: number = 0) {
   const { toast } = useToast();
-  const { user } = useAuth();
+  //const { user } = useAuth(); //Removed useAuth
   const [ws, setWs] = React.useState<WebSocket | null>(null);
   const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
   const reconnectTimeoutRef = React.useRef<NodeJS.Timeout>();
@@ -65,11 +65,6 @@ export function useLeaderboard(timePeriod: TimePeriod = "today", page: number = 
 
   // WebSocket connection management
   React.useEffect(() => {
-    if (!user) {
-      console.log('No user authenticated, skipping WebSocket connection');
-      return;
-    }
-
     const connect = () => {
       if (wsReconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) {
         console.error('Max WebSocket reconnection attempts reached');
@@ -123,39 +118,29 @@ export function useLeaderboard(timePeriod: TimePeriod = "today", page: number = 
         ws.close();
       }
     };
-  }, [user]);
+  }, []);
 
   const { data, isLoading, error, refetch } = useQuery<APIResponse>({
     queryKey: ["/api/affiliate/stats", timePeriod, page],
     queryFn: async () => {
       try {
-        if (!user) {
-          console.log('No authenticated user, skipping leaderboard fetch');
-          return defaultData;
-        }
-
         console.log('Fetching leaderboard data...');
         const response = await fetch(`/api/affiliate/stats?page=${page}&limit=10`, {
           headers: {
             'Accept': 'application/json',
             'Cache-Control': 'no-cache'
-          },
-          credentials: 'include'
+          }
         });
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           console.error('Leaderboard fetch failed:', response.status, errorData);
-          if (response.status === 401) {
-            return defaultData;
-          }
           throw new Error(errorData.message || `Failed to load leaderboard data`);
         }
 
         const responseData = await response.json();
         console.log('Received leaderboard data:', responseData);
 
-        // Validate and normalize data structure
         if (!responseData?.data || !responseData.data[timePeriod]?.data) {
           console.error('Invalid data structure received:', responseData);
           return defaultData;
@@ -172,7 +157,6 @@ export function useLeaderboard(timePeriod: TimePeriod = "today", page: number = 
         return defaultData;
       }
     },
-    enabled: !!user,
     refetchInterval: 60000,
     staleTime: 30000,
     gcTime: 5 * 60 * 1000,

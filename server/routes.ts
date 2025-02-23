@@ -168,20 +168,19 @@ function setupWebSocketHandlers(ws: CustomWebSocket) {
 
 async function storeLeaderboardData(data: any) {
   const now = new Date();
-  await db.transaction(async (tx) => {
-    // Log the transformation
-    await tx.insert(transformationLogs).values({
-      type: 'info',
-      message: 'Leaderboard data stored',
-      payload: JSON.stringify(data),
-      duration_ms: '0',
-      created_at: now,
-      resolved: true
-    });
 
-    // Broadcast the update using the new function
-    broadcastTransformationLog(data);
+  // Store transformation log without transaction
+  await db.insert(transformationLogs).values({
+    type: 'info',
+    message: 'Leaderboard data stored',
+    payload: JSON.stringify(data),
+    duration_ms: '0',
+    created_at: now,
+    resolved: true
   });
+
+  // Broadcast the update
+  broadcastTransformationLog(data);
 }
 
 function getDefaultRaceData() {
@@ -218,34 +217,24 @@ function formatRaceData(stats: any) {
   };
 }
 
+// Update the config from the environment variable or use the static URL
+const LEADERBOARD_API_URL = process.env.LEADERBOARD_API_URL || 'https://europe-west2-g3casino.cloudfunctions.net/user/affiliate/referral-leaderboard/2RW440E';
+const LEADERBOARD_API_TOKEN = process.env.LEADERBOARD_API_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsInNlc3Npb24iOiJEVVQ2Vkh1S3pNMjIiLCJpYXQiOjE3Mzc0MjQ3ODMsImV4cCI6MTczNzUxMTE4M30.ozh12z5PbT9vkZHb8x8d3BI4dUxe6KCyH8cYPUAMxGo';
+
+// Update fetchLeaderboardData to use the correct URL and token
 async function fetchLeaderboardData() {
   console.log('Fetching leaderboard data from API...');
-
-  const token = process.env.API_TOKEN || API_CONFIG.token;
-  if (!token) {
-    console.error('API token not configured');
-    throw new Error('API token not configured');
-  }
-
-  console.log(`Using API endpoint: ${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`);
-
   try {
-    const response = await fetch(
-      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await fetch(LEADERBOARD_API_URL, {
+      headers: {
+        Authorization: `Bearer ${LEADERBOARD_API_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+    });
 
     if (!response.ok) {
       console.error(`API request failed with status ${response.status}`);
-      console.error('Response headers:', response.headers);
-      const errorText = await response.text();
-      console.error('Error response:', errorText);
-      throw new Error(`API request failed with status ${response.status}, ${errorText}`);
+      throw new Error(`API request failed with status ${response.status}`);
     }
 
     const rawData = await response.json();
@@ -309,15 +298,7 @@ function registerRoutes(app: Express): Server {
   });
 
   // Affiliate stats endpoint with auth check and error handling
-  apiRouter.get("/affiliate/stats", async (req, res) => {
-    console.log('Received request for affiliate stats');
-    console.log('User authentication status:', req.isAuthenticated());
-
-    if (!req.isAuthenticated()) {
-      console.log('User not authenticated, returning 401');
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-
+  apiRouter.get("/affiliate/stats", async (_req, res) => {
     try {
       console.log('Fetching leaderboard data...');
       const rawData = await fetchLeaderboardData();
