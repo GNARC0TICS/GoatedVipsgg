@@ -1,3 +1,4 @@
+
 # Specify the main entry point
 entrypoint = "index.js"
 
@@ -27,6 +28,7 @@ author = "agent"
 mode = "parallel"
 
 [[workflows.workflow.tasks]]
+name = "dev-server"
 task = "shell.exec"
 args = "VITE_PORT=5173 API_PORT=5000 BOT_PORT=5001 npm run dev"
 wait_for_port = 5173
