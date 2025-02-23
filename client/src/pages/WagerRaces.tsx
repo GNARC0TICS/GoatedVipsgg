@@ -29,6 +29,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { QuickProfile } from "@/components/QuickProfile";
 import { Link } from "wouter";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
+import { useAuth } from "@/lib/auth";
 
 type WageredData = {
   today: number;
@@ -44,15 +45,17 @@ type LeaderboardEntry = {
   lastUpdate?: string;
 };
 
-import { PageTransition } from "@/components/PageTransition";
-
 export default function WagerRaces() {
+  const { user, isLoading: authLoading } = useAuth();
   const [raceType] = useState<"weekly" | "monthly" | "weekend">("monthly");
   const [showCompletedRace, setShowCompletedRace] = useState(false);
   const { data: leaderboardData, isLoading, error } = useLeaderboard("monthly");
   const ws = useRef<WebSocket | null>(null);
 
+  // Only attempt WebSocket connection if authenticated
   useEffect(() => {
+    if (!user) return;
+
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host;
     ws.current = new WebSocket(`${protocol}//${host}/ws`);
@@ -71,8 +74,102 @@ export default function WagerRaces() {
         ws.current.close();
       }
     };
-  }, []);
-  const { data: previousRace } = useQuery<any>({
+  }, [user]);
+
+  // Show login prompt if not authenticated
+  if (!user && !authLoading) {
+    return (
+      <div className="min-h-screen bg-[#14151A] flex items-center justify-center">
+        <div className="text-center p-8 bg-[#1A1B21] rounded-lg">
+          <h2 className="text-xl text-white mb-4">Please log in to view races</h2>
+          <Link href="/auth">
+            <Button variant="default" className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90">
+              Log In
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#14151A] flex items-center justify-center">
+        <div className="text-center p-8 bg-[#1A1B21] rounded-lg">
+          <h2 className="text-xl text-red-500 mb-4">Error loading race data</h2>
+          <p className="text-white/60">{error.message}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-[#D7FF00] text-black rounded hover:bg-[#D7FF00]/90"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || authLoading || !leaderboardData) {
+    return (
+      <div className="min-h-screen bg-[#14151A] flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  const prizePool = 500;
+  const prizeDistribution: Record<number, number> = {
+    1: 0.425, // $212.50
+    2: 0.2,   // $100
+    3: 0.15,  // $60
+    4: 0.075, // $30
+    5: 0.06,  // $24
+    6: 0.04,  // $16
+    7: 0.0275, // $11
+    8: 0.0225, // $9
+    9: 0.0175, // $7
+    10: 0.0175, // $7
+  };
+
+  const getLastUpdateTime = (timestamp?: string) => {
+    if (!timestamp) return 'recently';
+    const diff = Date.now() - new Date(timestamp).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  };
+
+  const getTrophyIcon = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return <Crown className="h-8 w-8 text-yellow-400 animate-pulse" />;
+      case 2:
+        return <Medal className="h-7 w-7 text-gray-400" />;
+      case 3:
+        return <Award className="h-7 w-7 text-amber-700" />;
+      default:
+        return <Star className="h-5 w-5 text-zinc-600" />;
+    }
+  };
+
+  const getWagerAmount = (player: LeaderboardEntry) => {
+    switch (raceType) {
+      case "weekly":
+        return player.wagered.this_week;
+      case "monthly":
+        return player.wagered.this_month;
+      default:
+        return player.wagered.this_week;
+    }
+  };
+
+  const getPrizeAmount = (rank: number) => {
+    return Math.round(prizePool * (prizeDistribution[rank] || 0) * 100) / 100;
+  };
+  const previousRaceQuery = useQuery<any>({
     queryKey: ["/api/wager-races/previous"],
     enabled: showCompletedRace,
     staleTime: Infinity,
@@ -135,86 +232,8 @@ export default function WagerRaces() {
     };
   }, []);
 
-  const prizePool = 500;
-  const prizeDistribution: Record<number, number> = {
-    1: 0.425, // $212.50
-    2: 0.2,   // $100
-    3: 0.15,  // $60
-    4: 0.075, // $30
-    5: 0.06,  // $24
-    6: 0.04,  // $16
-    7: 0.0275, // $11
-    8: 0.0225, // $9
-    9: 0.0175, // $7
-    10: 0.0175, // $7
-  };
-
-  const getLastUpdateTime = (timestamp?: string) => {
-    if (!timestamp) return 'recently';
-    const diff = Date.now() - new Date(timestamp).getTime();
-    const minutes = Math.floor(diff / 60000);
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
-  };
-
-  const getTrophyIcon = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return <Crown className="h-8 w-8 text-yellow-400 animate-pulse" />;
-      case 2:
-        return <Medal className="h-7 w-7 text-gray-400" />;
-      case 3:
-        return <Award className="h-7 w-7 text-amber-700" />;
-      default:
-        return <Star className="h-5 w-5 text-zinc-600" />;
-    }
-  };
-
-  const getWagerAmount = (player: LeaderboardEntry) => {
-    switch (raceType) {
-      case "weekly":
-        return player.wagered.this_week;
-      case "monthly":
-        return player.wagered.this_month;
-      default:
-        return player.wagered.this_week;
-    }
-  };
-
-  const getPrizeAmount = (rank: number) => {
-    return Math.round(prizePool * (prizeDistribution[rank] || 0) * 100) / 100;
-  };
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#14151A] flex items-center justify-center">
-        <div className="text-center p-8 bg-[#1A1B21] rounded-lg">
-          <h2 className="text-xl text-red-500 mb-4">Error loading race data</h2>
-          <p className="text-white/60">{error.message}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-[#D7FF00] text-black rounded hover:bg-[#D7FF00]/90"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading || !leaderboardData) {
-    return (
-      <div className="min-h-screen bg-[#14151A] flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
   const top10Players = showCompletedRace
-    ? (previousRace?.data?.participants || [])
+    ? (previousRaceQuery?.data?.data?.participants || [])
     : (leaderboardData || []).slice(0, 10);
   const currentLeader = top10Players[0];
 
@@ -536,7 +555,7 @@ export default function WagerRaces() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(showCompletedRace ? (previousRace?.data?.participants || []).slice(0, 10) : top10Players).map((player: LeaderboardEntry, index: number) => (
+                {(showCompletedRace ? (previousRaceQuery?.data?.data?.participants || []).slice(0, 10) : top10Players).map((player: LeaderboardEntry, index: number) => (
                   <TableRow
                     key={player.uid}
                     className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]"

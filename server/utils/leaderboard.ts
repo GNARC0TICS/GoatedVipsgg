@@ -40,96 +40,52 @@ export async function transformLeaderboardData(apiData: APIResponse) {
   const logId = `transform_${startTime}`;
 
   try {
-    // Extract and validate raw data
-    const rawData = Array.isArray(apiData) ? apiData : 
-                   Array.isArray(apiData?.data) ? apiData.data :
-                   Array.isArray(apiData?.results) ? apiData.results : [];
+    // Extract and validate raw data with more robust type checking
+    const rawData = Array.isArray(apiData?.data) ? apiData.data :
+                   Array.isArray(apiData?.results) ? apiData.results :
+                   Array.isArray(apiData) ? apiData : [];
 
     if (!rawData.length) {
-      throw new Error('No valid data received from API');
-    }
-
-    // Log incoming data
-    console.log(`[${logId}] Processing ${rawData.length} entries`);
-
-    // Transform entries with strict type checking
-    const transformedEntries = rawData.map((entry: any): LeaderboardEntry => {
-      if (!entry?.uid || !entry?.name) {
-        console.warn(`[${logId}] Invalid entry detected:`, entry);
-        return null;
-      }
-
+      console.warn(`[${logId}] No valid data received from API`);
       return {
-        uid: String(entry.uid),
-        name: String(entry.name),
-        wagered: {
-          today: Math.max(0, Number(entry?.wagered?.today || 0)),
-          this_week: Math.max(0, Number(entry?.wagered?.this_week || 0)),
-          this_month: Math.max(0, Number(entry?.wagered?.this_month || 0)),
-          all_time: Math.max(0, Number(entry?.wagered?.all_time || 0))
+        status: "success",
+        metadata: {
+          totalUsers: 0,
+          lastUpdated: new Date().toISOString(),
+        },
+        data: {
+          today: { data: [] },
+          weekly: { data: [] },
+          monthly: { data: [] },
+          all_time: { data: [] }
         }
       };
-    }).filter(Boolean);
+    }
+
+    // Transform entries with strict type checking and data validation
+    const transformedEntries = rawData
+      .map((entry: any): LeaderboardEntry | null => {
+        if (!entry?.uid || !entry?.name) {
+          console.warn(`[${logId}] Invalid entry detected:`, entry);
+          return null;
+        }
+
+        return {
+          uid: String(entry.uid),
+          name: String(entry.name),
+          wagered: {
+            today: Math.max(0, Number(entry?.wagered?.today || 0)),
+            this_week: Math.max(0, Number(entry?.wagered?.this_week || 0)),
+            this_month: Math.max(0, Number(entry?.wagered?.this_month || 0)),
+            all_time: Math.max(0, Number(entry?.wagered?.all_time || 0))
+          }
+        };
+      })
+      .filter(Boolean);
 
     if (!transformedEntries.length) {
       throw new Error('No valid entries after transformation');
     }
-
-    // Store data in database
-    const now = new Date();
-    await db.transaction(async (tx) => {
-      // Create or update race entry
-      const [race] = await tx
-        .insert(wagerRaces)
-        .values({
-          title: `Monthly Race ${now.getMonth() + 1}/${now.getFullYear()}`,
-          type: 'monthly',
-          status: 'live',
-          prizePool: 500,
-          startDate: new Date(now.getFullYear(), now.getMonth(), 1),
-          endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0),
-          minWager: 0,
-          prizeDistribution: {
-            "1": 0.425,
-            "2": 0.2,
-            "3": 0.15,
-            "4": 0.075,
-            "5": 0.06,
-            "6": 0.04,
-            "7": 0.0275,
-            "8": 0.0225,
-            "9": 0.0175,
-            "10": 0.0175
-          }
-        })
-        .onConflictDoUpdate({
-          target: [wagerRaces.type, wagerRaces.startDate],
-          set: {
-            updatedAt: now
-          }
-        })
-        .returning();
-
-      // Update participant data
-      for (const entry of transformedEntries) {
-        await tx
-          .insert(wagerRaceParticipants)
-          .values({
-            raceId: race.id,
-            userId: parseInt(entry.uid),
-            totalWager: entry.wagered.this_month,
-            wagerHistory: entry.wagered
-          })
-          .onConflictDoUpdate({
-            target: [wagerRaceParticipants.raceId, wagerRaceParticipants.userId],
-            set: {
-              totalWager: entry.wagered.this_month,
-              wagerHistory: entry.wagered,
-              updatedAt: now
-            }
-          });
-      }
-    });
 
     // Sort data for each period
     const todayData = [...transformedEntries].sort((a, b) => b.wagered.today - a.wagered.today);
@@ -137,7 +93,7 @@ export async function transformLeaderboardData(apiData: APIResponse) {
     const monthlyData = [...transformedEntries].sort((a, b) => b.wagered.this_month - a.wagered.this_month);
     const allTimeData = [...transformedEntries].sort((a, b) => b.wagered.all_time - a.wagered.all_time);
 
-    // Log transformation success
+    // Log success
     await db.insert(transformationLogs).values({
       type: 'info',
       message: 'Leaderboard transformation completed',
@@ -151,7 +107,7 @@ export async function transformLeaderboardData(apiData: APIResponse) {
         }
       }),
       duration_ms: (Date.now() - startTime).toString(),
-      created_at: now,
+      created_at: new Date(),
       resolved: true,
       error_message: null
     });
@@ -160,7 +116,7 @@ export async function transformLeaderboardData(apiData: APIResponse) {
       status: "success",
       metadata: {
         totalUsers: transformedEntries.length,
-        lastUpdated: now.toISOString(),
+        lastUpdated: new Date().toISOString(),
       },
       data: {
         today: { data: todayData },

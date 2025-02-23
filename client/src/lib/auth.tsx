@@ -1,5 +1,4 @@
 import { requiresAuth } from './protected-route';
-import { useUser } from '@/hooks/use-user';
 import { createContext, useContext, ReactNode } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -23,7 +22,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
-  const { data: user, isLoading, error } = useQuery({
+  const { data: user, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/user'],
     queryFn: async () => {
       const response = await fetch('/api/user', {
@@ -34,12 +33,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (response.status === 401) {
           return null;
         }
-        throw new Error('Failed to fetch user');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch user');
       }
 
       return response.json();
     },
     retry: false,
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    cacheTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
   const loginMutation = useMutation({
@@ -54,9 +56,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error('Login failed');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Login failed');
       }
 
+      await refetch(); // Refetch user data after successful login
       return response.json();
     },
     onSuccess: () => {
@@ -82,8 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error('Logout failed');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Logout failed');
       }
+
+      await refetch(); // Refetch user data after successful logout
     },
     onSuccess: () => {
       toast({
@@ -124,4 +131,4 @@ export function useAuth() {
 }
 
 // Re-export the auth utilities for consistency
-export { requiresAuth, useUser as useUser };
+export { requiresAuth };

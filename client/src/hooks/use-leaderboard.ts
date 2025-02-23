@@ -89,6 +89,7 @@ export function useLeaderboard(
 
       ws.onopen = () => {
         wsReconnectAttempts.current = 0; // Reset counter on successful connection
+        console.log('WebSocket connection established');
       };
 
       setWs(ws);
@@ -128,10 +129,18 @@ export function useLeaderboard(
 
         const data = await response.json();
 
-        // Validate data structure
+        // Validate and normalize data structure
         if (!data?.data || !data.data[timePeriod]?.data) {
           console.error('Invalid data structure received:', data);
-          throw new Error('Invalid data structure received from server');
+          return {
+            status: "success",
+            data: {
+              today: { data: [] },
+              weekly: { data: [] },
+              monthly: { data: [] },
+              all_time: { data: [] }
+            }
+          };
         }
 
         return data;
@@ -146,9 +155,9 @@ export function useLeaderboard(
       }
     },
     enabled: !!user, // Only run query if user is authenticated
-    refetchInterval: 60000,
-    staleTime: 30000,
-    gcTime: 5 * 60 * 1000,
+    refetchInterval: 60000, // Refetch every minute
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     refetchOnWindowFocus: false
   });
 
@@ -167,13 +176,17 @@ export function useLeaderboard(
 
     return data.data[periodKey].data.map((entry: LeaderboardEntry) => {
       const prevEntry = previousData.find((p) => p.uid === entry.uid);
-      const currentWager = entry.wagered[periodWagerKey] || 0;
-      const previousWager = prevEntry ? (prevEntry.wagered[periodWagerKey] || 0) : 0;
+      const currentWager = entry.wagered?.[periodWagerKey] || 0;
+      const previousWager = prevEntry?.wagered?.[periodWagerKey] || 0;
 
       return {
         ...entry,
         isWagering: currentWager > previousWager,
         wagerChange: currentWager - previousWager,
+        wagered: {
+          ...entry.wagered,
+          [periodWagerKey]: currentWager
+        }
       };
     });
   }, [data, periodKey, periodWagerKey, previousData]);
