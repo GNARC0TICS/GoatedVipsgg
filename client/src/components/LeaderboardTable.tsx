@@ -18,7 +18,6 @@ import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { QuickProfile } from "@/components/QuickProfile";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMemo } from "react";
 
 const ITEMS_PER_PAGE = 10;
 
