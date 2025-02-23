@@ -1,4 +1,4 @@
-
+import * as React from "react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Plus, Pencil, Trash2 } from "lucide-react";
@@ -14,12 +14,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
+interface BonusCode {
+  id: string;
+  code: string;
+  description: string;
+  value: string;
+  expiresAt: string;
+}
+
 export default function BonusCodeManagement() {
-  const [codes, setCodes] = useState([]);
+  const [codes, setCodes] = useState<BonusCode[]>([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [selectedCode, setSelectedCode] = useState(null);
+  const [selectedCode, setSelectedCode] = useState<BonusCode | null>(null);
   const { toast } = useToast();
-  
+
   const [formData, setFormData] = useState({
     code: "",
     description: "",
@@ -27,15 +35,15 @@ export default function BonusCodeManagement() {
     expiresAt: "",
   });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const response = await fetch("/api/admin/bonus-codes", {
         method: isEditing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(isEditing ? { ...formData, id: selectedCode.id } : formData),
+        body: JSON.stringify(isEditing ? { ...formData, id: selectedCode?.id } : formData),
       });
-      
+
       if (response.ok) {
         toast({
           title: `Bonus code ${isEditing ? "updated" : "created"} successfully`,
@@ -54,12 +62,12 @@ export default function BonusCodeManagement() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string) => {
     try {
       const response = await fetch(`/api/admin/bonus-codes/${id}`, {
         method: "DELETE",
       });
-      
+
       if (response.ok) {
         toast({
           title: "Bonus code deleted successfully",
