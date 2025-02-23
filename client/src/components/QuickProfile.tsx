@@ -32,7 +32,7 @@ export function QuickProfile({
   username,
   children,
 }: QuickProfileProps) {
-  const { data: leaderboardData, isLoading } = useQuery({
+  const { data: leaderboardData, isLoading, error } = useQuery({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
     retry: 3,
@@ -44,8 +44,14 @@ export function QuickProfile({
         monthly: { data: [] },
         all_time: { data: [] }
       }
-    }
+    },
+    refetchInterval: 15000
   });
+
+  if (error) {
+    console.error("Error fetching leaderboard data:", error);
+    return null;
+  }
 
   const stats = React.useMemo(() => {
     if (!leaderboardData?.data) return null;

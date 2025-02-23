@@ -132,7 +132,7 @@ const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
           ? "today"
           : "all_time";
 
-  const sortedData = data?.data[periodKey]?.data.map((entry: LeaderboardEntry) => {
+  const sortedData = data?.data?.[periodKey]?.data?.map((entry: LeaderboardEntry) => {
     const prevEntry = previousData.find((p) => p.uid === entry.uid);
     const currentWager = entry.wagered[
       timePeriod === "weekly"
