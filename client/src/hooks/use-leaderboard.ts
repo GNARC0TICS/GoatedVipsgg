@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
 
 type WageredData = {
   today: number;
@@ -21,7 +23,7 @@ type LeaderboardPeriodData = {
 };
 
 type APIResponse = {
-  status: "success";
+  status: "success" | "error";
   metadata?: {
     totalUsers: number;
     lastUpdated: string;
@@ -32,6 +34,7 @@ type APIResponse = {
     monthly: LeaderboardPeriodData;
     all_time: LeaderboardPeriodData;
   };
+  message?: string;
 };
 
 export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
@@ -40,17 +43,27 @@ export function useLeaderboard(
   timePeriod: TimePeriod = "today",
   page: number = 0,
 ) {
+  const { toast } = useToast();
+  const { user } = useAuth();
   const [ws, setWs] = React.useState<WebSocket | null>(null);
   const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
+  const reconnectTimeoutRef = React.useRef<NodeJS.Timeout>();
+  const wsReconnectAttempts = useRef(0);
+  const MAX_RECONNECT_ATTEMPTS = 5;
 
+  // WebSocket connection management
   React.useEffect(() => {
-    let reconnectTimer: NodeJS.Timeout;
-    let ws: WebSocket;
+    if (!user) return; // Don't connect if not authenticated
 
     const connect = () => {
+      if (wsReconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) {
+        console.error('Max WebSocket reconnection attempts reached');
+        return;
+      }
+
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const host = window.location.host.split(':')[0]; // Remove any port number
-      ws = new WebSocket(`${protocol}//${host}/ws/leaderboard`);
+      const host = window.location.host;
+      const ws = new WebSocket(`${protocol}//${host}/ws`);
 
       ws.onmessage = (event: MessageEvent) => {
         try {
@@ -64,12 +77,18 @@ export function useLeaderboard(
       };
 
       ws.onclose = () => {
-        reconnectTimer = setTimeout(connect, 3000);
+        wsReconnectAttempts.current += 1;
+        console.log('WebSocket connection closed, attempting to reconnect...');
+        reconnectTimeoutRef.current = setTimeout(connect, 3000);
       };
 
       ws.onerror = (error: Event) => {
         console.error('WebSocket error:', error);
         ws.close();
+      };
+
+      ws.onopen = () => {
+        wsReconnectAttempts.current = 0; // Reset counter on successful connection
       };
 
       setWs(ws);
@@ -78,41 +97,62 @@ export function useLeaderboard(
     connect();
 
     return () => {
-      clearTimeout(reconnectTimer);
-      if (ws) ws.close();
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (ws) {
+        ws.close();
+      }
     };
-  }, []);
+  }, [user]);
 
   const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
     queryKey: ["/api/affiliate/stats", timePeriod, page],
     queryFn: async () => {
-      const response = await fetch(`/api/affiliate/stats?page=${page}&limit=10`, {
-        headers: {
-          'Accept': 'application/json'
+      try {
+        const response = await fetch(`/api/affiliate/stats?page=${page}&limit=10`, {
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+          },
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          if (response.status === 401) {
+            throw new Error("Please log in to view leaderboard data");
+          }
+          throw new Error(errorData.message || `Failed to load leaderboard data`);
         }
-      });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+
+        // Validate data structure
+        if (!data?.data || !data.data[timePeriod]?.data) {
+          console.error('Invalid data structure received:', data);
+          throw new Error('Invalid data structure received from server');
+        }
+
+        return data;
+      } catch (error) {
+        console.error('Error fetching leaderboard data:', error);
+        toast({
+          title: "Error loading leaderboard",
+          description: error instanceof Error ? error.message : "Failed to load leaderboard data",
+          variant: "destructive",
+        });
+        throw error;
       }
-
-      return response.json();
     },
+    enabled: !!user, // Only run query if user is authenticated
     refetchInterval: 60000,
     staleTime: 30000,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false
   });
 
-  const periodKey =
-    timePeriod === "weekly"
-      ? "weekly"
-      : timePeriod === "monthly"
-        ? "monthly"
-        : timePeriod === "today"
-          ? "today"
-          : "all_time";
-
+  const periodKey = timePeriod;
   const periodWagerKey =
     timePeriod === "weekly"
       ? "this_week"
@@ -122,20 +162,24 @@ export function useLeaderboard(
           ? "today"
           : "all_time";
 
-  const sortedData = data?.data[periodKey]?.data.map((entry: LeaderboardEntry) => {
-    const prevEntry = previousData.find((p) => p.uid === entry.uid);
-    const currentWager = entry.wagered[periodWagerKey];
-    const previousWager = prevEntry ? prevEntry.wagered[periodWagerKey] : 0;
+  const sortedData = React.useMemo(() => {
+    if (!data?.data?.[periodKey]?.data) return [];
 
-    return {
-      ...entry,
-      isWagering: currentWager > previousWager,
-      wagerChange: currentWager - previousWager,
-    };
-  }) || [];
+    return data.data[periodKey].data.map((entry: LeaderboardEntry) => {
+      const prevEntry = previousData.find((p) => p.uid === entry.uid);
+      const currentWager = entry.wagered[periodWagerKey] || 0;
+      const previousWager = prevEntry ? (prevEntry.wagered[periodWagerKey] || 0) : 0;
+
+      return {
+        ...entry,
+        isWagering: currentWager > previousWager,
+        wagerChange: currentWager - previousWager,
+      };
+    });
+  }, [data, periodKey, periodWagerKey, previousData]);
 
   useEffect(() => {
-    if (data?.data[periodKey]?.data) {
+    if (data?.data?.[periodKey]?.data) {
       setPreviousData(data.data[periodKey].data);
     }
   }, [data, periodKey]);

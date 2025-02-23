@@ -49,14 +49,25 @@ import { PageTransition } from "@/components/PageTransition";
 export default function WagerRaces() {
   const [raceType] = useState<"weekly" | "monthly" | "weekend">("monthly");
   const [showCompletedRace, setShowCompletedRace] = useState(false);
+  const { data: leaderboardData, isLoading, error } = useLeaderboard("monthly");
   const ws = useRef<WebSocket | null>(null);
-  const { data: leaderboardData, isLoading } = useLeaderboard("monthly");
 
   useEffect(() => {
-    ws.current = new WebSocket(`wss://${window.location.hostname}/ws`);
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const host = window.location.host;
+    ws.current = new WebSocket(`${protocol}//${host}/ws`);
+
+    const handleError = (error: Event) => {
+      console.error('WebSocket connection error:', error);
+    };
+
+    if (ws.current) {
+      ws.current.addEventListener('error', handleError);
+    }
 
     return () => {
       if (ws.current) {
+        ws.current.removeEventListener('error', handleError);
         ws.current.close();
       }
     };
@@ -139,17 +150,17 @@ export default function WagerRaces() {
   };
 
   const getLastUpdateTime = (timestamp?: string) => {
-  if (!timestamp) return 'recently';
-  const diff = Date.now() - new Date(timestamp).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-};
+    if (!timestamp) return 'recently';
+    const diff = Date.now() - new Date(timestamp).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  };
 
-const getTrophyIcon = (rank: number) => {
+  const getTrophyIcon = (rank: number) => {
     switch (rank) {
       case 1:
         return <Crown className="h-8 w-8 text-yellow-400 animate-pulse" />;
@@ -177,6 +188,23 @@ const getTrophyIcon = (rank: number) => {
     return Math.round(prizePool * (prizeDistribution[rank] || 0) * 100) / 100;
   };
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#14151A] flex items-center justify-center">
+        <div className="text-center p-8 bg-[#1A1B21] rounded-lg">
+          <h2 className="text-xl text-red-500 mb-4">Error loading race data</h2>
+          <p className="text-white/60">{error.message}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-[#D7FF00] text-black rounded hover:bg-[#D7FF00]/90"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading || !leaderboardData) {
     return (
       <div className="min-h-screen bg-[#14151A] flex items-center justify-center">
@@ -185,7 +213,7 @@ const getTrophyIcon = (rank: number) => {
     );
   }
 
-  const top10Players = showCompletedRace 
+  const top10Players = showCompletedRace
     ? (previousRace?.data?.participants || [])
     : (leaderboardData || []).slice(0, 10);
   const currentLeader = top10Players[0];
@@ -343,8 +371,7 @@ const getTrophyIcon = (rank: number) => {
                 </div>
               </div>
             </motion.div>
-
-            </div>
+          </div>
 
           {/* Podium Section */}
           <motion.div
@@ -357,7 +384,7 @@ const getTrophyIcon = (rank: number) => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ 
+                whileHover={{
                   scale: 1.05,
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
@@ -399,7 +426,7 @@ const getTrophyIcon = (rank: number) => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ 
+                whileHover={{
                   scale: 1.05,
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
@@ -416,32 +443,31 @@ const getTrophyIcon = (rank: number) => {
                     {getTrophyIcon(1)}
                   </div>
                   <div className="text-center">
-                  <QuickProfile userId={top10Players[0]?.uid} username={top10Players[0]?.name}>
-                    <p className="text-xl font-bold truncate text-white cursor-pointer hover:text-[#D7FF00] transition-colors">
-                      {top10Players[0]?.name || "-"}
+                    <QuickProfile userId={top10Players[0]?.uid} username={top10Players[0]?.name}>
+                      <p className="text-xl font-bold truncate text-white cursor-pointer hover:text-[#D7FF00] transition-colors">
+                        {top10Players[0]?.name || "-"}
+                      </p>
+                    </QuickProfile>
+                    <p className="text-lg font-heading text-[#D7FF00] mt-2">
+                      ${getPrizeAmount(1).toLocaleString()}
                     </p>
-                  </QuickProfile>
-                  <p className="text-lg font-heading text-[#D7FF00] mt-2">
-                    ${getPrizeAmount(1).toLocaleString()}
-                  </p>
-                  <p className="text-sm text-white/60 mt-1">
-                    $
-                    {getWagerAmount(
-                      top10Players[0] || { wagered: { this_month: 0 } },
-                    ).toLocaleString()}{" "}
-                    wagered
-                  </p>
+                    <p className="text-sm text-white/60 mt-1">
+                      $
+                      {getWagerAmount(
+                        top10Players[0] || { wagered: { this_month: 0 } },
+                      ).toLocaleString()}{" "}
+                      wagered
+                    </p>
                   </div>
                 </div>
               </motion.div>
-
 
 
               {/* 3rd Place */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ 
+                whileHover={{
                   scale: 1.05,
                   transition: { duration: 0.2 },
                   boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"

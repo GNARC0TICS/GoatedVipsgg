@@ -32,8 +32,6 @@ export function registerRoutes(app: Express): Server {
     allowedHeaders: ['Content-Type', 'Authorization']
   }));
 
-  log("[Server] Basic middleware configured");
-
   // Create HTTP server first
   const httpServer = createServer(app);
 
@@ -54,22 +52,17 @@ export function registerRoutes(app: Express): Server {
 
   // Mount user routes first to handle auth endpoints
   apiRouter.use("/", usersRouter);
-  log("[Server] User routes mounted");
-
   apiRouter.use("/bonus", bonusChallengesRouter);
-  log("[Server] Bonus challenge routes mounted");
 
   // Health check endpoint
   apiRouter.get("/health", async (_req, res) => {
     try {
       await db.execute(sql`SELECT 1`);
-      const health = {
+      res.json({
         status: "ok",
         timestamp: new Date().toISOString(),
         db: "connected",
-        telegramBot: global.botInstance ? "initialized" : "not initialized",
-      };
-      res.json(health);
+      });
     } catch (error) {
       res.status(500).json({
         status: "error",
@@ -78,21 +71,56 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Affiliate stats endpoint with auth check and error handling
+  apiRouter.get("/affiliate/stats", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      const rawData = await response.json();
+
+      // Transform and validate the data
+      const transformedData = await transformLeaderboardData(rawData);
+
+      // Store in database and broadcast updates
+      await storeLeaderboardData(transformedData);
+
+      res.json(transformedData);
+    } catch (error) {
+      console.error('Error in /affiliate/stats:', error);
+      // Send a structured error response
+      res.status(500).json({
+        status: "error",
+        message: error instanceof Error ? error.message : "Failed to fetch leaderboard data",
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   // Mount the combined API router with security headers
   app.use("/api", (req, res, next) => {
-    log(`[API] ${req.method} ${req.path}`);
-    // Set common API headers
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-store');
-    // Add security headers
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     next();
   }, apiRouter);
-
-  log("[Server] API routes mounted at /api");
 
   // Wager races endpoint
   apiRouter.get("/wager-races/current",
@@ -126,26 +154,15 @@ export function registerRoutes(app: Express): Server {
   );
 
 
-  // Create a temporary stub for the missing affiliate stats endpoint
-  apiRouter.get("/affiliate/stats", (req, res) => {
-    res.json({
-      totalReferrals: 0,
-      activeReferrals: 0,
-      totalEarnings: 0,
-      pendingPayouts: 0,
-      recentActivity: []
-    });
-  });
-
   // Error handling middleware
   app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    log(`[Error] ${err.message}`);
+    console.error(`[Error] ${err.message}`);
     res.status(500).json({
       error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message
     });
   });
 
-  // Setup WebSocket after routes but before server starts
+  // Setup WebSocket server
   setupWebSocket(httpServer);
 
   return httpServer;
@@ -154,88 +171,27 @@ export function registerRoutes(app: Express): Server {
 let wsServer: WebSocketServer;
 
 function setupWebSocket(httpServer: Server) {
-  log("[WebSocket] Initializing WebSocket server...");
   wsServer = new WebSocketServer({
     noServer: true,
     path: "/ws"
   });
 
   httpServer.on("upgrade", (request, socket, head) => {
-    // Skip Vite HMR requests
     if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
-      log("[WebSocket] Skipping Vite HMR WebSocket request");
       return;
     }
 
     const url = new URL(request.url || '', `http://${request.headers.host}`);
-    const pathname = url.pathname;
-
-    log(`[WebSocket] Upgrade request received for: ${pathname}`);
-
-    if (pathname === "/ws/leaderboard" || pathname === "/ws/transformation-logs") {
-      wsServer.handleUpgrade(request, socket, head, (ws) => {
-        wsServer.emit("connection", ws, request);
-        const customWs = ws as CustomWebSocket;
-        if (pathname === "/ws/leaderboard") {
-          handleLeaderboardConnection(customWs);
-        } else {
-          handleTransformationLogsConnection(customWs);
-        }
-      });
-    } else {
-      log(`[WebSocket] Invalid WebSocket path: ${pathname}`);
-      socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
-      socket.destroy();
-    }
+    wsServer.handleUpgrade(request, socket, head, (ws) => {
+      wsServer.emit("connection", ws, request);
+      setupWebSocketHandlers(ws as CustomWebSocket);
+    });
   });
-
-  log("[WebSocket] WebSocket server initialized");
 }
 
-function handleLeaderboardConnection(ws: CustomWebSocket) {
-  const clientId = Date.now().toString();
-  log(`[WebSocket] Leaderboard client connected (${clientId})`);
-
+function setupWebSocketHandlers(ws: CustomWebSocket) {
   ws.isAlive = true;
-  const pingInterval = setInterval(() => {
-    if (ws.readyState === WebSocket.OPEN) {
-      log(`[WebSocket] Sending ping to leaderboard client (${clientId})`);
-      ws.ping();
-    }
-  }, 30000);
 
-  ws.on("pong", () => {
-    log(`[WebSocket] Received pong from leaderboard client (${clientId})`);
-    ws.isAlive = true;
-  });
-
-  ws.on("error", (error: Error) => {
-    log(`[WebSocket] Leaderboard client error (${clientId}): ${error.message}`);
-    clearInterval(pingInterval);
-    ws.terminate();
-  });
-
-  ws.on("close", () => {
-    log(`[WebSocket] Leaderboard client disconnected (${clientId})`);
-    clearInterval(pingInterval);
-  });
-
-  if (ws.readyState === WebSocket.OPEN) {
-    const message = {
-      type: "CONNECTED",
-      clientId,
-      timestamp: Date.now()
-    };
-    ws.send(JSON.stringify(message));
-    log(`[WebSocket] Sent connection confirmation to leaderboard client (${clientId})`);
-  }
-}
-
-function handleTransformationLogsConnection(ws: CustomWebSocket) {
-  const clientId = Date.now().toString();
-  log(`Transformation logs WebSocket client connected (${clientId})`);
-
-  ws.isAlive = true;
   const pingInterval = setInterval(() => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.ping();
@@ -248,11 +204,10 @@ function handleTransformationLogsConnection(ws: CustomWebSocket) {
 
   ws.on("close", () => {
     clearInterval(pingInterval);
-    log(`Transformation logs WebSocket client disconnected (${clientId})`);
   });
 
   ws.on("error", (error: Error) => {
-    log(`WebSocket error (${clientId}): ${error.message}`);
+    console.error('WebSocket error:', error);
     clearInterval(pingInterval);
     ws.terminate();
   });
@@ -260,60 +215,44 @@ function handleTransformationLogsConnection(ws: CustomWebSocket) {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({
       type: "CONNECTED",
-      clientId,
-      timestamp: Date.now()
+      timestamp: new Date().toISOString()
     }));
-
-    // Send recent logs on connection
-    db.select()
-      .from(transformationLogs)
-      .orderBy(sql`created_at DESC`)
-      .limit(50)
-      .then(logs => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({
-            type: "INITIAL_LOGS",
-            logs: logs.map(log => ({
-              ...log,
-              timestamp: log.created_at.toISOString()
-            }))
-          }));
-        }
-      })
-      .catch(error => {
-        console.error("Error fetching initial logs:", error);
-      });
   }
 }
 
-export function broadcastLeaderboardUpdate(data: any) {
-  wsServer.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({
-        type: "LEADERBOARD_UPDATE",
-        data
-      }));
-    }
+async function storeLeaderboardData(data: any) {
+  const now = new Date();
+
+  await db.transaction(async (tx) => {
+    // Log the transformation
+    await tx.insert(transformationLogs).values({
+      type: 'info',
+      message: 'Leaderboard data stored',
+      payload: JSON.stringify(data),
+      duration_ms: '0',
+      created_at: now,
+      resolved: true
+    });
+
+    // Broadcast the update
+    wsServer.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: "LEADERBOARD_UPDATE",
+          data,
+          timestamp: now.toISOString()
+        }));
+      }
+    });
   });
 }
 
-export function broadcastTransformationLog(log: {
-  type: 'info' | 'error' | 'warning';
-  message: string;
-  data?: any;
-}) {
-  wsServer.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({
-        type: "TRANSFORMATION_LOG",
-        log: {
-          ...log,
-          timestamp: new Date().toISOString()
-        }
-      }));
-    }
-  });
-}
+// Common cache times
+const CACHE_TIMES = {
+  SHORT: 15000,    // 15 seconds
+  MEDIUM: 60000,   // 1 minute
+  LONG: 300000     // 5 minutes
+};
 
 type RateLimitTier = 'HIGH' | 'MEDIUM' | 'LOW';
 const rateLimits: Record<RateLimitTier, { points: number; duration: number }> = {
@@ -434,7 +373,7 @@ function formatRaceData(stats: any) {
   };
 }
 
-export function transformLeaderboardData(apiData: any) {
+function transformLeaderboardData(apiData: any) {
   const data = apiData.data || apiData.results || apiData;
   if (!Array.isArray(data)) {
     return {
@@ -473,10 +412,4 @@ export function transformLeaderboardData(apiData: any) {
 }
 
 
-const CACHE_TIMES = {
-  SHORT: 15000,    // 15 seconds
-  MEDIUM: 60000,   // 1 minute
-  LONG: 300000     // 5 minutes
-};
-
-export { router };
+export { broadcastTransformationLog, setupWebSocket, registerRoutes };
