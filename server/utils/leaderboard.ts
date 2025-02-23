@@ -10,8 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@db";
-import { users, transformationLogs, wagerRaces, wagerRaceParticipants } from "@db/schema";
-import { broadcastTransformationLog } from "../routes";
+import { transformationLogs } from "@db/schema";
 
 type WageredData = {
   today: number;
@@ -26,12 +25,6 @@ type LeaderboardEntry = {
   wagered: WageredData;
 };
 
-type APIResponse = {
-  participants: LeaderboardEntry[];
-  today: number;
-  this_week: number;
-};
-
 /**
  * Transforms and stores leaderboard data
  */
@@ -40,33 +33,70 @@ export async function transformLeaderboardData(apiResponse: any) {
   const logId = `transform_${startTime}`;
 
   try {
+    console.log('[DEBUG] Starting transformation of API Response');
     console.log('[DEBUG] Raw API Response:', JSON.stringify(apiResponse, null, 2));
 
-    if (!apiResponse?.participants || !Array.isArray(apiResponse.participants)) {
-      console.error(`[${logId}] Invalid API response format:`, apiResponse);
-      throw new Error('Invalid API response format');
+    if (!apiResponse) {
+      throw new Error('API response is empty');
     }
 
-    // Transform entries with strict type checking and data validation
-    const transformedEntries = apiResponse.participants
+    // Handle both array and object responses
+    let entries: any[] = [];
+    if (Array.isArray(apiResponse)) {
+      entries = apiResponse;
+    } else if (typeof apiResponse === 'object') {
+      // Check for common response wrapper patterns
+      if (Array.isArray(apiResponse.data)) {
+        entries = apiResponse.data;
+      } else if (Array.isArray(apiResponse.users)) {
+        entries = apiResponse.users;
+      } else if (Array.isArray(apiResponse.results)) {
+        entries = apiResponse.results;
+      } else {
+        // If no obvious array found, try to extract user data from the object itself
+        entries = [apiResponse];
+      }
+    }
+
+    console.log('[DEBUG] Extracted entries:', entries.length);
+
+    // Transform entries with flexible validation
+    const transformedEntries = entries
       .map((entry: Record<string, any>): LeaderboardEntry | null => {
-        if (!entry?.uid || !entry?.name) {
-          console.warn(`[${logId}] Invalid entry detected:`, entry);
+        try {
+          // Extract identifier with fallbacks
+          const uid = entry.uid || entry.id || entry.userId || entry.user_id;
+          if (!uid) {
+            console.warn(`[${logId}] Entry missing identifier:`, entry);
+            return null;
+          }
+
+          // Extract name with fallbacks
+          const name = entry.name || entry.username || entry.user_name || 'Anonymous';
+
+          // Extract wager data with careful type conversion
+          const extractNumber = (value: any): number => {
+            if (typeof value === 'number') return value;
+            if (typeof value === 'string') return parseFloat(value) || 0;
+            return 0;
+          };
+
+          const wagered = {
+            today: extractNumber(entry.wagered?.today || entry.today || 0),
+            this_week: extractNumber(entry.wagered?.this_week || entry.week || 0),
+            this_month: extractNumber(entry.wagered?.this_month || entry.month || 0),
+            all_time: extractNumber(entry.wagered?.all_time || entry.total || 0)
+          };
+
+          return {
+            uid: String(uid),
+            name: String(name),
+            wagered
+          };
+        } catch (error) {
+          console.error(`[${logId}] Error transforming entry:`, error);
           return null;
         }
-
-        const wagered = {
-          today: Math.max(0, Number(entry?.wagered?.today || 0)),
-          this_week: Math.max(0, Number(entry?.wagered?.this_week || 0)),
-          this_month: Math.max(0, Number(entry?.wagered?.this_month || 0)),
-          all_time: Math.max(0, Number(entry?.wagered?.all_time || 0))
-        };
-
-        return {
-          uid: String(entry.uid),
-          name: String(entry.name),
-          wagered
-        };
       })
       .filter((entry: LeaderboardEntry | null): entry is LeaderboardEntry => entry !== null);
 
@@ -75,9 +105,9 @@ export async function transformLeaderboardData(apiResponse: any) {
       throw new Error('No valid entries after transformation');
     }
 
-    // Sort data for each period
-    console.log('[DEBUG] Starting data sorting...');
+    console.log('[DEBUG] Successfully transformed entries:', transformedEntries.length);
 
+    // Sort data for each period
     const todayData = [...transformedEntries].sort((a, b) => 
       (b.wagered.today || 0) - (a.wagered.today || 0)
     );
@@ -104,12 +134,10 @@ export async function transformLeaderboardData(apiResponse: any) {
           today: {
             count: todayData.length,
             topWagered: todayData[0]?.wagered.today || 0,
-            totalWagered: apiResponse.today || 0
           },
           weekly: {
             count: weeklyData.length,
             topWagered: weeklyData[0]?.wagered.this_week || 0,
-            totalWagered: apiResponse.this_week || 0
           },
           monthly: {
             count: monthlyData.length,
@@ -132,11 +160,7 @@ export async function transformLeaderboardData(apiResponse: any) {
       status: "success",
       metadata: {
         totalUsers: transformedEntries.length,
-        lastUpdated: new Date().toISOString(),
-        summary: {
-          today: apiResponse.today || 0,
-          this_week: apiResponse.this_week || 0
-        }
+        lastUpdated: new Date().toISOString()
       },
       data: {
         today: { data: todayData },
@@ -146,7 +170,6 @@ export async function transformLeaderboardData(apiResponse: any) {
       }
     };
 
-    console.log('[DEBUG] Final transformed result:', JSON.stringify(result, null, 2));
     return result;
 
   } catch (error) {
