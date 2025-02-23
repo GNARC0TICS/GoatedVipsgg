@@ -41,6 +41,8 @@ interface UserData {
   verifiedAt?: string;
 }
 
+import { User, Trophy, Award, Settings } from "lucide-react";
+
 interface QuickProfileProps {
   userId: string;
   username: string;
