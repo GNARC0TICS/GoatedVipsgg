@@ -291,26 +291,40 @@ async function initializeServer() {
  * Sets up WebSocket server for real-time communication
  */
 function setupWebSocket(server: any) {
-  wss = new WebSocketServer({ server, path: '/ws' });
+  wss = new WebSocketServer({ noServer: true });
 
-  wss.on('connection', (ws: WebSocket, req: any) => {
-    // Skip Vite HMR connections
-    if (req.headers['sec-websocket-protocol']?.includes('vite-hmr')) {
-      return;
-    }
+  server.on('upgrade', (request: any, socket: any, head: any) => {
+    if (request.url === '/ws/leaderboard') {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+        
+        ws.isAlive = true;
+        const pingInterval = setInterval(() => {
+          if (ws.isAlive === false) {
+            ws.terminate();
+            return;
+          }
+          ws.isAlive = false;
+          ws.ping();
+        }, 30000);
 
-    logAction({
-      action: "New WebSocket connection",
-      success: true
-    });
+        ws.on('pong', () => {
+          ws.isAlive = true;
+        });
 
-    ws.on('error', (error) => {
-      logAction({
-        action: "WebSocket error",
-        success: false,
-        details: error.message
+        ws.on('error', (error) => {
+          logAction({
+            action: "WebSocket error",
+            success: false,
+            details: error.message
+          });
+        });
+
+        ws.on('close', () => {
+          clearInterval(pingInterval);
+        });
       });
-    });
+    }
   });
 
   return wss;

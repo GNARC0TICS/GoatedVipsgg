@@ -49,7 +49,8 @@ export function useLeaderboard(
 
     const connect = () => {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      ws = new WebSocket(`${protocol}//${window.location.host}/ws/leaderboard`);
+      const host = window.location.host.split(':')[0]; // Remove any port number
+      ws = new WebSocket(`${protocol}//${host}/ws/leaderboard`);
 
       ws.onmessage = (event: MessageEvent) => {
         try {
