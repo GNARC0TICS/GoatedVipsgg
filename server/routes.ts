@@ -25,8 +25,8 @@ export function registerRoutes(app: Express): Server {
 
   // Basic middleware setup
   app.use(express.json());
-  app.use(cors({ 
-    origin: true, 
+  app.use(cors({
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -126,11 +126,22 @@ export function registerRoutes(app: Express): Server {
   );
 
 
+  // Create a temporary stub for the missing affiliate stats endpoint
+  apiRouter.get("/affiliate/stats", (req, res) => {
+    res.json({
+      totalReferrals: 0,
+      activeReferrals: 0,
+      totalEarnings: 0,
+      pendingPayouts: 0,
+      recentActivity: []
+    });
+  });
+
   // Error handling middleware
   app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
     log(`[Error] ${err.message}`);
-    res.status(500).json({ 
-      error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message 
+    res.status(500).json({
+      error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message
     });
   });
 
@@ -144,7 +155,10 @@ let wsServer: WebSocketServer;
 
 function setupWebSocket(httpServer: Server) {
   log("[WebSocket] Initializing WebSocket server...");
-  wsServer = new WebSocketServer({ noServer: true });
+  wsServer = new WebSocketServer({
+    noServer: true,
+    path: "/ws"
+  });
 
   httpServer.on("upgrade", (request, socket, head) => {
     // Skip Vite HMR requests
@@ -153,26 +167,24 @@ function setupWebSocket(httpServer: Server) {
       return;
     }
 
-    const url = request.url;
-    if (!url) {
-      log("[WebSocket] Invalid WebSocket request: missing URL");
-      socket.destroy();
-      return;
-    }
+    const url = new URL(request.url || '', `http://${request.headers.host}`);
+    const pathname = url.pathname;
 
-    log(`[WebSocket] Upgrade request received for: ${url}`);
+    log(`[WebSocket] Upgrade request received for: ${pathname}`);
 
-    if (url === "/ws/leaderboard" || url === "/ws/transformation-logs") {
+    if (pathname === "/ws/leaderboard" || pathname === "/ws/transformation-logs") {
       wsServer.handleUpgrade(request, socket, head, (ws) => {
         wsServer.emit("connection", ws, request);
-        if (url === "/ws/leaderboard") {
-          handleLeaderboardConnection(ws as CustomWebSocket);
+        const customWs = ws as CustomWebSocket;
+        if (pathname === "/ws/leaderboard") {
+          handleLeaderboardConnection(customWs);
         } else {
-          handleTransformationLogsConnection(ws as CustomWebSocket);
+          handleTransformationLogsConnection(customWs);
         }
       });
     } else {
-      log(`[WebSocket] Invalid WebSocket path: ${url}`);
+      log(`[WebSocket] Invalid WebSocket path: ${pathname}`);
+      socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
       socket.destroy();
     }
   });

@@ -44,7 +44,7 @@ async function handleRequest(
       const data = await response.json().catch(() => ({}));
       return { 
         ok: false, 
-        message: data.message || "Request failed",
+        message: data.message || data.error || "Request failed",
         errors: data.errors
       };
     }
@@ -69,31 +69,17 @@ export function useUser() {
     error,
     isLoading,
     refetch
-  } = useQuery<SelectUser | null, Error>({
+  } = useQuery<SelectUser | null>({
     queryKey: ["/api/user"],
     queryFn: async () => {
-      try {
-        const response = await fetch('/api/user', { 
-          credentials: 'include',
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        });
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            return null;
-          }
-          throw new Error('Failed to fetch user');
+      const result = await handleRequest("/api/user", "GET");
+      if (!result.ok) {
+        if (result.message === "Not authenticated") {
+          return null;
         }
-
-        const data = await response.json();
-        return data.user;
-      } catch (error) {
-        console.error("User fetch error:", error);
-        throw error;
+        throw new Error(result.message);
       }
+      return result.user || null;
     },
     staleTime: 30000, // Data considered fresh for 30 seconds
     gcTime: 60000, // Keep in cache for 1 minute
@@ -101,8 +87,10 @@ export function useUser() {
     refetchOnWindowFocus: true // Update when window regains focus
   });
 
-  const loginMutation = useMutation<RequestResult, Error, InsertUser>({
-    mutationFn: (userData) => handleRequest("/api/login", "POST", userData),
+  const loginMutation = useMutation({
+    mutationFn: async (userData: Pick<InsertUser, "username" | "password">) => {
+      return handleRequest("/api/login", "POST", userData as InsertUser);
+    },
     onSuccess: (data) => {
       if (data.ok && data.user) {
         queryClient.setQueryData(["/api/user"], data.user);
@@ -122,7 +110,7 @@ export function useUser() {
     },
   });
 
-  const logoutMutation = useMutation<RequestResult, Error>({
+  const logoutMutation = useMutation({
     mutationFn: () => handleRequest("/api/logout", "POST"),
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
@@ -142,8 +130,8 @@ export function useUser() {
     },
   });
 
-  const registerMutation = useMutation<RequestResult, Error, InsertUser>({
-    mutationFn: (userData) => handleRequest("/api/register", "POST", userData),
+  const registerMutation = useMutation({
+    mutationFn: (userData: InsertUser) => handleRequest("/api/register", "POST", userData),
     onSuccess: (data) => {
       if (data.ok && data.user) {
         queryClient.setQueryData(["/api/user"], data.user);
@@ -170,6 +158,6 @@ export function useUser() {
     login: loginMutation.mutateAsync,
     logout: logoutMutation.mutateAsync,
     register: registerMutation.mutateAsync,
-    refetch, // Expose refetch function for manual refresh
+    refetch,
   };
 }
