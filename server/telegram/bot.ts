@@ -1,12 +1,28 @@
-import TelegramBot, { Message, ChatMember } from 'node-telegram-bot-api';
+import TelegramBot, { Message, ChatMember, ChatPermissions as TelegramChatPermissions } from 'node-telegram-bot-api';
 import { db } from '@db';
 import { eq } from 'drizzle-orm';
 import { telegramUsers, verificationRequests, challenges, challengeEntries } from '@db/schema/telegram';
-import { users } from '@db/schema';
-import '@types/node-schedule';
-import { scheduleJob } from 'node-schedule';
+import { users } from '@db/schema/auth';
+import { Job, scheduleJob } from 'node-schedule';
 
-// Types for bot
+// Types for API responses
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+interface MonthlyData {
+  monthly: {
+    data: GoatedUser[];
+  };
+}
+
+interface BotCommands {
+  command: string;
+  description: string;
+}
+
+// Types for bot 
 interface Challenge {
   id: string;
   name: string;
@@ -26,14 +42,76 @@ interface ChallengeEntry {
   updatedAt: Date;
 }
 
-// Create singleton bot instance with polling enabled
+// Helper functions for validation and type safety
+export function isValidId(id: string | number | undefined): id is string | number {
+  return id !== undefined && id !== null && (typeof id === 'string' || typeof id === 'number');
+}
+
+export function isValidUsername(username: string | undefined): username is string {
+  return username !== undefined && username.length > 0;
+}
+
+export function toMessageId(id: string | number): number {
+  return typeof id === 'string' ? parseInt(id, 10) : id;
+}
+
+export function toChatId(id: string | number | undefined): number {
+  if (typeof id === 'string') return parseInt(id, 10);
+  if (typeof id === 'number') return id;
+  throw new Error('Invalid chat ID');
+}
+
+// Date handling functions with proper type safety
+export function formatDate(date: Date | string | null | undefined): string {
+  if (!date) return 'N/A';
+  try {
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return d.toLocaleString();
+  } catch (error) {
+    return 'Invalid Date';
+  }
+}
+
+// Safer date conversion
+function toSafeDate(date: Date | string | null | undefined): Date {
+  if (!date) return new Date();
+  try {
+    const d = date instanceof Date ? date : new Date(date);
+    return isNaN(d.getTime()) ? new Date() : d; 
+  } catch (error) {
+    return new Date();
+  }
+}
+
+// Type guard for API responses
+export function isGoatedUser(obj: any): obj is GoatedUser {
+  return obj && 
+    typeof obj.id === 'string' &&
+    typeof obj.name === 'string' &&
+    obj.wagered &&
+    typeof obj.wagered.this_month === 'number' &&
+    typeof obj.wagered.this_week === 'number' &&
+    typeof obj.wagered.today === 'number' &&
+    typeof obj.wagered.all_time === 'number';
+}
+
+// Config validation
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
 
-const bot = new TelegramBot(token, { polling: true });
-console.log('[Telegram Bot] Created with polling enabled');
+// Create singleton bot instance
+let bot: TelegramBot;
+if (!global.bot) {
+  bot = new TelegramBot(token, { polling: true });
+  global.bot = bot;
+  console.log('[Telegram Bot] Created with polling enabled');
+} else {
+  bot = global.bot;
+  console.log('[Telegram Bot] Using existing instance');
+}
 
 // Constants
 const ADMIN_TELEGRAM_IDS = ['1689953605']; 
@@ -83,9 +161,219 @@ const BOT_PERSONALITY = {
   CONGRATULATORY: ['Well done!', 'Amazing!', 'Great job!', 'Fantastic!']
 };
 
+interface GoatedUser {
+  id: string;
+  name: string;
+  wagered: {
+    this_month: number;
+    this_week: number;
+    today: number;
+    all_time: number;
+  };
+}
+
+// Message scheduling types
+interface RecurringMessage {
+  id: string;
+  message: string;
+  schedule: string;
+  chatId: number;
+  enabled: boolean;
+  targetGroups: Array<string>; // Fix array type syntax
+}
+
+// Message handling types
+interface MessageSchedule {
+  messageId: string;
+  job: Job;
+}
+
+// Message state tracking
+interface MessageState {
+  id: string;
+  state: 'active' | 'inactive';
+  lastRun?: number;
+}
+
+// Global state
+declare global {
+  var bot: TelegramBot;
+  var scheduledJobs: Map<string, Job>;
+  var recurringMessages: Map<string, RecurringMessage>;
+  var activeChats: Map<number, {
+    lastMessage: string;
+    timestamp: number;
+  }>;
+}
+
+// Initialize global state
+if (!global.scheduledJobs) global.scheduledJobs = new Map();
+if (!global.recurringMessages) global.recurringMessages = new Map();
+if (!global.activeChats) global.activeChats = new Map();
+
+// Get unique ID
+function getUniqueId(): string {
+  return crypto.randomUUID();
+}
+
+// Helper functions for recurring messages
+async function scheduleRecurringMessage(message: RecurringMessage): Promise<void> {
+  try {
+    const job = scheduleJob(message.schedule, async () => {
+      if (!message.enabled) return;
+      
+      for (const groupId of message.targetGroups) {
+        try {
+          await bot.sendMessage(Number(groupId), message.message);
+        } catch (error) {
+          console.error(`Error sending message to group ${groupId}:`, error);
+        }
+      }
+    });
+
+    global.scheduledJobs.set(message.id, job);
+    global.recurringMessages.set(message.id, message);
+  } catch (error) {
+    console.error('Error scheduling message:', error);
+    throw error;
+  }
+}
+
+async function addRecurringMessage(data: Partial<RecurringMessage> & { chatId: number }): Promise<RecurringMessage> {
+  const newMessage = createRecurringMessage(data);
+  await scheduleRecurringMessage(newMessage);
+  return newMessage;
+}
+
+async function removeRecurringMessage(messageId: string): Promise<boolean> {
+  const job = global.scheduledJobs.get(messageId);
+  if (job) {
+    job.cancel();
+    global.scheduledJobs.delete(messageId);
+    global.recurringMessages.delete(messageId);
+    return true;
+  }
+  return false;
+}
+
+// Update ChatPermissions interface to match Telegram API v6.9
+interface ChatPermissions {
+  can_send_messages?: boolean;
+  can_send_media_messages?: boolean;
+  can_send_polls?: boolean;
+  can_send_other_messages?: boolean;
+  can_add_web_page_previews?: boolean;
+  can_change_info?: boolean;
+  can_invite_users?: boolean;
+  can_pin_messages?: boolean;
+}
+
+// Helper function to create recurring messages
+function createRecurringMessage(data: Partial<RecurringMessage> & { chatId: number }): RecurringMessage {
+  const newMessage: RecurringMessage = {
+    id: getUniqueId(),
+    message: data.message || '',
+    schedule: data.schedule || '0 * * * *', // Default to hourly
+    chatId: data.chatId,
+    enabled: data.enabled ?? true,
+    targetGroups: data.targetGroups || []
+  };
+  return newMessage;
+}
+
+// Mute user with proper types
+async function muteUser(chatId: number | string, userId: number, duration: number): Promise<void> {
+  const untilDate = Math.floor(Date.now() / 1000) + duration;
+  const targetChatId = toChatId(chatId);
+  
+  const mute = {
+    until_date: untilDate,
+    permissions: {
+      can_send_messages: false,
+      can_send_other_messages: false,
+      can_add_web_page_previews: false,
+      can_change_info: false,
+      can_invite_users: false,
+      can_pin_messages: false,
+      can_send_polls: false
+    } as TelegramChatPermissions
+  };
+  
+  await bot.restrictChatMember(targetChatId, userId, mute);
+}
+
+interface VerificationRequest {
+  telegramId: string;
+  goatedUsername: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requestedAt: Date;
+  updatedAt: Date | null;
+}
+
+// Date and time helpers
+function toValidDate(date: Date | string | null | undefined): Date {
+  if (!date) return new Date();
+  try {
+    const d = date instanceof Date ? date : new Date(date);
+    return isNaN(d.getTime()) ? new Date() : d;
+  } catch (error) {
+    return new Date();
+  }
+}
+
+function safeDateFormat(date: Date | string | null | undefined): string {
+  try {
+    const d = toValidDate(date);
+    return d.toLocaleString();
+  } catch (error) {
+    return 'N/A';
+  }
+}
+
+// Helper function to safely get a message ID
+function safeMessageId(id: string | number): number {
+  return typeof id === 'string' ? parseInt(id, 10) : id;
+}
+
+// Helper function to safely handle numeric IDs
+function safeNumber(value: string | number | undefined): number | undefined {
+  if (typeof value === 'string') return parseInt(value, 10);
+  if (typeof value === 'number') return value;
+  return undefined;
+}
+
+interface MessageHandler {
+  cleanupCallback?: () => void;
+  isActive: boolean;
+  lastRun?: number;
+}
+
+interface ChatMemberUpdate {
+  userId: string;
+  status: string;
+  until?: number;
+  reason?: string;
+}
+
+// Message and text validation
+function sanitizeText(text: string | undefined | null): string {
+  if (!text) return '';
+  return text.trim();
+}
+
+function validateText(text: string | undefined | null, error = 'Text is required'): string {
+  const sanitized = sanitizeText(text);
+  if (!sanitized) throw new Error(error);
+  return sanitized;
+}
+
+export function validateUsername(username?: string | null): string {
+  return validateText(username, 'Username is required');
+}
+
 // Helper function to check if a message contains begging
-function containsBegging(text: string): boolean {
-  const lowerText = text.toLowerCase();
+function isBeggingMessage(text: string | undefined | null): boolean {
+  const lowerText = sanitizeText(text).toLowerCase();
   
   // Check direct begging patterns
   if (BEGGING_PATTERNS.DIRECT.some(pattern => lowerText.includes(pattern))) {
@@ -112,6 +400,26 @@ function containsBegging(text: string): boolean {
 
   return false;
 }
+
+// Export a single object with all needed functions/variables
+export const TelegramBot = {
+  bot,
+  isValidId,
+  isValidUsername,
+  toMessageId,
+  toChatId,
+  formatDate,
+  toSafeDate,
+  isGoatedUser,
+  validateUsername,
+  isBeggingMessage,
+  muteUser,
+  initializeBotWithRetry,
+  COMMAND_COOLDOWN,
+  MUTE_DURATIONS,
+  SPAM_DETECTION,
+  BEGGING_KEYWORDS
+};
 
 // Cleanup function to stop polling
 async function stopBot() {
@@ -170,13 +478,27 @@ function checkCommandCooldown(userId: string, command: string): boolean {
   return false;
 }
 
-// Set up bot commands with proper descriptions
+interface TelegramUserWithGoated {
+  telegramId: string;
+  goatedUsername: string | null;
+  isVerified: boolean;
+}
+
+// Already defined above
+
+// Error interface
+interface ApiError {
+  error: string;
+  code: number;
+}
+
+// Set up bot commands with proper descriptions 
 async function setupBotCommands() {
   try {
     // Clear existing commands
-    await bot.deleteMyCommands();
+    await bot.setMyCommands([]); // Alternative to deleteMyCommands
 
-    const baseCommands = [
+    const baseCommands: BotCommands[] = [
       { command: 'start', description: '🚀 Start using the bot' },
       { command: 'verify', description: '🔐 Link your Goated account' },
       { command: 'stats', description: '📊 Check your wager stats' },
@@ -304,7 +626,7 @@ bot.onText(/\/help/, async (msg) => {
 bot.onText(/\/check_stats (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const telegramId = msg.from?.id.toString();
-  const username = match?.[1]?.trim();
+  const username = validateUsername(match?.[1]?.trim());
 
   // Basic validation
   if (!telegramId) {
@@ -333,36 +655,37 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
     // DATA FETCHING
     // 1. Connect to Goated's internal API endpoint for affiliate statistics
     // This endpoint provides real-time wager data for all affiliates
-    const response = await fetch(
-      `http://0.0.0.0:5000/api/affiliate/stats?username=${encodeURIComponent(username)}`,
-      {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-      }
-    );
+    const apiUrl = new URL('http://0.0.0.0:5000/api/affiliate/stats');
+    apiUrl.searchParams.append('username', username);
+    
+    const response = await fetch(apiUrl.toString(), {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+    });
 
     // 2. Parse and transform the API response
-    const data = await response.json();
+    const data = await response.json() as ApiResponse<MonthlyData>;
     // Monthly data contains the primary stats we display
     const transformedData = data?.data?.monthly?.data;
     // Find the specific user in the data array
-    let userStats = transformedData?.find(u =>
+    let userStats = transformedData?.find((u: GoatedUser) =>
       u.name.toLowerCase() === username.toLowerCase()
     );
 
     // ADMIN LOOKUP FEATURE
     // If admin is checking by Telegram handle (@username), lookup their Goated username
     if (!userStats && msg.from?.username === 'xGoombas' && username.startsWith('@')) {
+      const cleanUsername = username.substring(1);
       const telegramUser = await db.select()
         .from(telegramUsers)
-        .where(eq(telegramUsers.telegramId, username.substring(1)))
+        .where(eq(telegramUsers.telegramUsername, cleanUsername))
         .execute();
 
       // If found, look up their stats using their Goated username
       if (telegramUser?.[0]?.goatedUsername) {
-        userStats = transformedData?.find(u =>
+        userStats = transformedData?.find((u: GoatedUser) =>
           u.name.toLowerCase() === telegramUser[0].goatedUsername?.toLowerCase()
         );
       }
@@ -385,6 +708,29 @@ All-time Wager: $${(userStats.wagered?.all_time || 0).toLocaleString()}`;
   } catch (error) {
     console.error('Error checking stats:', error);
     return bot.sendMessage(chatId, 'An error occurred while fetching stats.');
+  }
+});
+
+// Recurring message command handler
+bot.onText(/\/add_recurring_message/, async (msg) => {
+  const chatId = msg.chat.id;
+  if (msg.from?.username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+
+  try {
+    const newMessage = createRecurringMessage({
+      message: 'Default message',
+      schedule: '0 * * * *',
+      chatId: chatId,
+      targetGroups: [chatId.toString()],
+    });
+
+    await scheduleRecurringMessage(newMessage);
+    await bot.sendMessage(chatId, '✅ Recurring message added successfully!');
+  } catch (error) {
+    console.error('Error adding recurring message:', error);
+    await bot.sendMessage(chatId, '❌ Failed to add recurring message.');
   }
 });
 
@@ -751,9 +1097,6 @@ _Stay Goated, Stay Winning\\! 🐐_`;
   }
 });
 
-// Export bot instance for other modules
-export default bot;
-
 // Helper function to reformat Goated links
 function reformatGoatedLinks(text: string): string {
   // Match any Goated.com URL
@@ -767,6 +1110,9 @@ function reformatGoatedLinks(text: string): string {
     return 'https://www.goated.com/r/goatedvips';
   });
 }
+
+// Export bot instance for other modules
+export default bot;
 
 // Admin command to show forwarding setup guide
 bot.onText(/\/setup_guide/, async (msg) => {
@@ -1228,150 +1574,9 @@ bot.onText(/\/remove_recurring_message (.+)/, async (message: Message, match: Re
     return bot.sendMessage(chatId, '❌ Message not found.');
   }
 });
-  message: string;
-  schedule: string;
-  targetGroups: string[];
-  enabled: boolean;
-}
+// Storage for recurring messages is already defined in global scope
 
-// Helper function to schedule a recurring message
-function scheduleRecurringMessage(message: RecurringMessage): void {
-  return scheduleJob(message.schedule, async () => {
-    if (!message.enabled) return;
-
-    for (const groupId of message.targetGroups) {
-      try {
-        await bot.sendMessage(groupId, message.message);
-        logDebug(`Recurring message ${message.id} sent to group ${groupId}`);
-      } catch (error) {
-        console.error(`Error sending recurring message to group ${groupId}:`, error);
-      }
-    }
-  });
-}
-
-// Storage for recurring messages 
-const recurringMessages = new Map<string, RecurringMessage>();
-
-// Admin command to add recurring message
-bot.onText(/\/add_recurring_message/, async (message: Message) => {
-  const chatId = message.chat.id;
-  const username = message.from?.username;
-
-  if (username !== 'xGoombas') {
-    return bot.sendMessage(chatId, '❌ Only authorized users can manage recurring messages.');
-  }
-
-  try {
-    // Get message details through conversation
-    await bot.sendMessage(chatId, 'Please send the message you want to schedule:');
-    
-    const messageResponse = await new Promise<Message>((resolve) => {
-      const messageHandler = (response: Message) => {
-        if (response.chat.id === chatId) {
-          bot.removeListener('message', messageHandler);
-          resolve(response);
-        }
-      };
-      bot.on('message', messageHandler);
-    });
-
-    await bot.sendMessage(chatId, 'Please send the schedule in cron format (e.g., "0 9 * * *" for daily at 9 AM):');
-    
-    const scheduleResponse = await new Promise<Message>((resolve) => {
-      const scheduleHandler = (response: Message) => {
-        if (response.chat.id === chatId) {
-          bot.removeListener('message', scheduleHandler);
-          resolve(response);
-        }
-      };
-      bot.on('message', scheduleHandler);
-    });
-
-    // Use crypto.randomUUID() to generate unique ID
-    const messageId = crypto.randomUUID();
-    const recurringMessage: RecurringMessage = {
-      id: messageId,
-      message: messageResponse.text || '',
-      schedule: scheduleResponse.text || '',
-      targetGroups: ALLOWED_GROUP_IDS,
-      enabled: true
-    };
-
-    recurringMessages.set(messageId, recurringMessage);
-    scheduleRecurringMessage(recurringMessage);
-
-    return bot.sendMessage(chatId,
-      `✅ Recurring message added successfully!\n` +
-      `ID: ${messageId}\n` +
-      `Schedule: ${recurringMessage.schedule}\n` +
-      `Target Groups: ${recurringMessage.targetGroups.length}`);
-  } catch (error) {
-    console.error('Error adding recurring message:', error);
-    return bot.sendMessage(chatId, '❌ Error setting up recurring message.');
-  }
-});
-
-// Admin command to list recurring messages
-bot.onText(/\/list_recurring_messages/, async (message: Message) => {
-  const chatId = message.chat.id;
-  const username = message.from?.username;
-
-  if (username !== 'xGoombas') {
-    return bot.sendMessage(chatId, '❌ Only authorized users can view recurring messages.');
-  }
-
-  const messageList = Array.from(recurringMessages.values())
-    .map(message => 
-      `🔄 Message ID: ${message.id}\n` +
-      `📝 Content: ${message.message}\n` +
-      `⏰ Schedule: ${message.schedule}\n` +
-      `Status: ${message.enabled ? '✅ Enabled' : '❌ Disabled'}\n` +
-      `───────────────────`
-    ).join('\n\n');
-
-  return bot.sendMessage(chatId,
-    messageList || '📝 No recurring messages set up.');
-});
-
-// Admin command to remove recurring message
-bot.onText(/\/remove_recurring_message (.+)/, async (message: Message, match: RegExpExecArray | null) => {
-  const chatId = message.chat.id;
-  const username = message.from?.username;
-
-  if (username !== 'xGoombas') {
-    return bot.sendMessage(chatId, '❌ Only authorized users can remove recurring messages.');
-  }
-
-  const messageId = match?.[1];
-  if (!messageId) {
-    return bot.sendMessage(chatId, '❌ Please provide a message ID.');
-  }
-
-  if (recurringMessages.delete(messageId)) {
-    return bot.sendMessage(chatId, '✅ Recurring message removed successfully!');
-  } else {
-    return bot.sendMessage(chatId, '❌ Message not found.');
-  }
-});
-
-const recurringMessages = new Map<string, RecurringMessage>();
-
-// Helper function to schedule a recurring message
-function scheduleRecurringMessage(message: RecurringMessage) {
-  return scheduleJob(message.schedule, async () => {
-    if (!message.enabled) return;
-
-    for (const groupId of message.targetGroups) {
-      try {
-        await bot.sendMessage(groupId, message.message);
-        console.log(`[Recurring Message] Sent message ${message.id} to group ${groupId}`);
-      } catch (error) {
-        console.error(`[Recurring Message] Error sending to group ${groupId}:`, error);
-      }
-    }
-  });
-}
+// Admin commands are already defined above
 
 // Admin command to add recurring message
 bot.onText(/\/add_recurring_message/, async (msg) => {
