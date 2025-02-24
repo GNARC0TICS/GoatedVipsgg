@@ -3,9 +3,10 @@ import type { Message as TelegramMessage, ChatMember, ChatPermissions as Telegra
 import { db } from '@db';
 import { eq } from 'drizzle-orm';
 import { users } from '../../db/schema';
-import { telegramUsers, verificationRequests, challenges, challengeEntries } from '../../db/schema/telegram';
+import { telegramUsers, verificationRequests, challenges, challengeEntries, botResponses } from '../../db/schema/telegram';
 import { scheduleJob } from 'node-schedule';
 import { randomUUID } from 'crypto';
+import { nlpService } from './nlp-service';
 
 // Type declarations - keep minimal for now
 type Message = TelegramMessage;
@@ -42,6 +43,76 @@ bot.onText(/\/ping/, (msg) => {
   });
 });
 
+// Admin command to teach the bot new responses
+bot.onText(/\/teach (.+)=>(.+)/, async (msg, match) => {
+  if (msg.from?.username !== 'xGoombas') {
+    return bot.sendMessage(msg.chat.id, '❌ Only authorized users can teach me new responses.');
+  }
+
+  if (!match?.[1] || !match?.[2]) {
+    return bot.sendMessage(msg.chat.id, '❌ Please use the format: /teach pattern=>response');
+  }
+
+  const pattern = match[1].trim();
+  const response = match[2].trim();
+
+  try {
+    await nlpService.addResponse(pattern, response, msg.from.username);
+    await bot.sendMessage(msg.chat.id, '✅ I learned a new response pattern!');
+  } catch (error) {
+    console.error('Error teaching response:', error);
+    await bot.sendMessage(msg.chat.id, '❌ Failed to learn the new response.');
+  }
+});
+
+// Message handler for begging detection and bot mentions
+bot.on('message', async (msg) => {
+  if (!msg.text) return;
+
+  const messageText = msg.text.toLowerCase();
+  const chatId = msg.chat.id;
+  const username = msg.from?.username;
+  const telegramId = msg.from?.id.toString();
+
+  if (!telegramId) return;
+
+  // Check for begging patterns
+  if (isBeggingMessage(messageText)) {
+    const randomWarning = BEGGING_WARNINGS[Math.floor(Math.random() * BEGGING_WARNINGS.length)];
+    const warningMessage = randomWarning.replace('{username}', username || 'user');
+    await bot.sendMessage(chatId, warningMessage);
+    return;
+  }
+
+  // Process message with NLP service
+  const processed = nlpService.processMessage(messageText);
+  const bestMatch = await nlpService.findBestResponse(processed);
+
+  // If we found a good match, use it
+  if (bestMatch) {
+    await bot.sendMessage(chatId, bestMatch.responseText);
+    await nlpService.recordInteraction(messageText, bestMatch.responseId, telegramId);
+    return;
+  }
+
+  // Check if bot is mentioned or replied to
+  const botMention = `@${await bot.getMe().then(me => me.username)}`;
+  const isBotMentioned = messageText.includes(botMention.toLowerCase()) || 
+                        msg.reply_to_message?.from?.id === (await bot.getMe()).id;
+
+  if (isBotMentioned) {
+    const responses = [
+      "👋 Hey there! Need help? Try /help to see what I can do!",
+      "🎮 Looking for stats? Use /stats to check your progress!",
+      "🏆 Want to see the leaderboard? Just type /leaderboard!",
+      "💬 Need assistance? Feel free to ask @xGoombas!"
+    ];
+
+    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    await bot.sendMessage(chatId, randomResponse);
+  }
+});
+
 // Constants
 const ADMIN_TELEGRAM_IDS = ['1689953605'];
 const ALLOWED_GROUP_IDS = process.env.ALLOWED_GROUP_IDS?.split(',') || [];
@@ -75,6 +146,27 @@ const BEGGING_WARNINGS = [
   "⚠️ @{username} This is a warning for begging. Join the community events instead of asking for handouts!",
   "⚠️ @{username} No begging allowed! Check /help to see how you can earn through races and challenges!"
 ] as const;
+
+// Helper function to detect begging
+function isBeggingMessage(text: string | undefined | null): boolean {
+  const lowerText = text?.toLowerCase().trim() || '';
+
+  if (BEGGING_PATTERNS.DIRECT.some(pattern => lowerText.includes(pattern))) {
+    return true;
+  }
+
+  if (BEGGING_PATTERNS.SUBTLE.some(pattern => lowerText.includes(pattern))) {
+    return true;
+  }
+
+  const currencyPattern = /[\$\€\£\¥]|([0-9]+\s*(dollars|euros|usd|coins|tips))/gi;
+  const currencyMatches = lowerText.match(currencyPattern) || [];
+  if (currencyMatches.length > 0 && BEGGING_PATTERNS.SUBTLE.some(pattern => lowerText.includes(pattern))) {
+    return true;
+  }
+
+  return false;
+}
 
 // Bot personality traits
 const BOT_PERSONALITY = {
@@ -160,26 +252,6 @@ export function validateUsername(username?: string | null): string {
   return validateText(username, 'Username is required');
 }
 
-// Message and text validation helpers
-function isBeggingMessage(text: string | undefined | null): boolean {
-  const lowerText = sanitizeText(text).toLowerCase();
-
-  if (BEGGING_PATTERNS.DIRECT.some(pattern => lowerText.includes(pattern))) {
-    return true;
-  }
-
-  if (BEGGING_PATTERNS.SUBTLE.some(pattern => lowerText.includes(pattern))) {
-    return true;
-  }
-
-  const currencyPattern = /[\$\€\£\¥]|([0-9]+\s*(dollars|euros|usd|coins|tips))/gi;
-  const currencyMatches = lowerText.match(currencyPattern) || [];
-  if (currencyMatches.length > 0 && BEGGING_PATTERNS.SUBTLE.some(pattern => lowerText.includes(pattern))) {
-    return true;
-  }
-
-  return false;
-}
 
 // Recurring message helpers
 async function scheduleRecurringMessage(message: RecurringMessage): Promise<void> {
@@ -261,6 +333,8 @@ bot.onText(/\/help/, async (msg) => {
     message += `• /add\\_recurring\\_message \\- Add a recurring message\n`;
     message += `• /list\\_recurring\\_messages \\- List recurring messages\n`;
     message += `• /remove\\_recurring\\_message \\- Remove a recurring message\n\n`;
+    message += `*NLP Commands:*\n`;
+    message += `• /teach pattern=>response - Teach the bot a new response\n\n`;
   }
 
   message += `*Available Commands:*\n`;
