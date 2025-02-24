@@ -1,24 +1,79 @@
-import TelegramBot from 'node-telegram-bot-api';
+import TelegramBot, { Message, ChatMember } from 'node-telegram-bot-api';
 import { db } from '@db';
-import { eq, and, or } from 'drizzle-orm';
-import { telegramUsers, verificationRequests } from '@db/schema/telegram';
-import { API_CONFIG } from '../config/api';
+import { eq } from 'drizzle-orm';
+import { telegramUsers, verificationRequests, challenges, challengeEntries } from '@db/schema/telegram';
 import { users } from '@db/schema';
-import crypto from 'crypto';
+import '@types/node-schedule';
 import { scheduleJob } from 'node-schedule';
 
+// Types for bot
+interface Challenge {
+  id: string;
+  name: string;
+  description: string;
+  startDate: Date;
+  endDate: Date;
+  prizePool: number;
+}
+
+interface ChallengeEntry {
+  id: string;
+  userId: string;
+  challengeId: string;
+  score: number;
+  rank: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Create singleton bot instance with polling enabled
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const ADMIN_TELEGRAM_IDS = ['1689953605'];
+if (!token) {
+  throw new Error('TELEGRAM_BOT_TOKEN must be provided');
+}
+
+const bot = new TelegramBot(token, { polling: true });
+console.log('[Telegram Bot] Created with polling enabled');
+
+// Constants
+const ADMIN_TELEGRAM_IDS = ['1689953605']; 
 const ALLOWED_GROUP_IDS = process.env.ALLOWED_GROUP_IDS?.split(',') || [];
 
 // Add constants for AI conversation
 const CONVERSATION_COOLDOWN = 10000; // 10 seconds between AI responses
-const LEARNING_PATTERNS = {
-  POSITIVE: ['thank', 'thanks', 'helpful', 'good bot'],
-  NEGATIVE: ['stop', 'shut up', 'bad bot'],
-  BEGGING: ['give me', 'send me', 'need money', 'spare some'],
-  SHARING: ['airdrop', 'giving away', 'sharing']
+const BEGGING_PATTERNS = {
+  DIRECT: [
+    'give me', 'send me', 'need money', 'spare some', 
+    'can send?', 'sen pls', 'pls send', 'send pls',
+    'send coin', 'gimme', 'hook me up', 'need help$',
+    'can you send', 'send some', 'send anything'
+  ],
+  SUBTLE: [
+    'broke', 'poor', 'help me out', 'anything helps',
+    'can i get a tip', 'tip me', 'pls', 'plz',
+    'no money', 'struggling', 'desperate', 'appreciate anything',
+    'having a hard time', 'need assistance', 'could use help'
+  ],
+  SPAM: [
+    'copy paste', 'forwarded message', 'chain message',
+    'mass message', 'spam', 'bulk message'
+  ],
+  SHARING: [
+    'airdrop', 'giveaway', 'sharing',
+    'giving away', 'drop', 'contest'
+  ]
 };
+
+// Message tracking for spam detection
+const userMessageCounts = new Map<string, { count: number; timestamp: number; warnings: number }>();
+
+// Enhanced warning messages for begging
+const BEGGING_WARNINGS = [
+  "⚠️ @{username} Begging is not allowed in this group. Focus on participating in races and events instead!",
+  "⚠️ Hey @{username}, we don't allow begging here. Try joining our monthly races to earn rewards!",
+  "⚠️ @{username} This is a warning for begging. Join the community events instead of asking for handouts!",
+  "⚠️ @{username} No begging allowed! Check /help to see how you can earn through races and challenges."
+];
 
 // Bot personality traits
 const BOT_PERSONALITY = {
@@ -28,12 +83,35 @@ const BOT_PERSONALITY = {
   CONGRATULATORY: ['Well done!', 'Amazing!', 'Great job!', 'Fantastic!']
 };
 
-if (!token) {
-  throw new Error('TELEGRAM_BOT_TOKEN must be provided');
-}
+// Helper function to check if a message contains begging
+function containsBegging(text: string): boolean {
+  const lowerText = text.toLowerCase();
+  
+  // Check direct begging patterns
+  if (BEGGING_PATTERNS.DIRECT.some(pattern => lowerText.includes(pattern))) {
+    return true;
+  }
 
-// Create a bot instance with polling
-const bot = new TelegramBot(token, { polling: false });
+  // Check subtle begging patterns
+  if (BEGGING_PATTERNS.SUBTLE.some(pattern => lowerText.includes(pattern))) {
+    // If it contains 'pls' or 'plz', do additional context check
+    if (lowerText.includes('pls') || lowerText.includes('plz')) {
+      // Look for money/sending related words near 'pls'
+      const moneyWords = ['send', 'give', 'tip', 'money', 'coin', 'spare', 'help', 'need'];
+      return moneyWords.some(word => lowerText.includes(word));
+    }
+    return true;
+  }
+
+  // Check if message contains multiple currency symbols or numbers with currency
+  const currencyPattern = /[\$\€\£\¥]|([0-9]+\s*(dollars|euros|usd|coins|tips))/gi;
+  const currencyMatches = lowerText.match(currencyPattern) || [];
+  if (currencyMatches.length > 0 && BEGGING_PATTERNS.SUBTLE.some(pattern => lowerText.includes(pattern))) {
+    return true;
+  }
+
+  return false;
+}
 
 // Cleanup function to stop polling
 async function stopBot() {
@@ -49,10 +127,6 @@ async function stopBot() {
 process.on('SIGINT', stopBot);
 process.on('SIGTERM', stopBot);
 
-// Start polling in all environments
-bot.startPolling();
-console.log('[Telegram Bot] Polling started');
-
 // Debug logging function
 function logDebug(message: string, data?: any) {
   console.log(`[Telegram Bot] ${message}`, data ? JSON.stringify(data, null, 2) : '');
@@ -67,9 +141,11 @@ const MUTE_DURATIONS = {
 };
 
 const SPAM_DETECTION = {
-  TIME_WINDOW: 60000, // 1 minute
-  MAX_MESSAGES: 5,
-  MUTE_DURATION: 300 // 5 minutes
+  TIME_WINDOW: 30000, // 30 seconds
+  MAX_MESSAGES: 5,    // 5 messages
+  MUTE_DURATION: 300, // 5 minutes
+  WARNINGS_BEFORE_BAN: 3,
+  BAN_DURATION: 86400 // 24 hours
 };
 
 const BEGGING_KEYWORDS = [
@@ -200,9 +276,10 @@ bot.onText(/\/help/, async (msg) => {
     message += `• /warn @username reason \\- Warn a user\n`;
     message += `• /ban @username reason \\- Ban a user\n`;
     message += `• /bootfuck @username \\- Bootfuck a user\n\n`;
-    message += `• /add_recurring_message \\- Add a recurring message\n`;
-    message += `• /list_recurring_messages \\- List recurring messages\n`;
-    message += `• /remove_recurring_message \\- Remove a recurring message\n\n`;
+    message += `*Recurring Messages:*\n`;
+    message += `• /add\\_recurring\\_message \\- Add a recurring message\n`;
+    message += `• /list\\_recurring\\_messages \\- List recurring messages\n`;
+    message += `• /remove\\_recurring\\_message \\- Remove a recurring message\n\n`;
   }
 
   message += `*Available Commands:*\n`;
@@ -498,6 +575,184 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
     return bot.sendMessage(chatId, '❌ Error sending broadcast message.');
   }
 });
+
+// Enhanced message handler with better spam detection
+bot.on('message', async (msg) => {
+  if (!msg.text || !msg.from || msg.chat.type === 'private') return;
+
+  const userId = msg.from.id.toString();
+  const chatId = msg.chat.id;
+  const messageText = msg.text.toLowerCase();
+  const now = Date.now();
+
+  // Get or initialize user's message tracking
+  let userTracking = userMessageCounts.get(userId) || { count: 0, timestamp: now, warnings: 0 };
+
+  // Reset counter if time window has passed
+  if (now - userTracking.timestamp > SPAM_DETECTION.TIME_WINDOW) {
+    userTracking = { count: 1, timestamp: now, warnings: userTracking.warnings };
+  } else {
+    userTracking.count++;
+  }
+
+  userMessageCounts.set(userId, userTracking);
+
+  // Check for spam
+  if (userTracking.count > SPAM_DETECTION.MAX_MESSAGES) {
+    try {
+      userTracking.warnings++;
+      userMessageCounts.set(userId, userTracking);
+
+      // Delete spam messages
+      try {
+        await bot.deleteMessage(chatId, msg.message_id.toString());
+      } catch (error) {
+        console.error('Error deleting spam message:', error);
+      }
+
+      if (userTracking.warnings >= SPAM_DETECTION.WARNINGS_BEFORE_BAN) {
+        // Ban user for repeated spam
+        await bot.banChatMember(chatId, Number(userId), {
+          until_date: Math.floor(now / 1000) + SPAM_DETECTION.BAN_DURATION
+        });
+        await bot.sendMessage(chatId,
+          `🚫 ${msg.from.username || userId} has been banned for repeated spamming.`);
+      } else {
+        // Mute user temporarily
+        await bot.restrictChatMember(chatId, Number(userId), {
+          until_date: Math.floor(now / 1000) + SPAM_DETECTION.MUTE_DURATION,
+          permissions: {
+            can_send_messages: false,
+            can_send_media_messages: false,
+            can_send_other_messages: false,
+            can_add_web_page_previews: false
+          }
+        });
+        await bot.sendMessage(chatId,
+          `⚠️ @${msg.from.username} has been muted for ${SPAM_DETECTION.MUTE_DURATION / 60} minutes due to spamming.\n` +
+          `Warning ${userTracking.warnings}/${SPAM_DETECTION.WARNINGS_BEFORE_BAN}`);
+      }
+    } catch (error) {
+      console.error('Error handling spam:', error);
+    }
+    return;
+  }
+
+  // Check for begging
+  const isBegging = containsBegging(messageText);
+
+  if (isBegging) {
+    try {
+      await bot.deleteMessage(chatId, msg.message_id.toString());
+      const warningMessage = BEGGING_WARNINGS[Math.floor(Math.random() * BEGGING_WARNINGS.length)]
+        .replace('{username}', msg.from.username || userId);
+      
+      await bot.sendMessage(chatId, warningMessage);
+
+      // Increment warning count
+      userTracking.warnings++;
+      userMessageCounts.set(userId, userTracking);
+
+      if (userTracking.warnings >= SPAM_DETECTION.WARNINGS_BEFORE_BAN) {
+        await bot.banChatMember(chatId, Number(userId));
+        await bot.sendMessage(chatId,
+          `🚫 ${msg.from.username || userId} has been banned for repeated begging despite warnings.`);
+      }
+    } catch (error) {
+      console.error('Error handling begging:', error);
+    }
+  }
+
+  // Positive reinforcement for sharing
+  const isSharing = BEGGING_PATTERNS.SHARING
+    .some(pattern => messageText.includes(pattern));
+
+  if (isSharing && !isBegging) {
+    // Random delay to make it feel more natural
+    setTimeout(async () => {
+      try {
+        await bot.sendMessage(chatId,
+          `Thanks for sharing with the community, @${msg.from.username}! 🎁`);
+      } catch (error) {
+        console.error('Error sending appreciation message:', error);
+      }
+    }, Math.random() * 2000 + 1000); // Random delay between 1-3 seconds
+  }
+});
+
+// Add group rules command with proper markdown formatting
+bot.onText(/\/rules/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  const rulesMessage = `🐐 *GoatedVIPs Group Rules* 🐐
+
+1️⃣ *General Group Behavior*
+• Respect all members and admins
+• No spam or excessive messages 
+• Keep discussions related to Goated and gambling
+• English only in main chat
+• No referral links except official GoatedVIPs links
+
+2️⃣ *Zero Tolerance Policies*
+• NO begging for money/coins/tips
+• NO scamming or suspicious links
+• NO harassment or bullying
+• NO political or religious discussions
+• NO advertising without admin approval
+
+3️⃣ *Race & Competition Guidelines*
+• Verify your account to participate
+• Follow race requirements exactly
+• No multi\\-accounting or cheating
+• Report issues to admins only
+• Accept all admin decisions as final
+
+4️⃣ *Verification Requirements*
+• Use /verify command with your Goated username
+• Account must be active on Goated
+• Follow verification instructions exactly
+• Wait for admin approval
+• Keep your Telegram username stable
+
+5️⃣ *Moderation & Consequences*
+• 1st Offense: Warning
+• 2nd Offense: 24hr mute
+• 3rd Offense: 1 week mute
+• Severe/Repeated: Permanent ban
+• Begging = Instant mute/possible ban
+
+6️⃣ *Rewards & Benefits*
+• Monthly race prizes
+• Regular giveaways
+• Special verified member perks
+• Community challenges
+• Exclusive promotions
+
+💡 *Need help?*
+• Use /help for bot commands
+• Contact @xGoombas for support
+• Check pinned messages for updates
+
+⚠️ *Note:* Breaking these rules may result in immediate removal from the group\\. Admins reserve the right to modify rules or take action as needed\\.
+
+_Stay Goated, Stay Winning\\! 🐐_`;
+
+  try {
+    await bot.sendMessage(chatId, rulesMessage, {
+      parse_mode: 'MarkdownV2',
+      disable_web_page_preview: true
+    });
+  } catch (error) {
+    console.error('Error sending rules message:', error);
+    // Send plain text version if markdown fails
+    await bot.sendMessage(chatId, rulesMessage.replace(/[*_\\]/g, ''), {
+      disable_web_page_preview: true
+    });
+  }
+});
+
+// Export bot instance for other modules
+export default bot;
 
 // Helper function to reformat Goated links
 function reformatGoatedLinks(text: string): string {
@@ -846,9 +1101,378 @@ bot.onText(/\/reject_user (.+)/, async (msg, match) => {
     await bot.sendMessage(telegramId, '❌ Your verification request has been rejected. Please ensure you provided the correct Goated username and try again.');
     return bot.sendMessage(chatId, `❌ Rejected verification request for ${request.goatedUsername}`);
   } catch (error) {
-    console.error('Error rejecting user:', error);
+    console.error('Error rejectinguser:', error);
     return bot.sendMessage(chatId, '❌ Error rejecting user.');
   }
+
+// Add recurring message system
+// Interface is already declared above, so we only add implementation
+
+// Helper function to schedule a recurring message
+function scheduleRecurringMessage(message: RecurringMessage): void {
+  scheduleJob(message.schedule, async () => {
+    if (!message.enabled) return;
+
+    for (const groupId of message.targetGroups) {
+      try {
+        await bot.sendMessage(groupId, message.message);
+        logDebug(`Recurring message ${message.id} sent to group ${groupId}`);
+      } catch (error) {
+        console.error(`Error sending recurring message to group ${groupId}:`, error);
+      }
+    }
+  });
+}
+
+// Storage for recurring messages
+const recurringMessages = new Map<string, RecurringMessage>();
+
+// Admin command to add recurring message
+bot.onText(/\/add_recurring_message/, async (message: Message) => {
+  const chatId = message.chat.id;
+  const username = message.from?.username;
+
+  if (username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can manage recurring messages.');
+  }
+
+  try {
+    // Get message details through conversation
+    await bot.sendMessage(chatId, 'Please send the message you want to schedule:');
+    
+    const messageResponse = await new Promise<Message>((resolve) => {
+      const messageHandler = (response: Message) => {
+        if (response.chat.id === chatId) {
+          bot.removeListener('message', messageHandler);
+          resolve(response);
+        }
+      };
+      bot.on('message', messageHandler);
+    });
+
+    await bot.sendMessage(chatId, 'Please send the schedule in cron format (e.g., "0 9 * * *" for daily at 9 AM):');
+    
+    const scheduleResponse = await new Promise<Message>((resolve) => {
+      const scheduleHandler = (response: Message) => {
+        if (response.chat.id === chatId) {
+          bot.removeListener('message', scheduleHandler);
+          resolve(response);
+        }
+      };
+      bot.on('message', scheduleHandler);
+    });
+
+    // Use crypto.randomUUID() to generate unique ID 
+    const messageId = crypto.randomUUID();
+    const newRecurringMessage: RecurringMessage = {
+      id: messageId,
+      message: messageResponse.text || '',
+      schedule: scheduleResponse.text || '',
+      targetGroups: ALLOWED_GROUP_IDS,
+      enabled: true
+    };
+
+    recurringMessages.set(messageId, newRecurringMessage);
+    scheduleRecurringMessage(newRecurringMessage);
+
+    return bot.sendMessage(chatId,
+      `✅ Recurring message added successfully!\n` +
+      `ID: ${messageId}\n` +
+      `Schedule: ${newRecurringMessage.schedule}\n` +
+      `Target Groups: ${newRecurringMessage.targetGroups.length}`);
+  } catch (error) {
+    console.error('Error adding recurring message:', error);
+    return bot.sendMessage(chatId, '❌ Error setting up recurring message.');
+  }
+});
+
+// Admin command to list recurring messages
+bot.onText(/\/list_recurring_messages/, async (message: Message) => {
+  const chatId = message.chat.id;
+  const username = message.from?.username;
+
+  if (username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can view recurring messages.');
+  }
+
+  const messageList = Array.from(recurringMessages.values())
+    .map(msg => 
+      `🔄 Message ID: ${msg.id}\n` +
+      `📝 Content: ${msg.message}\n` +
+      `⏰ Schedule: ${msg.schedule}\n` +
+      `Status: ${msg.enabled ? '✅ Enabled' : '❌ Disabled'}\n` +
+      `───────────────────`
+    ).join('\n\n');
+
+  return bot.sendMessage(chatId,
+    messageList || '📝 No recurring messages set up.');
+});
+
+// Admin command to remove recurring message
+bot.onText(/\/remove_recurring_message (.+)/, async (message: Message, match: RegExpExecArray | null) => {
+  const chatId = message.chat.id;
+  const username = message.from?.username;
+
+  if (username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can remove recurring messages.');
+  }
+
+  const messageId = match?.[1];
+  if (!messageId) {
+    return bot.sendMessage(chatId, '❌ Please provide a message ID.');
+  }
+
+  if (recurringMessages.delete(messageId)) {
+    return bot.sendMessage(chatId, '✅ Recurring message removed successfully!');
+  } else {
+    return bot.sendMessage(chatId, '❌ Message not found.');
+  }
+});
+  message: string;
+  schedule: string;
+  targetGroups: string[];
+  enabled: boolean;
+}
+
+// Helper function to schedule a recurring message
+function scheduleRecurringMessage(message: RecurringMessage): void {
+  return scheduleJob(message.schedule, async () => {
+    if (!message.enabled) return;
+
+    for (const groupId of message.targetGroups) {
+      try {
+        await bot.sendMessage(groupId, message.message);
+        logDebug(`Recurring message ${message.id} sent to group ${groupId}`);
+      } catch (error) {
+        console.error(`Error sending recurring message to group ${groupId}:`, error);
+      }
+    }
+  });
+}
+
+// Storage for recurring messages 
+const recurringMessages = new Map<string, RecurringMessage>();
+
+// Admin command to add recurring message
+bot.onText(/\/add_recurring_message/, async (message: Message) => {
+  const chatId = message.chat.id;
+  const username = message.from?.username;
+
+  if (username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can manage recurring messages.');
+  }
+
+  try {
+    // Get message details through conversation
+    await bot.sendMessage(chatId, 'Please send the message you want to schedule:');
+    
+    const messageResponse = await new Promise<Message>((resolve) => {
+      const messageHandler = (response: Message) => {
+        if (response.chat.id === chatId) {
+          bot.removeListener('message', messageHandler);
+          resolve(response);
+        }
+      };
+      bot.on('message', messageHandler);
+    });
+
+    await bot.sendMessage(chatId, 'Please send the schedule in cron format (e.g., "0 9 * * *" for daily at 9 AM):');
+    
+    const scheduleResponse = await new Promise<Message>((resolve) => {
+      const scheduleHandler = (response: Message) => {
+        if (response.chat.id === chatId) {
+          bot.removeListener('message', scheduleHandler);
+          resolve(response);
+        }
+      };
+      bot.on('message', scheduleHandler);
+    });
+
+    // Use crypto.randomUUID() to generate unique ID
+    const messageId = crypto.randomUUID();
+    const recurringMessage: RecurringMessage = {
+      id: messageId,
+      message: messageResponse.text || '',
+      schedule: scheduleResponse.text || '',
+      targetGroups: ALLOWED_GROUP_IDS,
+      enabled: true
+    };
+
+    recurringMessages.set(messageId, recurringMessage);
+    scheduleRecurringMessage(recurringMessage);
+
+    return bot.sendMessage(chatId,
+      `✅ Recurring message added successfully!\n` +
+      `ID: ${messageId}\n` +
+      `Schedule: ${recurringMessage.schedule}\n` +
+      `Target Groups: ${recurringMessage.targetGroups.length}`);
+  } catch (error) {
+    console.error('Error adding recurring message:', error);
+    return bot.sendMessage(chatId, '❌ Error setting up recurring message.');
+  }
+});
+
+// Admin command to list recurring messages
+bot.onText(/\/list_recurring_messages/, async (message: Message) => {
+  const chatId = message.chat.id;
+  const username = message.from?.username;
+
+  if (username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can view recurring messages.');
+  }
+
+  const messageList = Array.from(recurringMessages.values())
+    .map(message => 
+      `🔄 Message ID: ${message.id}\n` +
+      `📝 Content: ${message.message}\n` +
+      `⏰ Schedule: ${message.schedule}\n` +
+      `Status: ${message.enabled ? '✅ Enabled' : '❌ Disabled'}\n` +
+      `───────────────────`
+    ).join('\n\n');
+
+  return bot.sendMessage(chatId,
+    messageList || '📝 No recurring messages set up.');
+});
+
+// Admin command to remove recurring message
+bot.onText(/\/remove_recurring_message (.+)/, async (message: Message, match: RegExpExecArray | null) => {
+  const chatId = message.chat.id;
+  const username = message.from?.username;
+
+  if (username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can remove recurring messages.');
+  }
+
+  const messageId = match?.[1];
+  if (!messageId) {
+    return bot.sendMessage(chatId, '❌ Please provide a message ID.');
+  }
+
+  if (recurringMessages.delete(messageId)) {
+    return bot.sendMessage(chatId, '✅ Recurring message removed successfully!');
+  } else {
+    return bot.sendMessage(chatId, '❌ Message not found.');
+  }
+});
+
+const recurringMessages = new Map<string, RecurringMessage>();
+
+// Helper function to schedule a recurring message
+function scheduleRecurringMessage(message: RecurringMessage) {
+  return scheduleJob(message.schedule, async () => {
+    if (!message.enabled) return;
+
+    for (const groupId of message.targetGroups) {
+      try {
+        await bot.sendMessage(groupId, message.message);
+        console.log(`[Recurring Message] Sent message ${message.id} to group ${groupId}`);
+      } catch (error) {
+        console.error(`[Recurring Message] Error sending to group ${groupId}:`, error);
+      }
+    }
+  });
+}
+
+// Admin command to add recurring message
+bot.onText(/\/add_recurring_message/, async (msg) => {
+  const chatId = msg.chat.id;
+  const username = msg.from?.username;
+
+  if (username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can manage recurring messages.');
+  }
+
+  try {
+    // Get message details through conversation
+    await bot.sendMessage(chatId, 'Please send the message you want to schedule:');
+    
+    const messageResponse = await new Promise<Message>((resolve) => {
+      const messageHandler = (response: Message) => {
+        if (response.chat.id === chatId) {
+          bot.removeListener('message', messageHandler);
+          resolve(response);
+        }
+      };
+      bot.on('message', messageHandler);
+    });
+
+    await bot.sendMessage(chatId, 'Please send the schedule in cron format (e.g., "0 9 * * *" for daily at 9 AM):');
+    
+    const scheduleResponse = await new Promise<Message>((resolve) => {
+      const scheduleHandler = (response: Message) => {
+        if (response.chat.id === chatId) {
+          bot.removeListener('message', scheduleHandler);
+          resolve(response);
+        }
+      };
+      bot.on('message', scheduleHandler);
+    });
+
+    const messageId = crypto.randomUUID();
+    const recurringMessage: RecurringMessage = {
+      id: messageId,
+      message: messageResponse.text || '',
+      schedule: scheduleResponse.text || '',
+      targetGroups: ALLOWED_GROUP_IDS,
+      enabled: true
+    };
+
+    recurringMessages.set(messageId, recurringMessage);
+    scheduleRecurringMessage(recurringMessage);
+
+    return bot.sendMessage(chatId,
+      `✅ Recurring message added successfully!\n` +
+      `ID: ${messageId}\n` +
+      `Schedule: ${recurringMessage.schedule}\n` +
+      `Target Groups: ${recurringMessage.targetGroups.length}`);
+  } catch (error) {
+    console.error('Error adding recurring message:', error);
+    return bot.sendMessage(chatId, '❌ Error setting up recurring message.');
+  }
+});
+
+// Admin command to list recurring messages
+bot.onText(/\/list_recurring_messages/, async (msg) => {
+  const chatId = msg.chat.id;
+  const username = msg.from?.username;
+
+  if (username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can view recurring messages.');
+  }
+
+  const messageList = Array.from(recurringMessages.values())
+    .map(message => 
+      `🔄 Message ID: ${message.id}\n` +
+      `📝 Content: ${message.message}\n` +
+      `⏰ Schedule: ${message.schedule}\n` +
+      `Status: ${message.enabled ? '✅ Enabled' : '❌ Disabled'}\n` +
+      `───────────────────`
+    ).join('\n\n');
+
+  return bot.sendMessage(chatId,
+    messageList || '📝 No recurring messages set up.');
+});
+
+// Admin command to remove recurring message
+bot.onText(/\/remove_recurring_message (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const username = msg.from?.username;
+
+  if (username !== 'xGoombas') {
+    return bot.sendMessage(chatId, '❌ Only authorized users can remove recurring messages.');
+  }
+
+  const messageId = match?.[1];
+  if (!messageId) {
+    return bot.sendMessage(chatId, '❌ Please provide a message ID.');
+  }
+
+  if (recurringMessages.delete(messageId)) {
+    return bot.sendMessage(chatId, '✅ Recurring message removed successfully!');
+  } else {
+    return bot.sendMessage(chatId, '❌ Message not found.');
+  }
+});
 
 // Add prize pool constants to match web interface
 const PRIZE_POOL = 500;
@@ -866,7 +1490,7 @@ const PRIZEDISTRIBUTION: Record<number, number> = {
 
 // Helper function to get prize amount
 function getPrizeAmount(rank: number): number {
-  return Math.round(PRIZE_POOL * (PRIZE_DISTRIBUTION[rank] || 0) * 100) / 100;
+  return Math.round(PRIZE_POOL * (PRIZEDISTRIBUTION[rank] || 0) * 100) / 100;
 }
 
 // Welcome message handler
@@ -2022,8 +2646,8 @@ bot.onText(/\/ban (@?\w+) (.+)/, async (msg, match) => {
   }
 });
 
-// Handle bootfuck command
-bot.onText(/\/bootfuck (@?\w+)/, async (msg, match) => {
+// Handle bootfuck command with public shaming
+bot.onText(/\/bootfuck (@?\w+)(?: (.+))?/, async (msg, match) => {
   const chatId = msg.chat.id;
   const userId = msg.from?.id.toString();
   const username = msg.from?.username;
@@ -2032,16 +2656,35 @@ bot.onText(/\/bootfuck (@?\w+)/, async (msg, match) => {
     return bot.sendMessage(chatId, '❌ Only authorized users can bootfuck members.');
   }
 
-  if (!checkCommandCooldown(userId, 'bootfuck')) {
-    return bot.sendMessage(chatId, '⚠️ Please wait before using this command again.');
+  if (!match?.[1]) {
+    return bot.sendMessage(chatId, '❌ Please provide a username to bootfuck.\nFormat: /bootfuck @username [reason]');
   }
 
-  const targetUser = match?.[1];
+  const targetUser = match[1].startsWith('@') ? match[1] : `@${match[1]}`;
+  const reason = match?.[2] || 'being a clown 🤡';
 
   try {
-    await bot.banChatMember(chatId, targetUser);
+    // Generate a random shaming message
+    const shamingMessages = [
+      `👢 BOOTFUCKED! ${targetUser} just got absolutely demolished! Reason: ${reason}`,
+      `🚫 ${targetUser} has been yeeted into the shadow realm! Why? ${reason}`,
+      `💀 Rest in pieces ${targetUser}! Got bootfucked for ${reason}`,
+      `🎯 ${targetUser} found out what happens when you ${reason}`,
+      `🔨 ${targetUser} has been bonked and bootfucked! Next time don't ${reason}`
+    ];
+
+    const shamingMessage = shamingMessages[Math.floor(Math.random() * shamingMessages.length)];
+
+    // First send the shaming message
+    await bot.sendMessage(chatId, shamingMessage);
+
+    // Then ban the user
+    await bot.banChatMember(chatId, targetUser.replace('@', ''));
+
+    // Send a follow-up warning to others
     await bot.sendMessage(chatId,
-      `👢 ${targetUser} has been bootfucked from the group!`);
+      `⚠️ Let this be a lesson to everyone else! Don't be like ${targetUser}!`);
+
   } catch (error) {
     console.error('Error bootfucking user:', error);
     await bot.sendMessage(chatId,
@@ -2452,7 +3095,9 @@ bot.on('message', async (msg) => {
   }
 });
 
-// Export for testing
+// Export bot instance and testing utilities
+export default bot;
+
 export const __testing = {
   CONVERSATION_PATTERNS,
   canRespond
