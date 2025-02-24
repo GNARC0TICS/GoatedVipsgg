@@ -2,60 +2,28 @@ import TelegramBot from 'node-telegram-bot-api';
 import type { Message as TelegramMessage, ChatMember, ChatPermissions as TelegramChatPermissions } from 'node-telegram-bot-api';
 import { db } from '@db';
 import { eq } from 'drizzle-orm';
-import { telegramUsers, verificationRequests, challenges, challengeEntries } from '@db/schema/telegram';
-import { users } from '@db/schema';
-import { Job, scheduleJob } from 'node-schedule';
+import { users } from '../../db/schema';
+import { telegramUsers, verificationRequests, challenges, challengeEntries } from '../../db/schema/telegram';
+import { scheduleJob } from 'node-schedule';
 import { randomUUID } from 'crypto';
 
-// Type declarations - moved to top to avoid duplicate declarations
+// Type declarations - keep minimal for now
 type Message = TelegramMessage;
-
-// Chat permissions interface extending Telegram's
 type ChatPermissions = TelegramChatPermissions;
 
-// API and User interfaces
-interface ApiError {
-  error: string;
-  code: number;
-}
-
-interface TelegramUserWithGoated {
-  telegramId: string;
-  goatedUsername: string | null;
-  isVerified: boolean;
-}
-
-interface VerificationRequest {
-  telegramId: string;
-  goatedUsername: string;
-  status: 'pending' | 'approved' | 'rejected';
-  requestedAt: Date;
-  updatedAt: Date | null;
-}
-
-// Bot Commands type
-interface BotCommands {
-  command: string;
-  description: string;
-}
-
-// Message handling types
-interface MessageHandler {
-  cleanupCallback?: () => void;
-  isActive: boolean;
-  lastRun?: number;
-  handler: (msg: TelegramMessage) => Promise<void>; // Added handler property
-}
+console.log('[Telegram Bot] Loading bot module...');
 
 // Config validation
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
+console.log('[Telegram Bot] Token validation successful');
 
-// Create singleton bot instance
+// Create singleton bot instance with proper logging
 let bot: TelegramBot;
 if (!global.bot) {
+  console.log('[Telegram Bot] Creating new bot instance...');
   bot = new TelegramBot(token, { polling: true });
   global.bot = bot;
   console.log('[Telegram Bot] Created with polling enabled');
@@ -63,6 +31,16 @@ if (!global.bot) {
   bot = global.bot;
   console.log('[Telegram Bot] Using existing instance');
 }
+
+// Simple ping command to verify bot is working
+bot.onText(/\/ping/, (msg) => {
+  console.log('[Telegram Bot] Received ping command');
+  bot.sendMessage(msg.chat.id, 'pong!').then(() => {
+    console.log('[Telegram Bot] Sent pong response');
+  }).catch(err => {
+    console.error('[Telegram Bot] Error sending pong:', err);
+  });
+});
 
 // Constants
 const ADMIN_TELEGRAM_IDS = ['1689953605'];
@@ -488,8 +466,10 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
   }
 });
 
-// Cleanup function to stop polling
-async function stopBot() {
+// Export bot instance and stop function
+export default bot;
+
+export async function stopBot() {
   try {
     await bot.stopPolling();
     console.log('[Telegram Bot] Polling stopped');
@@ -501,27 +481,3 @@ async function stopBot() {
 // Handle cleanup on server shutdown
 process.on('SIGINT', stopBot);
 process.on('SIGTERM', stopBot);
-
-// Export bot instance and types
-export default bot;
-
-export {
-  CONVERSATION_COOLDOWN,
-  BEGGING_PATTERNS,
-  BEGGING_WARNINGS,
-  BOT_PERSONALITY
-};
-
-export type {
-  Message,
-  ChatPermissions,
-  VerificationRequest,
-  TelegramUserWithGoated,
-  RecurringMessage,
-  MessageState,
-  ApiError,
-  BotCommands,
-  ApiResponse,
-  MonthlyData,
-  GoatedUser
-};

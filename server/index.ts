@@ -8,7 +8,7 @@ import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
 import { initializeAdmin } from "./middleware/admin";
-import { bot } from './telegram/bot';
+import bot from './telegram/bot';
 import { apiRateLimiter, affiliateRateLimiter, raceRateLimiter } from './middleware/rate-limiter';
 import fetch from 'node-fetch';
 
