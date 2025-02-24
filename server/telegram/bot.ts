@@ -240,10 +240,11 @@ async function muteUser(chatId: number | string, userId: number, duration: numbe
 // Help command
 bot.onText(/\/help/, async (msg) => {
   const chatId = msg.chat.id;
+  const isAdmin = msg.from?.username === 'xGoombas';
 
   let message = `🐐 *Welcome to Goated Stats Bot\\!*\n\n`;
 
-  if (msg.from?.username === 'xGoombas') {
+  if (isAdmin) {
     message += `*Admin Commands:*\n`;
     message += `• /broadcast \\- Send message to all users\n`;
     message += `• /group\\_message \\- Send message to group\n`;
