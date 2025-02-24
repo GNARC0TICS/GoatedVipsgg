@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, serial, integer, json } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, serial, integer } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const telegramUsers = pgTable('telegram_users', {
@@ -52,29 +52,4 @@ export const challengeEntries = pgTable('challenge_entries', {
   verifiedAt: timestamp('verified_at'),
   verifiedBy: text('verified_by'),
   updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`)
-});
-
-// New tables for bot learning system
-export const botResponses = pgTable('bot_responses', {
-  id: serial('id').primaryKey(),
-  pattern: text('pattern').notNull(),
-  response: text('response').notNull(),
-  context: text('context'),
-  useCount: integer('use_count').default(0),
-  successRate: integer('success_rate').default(100),
-  createdBy: text('created_by').notNull(),
-  createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`),
-  isActive: boolean('is_active').default(true),
-  metadata: json('metadata').default({})
-});
-
-export const botInteractions = pgTable('bot_interactions', {
-  id: serial('id').primaryKey(),
-  messageText: text('message_text').notNull(),
-  responseId: integer('response_id').notNull(),
-  telegramUserId: text('telegram_user_id').notNull(),
-  wasHelpful: boolean('was_helpful'),
-  createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
-  context: json('context').default({})
 });
