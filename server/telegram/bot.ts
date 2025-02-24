@@ -241,9 +241,7 @@ async function muteUser(chatId: number | string, userId: number, duration: numbe
 bot.onText(/\/help/, async (msg) => {
   const chatId = msg.chat.id;
 
-  let message = `👋 Welcome to Goombas x Goated Vips Bot\\!\n\n`;
-  message += `⚠️ You must be an affiliate to use this Bot\\.\n`;
-  message += `To get started, I'll need to verify your Goated\\.com account username to proceed\\.\n\n`;
+  let message = `🐐 *Welcome to Goated Stats Bot\\!*\n\n`;
 
   if (msg.from?.username === 'xGoombas') {
     message += `*Admin Commands:*\n`;
@@ -252,7 +250,16 @@ bot.onText(/\/help/, async (msg) => {
     message += `• /user\\_info \\- Get user information\n`;
     message += `• /pending \\- View verification requests\n`;
     message += `• /verify\\_user \\- Verify a user\n`;
-    message += `• /reject\\_user \\- Reject a verification\n\n`;
+    message += `• /reject\\_user \\- Reject a verification\n`;
+    message += `• /makeadmin \\- Grant admin privileges\n`;
+    message += `• /adminpanel \\- Access the admin panel\n`;
+    message += `• /mute @username duration \\- Mute a user\n`;
+    message += `• /warn @username reason \\- Warn a user\n`;
+    message += `• /ban @username reason \\- Ban a user\n\n`;
+    message += `*Recurring Messages:*\n`;
+    message += `• /add\\_recurring\\_message \\- Add a recurring message\n`;
+    message += `• /list\\_recurring\\_messages \\- List recurring messages\n`;
+    message += `• /remove\\_recurring\\_message \\- Remove a recurring message\n\n`;
   }
 
   message += `*Available Commands:*\n`;
