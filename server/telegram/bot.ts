@@ -3,7 +3,7 @@ import type { Message as TelegramMessage, ChatMember, ChatPermissions as Telegra
 import { db } from '@db';
 import { eq } from 'drizzle-orm';
 import { telegramUsers, verificationRequests, challenges, challengeEntries } from '@db/schema/telegram';
-import { users } from '@db/schema/auth';
+import { users } from '@db/schema';
 import { Job, scheduleJob } from 'node-schedule';
 import { randomUUID } from 'crypto';
 
@@ -458,6 +458,10 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
 
   if (adminUsername !== 'xGoombas') {
     return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  }
+
+  if (!match?.[1]) {
+    return bot.sendMessage(chatId, '❌ Please provide a message to broadcast.');
   }
 
   const message = match[1];
