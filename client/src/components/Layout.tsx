@@ -694,9 +694,9 @@ export function Layout({ children }: { children: ReactNode }) {
       </header>
 
       <main className="flex-grow pt-16">
-        <ErrorBoundary>
+        <React.Fragment>
           {children}
-        </ErrorBoundary>
+        </React.Fragment>
         {user?.isAdmin && isMobile && <MobileAdminBadge />}
       </main>
 
