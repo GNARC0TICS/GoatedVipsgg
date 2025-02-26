@@ -37,6 +37,8 @@ import VipProgram from "./pages/VipProgram";
 import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
+import AdminDashboard from "./pages/admin/Dashboard"; // Added import for AdminDashboard
+
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -148,6 +150,11 @@ function Router() {
                 <SupportManagement />
               </ProtectedRoute>
             </Route>
+            <Route path="/admin">
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            </Route> {/* Added route for AdminDashboard */}
 
             {/* 404 Route */}
             <Route component={NotFound} />

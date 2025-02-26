@@ -24,6 +24,8 @@ import {
 import { FloatingSupport } from "./FloatingSupport";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from 'framer-motion';
+import { MobileAdminBadge } from "@/components/MobileAdminBadge"; // Added import
+
 
 // Improved header styling
 const headerClasses = {
@@ -85,6 +87,7 @@ export function Layout({ children }: { children: ReactNode }) {
   });
 
   const isAuthenticated = !!user;
+  const isMobile = window.innerWidth < 768; // Basic mobile detection
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -691,7 +694,10 @@ export function Layout({ children }: { children: ReactNode }) {
       </header>
 
       <main className="flex-grow pt-16">
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
+        {user?.isAdmin && isMobile && <MobileAdminBadge />}
       </main>
 
       {showFloatingSupport && (
