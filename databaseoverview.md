@@ -256,6 +256,94 @@ Email newsletter subscription management.
 
 ## Data Flow and Transformation
 
+### Raw API Data Processing
+
+The platform integrates with external APIs to gather affiliate marketing data, which is then processed and stored in our database. Below is a step-by-step explanation of how raw API data is transformed and stored:
+
+1. **External API Data Format**:
+   
+   The system retrieves raw data in this format:
+   
+   ```json
+   {
+     "status": "success",
+     "metadata": {
+       "totalUsers": 50,
+       "lastUpdated": "2024-01-26T20:11:49.000Z"
+     },
+     "data": {
+       "monthly": {
+         "data": [
+           {
+             "uid": "QBbCmlNl63xCjX3S7OZL",
+             "name": "Yels789",
+             "wagered": {
+               "today": 0,
+               "this_week": 15000,
+               "this_month": 45000,
+               "all_time": 120000
+             }
+           },
+           // More users...
+         ]
+       }
+     }
+   }
+   ```
+
+2. **Data Fetching Process**:
+   - Scheduled job runs every 15 minutes to fetch fresh data
+   - Request is made to the external API endpoint with authentication
+   - Response is validated for proper structure and completeness
+   - On success, processing pipeline is initiated
+   - On failure, retry mechanism activates with exponential backoff
+
+3. **Data Transformation Pipeline**:
+   - Raw JSON response is parsed and validated
+   - Data is normalized into consistent format
+   - User identifiers are matched with internal database user IDs
+   - Timestamps are converted to UTC and standardized format
+   - Wager amounts are converted to decimal with fixed precision
+   - Calculation of derived metrics (ranking, percentages, growth rates)
+
+4. **Database Storage Process**:
+   - For each user in the response:
+     - User's existing records are retrieved from `affiliateStats` table
+     - New values are compared with existing values to detect changes
+     - If new data differs, transaction is initiated to update records
+     - New records are inserted with timestamp and full wager data
+     - Historical trends are calculated and stored
+     - User is added to wager race participants if eligible
+
+5. **Specific Database Field Mapping**:
+   | API Field | Database Table | Database Field | Transformation |
+   |-----------|----------------|----------------|----------------|
+   | `uid` | `affiliateStats` | `userId` (after mapping) | Mapped to internal user ID |
+   | `name` | Reference only | N/A | Used for verification and debugging |
+   | `wagered.today` | `affiliateStats` | Part of daily stats | Stored in daily snapshot |
+   | `wagered.this_week` | `affiliateStats` | Part of weekly stats | Used for weekly totals |
+   | `wagered.this_month` | `affiliateStats` | `totalWager` | Direct mapping for current month |
+   | `wagered.all_time` | `affiliateStats` | Part of historical data | Stored for lifetime metrics |
+   | `metadata.lastUpdated` | `affiliateStats` | `timestamp` | Stored as record timestamp |
+   | `metadata.totalUsers` | System metrics | N/A | Used for monitoring and alerts |
+
+6. **Wager Race Integration**:
+   - Current active races are identified
+   - For each participant in the API data:
+     - Check if user meets minimum wager requirement for race
+     - If new participant, create entry in `wagerRaceParticipants`
+     - Update `total_wager` field with latest amount
+     - Append to `wager_history` JSONB field with timestamp and amount
+     - Calculate and update current rank in the competition
+   - Trigger notifications for significant rank changes
+
+7. **Leaderboard Computation**:
+   - After all updates, recalculate leaderboard positions
+   - Sort all participants by total wager amount in descending order
+   - Update rank field for each participant
+   - Generate leaderboard caches for different time periods (daily, weekly, monthly)
+   - Store timestamp of last leaderboard update
+
 ### Wager Race System
 
 1. **Race Creation Flow**:
