@@ -98,10 +98,22 @@ export function Layout({ children }: { children: ReactNode }) {
       { threshold: 0.1 }
     );
 
-    if (footerRef.current) {
-      observer.observe(footerRef.current);
-      return () => observer.unobserve(footerRef.current!);
+    const footerElement = footerRef.current;
+    if (footerElement) {
+      observer.observe(footerElement);
+      return () => {
+        try {
+          // Only unobserve if the element is still valid
+          if (footerElement instanceof Element) {
+            observer.unobserve(footerElement);
+          }
+          observer.disconnect();
+        } catch (error) {
+          console.error('Error during IntersectionObserver cleanup:', error);
+        }
+      };
     }
+    return () => observer.disconnect();
   }, []);
 
   const handleLogout = async () => {
