@@ -147,6 +147,65 @@ html {
     @apply py-12 md:py-16 lg:py-24;
   }
   
+
+/* Enhanced form styling */
+.form-input {
+  @apply w-full bg-[#1A1B21] border border-[#2A2B31] rounded-lg px-4 py-3 text-white;
+  @apply outline-none focus:ring-2 focus:ring-[#D7FF00] focus:border-[#D7FF00] transition-all duration-200;
+  @apply placeholder:text-gray-500;
+  font-size: 16px; /* Prevents zoom on iOS */
+}
+
+.form-input:focus {
+  box-shadow: 0 0 0 2px rgba(215, 255, 0, 0.2);
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-300 mb-1.5;
+}
+
+.form-button {
+  @apply w-full py-3 px-4 bg-[#D7FF00] text-black font-bold rounded-lg;
+  @apply transition-all duration-200 hover:bg-[#D7FF00]/90 focus:outline-none focus:ring-2 focus:ring-[#D7FF00]/50;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed;
+  font-size: 16px;
+}
+
+.form-container {
+  @apply space-y-4 bg-[#14151A] p-6 rounded-xl border border-[#2A2B31];
+  @apply max-w-md mx-auto my-8;
+}
+
+.auth-title {
+  @apply text-2xl font-heading font-bold text-white text-center mb-6;
+}
+
+.form-error {
+  @apply text-red-500 text-sm mt-1;
+}
+
+/* Form field animation */
+.form-input-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.form-input-container::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #D7FF00;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+.form-input-container:focus-within::after {
+  transform: translateX(0);
+}
+
   .content-spacing {
     @apply space-y-6 md:space-y-8;
   }

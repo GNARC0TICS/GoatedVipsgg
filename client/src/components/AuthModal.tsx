@@ -118,7 +118,7 @@ export default function AuthModal() {
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input {...field} className="bg-[#2A2B31]" />
+                    <Input {...field} className="bg-[#2A2B31] form-input" /> {/* Added form-input class */}
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -131,7 +131,7 @@ export default function AuthModal() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input {...field} type="email" className="bg-[#2A2B31]" />
+                    <Input {...field} type="email" className="bg-[#2A2B31] form-input" /> {/* Added form-input class */}
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -147,8 +147,7 @@ export default function AuthModal() {
                     <Input
                       {...field}
                       type="password"
-                      className="bg-[#2A2B31]"
-                    />
+                      className="bg-[#2A2B31] form-input" /> {/* Added form-input class */}
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -157,7 +156,7 @@ export default function AuthModal() {
             <div className="flex flex-col gap-2">
               <Button
                 type="submit"
-                className="w-full font-heading uppercase tracking-tight text-black bg-[#D7FF00] hover:bg-[#b2d000]"
+                className="w-full font-heading uppercase tracking-tight text-black bg-[#D7FF00] hover:bg-[#b2d000] form-button"  {/* Added form-button class */}
                 disabled={isLoading}
               >
                 {isLoading ? (
