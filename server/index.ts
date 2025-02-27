@@ -8,7 +8,7 @@ import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
 import { initializeAdmin } from "./middleware/admin";
-import bot from './telegram/bot';
+import bot, { stopBot, getBotStatus } from './telegram/bot';
 import { apiRateLimiter, affiliateRateLimiter, raceRateLimiter } from './middleware/rate-limiter';
 import fetch from 'node-fetch';
 
@@ -33,6 +33,25 @@ async function setupMiddleware() {
 
   app.get("/api/health", (_req, res) => {
     res.json({ status: "healthy", timestamp: new Date().toISOString() });
+  });
+
+  // Add a Telegram bot status endpoint for debugging
+  app.get("/api/telegram/status", (_req, res) => {
+    try {
+      const status = getBotStatus();
+      res.json({ 
+        status: "ok", 
+        telegramBot: status,
+        timestamp: new Date().toISOString() 
+      });
+    } catch (error) {
+      console.error("Error getting bot status:", error);
+      res.status(500).json({ 
+        status: "error", 
+        message: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString()
+      });
+    }
   });
 }
 
@@ -190,13 +209,13 @@ async function startServer() {
 // Add Telegram bot shutdown handling
 process.on('SIGTERM', () => {
   log('Received SIGTERM signal. Shutting down gracefully...');
-  bot.stopPolling(); // Stop the Telegram bot
+  stopBot(); // Stop the Telegram bot
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   log('Received SIGINT signal. Shutting down gracefully...');
-  bot.stopPolling(); // Stop the Telegram bot
+  stopBot(); // Stop the Telegram bot
   process.exit(0);
 });
 

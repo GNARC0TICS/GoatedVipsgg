@@ -13,6 +13,10 @@ type ChatPermissions = TelegramChatPermissions;
 
 console.log('[Telegram Bot] Loading bot module...');
 
+// Singleton implementation with proper instance tracking
+let botInstance: TelegramBot | null = null;
+let isPolling = false;
+
 // Config validation
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
@@ -20,17 +24,70 @@ if (!token) {
 }
 console.log('[Telegram Bot] Token validation successful');
 
-// Create singleton bot instance with proper logging
-let bot: TelegramBot;
-if (!global.bot) {
+// Create bot instance with proper error handling
+function createBot(): TelegramBot {
+  if (botInstance) {
+    console.log('[Telegram Bot] Using existing instance');
+    return botInstance;
+  }
+
   console.log('[Telegram Bot] Creating new bot instance...');
-  bot = new TelegramBot(token, { polling: true });
-  global.bot = bot;
-  console.log('[Telegram Bot] Created with polling enabled');
-} else {
-  bot = global.bot;
-  console.log('[Telegram Bot] Using existing instance');
+
+  // Create with polling disabled initially to avoid instant conflicts
+  const bot = new TelegramBot(token, { polling: false });
+
+  // Handle polling errors
+  bot.on('polling_error', (error) => {
+    console.error(`[Telegram Bot] Polling error: ${error.message}`);
+
+    // If we get a conflict error, stop polling to prevent cascading errors
+    if (error.message.includes('409 Conflict')) {
+      console.log('[Telegram Bot] Detected polling conflict, stopping polling');
+      bot.stopPolling().catch(e => {
+        console.error('[Telegram Bot] Error stopping polling after conflict:', e);
+      });
+      isPolling = false;
+
+      // Wait and attempt to restart polling
+      setTimeout(() => {
+        if (!isPolling) {
+          console.log('[Telegram Bot] Attempting to restart polling after conflict');
+          startPolling(bot);
+        }
+      }, 5000);
+    }
+  });
+
+  // Store the instance
+  botInstance = bot;
+  return bot;
 }
+
+// Start polling with error handling
+function startPolling(bot: TelegramBot): void {
+  if (isPolling) {
+    console.log('[Telegram Bot] Already polling, ignoring start request');
+    return;
+  }
+
+  console.log('[Telegram Bot] Starting polling...');
+  bot.startPolling({ restart: false })
+    .then(() => {
+      console.log('[Telegram Bot] Polling started successfully');
+      isPolling = true;
+    })
+    .catch(error => {
+      console.error('[Telegram Bot] Failed to start polling:', error);
+      isPolling = false;
+
+      // Try again after delay
+      setTimeout(() => startPolling(bot), 5000);
+    });
+}
+
+// Create and initialize the bot
+const bot = createBot();
+startPolling(bot);
 
 // Simple ping command to verify bot is working
 bot.onText(/\/ping/, (msg) => {
@@ -126,8 +183,7 @@ interface MessageState {
 
 // Global state
 declare global {
-  var bot: TelegramBot;
-  var scheduledJobs: Map<string, Job>;
+  var scheduledJobs: Map<string, any>;
   var recurringMessages: Map<string, RecurringMessage>;
   var activeChats: Map<number, {
     lastMessage: string;
@@ -466,13 +522,27 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
   }
 });
 
+// Check bot status - this can be useful for debugging
+export function getBotStatus() {
+  return {
+    isInitialized: !!botInstance,
+    isPolling,
+    telegramToken: !!token,
+    commands: bot.getMyCommands()
+  };
+}
+
 // Export bot instance and stop function
 export default bot;
 
 export async function stopBot() {
   try {
-    await bot.stopPolling();
-    console.log('[Telegram Bot] Polling stopped');
+    console.log('[Telegram Bot] Stopping polling...');
+    if (botInstance && isPolling) {
+      await bot.stopPolling();
+      console.log('[Telegram Bot] Polling stopped');
+      isPolling = false;
+    }
   } catch (error) {
     console.error('[Telegram Bot] Error stopping polling:', error);
   }
