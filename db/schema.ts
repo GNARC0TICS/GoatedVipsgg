@@ -300,4 +300,10 @@ export type SelectNewsletterSubscription =
 export type InsertHistoricalRace = typeof historicalRaces.$inferInsert;
 export type SelectHistoricalRace = typeof historicalRaces.$inferSelect;
 
+// Verification request types
+export type InsertGoatedVerificationRequest = typeof goatedVerificationRequests.$inferInsert;
+export type SelectGoatedVerificationRequest = typeof goatedVerificationRequests.$inferSelect;
+export type InsertTelegramVerificationRequest = typeof telegramVerificationRequests.$inferInsert;
+export type SelectTelegramVerificationRequest = typeof telegramVerificationRequests.$inferSelect;
+
 export { challenges, challengeEntries };

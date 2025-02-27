@@ -7,10 +7,11 @@ import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import { db } from "@db";
-import { wagerRaces, users, ticketMessages, supportTickets, bonusCodes } from "@db/schema";
+import { wagerRaces, users, ticketMessages, supportTickets, bonusCodes, goatedVerificationRequests, telegramVerificationRequests } from "@db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { affiliateRateLimiter, raceRateLimiter } from "./middleware/rate-limiter"; // Import rate limiters with correct path
+import { registerVerificationRoutes } from "./verification-routes";
 
 // Add missing type definitions
 interface ExtendedWebSocket extends WebSocket {
