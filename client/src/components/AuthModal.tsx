@@ -93,9 +93,11 @@ export default function AuthModal() {
           variant="outline" 
           className="font-heading uppercase bg-[#1A1B21] border-[#2A2B31] hover:bg-[#2A2B31] hover:border-[#D7FF00] transition-all duration-300"
         >
-          <span className="text-white">LOGIN</span>
-          <span className="text-[#8A8B91]"> / </span>
-          <span className="text-[#D7FF00] group-hover:text-[#D7FF00]">REGISTER</span>
+          <div className="flex items-center">
+            <span className="text-white">LOGIN</span>
+            <span className="text-[#8A8B91]"> / </span>
+            <span className="text-[#D7FF00] group-hover:text-[#D7FF00]">REGISTER</span>
+          </div>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] bg-[#1A1B21] text-white border-[#2A2B31]">
