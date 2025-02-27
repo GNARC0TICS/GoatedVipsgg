@@ -693,9 +693,9 @@ export function Layout({ children }: { children: ReactNode }) {
       </header>
 
       <main className="flex-grow pt-16">
-        <>
-          {children}
-        </>
+          <>
+            {children}
+          </>
         {user?.isAdmin && isMobile && <MobileAdminBadge />}
       </main>
 
