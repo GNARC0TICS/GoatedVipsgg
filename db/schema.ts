@@ -20,6 +20,18 @@ export const users = pgTable("users", {
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastLogin: timestamp("last_login"),
+  
+  // Goated.com account linking fields
+  goatedUid: text("goated_uid").unique(),
+  goatedUsername: text("goated_username"),
+  isGoatedVerified: boolean("is_goated_verified").default(false),
+  goatedVerifiedAt: timestamp("goated_verified_at"),
+  
+  // Telegram account linking fields
+  telegramId: text("telegram_id").unique(),
+  telegramUsername: text("telegram_username"),
+  isTelegramVerified: boolean("is_telegram_verified").default(false),
+  telegramVerifiedAt: timestamp("telegram_verified_at"),
 });
 
 export const wagerRaces = pgTable("wager_races", {
@@ -135,6 +147,33 @@ export const historicalRaces = pgTable("historical_races", {
   status: text("status").notNull().default('completed'),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   metadata: jsonb("metadata").default({}).notNull() // For future extensibility
+});
+
+// Account verification request tables
+export const goatedVerificationRequests = pgTable('goated_verification_requests', {
+  id: serial('id').primaryKey(),
+  platformUserId: integer('platform_user_id').references(() => users.id).notNull(),
+  goatedUsername: text('goated_username').notNull(),
+  goatedUid: text('goated_uid').notNull(),
+  requestedAt: timestamp('requested_at').defaultNow().notNull(),
+  status: text('status').default('pending').notNull(),
+  adminNotes: text('admin_notes'),
+  verifiedAt: timestamp('verified_at'),
+  verifiedBy: integer('verified_by').references(() => users.id),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+export const telegramVerificationRequests = pgTable('telegram_verification_requests', {
+  id: serial('id').primaryKey(),
+  platformUserId: integer('platform_user_id').references(() => users.id).notNull(),
+  telegramId: text('telegram_id').notNull(),
+  telegramUsername: text('telegram_username'),
+  requestedAt: timestamp('requested_at').defaultNow().notNull(),
+  status: text('status').default('pending').notNull(),
+  adminNotes: text('admin_notes'),
+  verifiedAt: timestamp('verified_at'),
+  verifiedBy: integer('verified_by').references(() => users.id),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
 
 export const userRelations = relations(users, ({ one, many }) => ({
