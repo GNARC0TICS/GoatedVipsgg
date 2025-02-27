@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -74,36 +75,34 @@ export default function AdminLoginPage() {
         username: data.username,
         password: data.password,
       });
-
-      if (!result.ok) {
-        toast({
-          variant: "destructive",
-          title: "Admin Login Failed",
-          description: result.message || "Invalid administrator credentials",
-        });
-      } else if (result.user && !result.user.isAdmin) {
-        toast({
-          variant: "destructive",
-          title: "Access Denied",
-          description: "This account doesn't have administrator privileges",
-        });
-        // Log out the non-admin user
-        // No need to await, we'll redirect anyway
-        fetch("/api/logout", { method: "POST" });
-        setTimeout(() => navigate("/admin"), 1000);
+      
+      if (result.status === "success") {
+        if (result.user.isAdmin) {
+          toast({
+            title: "Login successful",
+            description: "Welcome to the admin dashboard",
+          });
+          navigate("/admin/dashboard");
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Access Denied",
+            description: "You don't have administrator privileges",
+          });
+        }
       } else {
         toast({
-          title: "Admin Access Granted",
-          description: "Welcome to the admin dashboard",
+          variant: "destructive",
+          title: "Login failed",
+          description: result.message || "Invalid credentials",
         });
-        navigate("/admin/dashboard");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Admin login error:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "An unexpected error occurred",
+        title: "Login failed",
+        description: "An unexpected error occurred",
       });
     } finally {
       setIsSubmitting(false);
@@ -189,15 +188,8 @@ export default function AdminLoginPage() {
               </form>
             </Form>
           </CardContent>
-          <CardFooter className="flex justify-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/")}
-              className="text-xs"
-            >
-              Return to Main Site
-            </Button>
+          <CardFooter className="flex justify-center text-sm text-muted-foreground">
+            <p>Secure administrator access only</p>
           </CardFooter>
         </Card>
       </motion.div>
