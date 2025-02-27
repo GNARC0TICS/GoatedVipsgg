@@ -58,55 +58,77 @@ export async function initializeAdmin(
     }
 
     // First check if admin user exists
-    const [existingAdmin] = await db
-      .select()
-      .from(users)
-      .where(eq(users.isAdmin, true))
-      .limit(1);
+    try {
+      // Only select specific fields to avoid column errors with new schema
+      const [existingAdmin] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          isAdmin: users.isAdmin
+        })
+        .from(users)
+        .where(eq(users.isAdmin, true))
+        .limit(1);
 
-    if (existingAdmin) {
-      // Only update if username matches to avoid duplicate key error
-      if (existingAdmin.username === username) {
-        const [updatedAdmin] = await db
-          .update(users)
-          .set({
-            password,
-            email: `${username}@admin.local`,
-          })
-          .where(eq(users.id, existingAdmin.id))
-          .returning();
-        console.log("Admin user updated successfully");
-        return updatedAdmin;
+      if (existingAdmin) {
+        // Only update if username matches to avoid duplicate key error
+        if (existingAdmin.username === username) {
+          const [updatedAdmin] = await db
+            .update(users)
+            .set({
+              password,
+              email: `${username}@admin.local`,
+            })
+            .where(eq(users.id, existingAdmin.id))
+            .returning();
+          console.log("Admin user updated successfully");
+          return updatedAdmin;
+        }
+        console.log("Admin user already exists with different username");
+        return existingAdmin;
       }
-      console.log("Admin user already exists with different username");
-      return existingAdmin;
+    } catch (e) {
+      console.warn("Error checking for existing admin, will try to create a new one", e);
+      // Continue with creating a new admin
     }
 
     // Check if username is already taken by non-admin
-    const [existingUser] = await db
-      .select()
-      .from(users)
-      .where(eq(users.username, username))
-      .limit(1);
+    try {
+      const [existingUser] = await db
+        .select({
+          id: users.id,
+          username: users.username
+        })
+        .from(users)
+        .where(eq(users.username, username))
+        .limit(1);
 
-    if (existingUser) {
-      console.warn(`Username ${username} already exists as non-admin user`);
-      return null;
+      if (existingUser) {
+        console.warn(`Username ${username} already exists as non-admin user`);
+        return null;
+      }
+    } catch (e) {
+      console.warn("Error checking for existing user", e);
     }
 
-    // Create new admin user
-    const [newAdmin] = await db
-      .insert(users)
-      .values({
-        username,
-        password,
-        isAdmin: true,
-        email: `${username}@admin.local`,
-      })
-      .returning();
+    // Create new admin user with minimal required fields
+    try {
+      const [newAdmin] = await db
+        .insert(users)
+        .values({
+          username,
+          password,
+          isAdmin: true,
+          email: `${username}@admin.local`,
+        })
+        .returning();
 
-    console.log("New admin user created successfully");
-    return newAdmin;
+      console.log("New admin user created successfully");
+      return newAdmin;
+    } catch (e) {
+      console.error("Failed to create admin user", e);
+      return null;
+    }
   } catch (error) {
     console.error("Error initializing admin:", error);
     // Don't throw, just return null to allow application to continue
