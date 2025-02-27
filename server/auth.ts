@@ -5,8 +5,8 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { users, insertUserSchema, type SelectUser } from "@db/schema";
-import { db } from "@db";
+import { users, insertUserSchema, type SelectUser } from "db/schema";
+import { db } from "db";
 import { eq } from "drizzle-orm";
 import express from 'express';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
@@ -162,7 +162,7 @@ export function setupAuth(app: Express) {
     try {
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
-        const errors = result.error.issues.map((i) => i.message).join(", ");
+        const errors = result.error.issues.map((i: { message: string }) => i.message).join(", ");
         return res.status(400).json({
           status: "error",
           message: "Validation failed",

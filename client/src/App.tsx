@@ -37,7 +37,9 @@ import VipProgram from "./pages/VipProgram";
 import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
-import AdminDashboard from "./pages/admin/Dashboard"; // Added import for AdminDashboard
+import AdminDashboard from "./pages/admin/Dashboard"; 
+import AdminLogin from "@/pages/admin-login";
+import AuthPage from "@/pages/auth-page";
 
 
 function ErrorFallback({ error }: { error: Error }) {
@@ -84,6 +86,9 @@ function Router() {
           <Switch>
             {/* Public Routes */}
             <Route path="/" component={Home} />
+            <Route path="/login" component={AuthPage} />
+            <Route path="/register" component={AuthPage} />
+            <Route path="/admin/login" component={AdminLogin} />
             <Route path="/wager-races" component={WagerRaces} />
             <Route path="/leaderboard" component={Leaderboard} />
             <Route path="/tips-and-strategies" component={TipsAndStrategies} />

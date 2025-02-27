@@ -100,21 +100,36 @@ export default function AuthPage() {
     }
   }, [user]);
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: UserFormData) => {
     setIsSubmitting(true);
     try {
+      // Validate form based on login or registration
+      if (!isLogin && !values.email) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Email is required for registration",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
       // For login, we only need username and password
       const formData = isLogin 
         ? { username: values.username, password: values.password } 
         : values;
         
+      console.log('Submitting form data:', isLogin ? 'login' : 'register', 
+        JSON.stringify({...formData, password: '****'}));
+      
       const result = await (isLogin ? login(formData) : register(formData));
       
       if (!result.ok) {
+        console.error('Auth error:', result.message);
         toast({
           variant: "destructive",
-          title: "Error",
-          description: result.message,
+          title: "Authentication Failed",
+          description: result.message || (isLogin ? "Invalid login credentials" : "Registration failed"),
         });
       } else {
         toast({
@@ -123,13 +138,16 @@ export default function AuthPage() {
         });
         
         // Redirect to dashboard on success
-        window.location.href = "/dashboard";
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 500); // Small delay to allow toast to be seen
       }
     } catch (error: any) {
+      console.error('Auth submission error:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: error.message || "An unexpected error occurred",
       });
     } finally {
       setIsSubmitting(false);
