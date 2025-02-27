@@ -383,7 +383,8 @@ export function registerBasicVerificationRoutes(app: Express) {
           .set({
             telegramUsername: verificationRequest.telegramUsername,
             telegramId: verificationRequest.telegramId,
-            telegramVerified: true
+            isTelegramVerified: true,
+            telegramVerifiedAt: new Date()
           })
           .where(eq(schema.users.id, verificationRequest.platformUserId));
       }
@@ -405,22 +406,54 @@ export function registerBasicVerificationRoutes(app: Express) {
   // Get user's verification status
   app.get("/api/verify/status", requireAuth, async (req: Request, res: Response) => {
     try {
+      // Get user details
+      const [user] = await db
+        .select({
+          id: schema.users.id,
+          username: schema.users.username,
+          goatedUsername: schema.users.goatedUsername,
+          goatedUid: schema.users.goatedUid,
+          isGoatedVerified: schema.users.isGoatedVerified,
+          goatedVerifiedAt: schema.users.goatedVerifiedAt,
+          telegramUsername: schema.users.telegramUsername,
+          telegramId: schema.users.telegramId,
+          isTelegramVerified: schema.users.isTelegramVerified,
+          telegramVerifiedAt: schema.users.telegramVerifiedAt
+        })
+        .from(schema.users)
+        .where(eq(schema.users.id, req.user!.id))
+        .limit(1);
+
+      // Get any pending verification requests
+      const [pendingGoatedRequest] = await db
+        .select()
+        .from(schema.goatedVerificationRequests)
+        .where(
+          and(
+            eq(schema.goatedVerificationRequests.platformUserId, req.user!.id),
+            eq(schema.goatedVerificationRequests.status, "pending")
+          )
+        )
+        .limit(1);
+
+      const [pendingTelegramRequest] = await db
+        .select()
+        .from(schema.telegramVerificationRequests)
+        .where(
+          and(
+            eq(schema.telegramVerificationRequests.platformUserId, req.user!.id),
+            eq(schema.telegramVerificationRequests.status, "pending")
+          )
+        )
+        .limit(1);
+
       res.json({
         status: "success",
         data: {
-          user: {
-            id: req.user!.id,
-            username: req.user!.username,
-            goatedUsername: null,
-            goatedUid: null,
-            goatedVerified: false,
-            telegramUsername: null,
-            telegramId: null,
-            telegramVerified: false,
-          },
+          user,
           pendingRequests: {
-            goated: null,
-            telegram: null,
+            goated: pendingGoatedRequest || null,
+            telegram: pendingTelegramRequest || null,
           },
         },
       });

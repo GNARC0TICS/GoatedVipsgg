@@ -135,19 +135,36 @@ Links Telegram users to both platform accounts and Goated.com accounts, serving 
 | verifiedBy | text | Admin who verified |
 | updatedAt | timestamp | Last update timestamp |
 
-#### `verificationRequests` Table
-Manages Telegram account verification process.
+#### `goatedVerificationRequests` Table
+Manages verification requests for linking Goated.com accounts to platform accounts.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| telegramId | text | Primary key (Telegram ID) |
-| goatedUsername | text | Platform username to verify |
-| requestedAt | timestamp | Request timestamp |
-| status | text | Request status |
-| adminNotes | text | Admin notes |
+| id | serial | Primary key |
+| platformUserId | integer | Foreign key to users table |
+| goatedUsername | text | Goated.com username to verify |
+| goatedUid | text | Goated.com UID to verify |
+| requestedAt | timestamp | Request submission timestamp |
+| status | text | Status (pending/approved/rejected) |
+| adminNotes | text | Optional admin notes |
+| verifiedAt | timestamp | When verification action occurred |
+| verifiedBy | integer | Admin user ID who took action |
+| updatedAt | timestamp | Last update timestamp |
+
+#### `telegramVerificationRequests` Table
+Manages verification requests for linking Telegram accounts to platform accounts.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | serial | Primary key |
+| platformUserId | integer | Foreign key to users table |
+| telegramId | text | Telegram user ID to verify |
 | telegramUsername | text | Telegram username |
-| verifiedAt | timestamp | Verification timestamp |
-| verifiedBy | text | Admin who verified |
+| requestedAt | timestamp | Request submission timestamp |
+| status | text | Status (pending/approved/rejected) |
+| adminNotes | text | Optional admin notes |
+| verifiedAt | timestamp | When verification action occurred |
+| verifiedBy | integer | Admin user ID who took action |
 | updatedAt | timestamp | Last update timestamp |
 
 #### `challenges` Table
@@ -401,7 +418,25 @@ The platform integrates with external APIs to gather affiliate marketing data, w
      - Goated.com Account: External account with wager stats (accessed via API)
      - Telegram Account: For bot interactions and real-time notifications
    
-2. **Placeholder Accounts**:
+2. **Verification System**:
+   - `goatedVerificationRequests` Table: Manages verification requests for Goated.com accounts
+     - Contains user-submitted Goated.com usernames and UIDs
+     - Admin must manually verify each request for security
+     - Tracks verification status, timestamp, and admin notes
+   
+   - `telegramVerificationRequests` Table: Manages verification requests for Telegram accounts
+     - Contains user-submitted Telegram usernames and IDs
+     - Admin must manually verify each request for security
+     - Tracks verification status, timestamp, and admin notes
+   
+   - User Verification Flow:
+     1. User submits verification request from platform
+     2. Admin reviews request in admin panel
+     3. Admin approves or rejects with optional notes
+     4. On approval, user record updated with verified status and account details
+     5. Verification request marked as approved and timestamped
+
+3. **Placeholder Accounts**:
    - All Goated.com users have placeholder accounts on our platform
    - Key fields automatically populated:
      - `uid`: Unique identifier from Goated.com
