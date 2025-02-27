@@ -33,17 +33,29 @@ export default function AuthPage() {
     defaultValues: {
       username: "",
       password: "",
+      email: "",
     },
   });
 
   const onSubmit = async (values: any) => {
     try {
-      const result = await (isLogin ? login(values) : register(values));
+      // For login, we only need username and password
+      const formData = isLogin 
+        ? { username: values.username, password: values.password } 
+        : values;
+        
+      const result = await (isLogin ? login(formData) : register(formData));
+      
       if (!result.ok) {
         toast({
           variant: "destructive",
           title: "Error",
           description: result.message,
+        });
+      } else {
+        toast({
+          title: isLogin ? "Welcome back!" : "Account created",
+          description: isLogin ? "You are now signed in" : "Your account has been created successfully",
         });
       }
     } catch (error: any) {
@@ -92,6 +104,21 @@ export default function AuthPage() {
                     </FormItem>
                   )}
                 />
+                {!isLogin && (
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-sans">Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" {...field} />
+                        </FormControl>
+                        <FormMessage className="font-sans" />
+                      </FormItem>
+                    )}
+                  />
+                )}
                 <FormField
                   control={form.control}
                   name="password"
