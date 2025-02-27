@@ -160,6 +160,13 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res) => {
     try {
+      if (!req.body) {
+        return res.status(400).json({
+          status: "error",
+          message: "Missing request body",
+        });
+      }
+
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
         const errors = result.error.issues.map((i: { message: string }) => i.message).join(", ");
@@ -182,6 +189,14 @@ export function setupAuth(app: Express) {
       }
 
       const { username, password, email } = result.data;
+
+      // Validate input data
+      if (!username || !password || !email) {
+        return res.status(400).json({
+          status: "error",
+          message: "Username, password, and email are required",
+        });
+      }
 
       // Check for existing username
       const [existingUsername] = await db
@@ -228,9 +243,10 @@ export function setupAuth(app: Express) {
       // Log the user in after registration
       req.login(newUser, (err) => {
         if (err) {
+          console.error('Login after registration error:', err);
           return res.status(500).json({
             status: "error",
-            message: "Error logging in after registration",
+            message: "Registration successful but failed to log in. Please log in manually.",
           });
         }
         return res.json({
@@ -248,7 +264,7 @@ export function setupAuth(app: Express) {
       console.error('Registration error:', error);
       return res.status(500).json({ 
         status: "error",
-        message: "Internal server error",
+        message: error.message || "Internal server error during registration",
       });
     }
   });

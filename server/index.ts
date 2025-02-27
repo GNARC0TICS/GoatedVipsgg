@@ -18,7 +18,8 @@ const PORT = 5000;
 
 async function setupMiddleware() {
   // Basic middleware
-  app.use(express.json());
+  app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
 
