@@ -10,7 +10,18 @@ declare module '@db' {
 
 declare module '@db/schema' {
   import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
-  import type { users, notificationPreferences, wagerRaces, wagerRaceParticipants, affiliateStats, supportTickets, newsletterSubscriptions, historicalRaces } from './schema';
+  import type { 
+    users, 
+    notificationPreferences, 
+    wagerRaces, 
+    wagerRaceParticipants, 
+    affiliateStats, 
+    supportTickets, 
+    newsletterSubscriptions, 
+    historicalRaces,
+    goatedVerificationRequests,
+    telegramVerificationRequests
+  } from './schema';
 
   // Re-export all types and schemas
   export * from './schema';
@@ -30,4 +41,10 @@ declare module '@db/schema' {
   export type SelectNewsletterSubscription = InferSelectModel<typeof newsletterSubscriptions>;
   export type InsertHistoricalRace = InferInsertModel<typeof historicalRaces>;
   export type SelectHistoricalRace = InferSelectModel<typeof historicalRaces>;
+  
+  // New verification types
+  export type InsertGoatedVerificationRequest = InferInsertModel<typeof goatedVerificationRequests>;
+  export type SelectGoatedVerificationRequest = InferSelectModel<typeof goatedVerificationRequests>;
+  export type InsertTelegramVerificationRequest = InferInsertModel<typeof telegramVerificationRequests>;
+  export type SelectTelegramVerificationRequest = InferSelectModel<typeof telegramVerificationRequests>;
 }

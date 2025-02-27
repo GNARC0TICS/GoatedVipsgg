@@ -1,17 +1,21 @@
 import { pgTable, text, timestamp, boolean, serial, integer } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+import { sql, relations } from "drizzle-orm";
+import { users } from "../schema";
 
 export const telegramUsers = pgTable('telegram_users', {
   telegramId: text('telegram_id').primaryKey(),
   telegramUsername: text('telegram_username'),
   goatedUsername: text('goated_username'),
+  goatedUid: text('goated_uid'),
   isVerified: boolean('is_verified').default(false),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
   lastActive: timestamp('last_active').default(sql`CURRENT_TIMESTAMP`),
   notificationsEnabled: boolean('notifications_enabled').default(true),
   verifiedAt: timestamp('verified_at'),
   verifiedBy: text('verified_by'),
-  updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`)
+  updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  // Link to platform user
+  platformUserId: integer('platform_user_id').references(() => users.id),
 });
 
 export const verificationRequests = pgTable('verification_requests', {
@@ -53,3 +57,11 @@ export const challengeEntries = pgTable('challenge_entries', {
   verifiedBy: text('verified_by'),
   updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`)
 });
+
+// Define relations
+export const telegramUserRelations = relations(telegramUsers, ({ one }) => ({
+  platformUser: one(users, {
+    fields: [telegramUsers.platformUserId],
+    references: [users.id],
+  }),
+}));

@@ -185,6 +185,9 @@ export const userRelations = relations(users, ({ one, many }) => ({
   raceParticipations: many(wagerRaceParticipants),
   supportTickets: many(supportTickets),
   assignedTickets: many(supportTickets, { relationName: "assignedTickets" }),
+  // New relations for account linking
+  goatedVerifications: many(goatedVerificationRequests),
+  telegramVerifications: many(telegramVerificationRequests),
 }));
 
 export const wagerRaceRelations = relations(wagerRaces, ({ one, many }) => ({
@@ -208,6 +211,37 @@ export const supportTicketRelations = relations(
     }),
     messages: many(ticketMessages),
   }),
+);
+
+// Verification request relations
+export const goatedVerificationRequestRelations = relations(
+  goatedVerificationRequests,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [goatedVerificationRequests.platformUserId],
+      references: [users.id],
+    }),
+    verifier: one(users, {
+      fields: [goatedVerificationRequests.verifiedBy],
+      references: [users.id],
+      relationName: "goatedVerifier",
+    }),
+  })
+);
+
+export const telegramVerificationRequestRelations = relations(
+  telegramVerificationRequests,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [telegramVerificationRequests.platformUserId],
+      references: [users.id],
+    }),
+    verifier: one(users, {
+      fields: [telegramVerificationRequests.verifiedBy],
+      references: [users.id],
+      relationName: "telegramVerifier",
+    }),
+  })
 );
 
 export const insertUserSchema = createInsertSchema(users);
@@ -237,6 +271,12 @@ export const selectNewsletterSubscriptionSchema = createSelectSchema(
 
 export const insertHistoricalRaceSchema = createInsertSchema(historicalRaces);
 export const selectHistoricalRaceSchema = createSelectSchema(historicalRaces);
+
+// Verification request schemas
+export const insertGoatedVerificationRequestSchema = createInsertSchema(goatedVerificationRequests);
+export const selectGoatedVerificationRequestSchema = createSelectSchema(goatedVerificationRequests);
+export const insertTelegramVerificationRequestSchema = createInsertSchema(telegramVerificationRequests);
+export const selectTelegramVerificationRequestSchema = createSelectSchema(telegramVerificationRequests);
 
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
