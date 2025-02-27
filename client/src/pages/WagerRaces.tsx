@@ -53,7 +53,21 @@ export default function WagerRaces() {
   const [raceType] = useState<"weekly" | "monthly" | "weekend">("monthly");
   const [showCompletedRace, setShowCompletedRace] = useState(false);
   const ws = useRef<WebSocket | null>(null);
-  const { data: leaderboardData, isLoading } = useLeaderboard("monthly");
+  const { data: leaderboardData, isLoading: isLeaderboardLoading } = useLeaderboard("monthly");
+  
+  // Add current race data query
+  const { data: currentRace, isLoading: isRaceLoading } = useQuery<any>({
+    queryKey: ["/api/wager-races/current"],
+    queryFn: async () => {
+      const response = await fetch('/api/wager-races/current');
+      if (!response.ok) {
+        throw new Error('Failed to fetch current race data');
+      }
+      return response.json();
+    },
+    staleTime: 30000,
+    refetchInterval: 30000,
+  });
 
   useEffect(() => {
     ws.current = new WebSocket(`wss://${window.location.hostname}/ws`);
@@ -180,17 +194,32 @@ const getTrophyIcon = (rank: number) => {
     return Math.round(prizePool * (prizeDistribution[rank] || 0) * 100) / 100;
   };
 
-  if (isLoading || !leaderboardData) {
+  const isLoading = isLeaderboardLoading || isRaceLoading;
+
+  if (isLoading || !leaderboardData || !currentRace) {
     return (
       <div className="min-h-screen bg-[#14151A] flex items-center justify-center">
         <LoadingSpinner />
       </div>
     );
   }
-
+  
+  // Format current race participants to match leaderboard format
+  const formattedRaceParticipants = currentRace.participants?.map((participant: any) => ({
+    uid: participant.uid,
+    name: participant.name,
+    wagered: {
+      this_month: participant.wagered,
+      today: 0,
+      this_week: 0,
+      all_time: 0
+    },
+    position: participant.position
+  })) || [];
+  
   const top10Players = showCompletedRace
-    ? (previousRace?.data?.participants || [])
-    : (leaderboardData?.data || []).slice(0, 10);
+    ? (previousRace?.participants || [])
+    : formattedRaceParticipants;
   const currentLeader = top10Players[0];
 
   return (
