@@ -1,10 +1,12 @@
 import { Express, Request, Response } from "express";
-import { db } from "@db";
-import { users, goatedVerificationRequests, telegramVerificationRequests } from "@db/schema";
+import { db } from "../db";
 import { eq, and, desc } from "drizzle-orm";
 import { log } from "./vite";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import { z } from "zod";
+
+// Import schema directly
+import * as schema from "../db/schema";
 
 // Schema validation
 const goatedVerificationSchema = z.object({
@@ -42,11 +44,11 @@ export function registerVerificationRoutes(app: Express) {
       // Check if this user already has a pending verification request
       const [existingRequest] = await db
         .select()
-        .from(goatedVerificationRequests)
+        .from(schema.goatedVerificationRequests)
         .where(
           and(
-            eq(goatedVerificationRequests.platformUserId, req.user!.id),
-            eq(goatedVerificationRequests.status, "pending")
+            eq(schema.goatedVerificationRequests.platformUserId, req.user!.id),
+            eq(schema.goatedVerificationRequests.status, "pending")
           )
         )
         .limit(1);
