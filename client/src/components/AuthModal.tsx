@@ -156,7 +156,7 @@ export default function AuthModal() {
             <div className="flex flex-col gap-2">
               <Button
                 type="submit"
-                className="w-full font-heading uppercase tracking-tight text-black bg-[#D7FF00] hover:bg-[#b2d000] form-button"  {/* Added form-button class */}
+                className="w-full font-heading uppercase tracking-tight text-black bg-[#D7FF00] hover:bg-[#b2d000] form-button"
                 disabled={isLoading}
               >
                 {isLoading ? (
