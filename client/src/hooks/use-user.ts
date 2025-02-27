@@ -25,12 +25,14 @@ async function handleRequest(
       credentials: "include",
     });
 
+    const data = await response.json();
+    
     if (!response.ok) {
+      console.error('API error:', url, data);
       if (response.status >= 500) {
-        return { ok: false, message: "Server error occurred" };
+        return { ok: false, message: data.message || "Server error occurred" };
       }
 
-      const data = await response.json();
       return { 
         ok: false, 
         message: data.message || "Authentication failed",
@@ -38,12 +40,21 @@ async function handleRequest(
       };
     }
 
-    const data = await response.json();
+    // If this is a login or register response, user data is in the 'user' property
+    if (data.user) {
+      return { 
+        ok: true,
+        user: data.user
+      };
+    }
+    
+    // Otherwise, assume the full response is the user data
     return { 
       ok: true,
       user: data
     };
   } catch (e: any) {
+    console.error('Request error:', e);
     return { ok: false, message: e.toString() };
   }
 }
