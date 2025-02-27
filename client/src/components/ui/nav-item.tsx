@@ -21,23 +21,22 @@ export function NavItem({ href, children, className, onClick }: NavItemProps) {
   const isDisabled = requiresAuthAccess && !isAuthenticated;
 
   const content = (
-    <Link href={isDisabled ? "#" : href}>
-      <a
-        className={cn(
-          "flex items-center gap-2 px-3 py-2 rounded-md transition-colors",
-          isDisabled && "opacity-50 cursor-not-allowed pointer-events-none",
-          className
-        )}
-        onClick={(e) => {
-          if (isDisabled) {
-            e.preventDefault();
-          } else if (onClick) {
-            onClick();
-          }
-        }}
-      >
-        {children}
-      </a>
+    <Link 
+      href={isDisabled ? "#" : href}
+      onClick={(e) => {
+        if (isDisabled) {
+          e.preventDefault();
+        } else if (onClick) {
+          onClick();
+        }
+      }}
+      className={cn(
+        "flex items-center gap-2 px-3 py-2 rounded-md transition-colors",
+        isDisabled && "opacity-50 cursor-not-allowed pointer-events-none",
+        className
+      )}
+    >
+      {children}
     </Link>
   );
 

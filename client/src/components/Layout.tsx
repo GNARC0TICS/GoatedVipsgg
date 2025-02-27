@@ -160,15 +160,14 @@ export function Layout({ children }: { children: ReactNode }) {
               />
               {/* GET STARTED dropdown */}
               <div className="relative group">
-                <Link href="/how-it-works">
-                  <Button
-                    variant="ghost"
-                    className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
-                  >
-                    <span className="font-bold">GET STARTED</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                  </Button>
-                </Link>
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
+                  onClick={() => window.location.href = "/how-it-works"}
+                >
+                  <span className="font-bold">GET STARTED</span>
+                  <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                </Button>
                 <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/how-it-works">
@@ -217,15 +216,14 @@ export function Layout({ children }: { children: ReactNode }) {
 
               {/* Promotions dropdown */}
               <div className="relative group">
-                <Link href="/promotions">
-                  <Button
-                    variant="ghost"
-                    className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
-                  >
-                    <span className="font-bold">PROMOTIONS</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                  </Button>
-                </Link>
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
+                  onClick={() => window.location.href = "/promotions"}
+                >
+                  <span className="font-bold">PROMOTIONS</span>
+                  <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                </Button>
                 <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/promotions">
@@ -279,15 +277,14 @@ export function Layout({ children }: { children: ReactNode }) {
 
               {/* Updated Leaderboard dropdown with hover functionality */}
               <div className="relative group">
-                <Link href="/leaderboard?period=daily">
-                  <Button
-                    variant="ghost"
-                    className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
-                  >
-                    <span className="font-bold">LEADERBOARDS</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                  </Button>
-                </Link>
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
+                  onClick={() => window.location.href = "/leaderboard?period=daily"}
+                >
+                  <span className="font-bold">LEADERBOARDS</span>
+                  <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                </Button>
                 <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/leaderboard?period=daily">
@@ -335,15 +332,14 @@ export function Layout({ children }: { children: ReactNode }) {
               </div>
               {/* Socials dropdown */}
               <div className="relative group">
-                <Link href="/socials">
-                  <Button
-                    variant="ghost"
-                    className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
-                  >
-                    <span className="font-bold">SOCIALS</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                  </Button>
-                </Link>
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
+                  onClick={() => window.location.href = "/socials"}
+                >
+                  <span className="font-bold">SOCIALS</span>
+                  <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                </Button>
                 <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/telegram">
@@ -362,15 +358,14 @@ export function Layout({ children }: { children: ReactNode }) {
 
               {/* Help/FAQ dropdown */}
               <div className="relative group">
-                <Link href="/help">
-                  <Button
-                    variant="ghost"
-                    className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
-                  >
-                    <span className="font-bold">HELP & FAQ</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                  </Button>
-                </Link>
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-1 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
+                  onClick={() => window.location.href = "/help"}
+                >
+                  <span className="font-bold">HELP & FAQ</span>
+                  <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                </Button>
                 <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/help">
@@ -854,16 +849,18 @@ function NavLink({ href, label, tooltip }: { href: string; label: string | React
     </motion.div>
   );
 
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Link href={href}>{linkContent}</Link>
-      </TooltipTrigger>
-      {tooltip && (
+  if (tooltip) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link href={href} className="block">{linkContent}</Link>
+        </TooltipTrigger>
         <TooltipContent className="bg-[#1A1B21] border-[#2A2B31] text-white">
           <p>{tooltip}</p>
         </TooltipContent>
-      )}
-    </Tooltip>
-  );
+      </Tooltip>
+    );
+  }
+  
+  return <Link href={href} className="block">{linkContent}</Link>;
 }
