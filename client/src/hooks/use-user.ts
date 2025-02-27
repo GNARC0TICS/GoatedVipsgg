@@ -102,7 +102,8 @@ export function useUser() {
 
   return {
     user,
-    isLoading,
+    isLoading,  // Fix property name to match the interface in types.d.ts
+    loading: isLoading,  // Keep both for backward compatibility
     error,
     login: loginMutation.mutateAsync,
     logout: logoutMutation.mutateAsync,
