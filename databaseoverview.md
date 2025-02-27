@@ -17,17 +17,21 @@ Schema Validation: drizzle-zod, zod
 ### User Management
 
 #### `users` Table
-Stores core user information for authentication and identification.
+Stores core user information for authentication and identification. This table represents registered users on our platform and can be linked to Goated.com accounts.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | id | serial | Primary key |
-| username | text | Unique username |
+| username | text | Unique username (for platform login) |
 | password | text | Hashed password |
 | email | text | Unique email |
 | isAdmin | boolean | Admin status flag |
 | createdAt | timestamp | Account creation date |
 | lastLogin | timestamp | Last login timestamp |
+| goatedUid | text | Linked Goated.com UID (if verified) |
+| goatedUsername | text | Linked Goated.com username (if verified) |
+| isVerified | boolean | Whether user has verified Goated.com ownership |
+| verifiedAt | timestamp | When verification occurred |
 
 #### `notificationPreferences` Table
 Controls user notification settings across different channels.
@@ -114,13 +118,15 @@ Archives completed wager races for historical reference.
 ### Telegram Bot Integration
 
 #### `telegramUsers` Table
-Links Telegram users to platform accounts.
+Links Telegram users to both platform accounts and Goated.com accounts, serving as part of the three-way account linking system.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | telegramId | text | Primary key (Telegram ID) |
 | telegramUsername | text | Telegram username |
-| goatedUsername | text | Platform username |
+| platformUserId | integer | Foreign key to our platform's users table (when linked) |
+| goatedUsername | text | Goated.com username from API |
+| goatedUid | text | Goated.com unique identifier from API |
 | isVerified | boolean | Verification status |
 | createdAt | timestamp | Record creation timestamp |
 | lastActive | timestamp | Last activity timestamp |
@@ -244,15 +250,24 @@ Email newsletter subscription management.
    - A user can have multiple affiliate statistics entries
    - A user can create and be assigned to support tickets
 
-2. **Wager Race Relationships**:
+2. **Account Linking Relationships**:
+   - A platform user can claim/link to one Goated.com account (identified by uid and name)
+   - A platform user can link to one Telegram account
+   - A Goated.com account (represented by API data) has one corresponding platform user after claiming
+   - Initially, placeholder accounts exist for all Goated.com users without linked platform users
+   - Foreign key relationships are transformed during the account claiming process
+
+3. **Wager Race Relationships**:
    - A wager race has one creator (admin user)
    - A wager race has many participants
    - Completed wager races are archived in historical races
+   - Race participation is recorded for both claimed and unclaimed Goated.com accounts
 
-3. **Telegram Integration**:
+4. **Telegram Integration**:
    - A Telegram user can be linked to one platform account
    - A Telegram user can participate in multiple challenges
    - A challenge can have multiple entries from different users
+   - Verification requests track the linking process between Telegram and platform accounts
 
 ## Data Flow and Transformation
 
@@ -378,14 +393,52 @@ The platform integrates with external APIs to gather affiliate marketing data, w
    - Polling fallback ensures data consistency
    - Rate limiting prevents API abuse
 
+### Account Synchronization System
+
+1. **Three-Way Account Linking**:
+   - Our platform uniquely integrates three separate identity spaces:
+     - Platform Account: Created when users register on our website
+     - Goated.com Account: External account with wager stats (accessed via API)
+     - Telegram Account: For bot interactions and real-time notifications
+   
+2. **Placeholder Accounts**:
+   - All Goated.com users have placeholder accounts on our platform
+   - Key fields automatically populated:
+     - `uid`: Unique identifier from Goated.com
+     - `name`: Username from Goated.com
+     - Wager statistics: All wager data from the API
+   - These accounts initially exist without direct user access
+   
+3. **Account Claiming Process**:
+   - When a user registers on our platform, they can claim their Goated account
+   - Verification process confirms ownership of the Goated.com account
+   - Upon verification, the placeholder account is merged with their platform account
+   - All historical data and statistics are preserved during the merge
+   - User gains ability to participate in races with their verified identity
+   
+4. **Database Implementation**:
+   - `users` table stores platform accounts with custom usernames
+   - Foreign key relationships link to Goated.com data (uid, name)
+   - When account is claimed, a verification flag is set and records are merged
+   - Relationships are updated to point to the claimed user account
+   - Historical data remains intact through careful primary/foreign key management
+   
+5. **Synchronization Process Flow**:
+   - Initial state: Placeholder accounts exist for all Goated.com users
+   - User registration: New record in `users` table with platform-specific details
+   - Account claiming: User provides verification of Goated.com ownership
+   - Account merging: Data associated with placeholder is transferred to user account
+   - Completed state: Single user entity with linked platform, Goated, and Telegram identities
+
 ### Telegram Integration
 
 1. **User Verification Flow**:
-   - User initiates verification through Telegram bot
+   - User initiates verification through Telegram bot or website interface
    - Request stored in `verificationRequests` table
    - Admin reviews and approves/rejects
-   - On approval, record created in `telegramUsers` table
+   - On approval, record created in `telegramUsers` table linking to platform account
    - User receives notification of verification status
+   - Account claiming can happen in either direction (Telegram → Platform or Platform → Telegram)
 
 2. **Challenge System**:
    - Admins create challenges in the `challenges` table
