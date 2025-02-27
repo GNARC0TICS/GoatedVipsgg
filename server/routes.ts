@@ -757,6 +757,63 @@ async function handleAdminLogin(req: any, res: any) {
     }
 
     const { username, password } = result.data;
+    
+    // Check for admin credentials from environment variables
+    const adminUsername = process.env.ADMIN_USERNAME;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    
+    if (adminUsername && adminPassword && username === adminUsername && password === adminPassword) {
+      // Find or create admin user
+      let user = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, adminUsername))
+        .limit(1)
+        .then(results => results[0]);
+      
+      if (!user) {
+        const [newUser] = await db
+          .insert(users)
+          .values({
+            username: adminUsername,
+            password: "admin-auth", // Not used for validation
+            email: "admin@example.com",
+            isAdmin: true,
+          })
+          .returning();
+        user = newUser;
+      } else if (!user.isAdmin) {
+        // Update user to be admin if found but not admin
+        await db
+          .update(users)
+          .set({ isAdmin: true })
+          .where(eq(users.id, user.id));
+        user.isAdmin = true;
+      }
+      
+      req.login(user, (err: any) => {
+        if (err) {
+          return res.status(500).json({
+            status: "error",
+            message: "Error creating admin session",
+          });
+        }
+        
+        return res.json({
+          status: "success",
+          message: "Admin login successful",
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            isAdmin: true,
+          },
+        });
+      });
+      return;
+    }
+    
+    // Try to authenticate with database user
     const [user] = await db
       .select()
       .from(users)
@@ -770,28 +827,35 @@ async function handleAdminLogin(req: any, res: any) {
       });
     }
 
-    // Verify password and generate token
-    const token = generateToken({
-      userId: user.id,
-      email: user.email,
-      isAdmin: user.isAdmin,
-    });
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-    });
-
-    res.json({
-      status: "success",
-      message: "Admin login successful",
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        isAdmin: user.isAdmin,
-      },
-    });
+    // Normal login process through passport
+    passport.authenticate("local", (err: any, authUser: any, info: any) => {
+      if (err || !authUser) {
+        return res.status(401).json({
+          status: "error",
+          message: info?.message || "Invalid admin credentials",
+        });
+      }
+      
+      req.login(authUser, (err: any) => {
+        if (err) {
+          return res.status(500).json({
+            status: "error",
+            message: "Error creating admin session",
+          });
+        }
+        
+        return res.json({
+          status: "success",
+          message: "Admin login successful",
+          user: {
+            id: authUser.id,
+            username: authUser.username,
+            email: authUser.email,
+            isAdmin: authUser.isAdmin,
+          },
+        });
+      });
+    })(req, res);
   } catch (error) {
     log(`Admin login error: ${error}`);
     res.status(500).json({

@@ -71,10 +71,11 @@ export default function AdminLoginPage() {
     try {
       console.log("Attempting admin login", { username: data.username });
       
+      // Use the admin login endpoint
       const result = await login({
         username: data.username,
         password: data.password,
-      });
+      }, true); // Pass true for admin login
       
       if (result.status === "success") {
         if (result.user.isAdmin) {
