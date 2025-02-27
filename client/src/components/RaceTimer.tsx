@@ -114,6 +114,28 @@ export function RaceTimer() {
       month: 'long'
     });
   };
+  
+  // Generate race title from ID (e.g., 202502 -> February 2025 Race)
+  const getRaceTitle = (raceData: RaceData) => {
+    if (raceData.title) return raceData.title;
+    
+    // If no title is provided, try to extract from ID or date
+    if (raceData.id && raceData.id.length === 6) {
+      const year = raceData.id.substring(0, 4);
+      const month = parseInt(raceData.id.substring(4, 6));
+      
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      
+      return `${monthNames[month-1]} ${year} Race`;
+    }
+    
+    // Fallback to extracting from start date
+    const startDate = new Date(raceData.startDate);
+    return `${startDate.toLocaleString('default', { month: 'long' })} ${startDate.getFullYear()} Race`;
+  };
 
   if (error) {
     return (
@@ -166,7 +188,7 @@ export function RaceTimer() {
             <div className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-[#D7FF00]" />
               <span className="font-heading text-white">
-                {raceData.title || (showPrevious ? 'Previous Race' : 'Monthly Race')}
+                {getRaceTitle(raceData)}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -181,7 +203,11 @@ export function RaceTimer() {
 
           <div className="flex justify-between items-center mt-2">
             <span className="text-[#8A8B91] text-sm">
-              {formatDate(raceData.startDate)}
+              {/* Extract month/year directly from race ID for accuracy */}
+              {raceData.id && raceData.id.length === 6 
+                ? `${new Date(parseInt(raceData.id.substring(0, 4)), parseInt(raceData.id.substring(4, 6)) - 1).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}`
+                : formatDate(raceData.startDate)
+              }
             </span>
             <div className="flex items-center gap-2">
               <button 
