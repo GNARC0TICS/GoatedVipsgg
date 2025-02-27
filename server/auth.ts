@@ -254,53 +254,93 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", express.json(), (req, res, next) => {
-    if (!req.body || !req.body.username || !req.body.password) {
-      return res.status(400).json({
-        status: "error",
-        message: "Username and password are required"
-      });
-    }
+    try {
+      if (!req.body || !req.body.username || !req.body.password) {
+        return res.status(400).json({
+          status: "error",
+          message: "Username and password are required"
+        });
+      }
 
-    passport.authenticate(
-      "local",
-      (err: any, user: Express.User | false, info: IVerifyOptions) => {
-        if (err) {
-          console.error('Login error:', err);
-          return res.status(500).json({
-            status: "error",
-            message: "Internal server error",
-          });
-        }
+      // Validate and sanitize input 
+      const username = String(req.body.username).trim();
+      const password = String(req.body.password).trim();
 
-        if (!user) {
-          return res.status(401).json({
-            status: "error",
-            message: info.message ?? "Invalid credentials",
-          });
-        }
+      if (!username || !password) {
+        return res.status(400).json({
+          status: "error",
+          message: "Username and password cannot be empty"
+        });
+      }
 
-        req.logIn(user, (err) => {
+      passport.authenticate(
+        "local",
+        (err: any, user: Express.User | false, info: IVerifyOptions) => {
           if (err) {
-            console.error('Login session error:', err);
+            console.error('Login error:', err);
             return res.status(500).json({
               status: "error",
-              message: "Error creating login session",
+              message: "Internal server error",
             });
           }
 
-          return res.json({
-            status: "success",
-            message: "Login successful",
-            user: {
-              id: user.id,
-              username: user.username,
-              email: user.email,
-              isAdmin: user.isAdmin,
-            },
+          if (!user) {
+            return res.status(401).json({
+              status: "error",
+              message: info.message ?? "Invalid credentials",
+            });
+          }
+
+          req.logIn(user, (err) => {
+            if (err) {
+              console.error('Login session error:', err);
+              return res.status(500).json({
+                status: "error",
+                message: "Error creating login session",
+              });
+            }
+
+            // Update last login time
+            db.update(users)
+              .set({ lastLogin: new Date() })
+              .where(eq(users.id, user.id))
+              .then(() => {
+                // Return user data after successful login
+                return res.json({
+                  status: "success",
+                  message: "Login successful",
+                  user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    isAdmin: user.isAdmin,
+                  },
+                });
+              })
+              .catch(error => {
+                // Still return success even if last login update fails
+                console.error('Error updating last login:', error);
+                return res.json({
+                  status: "success",
+                  message: "Login successful",
+                  user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    isAdmin: user.isAdmin,
+                  },
+                });
+              });
           });
-        });
-      },
-    )(req, res, next);
+        },
+      )(req, res, next);
+    } catch (error) {
+      console.error('Unexpected login error:', error);
+      return res.status(500).json({
+        status: "error",
+        message: "An unexpected error occurred"
+      });
+    }
   });
 
   app.post("/api/logout", (req, res) => {
