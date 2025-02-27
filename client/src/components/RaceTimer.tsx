@@ -188,7 +188,8 @@ export function RaceTimer() {
             <div className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-[#D7FF00]" />
               <span className="font-heading text-white">
-                {getRaceTitle(raceData)}
+                {/* Display "Monthly Race" instead of using our custom function */}
+                {showPrevious ? 'Previous Race' : 'Monthly Race'}
               </span>
             </div>
             <div className="flex items-center gap-2">
