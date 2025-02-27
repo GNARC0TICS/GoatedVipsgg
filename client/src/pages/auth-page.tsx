@@ -17,7 +17,31 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
+// Import the useUser hook from our custom hooks folder
 import { useUser } from "@/hooks/use-user";
+import type { SelectUser, InsertUser } from "@db/schema";
+
+// Define RequestResult type to match the one in the user hook
+type RequestResult =
+  | {
+      ok: true;
+      user?: SelectUser;
+    }
+  | {
+      ok: false;
+      message: string;
+      errors?: Record<string, string>;
+    };
+    
+// Define the return type of our useUser hook to avoid TypeScript errors
+interface UseUserHook {
+  user: SelectUser | null;
+  isLoading: boolean;
+  error: Error | null;
+  login: (data: Partial<InsertUser>) => Promise<RequestResult>;
+  register: (data: InsertUser) => Promise<RequestResult>;
+  logout: () => Promise<RequestResult>;
+}
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
@@ -36,10 +60,17 @@ const userFormSchema = z.object({
     .or(z.literal(""))
 });
 
+// Define the type for our user and form data
+type UserFormData = {
+  username: string;
+  password: string;
+  email: string;
+};
+
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user, login: loginFn, register: registerFn } = useUser();
+  const { user, login, register, isLoading: userIsLoading } = useUser();
   const { toast } = useToast();
 
   const form = useForm({
@@ -77,7 +108,7 @@ export default function AuthPage() {
         ? { username: values.username, password: values.password } 
         : values;
         
-      const result = await (isLogin ? loginFn(formData) : registerFn(formData));
+      const result = await (isLogin ? login(formData) : register(formData));
       
       if (!result.ok) {
         toast({
