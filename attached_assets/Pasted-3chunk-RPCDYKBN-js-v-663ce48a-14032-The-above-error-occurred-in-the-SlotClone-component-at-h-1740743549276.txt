@@ -1,0 +1,53 @@
+3chunk-RPCDYKBN.js?v=663ce48a:14032 The above error occurred in the <SlotClone> component:
+
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DKHUMOWT.js?v=663ce48a:52:11
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DKHUMOWT.js?v=663ce48a:33:11
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/src/components/ui/form.tsx:127:9
+    at div
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/src/components/ui/form.tsx:71:6
+    at Controller (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-YABUFNLM.js?v=663ce48a:313:35)
+    at FormField (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/src/components/ui/form.tsx:32:6)
+    at form
+    at FormProvider (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-YABUFNLM.js?v=663ce48a:102:11)
+    at div
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-CPFL7ZFD.js?v=663ce48a:41:13
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RSCUGOI3.js?v=663ce48a:47:7
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DKHUMOWT.js?v=663ce48a:52:11
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DKHUMOWT.js?v=663ce48a:33:11
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-CPFL7ZFD.js?v=663ce48a:41:13
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5INJJ5RZ.js?v=663ce48a:29:5
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-VOWSQO4S.js?v=663ce48a:234:13
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-VOWSQO4S.js?v=663ce48a:157:58
+    at Presence (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AZCBCMZO.js?v=663ce48a:24:11)
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-VOWSQO4S.js?v=663ce48a:148:64
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DKHUMOWT.js?v=663ce48a:52:11
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DKHUMOWT.js?v=663ce48a:33:11
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-CPFL7ZFD.js?v=663ce48a:41:13
+    at https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RSCUGOI3.js?v=663ce48a:246:22
+    at Presence (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AZCBCMZO.js?v=663ce48a:24:11)
+    at Provider (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LSQNWB54.js?v=663ce48a:38:15)
+    at DialogPortal (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-VOWSQO4S.js?v=663ce48a:111:11)
+    at _c3 (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/src/components/ui/dialog.tsx:49:12)
+    at Provider (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LSQNWB54.js?v=663ce48a:38:15)
+    at Dialog (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-VOWSQO4S.js?v=663ce48a:52:5)
+    at AuthModal (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/src/components/AuthModal.tsx:50:31)
+    at div
+    at div
+    at div
+    at nav
+    at header
+    at div
+    at Layout (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/src/components/Layout.tsx:93:26)
+    at Router
+    at Provider (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LSQNWB54.js?v=663ce48a:38:15)
+    at TooltipProvider (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=663ce48a:900:5)
+    at Suspense
+    at PresenceChild (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=663ce48a:7742:24)
+    at AnimatePresence (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=663ce48a:7800:26)
+    at AppContent (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/src/App.tsx?v=ngF1DYuPYFtnBZ5zTwDLi:397:51)
+    at AuthProvider (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/src/lib/auth.tsx:28:32)
+    at ErrorBoundary (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-error-boundary.js?v=663ce48a:18:5)
+    at QueryClientProvider (https://8cd6263d-a907-4b1a-98ff-02f3dec9fd83-00-1eth7jb125oj3.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=663ce48a:2805:3)
+    at App
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
