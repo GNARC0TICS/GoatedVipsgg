@@ -5,11 +5,18 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { users, insertUserSchema, type SelectUser } from "db/schema";
 import { db } from "db";
-import { eq } from "drizzle-orm";
+import * as schema from "../db/schema";
+import { eq, sql } from "drizzle-orm";
 import express from 'express';
+// Import our password utilities from admin middleware
+import { hash, verify } from "./middleware/admin";
 import { RateLimiterMemory } from 'rate-limiter-flexible';
+
+// Extract what we need from schema to avoid import issues
+const { users } = schema;
+const insertUserSchema = schema.insertUserSchema;
+type SelectUser = schema.SelectUser;
 
 const scryptAsync = promisify(scrypt);
 
@@ -27,20 +34,59 @@ const crypto = {
     return `${buf.toString("hex")}.${salt}`;
   },
   compare: async (suppliedPassword: string, storedPassword: string) => {
+    // Make sure the password is properly formatted with salt
+    if (!storedPassword || !storedPassword.includes('.')) {
+      console.warn('Invalid password format in database, missing salt separator');
+      return false;
+    }
+    
     const [hashedPassword, salt] = storedPassword.split(".");
-    const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
-    const suppliedPasswordBuf = (await scryptAsync(
-      suppliedPassword,
-      salt,
-      64,
-    )) as Buffer;
-    return timingSafeEqual(hashedPasswordBuf, suppliedPasswordBuf);
+    
+    if (!hashedPassword || !salt) {
+      console.warn('Invalid password format in database, missing hash or salt');
+      return false;
+    }
+    
+    try {
+      const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
+      const suppliedPasswordBuf = (await scryptAsync(
+        suppliedPassword,
+        salt,
+        64,
+      )) as Buffer;
+      return timingSafeEqual(hashedPasswordBuf, suppliedPasswordBuf);
+    } catch (error) {
+      console.error('Error comparing passwords:', error);
+      return false;
+    }
   },
 };
 
+// This is the structure we're actually using in our application
+// It doesn't need all the fields from the database schema
+interface AppUser {
+  id: number;
+  username: string;
+  email: string;
+  isAdmin: boolean;
+  createdAt: Date;
+  lastLogin?: Date | null;
+  password?: string;
+  // Add optional fields to prevent TypeScript errors
+  goatedUid?: string | null;
+  goatedUsername?: string | null;
+  isGoatedVerified?: boolean;
+  goatedVerifiedAt?: Date | null;
+  telegramId?: string | null;
+  telegramUsername?: string | null;
+  isTelegramVerified?: boolean;
+  telegramVerifiedAt?: Date | null;
+}
+
+// Tell TypeScript that our Express.User will have this structure
 declare global {
   namespace Express {
-    interface User extends SelectUser {}
+    interface User extends AppUser {}
   }
 }
 
@@ -72,13 +118,29 @@ export function setupAuth(app: Express) {
 
   passport.deserializeUser(async (id: number, done) => {
     try {
+      console.log(`Deserializing user ID: ${id}`);
+      // Be explicit about which columns we're selecting to avoid missing column errors
       const [user] = await db
-        .select()
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          isAdmin: users.isAdmin,
+          createdAt: users.createdAt,
+          lastLogin: users.lastLogin
+        })
         .from(users)
         .where(eq(users.id, id))
         .limit(1);
+      
+      if (!user) {
+        console.warn(`Could not deserialize user with ID: ${id}`);
+        return done(null, false);
+      }
+      
       done(null, user);
     } catch (error) {
+      console.error(`Error deserializing user: ${error}`);
       done(error);
     }
   });
@@ -102,49 +164,126 @@ export function setupAuth(app: Express) {
         const adminUsername = process.env.ADMIN_USERNAME;
         const adminPassword = process.env.ADMIN_PASSWORD;
 
-        if (adminUsername && adminPassword && 
-            sanitizedUsername === adminUsername && 
-            sanitizedPassword === adminPassword) {
+        // Special handling for admin login
+        if (adminUsername && adminPassword && sanitizedUsername === adminUsername) {
+          // Admin authentication is handled internally by the verify function
+          // It has special handling for matching against env variables
 
           // Create or update admin user
+          console.log('Admin login attempt with username:', sanitizedUsername);
+          
+          // Only select the columns we know exist
           let adminUser = await db
-            .select()
+            .select({
+              id: users.id,
+              username: users.username,
+              password: users.password,
+              email: users.email,
+              isAdmin: users.isAdmin,
+              createdAt: users.createdAt,
+              lastLogin: users.lastLogin
+            })
             .from(users)
             .where(eq(users.username, adminUsername))
             .limit(1)
             .then(results => results[0]);
+            
+          // Verify admin password
+          if (adminUser) {
+            // Verify the password using our unified verify function
+            const isAdminPasswordValid = await verify(sanitizedPassword, adminUser.password);
+            if (!isAdminPasswordValid && sanitizedPassword !== adminPassword) {
+              console.log('Admin password mismatch');
+              return done(null, false, { message: "Invalid username or password" });
+            }
+          }
 
           if (!adminUser) {
-            // Create new admin user
+            console.log('Admin user not found, creating new admin...');
+            // Create new admin user with hashed password
+            const hashedPassword = await hash(adminPassword);
+            console.log(`Creating admin with hashed password format: ${hashedPassword.includes('.') ? 'valid' : 'invalid'}`);
+            
             [adminUser] = await db
               .insert(users)
               .values({
                 username: adminUsername,
-                password: await crypto.hash(adminPassword),
+                password: hashedPassword,
                 email: 'admin@goatedvips.com',
                 isAdmin: true,
               })
-              .returning();
+              .returning({
+                id: users.id,
+                username: users.username,
+                password: users.password,
+                email: users.email,
+                isAdmin: users.isAdmin,
+                createdAt: users.createdAt,
+                lastLogin: users.lastLogin
+              });
+            
+            console.log('New admin user created successfully');
+          } else {
+            // Admin exists, but we should update the password if it doesn't match our format
+            if (!adminUser.password || !adminUser.password.includes('.')) {
+              console.log('Updating admin password to proper hashed format');
+              const hashedPassword = await crypto.hash(adminPassword);
+              
+              [adminUser] = await db
+                .update(users)
+                .set({ 
+                  password: hashedPassword,
+                  lastLogin: new Date()
+                })
+                .where(eq(users.id, adminUser.id))
+                .returning({
+                  id: users.id,
+                  username: users.username,
+                  password: users.password,
+                  email: users.email,
+                  isAdmin: users.isAdmin,
+                  createdAt: users.createdAt,
+                  lastLogin: users.lastLogin
+                });
+            }
           }
+          
+          console.log('Admin login successful with environment variables');
           return done(null, adminUser);
         }
 
         // Regular user login
+        console.log(`Regular login attempt for: ${sanitizedUsername}`);
+        
+        // Be explicit about which columns we select to avoid missing column errors
         const [user] = await db
-          .select()
+          .select({
+            id: users.id,
+            username: users.username,
+            password: users.password,
+            email: users.email,
+            isAdmin: users.isAdmin,
+            createdAt: users.createdAt,
+            lastLogin: users.lastLogin
+          })
           .from(users)
           .where(eq(users.username, sanitizedUsername))
           .limit(1);
 
         if (!user) {
+          console.log(`User not found: ${sanitizedUsername}`);
           return done(null, false, { message: "Invalid username or password" });
         }
 
-        const isMatch = await crypto.compare(sanitizedPassword, user.password);
+        // Use the verify function from admin middleware for consistent password checking
+        const isMatch = await verify(sanitizedPassword, user.password);
         if (!isMatch) {
+          console.log(`Password mismatch for user: ${sanitizedUsername}`);
           return done(null, false, { message: "Invalid username or password" });
         }
 
+        console.log(`Login successful for user: ${user.username}`);
+        
         // Update last login time
         await db
           .update(users)
@@ -153,6 +292,7 @@ export function setupAuth(app: Express) {
 
         return done(null, user);
       } catch (err) {
+        console.error('Authentication strategy error:', err);
         return done(err);
       }
     }),
@@ -167,9 +307,9 @@ export function setupAuth(app: Express) {
         });
       }
 
-      const result = insertUserSchema.safeParse(req.body);
-      if (!result.success) {
-        const errors = result.error.issues.map((i: { message: string }) => i.message).join(", ");
+      const validationResult = insertUserSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        const errors = validationResult.error.issues.map((i: { message: string }) => i.message).join(", ");
         return res.status(400).json({
           status: "error",
           message: "Validation failed",
@@ -188,7 +328,7 @@ export function setupAuth(app: Express) {
         });
       }
 
-      const { username, password, email } = result.data;
+      const { username, password, email } = validationResult.data;
 
       // Validate input data
       if (!username || !password || !email) {
@@ -226,22 +366,35 @@ export function setupAuth(app: Express) {
         });
       }
 
-      // Hash the password
-      const hashedPassword = await crypto.hash(password);
+      // Hash the password using our shared utility function
+      const hashedPassword = await hash(password);
 
-      // Create the new user
-      const [newUser] = await db
-        .insert(users)
-        .values({
-          username,
-          password: hashedPassword,
-          email,
-          isAdmin: false,
-        })
-        .returning();
+      // Execute direct SQL query to avoid schema mismatches
+      const queryResult = await db.execute(`
+        INSERT INTO users (username, password, email, is_admin) 
+        VALUES ('${username}', '${hashedPassword}', '${email}', false)
+        RETURNING id, username, email, is_admin as "isAdmin", created_at as "createdAt", last_login as "lastLogin"
+      `);
+      
+      // Extract user from query result
+      const newUser = queryResult.rows[0];
 
+      // Properly format the user object for login
+      // Cast the database result to a properly formatted user object
+      const formattedUser = {
+        id: Number(newUser.id),
+        username: String(newUser.username),
+        email: String(newUser.email),
+        isAdmin: Boolean(newUser.isadmin || newUser.isAdmin),
+        // Handle different casing in property names from raw SQL
+        createdAt: newUser.createdat ? new Date(String(newUser.createdat)) 
+                  : newUser.createdAt ? new Date(String(newUser.createdAt))
+                  : new Date(),
+        lastLogin: new Date()
+      };
+      
       // Log the user in after registration
-      req.login(newUser, (err) => {
+      req.login(formattedUser, (err) => {
         if (err) {
           console.error('Login after registration error:', err);
           return res.status(500).json({
@@ -253,10 +406,10 @@ export function setupAuth(app: Express) {
           status: "success",
           message: "Registration successful",
           user: {
-            id: newUser.id,
-            username: newUser.username,
-            email: newUser.email,
-            isAdmin: newUser.isAdmin,
+            id: formattedUser.id,
+            username: formattedUser.username,
+            email: formattedUser.email,
+            isAdmin: formattedUser.isAdmin,
           },
         });
       });

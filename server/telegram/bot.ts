@@ -2,8 +2,12 @@ import TelegramBot from 'node-telegram-bot-api';
 import type { Message as TelegramMessage, ChatMember, ChatPermissions as TelegramChatPermissions } from 'node-telegram-bot-api';
 import { db } from '@db';
 import { eq } from 'drizzle-orm';
-import { users } from '../../db/schema';
-import { telegramUsers, verificationRequests, challenges, challengeEntries } from '../../db/schema/telegram';
+import * as schema from '../../db/schema';
+import * as telegramSchema from '../../db/schema/telegram';
+
+// Extract schema entities to avoid import issues
+const { users } = schema;
+const { telegramUsers, verificationRequests, challenges, challengeEntries } = telegramSchema;
 import { scheduleJob } from 'node-schedule';
 import { randomUUID } from 'crypto';
 
