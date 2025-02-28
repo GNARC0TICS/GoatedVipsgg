@@ -1,3 +1,31 @@
+// Load environment variables first, before any other imports
+import * as dotenv from 'dotenv';
+dotenv.config();
+
+// Validate critical environment variables
+const requiredEnvVars = [
+  'ADMIN_USERNAME', 
+  'ADMIN_PASSWORD', 
+  'ADMIN_SECRET_KEY',
+  'TELEGRAM_BOT_TOKEN'
+];
+
+console.log('Environment variable check:');
+let missingVars = false;
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    console.error(`Missing required environment variable: ${envVar}`);
+    missingVars = true;
+  } else {
+    console.log(`✓ ${envVar} is set`);
+  }
+}
+
+if (missingVars) {
+  console.warn('Some required environment variables are missing. This may cause issues with authentication and bot functionality.');
+}
+
+// Regular imports
 import express from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";

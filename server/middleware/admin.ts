@@ -55,14 +55,22 @@ export async function initializeAdmin(
   adminKey: string = ADMIN_KEY ?? '',
 ) {
   try {
+    // Directly use environment variables as a fallback instead of trying to reload them
+    // This avoids the require() error in ES modules
+    const finalUsername = username || process.env.ADMIN_USERNAME || '';
+    const finalPassword = password || process.env.ADMIN_PASSWORD || '';
+    const finalAdminKey = adminKey || process.env.ADMIN_SECRET_KEY || '';
+    
+    console.log(`Admin initialization attempt with username: ${finalUsername ? '✓ Set' : '✗ Missing'}`);
+    
     // Check if required credentials exist
-    if (!username || !password || !adminKey) {
+    if (!finalUsername || !finalPassword || !finalAdminKey) {
       console.warn("Skipping admin initialization - missing credentials");
       return null;
     }
-
+    
     // Verify admin key
-    if (adminKey !== process.env.ADMIN_SECRET_KEY) {
+    if (finalAdminKey !== process.env.ADMIN_SECRET_KEY) {
       console.warn("Skipping admin initialization - invalid admin key");
       return null;
     }
