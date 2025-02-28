@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { db } from "@db";
-import { users } from "@db/schema";
+import * as schema from "../../db/schema";
 import { eq } from "drizzle-orm";
+
+// Use schema.users to avoid import issues
+const { users } = schema;
 
 export async function requireAdmin(
   req: Request,
@@ -77,8 +80,9 @@ export async function initializeAdmin(
 
     // First check if admin user exists
     try {
-      // Only select specific fields to avoid column errors with new schema
-      const [existingAdmin] = await db
+      // Only select core fields to avoid schema issues with missing columns
+      console.log("Checking for existing admin user...");
+      const query = db
         .select({
           id: users.id,
           username: users.username,
@@ -87,6 +91,9 @@ export async function initializeAdmin(
         .from(users)
         .where(eq(users.isAdmin, true))
         .limit(1);
+        
+      console.log("Admin search query:", query.toSQL());
+      const [existingAdmin] = await query;
 
       if (existingAdmin) {
         // Only update if username matches to avoid duplicate key error

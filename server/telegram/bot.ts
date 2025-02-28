@@ -24,9 +24,13 @@ config(); // Reload environment variables
 // Config validation
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
-  throw new Error('TELEGRAM_BOT_TOKEN must be provided');
+  console.error('[Telegram Bot] TELEGRAM_BOT_TOKEN is not provided. Bot will not function.');
+  // Instead of throwing, we'll return early and not initialize the bot
+  // This allows the rest of the application to continue running
+  // throw new Error('TELEGRAM_BOT_TOKEN must be provided');
+} else {
+  console.log('[Telegram Bot] Token validation successful');
 }
-console.log('[Telegram Bot] Token validation successful');
 
 // Check for allowed group IDs
 const allowedGroups = process.env.ALLOWED_GROUP_IDS?.split(',') || [];
@@ -41,8 +45,11 @@ function createBot(): TelegramBot {
 
   console.log('[Telegram Bot] Creating new bot instance...');
 
+  // Ensure we have a valid token string for the constructor
+  const validToken = token || 'placeholder_token_for_initialization';
+  
   // Create with polling disabled initially to avoid instant conflicts
-  const bot = new TelegramBot(token, { polling: false });
+  const bot = new TelegramBot(validToken, { polling: false });
 
   // Handle polling errors
   bot.on('polling_error', (error) => {
@@ -93,9 +100,24 @@ function startPolling(bot: TelegramBot): void {
     });
 }
 
-// Create and initialize the bot
-const bot = createBot();
-startPolling(bot);
+// Create and initialize the bot only if token is available
+let bot: TelegramBot;
+if (token) {
+  bot = createBot();
+  startPolling(bot);
+} else {
+  // Create a dummy bot that logs operations but doesn't actually connect to Telegram
+  // This allows the application to continue running even without the Telegram functionality
+  console.log('[Telegram Bot] Creating dummy bot instance due to missing token');
+  bot = {
+    sendMessage: (chatId: number | string, text: string) => {
+      console.log(`[Telegram Bot DUMMY] Would send to ${chatId}: ${text}`);
+      return Promise.resolve({ message_id: 0 } as any);
+    },
+    on: () => {},
+    onText: () => {},
+  } as unknown as TelegramBot;
+}
 
 // Simple ping command to verify bot is working
 bot.onText(/\/ping/, (msg) => {
