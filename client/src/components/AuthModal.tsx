@@ -22,6 +22,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 const authSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters").max(50),
@@ -91,11 +92,9 @@ export default function AuthModal() {
       <DialogTrigger asChild>
         <Button 
           variant="outline" 
-          className="font-heading uppercase bg-[#1A1B21] border-[#2A2B31] hover:bg-[#2A2B31] hover:border-[#D7FF00] transition-all duration-300 flex items-center"
+          className="font-heading uppercase bg-[#1A1B21] border-[#2A2B31] hover:bg-[#2A2B31] hover:border-[#D7FF00] transition-all duration-300"
         >
-          <span className="text-white">LOGIN</span>
-          <span className="text-[#8A8B91]"> / </span>
-          <span className="text-[#D7FF00] group-hover:text-[#D7FF00]">REGISTER</span>
+          LOGIN / REGISTER
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] bg-[#1A1B21] text-white border-[#2A2B31]">
@@ -160,12 +159,12 @@ export default function AuthModal() {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                    {mode === "login" ? "Signing In..." : "Creating Account..."}
-                  </div>
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span>{mode === "login" ? "Signing In..." : "Creating Account..."}</span>
+                  </>
                 ) : (
-                  mode === "login" ? "Sign In" : "Create Account"
+                  <span>{mode === "login" ? "Sign In" : "Create Account"}</span>
                 )}
               </Button>
               <Button
