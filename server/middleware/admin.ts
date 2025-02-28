@@ -31,9 +31,19 @@ export async function requireAdmin(
 }
 
 // Initialize the first admin user on startup
+// Force reload environment variables from .env file to ensure they're available
+import { config } from 'dotenv';
+config(); // Reload environment variables
+
 export const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 export const ADMIN_KEY = process.env.ADMIN_SECRET_KEY;
+
+// Log environment variable status (don't print actual values for security)
+console.log(`Admin initialization status:
+  - ADMIN_USERNAME: ${ADMIN_USERNAME ? 'Set' : 'Missing'}
+  - ADMIN_PASSWORD: ${ADMIN_PASSWORD ? 'Set' : 'Missing'}
+  - ADMIN_SECRET_KEY: ${ADMIN_KEY ? 'Set' : 'Missing'}`);
 
 if (!ADMIN_USERNAME || !ADMIN_PASSWORD || !ADMIN_KEY) {
   console.error('Missing required admin environment variables');

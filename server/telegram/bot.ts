@@ -17,12 +17,20 @@ console.log('[Telegram Bot] Loading bot module...');
 let botInstance: TelegramBot | null = null;
 let isPolling = false;
 
+// Ensure environment variables are properly loaded
+import { config } from 'dotenv';
+config(); // Reload environment variables
+
 // Config validation
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN must be provided');
 }
 console.log('[Telegram Bot] Token validation successful');
+
+// Check for allowed group IDs
+const allowedGroups = process.env.ALLOWED_GROUP_IDS?.split(',') || [];
+console.log(`[Telegram Bot] Configured allowed groups: ${allowedGroups.length ? allowedGroups.join(', ') : 'None'}`);
 
 // Create bot instance with proper error handling
 function createBot(): TelegramBot {
