@@ -267,10 +267,8 @@ export function RaceTimer() {
                     </span>
                   </div>
                 ))}
-                <Link href="/wager-races">
-                  <a className="block text-center text-[#D7FF00] mt-4 hover:underline">
-                    View Full Leaderboard
-                  </a>
+                <Link href="/wager-races" className="block text-center text-[#D7FF00] mt-4 hover:underline">
+                  View Full Leaderboard
                 </Link>
               </div>
             </motion.div>
