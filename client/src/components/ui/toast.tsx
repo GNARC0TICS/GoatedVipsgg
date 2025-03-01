@@ -27,17 +27,18 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "border bg-background text-foreground backdrop-blur-lg",
+        default: "border bg-background text-foreground",
         destructive:
           "destructive group border-destructive bg-destructive text-destructive-foreground",
-        success: "border-[#D7FF00] bg-[#D7FF00]/10 text-[#D7FF00]",
-        warning: "border-yellow-500 bg-yellow-500/10 text-yellow-500",
+        success: "border-green-500 bg-green-500 text-white",
+        warning: "border-yellow-500 bg-yellow-500 text-white",
+        info: "border-blue-500 bg-blue-500 text-white",
       },
     },
     defaultVariants: {
       variant: "default",
     },
-  },
+  }
 );
 
 const Toast = React.forwardRef<
@@ -113,7 +114,6 @@ const ToastDescription = React.forwardRef<
 ToastDescription.displayName = ToastPrimitives.Description.displayName;
 
 type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>;
-
 type ToastActionElement = React.ReactElement<typeof ToastAction>;
 
 export {
@@ -127,86 +127,3 @@ export {
   ToastClose,
   ToastAction,
 };
-import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
-import { X } from "lucide-react";
-
-import { cn } from "@/lib/utils";
-
-const ToastProvider = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <div className="fixed top-0 right-0 z-50 flex flex-col gap-2 w-full max-w-md p-4 pointer-events-none">
-      {children}
-    </div>
-  );
-};
-
-const toastVariants = cva(
-  "group pointer-events-auto relative w-full flex items-center justify-between overflow-hidden rounded-md border p-4 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full",
-  {
-    variants: {
-      variant: {
-        default: "border-border bg-background-card text-text-primary",
-        success: "border-green-500/30 bg-green-500/10 text-green-500",
-        error: "border-red-500/30 bg-red-500/10 text-red-500",
-        warning: "border-amber-500/30 bg-amber-500/10 text-amber-500",
-        info: "border-primary/30 bg-primary/10 text-primary",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
-
-const Toast = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof toastVariants> & {
-    onClose?: () => void;
-  }
->(({ className, variant, onClose, children, ...props }, ref) => {
-  return (
-    <div
-      ref={ref}
-      className={cn(toastVariants({ variant }), className)}
-      {...props}
-    >
-      <div className="flex-1">{children}</div>
-      {onClose && (
-        <button
-          onClick={onClose}
-          className="absolute right-2 top-2 rounded-md p-1 text-text-secondary opacity-70 transition-opacity hover:opacity-100 focus:opacity-100 focus:outline-none"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      )}
-    </div>
-  );
-});
-Toast.displayName = "Toast";
-
-const ToastTitle = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("text-sm font-semibold", className)}
-    {...props}
-  />
-));
-ToastTitle.displayName = "ToastTitle";
-
-const ToastDescription = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("text-xs opacity-90", className)}
-    {...props}
-  />
-));
-ToastDescription.displayName = "ToastDescription";
-
-export { Toast, ToastProvider, ToastTitle, ToastDescription };
