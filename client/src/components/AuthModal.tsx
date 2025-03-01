@@ -89,13 +89,13 @@ export default function AuthModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          className="font-heading uppercase bg-[#1A1B21] border-[#2A2B31] hover:bg-[#2A2B31] hover:border-[#D7FF00] transition-all duration-300"
+      <DialogTrigger>
+        <button 
+          type="button"
+          className="font-heading uppercase bg-[#1A1B21] border border-[#2A2B31] hover:bg-[#2A2B31] hover:border-[#D7FF00] px-4 py-2 rounded-md text-white transition-all duration-300"
         >
           LOGIN / REGISTER
-        </Button>
+        </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] bg-[#1A1B21] text-white border-[#2A2B31]">
         <DialogHeader>
