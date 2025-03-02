@@ -10,6 +10,7 @@ import { db } from "@db";
 // Import specific schemas from the updated schema structure
 import * as schema from "@db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { historicalRaces } from "@db/schema";
 import { z } from "zod";
 import { affiliateRateLimiter, raceRateLimiter } from "./middleware/rate-limiter"; // Import rate limiters with correct path
 import { registerBasicVerificationRoutes } from "./basic-verification-routes";
