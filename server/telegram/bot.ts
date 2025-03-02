@@ -51,7 +51,7 @@ function createBot(): TelegramBot {
 
   // Ensure we have a valid token string for the constructor
   const validToken = token || 'placeholder_token_for_initialization';
-  
+
   // Create with polling disabled initially to avoid instant conflicts
   const bot = new TelegramBot(validToken, { polling: false });
 
@@ -138,7 +138,7 @@ bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
   const firstName = msg.from?.first_name || 'there';
   console.log(`[Telegram Bot] Received start command from ${msg.from?.username || 'unknown user'}`);
-  
+
   try {
     const welcomeMessage = `👋 *Welcome to GoatedVIPs Bot, ${firstName}\\!*\n\n`
       + `I'm your assistant for Goated\\-related services\\.\n\n`
@@ -148,7 +148,7 @@ bot.onText(/\/start/, async (msg) => {
       + `• View leaderboards\n`
       + `• Get affiliate links\n\n`
       + `Type /help to see all available commands\\.`;
-    
+
     await bot.sendMessage(chatId, welcomeMessage, {
       parse_mode: 'MarkdownV2'
     });
@@ -583,6 +583,104 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
     return bot.sendMessage(chatId, '❌ Error broadcasting message.');
   }
 });
+
+// Leaderboard command - fetch and display leaderboard data
+bot.onText(/\/leaderboard/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  try {
+    console.log("[Telegram Bot] Fetching leaderboard data for /leaderboard command");
+
+    // Fetch current race data which has the most accurate monthly data
+    const raceResponse = await fetch(`${apiBaseUrl}/api/wager-races/current`);
+    if (!raceResponse.ok) {
+      throw new Error(`Race API request failed: ${raceResponse.status}`);
+    }
+
+    const raceData = await raceResponse.json();
+
+    if (!raceData || !raceData.participants || raceData.participants.length === 0) {
+      // Fallback to regular leaderboard if race data isn't available
+      const leaderboardResponse = await fetch(`${apiBaseUrl}/api/affiliate/stats`);
+      if (!leaderboardResponse.ok) {
+        throw new Error(`Leaderboard API request failed: ${leaderboardResponse.status}`);
+      }
+
+      const leaderboardData = await leaderboardResponse.json();
+      const monthlyData = leaderboardData.data.monthly.data.slice(0, 10);
+
+      if (!monthlyData || monthlyData.length === 0) {
+        await bot.sendMessage(chatId, "No leaderboard data available at the moment.");
+        return;
+      }
+
+      let message = "🏆 *Monthly Race Leaderboard* 🏆\n\n";
+
+      monthlyData.forEach((player, index) => {
+        const position = index + 1;
+        const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : `${position}\\)`;
+        message += `${medal} *${escapeMarkdownV2(player.name || 'Unknown')}*: $${escapeMarkdownV2(formatNumber(player.wagered?.this_month || 0))}\n`;
+      });
+
+      message += "\n👉 [View full leaderboard on GoatedVIPs](https://goatedvips.replit.app/leaderboard?period=monthly)";
+
+      await bot.sendMessage(chatId, message, {
+        parse_mode: 'MarkdownV2',
+        disable_web_page_preview: true
+      });
+      return;
+    }
+
+    // Use race participants data which is more accurate
+    let message = "🏆 *Monthly Race Leaderboard* 🏆\n\n";
+    message += `Prize Pool: $${escapeMarkdownV2(formatNumber(raceData.prizePool))}\n\n`;
+
+    raceData.participants.forEach((player, index) => {
+      const position = index + 1;
+      const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : `${position}\\)`;
+      message += `${medal} *${escapeMarkdownV2(player.name || 'Unknown')}*: $${escapeMarkdownV2(formatNumber(player.wagered || 0))}\n`;
+    });
+
+    // Add time left in race if available
+    if (raceData.endDate) {
+      const endDate = new Date(raceData.endDate);
+      const now = new Date();
+      const diffTime = endDate.getTime() - now.getTime();
+
+      if (diffTime > 0) {
+        const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        message += `\n⏱️ *Time Left*: ${days}d ${hours}h\n`;
+      }
+    }
+
+    message += "\n👉 [View full details on GoatedVIPs](https://goatedvips.replit.app/wager-races)";
+
+    await bot.sendMessage(chatId, message, {
+      parse_mode: 'MarkdownV2',
+      disable_web_page_preview: true
+    });
+
+    console.log("[Telegram Bot] Successfully sent leaderboard data");
+  } catch (error) {
+    console.error("[Telegram Bot] Error fetching leaderboard:", error);
+    await bot.sendMessage(chatId, "Sorry, I couldn't fetch the leaderboard data right now. Please try again later.");
+  }
+});
+
+// Helper function to escape markdown v2 special characters
+function escapeMarkdownV2(text) {
+  if (!text) return '';
+  return String(text).replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+}
+
+// Format number with commas for thousands
+function formatNumber(num) {
+  if (typeof num !== 'number') {
+    num = parseFloat(num) || 0;
+  }
+  return num.toLocaleString('en-US');
+}
 
 // Check bot status - this can be useful for debugging
 export function getBotStatus() {
