@@ -282,6 +282,12 @@ function setupRESTRoutes(app: Express) {
   // Modified current race endpoint to handle month end
   app.get("/api/wager-races/current", raceRateLimiter, async (_req, res) => {
     try {
+      // Check if we have fresh cached race data
+      if (isCacheValid(currentRaceLastUpdated)) {
+        log(`Using cached race data (${(Date.now() - currentRaceLastUpdated!)/1000}s old)`);
+        return res.json(cachedCurrentRaceData);
+      }
+
       const response = await fetch(
         `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
         {
@@ -384,9 +390,24 @@ function setupRESTRoutes(app: Express) {
         })).slice(0, 10) // Top 10 participants
       };
 
+      // Update cache
+      cachedCurrentRaceData = raceData;
+      currentRaceLastUpdated = Date.now();
+      log("Updated race cache");
+
       res.json(raceData);
     } catch (error) {
       log(`Error fetching current race: ${error}`);
+
+      // Return cached data if available
+      if (cachedCurrentRaceData !== null) {
+        log("Returning cached race data after error");
+        return res.json({
+          ...cachedCurrentRaceData,
+          warning: "Error fetching fresh data, returning cached data"
+        });
+      }
+
       res.status(500).json({
         status: "error",
         message: "Failed to fetch current race",
@@ -726,41 +747,57 @@ function setupRESTRoutes(app: Express) {
   });
 
   // Add a total wager endpoint that caches results
-  let cachedWagerTotal = null;
-  let wagerTotalLastUpdated = null;
+  // Add cache variables for all endpoints
+let cachedLeaderboardData = null;
+let leaderboardLastUpdated = null;
+let cachedCurrentRaceData = null;
+let currentRaceLastUpdated = null;
+let cachedWagerTotal = null;
+let wagerTotalLastUpdated = null;
+
+// Cache duration in milliseconds (5 minutes)
+const CACHE_DURATION = 300000;
+
+// Helper function to check if cache is valid
+const isCacheValid = (lastUpdated: number | null) => {
+  return lastUpdated !== null && (Date.now() - lastUpdated < CACHE_DURATION);
+};
+
+// Helper function to fetch API data with shared logic
+const fetchAPIData = async (endpoint: string) => {
+  const response = await fetch(
+    `${API_CONFIG.baseUrl}${endpoint}`,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status}`);
+  }
+
+  return await response.json();
+};
 
   app.get("/api/stats/total-wager", async (_req, res) => {
     try {
-      // Check if we have a fresh cached total (less than 5 minutes old)
-      const now = Date.now();
-      if (cachedWagerTotal !== null && wagerTotalLastUpdated !== null && 
-          now - wagerTotalLastUpdated < 300000) {
+      // Check if we have a fresh cached total
+      if (isCacheValid(wagerTotalLastUpdated)) {
         return res.json({
           status: "success",
           data: {
             total: cachedWagerTotal,
-            lastUpdated: new Date(wagerTotalLastUpdated).toISOString(),
+            lastUpdated: new Date(wagerTotalLastUpdated!).toISOString(),
             fromCache: true
           }
         });
       }
 
       // Otherwise fetch fresh data
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const apiData = await response.json();
+      const apiData = await fetchAPIData(API_CONFIG.endpoints.leaderboard);
       const data = apiData.data || apiData.results || apiData;
 
       // Calculate total wager
@@ -770,7 +807,7 @@ function setupRESTRoutes(app: Express) {
 
       // Update cache
       cachedWagerTotal = total;
-      wagerTotalLastUpdated = now;
+      wagerTotalLastUpdated = Date.now();
 
       res.json({
         status: "success",
@@ -799,6 +836,70 @@ function setupRESTRoutes(app: Express) {
       res.status(500).json({
         status: "error",
         message: "Failed to fetch total wager data",
+      });
+    }
+  });
+
+
+  // Add caching to affiliate stats endpoint
+  app.get("/api/affiliate/stats", affiliateRateLimiter, async (req: any, res: any) => {
+    try {
+      const username = req.query.username;
+      let url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
+
+      if (username) {
+        url += `?username=${encodeURIComponent(username)}`;
+      }
+
+      // Check cache first
+      if (isCacheValid(leaderboardLastUpdated)) {
+        log(`Using cached leaderboard data`);
+        return res.json(cachedLeaderboardData);
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          log("API Authentication failed - check API token");
+          throw new Error("API Authentication failed");
+        }
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const apiData = await response.json();
+      const transformedData = transformLeaderboardData(apiData);
+
+      // Update cache
+      cachedLeaderboardData = transformedData;
+      leaderboardLastUpdated = Date.now();
+      log("Updated leaderboard cache");
+
+      res.json(transformedData);
+    } catch (error) {
+      log(`Error in /api/affiliate/stats: ${error}`);
+      // Return cached data if available or empty data structure to prevent UI breaking
+      if (cachedLeaderboardData !== null) {
+        log("Returning cached leaderboard data after error");
+        return res.json(cachedLeaderboardData);
+      }
+      res.json({
+        status: "success",
+        metadata: {
+          totalUsers: 0,
+          lastUpdated: new Date().toISOString(),
+        },
+        data: {
+          today: { data: [] },
+          weekly: { data: [] },
+          monthly: { data: [] },
+          all_time: { data: [] },
+        },
       });
     }
   });
@@ -877,14 +978,18 @@ async function handleAffiliateStats(req: any, res: any) {
       url += `?username=${encodeURIComponent(username)}`;
     }
 
-    const response = await fetch(url,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    // Check cache first
+    if (isCacheValid(leaderboardLastUpdated)) {
+      log(`Using cached leaderboard data`);
+      return res.json(cachedLeaderboardData);
+    }
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+        "Content-Type": "application/json",
+      },
+    });
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -897,10 +1002,19 @@ async function handleAffiliateStats(req: any, res: any) {
     const apiData = await response.json();
     const transformedData = transformLeaderboardData(apiData);
 
+    // Update cache
+    cachedLeaderboardData = transformedData;
+    leaderboardLastUpdated = Date.now();
+    log("Updated leaderboard cache");
+
     res.json(transformedData);
   } catch (error) {
     log(`Error in /api/affiliate/stats: ${error}`);
-    // Return empty data structure to prevent UI breaking
+    // Return cached data if available or empty data structure to prevent UI breaking
+    if (cachedLeaderboardData !== null) {
+      log("Returning cached leaderboard data after error");
+      return res.json(cachedLeaderboardData);
+    }
     res.json({
       status: "success",
       metadata: {
