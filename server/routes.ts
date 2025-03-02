@@ -962,8 +962,8 @@ let currentRaceLastUpdated: number | null = null;
 let cachedWagerTotal: any = null;
 let wagerTotalLastUpdated: number | null = null;
 
-// Cache duration in milliseconds (5 minutes)
-const CACHE_DURATION = 300000;
+// Cache duration in milliseconds (10 minutes)
+const CACHE_DURATION = 600000;
 
 // Helper function to check if cache is valid
 const isCacheValid = (lastUpdated: number | null) => {

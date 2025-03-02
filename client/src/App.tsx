@@ -2,6 +2,16 @@ import React, { Suspense, useEffect } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
+
+// Configure default query client settings to reduce API calls
+queryClient.setDefaultOptions({
+  queries: {
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 180000, // 3 minutes
+    cacheTime: 300000, // 5 minutes
+  },
+});
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth, requiresAuth } from "@/lib/auth";

@@ -42,7 +42,9 @@ export function RaceTimer() {
       }
       return response.json();
     },
-    refetchInterval: 30000,
+    refetchInterval: 300000, // 5 minutes instead of 30 seconds
+    staleTime: 240000, // 4 minutes
+    cacheTime: 360000, // 6 minutes
     retry: 3,
     enabled: !showPrevious,
     onError: (error) => {
