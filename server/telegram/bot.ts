@@ -591,6 +591,9 @@ bot.onText(/\/leaderboard/, async (msg) => {
   try {
     console.log("[Telegram Bot] Fetching leaderboard data for /leaderboard command");
 
+    // Define API base URL - using internal URL since we're in the same service
+    const apiBaseUrl = "http://localhost:5000";
+
     // Fetch current race data which has the most accurate monthly data
     const raceResponse = await fetch(`${apiBaseUrl}/api/wager-races/current`);
     if (!raceResponse.ok) {
@@ -624,10 +627,18 @@ bot.onText(/\/leaderboard/, async (msg) => {
 
       message += "\n👉 [View full leaderboard on GoatedVIPs](https://goatedvips.replit.app/leaderboard?period=monthly)";
 
-      await bot.sendMessage(chatId, message, {
+      const options = {
         parse_mode: 'MarkdownV2',
-        disable_web_page_preview: true
-      });
+        disable_web_page_preview: true,
+        reply_markup: JSON.stringify({
+          inline_keyboard: [
+            [{ text: 'Refresh', callback_data: 'refresh_leaderboard' }],
+            [{ text: 'My Stats', callback_data: 'my_stats' }]
+          ]
+        })
+      };
+
+      await bot.sendMessage(chatId, message, options);
       return;
     }
 
@@ -656,10 +667,18 @@ bot.onText(/\/leaderboard/, async (msg) => {
 
     message += "\n👉 [View full details on GoatedVIPs](https://goatedvips.replit.app/wager-races)";
 
-    await bot.sendMessage(chatId, message, {
+    const options = {
       parse_mode: 'MarkdownV2',
-      disable_web_page_preview: true
-    });
+      disable_web_page_preview: true,
+      reply_markup: JSON.stringify({
+        inline_keyboard: [
+          [{ text: 'Refresh', callback_data: 'refresh_leaderboard' }],
+          [{ text: 'My Stats', callback_data: 'my_stats' }]
+        ]
+      })
+    };
+
+    await bot.sendMessage(chatId, message, options);
 
     console.log("[Telegram Bot] Successfully sent leaderboard data");
   } catch (error) {
@@ -711,3 +730,31 @@ export async function stopBot() {
 // Handle cleanup on server shutdown
 process.on('SIGINT', stopBot);
 process.on('SIGTERM', stopBot);
+
+// Global callback query handler
+bot.on('callback_query', async (callbackQuery) => {
+  const action = callbackQuery.data;
+  const msg = callbackQuery.message;
+
+  console.log(`[Telegram Bot] Received callback: ${action}`);
+
+  switch (action) {
+    case 'refresh_leaderboard':
+      await bot.answerCallbackQuery(callbackQuery.id, {
+        text: "Refreshing leaderboard data..."
+      });
+      await leaderboardHandler(msg);
+      break;
+
+    case 'my_stats':
+      await bot.answerCallbackQuery(callbackQuery.id, {
+        text: "Fetching your stats..."
+      });
+      await statsHandler(msg);
+      break;
+
+    default:
+      await bot.answerCallbackQuery(callbackQuery.id);
+      break;
+  }
+});
