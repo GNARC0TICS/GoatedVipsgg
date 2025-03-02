@@ -591,8 +591,8 @@ bot.onText(/\/leaderboard/, async (msg) => {
   try {
     console.log("[Telegram Bot] Fetching leaderboard data for /leaderboard command");
 
-    // Define API base URL - using internal URL since we're in the same service
-    const apiBaseUrl = "http://localhost:5000";
+    // Use our internal API endpoint (no external API call needed)
+    const apiBaseUrl = 'http://localhost:5000';
 
     // Fetch current race data which has the most accurate monthly data
     const raceResponse = await fetch(`${apiBaseUrl}/api/wager-races/current`);
