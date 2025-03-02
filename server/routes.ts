@@ -747,21 +747,6 @@ function setupRESTRoutes(app: Express) {
   });
 
   // Add a total wager endpoint that caches results
-  // Add cache variables for all endpoints
-let cachedLeaderboardData = null;
-let leaderboardLastUpdated = null;
-let cachedCurrentRaceData = null;
-let currentRaceLastUpdated = null;
-let cachedWagerTotal = null;
-let wagerTotalLastUpdated = null;
-
-// Cache duration in milliseconds (5 minutes)
-const CACHE_DURATION = 300000;
-
-// Helper function to check if cache is valid
-const isCacheValid = (lastUpdated: number | null) => {
-  return lastUpdated !== null && (Date.now() - lastUpdated < CACHE_DURATION);
-};
 
 // Helper function to fetch API data with shared logic
 const fetchAPIData = async (endpoint: string) => {
@@ -968,6 +953,22 @@ async function handleProfileRequest(req: any, res: any) {
     });
   }
 }
+
+// Add cache variables for all endpoints
+let cachedLeaderboardData: any = null;
+let leaderboardLastUpdated: number | null = null;
+let cachedCurrentRaceData: any = null;
+let currentRaceLastUpdated: number | null = null;
+let cachedWagerTotal: any = null;
+let wagerTotalLastUpdated: number | null = null;
+
+// Cache duration in milliseconds (5 minutes)
+const CACHE_DURATION = 300000;
+
+// Helper function to check if cache is valid
+const isCacheValid = (lastUpdated: number | null) => {
+  return lastUpdated !== null && (Date.now() - lastUpdated < CACHE_DURATION);
+};
 
 async function handleAffiliateStats(req: any, res: any) {
   try {
