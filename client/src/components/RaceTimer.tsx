@@ -171,7 +171,36 @@ export function RaceTimer() {
     );
   }
 
-  if (!raceData) return null;
+  if (!raceData) {
+    if (showPrevious) {
+      return (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed bottom-4 right-4 z-50 w-80"
+        >
+          <div className="bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-[#D7FF00]" />
+                <span className="font-heading text-white">Previous Month's Race</span>
+              </div>
+              <button 
+                onClick={() => setShowPrevious(false)}
+                className="p-1 rounded hover:bg-[#2A2B31] transition-colors"
+              >
+                <History className="h-4 w-4 text-[#8A8B91]" />
+              </button>
+            </div>
+            <div className="mt-4 text-center text-[#8A8B91]">
+              No data available for previous race
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+    return null;
+  }
 
   return (
     <motion.div 
