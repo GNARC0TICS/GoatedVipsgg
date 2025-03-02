@@ -133,6 +133,34 @@ bot.onText(/\/ping/, (msg) => {
   });
 });
 
+// Start command to initialize interaction with the bot
+bot.onText(/\/start/, async (msg) => {
+  const chatId = msg.chat.id;
+  const firstName = msg.from?.first_name || 'there';
+  console.log(`[Telegram Bot] Received start command from ${msg.from?.username || 'unknown user'}`);
+  
+  try {
+    const welcomeMessage = `👋 *Welcome to GoatedVIPs Bot, ${firstName}\\!*\n\n`
+      + `I'm your assistant for Goated\\-related services\\.\n\n`
+      + `*What can I do for you?*\n`
+      + `• Track your wager statistics\n`
+      + `• Check your race position\n`
+      + `• View leaderboards\n`
+      + `• Get affiliate links\n\n`
+      + `Type /help to see all available commands\\.`;
+    
+    await bot.sendMessage(chatId, welcomeMessage, {
+      parse_mode: 'MarkdownV2'
+    });
+    console.log('[Telegram Bot] Sent welcome message');
+  } catch (error) {
+    console.error('[Telegram Bot] Error sending welcome message:', error);
+    // Fallback to plain text if markdown fails
+    bot.sendMessage(chatId, `👋 Welcome to GoatedVIPs Bot, ${firstName}! Type /help to see available commands.`)
+      .catch(err => console.error('[Telegram Bot] Error sending fallback welcome message:', err));
+  }
+});
+
 // Constants
 const ADMIN_TELEGRAM_IDS = ['1689953605'];
 const ALLOWED_GROUP_IDS = process.env.ALLOWED_GROUP_IDS?.split(',') || [];
