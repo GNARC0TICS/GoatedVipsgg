@@ -18,7 +18,7 @@ import { AuthProvider, useAuth, requiresAuth } from "@/lib/auth";
 import { AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "react-error-boundary";
 import { PreLoader } from "@/components/PreLoader";
-import { LayoutEnhanced } from "@/components/LayoutNew";
+import { Layout } from "@/components/LayoutNew";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Redirect } from "@/lib/navigation";
 
@@ -90,7 +90,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function Router() {
   return (
-    <LayoutEnhanced>
+    <Layout>
       <AnimatePresence mode="wait">
         <ErrorBoundary FallbackComponent={ErrorFallback}>
           <Switch>
@@ -176,7 +176,7 @@ function Router() {
           </Switch>
         </ErrorBoundary>
       </AnimatePresence>
-    </LayoutEnhanced>
+    </Layout>
   );
 }
 
