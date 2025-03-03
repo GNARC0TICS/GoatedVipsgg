@@ -148,4 +148,3 @@ import Leaderboard from "@/pages/Leaderboard";
 import Challenges from "@/pages/Challenges";
 import WagerRaces from "@/pages/WagerRaces";
 import TipsAndStrategies from "@/pages/tips-and-strategies";
-import Promotions from "@/pages/Promotions";
