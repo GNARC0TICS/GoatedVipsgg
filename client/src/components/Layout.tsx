@@ -704,7 +704,7 @@ export function Layout({ children }: { children: ReactNode }) {
                   onClick={() =>
                     window.open("https://www.goated.com/r/SPIN", "_blank")
                   }
-                  className="relative font-heading uppercase tracking-tight bg-[#D7FF00] hover:bg-[#b2d000] text-[#14151A] border border-[#D7FF00] hover:border-[#b2d000] px-4 py-2 rounded-md transition-all duration-300 h-8 md:h-10 text-sm md:text-base"
+                  className="relative font-heading uppercase tracking-tight bg-[#D7FF00] hover:bg-[#b2d000] text-[#14151A] hover:text-[#14151A] border border-[#D7FF00] hover:border-[#b2d000] px-4 py-2 rounded-md transition-all duration-300 h-8 md:h-10 text-sm md:text-base"
                 >
                   <span className="relative z-10 flex items-center gap-1">
                     PLAY 
