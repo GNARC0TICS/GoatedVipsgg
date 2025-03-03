@@ -223,16 +223,33 @@ export function MVPCards() {
   const [openCard, setOpenCard] = useState<string | null>(null);
   const dialogTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const { data: leaderboardData, isLoading } = useQuery<LeaderboardData>({
+  const { data: leaderboardData, isLoading, error } = useQuery<LeaderboardData>({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
+    retry: 3,
+    onError: (err) => {
+      console.error("Error fetching MVP data:", err);
+    }
   });
 
+  // Make sure data exists and has the expected structure
   const mvps = {
-    daily: leaderboardData?.data?.today?.data[0],
-    weekly: leaderboardData?.data?.weekly?.data[0],
-    monthly: leaderboardData?.data?.monthly?.data[0]
+    daily: leaderboardData?.data?.today?.data?.[0] || null,
+    weekly: leaderboardData?.data?.weekly?.data?.[0] || null,
+    monthly: leaderboardData?.data?.monthly?.data?.[0] || null
   };
+
+  // For debugging
+  useEffect(() => {
+    if (error) {
+      console.error("MVP Cards data fetch error:", error);
+    }
+    if (leaderboardData) {
+      console.log("Leaderboard data structure:", 
+        Object.keys(leaderboardData?.data || {})
+      );
+    }
+  }, [leaderboardData, error]);
 
   const handleDialogChange = useCallback((open: boolean, period: string) => {
     if (dialogTimeoutRef.current) {
@@ -256,7 +273,8 @@ export function MVPCards() {
     };
   }, []);
 
-  if (isLoading || !mvps?.daily) {
+  // Show loading state or error state if needed
+  if (isLoading) {
     return (
       <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
         {timeframes.map((timeframe) => (
@@ -269,6 +287,25 @@ export function MVPCards() {
             <div className="w-full h-full animate-pulse bg-gradient-to-r from-[#1A1B21]/30 to-[#1A1B21]/50" />
           </motion.div>
         ))}
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="max-w-5xl mx-auto p-4 bg-red-900/20 border border-red-500/30 rounded-xl text-center">
+        <h3 className="text-xl font-medium text-white mb-2">Unable to load MVP data</h3>
+        <p className="text-white/70">Please try refreshing the page or contact support if the issue persists.</p>
+      </div>
+    );
+  }
+  
+  // Additional check for missing data structure
+  if (!leaderboardData?.data) {
+    return (
+      <div className="max-w-5xl mx-auto p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-xl text-center">
+        <h3 className="text-xl font-medium text-white mb-2">Leaderboard data is being refreshed</h3>
+        <p className="text-white/70">Please wait a moment while we update the latest MVP information.</p>
       </div>
     );
   }
@@ -299,7 +336,8 @@ export function MVPCards() {
               wagerAmount: mvps[timeframe.period as keyof typeof mvps]?.wagered[timeframe.period === 'daily' ? 'today' : timeframe.period === 'weekly' ? 'this_week' : 'this_month'] || 0,
               wagered: mvps[timeframe.period as keyof typeof mvps]?.wagered || {today:0, this_week:0, this_month:0, all_time:0},
               avatarUrl: mvps[timeframe.period as keyof typeof mvps]?.avatarUrl,
-              rank: (leaderboardData?.data[timeframe.period]?.data || []).findIndex((p:MVP)=> p.uid === mvps[timeframe.period as keyof typeof mvps]?.uid) +1
+              rank: (leaderboardData?.data[timeframe.period === 'daily' ? 'today' : timeframe.period]?.data || [])
+                .findIndex((p:MVP)=> p.uid === mvps[timeframe.period as keyof typeof mvps]?.uid) + 1 || 1
             } : undefined}
             isOpen={openCard === timeframe.period}
             onOpenChange={(open) => handleDialogChange(open, timeframe.period)}
