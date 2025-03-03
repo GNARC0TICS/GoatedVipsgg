@@ -73,7 +73,14 @@ export function GameCard({
         animate={{ opacity: isHovered ? 1 : 0 }}
       >
         <button className="bg-primary text-black font-heading px-6 py-2 rounded-full transform hover:scale-105 transition-transform">
-          PLAY NOW
+          <span className="flex items-center gap-1">
+            PLAY NOW
+            <img 
+              src="/images/Goated Logo - Black.png" 
+              alt="Goated" 
+              className="w-4 h-4 inline-block" 
+            />
+          </span>
         </button>
       </motion.div>
     </motion.div>
