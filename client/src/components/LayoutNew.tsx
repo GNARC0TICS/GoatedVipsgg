@@ -616,16 +616,9 @@ export function LayoutEnhanced({ children }: { children: ReactNode }) {
                     window.open("https://www.goated.com/r/SPIN", "_blank")
                   }
                   className="relative group overflow-hidden text-brand-dark fill-animation hover:text-brand-yellow transition-all duration-3000 font-heading uppercase tracking-tight h-8 md:h-10 px-3 md:px-4 text-sm md:text-base"
+                className="hidden"
                 >
-                  <span className="relative z-10">PLAY →</span>
-                </Button>
-                <Button
-                  onClick={() =>
-                    window.open("https://www.goated.com/r/SPIN", "_blank")
-                  }
-                  className="relative font-heading uppercase tracking-tight bg-[#D7FF00] hover:bg-[#b2d000] text-[#14151A] hover:text-[#14151A] border border-[#D7FF00] hover:border-[#b2d000] px-4 py-2 rounded-md transition-all duration-300 h-8 md:h-10 text-sm md:text-base"
-                >
-                  <span className="relative z-10">PLAY →</span>
+                  <span className="relative z-10 hidden">PLAY →</span>
                 </Button>
               </div>
             </div>
