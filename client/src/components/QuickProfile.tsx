@@ -1,11 +1,15 @@
 import React, { useEffect } from "react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, Calendar, Clock, Crown } from "lucide-react";
 import { motion } from "framer-motion";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "./LoadingSpinner";
+
+// Define SheetTrigger directly since we're having import issues
+const SheetTrigger = SheetPrimitive.Trigger;
 
 interface QuickProfileProps {
   userId: string;
@@ -32,12 +36,38 @@ export function QuickProfile({
   username,
   children,
 }: QuickProfileProps) {
-  const { data: leaderboardData, isLoading, error } = useQuery({
+  // Define types for leaderboard data
+  interface LeaderboardEntry {
+    uid: string;
+    name: string;
+    wagered: {
+      today: number;
+      this_week: number;
+      this_month: number;
+      all_time: number;
+    };
+  }
+
+  interface LeaderboardResponse {
+    status: string;
+    data: {
+      today: { data: LeaderboardEntry[] };
+      weekly: { data: LeaderboardEntry[] };
+      monthly: { data: LeaderboardEntry[] };
+      all_time: { data: LeaderboardEntry[] };
+    };
+    metadata?: {
+      totalUsers: number;
+    };
+  }
+
+  const { data: leaderboardData, isLoading, error } = useQuery<LeaderboardResponse>({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
     retry: 3,
     refetchOnWindowFocus: false,
     initialData: {
+      status: "success",
       data: {
         today: { data: [] },
         weekly: { data: [] },
@@ -45,16 +75,23 @@ export function QuickProfile({
         all_time: { data: [] }
       }
     },
-    refetchInterval: 15000
+    refetchInterval: 15000,
+    gcTime: 5 * 60 * 1000,
   });
 
-  if (error) {
-    console.error("Error fetching leaderboard data:", error);
-    return null;
-  }
+  // Never return null inside a component before all hooks are called
+  // Instead, set a variable to track error state
+  const hasError = Boolean(error);
+  
+  // Log any errors but don't early return
+  React.useEffect(() => {
+    if (error) {
+      console.error("Error fetching leaderboard data:", error);
+    }
+  }, [error]);
 
   const stats = React.useMemo(() => {
-    if (!leaderboardData?.data) return null;
+    if (!leaderboardData?.data || hasError) return null;
 
     const userStats = {
       today:
@@ -80,7 +117,7 @@ export function QuickProfile({
       wagered: userStats,
       position
     };
-  }, [leaderboardData, userId]);
+  }, [leaderboardData, userId, hasError]);
 
   return (
     <Sheet>
