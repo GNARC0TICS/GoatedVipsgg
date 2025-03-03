@@ -883,6 +883,6 @@ function NavLink({ href, label, tooltip }: { href: string; label: string | React
       </Tooltip>
     );
   }
-  
+
   return <Link href={href} className="block">{linkContent}</Link>;
 }
