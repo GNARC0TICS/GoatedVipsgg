@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send } from "lucide-react";
@@ -36,7 +35,7 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
 
   const handleSendReply = async () => {
     if (!replyText.trim()) return;
-    
+
     try {
       await fetch('/api/support/reply', {
         method: 'POST',
@@ -61,7 +60,7 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
-        className="fixed bottom-20 right-4 z-50"
+        className="fixed bottom-4 left-4 z-40" //Only change made
       >
         {isMinimized ? (
           <div className="relative">
@@ -108,7 +107,7 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
                 </Button>
               </div>
             </div>
-            
+
             <div className="p-6 space-y-4">
               {user?.isAdmin ? (
                 // Admin Interface
