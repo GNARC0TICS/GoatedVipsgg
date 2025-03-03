@@ -14,8 +14,8 @@ queryClient.setDefaultOptions({
 });
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-// Import our Firebase AuthProvider instead of the old one
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+// Import the custom AuthProvider
+import { AuthProvider } from "@/lib/auth";
 import { AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "react-error-boundary";
 import { PreLoader } from "@/components/PreLoader";
