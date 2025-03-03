@@ -124,6 +124,9 @@ export function ChatInterface() {
     });
   };
 
+  const safeMessages = messages || [];
+
+
   return (
     <Card className="w-full max-w-4xl mx-auto bg-[#1A1B21] border-[#2A2B31]">
       <CardHeader className="border-b border-[#2A2B31] p-4">
@@ -140,7 +143,7 @@ export function ChatInterface() {
       <CardContent className="p-0">
         <ScrollArea className="h-[500px] px-6 py-4">
           <div className="space-y-4">
-            {messages.map((msg, idx) => (
+            {safeMessages.map((msg, idx) => (
               <div
                 key={msg.id || idx}
                 className={`flex gap-3 ${msg.userId === user?.id ? "justify-end" : ""}`}
