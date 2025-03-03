@@ -1,238 +1,152 @@
-import React, { Suspense, useEffect } from "react";
-import { Switch, Route, useLocation } from "wouter";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "./lib/queryClient";
-
-// Configure default query client settings to reduce API calls
-queryClient.setDefaultOptions({
-  queries: {
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: 180000, // 3 minutes
-    cacheTime: 300000, // 5 minutes
-  },
-});
+import { lazy, Suspense } from "react";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider, useAuth, requiresAuth } from "@/lib/auth"; // Import useAuth and requiresAuth
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-// Import the custom AuthProvider
-import { AuthProvider } from "@/lib/auth";
 import { AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "react-error-boundary";
 import { PreLoader } from "@/components/PreLoader";
-import { Layout } from "@/components/LayoutNew";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { Redirect } from "@/lib/navigation";
 
-// Import all pages
-import NotFound from "@/pages/not-found";
-import Home from "@/pages/Home";
-import VipTransfer from "@/pages/VipTransfer";
-import ProvablyFair from "@/pages/ProvablyFair";
-import WagerRaces from "@/pages/WagerRaces";
-import BonusCodes from "@/pages/bonus-codes";
-import NotificationPreferences from "@/pages/notification-preferences";
-import WagerRaceManagement from "@/pages/admin/WagerRaceManagement";
-import UserManagement from "@/pages/admin/UserManagement";
-import NotificationManagement from "@/pages/admin/NotificationManagement";
-import BonusCodeManagement from "@/pages/admin/BonusCodeManagement";
-import SupportManagement from "@/pages/admin/SupportManagement";
-import Leaderboard from "@/pages/Leaderboard";
-import Help from "./pages/Help";
-import UserProfile from "@/pages/UserProfile";
-import Telegram from "@/pages/Telegram";
-import HowItWorks from "@/pages/HowItWorks";
-import GoatedToken from "@/pages/GoatedToken";
-import Support from "@/pages/support";
-import FAQ from "@/pages/faq";
-import VipProgram from "./pages/VipProgram";
-import TipsAndStrategies from "@/pages/tips-and-strategies";
-import Promotions from "@/pages/Promotions";
-import Challenges from "@/pages/Challenges";
-import AdminDashboard from "./pages/admin/Dashboard"; 
-import AdminLogin from "@/pages/admin-login";
-import AuthPage from "@/pages/auth-page";
+// Lazy load pages for better performance
+const Home = lazy(() => import("@/pages/Home"));
+const LeaderboardPage = lazy(() => import("@/pages/Leaderboard")); //Renamed to match original
+const RacesPage = lazy(() => import("@/pages/WagerRaces")); //Renamed to match original
+const ChallengesPage = lazy(() => import("@/pages/Challenges")); //Renamed to match original
+const AdminPage = lazy(() => import("./pages/admin/Dashboard")); // Adjusted import path for AdminDashboard.  This assumes AdminPage will hold all admin routes
+const NotFoundPage = lazy(() => import("@/pages/not-found")); //Renamed to match original
+const ProfilePage = lazy(() => import("@/pages/UserProfile")); //Renamed to match original
+const PrivacyPage = lazy(() => import("@/pages/PrivacyPage")); // Added, not in original, assuming this is new functionality
+const TermsPage = lazy(() => import("@/pages/TermsPage")); // Added, not in original, assuming this is new functionality
 
 
-function ErrorFallback({ error }: { error: Error }) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="max-w-md w-full mx-4 p-6 text-center">
-        <h2 className="text-2xl font-bold text-destructive mb-4">
-          Something went wrong
-        </h2>
-        <pre className="text-sm bg-muted p-4 rounded-lg overflow-auto">
-          {error.message}
-        </pre>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg"
-        >
-          Reload page
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// Helper function to check if a route requires authentication
-function requiresAuth(path: string): boolean {
-  // Add paths that require authentication
-  const authPaths = [
-    '/bonus-codes',
-    '/notification-preferences',
-    '/vip-transfer',
-    '/support',
-    '/user', // Admin paths
-    '/admin'
-  ];
-  
-  return authPaths.some(authPath => path.startsWith(authPath));
-}
-
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { currentUser, isLoading } = useAuth();
-  const [location] = useLocation();
+// Define auth protected route component
+function ProtectedRoute({ children }: { children: JSX.Element }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <PreLoader />;
   }
 
-  if (!currentUser && requiresAuth(location)) {
-    return <Redirect to="/login" />;
+  if (!isAuthenticated && requiresAuth(location.pathname)) {
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
-  return <>{children}</>;
+  return children;
 }
 
-function Router() {
-  return (
-    <Layout>
-      <AnimatePresence mode="wait">
-        <ErrorBoundary FallbackComponent={ErrorFallback}>
-          <Switch>
-            {/* Public Routes */}
-            <Route path="/" component={Home} />
-            <Route path="/login" component={AuthPage} />
-            <Route path="/register" component={AuthPage} />
-            <Route path="/admin/login" component={AdminLogin} />
-            <Route path="/wager-races" component={WagerRaces} />
-            <Route path="/leaderboard" component={Leaderboard} />
-            <Route path="/tips-and-strategies" component={TipsAndStrategies} />
-            <Route path="/promotions" component={Promotions} />
-            <Route path="/help" component={Help} />
-            <Route path="/provably-fair" component={ProvablyFair} />
-            <Route path="/telegram" component={Telegram} />
-            <Route path="/how-it-works" component={HowItWorks} />
-            <Route path="/goated-token" component={GoatedToken} />
-            <Route path="/faq" component={FAQ} />
-            <Route path="/vip-program" component={VipProgram} />
-            <Route path="/challenges" component={Challenges} />
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-            {/* Protected Routes */}
-            <Route path="/bonus-codes">
-              <ProtectedRoute>
-                <BonusCodes />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/notification-preferences">
-              <ProtectedRoute>
-                <NotificationPreferences />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/vip-transfer">
-              <ProtectedRoute>
-                <VipTransfer />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/support">
-              <ProtectedRoute>
-                <Support />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/user/:id">
-              <ProtectedRoute>
-                <UserProfile />
-              </ProtectedRoute>
-            </Route>
-
-            {/* Admin Routes */}
-            <Route path="/admin/wager-races">
-              <ProtectedRoute>
-                <WagerRaceManagement />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/admin/users">
-              <ProtectedRoute>
-                <UserManagement />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/admin/notifications">
-              <ProtectedRoute>
-                <NotificationManagement />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/admin/bonus-codes">
-              <ProtectedRoute>
-                <BonusCodeManagement />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/admin/support">
-              <ProtectedRoute>
-                <SupportManagement />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/admin">
-              <ProtectedRoute>
-                <AdminDashboard />
-              </ProtectedRoute>
-            </Route> {/* Added route for AdminDashboard */}
-
-            {/* 404 Route */}
-            <Route component={NotFound} />
-          </Switch>
-        </ErrorBoundary>
-      </AnimatePresence>
-    </Layout>
-  );
-}
-
-function App() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ErrorBoundary FallbackComponent={ErrorFallback}>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </ErrorBoundary>
+      <AuthProvider>
+        <TooltipProvider>
+          <ErrorBoundary fallback={<div>Something went wrong</div>}>
+            <AnimatePresence mode="wait">
+              <Suspense fallback={<PreLoader />}>
+                <Routes>
+                  {/* Public routes */}
+                  <Route path="/" element={<Home />} />
+                  <Route path="/leaderboard" element={<LeaderboardPage />} />
+                  <Route path="/wager-races" element={<RacesPage />} />  {/* Reverted to original path */}
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/login" element={<AuthPage />} /> {/* Added login route */}
+                  <Route path="/register" element={<AuthPage />} /> {/* Added register route */}
+                  <Route path="/admin/login" element={<AdminLogin />} /> {/* Added admin login route */}
+                  <Route path="/help" element={<Help />} /> {/* Added help route */}
+                  <Route path="/provably-fair" element={<ProvablyFair />} /> {/* Added provably-fair route */}
+                  <Route path="/telegram" element={<Telegram />} /> {/* Added telegram route */}
+                  <Route path="/how-it-works" element={<HowItWorks />} /> {/* Added how-it-works route */}
+                  <Route path="/goated-token" element={<GoatedToken />} /> {/* Added goated-token route */}
+                  <Route path="/faq" element={<FAQ />} /> {/* Added faq route */}
+                  <Route path="/vip-program" element={<VipProgram />} /> {/* Added vip-program route */}
+                  <Route path="/challenges" element={<ChallengesPage />} /> {/* Reverted to original path */}
+                  <Route path="/tips-and-strategies" element={<TipsAndStrategies />} /> {/* Added tips-and-strategies route */}
+                  <Route path="/promotions" element={<Promotions />} /> {/* Added promotions route */}
+                  <Route path="/support" element={<Support />} /> {/* Added support route */}
+                  <Route path="/user/:id" element={<UserProfile />} /> {/* Added user profile route */}
+                  <Route path="/bonus-codes" element={<BonusCodes />} /> {/* Added bonus codes route */}
+                  <Route path="/notification-preferences" element={<NotificationPreferences />} /> {/* Added notification preferences route */}
+                  <Route path="/vip-transfer" element={<VipTransfer />} /> {/* Added vip transfer route */}
+
+
+                  {/* Protected routes */}
+                  <Route 
+                    path="/admin/*" 
+                    element={
+                      <ProtectedRoute>
+                        <AdminPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/profile" 
+                    element={
+                      <ProtectedRoute>
+                        <ProfilePage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/challenges" 
+                    element={
+                      <ProtectedRoute>
+                        <ChallengesPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+
+                  {/* Catch-all route */}
+                  <Route path="*" element={<NotFoundPage />} />
+                </Routes>
+              </Suspense>
+            </AnimatePresence>
+          </ErrorBoundary>
+          <Toaster />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
 
-function AppContent() {
-  const [isInitialLoad, setIsInitialLoad] = React.useState(() => {
-    return !sessionStorage.getItem('hasVisited');
-  });
-
-  useEffect(() => {
-    if (!isInitialLoad) return;
-    sessionStorage.setItem('hasVisited', 'true');
-    setIsInitialLoad(false);
-  }, [isInitialLoad]);
-
-  return (
-    <AnimatePresence mode="wait">
-      {isInitialLoad ? (
-        <PreLoader onLoadComplete={() => setIsInitialLoad(false)} />
-      ) : (
-        <Suspense fallback={<LoadingSpinner />}>
-          <TooltipProvider>
-            <Router />
-            <Toaster />
-          </TooltipProvider>
-        </Suspense>
-      )}
-    </AnimatePresence>
-  );
-}
-
-export default App;
+//Import necessary components
+import AuthPage from "@/pages/auth-page";
+import AdminLogin from "@/pages/admin-login";
+import Help from "./pages/Help";
+import ProvablyFair from "@/pages/ProvablyFair";
+import Telegram from "@/pages/Telegram";
+import HowItWorks from "@/pages/HowItWorks";
+import GoatedToken from "@/pages/GoatedToken";
+import FAQ from "@/pages/faq";
+import VipProgram from "./pages/VipProgram";
+import TipsAndStrategies from "@/pages/tips-and-strategies";
+import Promotions from "@/pages/Promotions";
+import BonusCodes from "@/pages/bonus-codes";
+import NotificationPreferences from "@/pages/notification-preferences";
+import VipTransfer from "@/pages/VipTransfer";
+import Support from "@/pages/support";
+import UserProfile from "@/pages/UserProfile";
+import {useAuth} from "@/lib/auth"
+import BonusCodeManagement from "@/pages/admin/BonusCodeManagement";
+import NotificationManagement from "@/pages/admin/NotificationManagement";
+import SupportManagement from "@/pages/admin/SupportManagement";
+import UserManagement from "@/pages/admin/UserManagement";
+import WagerRaceManagement from "@/pages/admin/WagerRaceManagement";
+import AdminDashboard from "./pages/admin/Dashboard";
+import NotFound from "@/pages/not-found";
+import Leaderboard from "@/pages/Leaderboard";
+import Challenges from "@/pages/Challenges";
+import WagerRaces from "@/pages/WagerRaces";
+import TipsAndStrategies from "@/pages/tips-and-strategies";
+import Promotions from "@/pages/Promotions";

@@ -1,8 +1,18 @@
+
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, User, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { 
+  getAuth, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut, 
+  User, 
+  onAuthStateChanged, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  updateProfile 
+} from 'firebase/auth';
 
 // Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -41,9 +51,15 @@ export const loginWithEmailAndPassword = async (email: string, password: string)
 };
 
 // Register with email/password
-export const registerWithEmailAndPassword = async (email: string, password: string) => {
+export const registerWithEmailAndPassword = async (email: string, password: string, displayName?: string) => {
   try {
     const result = await createUserWithEmailAndPassword(auth, email, password);
+    
+    // Update profile with display name if provided
+    if (displayName && result.user) {
+      await updateProfile(result.user, { displayName });
+    }
+    
     return { success: true, user: result.user };
   } catch (error) {
     console.error("Error registering with email/password: ", error);
