@@ -26,7 +26,6 @@ import { FloatingSupport } from "./FloatingSupport";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from 'framer-motion';
 import { MobileAdminBadge } from "@/components/MobileAdminBadge";
-import { TopRaceTimer } from "./TopRaceTimer";
 
 // Enhanced header styling with improved spacing and responsive behavior
 const headerClasses = {
@@ -722,12 +721,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </nav>
       </header>
 
-      {/* New TopRaceTimer component below header */}
-      <div className="pt-16 md:pt-20">
-        <TopRaceTimer />
-      </div>
-
-      <main className="flex-grow">
+      <main className="flex-grow pt-16 md:pt-20">
           <div className="layout-container">
             {children}
           </div>
