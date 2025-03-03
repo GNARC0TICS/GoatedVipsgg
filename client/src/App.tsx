@@ -130,7 +130,6 @@ import HowItWorks from "@/pages/HowItWorks";
 import GoatedToken from "@/pages/GoatedToken";
 import FAQ from "@/pages/faq";
 import VipProgram from "./pages/VipProgram";
-import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 import BonusCodes from "@/pages/bonus-codes";
 import NotificationPreferences from "@/pages/notification-preferences";
