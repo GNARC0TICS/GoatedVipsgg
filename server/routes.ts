@@ -38,14 +38,42 @@ function handleLeaderboardConnection(ws: ExtendedWebSocket) {
   log(`Leaderboard WebSocket client connected (${clientId})`);
 
   ws.isAlive = true;
+  
+  // More frequent ping checks (20 seconds instead of 30)
   const pingInterval = setInterval(() => {
     if (!ws.isAlive) {
+      log(`WebSocket client ${clientId} not responding to pings, terminating`);
       clearInterval(pingInterval);
       return ws.terminate();
     }
     ws.isAlive = false;
-    ws.ping();
-  }, 30000);
+    try {
+      ws.ping();
+    } catch (err) {
+      log(`Error sending ping to client ${clientId}: ${err}`);
+      clearInterval(pingInterval);
+      ws.terminate();
+    }
+  }, 20000);
+
+  // Handle messages from clients
+  ws.on("message", (message: string) => {
+    try {
+      const data = JSON.parse(message.toString());
+      if (data.type === "PING") {
+        // Respond to client ping
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: "PONG",
+            timestamp: Date.now()
+          }));
+        }
+        ws.isAlive = true; // Reset the ping timeout when we receive any message
+      }
+    } catch (error) {
+      log(`Error processing WebSocket message from ${clientId}: ${error}`);
+    }
+  });
 
   ws.on("pong", () => {
     ws.isAlive = true;
@@ -54,21 +82,38 @@ function handleLeaderboardConnection(ws: ExtendedWebSocket) {
   ws.on("error", (error: Error) => {
     log(`WebSocket error (${clientId}): ${error.message}`);
     clearInterval(pingInterval);
-    ws.terminate();
+    try {
+      ws.terminate();
+    } catch (err) {
+      // Ignore errors during termination
+    }
   });
 
-  ws.on("close", () => {
-    log(`Leaderboard WebSocket client disconnected (${clientId})`);
+  ws.on("close", (code: number, reason: string) => {
+    log(`Leaderboard WebSocket client ${clientId} disconnected. Code: ${code}, Reason: ${reason || 'Unknown'}`);
     clearInterval(pingInterval);
   });
 
-  // Send initial data with rate limiting
+  // Send initial data to the client
   if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({
-      type: "CONNECTED",
-      clientId,
-      timestamp: Date.now()
-    }));
+    try {
+      ws.send(JSON.stringify({
+        type: "CONNECTED",
+        clientId,
+        timestamp: Date.now()
+      }));
+      
+      // If we have cached leaderboard data, send it immediately
+      if (cachedLeaderboardData) {
+        ws.send(JSON.stringify({
+          type: "LEADERBOARD_UPDATE",
+          data: cachedLeaderboardData,
+          timestamp: Date.now()
+        }));
+      }
+    } catch (err) {
+      log(`Error sending initial data to client ${clientId}: ${err}`);
+    }
   }
 }
 
@@ -1229,7 +1274,33 @@ async function handleCreateWagerRace(req: any, res: any) {
 }
 
 function setupWebSocket(httpServer: Server) {
-  wss = new WebSocketServer({ noServer: true });
+  wss = new WebSocketServer({ 
+    noServer: true,
+    // Adding more robust error handling for WebSocket server
+    clientTracking: true, // Track clients for easier management
+  });
+
+  // Set up error handling for the WebSocket server itself
+  wss.on('error', (error) => {
+    log(`WebSocket server error: ${error.message}`);
+  });
+
+  // Interval to check all connections and terminate broken ones
+  setInterval(() => {
+    wss.clients.forEach((ws: ExtendedWebSocket) => {
+      if (!ws.isAlive) {
+        log(`Terminating inactive WebSocket connection`);
+        return ws.terminate();
+      }
+      ws.isAlive = false;
+      try {
+        ws.ping();
+      } catch (err) {
+        log(`Error pinging client: ${err}`);
+        ws.terminate();
+      }
+    });
+  }, 30000);
 
   httpServer.on("upgrade", (request, socket, head) => {
     // Skip vite HMR requests
@@ -1237,18 +1308,35 @@ function setupWebSocket(httpServer: Server) {
       return;
     }
 
-    if (request.url === "/ws/leaderboard") {
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit("connection", ws, request);
-        handleLeaderboardConnection(ws);
-      });
-    } else if (request.url === "/ws/chat") {
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit("connection", ws, request);
-        handleChatConnection(ws);
-      });
+    // Handle errors in the upgrade process
+    socket.on('error', (err) => {
+      log(`Socket error during WebSocket upgrade: ${err.message}`);
+      socket.destroy();
+    });
+
+    try {
+      if (request.url === "/ws/leaderboard") {
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          wss.emit("connection", ws, request);
+          // Cast to ExtendedWebSocket
+          handleLeaderboardConnection(ws as ExtendedWebSocket);
+        });
+      } else if (request.url === "/ws/chat") {
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          wss.emit("connection", ws, request);
+          handleChatConnection(ws as ExtendedWebSocket);
+        });
+      } else {
+        // Reject non-matching requests
+        socket.destroy();
+      }
+    } catch (err) {
+      log(`Error in WebSocket upgrade: ${err}`);
+      socket.destroy();
     }
   });
+
+  log('WebSocket server setup complete');
 }
 
 const chatMessageSchema = z.object({
@@ -1258,7 +1346,7 @@ const chatMessageSchema = z.object({
   isStaffReply: z.boolean().default(false),
 });
 
-async function handleChatConnection(ws: WebSocket) {
+async function handleChatConnection(ws: ExtendedWebSocket) {
   log("Chat WebSocket client connected");
   let pingInterval: NodeJS.Timeout;
 

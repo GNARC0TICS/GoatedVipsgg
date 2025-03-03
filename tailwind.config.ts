@@ -31,6 +31,7 @@ export default {
         sm: "calc(var(--radius) - 4px)",
         xl: "calc(var(--radius) + 4px)",
         '2xl': "calc(var(--radius) + 8px)",
+        'card': '12px',
       },
       spacing: {
         'xs': '0.25rem',    // 4px
@@ -67,6 +68,8 @@ export default {
         'button': '0 5px 15px rgba(215, 255, 0, 0.15)',
         'button-hover': '0 10px 25px rgba(215, 255, 0, 0.25)',
         'neon': '0 0 20px rgba(215, 255, 0, 0.5), 0 0 40px rgba(215, 255, 0, 0.3)',
+        'mvp-card': '0 8px 20px -5px rgba(0, 0, 0, 0.3)',
+        'mvp-card-hover': '0 12px 30px -8px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--hover-border-color)',
       },
       colors: {
         background: "hsl(var(--background))",
@@ -128,6 +131,35 @@ export default {
           yellow: "#D7FF00",
           "yellow-dim": "rgba(215, 255, 0, 0.7)",
         },
+        // MVP card theme colors
+        mvp: {
+          base: "#1A1B21",
+          border: "#2A2B31",
+          text: {
+            DEFAULT: "#F5F5F5",
+            muted: "#8A8B91",
+          },
+          daily: {
+            primary: "#8B5CF6",
+            accent: "#7C3AED",
+            shine: "#A78BFA"
+          },
+          weekly: {
+            primary: "#10B981",
+            accent: "#059669",
+            shine: "#34D399"
+          },
+          monthly: {
+            primary: "#F59E0B",
+            accent: "#D97706",
+            shine: "#FBBF24"
+          },
+          alltime: {
+            primary: "#EC4899",
+            accent: "#DB2777",
+            shine: "#F472B6"
+          }
+        }
       },
       keyframes: {
         "accordion-down": {

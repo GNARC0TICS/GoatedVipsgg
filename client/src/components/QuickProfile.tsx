@@ -63,6 +63,13 @@ export function QuickProfile({
 
   const { data: leaderboardData, isLoading, error } = useQuery<LeaderboardResponse>({
     queryKey: ["/api/affiliate/stats"],
+    queryFn: async () => {
+      const response = await fetch("/api/affiliate/stats");
+      if (!response.ok) {
+        throw new Error("Failed to fetch leaderboard data");
+      }
+      return response.json();
+    },
     staleTime: 30000,
     retry: 3,
     refetchOnWindowFocus: false,

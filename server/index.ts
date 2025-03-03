@@ -42,7 +42,20 @@ import fetch from 'node-fetch';
 
 const execAsync = promisify(exec);
 const app = express();
-const PORT = 5000;
+
+// Generate a random port between 3000-9000 (excluding 5000) if PORT env var is 0
+let PORT: number;
+if (process.env.PORT === '0') {
+  // Generate a random port, avoiding port 5000
+  let randomPort;
+  do {
+    randomPort = Math.floor(Math.random() * (9000 - 3000 + 1)) + 3000;
+  } while (randomPort === 5000);
+  PORT = randomPort;
+  console.log(`Using random port: ${PORT}`);
+} else {
+  PORT = parseInt(process.env.PORT || '5000', 10);
+}
 
 async function setupMiddleware() {
   // Basic middleware

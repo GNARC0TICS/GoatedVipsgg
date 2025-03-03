@@ -14,7 +14,8 @@ queryClient.setDefaultOptions({
 });
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider, useAuth, requiresAuth } from "@/lib/auth";
+// Import our Firebase AuthProvider instead of the old one
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "react-error-boundary";
 import { PreLoader } from "@/components/PreLoader";
@@ -73,16 +74,31 @@ function ErrorFallback({ error }: { error: Error }) {
   );
 }
 
+// Helper function to check if a route requires authentication
+function requiresAuth(path: string): boolean {
+  // Add paths that require authentication
+  const authPaths = [
+    '/bonus-codes',
+    '/notification-preferences',
+    '/vip-transfer',
+    '/support',
+    '/user', // Admin paths
+    '/admin'
+  ];
+  
+  return authPaths.some(authPath => path.startsWith(authPath));
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { currentUser, isLoading } = useAuth();
   const [location] = useLocation();
 
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
-  if (!user && requiresAuth(location)) {
-    return <Redirect to="/" />;
+  if (!currentUser && requiresAuth(location)) {
+    return <Redirect to="/login" />;
   }
 
   return <>{children}</>;
