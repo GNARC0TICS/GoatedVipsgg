@@ -109,7 +109,7 @@ function NavLink({ href, label, tooltip }: { href: string; label: string | React
 }
 
 // Main Layout Component - Enhanced Version
-export function LayoutEnhanced({ children }: { children: ReactNode }) {
+export function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const footerRef = useRef<HTMLElement>(null);
   const [isFooterVisible, setIsFooterVisible] = useState(false);
@@ -746,4 +746,5 @@ export function LayoutEnhanced({ children }: { children: ReactNode }) {
         </div>
       </footer>
     </div>
-  );}
+  );
+}
