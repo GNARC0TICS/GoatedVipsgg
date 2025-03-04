@@ -1,8 +1,14 @@
 
 import React, { createContext, useContext, useReducer, ReactNode } from "react";
-import { Toast, ToastProvider, ToastTitle, ToastDescription } from "@/components/ui/toast";
-
-type ToastType = "default" | "success" | "error" | "warning" | "info";
+import { 
+  Toast, 
+  ToastProvider, 
+  ToastViewport, 
+  ToastTitle, 
+  ToastDescription, 
+  ToastClose,
+  type ToastType
+} from "@/components/ui/toast";
 
 interface ToastMessage {
   id: string;
@@ -94,13 +100,18 @@ export const ToastContextProvider = ({ children }: { children: ReactNode }) => {
           <Toast 
             key={toast.id} 
             variant={toast.type}
-            onClose={() => removeToast(toast.id)}
             className="mb-2"
           >
-            <ToastTitle>{toast.title}</ToastTitle>
-            <ToastDescription>{toast.message}</ToastDescription>
+            <div className="flex items-start gap-2">
+              <div className="flex-1">
+                <ToastTitle>{toast.title}</ToastTitle>
+                <ToastDescription>{toast.message}</ToastDescription>
+              </div>
+              <ToastClose onClick={() => removeToast(toast.id)} />
+            </div>
           </Toast>
         ))}
+        <ToastViewport />
       </ToastProvider>
     </ToastContext.Provider>
   );
