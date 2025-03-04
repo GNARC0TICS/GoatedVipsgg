@@ -2,11 +2,13 @@ import React, { useEffect } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, Calendar, Clock, Crown } from "lucide-react";
+import { TrendingUp, Calendar, Clock, Crown, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "./LoadingSpinner";
+import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 // Define SheetTrigger directly since we're having import issues
 const SheetTrigger = SheetPrimitive.Trigger;
@@ -96,6 +98,16 @@ export function QuickProfile({
       console.error("Error fetching leaderboard data:", error);
     }
   }, [error]);
+
+  const [, setLocation] = useLocation();
+
+  const handleViewFullProfile = () => {
+    // Close the sheet and navigate to full profile
+    document.body.click(); // Trigger close of the sheet
+    setTimeout(() => {
+      setLocation(`/user/${userId}`);
+    }, 300); // Small delay to allow sheet closing animation
+  };
 
   const stats = React.useMemo(() => {
     if (!leaderboardData?.data || hasError) return null;
@@ -234,6 +246,17 @@ export function QuickProfile({
                   </p>
                 </CardContent>
               </Card>
+            </div>
+            
+            {/* View Full Profile Button */}
+            <div className="mt-6">
+              <Button 
+                onClick={handleViewFullProfile}
+                className="w-full flex items-center justify-center gap-2 bg-[#2A2B31] hover:bg-[#D7FF00] hover:text-black text-white transition-colors"
+              >
+                <ExternalLink className="h-4 w-4" />
+                View Full Profile
+              </Button>
             </div>
           </motion.div>
         )}

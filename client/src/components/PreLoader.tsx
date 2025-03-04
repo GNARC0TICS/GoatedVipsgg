@@ -2,25 +2,32 @@ import * as React from "react";
 import { motion } from "framer-motion";
 
 interface PreLoaderProps {
-  onLoadComplete: () => void;
+  onLoadComplete?: () => void;
 }
 
-export function PreLoader({ onLoadComplete }: PreLoaderProps) {
+export function PreLoader({ onLoadComplete = () => {} }: PreLoaderProps) {
   const [progress, setProgress] = React.useState(0);
 
   React.useEffect(() => {
-    const timer = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(timer);
-          setTimeout(onLoadComplete, 500);
-          return 100;
-        }
-        return prev + 1;
-      });
-    }, 20);
-
-    return () => clearInterval(timer);
+    // Start with a bit of delay to ensure animation starts properly
+    const startDelay = setTimeout(() => {
+      const timer = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(timer);
+            setTimeout(onLoadComplete, 500);
+            return 100;
+          }
+          // Increase faster initially, then slower towards the end
+          const increment = prev < 50 ? 2 : prev < 85 ? 1 : 0.5;
+          return Math.min(100, prev + increment);
+        });
+      }, 30);
+      
+      return () => clearInterval(timer);
+    }, 200);
+    
+    return () => clearTimeout(startDelay);
   }, [onLoadComplete]);
 
   return (
