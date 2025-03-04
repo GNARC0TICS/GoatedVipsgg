@@ -127,3 +127,138 @@ export {
   ToastClose,
   ToastAction,
 };
+"use client";
+
+import * as React from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X } from "lucide-react";
+
+type ToastType = "success" | "error" | "warning" | "info";
+
+interface ToastProps {
+  message: string;
+  type?: ToastType;
+  duration?: number;
+  onClose?: () => void;
+}
+
+interface ToastContextType {
+  showToast: (props: ToastProps) => void;
+  hideToast: (id: string) => void;
+}
+
+const ToastContext = React.createContext<ToastContextType | undefined>(undefined);
+
+export function useToast() {
+  const context = React.useContext(ToastContext);
+  if (!context) {
+    throw new Error("useToast must be used within a ToastProvider");
+  }
+  return context;
+}
+
+interface Toast extends ToastProps {
+  id: string;
+  createdAt: Date;
+}
+
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [toasts, setToasts] = React.useState<Toast[]>([]);
+
+  const showToast = React.useCallback(({ message, type = "info", duration = 5000, onClose }: ToastProps) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prevToasts) => [
+      ...prevToasts,
+      { id, message, type, duration, onClose, createdAt: new Date() },
+    ]);
+
+    if (duration > 0) {
+      setTimeout(() => {
+        hideToast(id);
+      }, duration);
+    }
+    
+    return id;
+  }, []);
+
+  const hideToast = React.useCallback((id: string) => {
+    setToasts((prevToasts) => {
+      const toast = prevToasts.find((t) => t.id === id);
+      if (toast?.onClose) {
+        toast.onClose();
+      }
+      return prevToasts.filter((t) => t.id !== id);
+    });
+  }, []);
+
+  return (
+    <ToastContext.Provider value={{ showToast, hideToast }}>
+      {children}
+      <AnimatePresence>
+        <div className="fixed bottom-0 right-0 z-100 p-4 flex flex-col gap-2 max-w-md w-full">
+          {toasts.map((toast) => (
+            <Toast key={toast.id} toast={toast} onClose={() => hideToast(toast.id)} />
+          ))}
+        </div>
+      </AnimatePresence>
+    </ToastContext.Provider>
+  );
+}
+
+function Toast({ toast, onClose }: { toast: Toast; onClose: () => void }) {
+  const typeStyles = {
+    success: {
+      bg: "bg-gradient-to-r from-green-500/90 to-green-600/90",
+      icon: "✓",
+      iconBg: "bg-green-400",
+    },
+    error: {
+      bg: "bg-gradient-to-r from-red-500/90 to-red-600/90",
+      icon: "✕",
+      iconBg: "bg-red-400",
+    },
+    warning: {
+      bg: "bg-gradient-to-r from-amber-500/90 to-amber-600/90",
+      icon: "!",
+      iconBg: "bg-amber-400",
+    },
+    info: {
+      bg: "bg-gradient-to-r from-brand-yellow/90 to-brand-yellow-dim",
+      icon: "i",
+      iconBg: "bg-brand-yellow",
+    },
+  };
+
+  const { bg, icon, iconBg } = typeStyles[toast.type || "info"];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 50, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 20, scale: 0.9 }}
+      transition={{ duration: 0.2 }}
+      className={`${bg} backdrop-blur-lg text-white rounded-lg shadow-lg p-4 min-w-80 relative overflow-hidden`}
+    >
+      <div className="flex items-start gap-3">
+        <div className={`${iconBg} text-black h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold`}>
+          {icon}
+        </div>
+        <div className="flex-1 mr-6">
+          <p className="text-sm font-medium">{toast.message}</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 p-1 rounded-full hover:bg-black/20 transition-colors"
+        >
+          <X size={14} />
+        </button>
+      </div>
+      <motion.div
+        initial={{ width: "100%" }}
+        animate={{ width: "0%" }}
+        transition={{ duration: toast.duration ? toast.duration / 1000 : 5, ease: "linear" }}
+        className="absolute bottom-0 left-0 h-1 bg-white/30"
+      />
+    </motion.div>
+  );
+}
