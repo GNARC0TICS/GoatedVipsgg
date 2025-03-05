@@ -1,12 +1,11 @@
-
-import React, { createContext, useContext, useReducer, ReactNode } from "react";
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from "react";
 import { 
-  Toast, 
   ToastProvider, 
   ToastViewport, 
   ToastTitle, 
   ToastDescription, 
   ToastClose,
+  Toast,
   type ToastType
 } from "@/components/ui/toast";
 
@@ -79,7 +78,7 @@ export const ToastContextProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Auto-remove toasts after their duration
-  React.useEffect(() => {
+  useEffect(() => {
     const timers = state.toasts.map((toast) => {
       const timer = setTimeout(() => {
         removeToast(toast.id);
@@ -95,24 +94,6 @@ export const ToastContextProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ToastContext.Provider value={{ state, toast, removeToast }}>
       {children}
-      <ToastProvider>
-        {state.toasts.map((toast) => (
-          <Toast 
-            key={toast.id} 
-            variant={toast.type}
-            className="mb-2"
-          >
-            <div className="flex items-start gap-2">
-              <div className="flex-1">
-                <ToastTitle>{toast.title}</ToastTitle>
-                <ToastDescription>{toast.message}</ToastDescription>
-              </div>
-              <ToastClose onClick={() => removeToast(toast.id)} />
-            </div>
-          </Toast>
-        ))}
-        <ToastViewport />
-      </ToastProvider>
     </ToastContext.Provider>
   );
 };
