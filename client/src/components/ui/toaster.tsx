@@ -1,32 +1,34 @@
 
-import * as React from "react";
-import { useToast } from "@/lib/toast-context";
 import {
   Toast,
   ToastClose,
   ToastDescription,
   ToastProvider,
+  ToastTitle,
   ToastViewport,
-  ToastTitle
-} from "@/components/ui/toast";
+} from "@/components/ui/toast"
+import { useToast } from "@/components/ui/use-toast"
 
 export function Toaster() {
-  const { state, removeToast } = useToast();
+  const { toasts } = useToast()
 
   return (
     <ToastProvider>
-      {state.toasts.map(({ id, title, message, type }) => (
-        <Toast key={id} variant={type}>
-          <div className="grid gap-1">
-            {title && <ToastTitle>{title}</ToastTitle>}
-            {message && (
-              <ToastDescription>{message}</ToastDescription>
-            )}
-          </div>
-          <ToastClose onClick={() => removeToast(id)} />
-        </Toast>
-      ))}
+      {toasts.map(function ({ id, title, description, action, ...props }) {
+        return (
+          <Toast key={id} {...props}>
+            <div className="grid gap-1">
+              {title && <ToastTitle>{title}</ToastTitle>}
+              {description && (
+                <ToastDescription>{description}</ToastDescription>
+              )}
+            </div>
+            {action}
+            <ToastClose />
+          </Toast>
+        )
+      })}
       <ToastViewport />
     </ToastProvider>
-  );
+  )
 }

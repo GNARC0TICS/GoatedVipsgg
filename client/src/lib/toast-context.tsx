@@ -1,107 +1,27 @@
-import React, { createContext, useContext, useReducer, ReactNode, useEffect } from "react";
-import { 
-  ToastProvider, 
-  ToastViewport, 
-  ToastTitle, 
-  ToastDescription, 
-  ToastClose,
-  Toast,
-  type ToastType
-} from "@/components/ui/toast";
+import React, { createContext, useContext } from 'react';
+import { ToastActionElement, ToastProps } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/use-toast';
 
-interface ToastMessage {
-  id: string;
-  type: ToastType;
-  title: string;
-  message: string;
-  duration?: number;
-}
-
-interface ToastState {
-  toasts: ToastMessage[];
-}
-
-type ToastAction =
-  | { type: "ADD_TOAST"; payload: Omit<ToastMessage, "id"> }
-  | { type: "REMOVE_TOAST"; payload: { id: string } };
-
-const initialState: ToastState = {
-  toasts: [],
+type ToastContextType = {
+  toast: (props: ToastProps & { action?: ToastActionElement }) => void;
 };
 
-const ToastContext = createContext<{
-  state: ToastState;
-  toast: (
-    title: string, 
-    message: string, 
-    type?: ToastType,
-    duration?: number
-  ) => void;
-  removeToast: (id: string) => void;
-} | undefined>(undefined);
+const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-function toastReducer(state: ToastState, action: ToastAction): ToastState {
-  switch (action.type) {
-    case "ADD_TOAST":
-      return {
-        ...state,
-        toasts: [
-          ...state.toasts,
-          { ...action.payload, id: Date.now().toString() },
-        ],
-      };
-    case "REMOVE_TOAST":
-      return {
-        ...state,
-        toasts: state.toasts.filter((toast) => toast.id !== action.payload.id),
-      };
-    default:
-      return state;
-  }
-}
-
-export const ToastContextProvider = ({ children }: { children: ReactNode }) => {
-  const [state, dispatch] = useReducer(toastReducer, initialState);
-
-  const toast = (
-    title: string, 
-    message: string, 
-    type: ToastType = "default",
-    duration: number = 5000
-  ) => {
-    const newToast = { title, message, type, duration };
-    dispatch({ type: "ADD_TOAST", payload: newToast });
-  };
-
-  const removeToast = (id: string) => {
-    dispatch({ type: "REMOVE_TOAST", payload: { id } });
-  };
-
-  // Auto-remove toasts after their duration
-  useEffect(() => {
-    const timers = state.toasts.map((toast) => {
-      const timer = setTimeout(() => {
-        removeToast(toast.id);
-      }, toast.duration || 5000);
-      return { id: toast.id, timer };
-    });
-
-    return () => {
-      timers.forEach((t) => clearTimeout(t.timer));
-    };
-  }, [state.toasts]);
+export function ToastContextProvider({ children }: { children: React.ReactNode }) {
+  const { toast } = useToast();
 
   return (
-    <ToastContext.Provider value={{ state, toast, removeToast }}>
+    <ToastContext.Provider value={{ toast }}>
       {children}
     </ToastContext.Provider>
   );
-};
+}
 
-export const useToast = () => {
+export const useToastContext = () => {
   const context = useContext(ToastContext);
   if (context === undefined) {
-    throw new Error("useToast must be used within a ToastContextProvider");
+    throw new Error('useToastContext must be used within a ToastContextProvider');
   }
   return context;
 };
