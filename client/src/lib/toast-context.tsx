@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import { ToastActionElement, ToastProps } from '@/components/ui/toast';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 type ToastContextType = {
   toast: (props: ToastProps & { action?: ToastActionElement }) => void;
