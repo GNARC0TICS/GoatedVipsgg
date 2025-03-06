@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { Route, Router, Switch, useLocation, Link } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, requiresAuth, useAuth } from "@/lib/auth";
@@ -9,6 +9,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { PreLoader } from "@/components/PreLoader";
 
 // Import all other components at the top to avoid circular dependencies
+import Home from "@/pages/Home";
 import AuthPage from "@/pages/auth-page";
 import AdminLogin from "@/pages/admin-login";
 import Help from "./pages/Help";
@@ -35,17 +36,8 @@ import Leaderboard from "@/pages/Leaderboard";
 import Challenges from "@/pages/Challenges";
 import WagerRaces from "@/pages/WagerRaces";
 import TipsAndStrategies from "@/pages/tips-and-strategies";
-
-// Lazy load pages for better performance
-const Home = lazy(() => import("@/pages/Home"));
-const LeaderboardPage = lazy(() => import("@/pages/Leaderboard")); //Renamed to match original
-const RacesPage = lazy(() => import("@/pages/WagerRaces")); //Renamed to match original
-const ChallengesPage = lazy(() => import("@/pages/Challenges")); //Renamed to match original
-const AdminPage = lazy(() => import("./pages/admin/Dashboard")); // Adjusted import path for AdminDashboard.  This assumes AdminPage will hold all admin routes
-const NotFoundPage = lazy(() => import("@/pages/not-found")); //Renamed to match original
-const ProfilePage = lazy(() => import("@/pages/UserProfile")); //Renamed to match original
-const PrivacyPage = lazy(() => import("@/pages/PrivacyPage")); // Added, not in original, assuming this is new functionality
-const TermsPage = lazy(() => import("@/pages/TermsPage")); // Added, not in original, assuming this is new functionality
+import PrivacyPage from "@/pages/PrivacyPage";
+import TermsPage from "@/pages/TermsPage";
 
 
 // Define auth protected route component
@@ -88,8 +80,8 @@ export default function App() {
                   <Switch>
                     {/* Public routes */}
                     <Route path="/" component={Home} />
-                    <Route path="/leaderboard" component={LeaderboardPage} />
-                    <Route path="/wager-races" component={RacesPage} />
+                    <Route path="/leaderboard" component={Leaderboard} />
+                    <Route path="/wager-races" component={WagerRaces} />
                     <Route path="/privacy" component={PrivacyPage} />
                     <Route path="/terms" component={TermsPage} />
                     <Route path="/login" component={AuthPage} />
@@ -102,7 +94,7 @@ export default function App() {
                     <Route path="/goated-token" component={GoatedToken} />
                     <Route path="/faq" component={FAQ} />
                     <Route path="/vip-program" component={VipProgram} />
-                    <Route path="/challenges" component={ChallengesPage} />
+                    <Route path="/challenges" component={Challenges} />
                     <Route path="/tips-and-strategies" component={TipsAndStrategies} />
                     <Route path="/promotions" component={Promotions} />
                     <Route path="/support" component={Support} />
@@ -115,20 +107,20 @@ export default function App() {
                     <Route path="/admin/:rest*">
                       {(params) => (
                         <ProtectedRoute>
-                          <AdminPage />
+                          <AdminDashboard />
                         </ProtectedRoute>
                       )}
                     </Route>
                     <Route path="/profile">
                       {() => (
                         <ProtectedRoute>
-                          <ProfilePage />
+                          <UserProfile />
                         </ProtectedRoute>
                       )}
                     </Route>
 
                     {/* Catch-all route */}
-                    <Route path="/:rest*" component={NotFoundPage} />
+                    <Route path="/:rest*" component={NotFound} />
                   </Switch>
                 </Router>
               </Suspense>

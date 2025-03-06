@@ -1,3 +1,5 @@
+@import "./styles/theme.css";
+
 @font-face {
   font-family: 'MonaSansCondensed-ExtraBold';
   src: url('/fonts/MonaSansCondensed-ExtraBold.woff2') format('woff2');
@@ -60,8 +62,6 @@
     text-shadow: 0 0 20px rgba(215, 255, 0, 0.4);
   }
 }
-
-@import "./styles/theme.css";
 
 @tailwind base;
 @tailwind components;
