@@ -1,91 +1,65 @@
-# Affiliate Marketing Platform Documentation
+# GoatedVIPs.gg - Premium Rewards Hub for Goated.com Players
 
-Welcome to the comprehensive documentation for the Affiliate Marketing Platform project. This documentation set is designed to provide an in-depth understanding of the project's structure, architecture, and technical implementation.
+## Overview
 
-## Documentation Directory
+GoatedVIPs.gg is an exclusive rewards hub designed specifically for players on the crypto casino Goated.com. Our platform provides enhanced rewards, competitions, and community features for users who register on Goated.com using the referral code **GOATEDVIPS**.
 
-1. **[Project Table of Contents](PROJECT_TOC.md)**
-   - Detailed descriptions of all files and directories in the project
-   - Overview of key technologies and components
+## Platform Purpose
 
-2. **[Project Structure](PROJECT_STRUCTURE.md)**
-   - Visual representation of the project's directory structure
-   - Hierarchical view of files and folders
+This platform is developed by an established Goated.com affiliate partner to create a dedicated VIP community experience. We leverage the Goated.com affiliate API to:
 
-3. **[System Architecture](SYSTEM_ARCHITECTURE.md)**
-   - High-level architecture overview
-   - Core functionality descriptions
-   - Data flow explanations
-   - Security and scalability considerations
+- Track user wager statistics in real-time
+- Host competitive wager races with exclusive prizes
+- Distribute bonus codes and special promotions
+- Organize challenges and community events
+- Provide detailed performance analytics and insights
 
-4. **[Technical Implementation](TECHNICAL_IMPLEMENTATION.md)**
-   - Code examples for key components
-   - Database schema details
-   - API implementation
-   - Frontend component examples
-   - State management approach
-   - Real-time data handling
+## Key Features
 
-## Project Overview
+### 📊 Wager Statistics Tracking
+Access comprehensive, real-time tracking of your wager statistics across various game types.
 
-The Affiliate Marketing Platform is an advanced web application designed to streamline marketing workflows through intelligent automation and data-driven insights. The platform features a sophisticated Telegram bot for user interactions and a comprehensive analytics ecosystem.
+### 🏆 Wager Races
+Participate in monthly wager races and competitions with other community members to win exclusive rewards.
 
-### Core Technologies
+### 🎁 Bonus Codes
+Get access to exclusive bonus codes not available through the standard platform.
 
+### 🎯 Challenges
+Take part in special challenges designed to enhance your gaming experience and provide additional rewards.
+
+### 👑 VIP Community
+Join an exclusive community of dedicated players with access to special perks and promotions.
+
+## Technical Implementation
+
+GoatedVIPs is built using a modern tech stack:
+
+- **Frontend**: React with TypeScript, TailwindCSS, and Framer Motion for smooth animations
+- **Backend**: Express.js server handling API interactions and data transformation
+- **Design System**: Custom theme with neon highlights and dynamic elements based on the Goated brand colors
+- **Real-time Updates**: WebSocket integration for live leaderboard and race updates
+
+The platform features a dark-mode color scheme with vibrant neon yellow highlights (#D7FF00) that create a premium, high-energy gaming atmosphere.
 - **Frontend**: TypeScript, React, Tailwind CSS, ShadCN UI, Framer Motion
 - **Backend**: Express.js, Node.js
 - **Database**: PostgreSQL with Drizzle ORM
-- **Integrations**: Telegram Bot API, Firebase Authentication, OpenAI API
 - **State Management**: React Query, React Context
 - **Real-time Updates**: WebSockets, HTTP polling
 
-### Key Features
 
-1. **User Account Management**
-   - Authentication and authorization
-   - Profile management with verification systems
-   - Notification preferences
+## How to Join
 
-2. **Affiliate Marketing Tools**
-   - Performance tracking and analytics
-   - Commission calculations
-   - Leaderboard ranking system
+1. Register on [Goated.com](https://www.goated.com) using the referral code **GOATEDVIPS**
+2. Visit [GoatedVIPs.gg](https://goatedvips.gg) to access your enhanced rewards dashboard
+3. Start participating in races, redeeming bonus codes, and enjoying exclusive VIP benefits
 
-3. **Wager Races**
-   - Competitive events among affiliates
-   - Real-time tracking and updates
-   - Prize distribution
+## About the Creator
 
-4. **Telegram Bot Integration**
-   - Command-based interactions
-   - Account linking
-   - Performance reporting
-   - Intelligent responses
-
-5. **Administrative Features**
-   - User management
-   - Promotion creation
-   - System configuration
-   - Analytics reporting
-
-## Getting Started
-
-To run the project locally:
-
-1. Clone the repository
-2. Install dependencies with `npm install`
-3. Set up environment variables
-4. Initialize the database
-5. Start the development server with `npm run dev`
-
-## Development Workflow
-
-The project uses a workflow named 'Start application' which runs `npm run dev` to start both the frontend and backend servers during development.
-
-## Contributing
-
-When contributing to this project, please follow the development guidelines outlined in the codebase.
+GoatedVIPs.gg was created by an established Goated.com affiliate partner to provide additional value to referred players. The platform transforms raw API data from Goated.com into engaging features that enhance the overall gaming experience.
 
 ---
 
-This documentation is designed to be fed into an LLM for detailed analysis of the codebase. It provides a comprehensive overview of the project's structure, architecture, and implementation details.
+© 2024 GoatedVIPs.gg. All rights reserved.
+
+*Disclaimer: This website is not officially affiliated with Goated.com. It is an independent platform created by an affiliate partner to provide extra benefits to referred players.*
