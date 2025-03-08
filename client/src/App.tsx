@@ -1,12 +1,13 @@
-import { Suspense, useState, useEffect } from "react";
-import { Route, Router, Switch, useLocation, Link } from "wouter";
+import { Suspense } from "react";
+import { Route, Router, Switch, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, requiresAuth, useAuth } from "@/lib/auth";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AnimatePresence } from "framer-motion";
-import { ErrorBoundary } from "react-error-boundary";
 import { PreLoader } from "@/components/PreLoader";
+import { Layout } from "./frontend/components/layout/Layout";
+import { ErrorBoundary } from "./frontend/components/errors/ErrorBoundary";
 
 // Import all other components at the top to avoid circular dependencies
 import Home from "@/pages/Home";
@@ -31,7 +32,7 @@ import SupportManagement from "@/pages/admin/SupportManagement";
 import UserManagement from "@/pages/admin/UserManagement";
 import WagerRaceManagement from "@/pages/admin/WagerRaceManagement";
 import AdminDashboard from "./pages/admin/Dashboard";
-import NotFound from "@/pages/not-found";
+import { NotFound } from "./frontend/components/errors/NotFound";
 import Leaderboard from "@/pages/Leaderboard";
 import Challenges from "@/pages/Challenges";
 import WagerRaces from "@/pages/WagerRaces";
@@ -67,6 +68,15 @@ const queryClient = new QueryClient({
   },
 });
 
+// Higher-order component to wrap route components with Layout
+const withLayout = (Component: React.ComponentType<any>) => (props: any) => {
+  return (
+    <Layout>
+      <Component {...props} />
+    </Layout>
+  );
+};
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -78,49 +88,53 @@ export default function App() {
                 {/* Wouter Router */}
                 <Router>
                   <Switch>
-                    {/* Public routes */}
-                    <Route path="/" component={Home} />
-                    <Route path="/leaderboard" component={Leaderboard} />
-                    <Route path="/wager-races" component={WagerRaces} />
-                    <Route path="/privacy" component={PrivacyPage} />
-                    <Route path="/terms" component={TermsPage} />
-                    <Route path="/login" component={AuthPage} />
-                    <Route path="/register" component={AuthPage} />
-                    <Route path="/admin/login" component={AdminLogin} />
-                    <Route path="/help" component={Help} />
-                    <Route path="/provably-fair" component={ProvablyFair} />
-                    <Route path="/telegram" component={Telegram} />
-                    <Route path="/how-it-works" component={HowItWorks} />
-                    <Route path="/goated-token" component={GoatedToken} />
-                    <Route path="/faq" component={FAQ} />
-                    <Route path="/vip-program" component={VipProgram} />
-                    <Route path="/challenges" component={Challenges} />
-                    <Route path="/tips-and-strategies" component={TipsAndStrategies} />
-                    <Route path="/promotions" component={Promotions} />
-                    <Route path="/support" component={Support} />
-                    <Route path="/user/:id" component={UserProfile} />
-                    <Route path="/bonus-codes" component={BonusCodes} />
-                    <Route path="/notification-preferences" component={NotificationPreferences} />
-                    <Route path="/vip-transfer" component={VipTransfer} />
+                    {/* Public routes wrapped with Layout */}
+                    <Route path="/" component={withLayout(Home)} />
+                    <Route path="/leaderboard" component={withLayout(Leaderboard)} />
+                    <Route path="/wager-races" component={withLayout(WagerRaces)} />
+                    <Route path="/privacy" component={withLayout(PrivacyPage)} />
+                    <Route path="/terms" component={withLayout(TermsPage)} />
+                    <Route path="/login" component={withLayout(AuthPage)} />
+                    <Route path="/register" component={withLayout(AuthPage)} />
+                    <Route path="/admin/login" component={withLayout(AdminLogin)} />
+                    <Route path="/help" component={withLayout(Help)} />
+                    <Route path="/provably-fair" component={withLayout(ProvablyFair)} />
+                    <Route path="/telegram" component={withLayout(Telegram)} />
+                    <Route path="/how-it-works" component={withLayout(HowItWorks)} />
+                    <Route path="/goated-token" component={withLayout(GoatedToken)} />
+                    <Route path="/faq" component={withLayout(FAQ)} />
+                    <Route path="/vip-program" component={withLayout(VipProgram)} />
+                    <Route path="/challenges" component={withLayout(Challenges)} />
+                    <Route path="/tips-and-strategies" component={withLayout(TipsAndStrategies)} />
+                    <Route path="/promotions" component={withLayout(Promotions)} />
+                    <Route path="/support" component={withLayout(Support)} />
+                    <Route path="/user/:id" component={withLayout(UserProfile)} />
+                    <Route path="/bonus-codes" component={withLayout(BonusCodes)} />
+                    <Route path="/notification-preferences" component={withLayout(NotificationPreferences)} />
+                    <Route path="/vip-transfer" component={withLayout(VipTransfer)} />
 
-                    {/* Protected routes */}
+                    {/* Protected routes wrapped with Layout */}
                     <Route path="/admin/:rest*">
                       {(params) => (
                         <ProtectedRoute>
-                          <AdminDashboard />
+                          <Layout>
+                            <AdminDashboard />
+                          </Layout>
                         </ProtectedRoute>
                       )}
                     </Route>
                     <Route path="/profile">
                       {() => (
                         <ProtectedRoute>
-                          <UserProfile />
+                          <Layout>
+                            <UserProfile />
+                          </Layout>
                         </ProtectedRoute>
                       )}
                     </Route>
 
-                    {/* Catch-all route */}
-                    <Route path="/:rest*" component={NotFound} />
+                    {/* Catch-all route wrapped with Layout */}
+                    <Route path="/:rest*" component={withLayout(NotFound)} />
                   </Switch>
                 </Router>
               </Suspense>
