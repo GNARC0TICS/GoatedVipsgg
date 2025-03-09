@@ -132,7 +132,7 @@ export async function initializeAdmin(
         .limit(1);
         
       console.log("Admin search query:", query.toSQL());
-      const [existingAdmin] = await query;
+      const [existingAdmin] = await queryery;
 
       if (existingAdmin) {
         // Only update if username matches to avoid duplicate key error
