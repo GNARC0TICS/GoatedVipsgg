@@ -30,8 +30,12 @@ Stores core user information for authentication and identification. This table r
 | lastLogin | timestamp | Last login timestamp |
 | goatedUid | text | Linked Goated.com UID (if verified) |
 | goatedUsername | text | Linked Goated.com username (if verified) |
-| isVerified | boolean | Whether user has verified Goated.com ownership |
-| verifiedAt | timestamp | When verification occurred |
+| isGoatedVerified | boolean | Whether user has verified Goated.com ownership |
+| goatedVerifiedAt | timestamp | When Goated.com verification occurred |
+| telegramId | text | Linked Telegram ID (if verified) |
+| telegramUsername | text | Linked Telegram username (if verified) |
+| isTelegramVerified | boolean | Whether user has verified Telegram ownership |
+| telegramVerifiedAt | timestamp | When Telegram verification occurred |
 
 #### `notificationPreferences` Table
 Controls user notification settings across different channels.
@@ -280,11 +284,14 @@ Email newsletter subscription management.
    - Completed wager races are archived in historical races
    - Race participation is recorded for both claimed and unclaimed Goated.com accounts
 
-4. **Telegram Integration**:
-   - A Telegram user can be linked to one platform account
-   - A Telegram user can participate in multiple challenges
-   - A challenge can have multiple entries from different users
-   - Verification requests track the linking process between Telegram and platform accounts
+4. **Verification and Account Linking**:
+   - A platform user can submit multiple verification requests but only have one approved verification per account type
+   - Each verification request has a status (pending/approved/rejected) and admin notes
+   - An admin user can review and approve/reject verification requests
+   - Verification requests maintain an audit trail of approvals and rejections
+   - When approved, the user record is updated with the verified account details
+   - Both Goated.com and Telegram verifications follow the same pattern but are stored in separate tables
+   - All verification actions require admin approval for security
 
 ## Data Flow and Transformation
 
@@ -468,12 +475,16 @@ The platform integrates with external APIs to gather affiliate marketing data, w
 ### Telegram Integration
 
 1. **User Verification Flow**:
-   - User initiates verification through Telegram bot or website interface
-   - Request stored in `verificationRequests` table
-   - Admin reviews and approves/rejects
-   - On approval, record created in `telegramUsers` table linking to platform account
-   - User receives notification of verification status
-   - Account claiming can happen in either direction (Telegram → Platform or Platform → Telegram)
+   - User initiates verification through platform interface
+   - Request stored in `telegramVerificationRequests` or `goatedVerificationRequests` table
+   - Admin reviews request details in admin dashboard
+   - Admin approves or rejects with optional notes
+   - On approval:
+     - User record in `users` table is updated with verification status and account details
+     - The verification request record is marked as approved with timestamp
+     - User receives notification of verification status
+   - Admin-based verification ensures security and prevents fraudulent claims
+   - All verification actions are logged for audit purposes
 
 2. **Challenge System**:
    - Admins create challenges in the `challenges` table
