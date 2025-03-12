@@ -10,17 +10,26 @@ interface PageTransitionProps {
 
 export function PageTransition({ children, isLoading = false }: PageTransitionProps) {
   const [showLoading, setShowLoading] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
 
+  // Only show loader if loading takes more than 300ms to avoid flicker for fast loads
   useEffect(() => {
     let timeout: NodeJS.Timeout;
+    
     if (isLoading) {
-      timeout = setTimeout(() => setShowLoading(true), 300); // Only show loader after 300ms
+      setIsCompleted(false);
+      timeout = setTimeout(() => setShowLoading(true), 300);
+    } else {
+      setShowLoading(false);
+      // Reset completion state after transition
+      timeout = setTimeout(() => setIsCompleted(false), 500);
     }
+    
     return () => clearTimeout(timeout);
   }, [isLoading]);
 
-  if (isLoading && showLoading) {
-    return <PreLoader onLoadComplete={() => setShowLoading(false)} />;
+  if (isLoading && showLoading && !isCompleted) {
+    return <PreLoader onLoadComplete={() => setIsCompleted(true)} />;
   }
 
   return (
