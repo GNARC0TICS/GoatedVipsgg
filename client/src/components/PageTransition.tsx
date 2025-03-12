@@ -28,6 +28,8 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
       } else {
         // If loading is done but we weren't showing the loader, render content immediately
         setShouldRenderContent(true);
+        // Scroll to top when new content loads
+        window.scrollTo({ top: 0, behavior: "instant" });
         timeout = setTimeout(() => {
           setShowLoading(false);
           setIsCompleted(false);

@@ -1,5 +1,7 @@
 import { ReactNode, useState, useRef, useEffect, Fragment } from "react";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
+import { Link } from "wouter";
+import { motion } from "framer-motion";
 import { Menu, Bell, Settings, User, LogOut, ChevronDown, Gift, Lock } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -23,8 +25,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FloatingSupport } from "./FloatingSupport";
 import { useToast } from "@/hooks/use-toast";
-import { motion } from 'framer-motion';
 import { MobileAdminBadge } from "@/components/MobileAdminBadge";
+import { ScrollToTopNavigation } from "./ScrollToTopNavigation";
 
 // Improved header styling
 const headerClasses = {
@@ -123,6 +125,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#14151A]">
+      <ScrollToTopNavigation />
       <header className={headerClasses.container}>
         <nav className={headerClasses.nav}>
           {/* Navigation content */}
@@ -557,7 +560,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
                     {user?.isAdmin && (
                       <>
-                        <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">ADMIN</div>
+                        <div className="mt-6 px-4 py-2 text[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">ADMIN</div>
                         <MobileNavLink href="/admin/user-management" label="UserManagement" onClose={() => setOpenMobile(false)} />
                         <MobileNavLink href="/admin/wager-races" label="Wager Race Management" onClose={() => setOpenMobile(false)} />
                         <MobileNavLink href="/admin/bonus-codes" label="Bonus Code Management" onClose={() => setOpenMobile(false)} />
@@ -693,9 +696,9 @@ export function Layout({ children }: { children: ReactNode }) {
       </header>
 
       <main className="flex-grow pt-16">
-          <>
-            {children}
-          </>
+        <>
+          {children}
+        </>
         {user?.isAdmin && isMobile && <MobileAdminBadge />}
       </main>
 
