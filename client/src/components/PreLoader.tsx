@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
 interface PreLoaderProps {
@@ -9,10 +9,12 @@ interface PreLoaderProps {
 export function PreLoader({ onLoadComplete }: PreLoaderProps) {
   const [progress, setProgress] = useState(0);
   const [loadingText, setLoadingText] = useState("Loading");
+  const [forceComplete, setForceComplete] = useState(false);
 
-  // Create more realistic loading simulation
+  // Create more realistic loading simulation with guaranteed completion
   useEffect(() => {
     let timer: NodeJS.Timeout;
+    let completionTimer: NodeJS.Timeout;
     
     // Initial quick progress to 30%
     const initialProgress = () => {
@@ -65,10 +67,28 @@ export function PreLoader({ onLoadComplete }: PreLoaderProps) {
 
     initialProgress();
 
+    // Ensure completion after a maximum time (8 seconds) regardless of progress
+    completionTimer = setTimeout(() => {
+      setForceComplete(true);
+      setProgress(100);
+      clearInterval(timer);
+      setTimeout(() => {
+        onLoadComplete();
+      }, 600);
+    }, 8000);
+
     return () => {
       clearInterval(timer);
+      clearTimeout(completionTimer);
     };
   }, [onLoadComplete]);
+
+  // Force completion if needed
+  useEffect(() => {
+    if (forceComplete) {
+      setProgress(100);
+    }
+  }, [forceComplete]);
 
   // Animate the loading text dots
   useEffect(() => {

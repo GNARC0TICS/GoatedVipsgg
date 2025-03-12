@@ -13,23 +13,38 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
   const [isCompleted, setIsCompleted] = useState(false);
   const [shouldRenderContent, setShouldRenderContent] = useState(!isLoading);
 
-  // Only show loader if loading takes more than 250ms to avoid flicker for fast loads
+  // Show loader with improved timing to avoid flickering but guarantee visibility for user feedback
   useEffect(() => {
     let timeout: NodeJS.Timeout;
     
     if (isLoading) {
       setIsCompleted(false);
       setShouldRenderContent(false);
-      timeout = setTimeout(() => setShowLoading(true), 250);
+      
+      // Show loader after a small delay to avoid flickering for very fast loads
+      timeout = setTimeout(() => setShowLoading(true), 200);
+      
+      // Force completion after a reasonable maximum time
+      const forceCompleteTimeout = setTimeout(() => {
+        handleLoadComplete();
+      }, 8000); // Force completion after 8 seconds max
+      
+      return () => {
+        clearTimeout(timeout);
+        clearTimeout(forceCompleteTimeout);
+      };
     } else if (!isCompleted) {
       if (showLoading) {
         // If we were showing the loader, wait for the complete animation
         // This ensures we don't cut off animations in the middle
+        // The handling of this case is done in handleLoadComplete
       } else {
         // If loading is done but we weren't showing the loader, render content immediately
         setShouldRenderContent(true);
+        
         // Scroll to top when new content loads
         window.scrollTo({ top: 0, behavior: "instant" });
+        
         timeout = setTimeout(() => {
           setShowLoading(false);
           setIsCompleted(false);
@@ -40,14 +55,19 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
     return () => clearTimeout(timeout);
   }, [isLoading, isCompleted, showLoading]);
 
-  // Handle loading completion
+  // Handle loading completion with guaranteed visual feedback
   const handleLoadComplete = () => {
     setIsCompleted(true);
-    // Wait a moment before rendering content to allow for transition
+    
+    // Ensure we show at least a brief completion state before transitioning
+    // This guarantees users see the loading reach 100% for better perceived performance
     setTimeout(() => {
       setShowLoading(false);
       setShouldRenderContent(true);
-    }, 800); // Increased from 600ms to ensure smoother transition
+      
+      // Scroll to top when completed
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }, 800); // Increased from 600ms to ensure smoother transition and visibility of completed state
   };
 
   if (isLoading && showLoading && !isCompleted) {
