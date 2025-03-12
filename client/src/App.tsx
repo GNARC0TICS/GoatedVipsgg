@@ -178,20 +178,33 @@ function App() {
 }
 
 function AppContent() {
+  // Force initial load to true on first visit or when explicitly testing
   const [isInitialLoad, setIsInitialLoad] = React.useState(() => {
+    // Always show initial load on first visit
     return !sessionStorage.getItem('hasVisited');
   });
 
+  // Handle session storage separately from loading state
   useEffect(() => {
-    if (!isInitialLoad) return;
-    sessionStorage.setItem('hasVisited', 'true');
-    setIsInitialLoad(false);
+    if (isInitialLoad) {
+      // Only set the hasVisited flag after loading completes
+      // This is now handled by the onLoadComplete callback
+    }
   }, [isInitialLoad]);
+
+  const handleLoadComplete = () => {
+    // Set the session storage flag to prevent showing the loader on subsequent visits
+    sessionStorage.setItem('hasVisited', 'true');
+    // Delay state update to ensure animation completes
+    setTimeout(() => {
+      setIsInitialLoad(false);
+    }, 600); // Adding delay to ensure animation completes
+  };
 
   return (
     <AnimatePresence mode="wait">
       {isInitialLoad ? (
-        <PreLoader onLoadComplete={() => setIsInitialLoad(false)} />
+        <PreLoader onLoadComplete={handleLoadComplete} />
       ) : (
         <Suspense fallback={<LoadingSpinner />}>
           <TooltipProvider>
