@@ -63,46 +63,26 @@ export const PreLoader: React.FC<PreLoaderProps> = ({ onLoadComplete }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.4 }}
-      className="fixed inset-0 flex flex-col items-center justify-center bg-black z-50"
+      className="fixed inset-0 flex flex-col items-center justify-center bg-[#14151A] z-50"
+      style={{ 
+        willChange: "opacity, transform",
+      }}
     >
-      <div className="relative w-48 h-48 mb-8">
-        <motion.img 
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          src="/images/Goated Logo - Yellow.png" 
-          alt="Goated Logo" 
-          className="w-full h-full"
+      <div className="flex flex-col items-center">
+        <img 
+          src="/images/preload.PNG" 
+          alt="Goated VIPs" 
+          className="mb-8 w-64 h-auto object-contain"
         />
-
-        {/* Add subtle pulse animation around the logo */}
-        <motion.div
-          animate={{ 
-            scale: [1, 1.05, 1],
-            opacity: [0.2, 0.4, 0.2]
-          }}
-          transition={{ 
-            duration: 2, 
-            repeat: Infinity,
-            ease: "easeInOut" 
-          }}
-          className="absolute inset-0 rounded-full bg-[#D7FF00]/20 -z-10"
-        />
-      </div>
-
-      {/* Progress bar container */}
-      <div className="w-64 h-2 bg-[#1A1B21] rounded-full overflow-hidden">
-        <motion.div
-          className="h-full bg-[#D7FF00]"
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          transition={{ ease: "easeInOut" }}
-        />
-      </div>
-
-      <div className="mt-4 text-[#8A8B91] text-sm font-mono">
-        {loadingText}
+        <div className="w-64 h-2 bg-[#2A2B31] rounded-full overflow-hidden mb-4">
+          <motion.div
+            className="h-full bg-[#D7FF00]"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ ease: "easeInOut" }}
+          />
+        </div>
+        <p className="text-[#8A8B91] font-mono">{loadingText}</p>
       </div>
     </motion.div>
   );
