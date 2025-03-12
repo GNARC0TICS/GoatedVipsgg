@@ -13,25 +13,30 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
   const [isCompleted, setIsCompleted] = useState(false);
   const [shouldRenderContent, setShouldRenderContent] = useState(!isLoading);
 
-  // Only show loader if loading takes more than 300ms to avoid flicker for fast loads
+  // Only show loader if loading takes more than 250ms to avoid flicker for fast loads
   useEffect(() => {
     let timeout: NodeJS.Timeout;
     
     if (isLoading) {
       setIsCompleted(false);
       setShouldRenderContent(false);
-      timeout = setTimeout(() => setShowLoading(true), 300);
+      timeout = setTimeout(() => setShowLoading(true), 250);
     } else if (!isCompleted) {
-      // If loading is done but we weren't showing the loader, render content immediately
-      setShouldRenderContent(true);
-      timeout = setTimeout(() => {
-        setShowLoading(false);
-        setIsCompleted(false);
-      }, 500);
+      if (showLoading) {
+        // If we were showing the loader, wait for the complete animation
+        // This ensures we don't cut off animations in the middle
+      } else {
+        // If loading is done but we weren't showing the loader, render content immediately
+        setShouldRenderContent(true);
+        timeout = setTimeout(() => {
+          setShowLoading(false);
+          setIsCompleted(false);
+        }, 500);
+      }
     }
     
     return () => clearTimeout(timeout);
-  }, [isLoading, isCompleted]);
+  }, [isLoading, isCompleted, showLoading]);
 
   // Handle loading completion
   const handleLoadComplete = () => {
@@ -40,7 +45,7 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
     setTimeout(() => {
       setShowLoading(false);
       setShouldRenderContent(true);
-    }, 600);
+    }, 800); // Increased from 600ms to ensure smoother transition
   };
 
   if (isLoading && showLoading && !isCompleted) {

@@ -74,6 +74,16 @@ export function MainPreloader({
     }
     
     return () => {};
+  // Make sure animation completes even if loading finishes early
+  useEffect(() => {
+    // If progress reaches 100%, wait a moment before triggering completion
+    if (progress >= 100) {
+      const timer = setTimeout(() => {
+        onLoadComplete();
+      }, 600); // Give time for the final animation
+      
+      return () => clearTimeout(timer);
+    }
   }, [progress, onLoadComplete]);
   
   return (
