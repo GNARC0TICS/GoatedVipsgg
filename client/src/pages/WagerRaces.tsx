@@ -53,7 +53,17 @@ export default function WagerRaces() {
   const [raceType] = useState<"weekly" | "monthly" | "weekend">("monthly");
   const [showCompletedRace, setShowCompletedRace] = useState(false);
   const ws = useRef<WebSocket | null>(null);
-  const { data: leaderboardData, isLoading } = useLeaderboard("monthly");
+  const { data: leaderboardData, isLoading, error } = useLeaderboard("monthly");
+  
+  // Log data for debugging purposes
+  useEffect(() => {
+    if (leaderboardData) {
+      console.log("Leaderboard data:", leaderboardData);
+    }
+    if (error) {
+      console.error("Leaderboard error:", error);
+    }
+  }, [leaderboardData, error]);
 
   useEffect(() => {
     ws.current = new WebSocket(`wss://${window.location.hostname}/ws`);
@@ -180,7 +190,7 @@ const getTrophyIcon = (rank: number) => {
     return Math.round(prizePool * (prizeDistribution[rank] || 0) * 100) / 100;
   };
 
-  if (isLoading || !leaderboardData) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#14151A] flex items-center justify-center">
         <LoadingSpinner />
@@ -188,9 +198,41 @@ const getTrophyIcon = (rank: number) => {
     );
   }
 
+  if (error) {
+    console.error("Error loading wager race data:", error);
+    return (
+      <div className="min-h-screen bg-[#14151A] flex items-center justify-center flex-col">
+        <div className="text-red-500 mb-4">Failed to load race data</div>
+        <Button 
+          onClick={() => window.location.reload()} 
+          className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  // Check if leaderboard data is empty
+  if (!leaderboardData || leaderboardData.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#14151A] flex items-center justify-center flex-col">
+        <div className="text-white mb-4">No participants in the current race</div>
+        <Link href="/leaderboard">
+          <a className="text-[#D7FF00] hover:underline">View Regular Leaderboard</a>
+        </Link>
+      </div>
+    );
+  }
+
+  // Ensure we're accessing the data correctly
   const top10Players = showCompletedRace
     ? (previousRace?.data?.participants || [])
-    : (leaderboardData?.data || []).slice(0, 10);
+    : (leaderboardData || []).slice(0, 10);
+  
+  // Add logging to verify the data
+  console.log("Top 10 players:", top10Players);
+  
   const currentLeader = top10Players[0];
 
   return (
