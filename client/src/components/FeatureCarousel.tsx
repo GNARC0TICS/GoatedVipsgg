@@ -6,19 +6,10 @@ import {useAuth} from '@/lib/auth'; //Hypothetical auth context
 import {useToast} from '@/hooks/use-toast';
 
 
+import { useWagerTotals } from '@/hooks/use-leaderboard';
+
 const useWagerTotal = () => {
-  const { data } = useQuery({
-    queryKey: ['wager-total'],
-    queryFn: async () => {
-      const response = await fetch('/api/affiliate/stats');
-      const data = await response.json();
-      const total = data?.data?.all_time?.data?.reduce((sum: number, entry: any) => {
-        return sum + (entry?.wagered?.all_time || 0);
-      }, 0);
-      return total || 2147483;
-    },
-    refetchInterval: 86400000,
-  });
+  const { data } = useWagerTotals();
   return data || 2147483;
 };
 
