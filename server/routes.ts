@@ -295,11 +295,16 @@ function setupRESTRoutes(app: Express) {
         }
       }
 
+      // Generate explicit dates to ensure correct month
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      
       const raceData = {
-        id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`,
+        id: `${currentYear}${(currentMonth + 1).toString().padStart(2, '0')}`,
         status: 'live',
-        startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+        startDate: new Date(currentYear, currentMonth, 1).toISOString(),
         endDate: endOfMonth.toISOString(),
+        title: `${new Date(currentYear, currentMonth, 1).toLocaleString('en-US', { month: 'long' })} ${currentYear} Race`,
         prizePool: 500, // Monthly race prize pool
         participants: stats.data.monthly.data.map((participant: any, index: number) => ({
           uid: participant.uid,
@@ -308,6 +313,9 @@ function setupRESTRoutes(app: Express) {
           position: index + 1
         })).slice(0, 10) // Top 10 participants
       };
+      
+      // Log race data for debugging
+      console.log(`Race data for month ${currentMonth + 1}, year ${currentYear}:`, raceData.title);
 
       res.json(raceData);
     } catch (error) {
