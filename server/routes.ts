@@ -304,7 +304,6 @@ function setupRESTRoutes(app: Express) {
         status: 'live',
         startDate: new Date(currentYear, currentMonth, 1).toISOString(),
         endDate: endOfMonth.toISOString(),
-        title: `${new Date(currentYear, currentMonth, 1).toLocaleString('en-US', { month: 'long' })} ${currentYear} Race`,
         prizePool: 500, // Monthly race prize pool
         participants: stats.data.monthly.data.map((participant: any, index: number) => ({
           uid: participant.uid,
@@ -315,7 +314,7 @@ function setupRESTRoutes(app: Express) {
       };
       
       // Log race data for debugging
-      console.log(`Race data for month ${currentMonth + 1}, year ${currentYear}:`, raceData.title);
+      console.log(`Race data for month ${currentMonth + 1}, year ${currentYear}`);
 
       res.json(raceData);
     } catch (error) {
