@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
@@ -33,25 +32,6 @@ export function MainPreloader({
   progress: externalProgress = 0
 }: MainPreloaderProps) {
   const [progress, setProgress] = useState(externalProgress);
-  const [forceComplete, setForceComplete] = useState(false);
-  
-  // Handle forced completion after timeout
-  useEffect(() => {
-    const forceCompleteTimer = setTimeout(() => {
-      if (progress < 100) {
-        setForceComplete(true);
-        setProgress(100);
-        
-        const completeTimer = setTimeout(() => {
-          if (onLoadComplete) onLoadComplete();
-        }, 600);
-        
-        return () => clearTimeout(completeTimer);
-      }
-    }, 8000); // Force completion after 8 seconds max
-    
-    return () => clearTimeout(forceCompleteTimer);
-  }, [onLoadComplete]);
   
   useEffect(() => {
     if (!useRandomProgressBar) {
@@ -59,10 +39,8 @@ export function MainPreloader({
       return;
     }
     
-    // Random progress simulation for better UX - ensuring progress starts immediately
-    let currentProgress = 5; // Start at 5% to show movement immediately
-    setProgress(currentProgress);
-    
+    // Random progress simulation for better UX
+    let currentProgress = 0;
     const interval = setInterval(() => {
       // Slow down as we approach 100%
       const increment = currentProgress < 70 
@@ -78,23 +56,15 @@ export function MainPreloader({
     return () => clearInterval(interval);
   }, [useRandomProgressBar, externalProgress]);
   
-  // When forceComplete is triggered or onLoadComplete is called, quickly complete the progress
+  // When onLoadComplete is called, quickly complete the progress
   useEffect(() => {
-    if (forceComplete) {
-      setProgress(100);
-      const timeout = setTimeout(() => {
-        if (onLoadComplete) onLoadComplete();
-      }, 600);
-      return () => clearTimeout(timeout);
-    }
-    
     if (!onLoadComplete) return;
     
     const completeLoading = () => {
       setProgress(100);
       const timeout = setTimeout(() => {
         onLoadComplete();
-      }, 600); // Short delay to show the completed progress
+      }, 400); // Short delay to show the completed progress
       
       return () => clearTimeout(timeout);
     };
@@ -104,12 +74,10 @@ export function MainPreloader({
     }
     
     return () => {};
-  }, [progress, onLoadComplete, forceComplete]);
-  
   // Make sure animation completes even if loading finishes early
   useEffect(() => {
     // If progress reaches 100%, wait a moment before triggering completion
-    if (progress >= 100 && onLoadComplete) {
+    if (progress >= 100) {
       const timer = setTimeout(() => {
         onLoadComplete();
       }, 600); // Give time for the final animation

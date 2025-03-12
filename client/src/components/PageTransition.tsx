@@ -13,38 +13,23 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
   const [isCompleted, setIsCompleted] = useState(false);
   const [shouldRenderContent, setShouldRenderContent] = useState(!isLoading);
 
-  // Show loader with improved timing to avoid flickering but guarantee visibility for user feedback
+  // Only show loader if loading takes more than 250ms to avoid flicker for fast loads
   useEffect(() => {
     let timeout: NodeJS.Timeout;
     
     if (isLoading) {
       setIsCompleted(false);
       setShouldRenderContent(false);
-      
-      // Show loader after a small delay to avoid flickering for very fast loads
-      timeout = setTimeout(() => setShowLoading(true), 200);
-      
-      // Force completion after a reasonable maximum time
-      const forceCompleteTimeout = setTimeout(() => {
-        handleLoadComplete();
-      }, 8000); // Force completion after 8 seconds max
-      
-      return () => {
-        clearTimeout(timeout);
-        clearTimeout(forceCompleteTimeout);
-      };
+      timeout = setTimeout(() => setShowLoading(true), 250);
     } else if (!isCompleted) {
       if (showLoading) {
         // If we were showing the loader, wait for the complete animation
         // This ensures we don't cut off animations in the middle
-        // The handling of this case is done in handleLoadComplete
       } else {
         // If loading is done but we weren't showing the loader, render content immediately
         setShouldRenderContent(true);
-        
         // Scroll to top when new content loads
         window.scrollTo({ top: 0, behavior: "instant" });
-        
         timeout = setTimeout(() => {
           setShowLoading(false);
           setIsCompleted(false);
@@ -55,19 +40,14 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
     return () => clearTimeout(timeout);
   }, [isLoading, isCompleted, showLoading]);
 
-  // Handle loading completion with guaranteed visual feedback
+  // Handle loading completion
   const handleLoadComplete = () => {
     setIsCompleted(true);
-    
-    // Ensure we show at least a brief completion state before transitioning
-    // This guarantees users see the loading reach 100% for better perceived performance
+    // Wait a moment before rendering content to allow for transition
     setTimeout(() => {
       setShowLoading(false);
       setShouldRenderContent(true);
-      
-      // Scroll to top when completed
-      window.scrollTo({ top: 0, behavior: "instant" });
-    }, 800); // Increased from 600ms to ensure smoother transition and visibility of completed state
+    }, 800); // Increased from 600ms to ensure smoother transition
   };
 
   if (isLoading && showLoading && !isCompleted) {
