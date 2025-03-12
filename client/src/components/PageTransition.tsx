@@ -11,6 +11,7 @@ interface PageTransitionProps {
 export function PageTransition({ children, isLoading = false }: PageTransitionProps) {
   const [showLoading, setShowLoading] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [shouldRenderContent, setShouldRenderContent] = useState(!isLoading);
 
   // Only show loader if loading takes more than 300ms to avoid flicker for fast loads
   useEffect(() => {
@@ -18,18 +19,37 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
     
     if (isLoading) {
       setIsCompleted(false);
+      setShouldRenderContent(false);
       timeout = setTimeout(() => setShowLoading(true), 300);
-    } else {
-      setShowLoading(false);
-      // Reset completion state after transition
-      timeout = setTimeout(() => setIsCompleted(false), 500);
+    } else if (!isCompleted) {
+      // If loading is done but we weren't showing the loader, render content immediately
+      setShouldRenderContent(true);
+      timeout = setTimeout(() => {
+        setShowLoading(false);
+        setIsCompleted(false);
+      }, 500);
     }
     
     return () => clearTimeout(timeout);
-  }, [isLoading]);
+  }, [isLoading, isCompleted]);
+
+  // Handle loading completion
+  const handleLoadComplete = () => {
+    setIsCompleted(true);
+    // Wait a moment before rendering content to allow for transition
+    setTimeout(() => {
+      setShowLoading(false);
+      setShouldRenderContent(true);
+    }, 600);
+  };
 
   if (isLoading && showLoading && !isCompleted) {
-    return <PreLoader onLoadComplete={() => setIsCompleted(true)} />;
+    return <PreLoader onLoadComplete={handleLoadComplete} />;
+  }
+
+  // Only render content when we should
+  if (!shouldRenderContent) {
+    return null; // Return empty during transition
   }
 
   return (
