@@ -82,13 +82,29 @@ export function Layout({ children }: { children: ReactNode }) {
   const [showFloatingSupport, setShowFloatingSupport] = useState(true);
   const { toast } = useToast();
   const [openMobile, setOpenMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const { data: user } = useQuery<SelectUser>({
     queryKey: ["/api/user"],
   });
 
   const isAuthenticated = !!user;
-  const isMobile = window.innerWidth < 768; // Basic mobile detection
+
+  // Check if the screen is mobile and update on resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    // Set initial value
+    handleResize();
+
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+
+    // Clean up
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -160,7 +176,7 @@ export function Layout({ children }: { children: ReactNode }) {
                     <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
-                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                <div className="absolute left-0 mt-2 w-full min-w-[180px] md:w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/how-it-works">
                       <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
@@ -217,7 +233,7 @@ export function Layout({ children }: { children: ReactNode }) {
                     <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
-                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                <div className="absolute left-0 mt-2 w-full min-w-[180px] md:w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/promotions">
                       <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
@@ -279,7 +295,7 @@ export function Layout({ children }: { children: ReactNode }) {
                     <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
-                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                <div className="absolute left-0 mt-2 w-full min-w-[180px] md:w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/leaderboard?period=daily">
                       <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
@@ -335,7 +351,7 @@ export function Layout({ children }: { children: ReactNode }) {
                     <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
-                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                <div className="absolute left-0 mt-2 w-full min-w-[180px] md:w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/telegram">
                       <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
@@ -362,7 +378,7 @@ export function Layout({ children }: { children: ReactNode }) {
                     <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
-                <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                <div className="absolute left-0 mt-2 w-full min-w-[180px] md:w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                     <Link href="/help">
                       <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-2 group-item">
@@ -407,7 +423,7 @@ export function Layout({ children }: { children: ReactNode }) {
                     <span className="font-bold">ADMIN</span>
                     <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
-                  <div className="absolute left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+                  <div className="absolute left-0 mt-2 w-full min-w-[180px] md:w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
                     <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
                       <Link href="/admin/user-management">
                         <div className="px-4 py-2.5 font-bold text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer">
@@ -586,111 +602,51 @@ export function Layout({ children }: { children: ReactNode }) {
 
           {/* User section */}
           <div className={headerClasses.userSection}>
-            <div>
-              {user && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-[#8A8B91] hover:text-white relative h-8 w-8 md:h-10 md:w-10"
-                    >
-                      <Bell className="h-4 w-4 md:h-5 md:w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-80 bg-[#1A1B21] border-[#2A2B31]">
-                    <DropdownMenuLabel className="flex items-center justify-between">
-                      Notifications
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                          window.open("/notification-preferences", "_self")
-                        }
-                        className="h-8 w-8"
-                      >
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <div className="max-h-[300px] overflow-y-auto">
-                      {/* Active notifications */}
-                      <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 text-white">
-                        <div className="text-sm font-medium">
-                          Monthly Wager Race Live!
-                        </div>
-                        <div className="text-xs text-[#8A8B91]">
-                          Compete for a share of the $2000 prize pool - Join now!
-                        </div>
-                        <div className="text-xs text-[#8A8B91]">
-                          Just now
-                        </div>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 text-white">
-                        <div className="text-sm font-medium">
-                          Welcome to GoatedVIPs!
-                        </div>
-                        <div className="text-xs text-[#8A8B91]">
-                          Your #1 source for casino rewards and competitions
-                        </div>
-                        <div className="text-xs text-[#8A8B91]">2 days ago</div>
-                      </DropdownMenuItem>
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-              <div className="flex items-center gap-2 md:gap-4">
-                {user ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="flex items-center gap-1 md:gap-2 text-white px-2 md:px-4 h-8 md:h-10"
-                      >
-                        <User className="h-5 w-5" />
-                        <span className="hidden md:inline">
-                          {user.username}
-                        </span>
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56 bg-[#1A1B21] border-[#2A2B31]">
-                      <DropdownMenuLabel className="text-white">My Account</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <Link href={`/user/${user.id}`}>
-                        <DropdownMenuItem className="cursor-pointer text-white">
-                          Profile
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link href="/notification-preferences">
-                        <DropdownMenuItem className="cursor-pointer text-white">
-                          Settings
-                        </DropdownMenuItem>
-                      </Link>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={handleLogout}
-                        className="text-red-500 cursor-pointer"
-                      >
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Logout
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <AuthModal />
-                )}
-                <Button
-                  onClick={() =>
-                    window.open("https://www.goated.com/r/SPIN", "_blank")
-                  }
-                  className="relative group overflow-hidden text-[#14151A] fill-animation hover:text-[#D7FF00] transition-all duration-3000 font-heading uppercase tracking-tight h-8 md:h-10 px-3 md:px-4 text-sm md:text-base"
-                >
-                  <span className="relative z-10">PLAY →</span>
-                </Button>
-              </div>
-            </div>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-[#8A8B91] hover:text-white relative h-8 w-8 md:h-10 md:w-10"
+                  >
+                    <User className="h-5 w-5 md:h-6 md:w-6" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className={`${dropdownClasses.content} w-48 sm:w-56`} align="end">
+                  <DropdownMenuLabel className="text-white">My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <Link href={`/user/${user.id}`}>
+                    <DropdownMenuItem className="cursor-pointer text-white">
+                      Profile
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/notification-preferences">
+                    <DropdownMenuItem className="cursor-pointer text-white">
+                      Settings
+                    </DropdownMenuItem>
+                  </Link>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-red-500 cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <AuthModal />
+            )}
+            <Button
+              onClick={() =>
+                window.open("https://www.goated.com/r/SPIN", "_blank")
+              }
+              className="relative group overflow-hidden text-[#14151A] fill-animation hover:text-[#D7FF00] transition-all duration-3000 font-heading uppercase tracking-tight h-8 md:h-10 px-3 md:px-4 text-sm md:text-base"
+            >
+              <span className="relative z-10">PLAY →</span>
+            </Button>
           </div>
         </nav>
       </header>
