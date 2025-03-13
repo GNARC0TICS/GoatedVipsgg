@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -96,6 +96,9 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
     if (!data) return 0;
     return data.reduce((total, entry) => total + getWagerAmount(entry), 0);
   }, [data, timePeriod]);
+
+  const formattedTotalWager = totalDailyWager.toLocaleString();
+
 
   if (isLoading) {
     return (
@@ -257,11 +260,12 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
             </Button>
           </div>
         </div>
-        <div className="text-right mt-4 text-[#D7FF00] font-mono text-lg">
-          Total Wagered {timePeriod === "all_time" ? "All Time" : 
+        <div className="text-center mt-4">
+          <p className="text-[#8A8B91] text-sm">Total Wagered {timePeriod === "all_time" ? "All Time" : 
             timePeriod === "monthly" ? "This Month" : 
             timePeriod === "weekly" ? "This Week" : 
-            "Today"}: ${totalDailyWager.toLocaleString()}
+            "Today"}:</p>
+          <p className="text-[#D7FF00] text-2xl font-bold font-mono">{formattedTotalWager}</p>
         </div>
       </div>
     </div>
