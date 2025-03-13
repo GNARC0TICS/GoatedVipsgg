@@ -148,6 +148,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-8">
             <Link href="/">
               <img src="/images/logo-neon.png" alt="GOATED" className={headerClasses.logo} />
+              <div className="absolute inset-0 bg-[#D7FF00]/0 rounded-full filter blur-md transition-all duration-300 group-hover:bg-[#D7FF00]/30 group-hover:blur-xl -z-0"></div>
             </Link>
 
             {/* Desktop Navigation */}
