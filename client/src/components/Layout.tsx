@@ -32,7 +32,7 @@ import { ScrollToTopNavigation } from "./ScrollToTopNavigation";
 const headerClasses = {
   container: "fixed top-0 left-0 right-0 z-50 bg-[#14151A]/80 backdrop-blur-xl border-b border-[#2A2B31]/50",
   nav: "container mx-auto h-16 px-4 flex items-center justify-between",
-  logo: "h-8 w-auto relative transition-transform duration-300 hover:scale-105",
+  logo: "h-8 w-auto relative z-10 transition-transform duration-300 hover:scale-105",
   menuButton: "md:hidden relative overflow-hidden group",
   desktopNav: "hidden md:flex items-center space-x-6",
   userSection: "flex items-center space-x-4",
@@ -146,9 +146,9 @@ export function Layout({ children }: { children: ReactNode }) {
         <nav className={headerClasses.nav}>
           {/* Navigation content */}
           <div className="flex items-center gap-8">
-            <Link href="/">
+            <Link href="/" className="group relative">
               <img src="/images/logo-neon.png" alt="GOATED" className={headerClasses.logo} />
-              <div className="absolute inset-0 bg-[#D7FF00]/0 rounded-full filter blur-md transition-all duration-300 group-hover:bg-[#D7FF00]/30 group-hover:blur-xl -z-0"></div>
+              <div className="absolute inset-0 bg-[#D7FF00]/0 rounded-full filter blur-md transition-all duration-300 group-hover:bg-[#D7FF00]/30 group-hover:blur-xl -z-10"></div>
             </Link>
 
             {/* Desktop Navigation */}
