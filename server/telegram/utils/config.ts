@@ -45,6 +45,7 @@ export const MessageTemplates = {
     SERVER_ERROR: '❌ An error occurred while processing your request. Please try again later.',
     VALIDATION_ERROR: '❌ Invalid input. Please check your command format and try again.',
     TIMEOUT: '❌ The request timed out. Please try again later.',
+    USER_NOT_FOUND: '❌ Could not identify your user account. Please try again.',
   },
   
   SUCCESS: {

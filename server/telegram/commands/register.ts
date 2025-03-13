@@ -10,6 +10,9 @@ import { logger } from '../utils';
 // Import all commands
 import helpCommand from './help';
 import statsCommand from './stats';
+import verifyCommand from './verify';
+import verifyUserCommand, { listRequestsCommand } from './verify-user';
+import leaderboardCommand, { raceCommand } from './leaderboard';
 
 // Add more command imports here as they are created
 
@@ -22,6 +25,16 @@ export function registerCommands(): void {
   // Register individual commands
   commandRegistry.register(helpCommand);
   commandRegistry.register(statsCommand);
+  commandRegistry.register(verifyCommand);
+  
+  // Register admin commands
+  commandRegistry.register(verifyUserCommand);
+  commandRegistry.register(listRequestsCommand);
+  
+  // Register leaderboard commands
+  commandRegistry.register(leaderboardCommand);
+  commandRegistry.register(raceCommand);
+  
   // Register additional commands here
   
   logger.info(`Registered ${commandRegistry.getAllCommands().size} commands successfully`);
