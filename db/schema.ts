@@ -10,7 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
-import { challenges, challengeEntries } from './schema/telegram';
+import { challenges, challengeEntries, telegramBotState, telegramUsers, verificationRequests } from './schema/telegram';
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -307,4 +307,10 @@ export type SelectGoatedVerificationRequest = typeof goatedVerificationRequests.
 export type InsertTelegramVerificationRequest = typeof telegramVerificationRequests.$inferInsert;
 export type SelectTelegramVerificationRequest = typeof telegramVerificationRequests.$inferSelect;
 
-export { challenges, challengeEntries };
+export { 
+  challenges, 
+  challengeEntries,
+  telegramBotState,
+  telegramUsers,
+  verificationRequests
+};

@@ -6,55 +6,68 @@ import { users } from '../../db/schema';
 import { telegramUsers, verificationRequests, challenges, challengeEntries } from '../../db/schema/telegram';
 import { scheduleJob } from 'node-schedule';
 import { randomUUID } from 'crypto';
+import { logger, stateManager, BotConfig, MessageTemplates, LogContext } from './utils';
+import { validateConfig } from './utils/config';
+import { ApiError, ApiErrorType } from './utils/api';
 
 // Type declarations - keep minimal for now
 type Message = TelegramMessage;
 type ChatPermissions = TelegramChatPermissions;
 
-console.log('[Telegram Bot] Loading bot module...');
+logger.info('Loading bot module...');
 
 // Singleton implementation with proper instance tracking
 let botInstance: TelegramBot | null = null;
 let isPolling = false;
 
 // Config validation
-const token = process.env.TELEGRAM_BOT_TOKEN;
-if (!token) {
-  throw new Error('TELEGRAM_BOT_TOKEN must be provided');
+if (!validateConfig()) {
+  throw new Error('Invalid bot configuration');
 }
-console.log('[Telegram Bot] Token validation successful');
+
+logger.info('Token validation successful');
 
 // Create bot instance with proper error handling
 function createBot(): TelegramBot {
   if (botInstance) {
-    console.log('[Telegram Bot] Using existing instance');
+    logger.info('Using existing instance');
     return botInstance;
   }
 
-  console.log('[Telegram Bot] Creating new bot instance...');
+  logger.info('Creating new bot instance...');
+
+  if (!BotConfig.TOKEN) {
+    throw new Error('TELEGRAM_BOT_TOKEN must be provided');
+  }
 
   // Create with polling disabled initially to avoid instant conflicts
-  const bot = new TelegramBot(token, { polling: false });
+  if (!BotConfig.TOKEN) {
+    throw new Error('TELEGRAM_BOT_TOKEN must be provided');
+  }
+  const bot = new TelegramBot(BotConfig.TOKEN, { polling: false });
 
   // Handle polling errors
   bot.on('polling_error', (error) => {
-    console.error(`[Telegram Bot] Polling error: ${error.message}`);
+    logger.error('Polling error', { 
+      error: error.message,
+      stack: error.stack
+    });
 
     // If we get a conflict error, stop polling to prevent cascading errors
     if (error.message.includes('409 Conflict')) {
-      console.log('[Telegram Bot] Detected polling conflict, stopping polling');
+      logger.warn('Detected polling conflict, stopping polling');
       bot.stopPolling().catch(e => {
-        console.error('[Telegram Bot] Error stopping polling after conflict:', e);
+        logger.error('Error stopping polling after conflict', { error: e });
       });
       isPolling = false;
 
       // Wait and attempt to restart polling
       setTimeout(() => {
         if (!isPolling) {
-          console.log('[Telegram Bot] Attempting to restart polling after conflict');
+          logger.info('Attempting to restart polling after conflict');
           startPolling(bot);
         }
-      }, 5000);
+      }, BotConfig.POLLING_RESTART_DELAY);
     }
   });
 
@@ -66,24 +79,34 @@ function createBot(): TelegramBot {
 // Start polling with error handling
 function startPolling(bot: TelegramBot): void {
   if (isPolling) {
-    console.log('[Telegram Bot] Already polling, ignoring start request');
+    logger.info('Already polling, ignoring start request');
     return;
   }
 
-  console.log('[Telegram Bot] Starting polling...');
+  logger.info('Starting polling...');
   bot.startPolling({ restart: false })
     .then(() => {
-      console.log('[Telegram Bot] Polling started successfully');
+      logger.info('Polling started successfully');
       isPolling = true;
     })
     .catch(error => {
-      console.error('[Telegram Bot] Failed to start polling:', error);
+      logger.error('Failed to start polling', { 
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
       isPolling = false;
 
       // Try again after delay
-      setTimeout(() => startPolling(bot), 5000);
+      setTimeout(() => startPolling(bot), BotConfig.POLLING_RESTART_DELAY);
     });
 }
+
+// Initialize state manager
+stateManager.init().catch(error => {
+  logger.error('Failed to initialize state manager', { 
+    error: error instanceof Error ? error.message : String(error)
+  });
+});
 
 // Create and initialize the bot
 const bot = createBot();
@@ -523,28 +546,30 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
 });
 
 // Check bot status - this can be useful for debugging
-export function getBotStatus() {
+export async function getBotStatus() {
   return {
-    isInitialized: !!botInstance,
     isPolling,
-    telegramToken: !!token,
-    commands: bot.getMyCommands()
+    hasInstance: !!botInstance,
+    uptime: process.uptime(),
+    token: !!BotConfig.TOKEN,
+    commands: await bot.getMyCommands()
   };
 }
 
 // Export bot instance and stop function
 export default bot;
 
+// Stop the bot and clean up resources
 export async function stopBot() {
   try {
-    console.log('[Telegram Bot] Stopping polling...');
+    logger.info('Stopping polling...');
     if (botInstance && isPolling) {
       await bot.stopPolling();
-      console.log('[Telegram Bot] Polling stopped');
+      logger.info('Polling stopped');
       isPolling = false;
     }
   } catch (error) {
-    console.error('[Telegram Bot] Error stopping polling:', error);
+    logger.error('Error stopping polling', { error });
   }
 }
 
