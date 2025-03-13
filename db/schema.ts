@@ -20,6 +20,7 @@ export const users = pgTable("users", {
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastLogin: timestamp("last_login"),
+  lastLoginIp: text("last_login_ip"),
   
   // Goated.com account linking fields
   goatedUid: text("goated_uid").unique(),
