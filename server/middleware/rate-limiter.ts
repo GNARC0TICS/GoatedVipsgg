@@ -1,5 +1,5 @@
-import { RateLimiterMemory } from 'rate-limiter-flexible';
-import { Request, Response, NextFunction } from 'express';
+import { RateLimiterMemory } from "rate-limiter-flexible";
+import { Request, Response, NextFunction } from "express";
 
 // Create a rate limiter instance for API endpoints
 export const apiLimiter = new RateLimiterMemory({
@@ -24,16 +24,17 @@ export const createRateLimiter = (limiter: RateLimiterMemory) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Use X-Forwarded-For header if available, otherwise fallback to connection remote address
-      const clientIp = (req.headers['x-forwarded-for'] as string) || 
-                      req.socket.remoteAddress || 
-                      'unknown';
+      const clientIp =
+        (req.headers["x-forwarded-for"] as string) ||
+        req.socket.remoteAddress ||
+        "unknown";
 
       await limiter.consume(clientIp);
       next();
     } catch (error: any) {
       res.status(429).json({
-        error: 'Too many requests, please try again later.',
-        retryAfter: error.msBeforeNext / 1000
+        error: "Too many requests, please try again later.",
+        retryAfter: error.msBeforeNext / 1000,
       });
     }
   };

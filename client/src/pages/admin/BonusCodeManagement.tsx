@@ -41,7 +41,9 @@ export default function BonusCodeManagement() {
       const response = await fetch("/api/admin/bonus-codes", {
         method: isEditing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(isEditing ? { ...formData, id: selectedCode?.id } : formData),
+        body: JSON.stringify(
+          isEditing ? { ...formData, id: selectedCode?.id } : formData,
+        ),
       });
 
       if (response.ok) {
@@ -102,7 +104,9 @@ export default function BonusCodeManagement() {
         className="space-y-6"
       >
         <div className="flex justify-between items-center">
-          <h2 className="text-3xl font-bold text-white">Bonus Code Management</h2>
+          <h2 className="text-3xl font-bold text-white">
+            Bonus Code Management
+          </h2>
           <Dialog>
             <DialogTrigger asChild>
               <Button className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/80">
@@ -112,7 +116,9 @@ export default function BonusCodeManagement() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{isEditing ? "Edit" : "Add"} Bonus Code</DialogTitle>
+                <DialogTitle>
+                  {isEditing ? "Edit" : "Add"} Bonus Code
+                </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Input

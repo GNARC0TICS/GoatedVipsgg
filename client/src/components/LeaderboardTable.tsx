@@ -1,5 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,7 +56,7 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
   const filteredData = useMemo(() => {
     if (!data) return [];
     return data.filter((entry: LeaderboardEntry) =>
-      entry.name.toLowerCase().includes(searchQuery.toLowerCase())
+      entry.name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [data, searchQuery]);
 
@@ -103,9 +110,15 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="w-20 font-heading text-[#D7FF00]">RANK</TableHead>
-              <TableHead className="font-heading text-[#D7FF00]">USERNAME</TableHead>
-              <TableHead className="text-right font-heading text-[#D7FF00]">WAGER</TableHead>
+              <TableHead className="w-20 font-heading text-[#D7FF00]">
+                RANK
+              </TableHead>
+              <TableHead className="font-heading text-[#D7FF00]">
+                USERNAME
+              </TableHead>
+              <TableHead className="text-right font-heading text-[#D7FF00]">
+                WAGER
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -156,18 +169,30 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
       </div>
 
       <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
-        <div className="overflow-x-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#2A2B31 #14151A' }}>
+        <div
+          className="overflow-x-auto"
+          style={{ scrollbarWidth: "thin", scrollbarColor: "#2A2B31 #14151A" }}
+        >
           <Table className="w-full">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[50px] md:w-20 font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap font-black">RANK</TableHead>
-                <TableHead className="font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base font-black">USERNAME</TableHead>
-                <TableHead className="text-right font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap font-black">WAGER</TableHead>
+                <TableHead className="w-[50px] md:w-20 font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap font-black">
+                  RANK
+                </TableHead>
+                <TableHead className="font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base font-black">
+                  USERNAME
+                </TableHead>
+                <TableHead className="text-right font-heading text-[#D7FF00] px-1 md:px-4 text-xs md:text-base whitespace-nowrap font-black">
+                  WAGER
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredData
-                .slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE)
+                .slice(
+                  currentPage * ITEMS_PER_PAGE,
+                  (currentPage + 1) * ITEMS_PER_PAGE,
+                )
                 .map((entry, index) => (
                   <motion.tr
                     key={entry.uid}
@@ -179,7 +204,9 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
                     <TableCell className="font-heading px-1 md:px-4">
                       <div className="flex items-center gap-1 md:gap-2">
                         <div className="hidden md:block">
-                          {getTrophyIcon(index + 1 + currentPage * ITEMS_PER_PAGE)}
+                          {getTrophyIcon(
+                            index + 1 + currentPage * ITEMS_PER_PAGE,
+                          )}
                         </div>
                         <span className="text-[#D7FF00] text-xs md:text-base">
                           {index + 1 + currentPage * ITEMS_PER_PAGE}
@@ -190,7 +217,9 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
                       <QuickProfile userId={entry.uid} username={entry.name}>
                         <div className="flex items-center gap-2 cursor-pointer">
                           <img
-                            src={getTierIcon(getTierFromWager(entry.wagered.all_time))}
+                            src={getTierIcon(
+                              getTierFromWager(entry.wagered.all_time),
+                            )}
                             alt="Tier"
                             className="w-5 h-5"
                           />
@@ -228,9 +257,7 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
         <div className="p-4 border-t border-[#2A2B31] flex items-center justify-between">
           <div className="flex items-center gap-2 text-[#8A8B91]">
             <Users className="h-4 w-4" />
-            <span className="text-sm">
-              {filteredData.length} Players
-            </span>
+            <span className="text-sm">{filteredData.length} Players</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -258,10 +285,15 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
           </div>
         </div>
         <div className="text-right mt-4 text-[#D7FF00] font-mono text-lg">
-          Total Wagered {timePeriod === "all_time" ? "All Time" : 
-            timePeriod === "monthly" ? "This Month" : 
-            timePeriod === "weekly" ? "This Week" : 
-            "Today"}: ${totalDailyWager.toLocaleString()}
+          Total Wagered{" "}
+          {timePeriod === "all_time"
+            ? "All Time"
+            : timePeriod === "monthly"
+              ? "This Month"
+              : timePeriod === "weekly"
+                ? "This Week"
+                : "Today"}
+          : ${totalDailyWager.toLocaleString()}
         </div>
       </div>
     </div>

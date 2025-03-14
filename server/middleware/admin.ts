@@ -36,13 +36,13 @@ export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 export const ADMIN_KEY = process.env.ADMIN_SECRET_KEY;
 
 if (!ADMIN_USERNAME || !ADMIN_PASSWORD || !ADMIN_KEY) {
-  console.error('Missing required admin environment variables');
+  console.error("Missing required admin environment variables");
 }
 
 export async function initializeAdmin(
-  username: string = ADMIN_USERNAME ?? '',
-  password: string = ADMIN_PASSWORD ?? '',
-  adminKey: string = ADMIN_KEY ?? '',
+  username: string = ADMIN_USERNAME ?? "",
+  password: string = ADMIN_PASSWORD ?? "",
+  adminKey: string = ADMIN_KEY ?? "",
 ) {
   try {
     // Check if required credentials exist
@@ -64,7 +64,7 @@ export async function initializeAdmin(
         .select({
           id: users.id,
           username: users.username,
-          isAdmin: users.isAdmin
+          isAdmin: users.isAdmin,
         })
         .from(users)
         .where(eq(users.isAdmin, true))
@@ -88,7 +88,10 @@ export async function initializeAdmin(
         return existingAdmin;
       }
     } catch (e) {
-      console.warn("Error checking for existing admin, will try to create a new one", e);
+      console.warn(
+        "Error checking for existing admin, will try to create a new one",
+        e,
+      );
       // Continue with creating a new admin
     }
 
@@ -97,7 +100,7 @@ export async function initializeAdmin(
       const [existingUser] = await db
         .select({
           id: users.id,
-          username: users.username
+          username: users.username,
         })
         .from(users)
         .where(eq(users.username, username))

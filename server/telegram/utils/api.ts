@@ -3,7 +3,7 @@
  * Provides standardized API interaction with error handling and retries
  */
 
-import { BotConfig } from './config';
+import { BotConfig } from "./config";
 
 /**
  * Generic API response interface
@@ -20,13 +20,13 @@ export interface ApiResponse<T> {
  * API error categories
  */
 export enum ApiErrorType {
-  NETWORK = 'network',
-  TIMEOUT = 'timeout',
-  SERVER = 'server',
-  AUTH = 'auth',
-  VALIDATION = 'validation',
-  NOT_FOUND = 'not_found',
-  UNKNOWN = 'unknown',
+  NETWORK = "network",
+  TIMEOUT = "timeout",
+  SERVER = "server",
+  AUTH = "auth",
+  VALIDATION = "validation",
+  NOT_FOUND = "not_found",
+  UNKNOWN = "unknown",
 }
 
 /**
@@ -37,9 +37,14 @@ export class ApiError extends Error {
   public statusCode?: number;
   public response?: Response;
 
-  constructor(message: string, type: ApiErrorType, statusCode?: number, response?: Response) {
+  constructor(
+    message: string,
+    type: ApiErrorType,
+    statusCode?: number,
+    response?: Response,
+  ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
     this.type = type;
     this.statusCode = statusCode;
     this.response = response;
@@ -82,7 +87,7 @@ export class ApiClient {
    */
   constructor(
     timeout = BotConfig.REQUEST_TIMEOUT,
-    retryOptions = DEFAULT_RETRY_OPTIONS
+    retryOptions = DEFAULT_RETRY_OPTIONS,
   ) {
     this.timeout = timeout;
     this.retryOptions = retryOptions;
@@ -101,36 +106,33 @@ export class ApiClient {
     const signal = controller.signal;
 
     try {
-      return await this.executeWithRetry<T>(
-        async () => {
-          try {
-            const response = await fetch(url, {
-              ...options,
-              signal,
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                ...options.headers,
-              },
-            });
+      return await this.executeWithRetry<T>(async () => {
+        try {
+          const response = await fetch(url, {
+            ...options,
+            signal,
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              ...options.headers,
+            },
+          });
 
-            const responseData = await this.handleResponse<T>(response);
-            return responseData;
-          } catch (error) {
-            if (error instanceof DOMException && error.name === 'AbortError') {
-              throw new ApiError('Request timed out', ApiErrorType.TIMEOUT);
-            }
-            
-            // Network errors (e.g., no internet)
-            if (error instanceof TypeError && error.message.includes('fetch')) {
-              throw new ApiError('Network error', ApiErrorType.NETWORK);
-            }
-            
-            throw error;
+          const responseData = await this.handleResponse<T>(response);
+          return responseData;
+        } catch (error) {
+          if (error instanceof DOMException && error.name === "AbortError") {
+            throw new ApiError("Request timed out", ApiErrorType.TIMEOUT);
           }
-        },
-        this.retryOptions
-      );
+
+          // Network errors (e.g., no internet)
+          if (error instanceof TypeError && error.message.includes("fetch")) {
+            throw new ApiError("Network error", ApiErrorType.NETWORK);
+          }
+
+          throw error;
+        }
+      }, this.retryOptions);
     } finally {
       clearTimeout(timeoutId);
     }
@@ -149,12 +151,13 @@ export class ApiClient {
       data = await response.json();
     } catch (error) {
       // Non-JSON response
-      data = { success: false, message: 'Invalid response format' };
+      data = { success: false, message: "Invalid response format" };
     }
 
     if (!response.ok) {
       let errorType = ApiErrorType.UNKNOWN;
-      let errorMessage = data?.message || data?.error || response.statusText || 'Unknown error';
+      let errorMessage =
+        data?.message || data?.error || response.statusText || "Unknown error";
 
       // Categorize error based on status code
       switch (response.status) {
@@ -194,7 +197,7 @@ export class ApiClient {
    */
   private async executeWithRetry<T>(
     operation: () => Promise<T>,
-    options: RetryOptions
+    options: RetryOptions,
   ): Promise<T> {
     let lastError: Error | undefined;
     let delay = options.initialDelay;
@@ -204,12 +207,12 @@ export class ApiClient {
         return await operation();
       } catch (error) {
         lastError = error as Error;
-        
+
         // Don't retry if this is the last attempt
         if (attempt > options.maxRetries) {
           break;
         }
-        
+
         // Don't retry for certain error types
         if (error instanceof ApiError) {
           if (
@@ -219,7 +222,7 @@ export class ApiClient {
           ) {
             break;
           }
-          
+
           // Only retry specific status codes
           if (
             error.statusCode &&
@@ -228,14 +231,14 @@ export class ApiClient {
             break;
           }
         }
-        
+
         // Wait before retrying
-        await new Promise(resolve => setTimeout(resolve, delay));
-        
+        await new Promise((resolve) => setTimeout(resolve, delay));
+
         // Calculate next delay (exponential backoff with jitter)
         delay = Math.min(
           options.maxDelay,
-          delay * options.factor * (0.5 + Math.random())
+          delay * options.factor * (0.5 + Math.random()),
         );
       }
     }
@@ -251,8 +254,8 @@ export class ApiClient {
    */
   async getGoatedStats(username: string): Promise<any> {
     const url = new URL(BotConfig.API.STATS);
-    url.searchParams.append('username', username);
-    
+    url.searchParams.append("username", username);
+
     return this.request(url.toString());
   }
 

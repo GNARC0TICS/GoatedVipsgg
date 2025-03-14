@@ -21,10 +21,13 @@ export function BonusCodeHeroCard() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <Card className={cn(
-      "relative overflow-hidden bg-[#1A1B21]/50 backdrop-blur-sm border border-[#2A2B31]",
-      !isAuthenticated && "opacity-50 hover:opacity-75 transition-opacity group"
-    )}>
+    <Card
+      className={cn(
+        "relative overflow-hidden bg-[#1A1B21]/50 backdrop-blur-sm border border-[#2A2B31]",
+        !isAuthenticated &&
+          "opacity-50 hover:opacity-75 transition-opacity group",
+      )}
+    >
       <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-[#D7FF00]">
@@ -32,7 +35,7 @@ export function BonusCodeHeroCard() {
           {!isAuthenticated && <Lock className="h-4 w-4 text-[#8A8B91]" />}
         </CardTitle>
         <CardDescription className="text-[#8A8B91]">
-          {isAuthenticated 
+          {isAuthenticated
             ? "View and redeem your exclusive bonus codes"
             : "Sign in to access exclusive bonus codes"}
         </CardDescription>
@@ -40,7 +43,10 @@ export function BonusCodeHeroCard() {
       <CardContent>
         {isAuthenticated ? (
           <Link href="/bonus-codes">
-            <Button variant="default" className="w-full bg-[#D7FF00] text-black hover:bg-[#b2d000]">
+            <Button
+              variant="default"
+              className="w-full bg-[#D7FF00] text-black hover:bg-[#b2d000]"
+            >
               View Bonus Codes
             </Button>
           </Link>
@@ -48,8 +54,8 @@ export function BonusCodeHeroCard() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="secondary" 
+                <Button
+                  variant="secondary"
                   className="w-full bg-[#2A2B31] text-[#8A8B91] cursor-not-allowed"
                   disabled
                 >

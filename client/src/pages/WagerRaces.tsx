@@ -32,7 +32,7 @@ import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 
 interface LeaderboardData {
   data: LeaderboardEntry[];
-  status?: 'active' | 'transition';
+  status?: "active" | "transition";
 }
 
 type WageredData = {
@@ -54,7 +54,7 @@ export default function WagerRaces() {
   const [showCompletedRace, setShowCompletedRace] = useState(false);
   const ws = useRef<WebSocket | null>(null);
   const { data: leaderboardData, isLoading, error } = useLeaderboard("monthly");
-  
+
   // Log data for debugging purposes
   useEffect(() => {
     if (leaderboardData) {
@@ -97,18 +97,25 @@ export default function WagerRaces() {
             this_month: p.wagered || 0,
             today: 0,
             this_week: 0,
-            all_time: p.allTimeWagered || 0
-          }
+            all_time: p.allTimeWagered || 0,
+          },
         })),
-        isTransition: now < transitionEnds
+        isTransition: now < transitionEnds,
       };
-    }
+    },
   });
 
   // Auto-show completed race when race ends
   useEffect(() => {
     const now = new Date();
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+    );
 
     if (now >= endOfMonth && !showCompletedRace) {
       setShowCompletedRace(true);
@@ -140,11 +147,11 @@ export default function WagerRaces() {
   const prizePool = 500;
   const prizeDistribution: Record<number, number> = {
     1: 0.425, // $212.50
-    2: 0.2,   // $100
-    3: 0.15,  // $60
+    2: 0.2, // $100
+    3: 0.15, // $60
     4: 0.075, // $30
-    5: 0.06,  // $24
-    6: 0.04,  // $16
+    5: 0.06, // $24
+    6: 0.04, // $16
     7: 0.0275, // $11
     8: 0.0225, // $9
     9: 0.0175, // $7
@@ -152,17 +159,17 @@ export default function WagerRaces() {
   };
 
   const getLastUpdateTime = (timestamp?: string) => {
-  if (!timestamp) return 'recently';
-  const diff = Date.now() - new Date(timestamp).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-};
+    if (!timestamp) return "recently";
+    const diff = Date.now() - new Date(timestamp).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return "just now";
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  };
 
-const getTrophyIcon = (rank: number) => {
+  const getTrophyIcon = (rank: number) => {
     switch (rank) {
       case 1:
         return <Crown className="h-8 w-8 text-yellow-400 animate-pulse" />;
@@ -203,8 +210,8 @@ const getTrophyIcon = (rank: number) => {
     return (
       <div className="min-h-screen bg-[#14151A] flex items-center justify-center flex-col">
         <div className="text-red-500 mb-4">Failed to load race data</div>
-        <Button 
-          onClick={() => window.location.reload()} 
+        <Button
+          onClick={() => window.location.reload()}
           className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
         >
           Retry
@@ -217,9 +224,13 @@ const getTrophyIcon = (rank: number) => {
   if (!leaderboardData || leaderboardData.length === 0) {
     return (
       <div className="min-h-screen bg-[#14151A] flex items-center justify-center flex-col">
-        <div className="text-white mb-4">No participants in the current race</div>
+        <div className="text-white mb-4">
+          No participants in the current race
+        </div>
         <Link href="/leaderboard">
-          <a className="text-[#D7FF00] hover:underline">View Regular Leaderboard</a>
+          <a className="text-[#D7FF00] hover:underline">
+            View Regular Leaderboard
+          </a>
         </Link>
       </div>
     );
@@ -227,12 +238,12 @@ const getTrophyIcon = (rank: number) => {
 
   // Ensure we're accessing the data correctly
   const top10Players = showCompletedRace
-    ? (previousRace?.data?.participants || [])
+    ? previousRace?.data?.participants || []
     : (leaderboardData || []).slice(0, 10);
-  
+
   // Add logging to verify the data
   console.log("Top 10 players:", top10Players);
-  
+
   const currentLeader = top10Players[0];
 
   return (
@@ -252,7 +263,7 @@ const getTrophyIcon = (rank: number) => {
                 ref={(el) => {
                   if (el) {
                     el.playbackRate = 0.5;
-                    el.addEventListener('ended', () => {
+                    el.addEventListener("ended", () => {
                       setTimeout(() => {
                         el.play();
                       }, 1000); // 1 second pause before replay
@@ -305,10 +316,11 @@ const getTrophyIcon = (rank: number) => {
                         Race Completed
                       </div>
                       <div className="bg-[#1A1B21]/80 text-[#D7FF00]/80 px-6 py-3 rounded-lg text-sm">
-                        Winners will receive their prizes directly to their Goated account within 24 hours of race completion
+                        Winners will receive their prizes directly to their
+                        Goated account within 24 hours of race completion
                       </div>
                     </div>
-                  ) : leaderboardData?.status === 'transition' ? (
+                  ) : leaderboardData?.status === "transition" ? (
                     <div className="bg-orange-500/10 text-orange-500 px-6 py-2 rounded-full border border-orange-500 backdrop-blur-sm">
                       In Transition Period
                     </div>
@@ -329,9 +341,12 @@ const getTrophyIcon = (rank: number) => {
                   )}
 
                   {/* Next Race Countdown */}
-                  {(showCompletedRace || leaderboardData?.status === 'transition') && (
+                  {(showCompletedRace ||
+                    leaderboardData?.status === "transition") && (
                     <div className="text-center">
-                      <div className="text-[#8A8B91] mb-2">Next Race Starts In</div>
+                      <div className="text-[#8A8B91] mb-2">
+                        Next Race Starts In
+                      </div>
                       <div className="bg-[#1A1B21]/80 backdrop-blur-sm px-6 py-4 rounded-lg">
                         <CountdownTimer
                           endDate={new Date(
@@ -361,9 +376,7 @@ const getTrophyIcon = (rank: number) => {
                   </h3>
                   <div className="flex items-center justify-center gap-2">
                     <Trophy className="h-5 w-5 text-[#D7FF00]" />
-                    <p className="text-xl font-bold">
-                      $500
-                    </p>
+                    <p className="text-xl font-bold">$500</p>
                   </div>
                 </div>
                 <div className="text-center">
@@ -388,7 +401,6 @@ const getTrophyIcon = (rank: number) => {
                 </div>
               </div>
             </motion.div>
-
           </div>
 
           {/* Podium Section */}
@@ -405,7 +417,7 @@ const getTrophyIcon = (rank: number) => {
                 whileHover={{
                   scale: 1.05,
                   transition: { duration: 0.2 },
-                  boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
+                  boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)",
                 }}
                 className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-3 md:p-6 rounded-2xl border-2 border-[#C0C0C0] w-[120px] md:w-[180px] h-[180px] md:h-[220px] transform -translate-y-4"
               >
@@ -419,7 +431,10 @@ const getTrophyIcon = (rank: number) => {
                     {getTrophyIcon(2)}
                   </div>
                   <div className="text-center">
-                    <QuickProfile userId={top10Players[1]?.uid} username={top10Players[1]?.name}>
+                    <QuickProfile
+                      userId={top10Players[1]?.uid}
+                      username={top10Players[1]?.name}
+                    >
                       <p className="text-base md:text-lg font-bold truncate text-white/90 cursor-pointer hover:text-[#D7FF00] transition-colors">
                         {top10Players[1]?.name || "-"}
                       </p>
@@ -428,8 +443,8 @@ const getTrophyIcon = (rank: number) => {
                       ${getPrizeAmount(2).toLocaleString()}
                     </p>
                     <p className="text-sm text-white/60 mt-1 flex items-center justify-center gap-1">
-                      <TrendingUp className="h-3 w-3" />
-                      ${getWagerAmount(
+                      <TrendingUp className="h-3 w-3" />$
+                      {getWagerAmount(
                         top10Players[1] || { wagered: { this_month: 0 } },
                       ).toLocaleString()}
                     </p>
@@ -447,7 +462,7 @@ const getTrophyIcon = (rank: number) => {
                 whileHover={{
                   scale: 1.05,
                   transition: { duration: 0.2 },
-                  boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
+                  boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)",
                 }}
                 className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-3 md:p-6 rounded-2xl border-2 border-[#FFD700] w-[140px] md:w-[220px] h-[200px] md:h-[240px] z-10 glow-gold"
               >
@@ -461,25 +476,27 @@ const getTrophyIcon = (rank: number) => {
                     {getTrophyIcon(1)}
                   </div>
                   <div className="text-center">
-                  <QuickProfile userId={top10Players[0]?.uid} username={top10Players[0]?.name}>
-                    <p className="text-xl font-bold truncate text-white cursor-pointer hover:text-[#D7FF00] transition-colors">
-                      {top10Players[0]?.name || "-"}
+                    <QuickProfile
+                      userId={top10Players[0]?.uid}
+                      username={top10Players[0]?.name}
+                    >
+                      <p className="text-xl font-bold truncate text-white cursor-pointer hover:text-[#D7FF00] transition-colors">
+                        {top10Players[0]?.name || "-"}
+                      </p>
+                    </QuickProfile>
+                    <p className="text-lg font-heading text-[#D7FF00] mt-2">
+                      ${getPrizeAmount(1).toLocaleString()}
                     </p>
-                  </QuickProfile>
-                  <p className="text-lg font-heading text-[#D7FF00] mt-2">
-                    ${getPrizeAmount(1).toLocaleString()}
-                  </p>
-                  <p className="text-sm text-white/60 mt-1">
-                    $
-                    {getWagerAmount(
-                      top10Players[0] || { wagered: { this_month: 0 } },
-                    ).toLocaleString()}{" "}
-                    wagered
-                  </p>
+                    <p className="text-sm text-white/60 mt-1">
+                      $
+                      {getWagerAmount(
+                        top10Players[0] || { wagered: { this_month: 0 } },
+                      ).toLocaleString()}{" "}
+                      wagered
+                    </p>
                   </div>
                 </div>
               </motion.div>
-
 
               {/* 3rd Place */}
               <motion.div
@@ -488,7 +505,7 @@ const getTrophyIcon = (rank: number) => {
                 whileHover={{
                   scale: 1.05,
                   transition: { duration: 0.2 },
-                  boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)"
+                  boxShadow: "0 0 20px rgba(215, 255, 0, 0.2)",
                 }}
                 className="relative bg-gradient-to-b from-[#1A1B21]/90 to-[#1A1B21]/70 backdrop-blur-sm p-3 md:p-6 rounded-2xl border-2 border-[#CD7F32] w-[120px] md:w-[180px] h-[160px] md:h-[200px] transform -translate-y-8"
               >
@@ -502,7 +519,10 @@ const getTrophyIcon = (rank: number) => {
                     {getTrophyIcon(3)}
                   </div>
                   <div className="text-center">
-                    <QuickProfile userId={top10Players[2]?.uid} username={top10Players[2]?.name}>
+                    <QuickProfile
+                      userId={top10Players[2]?.uid}
+                      username={top10Players[2]?.name}
+                    >
                       <p className="text-base md:text-lg font-bold truncate text-white/90 cursor-pointer hover:text-[#D7FF00] transition-colors">
                         {top10Players[2]?.name || "-"}
                       </p>
@@ -511,8 +531,8 @@ const getTrophyIcon = (rank: number) => {
                       ${getPrizeAmount(3).toLocaleString()}
                     </p>
                     <p className="text-sm text-white/60 mt-1 flex items-center justify-center gap-1">
-                      <TrendingUp className="h-3 w-3" />
-                      ${getWagerAmount(
+                      <TrendingUp className="h-3 w-3" />$
+                      {getWagerAmount(
                         top10Players[2] || { wagered: { this_month: 0 } },
                       ).toLocaleString()}
                     </p>
@@ -554,7 +574,10 @@ const getTrophyIcon = (rank: number) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(showCompletedRace ? (previousRace?.data?.participants || []).slice(0, 10) : top10Players).map((player: LeaderboardEntry, index: number) => (
+                {(showCompletedRace
+                  ? (previousRace?.data?.participants || []).slice(0, 10)
+                  : top10Players
+                ).map((player: LeaderboardEntry, index: number) => (
                   <TableRow
                     key={player.uid}
                     className="bg-[#1A1B21]/50 backdrop-blur-sm hover:bg-[#1A1B21]"
@@ -588,7 +611,9 @@ const getTrophyIcon = (rank: number) => {
                         ${getWagerAmount(player)?.toLocaleString()}
                       </motion.span>
                     </TableCell>
-                    <TableCell className={`text-right font-sans text-[#D7FF00] ${showCompletedRace ? 'font-bold' : ''}`}>
+                    <TableCell
+                      className={`text-right font-sans text-[#D7FF00] ${showCompletedRace ? "font-bold" : ""}`}
+                    >
                       ${getPrizeAmount(index + 1).toLocaleString()}
                     </TableCell>
                   </TableRow>

@@ -6,7 +6,7 @@ import { useCallback } from "react";
 
 /**
  * LoadingManager
- * 
+ *
  * Central component that manages and displays different types of loading states
  * This is used by the LoadingProvider to show the appropriate loading UI
  */
@@ -27,8 +27,8 @@ export function LoadingManager() {
         <>
           {/* Full-screen preloader with logo and progress bar */}
           {loadingType === "full" && (
-            <MainPreloader 
-              onLoadComplete={handleLoadComplete} 
+            <MainPreloader
+              onLoadComplete={handleLoadComplete}
               useRandomProgressBar={true}
             />
           )}

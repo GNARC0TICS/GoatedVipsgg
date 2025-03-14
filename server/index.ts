@@ -8,9 +8,13 @@ import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
 import { initializeAdmin } from "./middleware/admin";
-import bot, { stopBot, getBotStatus } from './telegram/bot';
-import { apiRateLimiter, affiliateRateLimiter, raceRateLimiter } from './middleware/rate-limiter';
-import fetch from 'node-fetch';
+import bot, { stopBot, getBotStatus } from "./telegram/bot";
+import {
+  apiRateLimiter,
+  affiliateRateLimiter,
+  raceRateLimiter,
+} from "./middleware/rate-limiter";
+import fetch from "node-fetch";
 
 const execAsync = promisify(exec);
 const app = express();
@@ -23,9 +27,9 @@ async function setupMiddleware() {
   app.use(cookieParser());
 
   // Rate limiters - apply before routes but after basic middleware
-  app.use('/api', apiRateLimiter);
-  app.use('/api/affiliate/stats', affiliateRateLimiter);
-  app.use('/api/races', raceRateLimiter);
+  app.use("/api", apiRateLimiter);
+  app.use("/api/affiliate/stats", affiliateRateLimiter);
+  app.use("/api/races", raceRateLimiter);
 
   // Logging and error handling
   app.use(requestLogger);
@@ -39,17 +43,17 @@ async function setupMiddleware() {
   app.get("/api/telegram/status", (_req, res) => {
     try {
       const status = getBotStatus();
-      res.json({ 
-        status: "ok", 
+      res.json({
+        status: "ok",
         telegramBot: status,
-        timestamp: new Date().toISOString() 
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       console.error("Error getting bot status:", error);
-      res.status(500).json({ 
-        status: "error", 
+      res.status(500).json({
+        status: "error",
         message: error instanceof Error ? error.message : "Unknown error",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   });
@@ -115,7 +119,7 @@ async function cleanupPort() {
   try {
     await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
     // Wait for port to be released
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     log(`Port ${PORT} is now available`);
     return true;
   } catch (error) {
@@ -133,7 +137,7 @@ async function waitForPort(port: number, retries = 5): Promise<boolean> {
         return true;
       }
     } catch (error) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
   return false;
@@ -144,12 +148,12 @@ async function startServer() {
     log("Starting server initialization...");
 
     // Ensure database is ready
-    if (!await checkDatabase()) {
+    if (!(await checkDatabase())) {
       throw new Error("Database connection failed");
     }
 
     // Ensure port is available
-    if (!await cleanupPort()) {
+    if (!(await cleanupPort())) {
       throw new Error("Failed to clean up port");
     }
 
@@ -165,7 +169,7 @@ async function startServer() {
     // Initialize Telegram bot
     log("Initializing Telegram bot...");
     if (!process.env.TELEGRAM_BOT_TOKEN) {
-      throw new Error('TELEGRAM_BOT_TOKEN must be provided');
+      throw new Error("TELEGRAM_BOT_TOKEN must be provided");
     }
 
     if (app.get("env") === "development") {
@@ -178,8 +182,8 @@ async function startServer() {
     await new Promise<void>((resolve, reject) => {
       server
         .listen(PORT, "0.0.0.0")
-        .once('error', (err: NodeJS.ErrnoException) => {
-          if (err.code === 'EADDRINUSE') {
+        .once("error", (err: NodeJS.ErrnoException) => {
+          if (err.code === "EADDRINUSE") {
             log(`Port ${PORT} is in use, attempting to free it...`);
             cleanupPort().then(() => {
               server.listen(PORT, "0.0.0.0");
@@ -188,18 +192,17 @@ async function startServer() {
             reject(err);
           }
         })
-        .once('listening', () => {
+        .once("listening", () => {
           log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-          log('Telegram bot started successfully');
+          log("Telegram bot started successfully");
           resolve();
         });
     });
 
     // Wait for server to be ready
-    if (!await waitForPort(PORT)) {
+    if (!(await waitForPort(PORT))) {
       throw new Error("Server failed to become ready");
     }
-
   } catch (error) {
     console.error("Failed to start application:", error);
     process.exit(1);
@@ -207,14 +210,14 @@ async function startServer() {
 }
 
 // Add Telegram bot shutdown handling
-process.on('SIGTERM', () => {
-  log('Received SIGTERM signal. Shutting down gracefully...');
+process.on("SIGTERM", () => {
+  log("Received SIGTERM signal. Shutting down gracefully...");
   stopBot(); // Stop the Telegram bot
   process.exit(0);
 });
 
-process.on('SIGINT', () => {
-  log('Received SIGINT signal. Shutting down gracefully...');
+process.on("SIGINT", () => {
+  log("Received SIGINT signal. Shutting down gracefully...");
   stopBot(); // Stop the Telegram bot
   process.exit(0);
 });

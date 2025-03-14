@@ -5,7 +5,9 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: async ({ queryKey }) => {
         try {
-          const cacheKey = Array.isArray(queryKey) ? queryKey.join('-') : queryKey;
+          const cacheKey = Array.isArray(queryKey)
+            ? queryKey.join("-")
+            : queryKey;
           const cachedData = sessionStorage.getItem(cacheKey);
 
           if (cachedData) {
@@ -20,9 +22,9 @@ export const queryClient = new QueryClient({
           const res = await fetch(queryKey[0] as string, {
             credentials: "include",
             headers: {
-              'Cache-Control': 'no-cache',
-              'Pragma': 'no-cache'
-            }
+              "Cache-Control": "no-cache",
+              Pragma: "no-cache",
+            },
           });
 
           if (!res.ok) {
@@ -33,14 +35,17 @@ export const queryClient = new QueryClient({
           }
 
           const data = await res.json();
-          sessionStorage.setItem(cacheKey, JSON.stringify({
-            data,
-            timestamp: Date.now()
-          }));
+          sessionStorage.setItem(
+            cacheKey,
+            JSON.stringify({
+              data,
+              timestamp: Date.now(),
+            }),
+          );
 
           return data;
         } catch (error) {
-          console.error('Query error:', error);
+          console.error("Query error:", error);
           throw error;
         }
       },
@@ -49,13 +54,13 @@ export const queryClient = new QueryClient({
       staleTime: 60000, // Increased stale time to 60 seconds
       cacheTime: 300000, // Keep unused data in cache for 5 minutes
       retry: (failureCount, error) => {
-        return failureCount < 3 && !error.message.includes('401');
+        return failureCount < 3 && !error.message.includes("401");
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
       retry: (failureCount, error) => {
-        return failureCount < 2 && !error.message.includes('401');
+        return failureCount < 2 && !error.message.includes("401");
       },
     },
   },

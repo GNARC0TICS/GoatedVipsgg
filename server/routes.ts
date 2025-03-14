@@ -11,7 +11,10 @@ import { db } from "@db";
 import * as schema from "@db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
-import { affiliateRateLimiter, raceRateLimiter } from "./middleware/rate-limiter"; // Import rate limiters with correct path
+import {
+  affiliateRateLimiter,
+  raceRateLimiter,
+} from "./middleware/rate-limiter"; // Import rate limiters with correct path
 import { registerBasicVerificationRoutes } from "./basic-verification-routes";
 
 // Add missing type definitions
@@ -21,11 +24,11 @@ interface ExtendedWebSocket extends WebSocket {
 
 // Add utility functions
 function getTierFromWager(wagerAmount: number): string {
-  if (wagerAmount >= 1000000) return 'Diamond';
-  if (wagerAmount >= 500000) return 'Platinum';
-  if (wagerAmount >= 100000) return 'Gold';
-  if (wagerAmount >= 50000) return 'Silver';
-  return 'Bronze';
+  if (wagerAmount >= 1000000) return "Diamond";
+  if (wagerAmount >= 500000) return "Platinum";
+  if (wagerAmount >= 100000) return "Gold";
+  if (wagerAmount >= 50000) return "Silver";
+  return "Bronze";
 }
 
 // Constants
@@ -63,11 +66,13 @@ function handleLeaderboardConnection(ws: ExtendedWebSocket) {
 
   // Send initial data with rate limiting
   if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({
-      type: "CONNECTED",
-      clientId,
-      timestamp: Date.now()
-    }));
+    ws.send(
+      JSON.stringify({
+        type: "CONNECTED",
+        clientId,
+        timestamp: Date.now(),
+      }),
+    );
   }
 }
 
@@ -75,10 +80,12 @@ function handleLeaderboardConnection(ws: ExtendedWebSocket) {
 export function broadcastLeaderboardUpdate(data: any) {
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({
-        type: "LEADERBOARD_UPDATE",
-        data
-      }));
+      client.send(
+        JSON.stringify({
+          type: "LEADERBOARD_UPDATE",
+          data,
+        }),
+      );
     }
   });
 }
@@ -88,32 +95,42 @@ let wss: WebSocketServer;
 // Helper functions
 function sortByWagered(data: any[], period: string) {
   return [...data].sort(
-    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
+    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0),
   );
 }
 
 const transformMVPData = (mvpData: any) => {
-  return Object.entries(mvpData).reduce((acc: Record<string, any>, [period, data]: [string, any]) => {
-    if (data) {
-      // Calculate if there was a wager change
-      const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'];
-      const previousWager = data.wagered?.previous || 0;
-      const hasIncrease = currentWager > previousWager;
+  return Object.entries(mvpData).reduce(
+    (acc: Record<string, any>, [period, data]: [string, any]) => {
+      if (data) {
+        // Calculate if there was a wager change
+        const currentWager =
+          data.wagered[
+            period === "daily"
+              ? "today"
+              : period === "weekly"
+                ? "this_week"
+                : "this_month"
+          ];
+        const previousWager = data.wagered?.previous || 0;
+        const hasIncrease = currentWager > previousWager;
 
-      acc[period] = {
-        username: data.name,
-        wagerAmount: currentWager,
-        rank: 1,
-        lastWagerChange: hasIncrease ? Date.now() : undefined,
-        stats: {
-          winRate: data.stats?.winRate || 0,
-          favoriteGame: data.stats?.favoriteGame || 'Unknown',
-          totalGames: data.stats?.totalGames || 0
-        }
-      };
-    }
-    return acc;
-  }, {});
+        acc[period] = {
+          username: data.name,
+          wagerAmount: currentWager,
+          rank: 1,
+          lastWagerChange: hasIncrease ? Date.now() : undefined,
+          stats: {
+            winRate: data.stats?.winRate || 0,
+            favoriteGame: data.stats?.favoriteGame || "Unknown",
+            totalGames: data.stats?.totalGames || 0,
+          },
+        };
+      }
+      return acc;
+    },
+    {},
+  );
 };
 
 // Transforms raw API data into our standardized leaderboard format
@@ -121,7 +138,10 @@ const transformMVPData = (mvpData: any) => {
 function transformLeaderboardData(apiData: any) {
   // Extract data from various possible API response formats
   const responseData = apiData.data || apiData.results || apiData;
-  if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
+  if (
+    !responseData ||
+    (Array.isArray(responseData) && responseData.length === 0)
+  ) {
     return {
       status: "success",
       metadata: {
@@ -202,7 +222,7 @@ function setupRESTRoutes(app: Express) {
             Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -214,7 +234,14 @@ function setupRESTRoutes(app: Express) {
 
       // Get current month's info
       const now = new Date();
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      const endOfMonth = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+      );
 
       // Check if previous month needs to be archived
       const startOfToday = new Date();
@@ -223,7 +250,8 @@ function setupRESTRoutes(app: Express) {
       // If it's the first day of the month and we haven't archived yet
       if (now.getDate() === 1 && now.getHours() < 1) {
         const previousMonth = now.getMonth() === 0 ? 12 : now.getMonth();
-        const previousYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+        const previousYear =
+          now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
 
         // Check if we already have an entry for the previous month
         const [existingEntry] = await db
@@ -232,8 +260,8 @@ function setupRESTRoutes(app: Express) {
           .where(
             and(
               eq(historicalRaces.month, previousMonth),
-              eq(historicalRaces.year, previousYear)
-            )
+              eq(historicalRaces.year, previousYear),
+            ),
           )
           .limit(1);
 
@@ -245,16 +273,18 @@ function setupRESTRoutes(app: Express) {
           const currentYear = now.getFullYear();
 
           // Store complete race results with detailed participant data
-          const winners = stats.data.monthly.data.slice(0, 10).map((participant: any, index: number) => ({
-            uid: participant.uid,
-            name: participant.name,
-            wagered: participant.wagered.this_month,
-            allTimeWagered: participant.wagered.all_time,
-            tier: getTierFromWager(participant.wagered.all_time),
-            prize: (prizePool * prizeDistribution[index]).toFixed(2),
-            position: index + 1,
-            timestamp: new Date().toISOString()
-          }));
+          const winners = stats.data.monthly.data
+            .slice(0, 10)
+            .map((participant: any, index: number) => ({
+              uid: participant.uid,
+              name: participant.name,
+              wagered: participant.wagered.this_month,
+              allTimeWagered: participant.wagered.all_time,
+              tier: getTierFromWager(participant.wagered.all_time),
+              prize: (prizePool * prizeDistribution[index]).toFixed(2),
+              position: index + 1,
+              timestamp: new Date().toISOString(),
+            }));
 
           // Store race completion data
           await db.insert(historicalRaces).values({
@@ -264,14 +294,23 @@ function setupRESTRoutes(app: Express) {
             startDate: new Date(currentYear, currentMonth, 1),
             endDate: now,
             participants: winners,
-            totalWagered: stats.data.monthly.data.reduce((sum: number, p: any) => sum + p.wagered.this_month, 0),
+            totalWagered: stats.data.monthly.data.reduce(
+              (sum: number, p: any) => sum + p.wagered.this_month,
+              0,
+            ),
             participantCount: stats.data.monthly.data.length,
-            status: 'completed',
+            status: "completed",
             metadata: {
-              transitionEnds: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-              nextRaceStarts: new Date(currentYear, currentMonth + 1, 1).toISOString(),
-              prizeDistribution: prizeDistribution
-            }
+              transitionEnds: new Date(
+                now.getTime() + 24 * 60 * 60 * 1000,
+              ).toISOString(),
+              nextRaceStarts: new Date(
+                currentYear,
+                currentMonth + 1,
+                1,
+              ).toISOString(),
+              prizeDistribution: prizeDistribution,
+            },
           });
 
           await db.insert(historicalRaces).values({
@@ -281,7 +320,7 @@ function setupRESTRoutes(app: Express) {
             startDate: new Date(previousYear, previousMonth - 1, 1),
             endDate: new Date(previousYear, previousMonth, 0, 23, 59, 59),
             participants: winners,
-            isCompleted: true
+            isCompleted: true,
           });
 
           // Broadcast race completion to all connected clients
@@ -289,8 +328,12 @@ function setupRESTRoutes(app: Express) {
             type: "RACE_COMPLETED",
             data: {
               winners,
-              nextRaceStart: new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-            }
+              nextRaceStart: new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                1,
+              ).toISOString(),
+            },
           });
         }
       }
@@ -298,23 +341,27 @@ function setupRESTRoutes(app: Express) {
       // Generate explicit dates to ensure correct month
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
-      
+
       const raceData = {
-        id: `${currentYear}${(currentMonth + 1).toString().padStart(2, '0')}`,
-        status: 'live',
+        id: `${currentYear}${(currentMonth + 1).toString().padStart(2, "0")}`,
+        status: "live",
         startDate: new Date(currentYear, currentMonth, 1).toISOString(),
         endDate: endOfMonth.toISOString(),
         prizePool: 500, // Monthly race prize pool
-        participants: stats.data.monthly.data.map((participant: any, index: number) => ({
-          uid: participant.uid,
-          name: participant.name,
-          wagered: participant.wagered.this_month,
-          position: index + 1
-        })).slice(0, 10) // Top 10 participants
+        participants: stats.data.monthly.data
+          .map((participant: any, index: number) => ({
+            uid: participant.uid,
+            name: participant.name,
+            wagered: participant.wagered.this_month,
+            position: index + 1,
+          }))
+          .slice(0, 10), // Top 10 participants
       };
-      
+
       // Log race data for debugging
-      console.log(`Race data for month ${currentMonth + 1}, year ${currentYear}`);
+      console.log(
+        `Race data for month ${currentMonth + 1}, year ${currentYear}`,
+      );
 
       res.json(raceData);
     } catch (error) {
@@ -342,21 +389,21 @@ function setupRESTRoutes(app: Express) {
           user: {
             columns: {
               username: true,
-              isAdmin: true
-            }
-          }
-        }
+              isAdmin: true,
+            },
+          },
+        },
       });
 
       res.json({
         status: "success",
-        data: messages
+        data: messages,
       });
     } catch (error) {
       log(`Error fetching support messages: ${error}`);
       res.status(500).json({
         status: "error",
-        message: "Failed to fetch support messages"
+        message: "Failed to fetch support messages",
       });
     }
   });
@@ -368,58 +415,58 @@ function setupRESTRoutes(app: Express) {
         with: {
           user: {
             columns: {
-              username: true
-            }
+              username: true,
+            },
           },
-          messages: true
-        }
+          messages: true,
+        },
       });
 
       res.json({
         status: "success",
-        data: tickets
+        data: tickets,
       });
     } catch (error) {
       log(`Error fetching support tickets: ${error}`);
       res.status(500).json({
         status: "error",
-        message: "Failed to fetch support tickets"
+        message: "Failed to fetch support tickets",
       });
     }
   });
 
   app.post("/api/support/tickets", requireAuth, async (req, res) => {
     try {
-      const [ticket] = await db.insert(supportTickets)
+      const [ticket] = await db
+        .insert(supportTickets)
         .values({
           userId: req.user!.id,
           subject: req.body.subject,
           description: req.body.description,
-          status: 'open',
-          priority: req.body.priority || 'medium',
-          createdAt: new Date()
+          status: "open",
+          priority: req.body.priority || "medium",
+          createdAt: new Date(),
         })
         .returning();
 
       // Create initial message
-      await db.insert(ticketMessages)
-        .values({
-          ticketId: ticket.id,
-          userId: req.user!.id,
-          message: req.body.description,
-          createdAt: new Date(),
-          isStaffReply: false
-        });
+      await db.insert(ticketMessages).values({
+        ticketId: ticket.id,
+        userId: req.user!.id,
+        message: req.body.description,
+        createdAt: new Date(),
+        isStaffReply: false,
+      });
 
       res.json({
         status: "success",
-        data: ticket
+        data: ticket,
       });
     } catch (error) {
       log(`Error creating support ticket: ${error}`);
       res.status(500).json({
         status: "error",
-        message: "Failed to create support ticket"
+        message: "Failed to create support ticket",
       });
     }
   });
@@ -428,10 +475,14 @@ function setupRESTRoutes(app: Express) {
     try {
       const { ticketId, message } = req.body;
 
-      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      if (
+        !message ||
+        typeof message !== "string" ||
+        message.trim().length === 0
+      ) {
         return res.status(400).json({
           status: "error",
-          message: "Message is required"
+          message: "Message is required",
         });
       }
 
@@ -442,7 +493,7 @@ function setupRESTRoutes(app: Express) {
           message: message.trim(),
           userId: req.user!.id,
           isStaffReply: req.user!.isAdmin,
-          createdAt: new Date()
+          createdAt: new Date(),
         })
         .returning();
 
@@ -450,29 +501,31 @@ function setupRESTRoutes(app: Express) {
       if (req.user!.isAdmin) {
         await db
           .update(supportTickets)
-          .set({ status: 'in_progress' })
+          .set({ status: "in_progress" })
           .where(eq(supportTickets.id, ticketId));
       }
 
       // Broadcast message to WebSocket clients
       wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({
-            type: 'NEW_MESSAGE',
-            data: savedMessage
-          }));
+          client.send(
+            JSON.stringify({
+              type: "NEW_MESSAGE",
+              data: savedMessage,
+            }),
+          );
         }
       });
 
       res.json({
         status: "success",
-        data: savedMessage
+        data: savedMessage,
       });
     } catch (error) {
       log(`Error saving support reply: ${error}`);
       res.status(500).json({
         status: "error",
-        message: "Failed to save reply"
+        message: "Failed to save reply",
       });
     }
   });
@@ -486,20 +539,20 @@ function setupRESTRoutes(app: Express) {
           status,
           priority,
           assignedTo,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(supportTickets.id, parseInt(req.params.id)))
         .returning();
 
       res.json({
         status: "success",
-        data: updatedTicket
+        data: updatedTicket,
       });
     } catch (error) {
       log(`Error updating support ticket: ${error}`);
       res.status(500).json({
         status: "error",
-        message: "Failed to update support ticket"
+        message: "Failed to update support ticket",
       });
     }
   });
@@ -597,7 +650,7 @@ function setupRESTRoutes(app: Express) {
             Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -608,28 +661,34 @@ function setupRESTRoutes(app: Express) {
       const data = rawData.data || rawData.results || rawData;
 
       // Calculate totals
-      const totals = data.reduce((acc: any, entry: any) => {
-        acc.dailyTotal += entry.wagered?.today || 0;
-        acc.weeklyTotal += entry.wagered?.this_week || 0;
-        acc.monthlyTotal += entry.wagered?.this_month || 0;
-        acc.allTimeTotal += entry.wagered?.all_time || 0;
-        return acc;
-      }, {
-        dailyTotal: 0,
-        weeklyTotal: 0,
-        monthlyTotal: 0,
-        allTimeTotal: 0
-      });
+      const totals = data.reduce(
+        (acc: any, entry: any) => {
+          acc.dailyTotal += entry.wagered?.today || 0;
+          acc.weeklyTotal += entry.wagered?.this_week || 0;
+          acc.monthlyTotal += entry.wagered?.this_month || 0;
+          acc.allTimeTotal += entry.wagered?.all_time || 0;
+          return acc;
+        },
+        {
+          dailyTotal: 0,
+          weeklyTotal: 0,
+          monthlyTotal: 0,
+          allTimeTotal: 0,
+        },
+      );
 
       const [userCount, raceCount] = await Promise.all([
         db.select({ count: sql`count(*)` }).from(users),
-        db.select({ count: sql`count(*)` }).from(wagerRaces).where(eq(wagerRaces.status, 'live')),
+        db
+          .select({ count: sql`count(*)` })
+          .from(wagerRaces)
+          .where(eq(wagerRaces.status, "live")),
       ]);
 
       const stats = {
         totalUsers: userCount[0].count,
         activeRaces: raceCount[0].count,
-        wagerTotals: totals
+        wagerTotals: totals,
       };
 
       res.json(stats);
@@ -671,7 +730,7 @@ async function handleProfileRequest(req: any, res: any) {
           Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -679,19 +738,22 @@ async function handleProfileRequest(req: any, res: any) {
     }
 
     const leaderboardData = await response.json();
-    const data = leaderboardData.data || leaderboardData.results || leaderboardData;
+    const data =
+      leaderboardData.data || leaderboardData.results || leaderboardData;
 
     // Find user positions
     const position = {
-      weekly: data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined,
-      monthly: data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined
+      weekly:
+        data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined,
+      monthly:
+        data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined,
     };
 
     res.json({
       status: "success",
       data: {
         ...user,
-        position
+        position,
       },
     });
   } catch (error) {
@@ -712,14 +774,12 @@ async function handleAffiliateStats(req: any, res: any) {
       url += `?username=${encodeURIComponent(username)}`;
     }
 
-    const response = await fetch(url,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+        "Content-Type": "application/json",
+      },
+    });
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -935,7 +995,7 @@ async function handleChatConnection(ws: WebSocket) {
           JSON.stringify({
             type: "error",
             message: "Invalid message format",
-          })
+          }),
         );
         return;
       }
@@ -973,7 +1033,7 @@ async function handleChatConnection(ws: WebSocket) {
         JSON.stringify({
           type: "error",
           message: "Failed to process message",
-        })
+        }),
       );
     }
   });

@@ -3,9 +3,13 @@
  * Provides information about available commands
  */
 
-import TelegramBot from 'node-telegram-bot-api';
-import { CommandAccessLevel, CommandDefinition, commandRegistry } from './index';
-import { logger } from '../utils';
+import TelegramBot from "node-telegram-bot-api";
+import {
+  CommandAccessLevel,
+  CommandDefinition,
+  commandRegistry,
+} from "./index";
+import { logger } from "../utils";
 
 /**
  * Help command handler
@@ -14,28 +18,28 @@ import { logger } from '../utils';
 export const helpCommandHandler = async (
   bot: TelegramBot,
   msg: TelegramBot.Message,
-  match: RegExpExecArray | null
+  match: RegExpExecArray | null,
 ): Promise<void> => {
-  logger.info(`Help command executed by ${msg.from?.username || 'unknown'}`);
-  
+  logger.info(`Help command executed by ${msg.from?.username || "unknown"}`);
+
   try {
     // Get formatted help message
     const helpMessage = commandRegistry.formatHelpMessage(msg);
-    
+
     // Send help message with Markdown formatting
     await bot.sendMessage(msg.chat.id, helpMessage, {
-      parse_mode: 'MarkdownV2',
+      parse_mode: "MarkdownV2",
     });
   } catch (error) {
-    logger.error('Error sending help message', { 
+    logger.error("Error sending help message", {
       error: error instanceof Error ? error.message : String(error),
       userId: msg.from?.id,
       username: msg.from?.username,
-      chatId: msg.chat.id
+      chatId: msg.chat.id,
     });
     await bot.sendMessage(
       msg.chat.id,
-      '❌ An error occurred while generating the help message. Please try again later.'
+      "❌ An error occurred while generating the help message. Please try again later.",
     );
   }
 };
@@ -44,10 +48,10 @@ export const helpCommandHandler = async (
  * Help command definition
  */
 export const helpCommand: CommandDefinition = {
-  name: 'help',
+  name: "help",
   handler: helpCommandHandler,
   accessLevel: CommandAccessLevel.PUBLIC,
-  description: 'Show available commands and information',
+  description: "Show available commands and information",
   requiresArgs: false,
   enabled: true,
   showInHelp: true,

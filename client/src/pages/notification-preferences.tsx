@@ -19,7 +19,8 @@ interface NotificationPreferencesResponse {
 
 export default function NotificationPreferences() {
   const { toast } = useToast();
-  const [preferences, setPreferences] = useState<SelectNotificationPreferences | null>(null);
+  const [preferences, setPreferences] =
+    useState<SelectNotificationPreferences | null>(null);
 
   // Fetch current preferences
   const { data, isLoading } = useQuery<NotificationPreferencesResponse>({
@@ -39,7 +40,9 @@ export default function NotificationPreferences() {
 
   // Update preferences mutation
   const updatePreferences = useMutation({
-    mutationFn: async (newPreferences: Partial<SelectNotificationPreferences>) => {
+    mutationFn: async (
+      newPreferences: Partial<SelectNotificationPreferences>,
+    ) => {
       const response = await fetch("/api/notification-preferences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -56,13 +59,17 @@ export default function NotificationPreferences() {
     onSuccess: () => {
       toast({
         title: "Preferences Updated",
-        description: "Your notification preferences have been saved successfully.",
+        description:
+          "Your notification preferences have been saved successfully.",
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update preferences",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to update preferences",
         variant: "destructive",
       });
     },

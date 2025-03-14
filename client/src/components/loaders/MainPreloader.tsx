@@ -74,6 +74,8 @@ export function MainPreloader({
     }
     
     return () => {};
+  }, [progress, onLoadComplete]);
+  
   // Make sure animation completes even if loading finishes early
   useEffect(() => {
     // If progress reaches 100%, wait a moment before triggering completion

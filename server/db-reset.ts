@@ -85,7 +85,7 @@ async function resetDatabase() {
         rank: null,
         wager_history: [],
         joined_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       // Insert default notification preferences

@@ -3,11 +3,11 @@
  * Provides a centralized way to manage and persist bot state
  */
 
-import { logger } from './logger';
-import { Job } from 'node-schedule';
-import { db } from '@db';
-import { telegramBotState } from '../../../db/schema/telegram';
-import { eq } from 'drizzle-orm';
+import { logger } from "./logger";
+import { Job } from "node-schedule";
+import { db } from "@db";
+import { telegramBotState } from "../../../db/schema/telegram";
+import { eq } from "drizzle-orm";
 
 /**
  * Interface for recurring message configuration
@@ -56,10 +56,10 @@ class BotStateManager {
     this.recurringMessages = new Map();
     this.activeChats = new Map();
     this.userStates = new Map();
-    
-    logger.info('BotStateManager initialized');
+
+    logger.info("BotStateManager initialized");
   }
-  
+
   /**
    * Initialize state from database
    */
@@ -67,18 +67,18 @@ class BotStateManager {
     if (this.isInitialized) {
       return;
     }
-    
+
     try {
       await this.loadState();
       this.isInitialized = true;
-      logger.info('Bot state loaded from database');
+      logger.info("Bot state loaded from database");
     } catch (error) {
-      logger.error('Failed to load bot state from database', { 
-        error: error instanceof Error ? error.message : String(error) 
+      logger.error("Failed to load bot state from database", {
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
-  
+
   /**
    * Load state from database
    * Loads critical bot state from the database
@@ -89,37 +89,41 @@ class BotStateManager {
       const state = await db
         .select()
         .from(telegramBotState)
-        .where(eq(telegramBotState.id, 'main'))
+        .where(eq(telegramBotState.id, "main"))
         .execute();
-      
+
       if (state.length === 0) {
-        logger.info('No saved state found in database');
+        logger.info("No saved state found in database");
         return;
       }
-      
+
       const persistedState = state[0].data as unknown as PersistedState;
-      
+
       // Restore recurring messages
       if (persistedState.recurringMessages) {
-        Object.entries(persistedState.recurringMessages).forEach(([id, message]) => {
-          this.recurringMessages.set(id, message);
-        });
+        Object.entries(persistedState.recurringMessages).forEach(
+          ([id, message]) => {
+            this.recurringMessages.set(id, message);
+          },
+        );
       }
-      
+
       // Restore user states
       if (persistedState.userStates) {
-        Object.entries(persistedState.userStates).forEach(([userIdStr, state]) => {
-          const userId = parseInt(userIdStr, 10);
-          if (!isNaN(userId)) {
-            this.userStates.set(userId, state);
-          }
-        });
+        Object.entries(persistedState.userStates).forEach(
+          ([userIdStr, state]) => {
+            const userId = parseInt(userIdStr, 10);
+            if (!isNaN(userId)) {
+              this.userStates.set(userId, state);
+            }
+          },
+        );
       }
-      
-      logger.info('Bot state loaded from database');
+
+      logger.info("Bot state loaded from database");
     } catch (error) {
-      logger.error('Failed to load bot state from database', { 
-        error: error instanceof Error ? error.message : String(error) 
+      logger.error("Failed to load bot state from database", {
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
@@ -279,14 +283,14 @@ class BotStateManager {
   cleanupStaleData(): void {
     const now = Date.now();
     const inactivityThreshold = 30 * 60 * 1000; // 30 minutes
-    
+
     // Clean up inactive chats
     this.activeChats.forEach((state, chatId) => {
       if (now - state.timestamp > inactivityThreshold) {
         this.activeChats.delete(chatId);
       }
     });
-    
+
     logger.info(`Cleaned up stale data`);
   }
 
@@ -298,8 +302,8 @@ class BotStateManager {
       job.cancel();
     });
     this.scheduledJobs.clear();
-    
-    logger.info('All scheduled jobs cancelled');
+
+    logger.info("All scheduled jobs cancelled");
   }
 
   /**
@@ -310,10 +314,10 @@ class BotStateManager {
     this.recurringMessages.clear();
     this.activeChats.clear();
     this.userStates.clear();
-    
-    logger.info('State manager reset');
+
+    logger.info("State manager reset");
   }
-  
+
   /**
    * Save state to database
    * Saves critical bot state to the database for persistence
@@ -325,40 +329,40 @@ class BotStateManager {
       this.recurringMessages.forEach((message, id) => {
         recurringMessagesData[id] = message;
       });
-      
+
       // Save user states (convert Map to object)
       const userStatesData: Record<string, Record<string, any>> = {};
       this.userStates.forEach((state, userId) => {
         userStatesData[userId.toString()] = state;
       });
-      
+
       // Create persisted state object
       const persistedState: PersistedState = {
         recurringMessages: recurringMessagesData,
-        userStates: userStatesData
+        userStates: userStatesData,
       };
-      
+
       // Save to database
       await db
         .insert(telegramBotState)
         .values({
-          id: 'main',
-          stateType: 'core',
+          id: "main",
+          stateType: "core",
           data: persistedState as any,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .onConflictDoUpdate({
           target: telegramBotState.id,
           set: {
             data: persistedState as any,
-            updatedAt: new Date()
-          }
+            updatedAt: new Date(),
+          },
         });
-      
-      logger.info('Bot state saved to database');
+
+      logger.info("Bot state saved to database");
     } catch (error) {
-      logger.error('Failed to save bot state to database', { 
-        error: error instanceof Error ? error.message : String(error) 
+      logger.error("Failed to save bot state to database", {
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }

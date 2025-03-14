@@ -43,27 +43,32 @@ export function useLeaderboard(timePeriod: string, page: number = 1) {
     queryKey: [AFFILIATE_STATS_KEY, timePeriod, page],
     queryFn: async () => {
       // Check if we already have the data in the query cache
-      const existingData = queryClient.getQueryData<APIResponse>([AFFILIATE_STATS_KEY]);
+      const existingData = queryClient.getQueryData<APIResponse>([
+        AFFILIATE_STATS_KEY,
+      ]);
       if (existingData) {
         return existingData;
       }
 
-      const response = await fetch(`${AFFILIATE_STATS_KEY}?page=${page}&limit=10`, {
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
+      const response = await fetch(
+        `${AFFILIATE_STATS_KEY}?page=${page}&limit=10`,
+        {
+          headers: {
+            Accept: "application/json",
+          },
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const freshData = await response.json() as APIResponse;
+      const freshData = (await response.json()) as APIResponse;
       return freshData;
     },
     refetchInterval: 60000, // Increased to 1 minute
-    staleTime: 55000,       // Just under the refetch interval
-    cacheTime: 300000,      // 5 minutes
+    staleTime: 55000, // Just under the refetch interval
+    cacheTime: 300000, // 5 minutes
     retry: 3,
     gcTime: 5 * 60 * 1000,
   });
@@ -111,15 +116,20 @@ export function useWagerTotals() {
   const queryClient = useQueryClient();
 
   return useQuery({
-    queryKey: ['wager-total'],
+    queryKey: ["wager-total"],
     queryFn: async () => {
       // Try to use existing data first
-      const existingData = queryClient.getQueryData<APIResponse>([AFFILIATE_STATS_KEY]);
+      const existingData = queryClient.getQueryData<APIResponse>([
+        AFFILIATE_STATS_KEY,
+      ]);
 
       if (existingData) {
-        const total = existingData?.data?.all_time?.data?.reduce((sum, entry) => {
-          return sum + (entry?.wagered?.all_time || 0);
-        }, 0);
+        const total = existingData?.data?.all_time?.data?.reduce(
+          (sum, entry) => {
+            return sum + (entry?.wagered?.all_time || 0);
+          },
+          0,
+        );
         return total || 2147483;
       }
 

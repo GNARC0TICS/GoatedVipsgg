@@ -31,17 +31,17 @@ async function handleRequest(
       }
 
       const data = await response.json();
-      return { 
-        ok: false, 
+      return {
+        ok: false,
         message: data.message || "Authentication failed",
-        errors: data.errors
+        errors: data.errors,
       };
     }
 
     const data = await response.json();
-    return { 
+    return {
       ok: true,
-      user: data
+      user: data,
     };
   } catch (e: any) {
     return { ok: false, message: e.toString() };
@@ -58,8 +58,8 @@ export function useUser() {
   } = useQuery<SelectUser | null, Error>({
     queryKey: ["/api/user"],
     queryFn: async () => {
-      const response = await fetch('/api/user', { credentials: 'include' });
-      if (!response.ok) throw new Error('Not authenticated');
+      const response = await fetch("/api/user", { credentials: "include" });
+      if (!response.ok) throw new Error("Not authenticated");
       return response.json();
     },
   });

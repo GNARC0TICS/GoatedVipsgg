@@ -1,20 +1,35 @@
-import TelegramBot from 'node-telegram-bot-api';
-import type { Message as TelegramMessage, ChatMember, ChatPermissions as TelegramChatPermissions } from 'node-telegram-bot-api';
-import { db } from '@db';
-import { eq } from 'drizzle-orm';
-import { users } from '../../db/schema';
-import { telegramUsers, verificationRequests, challenges, challengeEntries } from '../../db/schema/telegram';
-import { scheduleJob } from 'node-schedule';
-import { randomUUID } from 'crypto';
-import { logger, stateManager, BotConfig, MessageTemplates, LogContext } from './utils';
-import { validateConfig } from './utils/config';
-import { ApiError, ApiErrorType } from './utils/api';
+import TelegramBot from "node-telegram-bot-api";
+import type {
+  Message as TelegramMessage,
+  ChatMember,
+  ChatPermissions as TelegramChatPermissions,
+} from "node-telegram-bot-api";
+import { db } from "@db";
+import { eq } from "drizzle-orm";
+import { users } from "../../db/schema";
+import {
+  telegramUsers,
+  verificationRequests,
+  challenges,
+  challengeEntries,
+} from "../../db/schema/telegram";
+import { scheduleJob } from "node-schedule";
+import { randomUUID } from "crypto";
+import {
+  logger,
+  stateManager,
+  BotConfig,
+  MessageTemplates,
+  LogContext,
+} from "./utils";
+import { validateConfig } from "./utils/config";
+import { ApiError, ApiErrorType } from "./utils/api";
 
 // Type declarations - keep minimal for now
 type Message = TelegramMessage;
 type ChatPermissions = TelegramChatPermissions;
 
-logger.info('Loading bot module...');
+logger.info("Loading bot module...");
 
 // Singleton implementation with proper instance tracking
 let botInstance: TelegramBot | null = null;
@@ -22,49 +37,49 @@ let isPolling = false;
 
 // Config validation
 if (!validateConfig()) {
-  throw new Error('Invalid bot configuration');
+  throw new Error("Invalid bot configuration");
 }
 
-logger.info('Token validation successful');
+logger.info("Token validation successful");
 
 // Create bot instance with proper error handling
 function createBot(): TelegramBot {
   if (botInstance) {
-    logger.info('Using existing instance');
+    logger.info("Using existing instance");
     return botInstance;
   }
 
-  logger.info('Creating new bot instance...');
+  logger.info("Creating new bot instance...");
 
   if (!BotConfig.TOKEN) {
-    throw new Error('TELEGRAM_BOT_TOKEN must be provided');
+    throw new Error("TELEGRAM_BOT_TOKEN must be provided");
   }
 
   // Create with polling disabled initially to avoid instant conflicts
   if (!BotConfig.TOKEN) {
-    throw new Error('TELEGRAM_BOT_TOKEN must be provided');
+    throw new Error("TELEGRAM_BOT_TOKEN must be provided");
   }
   const bot = new TelegramBot(BotConfig.TOKEN, { polling: false });
 
   // Handle polling errors
-  bot.on('polling_error', (error) => {
-    logger.error('Polling error', { 
+  bot.on("polling_error", (error) => {
+    logger.error("Polling error", {
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
 
     // If we get a conflict error, stop polling to prevent cascading errors
-    if (error.message.includes('409 Conflict')) {
-      logger.warn('Detected polling conflict, stopping polling');
-      bot.stopPolling().catch(e => {
-        logger.error('Error stopping polling after conflict', { error: e });
+    if (error.message.includes("409 Conflict")) {
+      logger.warn("Detected polling conflict, stopping polling");
+      bot.stopPolling().catch((e) => {
+        logger.error("Error stopping polling after conflict", { error: e });
       });
       isPolling = false;
 
       // Wait and attempt to restart polling
       setTimeout(() => {
         if (!isPolling) {
-          logger.info('Attempting to restart polling after conflict');
+          logger.info("Attempting to restart polling after conflict");
           startPolling(bot);
         }
       }, BotConfig.POLLING_RESTART_DELAY);
@@ -79,20 +94,21 @@ function createBot(): TelegramBot {
 // Start polling with error handling
 function startPolling(bot: TelegramBot): void {
   if (isPolling) {
-    logger.info('Already polling, ignoring start request');
+    logger.info("Already polling, ignoring start request");
     return;
   }
 
-  logger.info('Starting polling...');
-  bot.startPolling({ restart: false })
+  logger.info("Starting polling...");
+  bot
+    .startPolling({ restart: false })
     .then(() => {
-      logger.info('Polling started successfully');
+      logger.info("Polling started successfully");
       isPolling = true;
     })
-    .catch(error => {
-      logger.error('Failed to start polling', { 
+    .catch((error) => {
+      logger.error("Failed to start polling", {
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
       isPolling = false;
 
@@ -102,9 +118,9 @@ function startPolling(bot: TelegramBot): void {
 }
 
 // Initialize state manager
-stateManager.init().catch(error => {
-  logger.error('Failed to initialize state manager', { 
-    error: error instanceof Error ? error.message : String(error)
+stateManager.init().catch((error) => {
+  logger.error("Failed to initialize state manager", {
+    error: error instanceof Error ? error.message : String(error),
   });
 });
 
@@ -114,38 +130,55 @@ startPolling(bot);
 
 // Simple ping command to verify bot is working
 bot.onText(/\/ping/, (msg) => {
-  console.log('[Telegram Bot] Received ping command');
-  bot.sendMessage(msg.chat.id, 'pong!').then(() => {
-    console.log('[Telegram Bot] Sent pong response');
-  }).catch(err => {
-    console.error('[Telegram Bot] Error sending pong:', err);
-  });
+  console.log("[Telegram Bot] Received ping command");
+  bot
+    .sendMessage(msg.chat.id, "pong!")
+    .then(() => {
+      console.log("[Telegram Bot] Sent pong response");
+    })
+    .catch((err) => {
+      console.error("[Telegram Bot] Error sending pong:", err);
+    });
 });
 
 // Constants
-const ADMIN_TELEGRAM_IDS = ['1689953605'];
-const ALLOWED_GROUP_IDS = process.env.ALLOWED_GROUP_IDS?.split(',') || [];
+const ADMIN_TELEGRAM_IDS = ["1689953605"];
+const ALLOWED_GROUP_IDS = process.env.ALLOWED_GROUP_IDS?.split(",") || [];
 
 // Define constants
 const CONVERSATION_COOLDOWN = 10000; // 10 seconds between AI responses
 const BEGGING_PATTERNS = {
   DIRECT: [
-    'give me', 'send me', 'need money', 'spare some',
-    'can send?', 'sen pls', 'pls send', 'send pls',
-    'send coin', 'gimme', 'hook me up', 'need help$'
+    "give me",
+    "send me",
+    "need money",
+    "spare some",
+    "can send?",
+    "sen pls",
+    "pls send",
+    "send pls",
+    "send coin",
+    "gimme",
+    "hook me up",
+    "need help$",
   ],
   SUBTLE: [
-    'broke', 'poor', 'help me out', 'anything helps',
-    'no money', 'struggling', 'desperate'
+    "broke",
+    "poor",
+    "help me out",
+    "anything helps",
+    "no money",
+    "struggling",
+    "desperate",
   ],
   SPAM: [
-    'copy paste', 'forwarded message', 'chain message',
-    'spam', 'bulk message'
+    "copy paste",
+    "forwarded message",
+    "chain message",
+    "spam",
+    "bulk message",
   ],
-  SHARING: [
-    'airdrop', 'giveaway', 'sharing',
-    'giving away', 'drop', 'contest'
-  ]
+  SHARING: ["airdrop", "giveaway", "sharing", "giving away", "drop", "contest"],
 } as const;
 
 // Warning messages for begging
@@ -153,15 +186,19 @@ const BEGGING_WARNINGS = [
   "⚠️ @{username} Begging is not allowed in this group. Focus on participating in races and events instead!",
   "⚠️ Hey @{username}, we don't allow begging here. Try joining our monthly races to earn rewards!",
   "⚠️ @{username} This is a warning for begging. Join the community events instead of asking for handouts!",
-  "⚠️ @{username} No begging allowed! Check /help to see how you can earn through races and challenges!"
+  "⚠️ @{username} No begging allowed! Check /help to see how you can earn through races and challenges!",
 ] as const;
 
 // Bot personality traits
 const BOT_PERSONALITY = {
-  FRIENDLY: ['Hey!', 'Hi there!', 'Hello!', 'Sup!'],
-  HELPFUL: ['Let me help you with that!', 'I can assist with that!', 'I got you!'],
-  PLAYFUL: ['😎', '🎮', '🎲'],
-  CONGRATULATORY: ['Well done!', 'Amazing!', 'Great job!', 'Fantastic!']
+  FRIENDLY: ["Hey!", "Hi there!", "Hello!", "Sup!"],
+  HELPFUL: [
+    "Let me help you with that!",
+    "I can assist with that!",
+    "I got you!",
+  ],
+  PLAYFUL: ["😎", "🎮", "🎲"],
+  CONGRATULATORY: ["Well done!", "Amazing!", "Great job!", "Fantastic!"],
 } as const;
 
 // Types for API responses
@@ -200,7 +237,7 @@ interface RecurringMessage {
 // Message state tracking
 interface MessageState {
   id: string;
-  state: 'active' | 'inactive';
+  state: "active" | "inactive";
   lastRun?: number;
 }
 
@@ -208,10 +245,13 @@ interface MessageState {
 declare global {
   var scheduledJobs: Map<string, any>;
   var recurringMessages: Map<string, RecurringMessage>;
-  var activeChats: Map<number, {
-    lastMessage: string;
-    timestamp: number;
-  }>;
+  var activeChats: Map<
+    number,
+    {
+      lastMessage: string;
+      timestamp: number;
+    }
+  >;
 }
 
 // Initialize global state
@@ -225,35 +265,42 @@ function getUniqueId(): string {
 }
 
 function sanitizeText(text: string | undefined | null): string {
-  if (!text) return '';
+  if (!text) return "";
   return text.trim();
 }
 
-function validateText(text: string | undefined | null, error = 'Text is required'): string {
+function validateText(
+  text: string | undefined | null,
+  error = "Text is required",
+): string {
   const sanitized = sanitizeText(text);
   if (!sanitized) throw new Error(error);
   return sanitized;
 }
 
 export function validateUsername(username?: string | null): string {
-  return validateText(username, 'Username is required');
+  return validateText(username, "Username is required");
 }
 
 // Message and text validation helpers
 function isBeggingMessage(text: string | undefined | null): boolean {
   const lowerText = sanitizeText(text).toLowerCase();
 
-  if (BEGGING_PATTERNS.DIRECT.some(pattern => lowerText.includes(pattern))) {
+  if (BEGGING_PATTERNS.DIRECT.some((pattern) => lowerText.includes(pattern))) {
     return true;
   }
 
-  if (BEGGING_PATTERNS.SUBTLE.some(pattern => lowerText.includes(pattern))) {
+  if (BEGGING_PATTERNS.SUBTLE.some((pattern) => lowerText.includes(pattern))) {
     return true;
   }
 
-  const currencyPattern = /[\$\€\£\¥]|([0-9]+\s*(dollars|euros|usd|coins|tips))/gi;
+  const currencyPattern =
+    /[\$\€\£\¥]|([0-9]+\s*(dollars|euros|usd|coins|tips))/gi;
   const currencyMatches = lowerText.match(currencyPattern) || [];
-  if (currencyMatches.length > 0 && BEGGING_PATTERNS.SUBTLE.some(pattern => lowerText.includes(pattern))) {
+  if (
+    currencyMatches.length > 0 &&
+    BEGGING_PATTERNS.SUBTLE.some((pattern) => lowerText.includes(pattern))
+  ) {
     return true;
   }
 
@@ -261,7 +308,9 @@ function isBeggingMessage(text: string | undefined | null): boolean {
 }
 
 // Recurring message helpers
-async function scheduleRecurringMessage(message: RecurringMessage): Promise<void> {
+async function scheduleRecurringMessage(
+  message: RecurringMessage,
+): Promise<void> {
   try {
     const job = scheduleJob(message.schedule, async () => {
       if (!message.enabled) return;
@@ -278,26 +327,33 @@ async function scheduleRecurringMessage(message: RecurringMessage): Promise<void
     global.scheduledJobs.set(message.id, job);
     global.recurringMessages.set(message.id, message);
   } catch (error) {
-    console.error('Error scheduling message:', error);
+    console.error("Error scheduling message:", error);
     throw error;
   }
 }
 
 // Message management functions
-function createRecurringMessage(data: Partial<RecurringMessage> & { chatId: number }): RecurringMessage {
+function createRecurringMessage(
+  data: Partial<RecurringMessage> & { chatId: number },
+): RecurringMessage {
   return {
     id: getUniqueId(),
-    message: data.message || '',
-    schedule: data.schedule || '0 * * * *',
+    message: data.message || "",
+    schedule: data.schedule || "0 * * * *",
     chatId: data.chatId,
     enabled: data.enabled ?? true,
-    targetGroups: data.targetGroups || []
+    targetGroups: data.targetGroups || [],
   };
 }
 
-async function muteUser(chatId: number | string, userId: number, duration: number): Promise<void> {
+async function muteUser(
+  chatId: number | string,
+  userId: number,
+  duration: number,
+): Promise<void> {
   const untilDate = Math.floor(Date.now() / 1000) + duration;
-  const targetChatId = typeof chatId === 'string' ? parseInt(chatId, 10) : chatId;
+  const targetChatId =
+    typeof chatId === "string" ? parseInt(chatId, 10) : chatId;
 
   const mute = {
     until_date: untilDate,
@@ -308,8 +364,8 @@ async function muteUser(chatId: number | string, userId: number, duration: numbe
       can_change_info: false,
       can_invite_users: false,
       can_pin_messages: false,
-      can_send_polls: false
-    } as TelegramChatPermissions
+      can_send_polls: false,
+    } as TelegramChatPermissions,
   };
 
   await bot.restrictChatMember(targetChatId, userId, mute);
@@ -322,7 +378,7 @@ bot.onText(/\/help/, async (msg) => {
 
   let message = `🐐 *Welcome to Goated Stats Bot\\!*\n\n`;
 
-  if (msg.from?.username === 'xGoombas') {
+  if (msg.from?.username === "xGoombas") {
     message += `*Admin Commands:*\n`;
     message += `• /broadcast \\- Send message to all users\n`;
     message += `• /group\\_message \\- Send message to group\n`;
@@ -353,7 +409,7 @@ bot.onText(/\/help/, async (msg) => {
   message += `Need help? Contact @xGoombas for support\\.`;
 
   await bot.sendMessage(chatId, message, {
-    parse_mode: 'MarkdownV2'
+    parse_mode: "MarkdownV2",
   });
 });
 
@@ -364,55 +420,67 @@ bot.onText(/\/check_stats (.+)/, async (msg, match) => {
   const username = validateUsername(match?.[1]?.trim());
 
   if (!telegramId) {
-    return bot.sendMessage(chatId, 'Could not identify user.');
+    return bot.sendMessage(chatId, "Could not identify user.");
   }
 
   try {
-    if (msg.from?.username !== 'xGoombas') {
-      const requester = await db.select()
+    if (msg.from?.username !== "xGoombas") {
+      const requester = await db
+        .select()
         .from(telegramUsers)
         .where(eq(telegramUsers.telegramId, telegramId))
         .execute();
 
-      if (!requester?.[0]?.isVerified ||
-        requester[0].goatedUsername?.toLowerCase() !== username.toLowerCase()) {
-        return bot.sendMessage(chatId,
-          'You can only check your own stats after verification.');
+      if (
+        !requester?.[0]?.isVerified ||
+        requester[0].goatedUsername?.toLowerCase() !== username.toLowerCase()
+      ) {
+        return bot.sendMessage(
+          chatId,
+          "You can only check your own stats after verification.",
+        );
       }
     }
 
-    const apiUrl = new URL('http://0.0.0.0:5000/api/affiliate/stats');
-    apiUrl.searchParams.append('username', username);
+    const apiUrl = new URL("http://0.0.0.0:5000/api/affiliate/stats");
+    apiUrl.searchParams.append("username", username);
 
     const response = await fetch(apiUrl.toString(), {
       headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        Accept: "application/json",
+        "Content-Type": "application/json",
       },
     });
 
-    const data = await response.json() as ApiResponse<MonthlyData>;
+    const data = (await response.json()) as ApiResponse<MonthlyData>;
     const transformedData = data?.data?.monthly?.data;
-    let userStats = transformedData?.find((u: GoatedUser) =>
-      u.name.toLowerCase() === username.toLowerCase()
+    let userStats = transformedData?.find(
+      (u: GoatedUser) => u.name.toLowerCase() === username.toLowerCase(),
     );
 
-    if (!userStats && msg.from?.username === 'xGoombas' && username.startsWith('@')) {
+    if (
+      !userStats &&
+      msg.from?.username === "xGoombas" &&
+      username.startsWith("@")
+    ) {
       const cleanUsername = username.substring(1);
-      const telegramUser = await db.select()
+      const telegramUser = await db
+        .select()
         .from(telegramUsers)
         .where(eq(telegramUsers.telegramUsername, cleanUsername))
         .execute();
 
       if (telegramUser?.[0]?.goatedUsername) {
-        userStats = transformedData?.find((u: GoatedUser) =>
-          u.name.toLowerCase() === telegramUser[0].goatedUsername?.toLowerCase()
+        userStats = transformedData?.find(
+          (u: GoatedUser) =>
+            u.name.toLowerCase() ===
+            telegramUser[0].goatedUsername?.toLowerCase(),
         );
       }
     }
 
     if (!userStats) {
-      return bot.sendMessage(chatId, 'User not found.');
+      return bot.sendMessage(chatId, "User not found.");
     }
 
     const message = `📊 Stats for ${userStats.name}:\n
@@ -423,8 +491,8 @@ All-time Wager: $${(userStats.wagered?.all_time || 0).toLocaleString()}`;
 
     return bot.sendMessage(chatId, message);
   } catch (error) {
-    console.error('Error checking stats:', error);
-    return bot.sendMessage(chatId, 'An error occurred while fetching stats.');
+    console.error("Error checking stats:", error);
+    return bot.sendMessage(chatId, "An error occurred while fetching stats.");
   }
 });
 
@@ -433,8 +501,11 @@ bot.onText(/\/makeadmin/, async (msg) => {
   const chatId = msg.chat.id;
   const username = msg.from?.username;
 
-  if (username !== 'xGoombas') {
-    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  if (username !== "xGoombas") {
+    return bot.sendMessage(
+      chatId,
+      "❌ Only authorized users can use this command.",
+    );
   }
 
   try {
@@ -445,13 +516,22 @@ bot.onText(/\/makeadmin/, async (msg) => {
       .returning();
 
     if (user) {
-      await bot.sendMessage(chatId, '✅ Admin privileges granted successfully!');
+      await bot.sendMessage(
+        chatId,
+        "✅ Admin privileges granted successfully!",
+      );
     } else {
-      await bot.sendMessage(chatId, '❌ Failed to grant admin privileges. Please try again.');
+      await bot.sendMessage(
+        chatId,
+        "❌ Failed to grant admin privileges. Please try again.",
+      );
     }
   } catch (error) {
-    console.error('Error granting admin privileges:', error);
-    await bot.sendMessage(chatId, '❌ An error occurred while granting admin privileges.');
+    console.error("Error granting admin privileges:", error);
+    await bot.sendMessage(
+      chatId,
+      "❌ An error occurred while granting admin privileges.",
+    );
   }
 });
 
@@ -460,25 +540,32 @@ bot.onText(/\/reject_user (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const adminUsername = msg.from?.username;
 
-  if (adminUsername !== 'xGoombas') {
-    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  if (adminUsername !== "xGoombas") {
+    return bot.sendMessage(
+      chatId,
+      "❌ Only authorized users can use this command.",
+    );
   }
 
   if (!match?.[1]) {
-    return bot.sendMessage(chatId, '❌ Please provide a Telegram username or ID.');
+    return bot.sendMessage(
+      chatId,
+      "❌ Please provide a Telegram username or ID.",
+    );
   }
 
   let telegramId = match[1];
   // If username format is provided (@username), remove @ and find the user's ID
-  if (telegramId.startsWith('@')) {
+  if (telegramId.startsWith("@")) {
     telegramId = telegramId.substring(1);
-    const user = await db.select()
+    const user = await db
+      .select()
       .from(telegramUsers)
       .where(eq(telegramUsers.telegramUsername, telegramId))
       .execute();
 
     if (!user?.[0]) {
-      return bot.sendMessage(chatId, '❌ User not found with that username.');
+      return bot.sendMessage(chatId, "❌ User not found with that username.");
     }
     telegramId = user[0].telegramId;
   }
@@ -487,24 +574,29 @@ bot.onText(/\/reject_user (.+)/, async (msg, match) => {
     // Update verification request status
     const [request] = await db
       .update(verificationRequests)
-      .set({ status: 'rejected', updatedAt: new Date() })
+      .set({ status: "rejected", updatedAt: new Date() })
       .where(eq(verificationRequests.telegramId, telegramId))
       .returning();
 
     if (!request) {
-      return bot.sendMessage(chatId, '❌ Verification request not found.');
+      return bot.sendMessage(chatId, "❌ Verification request not found.");
     }
 
     // Notify user privately
-    await bot.sendMessage(telegramId,
-      '❌ Your verification request has been rejected.\n' +
-      'Please ensure you\'re using the correct Goated username and try again.\n' +
-      'If you need help, contact @xGoombas.');
+    await bot.sendMessage(
+      telegramId,
+      "❌ Your verification request has been rejected.\n" +
+        "Please ensure you're using the correct Goated username and try again.\n" +
+        "If you need help, contact @xGoombas.",
+    );
 
-    return bot.sendMessage(chatId, `✅ User ${request.goatedUsername}'s verification request has been rejected.`);
+    return bot.sendMessage(
+      chatId,
+      `✅ User ${request.goatedUsername}'s verification request has been rejected.`,
+    );
   } catch (error) {
-    console.error('Error rejecting verification:', error);
-    return bot.sendMessage(chatId, '❌ Error rejecting verification request.');
+    console.error("Error rejecting verification:", error);
+    return bot.sendMessage(chatId, "❌ Error rejecting verification request.");
   }
 });
 
@@ -513,12 +605,15 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const adminUsername = msg.from?.username;
 
-  if (adminUsername !== 'xGoombas') {
-    return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+  if (adminUsername !== "xGoombas") {
+    return bot.sendMessage(
+      chatId,
+      "❌ Only authorized users can use this command.",
+    );
   }
 
   if (!match?.[1]) {
-    return bot.sendMessage(chatId, '❌ Please provide a message to broadcast.');
+    return bot.sendMessage(chatId, "❌ Please provide a message to broadcast.");
   }
 
   const message = match[1];
@@ -537,11 +632,13 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
       }
     }
 
-    return bot.sendMessage(chatId,
-      `📢 Broadcast complete!\n✅ Sent: ${successCount}\n❌ Failed: ${failureCount}`);
+    return bot.sendMessage(
+      chatId,
+      `📢 Broadcast complete!\n✅ Sent: ${successCount}\n❌ Failed: ${failureCount}`,
+    );
   } catch (error) {
-    console.error('Error broadcasting message:', error);
-    return bot.sendMessage(chatId, '❌ Error broadcasting message.');
+    console.error("Error broadcasting message:", error);
+    return bot.sendMessage(chatId, "❌ Error broadcasting message.");
   }
 });
 
@@ -552,7 +649,7 @@ export async function getBotStatus() {
     hasInstance: !!botInstance,
     uptime: process.uptime(),
     token: !!BotConfig.TOKEN,
-    commands: await bot.getMyCommands()
+    commands: await bot.getMyCommands(),
   };
 }
 
@@ -562,17 +659,17 @@ export default bot;
 // Stop the bot and clean up resources
 export async function stopBot() {
   try {
-    logger.info('Stopping polling...');
+    logger.info("Stopping polling...");
     if (botInstance && isPolling) {
       await bot.stopPolling();
-      logger.info('Polling stopped');
+      logger.info("Polling stopped");
       isPolling = false;
     }
   } catch (error) {
-    logger.error('Error stopping polling', { error });
+    logger.error("Error stopping polling", { error });
   }
 }
 
 // Handle cleanup on server shutdown
-process.on('SIGINT', stopBot);
-process.on('SIGTERM', stopBot);
+process.on("SIGINT", stopBot);
+process.on("SIGTERM", stopBot);

@@ -3,34 +3,40 @@
  * Implements a registry pattern for better organization and error handling
  */
 
-import TelegramBot from 'node-telegram-bot-api';
-import { logger, isAdminMessage, isModeratorMessage, MessageTemplates, LogContext } from '../utils';
+import TelegramBot from "node-telegram-bot-api";
+import {
+  logger,
+  isAdminMessage,
+  isModeratorMessage,
+  MessageTemplates,
+  LogContext,
+} from "../utils";
 
 // Command handler type definition
 export type CommandHandler = (
   bot: TelegramBot,
   msg: TelegramBot.Message,
-  match: RegExpExecArray | null
+  match: RegExpExecArray | null,
 ) => Promise<void>;
 
 // Command access level
 export enum CommandAccessLevel {
-  PUBLIC = 'public',   // Available to all users
-  USER = 'user',       // Only for authenticated users
-  MOD = 'moderator',   // Only for moderators and admins
-  ADMIN = 'admin',     // Only for admins
+  PUBLIC = "public", // Available to all users
+  USER = "user", // Only for authenticated users
+  MOD = "moderator", // Only for moderators and admins
+  ADMIN = "admin", // Only for admins
 }
 
 // Command definition interface
 export interface CommandDefinition {
-  name: string;                // Command name without slash (e.g., 'help')
-  handler: CommandHandler;     // Function to handle the command
-  pattern?: RegExp;            // Optional custom pattern
+  name: string; // Command name without slash (e.g., 'help')
+  handler: CommandHandler; // Function to handle the command
+  pattern?: RegExp; // Optional custom pattern
   accessLevel: CommandAccessLevel;
-  description: string;         // Short description for help menu
-  requiresArgs?: boolean;      // Whether the command requires arguments
-  enabled: boolean;            // Whether the command is enabled
-  showInHelp: boolean;         // Whether to show in help menu
+  description: string; // Short description for help menu
+  requiresArgs?: boolean; // Whether the command requires arguments
+  enabled: boolean; // Whether the command is enabled
+  showInHelp: boolean; // Whether to show in help menu
 }
 
 // Command registry class to manage all commands
@@ -40,7 +46,7 @@ class CommandRegistry {
 
   constructor() {
     this.commands = new Map();
-    logger.info('Command registry initialized');
+    logger.info("Command registry initialized");
   }
 
   /**
@@ -51,7 +57,7 @@ class CommandRegistry {
     if (this.commands.has(command.name)) {
       logger.warn(`Command '${command.name}' already registered, overwriting`);
     }
-    
+
     this.commands.set(command.name, command);
     logger.info(`Registered command: ${command.name}`);
   }
@@ -61,7 +67,7 @@ class CommandRegistry {
    * @param commands Array of command definitions
    */
   registerBulk(commands: CommandDefinition[]): void {
-    commands.forEach(command => this.register(command));
+    commands.forEach((command) => this.register(command));
   }
 
   /**
@@ -86,28 +92,36 @@ class CommandRegistry {
    * @param accessLevel Minimum access level to include
    * @returns Array of command definitions
    */
-  getHelpCommands(accessLevel: CommandAccessLevel = CommandAccessLevel.PUBLIC): CommandDefinition[] {
+  getHelpCommands(
+    accessLevel: CommandAccessLevel = CommandAccessLevel.PUBLIC,
+  ): CommandDefinition[] {
     const commands: CommandDefinition[] = [];
-    
-    this.commands.forEach(command => {
+
+    this.commands.forEach((command) => {
       if (command.showInHelp && command.enabled) {
         // Filter by access level
         if (accessLevel === CommandAccessLevel.ADMIN) {
           commands.push(command);
-        } else if (accessLevel === CommandAccessLevel.MOD && 
-                   command.accessLevel !== CommandAccessLevel.ADMIN) {
+        } else if (
+          accessLevel === CommandAccessLevel.MOD &&
+          command.accessLevel !== CommandAccessLevel.ADMIN
+        ) {
           commands.push(command);
-        } else if (accessLevel === CommandAccessLevel.USER && 
-                   command.accessLevel !== CommandAccessLevel.ADMIN && 
-                   command.accessLevel !== CommandAccessLevel.MOD) {
+        } else if (
+          accessLevel === CommandAccessLevel.USER &&
+          command.accessLevel !== CommandAccessLevel.ADMIN &&
+          command.accessLevel !== CommandAccessLevel.MOD
+        ) {
           commands.push(command);
-        } else if (accessLevel === CommandAccessLevel.PUBLIC && 
-                   command.accessLevel === CommandAccessLevel.PUBLIC) {
+        } else if (
+          accessLevel === CommandAccessLevel.PUBLIC &&
+          command.accessLevel === CommandAccessLevel.PUBLIC
+        ) {
           commands.push(command);
         }
       }
     });
-    
+
     return commands;
   }
 
@@ -140,48 +154,57 @@ class CommandRegistry {
    */
   formatHelpMessage(msg: TelegramBot.Message): string {
     let accessLevel = CommandAccessLevel.PUBLIC;
-    
+
     if (isAdminMessage(msg)) {
       accessLevel = CommandAccessLevel.ADMIN;
     } else if (isModeratorMessage(msg)) {
       accessLevel = CommandAccessLevel.MOD;
     }
-    
+
     const commands = this.getHelpCommands(accessLevel);
-    
+
     let message = `🐐 *Welcome to Goated Stats Bot\\!*\n\n`;
-    
+
     // Admin commands
     if (accessLevel === CommandAccessLevel.ADMIN) {
       message += `*Admin Commands:*\n`;
-      commands.filter(cmd => cmd.accessLevel === CommandAccessLevel.ADMIN)
-        .forEach(cmd => {
+      commands
+        .filter((cmd) => cmd.accessLevel === CommandAccessLevel.ADMIN)
+        .forEach((cmd) => {
           message += `• /${cmd.name} \\- ${cmd.description}\n`;
         });
       message += `\n`;
     }
-    
+
     // Moderator commands
-    if (accessLevel === CommandAccessLevel.ADMIN || accessLevel === CommandAccessLevel.MOD) {
+    if (
+      accessLevel === CommandAccessLevel.ADMIN ||
+      accessLevel === CommandAccessLevel.MOD
+    ) {
       message += `*Moderator Commands:*\n`;
-      commands.filter(cmd => cmd.accessLevel === CommandAccessLevel.MOD)
-        .forEach(cmd => {
+      commands
+        .filter((cmd) => cmd.accessLevel === CommandAccessLevel.MOD)
+        .forEach((cmd) => {
           message += `• /${cmd.name} \\- ${cmd.description}\n`;
         });
       message += `\n`;
     }
-    
+
     // User commands
     message += `*Available Commands:*\n`;
-    commands.filter(cmd => cmd.accessLevel === CommandAccessLevel.PUBLIC || 
-                           cmd.accessLevel === CommandAccessLevel.USER)
-      .forEach(cmd => {
+    commands
+      .filter(
+        (cmd) =>
+          cmd.accessLevel === CommandAccessLevel.PUBLIC ||
+          cmd.accessLevel === CommandAccessLevel.USER,
+      )
+      .forEach((cmd) => {
         message += `• /${cmd.name} \\- ${cmd.description}\n`;
       });
-    
+
     // Support info
     message += `\nNeed help? Contact @xGoombas for support\\.`;
-    
+
     return message;
   }
 
@@ -196,7 +219,8 @@ class CommandRegistry {
         return;
       }
 
-      const pattern = command.pattern || new RegExp(`^\\/${command.name}(?:\\s+(.+))?$`);
+      const pattern =
+        command.pattern || new RegExp(`^\\/${command.name}(?:\\s+(.+))?$`);
 
       bot.onText(pattern, async (msg, match) => {
         const logContext = {
@@ -213,8 +237,14 @@ class CommandRegistry {
         try {
           // Check access level
           if (!this.hasAccess(command, msg)) {
-            logger.warn(`Access denied for command: ${command.name}`, logContext);
-            await bot.sendMessage(msg.chat.id, MessageTemplates.ERRORS.UNAUTHORIZED);
+            logger.warn(
+              `Access denied for command: ${command.name}`,
+              logContext,
+            );
+            await bot.sendMessage(
+              msg.chat.id,
+              MessageTemplates.ERRORS.UNAUTHORIZED,
+            );
             return;
           }
 
@@ -222,7 +252,7 @@ class CommandRegistry {
           if (command.requiresArgs && (!match || !match[1])) {
             await bot.sendMessage(
               msg.chat.id,
-              `❌ The ${command.name} command requires additional parameters. Use /help for more information.`
+              `❌ The ${command.name} command requires additional parameters. Use /help for more information.`,
             );
             return;
           }
@@ -231,14 +261,14 @@ class CommandRegistry {
           await command.handler(bot, msg, match);
         } catch (error) {
           // Log error with proper formatting
-          logger.error(`Error executing command: ${command.name}`, { 
-            error: error instanceof Error ? error.message : String(error), 
-            ...logContext 
+          logger.error(`Error executing command: ${command.name}`, {
+            error: error instanceof Error ? error.message : String(error),
+            ...logContext,
           });
 
           // Send error message to user
           let errorMessage = MessageTemplates.ERRORS.SERVER_ERROR;
-          
+
           if (error instanceof Error) {
             // Add specific error message for admins
             if (isAdminMessage(msg)) {
@@ -261,14 +291,14 @@ class CommandRegistry {
    */
   private logCommand(commandName: string, msg: TelegramBot.Message): void {
     const timestamp = new Date().toISOString();
-    const userId = msg.from?.id || 'unknown';
-    const username = msg.from?.username || 'unknown';
+    const userId = msg.from?.id || "unknown";
+    const username = msg.from?.username || "unknown";
     const chatId = msg.chat.id;
     const chatType = msg.chat.type;
-    
+
     const logEntry = `${timestamp} [CMD:${commandName}] User:${userId}(${username}) Chat:${chatId}(${chatType})`;
     this.commandLog.push(logEntry);
-    
+
     // Keep log at a reasonable size
     if (this.commandLog.length > 1000) {
       this.commandLog.shift();

@@ -12,43 +12,71 @@ declare module "@/components/ui/card" {
 }
 
 declare module "@/components/ui/button" {
-  import { ButtonHTMLAttributes, ForwardRefExoticComponent, RefAttributes } from "react";
+  import {
+    ButtonHTMLAttributes,
+    ForwardRefExoticComponent,
+    RefAttributes,
+  } from "react";
 
   export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+    variant?:
+      | "default"
+      | "destructive"
+      | "outline"
+      | "secondary"
+      | "ghost"
+      | "link";
     size?: "default" | "sm" | "lg" | "icon";
     asChild?: boolean;
   }
 
-  export const Button: ForwardRefExoticComponent<ButtonProps & RefAttributes<HTMLButtonElement>>;
+  export const Button: ForwardRefExoticComponent<
+    ButtonProps & RefAttributes<HTMLButtonElement>
+  >;
 }
 
 declare module "@/components/ui/input" {
-  import { InputHTMLAttributes, ForwardRefExoticComponent, RefAttributes } from "react";
+  import {
+    InputHTMLAttributes,
+    ForwardRefExoticComponent,
+    RefAttributes,
+  } from "react";
 
   export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     asChild?: boolean;
   }
 
-  export const Input: ForwardRefExoticComponent<InputProps & RefAttributes<HTMLInputElement>>;
+  export const Input: ForwardRefExoticComponent<
+    InputProps & RefAttributes<HTMLInputElement>
+  >;
 }
 
 declare module "@/components/ui/textarea" {
   import { TextareaHTMLAttributes, FC } from "react";
 
-  export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {}
+  export interface TextareaProps
+    extends TextareaHTMLAttributes<HTMLTextAreaElement> {}
   export const Textarea: FC<TextareaProps>;
 }
 
 declare module "@/components/ui/table" {
-  import { FC, HTMLAttributes, TdHTMLAttributes, ThHTMLAttributes } from "react";
+  import {
+    FC,
+    HTMLAttributes,
+    TdHTMLAttributes,
+    ThHTMLAttributes,
+  } from "react";
 
   export interface TableProps extends HTMLAttributes<HTMLTableElement> {}
-  export interface TableHeaderProps extends HTMLAttributes<HTMLTableSectionElement> {}
-  export interface TableBodyProps extends HTMLAttributes<HTMLTableSectionElement> {}
+  export interface TableHeaderProps
+    extends HTMLAttributes<HTMLTableSectionElement> {}
+  export interface TableBodyProps
+    extends HTMLAttributes<HTMLTableSectionElement> {}
   export interface TableRowProps extends HTMLAttributes<HTMLTableRowElement> {}
-  export interface TableHeadProps extends ThHTMLAttributes<HTMLTableHeaderCellElement> {}
-  export interface TableCellProps extends TdHTMLAttributes<HTMLTableDataCellElement> {}
+  export interface TableHeadProps
+    extends ThHTMLAttributes<HTMLTableHeaderCellElement> {}
+  export interface TableCellProps
+    extends TdHTMLAttributes<HTMLTableDataCellElement> {}
 
   export const Table: FC<TableProps>;
   export const TableHeader: FC<TableHeaderProps>;
@@ -77,14 +105,20 @@ declare module "@/components/ui/switch" {
 }
 
 declare module "@/components/ui/separator" {
-  import { HTMLAttributes, ForwardRefExoticComponent, RefAttributes } from "react";
+  import {
+    HTMLAttributes,
+    ForwardRefExoticComponent,
+    RefAttributes,
+  } from "react";
 
   export interface SeparatorProps extends HTMLAttributes<HTMLDivElement> {
     orientation?: "horizontal" | "vertical";
     decorative?: boolean;
   }
 
-  export const Separator: ForwardRefExoticComponent<SeparatorProps & RefAttributes<HTMLDivElement>>;
+  export const Separator: ForwardRefExoticComponent<
+    SeparatorProps & RefAttributes<HTMLDivElement>
+  >;
 }
 
 declare module "@/components/ui/sheet" {
@@ -110,7 +144,12 @@ declare module "@/components/ui/skeleton" {
 }
 
 declare module "@/components/ui/tooltip" {
-  import { HTMLAttributes, ForwardRefExoticComponent, RefAttributes, ReactNode } from "react";
+  import {
+    HTMLAttributes,
+    ForwardRefExoticComponent,
+    RefAttributes,
+    ReactNode,
+  } from "react";
 
   export interface TooltipProviderProps {
     children: ReactNode;
@@ -130,10 +169,18 @@ declare module "@/components/ui/tooltip" {
     sticky?: "partial" | "always";
   }
 
-  export const Tooltip: ForwardRefExoticComponent<TooltipProps & RefAttributes<HTMLDivElement>>;
-  export const TooltipContent: ForwardRefExoticComponent<TooltipContentProps & RefAttributes<HTMLDivElement>>;
+  export const Tooltip: ForwardRefExoticComponent<
+    TooltipProps & RefAttributes<HTMLDivElement>
+  >;
+  export const TooltipContent: ForwardRefExoticComponent<
+    TooltipContentProps & RefAttributes<HTMLDivElement>
+  >;
   export const TooltipProvider: React.FC<TooltipProviderProps>;
-  export const TooltipTrigger: ForwardRefExoticComponent<HTMLAttributes<HTMLElement> & { asChild?: boolean } & RefAttributes<HTMLElement>>;
+  export const TooltipTrigger: ForwardRefExoticComponent<
+    HTMLAttributes<HTMLElement> & {
+      asChild?: boolean;
+    } & RefAttributes<HTMLElement>
+  >;
 }
 
 declare module "@/hooks/use-toast" {

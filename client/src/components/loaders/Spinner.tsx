@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Spinner
- * 
+ *
  * A simple loading spinner with size and color variants
  * Used for smaller UI elements and inline loading states
  */
@@ -30,16 +30,17 @@ const spinnerVariants = cva(
       size: "md",
       variant: "brand",
     },
-  }
+  },
 );
 
-interface SpinnerProps extends React.HTMLAttributes<HTMLDivElement>,
-  VariantProps<typeof spinnerVariants> {
+interface SpinnerProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof spinnerVariants> {
   /**
    * Optional text to display next to the spinner
    */
   text?: string;
-  
+
   /**
    * Whether to center the spinner horizontally
    * @default false
@@ -47,33 +48,42 @@ interface SpinnerProps extends React.HTMLAttributes<HTMLDivElement>,
   centered?: boolean;
 }
 
-export function Spinner({ 
-  className, 
-  size, 
-  variant, 
-  text, 
+export function Spinner({
+  className,
+  size,
+  variant,
+  text,
   centered = false,
-  ...props 
+  ...props
 }: SpinnerProps) {
   const containerClasses = cn(
     "flex items-center gap-2",
     centered && "justify-center",
-    className
+    className,
   );
 
   return (
     <div className={containerClasses} {...props}>
-      <div className={spinnerVariants({ size, variant })} role="status" aria-label="Loading">
+      <div
+        className={spinnerVariants({ size, variant })}
+        role="status"
+        aria-label="Loading"
+      >
         <span className="sr-only">Loading</span>
       </div>
       {text && (
-        <span className={cn(
-          "text-sm font-medium", 
-          variant === "brand" ? "text-[#D7FF00]" : 
-          variant === "white" ? "text-white" : 
-          variant === "muted" ? "text-muted-foreground" : 
-          "text-foreground"
-        )}>
+        <span
+          className={cn(
+            "text-sm font-medium",
+            variant === "brand"
+              ? "text-[#D7FF00]"
+              : variant === "white"
+                ? "text-white"
+                : variant === "muted"
+                  ? "text-muted-foreground"
+                  : "text-foreground",
+          )}
+        >
           {text}
         </span>
       )}
