@@ -13,6 +13,19 @@ import statsCommand from './stats';
 import verifyCommand from './verify';
 import verifyUserCommand, { listRequestsCommand } from './verify-user';
 import leaderboardCommand, { raceCommand } from './leaderboard';
+import { 
+  createChallengeCommand, 
+  listChallengesCommand, 
+  viewChallengeCommand, 
+  updateChallengeStatusCommand 
+} from './challenge';
+import {
+  challengeEntryCommand,
+  listEntriesCommand,
+  verifyEntryCommand,
+  reviewEntryCommand,
+  myEntriesCommand
+} from './challenge-entry';
 
 // Add more command imports here as they are created
 
@@ -34,6 +47,19 @@ export function registerCommands(): void {
   // Register leaderboard commands
   commandRegistry.register(leaderboardCommand);
   commandRegistry.register(raceCommand);
+  
+  // Register challenge commands
+  commandRegistry.register(createChallengeCommand);
+  commandRegistry.register(listChallengesCommand);
+  commandRegistry.register(viewChallengeCommand);
+  commandRegistry.register(updateChallengeStatusCommand);
+  
+  // Register challenge entry commands
+  commandRegistry.register(challengeEntryCommand);
+  commandRegistry.register(listEntriesCommand);
+  commandRegistry.register(verifyEntryCommand);
+  commandRegistry.register(reviewEntryCommand);
+  commandRegistry.register(myEntriesCommand);
   
   // Register additional commands here
   

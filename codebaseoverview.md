@@ -1,163 +1,138 @@
+# Codebase Overview
 
-# GoatedVIPs.gg Platform - Codebase Overview
+This document provides a visual structure of the codebase, highlighting key files and their relationships.
 
 ## Project Structure
 
 ```
-GoatedVIPs.gg/
-├── client/                       # Frontend React application
-│   ├── public/                   # Static assets
-│   ├── src/
-│   │   ├── components/           # Reusable UI components
-│   │   │   ├── ui/               # Base UI components (shadcn/ui)
-│   │   │   ├── Layout.tsx        # Main layout wrapper
-│   │   │   ├── LeaderboardTable.tsx # Leaderboard display component
-│   │   │   ├── MobileAdminBadge.tsx # Admin indicator for mobile
-│   │   │   ├── PageTransition.tsx # Animation wrapper
-│   │   │   └── QuickProfile.tsx  # User profile popup
-│   │   ├── hooks/                # Custom React hooks
-│   │   │   ├── use-auth.tsx      # Authentication hook
-│   │   │   ├── use-leaderboard.tsx # Leaderboard data fetching
-│   │   │   └── use-wager-races.tsx # Wager race data management
-│   │   ├── lib/                  # Utility functions and helpers
-│   │   │   ├── api.ts            # API client functions
-│   │   │   ├── tier-utils.ts     # User tier calculations
-│   │   │   ├── types.d.ts        # TypeScript type definitions
-│   │   │   └── utils.ts          # General utility functions
-│   │   ├── pages/                # Application pages
-│   │   │   ├── admin/            # Admin dashboard and management pages
-│   │   │   │   ├── Dashboard.tsx # Admin overview page
-│   │   │   │   ├── UserManagement.tsx # User admin controls
-│   │   │   │   ├── WagerRaceManagement.tsx # Race configuration
-│   │   │   │   ├── NotificationManagement.tsx # Notification controls 
-│   │   │   │   ├── BonusCodeManagement.tsx # Bonus code admin
-│   │   │   │   └── SupportManagement.tsx # Support ticket management
-│   │   │   ├── Home.tsx          # Landing page
-│   │   │   ├── Leaderboard.tsx   # Main leaderboard page
-│   │   │   ├── WagerRaces.tsx    # Wager race display and tracking
-│   │   │   ├── UserProfile.tsx   # User profile page
-│   │   │   ├── Telegram.tsx      # Telegram integration page
-│   │   │   ├── Challenges.tsx    # User challenges page
-│   │   │   ├── GoatedToken.tsx   # Token information page
-│   │   │   ├── VipProgram.tsx    # VIP program details
-│   │   │   ├── HowItWorks.tsx    # Platform explanation
-│   │   │   └── Support.tsx       # User support interface
-│   │   ├── App.tsx               # Main application component
-│   │   └── index.tsx             # Application entry point
-│   ├── index.html                # HTML entry point
-│   └── tailwind.config.ts        # Tailwind CSS configuration
-│
-├── server/                       # Backend Express server
-│   ├── config/                   # Server configuration
-│   │   └── db.ts                 # Database configuration
-│   ├── middleware/               # Express middleware
-│   │   ├── auth.ts               # Authentication middleware
-│   │   ├── rate-limiter.ts       # API rate limiting
-│   │   └── validation.ts         # Request validation
-│   ├── telegram/                 # Telegram bot integration
-│   │   ├── bot.ts                # Main bot initialization
-│   │   ├── commands.ts           # Bot command handlers
-│   │   └── verification.ts       # User verification logic
-│   ├── index.ts                  # Server entry point
-│   ├── routes.ts                 # API route definitions
-│   ├── auth.ts                   # Authentication logic
-│   └── verification-routes.ts    # User verification endpoints
-│
-├── db/                           # Database layer
-│   ├── schema/                   # Database schema definitions
-│   │   ├── users.ts              # User table schema
-│   │   ├── wager-races.ts        # Wager race table schema
-│   │   └── challenges.ts         # Challenges table schema
-│   ├── index.ts                  # Database connection initialization
-│   ├── schema.ts                 # Combined schema exports
-│   └── types.d.ts                # TypeScript types for DB entities
-│
-├── fonts/                        # Custom web fonts
-│   ├── GeistMono-Black.woff2     # Monospace font
-│   ├── GeistMono-Regular.woff2   # Monospace font
-│   ├── MonaSansCondensed-ExtraBold.woff2 # Heading font
-│   └── MonaSansExpanded-ExtraBold.woff2  # Expanded heading font
-│
-├── package.json                  # Project dependencies and scripts
-├── databaseoverview.md           # Database documentation
-├── drizzle.config.ts             # Drizzle ORM configuration
-├── tailwind.config.ts            # Global Tailwind configuration
-├── theme.json                    # UI theme configuration
-├── tsconfig.json                 # TypeScript configuration
-└── vite.config.ts                # Vite bundler configuration
+.
+├── client                  # Frontend application
+│   ├── src                 # Source code
+│   │   ├── components      # Reusable UI components
+│   │   │   ├── ui          # Shadcn UI components
+│   │   │   └── ...         # Custom components
+│   │   ├── contexts        # React contexts
+│   │   ├── hooks           # Custom React hooks
+│   │   ├── lib             # Utility libraries
+│   │   ├── pages           # Application pages/routes
+│   │   └── utils           # Helper functions
+│   ├── index.html          # Entry HTML file
+│   └── tailwind.config.ts  # Tailwind CSS configuration
+├── db                      # Database integration
+│   ├── schema              # Database schema definitions
+│   │   ├── telegram.ts     # Telegram-related schemas
+│   │   └── users.ts        # User-related schemas
+│   ├── index.ts            # Database connection setup
+│   └── schema.ts           # Main schema file with exports
+├── server                  # Backend server
+│   ├── telegram            # Telegram bot implementation
+│   │   ├── commands        # Bot command modules
+│   │   ├── utils           # Bot utility functions
+│   │   └── bot.ts          # Main bot implementation
+│   ├── config              # Server configuration
+│   ├── middleware          # Express middleware
+│   ├── routes.ts           # API routes definition
+│   └── index.ts            # Server entry point
+└── config files            # Various configuration files
+    ├── drizzle.config.ts   # Drizzle ORM configuration
+    ├── package.json        # Node.js dependencies
+    ├── tailwind.config.ts  # Tailwind CSS configuration
+    ├── tsconfig.json       # TypeScript configuration
+    └── vite.config.ts      # Vite bundler configuration
 ```
 
-## Technology Stack
+## Key Components
 
-### Frontend
-- **Framework**: React with TypeScript
-- **Styling**: Tailwind CSS with custom theme
-- **UI Components**: Radix UI primitives with shadcn/ui
-- **Animation**: Framer Motion
-- **State Management**: React Query for server state
-- **Routing**: React Router
+### Frontend (client/)
 
-### Backend
-- **Framework**: Express.js with TypeScript
-- **Database ORM**: Drizzle
-- **Authentication**: JWT with Passport.js
-- **External Integrations**: Telegram Bot API
-- **Security**: Rate limiting with rate-limiter-flexible
+#### Components
 
-### Database
-- **Type**: PostgreSQL
-- **Schema Management**: Drizzle ORM with migrations
-- **Data Types**: Strongly typed with TypeScript
+- **UI Components (`client/src/components/ui/`)**: Shadcn UI components used throughout the application
+- **Custom Components (`client/src/components/`)**: Application-specific components like:
+  - `AffiliateStats.tsx`: Displays affiliate statistics
+  - `LeaderboardTable.tsx`: Renders user leaderboards
+  - `RaceTimer.tsx`: Timer component for wager races
 
-## Key Application Flows
+#### Pages
 
-### User Authentication
-1. User signs up/logs in via web UI or Telegram
-2. JWT tokens manage session state
-3. Protected routes enforce authentication
+- **Main Pages (`client/src/pages/`)**: Application routes including:
+  - `Dashboard.tsx`: User dashboard
+  - `WagerRaces.tsx`: Wager races page
+  - `Leaderboard.tsx`: Leaderboard display
+  - `Challenges.tsx`: User challenges
+  - `Telegram.tsx`: Telegram integration page
 
-### Leaderboard Display
-1. Data fetched from backend API 
-2. Filtered by time period (daily/weekly/monthly/all-time)
-3. Cached for performance
-4. Real-time updates via WebSockets
+#### Hooks & Utilities
 
-### Wager Races
-1. Admins configure race parameters
-2. Users automatically participate when wagering
-3. Live leaderboard shows current standings
-4. Race results processed automatically at end time
+- **Custom Hooks (`client/src/hooks/`)**: React hooks for data fetching and UI state management
+  - `use-leaderboard.ts`: Data fetching for leaderboards
+  - `use-api-with-loading.ts`: API integration with loading states
+  - `use-user.ts`: User authentication state management
 
-### Admin Dashboard
-1. Centralized management interface
-2. User management capabilities
-3. Race configuration and management
-4. Notification and bonus code administration
+### Backend (server/)
 
-### Telegram Integration
-1. Bot provides platform interaction via Telegram
-2. User verification links accounts
-3. Real-time notifications and commands
-4. Community engagement features
+#### Telegram Bot (server/telegram/)
 
-## Development Patterns
+- **Commands (`server/telegram/commands/`)**: Bot command implementations
+  - `verify.ts`: Account verification command
+  - `verify-user.ts`: Admin verification command
+  - `leaderboard.ts`: Leaderboard display command
+  - `challenge.ts`: Challenge creation and management
+  - `challenge-entry.ts`: Challenge participation commands
+  - `stats.ts`: User statistics command
+  - `help.ts`: Help command
 
-### Component Structure
-- UI components use shadcn/ui pattern with Radix primitives
-- Page components integrate with data hooks
-- Layout components handle consistent structure
+- **Utilities (`server/telegram/utils/`)**: Support functions for bot operations
+  - `api.ts`: API client for external endpoints
+  - `auth.ts`: Authentication and permissions
+  - `config.ts`: Bot configuration
+  - `state.ts`: Bot state management
+  - `logger.ts`: Logging system
 
-### Data Fetching
-- React Query handles server state
-- Custom hooks abstract data fetching logic
-- Type-safe API interactions
+#### API Routes
 
-### Styling Approach
-- Utility-first with Tailwind CSS
-- Consistent color scheme via theme.json
-- Responsive design with mobile-first approach
+- **Main Routes (`server/routes.ts`)**: API endpoints for frontend integration
+- **Authentication (`server/auth.ts`)**: User authentication setup
+- **Verification (`server/verification-routes.ts`)**: Account verification endpoints
 
-### Authentication Pattern
-- JWT tokens stored in HTTP-only cookies
-- Role-based access control
-- Secure routes with middleware protection
+### Database (db/)
+
+#### Schemas
+
+- **Telegram Schemas (`db/schema/telegram.ts`)**:
+  - `telegramUsers`: Telegram user records
+  - `telegramBotState`: Bot state persistence
+  - `verificationRequests`: Account verification requests
+  - `challenges`: Challenge definitions
+  - `challengeEntries`: User challenge entries
+
+- **User Schemas (`db/schema/users.ts`)**:
+  - `users`: Platform user records
+  - User-related data definitions
+
+## Data Flow
+
+1. **User Flow**:
+   - Users interact with the frontend React application
+   - API requests are made to backend endpoints
+   - Authentication is handled through the auth system
+
+2. **Telegram Bot Flow**:
+   - Users send commands to the Telegram bot
+   - Commands are processed by the appropriate handler
+   - Database queries validate and update user data
+   - Responses are sent back to the user
+
+3. **Challenge System Flow**:
+   - Admins create challenges via Telegram bot
+   - Users submit entries with proof of participation
+   - Admins review and approve entries
+   - Rewards are distributed via bonus codes
+
+## Development Guidelines
+
+- Frontend uses TypeScript React with Shadcn UI components
+- Database uses Drizzle ORM with PostgreSQL
+- Telegram bot uses node-telegram-bot-api
+- Authentication uses Passport.js
+- State management combines React Context and React Query
