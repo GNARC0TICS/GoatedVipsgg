@@ -8,6 +8,22 @@ interface PageTransitionProps {
   isLoading?: boolean;
 }
 
+// Define the animation variants
+const pageVariants = {
+  initial: { 
+    opacity: 0, 
+    y: 10
+  },
+  animate: { 
+    opacity: 1, 
+    y: 0
+  },
+  exit: { 
+    opacity: 0, 
+    y: -10
+  }
+};
+
 export function PageTransition({ children, isLoading = false }: PageTransitionProps) {
   const [showLoading, setShowLoading] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -16,7 +32,7 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
   // Only show loader if loading takes more than 250ms to avoid flicker for fast loads
   useEffect(() => {
     let timeout: NodeJS.Timeout;
-    
+
     if (isLoading) {
       setIsCompleted(false);
       setShouldRenderContent(false);
@@ -36,7 +52,7 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
         }, 500);
       }
     }
-    
+
     return () => clearTimeout(timeout);
   }, [isLoading, isCompleted, showLoading]);
 
@@ -61,18 +77,20 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={pageVariants}
       transition={{
         type: "tween",
-        duration: 0.2,
+        duration: 0.3,
         ease: "easeOut"
       }}
       style={{ 
         willChange: "opacity, transform",
         backfaceVisibility: "hidden"
       }}
+      className="w-full"
     >
       {children}
     </motion.div>

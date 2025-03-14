@@ -2,9 +2,7 @@ import { ReactNode, useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import {
-  Menu, Bell, Settings, User, LogOut, ChevronDown, Gift, Lock, ExternalLink 
-} from "lucide-react";
+import { Menu, Bell, Settings, User, LogOut, ChevronDown, Gift, Lock, ExternalLink } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
@@ -363,118 +361,509 @@ export function Layout({ children }: { children: ReactNode }) {
                 </div>
               </div>
 
-
-              {/* User Section */}
-              <div className={headerClasses.userSection}>
-                {isAuthenticated ? (
-                  <>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="flex items-center gap-2">
-                          <User className="h-5 w-5" />
-                          <span>{user.name}</span>
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className={dropdownClasses.content}>
-                        <DropdownMenuLabel>Account</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={handleLogout}>
-                          Log out
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </>
-                ) : (
-                  <Button onClick={() => setOpenMobile(true)} variant="primary">
-                    Sign in
+              {/* Socials dropdown */}
+              <div className="relative group">
+                <Link href="/socials">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-1.5 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
+                  >
+                    <span className="font-bold">SOCIALS</span>
+                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
-                )}
+                </Link>
+                <div className="absolute left-0 mt-2 w-full min-w-[200px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                    <Link href="/telegram">
+                      <div className={dropdownClasses.item}>
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
+                            Telegram Community
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
               </div>
+
+              {/* Help/FAQ dropdown */}
+              <div className="relative group">
+                <Link href="/help">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-1.5 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
+                  >
+                    <span className="font-bold">HELP & FAQ</span>
+                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                  </Button>
+                </Link>
+                <div className="absolute left-0 mt-2 w-full min-w-[200px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                    <Link href="/help">
+                      <div className={dropdownClasses.item}>
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
+                            Help Center
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                    <Link href="/faq">
+                      <div className={dropdownClasses.item}>
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
+                            FAQ
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                    <Link href="/support">
+                      <div className={dropdownClasses.item}>
+                        <span className="relative">
+                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">→</span>
+                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
+                            Contact Support
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              {user?.isAdmin && (
+                <div className="relative group">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-1.5 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
+                  >
+                    <span className="font-bold">ADMIN</span>
+                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                  </Button>
+                  <div className="absolute left-0 mt-2 w-full min-w-[200px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
+                    <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                      <Link href="/admin/user-management">
+                        <div className={dropdownClasses.item}>
+                          <span className="relative">
+                            <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">→</span>
+                            <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
+                              User Management
+                            </span>
+                          </span>
+                        </div>
+                      </Link>
+                      <Link href="/admin/notifications">
+                        <div className={dropdownClasses.item}>
+                          <span className="relative">
+                            <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">→</span>
+                            <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
+                              Notification Management
+                            </span>
+                          </span>
+                        </div>
+                      </Link>
+                      <Link href="/admin/support">
+                        <div className={dropdownClasses.item}>
+                          <span className="relative">
+                            <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">→</span>
+                            <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
+                              Support Management
+                            </span>
+                          </span>
+                        </div>
+                      </Link>
+                      <Link href="/admin/wager-races">
+                        <div className={dropdownClasses.item}>
+                          <span className="relative">
+                            <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">→</span>
+                            <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
+                              Wager Race Management
+                            </span>
+                          </span>
+                        </div>
+                      </Link>
+                      <Link href="/admin/bonus-codes">
+                        <div className={dropdownClasses.item}>
+                          <span className="relative">
+                            <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">→</span>
+                            <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
+                              Bonus Code Management
+                            </span>
+                          </span>
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Enhanced mobile navigation */}
+            <div className={headerClasses.menuButton}>
+              <Sheet open={openMobile} onOpenChange={setOpenMobile}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative overflow-hidden group"
+                  >
+                    <div className="absolute inset-0 bg-[#D7FF00]/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-md" />
+                    <Menu className="h-6 w-6 text-white relative z-10 group-hover:text-[#D7FF00] transition-colors duration-300" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent
+                  side="left"
+                  className="w-[300px] bg-[#14151A] border-r border-[#2A2B31] overflow-y-auto p-0 shadow-xl"
+                >
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex flex-col gap-4 pt-8"
+                  >
+                    <div className="px-4 py-2 text-[#D7FF00] font-heading text-base font-bold">MENU</div>
+                    <MobileNavLink href="/" label="HOME" onClose={() => setOpenMobile(false)} isTitle={true} />
+
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">EVENTS</div>
+                    <MobileNavLink
+                      href="/wager-races"
+                      label={
+                        <div className="flex items-center justify-between w-full">
+                          <span>Monthly Race</span>
+                          <div className="ml-2 flex items-center gap-1">
+                            <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                            <span className="text-xs text-red-500">LIVE</span>
+                          </div>
+                        </div>
+                      }
+                      onClose={() => setOpenMobile(false)}
+                    />
+                    <MobileNavLink
+                      href="/challenges"
+                      label={
+                        <div className="flex items-center justify-between w-full">
+                          <span>Challenges</span>
+                          <div className="ml-2 flex items-center gap-1">
+                            <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+                            <span className="text-xs text-green-500">ONGOING</span>
+                          </div>
+                        </div>
+                      }
+                      onClose={() => setOpenMobile(false)}
+                    />
+
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">GET STARTED</div>
+                    <MobileNavLink href="/how-it-works" label="How It Works" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink href="/vip-transfer" label="VIP Transfer" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink href="/tips-and-strategies" label="Tips & Strategies" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink href="/vip-program" label="VIP Program" onClose={() => setOpenMobile(false)} />
+
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">PROMOTIONS</div>
+                    <MobileNavLink href="/promotions" label="News & Promotions" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink href="/goated-token" label="Goated Airdrop" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink
+                      href="/bonus-codes"
+                      label={
+                        isAuthenticated ? (
+                          <div className="flex items-center gap-2">
+                            <span>Bonus Codes</span>
+                            <Gift className="h-4 w-4" />
+                          </div>
+                        ) : (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger className="flex items-center gap-2 opacity-50 cursor-not-allowed">
+                                <span>Bonus Codes</span>
+                                <Lock className="h-4 w-4" />
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-[#1A1B21] border-[#2A2B31] text-white">
+                                <p>Sign in to access bonus codes and rewards</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )
+                      }
+                      onClose={() => setOpenMobile(false)}
+                    />
+
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">LEADERBOARDS</div>
+                    <MobileNavLink
+                      href="/leaderboard?period=daily"
+                      label="Daily Leaderboard"
+                      onClose={() => setOpenMobile(false)}
+                    />
+                    <MobileNavLink
+                      href="/leaderboard?period=weekly"
+                      label="Weekly Leaderboard"
+                      onClose={() => setOpenMobile(false)}
+                    />
+                    <MobileNavLink
+                      href="/leaderboard?period=monthly"
+                      label="Monthly Leaderboard"
+                      onClose={() => setOpenMobile(false)}
+                    />
+                    <MobileNavLink
+                      href="/leaderboard?period=all-time"
+                      label="All Time Leaderboard"
+                      onClose={() => setOpenMobile(false)}
+                    />
+
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">SOCIALS</div>
+                    <MobileNavLink href="/telegram" label="Telegram Community" onClose={() => setOpenMobile(false)} />
+
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">HELP & SUPPORT</div>
+                    <MobileNavLink href="/help" label="Help Center" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink href="/faq" label="FAQ" onClose={() => setOpenMobile(false)} />
+                    <MobileNavLink href="/support" label="Contact Support" onClose={() => setOpenMobile(false)} />
+
+                    {user?.isAdmin && (
+                      <>
+                        <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">ADMIN</div>
+                        <MobileNavLink href="/admin/user-management" label="User Management" onClose={() => setOpenMobile(false)} />
+                        <MobileNavLink href="/admin/wager-races" label="Wager Race Management" onClose={() => setOpenMobile(false)} />
+                        <MobileNavLink href="/admin/bonus-codes" label="Bonus Code Management" onClose={() => setOpenMobile(false)} />
+                      </>
+                    )}
+
+                    <div className="mt-6 px-4 border-t border-[#2A2B31]/50 pt-6 pb-8">
+                      <Button
+                        onClick={() => {
+                          setOpenMobile(false);
+                          window.open("https://www.goated.com/r/SPIN", "_blank");
+                        }}
+                        className="w-full relative overflow-hidden group bg-[#D7FF00] text-[#14151A] hover:text-[#D7FF00] transition-colors duration-300 rounded-md flex items-center justify-center gap-2 py-2.5"
+                      >
+                        <span className="relative z-10">PLAY NOW</span>
+                        <ExternalLink className="h-4 w-4 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+                        <div className="absolute inset-0 bg-[#14151A] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                      </Button>
+                    </div>
+                  </motion.div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
-          {/* Mobile Menu Button */}
-          <div className={headerClasses.menuButton}>
-            <button
-              className="p-2 rounded-full bg-[#2A2B31]/50 hover:bg-[#2A2B31]/80 transition-all duration-200"
-              onClick={() => setOpenMobile(!openMobile)}
-            >
-              <Menu className="h-6 w-6 text-[#D7FF00]" />
-            </button>
-          </div>
 
-          {/* Mobile Menu */}
-          {openMobile && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              className="absolute top-16 right-0 md:hidden bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl p-4 w-full"
+          {/* User section */}
+          <div className={headerClasses.userSection}>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-[#8A8B91] hover:text-white relative h-8 w-8 md:h-10 md:w-10 transition-all duration-300 rounded-full"
+                  >
+                    <div className="absolute inset-0 bg-[#2A2B31]/50 opacity-0 hover:opacity-100 transition-opacity duration-300 rounded-full"></div>
+                    <User className="h-5 w-5 md:h-6 md:w-6" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className={dropdownClasses.content}>
+                  <DropdownMenuLabel className="text-white font-heading">My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-[#2A2B31]/50" />
+                  <Link href={`/user/${user.id}`}>
+                    <DropdownMenuItem className={dropdownClasses.item}>
+                      Profile
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/notification-preferences">
+                    <DropdownMenuItem className={dropdownClasses.item}>
+                      Settings
+                    </DropdownMenuItem>
+                  </Link>
+                  <DropdownMenuSeparator className="bg-[#2A2B31]/50" />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="px-4 py-2.5 font-medium text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200 cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <LogOut className="h-4 w-4" />
+                      <span>Logout</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <AuthModal />
+            )}
+            <Button
+              onClick={() =>
+                window.open("https://www.goated.com/r/SPIN", "_blank")
+              }
+              className="relative overflow-hidden group bg-[#D7FF00] text-[#14151A] hover:text-[#D7FF00] transition-colors duration-300 rounded-md flex items-center gap-2 h-8 md:h-10 px-3 md:px-4 text-sm md:text-base font-heading"
             >
-              <MobileNavLink href="/" label="Home" onClose={() => setOpenMobile(false)} isTitle />
-              <MobileNavLink href="/how-it-works" label="How it Works" onClose={() => setOpenMobile(false)} />
-              <MobileNavLink href="/vip-transfer" label="VIP Transfer" onClose={() => setOpenMobile(false)} />
-              <MobileNavLink href="/tips-and-strategies" label="Tips & Strategies" onClose={() => setOpenMobile(false)} />
-              <MobileNavLink href="/vip-program" label="VIP Program" onClose={() => setOpenMobile(false)} />
-              <MobileNavLink href="/promotions" label="Promotions" onClose={() => setOpenMobile(false)} />
-              <MobileNavLink href="/leaderboard?period=daily" label="Leaderboards" onClose={() => setOpenMobile(false)} />
-              {isAuthenticated && (
-                <>
-                  <MobileNavLink href="/profile" label="Profile" onClose={() => setOpenMobile(false)} />
-                  <MobileNavLink href="/bonus-codes" label="Bonus Codes" onClose={() => setOpenMobile(false)} />
-                  <MobileNavLink href="/settings" label="Settings" onClose={() => setOpenMobile(false)} />
-                  <MobileNavLink href="/logout" label="Logout" onClose={() => setOpenMobile(false)} />
-                </>
-              )}
-              {!isAuthenticated && (
-                <MobileNavLink href="/login" label="Sign In" onClose={() => setOpenMobile(false)} />
-              )}
-            </motion.div>
-          )}
+              <span className="relative z-10">PLAY</span>
+              <ExternalLink className="h-4 w-4 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+              <div className="absolute inset-0 bg-[#14151A] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+            </Button>
+          </div>
         </nav>
       </header>
-      <main className="flex-grow">{children}</main>
+
+      <main className="flex-grow pt-16">
+        {children}
+        {user?.isAdmin && isMobile && <MobileAdminBadge />}
+      </main>
+
+      {showFloatingSupport && (
+        <FloatingSupport onClose={() => setShowFloatingSupport(false)} />
+      )}
+
+      <ScrollToTop />
+
       <footer ref={footerRef} className={footerClasses.wrapper}>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent pointer-events-none" />
         <div className={footerClasses.container}>
           <div className={footerClasses.grid}>
             <div>
-              <h2 className={footerClasses.heading}>GOATED</h2>
-              <p className="mt-4 text-lg text-[#14151A]/70">
-                GOATED is a revolutionary platform that revolutionizes how we wager and race.
-              </p>
-            </div>
-            <div className="flex flex-col space-y-4">
-              <div className="flex items-center gap-2">
-                <ExternalLink className="h-4 w-4 text-[#14151A]" />
-                <a href="https://goated.gg" target="_blank" rel="noreferrer" className="text-[#14151A]">
-                  Visit Website
+              <div className="flex items-center gap-3 mb-4">
+                <h4 className={footerClasses.heading}>
+                  Ready to get Goated?
+                </h4>
+                <a
+                  href="https://www.goated.com/r/VIPBOOST"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transform transition-transform duration-300 hover:scale-110"
+                >
+                  <img
+                    src="/images/Goated Logo - Black.png"
+                    alt="Goated"
+                    className="h-8 w-auto"
+                  />
                 </a>
               </div>
+              <p className="text-[#14151A] mb-6">
+                Sign up now and enjoy additional rewards from our platform. Start
+                your journey to becoming a casino legend!
+              </p>
+              <Button
+                onClick={() =>
+                  window.open("https://www.goated.com/r/EARLYACCESS", "_blank")
+                }
+                className="bg-[#14151A] text-white hover:bg-[#14151A]/80 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 font-medium gap-2 flex items-center"
+              >
+                <span>Sign Up Now</span>
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <h4 className={footerClasses.heading}>
+                  Stay Updated
+                </h4>
+                <a
+                  href="https://t.me/+iFlHl5V9VcszZTVh"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transform transition-transform duration-300 hover:scale-110"
+                >
+                  <img
+                    src="/images/Goated logo with text.png"
+                    alt="Goated"
+                    className="h-[4.5rem] w-auto object-contain"
+                  />
+                </a>
+              </div>
+              <p className="text-[#14151A] mb-6">
+                Subscribe to our newsletter for exclusive offers and updates!
+              </p>
+              <form onSubmit={(e) => e.preventDefault()} className="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  className="flex-1 px-4 py-2 rounded-lg border border-[#14151A]/20 focus:outline-none focus:border-[#14151A] focus:ring-1 focus:ring-[#14151A]/30 transition-all duration-300 bg-white/95"
+                />
+                <Button className="bg-[#14151A] text-white hover:bg-[#14151A]/80 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                  Subscribe
+                </Button>
+              </form>
             </div>
           </div>
         </div>
+        <div className="bg-[#14151A] text-[#8A8B91] text-sm py-6">
+          <div className="container mx-auto px-4 text-center">
+            <div className="flex flex-col items-center gap-4 mb-6">
+              <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 px-4">
+                <a
+                  href="https://www.goated.com/r/VIPBOOST"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transform transition-all duration-300 hover:scale-105 hover:brightness-110"
+                >
+                  <img
+                    src="/images/Goated logo with text.png"
+                    alt="Goated"
+                    className="h-10 md:h-12 w-auto object-contain max-w-[200px]"
+                  />
+                </a>
+                <a
+                  href="https://t.me/+iFlHl5V9VcszZTVh"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transform transition-all duration-300 hover:scale-105 hover:brightness-110"
+                >
+                  <img
+                    src="/images/Goated logo with text1.png"
+                    alt="Goated Partner"
+                    className="h-10 md:h-12 w-auto object-contain max-w-[200px]"
+                  />
+                </a>
+              </div>
+            </div>
+            <p className="mb-2">
+              © 2024 GoatedVips.gg. All rights reserved.
+            </p>
+            <p className="mb-2">
+              Disclaimer: This is an independent platform not affiliated with or operated by Goated.com.
+            </p>
+            <p>Gamble responsibly. 18+ only. BeGambleAware.org</p>
+          </div>
+        </div>
       </footer>
-      {showFloatingSupport && <FloatingSupport />}
-      <AuthModal open={openMobile} onClose={() => setOpenMobile(false)} />
-      <ScrollToTop />
     </div>
   );
 }
 
-function NavLink({ href, label }: { href: string; label: string | React.ReactNode }) {
+function NavLink({ href, label, tooltip }: { href: string; label: string | React.ReactNode; tooltip?: string; }) {
   const [location] = useLocation();
   const isActive = location === href;
 
-  return (
-    <Link href={href}>
+  const linkContent = (
+    <motion.div
+      className={`relative font-heading cursor-pointer ${
+        isActive ? "text-[#D7FF00]" : "text-white"
+      } hover:text-[#D7FF00] transition-all duration-300`}
+      whileHover={{ x: 5 }}
+      whileTap={{ scale: 0.95 }}
+    >
+      {label}
       <motion.div
-        variants={hoverVariants}
-        initial="initial"
-        whileHover="hover"
-        className={`transition-all duration-300 font-heading text-white hover:text-[#D7FF00] ${isActive ? "font-bold" : ""}`}
-      >
-        {label}
-      </motion.div>
-    </Link>
+        className="absolute -bottom-1 left-0 h-0.5 bg-[#D7FF00] origin-left"
+        initial={{ scaleX: isActive ? 1 : 0 }}
+        animate={{ scaleX: isActive ? 1 : 0 }}
+        whileHover={{ scaleX: 1 }}
+        transition={{ duration: 0.3 }}
+      />
+    </motion.div>
+  );
+
+  return tooltip ? (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link href={href}>{linkContent}</Link>
+        </TooltipTrigger>
+        <TooltipContent className="bg-[#1A1B21] border-[#2A2B31] text-white">
+          <p>{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  ) : (
+    <Link href={href}>{linkContent}</Link>
   );
 }

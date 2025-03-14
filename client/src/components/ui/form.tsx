@@ -12,6 +12,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { cva } from "class-variance-authority";
 
 const Form = FormProvider;
 
@@ -70,18 +71,37 @@ const FormItemContext = React.createContext<FormItemContextValue>(
   {} as FormItemContextValue,
 );
 
-const FormItem = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
-  const id = React.useId();
-
-  return (
-    <FormItemContext.Provider value={{ id }}>
-      <div ref={ref} className={cn("space-y-2", className)} {...props} />
-    </FormItemContext.Provider>
-  );
+const formItemVariants = cva("space-y-2", {
+  variants: {
+    variant: {
+      default: "",
+      inline: "flex flex-row items-start gap-8 space-y-0",
+    }
+  },
+  defaultVariants: {
+    variant: "default"
+  }
 });
+
+interface FormItemProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "default" | "inline";
+}
+
+const FormItem = React.forwardRef<HTMLDivElement, FormItemProps>(
+  ({ className, variant, ...props }, ref) => {
+    const id = React.useId();
+
+    return (
+      <FormItemContext.Provider value={{ id }}>
+        <div 
+          ref={ref} 
+          className={cn(formItemVariants({ variant }), className)} 
+          {...props} 
+        />
+      </FormItemContext.Provider>
+    );
+  }
+);
 FormItem.displayName = "FormItem";
 
 const FormLabel = React.forwardRef<
@@ -93,7 +113,11 @@ const FormLabel = React.forwardRef<
   return (
     <Label
       ref={ref}
-      className={cn(error && "text-destructive", className)}
+      className={cn(
+        "text-sm font-mona-sans font-bold uppercase tracking-wide",
+        error && "text-destructive",
+        className
+      )}
       htmlFor={formItemId}
       {...props}
     />
@@ -134,7 +158,7 @@ const FormDescription = React.forwardRef<
     <p
       ref={ref}
       id={formDescriptionId}
-      className={cn("text-sm text-muted-foreground", className)}
+      className={cn("text-sm text-text-secondary mt-1.5", className)}
       {...props}
     />
   );
@@ -156,22 +180,83 @@ const FormMessage = React.forwardRef<
     <p
       ref={ref}
       id={formMessageId}
-      className={cn("text-sm font-medium text-destructive", className)}
+      className={cn(
+        "text-sm font-medium text-destructive flex items-center gap-1.5 mt-1.5",
+        className
+      )}
       {...props}
     >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+        <path d="M12 8v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <circle cx="12" cy="16" r="1" fill="currentColor"/>
+      </svg>
       {body}
     </p>
   );
 });
 FormMessage.displayName = "FormMessage";
 
-export {
-  useFormField,
-  Form,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormDescription,
-  FormMessage,
-  FormField,
-};
+// NEW: Form Section with heading and description - Fixed type issues
+interface FormSectionProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  collapsible?: boolean;
+}
+
+const FormSection = React.forwardRef<HTMLDivElement, FormSectionProps>(
+  ({ className, title, description, collapsible = false, children, ...props }, ref) => {
+    const [expanded, setExpanded] = React.useState(true);
+
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "border border-border rounded-lg p-6 mb-8",
+          className
+        )}
+        {...props}
+      >
+        {title && (
+          <div className="flex justify-between items-center mb-4 pb-4 border-b border-border/50">
+            <div>
+              <h3 className="text-lg font-mona-sans font-extrabold">
+                {title}
+              </h3>
+              {description && (
+                <p className="text-text-secondary mt-1">{description}</p>
+              )}
+            </div>
+            {collapsible && (
+              <button
+                type="button"
+                onClick={() => setExpanded(!expanded)}
+                className="p-1 rounded-md hover:bg-background-alt text-text-secondary transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className={cn(
+                    "h-5 w-5 transition-transform",
+                    expanded ? "transform rotate-180" : ""
+                  )}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m18 15-6-6-6 6"/>
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
+        {(!collapsible || expanded) && (
+          <div className="space-y-4">{children}</div>
+        )}
+      </div>
+    );
+  }
+);
+FormSection.displayName = "FormSection";
