@@ -13,14 +13,8 @@ export default function Leaderboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Start loading when period changes
-    setIsLoading(true);
-    
-    // Give the loader time to show the full animation (at least 2.5s)
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2500);
-    
+    // Simulate loading time for data fetch
+    const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
   }, [period]);
 

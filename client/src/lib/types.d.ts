@@ -184,11 +184,25 @@ declare module "@/hooks/use-user" {
     isAdmin: boolean;
   }
 
+  // RequestResult type used by all auth operations
+  export type RequestResult =
+    | {
+        ok: true;
+        user?: User;
+      }
+    | {
+        ok: false;
+        message: string;
+        errors?: Record<string, string>;
+      };
+
   export function useUser(): {
     user: User | null;
-    loading: boolean;
+    isLoading: boolean;
     error: Error | null;
-    logout: () => Promise<void>;
+    login: (data: any) => Promise<RequestResult>;
+    register: (data: any) => Promise<RequestResult>;
+    logout: () => Promise<RequestResult>;
   };
 }
 

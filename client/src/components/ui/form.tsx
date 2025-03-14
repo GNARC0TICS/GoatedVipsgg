@@ -9,9 +9,9 @@ import {
   FormProvider,
   useFormContext,
 } from "react-hook-form";
+
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
-import { cva } from "class-variance-authority";
 
 const Form = FormProvider;
 
@@ -25,26 +25,6 @@ type FormFieldContextValue<
 const FormFieldContext = React.createContext<FormFieldContextValue>(
   {} as FormFieldContextValue
 );
-
-type FormItemContextValue = {
-  id: string;
-};
-
-const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue
-);
-
-const formItemVariants = cva("space-y-2", {
-  variants: {
-    variant: {
-      default: "",
-      inline: "flex flex-row items-start gap-8 space-y-0",
-    }
-  },
-  defaultVariants: {
-    variant: "default"
-  }
-});
 
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
@@ -82,25 +62,26 @@ const useFormField = () => {
   };
 };
 
-interface FormItemProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "default" | "inline";
-}
+type FormItemContextValue = {
+  id: string;
+};
 
-const FormItem = React.forwardRef<HTMLDivElement, FormItemProps>(
-  ({ className, variant, ...props }, ref) => {
-    const id = React.useId();
-
-    return (
-      <FormItemContext.Provider value={{ id }}>
-        <div 
-          ref={ref} 
-          className={cn(formItemVariants({ variant }), className)} 
-          {...props} 
-        />
-      </FormItemContext.Provider>
-    );
-  }
+const FormItemContext = React.createContext<FormItemContextValue>(
+  {} as FormItemContextValue
 );
+
+const FormItem = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => {
+  const id = React.useId();
+
+  return (
+    <FormItemContext.Provider value={{ id }}>
+      <div ref={ref} className={cn("space-y-2", className)} {...props} />
+    </FormItemContext.Provider>
+  );
+});
 FormItem.displayName = "FormItem";
 
 const FormLabel = React.forwardRef<
@@ -112,11 +93,7 @@ const FormLabel = React.forwardRef<
   return (
     <Label
       ref={ref}
-      className={cn(
-        "text-sm font-mona-sans font-bold uppercase tracking-wide",
-        error && "text-destructive",
-        className
-      )}
+      className={cn(error && "text-destructive", className)}
       htmlFor={formItemId}
       {...props}
     />
@@ -127,8 +104,15 @@ FormLabel.displayName = "FormLabel";
 const FormControl = React.forwardRef<
   React.ElementRef<typeof Slot>,
   React.ComponentPropsWithoutRef<typeof Slot>
->(({ ...props }, ref) => {
-  const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
+>(({ children, ...props }, ref) => {
+  const { error, formItemId, formDescriptionId, formMessageId } =
+    useFormField();
+
+  // Ensure we only pass a single child to Slot component
+  const childArray = React.Children.toArray(children);
+  const singleChild = childArray.length === 1 
+    ? children 
+    : <span>{children}</span>;
 
   return (
     <Slot
@@ -141,7 +125,9 @@ const FormControl = React.forwardRef<
       }
       aria-invalid={!!error}
       {...props}
-    />
+    >
+      {singleChild}
+    </Slot>
   );
 });
 FormControl.displayName = "FormControl";
@@ -156,7 +142,7 @@ const FormDescription = React.forwardRef<
     <p
       ref={ref}
       id={formDescriptionId}
-      className={cn("text-sm text-text-secondary mt-1.5", className)}
+      className={cn("text-sm text-muted-foreground", className)}
       {...props}
     />
   );
@@ -178,17 +164,9 @@ const FormMessage = React.forwardRef<
     <p
       ref={ref}
       id={formMessageId}
-      className={cn(
-        "text-sm font-medium text-destructive flex items-center gap-1.5 mt-1.5",
-        className
-      )}
+      className={cn("text-sm font-medium text-destructive", className)}
       {...props}
     >
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-        <path d="M12 8v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        <circle cx="12" cy="16" r="1" fill="currentColor"/>
-      </svg>
       {body}
     </p>
   );
@@ -196,6 +174,7 @@ const FormMessage = React.forwardRef<
 FormMessage.displayName = "FormMessage";
 
 export {
+  useFormField,
   Form,
   FormItem,
   FormLabel,
@@ -203,5 +182,4 @@ export {
   FormDescription,
   FormMessage,
   FormField,
-  useFormField,
 };

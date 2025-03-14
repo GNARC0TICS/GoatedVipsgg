@@ -6,11 +6,41 @@ import {useAuth} from '@/lib/auth'; //Hypothetical auth context
 import {useToast} from '@/hooks/use-toast';
 
 
-import { useWagerTotals } from '@/hooks/use-leaderboard';
-
 const useWagerTotal = () => {
-  const { data } = useWagerTotals();
-  return data || 2147483;
+  const { toast } = useToast();
+  const [cachedTotal, setCachedTotal] = useState(() => {
+    const stored = localStorage.getItem('wagerTotal');
+    return stored ? parseInt(stored, 10) : 0;
+  });
+
+  const { data } = useQuery({
+    queryKey: ['wager-total'],
+    queryFn: async () => {
+      try {
+        // Use the dedicated endpoint for total wager
+        const response = await fetch('/api/stats/total-wager');
+        if (!response.ok) throw new Error('Failed to fetch wager stats');
+        
+        const result = await response.json();
+        const total = result?.data?.total;
+        
+        if (total !== undefined && total > 0) {
+          localStorage.setItem('wagerTotal', total.toString());
+          setCachedTotal(total);
+          return total;
+        }
+        return cachedTotal || 0;
+      } catch (error) {
+        console.error('Error fetching wager total:', error);
+        // Fall back to cached value on error
+        return cachedTotal || 0;
+      }
+    },
+    refetchInterval: 300000, // Refresh every 5 minutes
+    staleTime: 60000, // Consider data stale after 1 minute
+  });
+  
+  return data || cachedTotal || 0;
 };
 
 const announcements = [

@@ -1,11 +1,17 @@
-import React from "react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import React, { useEffect } from "react";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, Calendar, Clock, Crown } from "lucide-react";
+import { TrendingUp, Calendar, Clock, Crown, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "./LoadingSpinner";
+import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
+
+// Define SheetTrigger directly since we're having import issues
+const SheetTrigger = SheetPrimitive.Trigger;
 
 interface QuickProfileProps {
   userId: string;
@@ -32,23 +38,10 @@ export function QuickProfile({
   username,
   children,
 }: QuickProfileProps) {
-  const { data: leaderboardData, isLoading } = useQuery({
-    queryKey: ["/api/affiliate/stats"],
-    staleTime: 30000,
-    retry: 3,
-    refetchOnWindowFocus: false,
-    initialData: {
-      data: {
-        today: { data: [] },
-        weekly: { data: [] },
-        monthly: { data: [] },
-        all_time: { data: [] }
-      }
-    }
-  });
-
-  interface LeaderboardPlayer {
+  // Define types for leaderboard data
+  interface LeaderboardEntry {
     uid: string;
+    name: string;
     wagered: {
       today: number;
       this_week: number;
@@ -57,30 +50,93 @@ export function QuickProfile({
     };
   }
 
+  interface LeaderboardResponse {
+    status: string;
+    data: {
+      today: { data: LeaderboardEntry[] };
+      weekly: { data: LeaderboardEntry[] };
+      monthly: { data: LeaderboardEntry[] };
+      all_time: { data: LeaderboardEntry[] };
+    };
+    metadata?: {
+      totalUsers: number;
+    };
+  }
+
+  const { data: leaderboardData, isLoading, error } = useQuery<LeaderboardResponse>({
+    queryKey: ["/api/affiliate/stats"],
+    queryFn: async () => {
+      const response = await fetch("/api/affiliate/stats");
+      if (!response.ok) {
+        throw new Error("Failed to fetch leaderboard data");
+      }
+      return response.json();
+    },
+    staleTime: 30000,
+    retry: 3,
+    refetchOnWindowFocus: false,
+    initialData: {
+      status: "success",
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] }
+      }
+    },
+    refetchInterval: 15000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  // Never return null inside a component before all hooks are called
+  // Instead, set a variable to track error state
+  const hasError = Boolean(error);
+  
+  // Log any errors but don't early return
+  React.useEffect(() => {
+    if (error) {
+      console.error("Error fetching leaderboard data:", error);
+    }
+  }, [error]);
+
+  const [, setLocation] = useLocation();
+
+  const handleViewFullProfile = () => {
+    // Close the sheet and navigate to full profile
+    document.body.click(); // Trigger close of the sheet
+    setTimeout(() => {
+      setLocation(`/user/${userId}`);
+    }, 300); // Small delay to allow sheet closing animation
+  };
+
   const stats = React.useMemo(() => {
-    if (!leaderboardData?.data) return null;
+    if (!leaderboardData?.data || hasError) return null;
 
     const userStats = {
-      today: leaderboardData.data.today.data
-        .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.today || 0,
-      this_week: leaderboardData.data.weekly.data
-        .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.this_week || 0,
-      this_month: leaderboardData.data.monthly.data
-        .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.this_month || 0,
-      all_time: leaderboardData.data.all_time.data
-        .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.all_time || 0,
+      today:
+        leaderboardData.data.today.data.find((p) => p.uid === userId)?.wagered
+          ?.today || 0,
+      this_week:
+        leaderboardData.data.weekly.data.find((p) => p.uid === userId)?.wagered
+          ?.this_week || 0,
+      this_month:
+        leaderboardData.data.monthly.data.find((p) => p.uid === userId)?.wagered
+          ?.this_month || 0,
+      all_time:
+        leaderboardData.data.all_time.data.find((p) => p.uid === userId)
+          ?.wagered?.all_time || 0,
     };
 
     const position = {
-      weekly: leaderboardData.data.weekly.data.findIndex((p: LeaderboardPlayer) => p.uid === userId) + 1 || undefined,
-      monthly: leaderboardData.data.monthly.data.findIndex((p: LeaderboardPlayer) => p.uid === userId) + 1 || undefined
+      weekly: leaderboardData.data.weekly.data.findIndex((p) => p.uid === userId) + 1 || undefined,
+      monthly: leaderboardData.data.monthly.data.findIndex((p) => p.uid === userId) + 1 || undefined
     };
 
     return { 
       wagered: userStats,
       position
     };
-  }, [leaderboardData, userId]);
+  }, [leaderboardData, userId, hasError]);
 
   return (
     <Sheet>
@@ -190,6 +246,17 @@ export function QuickProfile({
                   </p>
                 </CardContent>
               </Card>
+            </div>
+            
+            {/* View Full Profile Button */}
+            <div className="mt-6">
+              <Button 
+                onClick={handleViewFullProfile}
+                className="w-full flex items-center justify-center gap-2 bg-[#2A2B31] hover:bg-[#D7FF00] hover:text-black text-white transition-colors"
+              >
+                <ExternalLink className="h-4 w-4" />
+                View Full Profile
+              </Button>
             </div>
           </motion.div>
         )}

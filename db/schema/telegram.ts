@@ -1,7 +1,6 @@
-import { pgTable, text, timestamp, boolean, serial, integer, json } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, serial, integer } from "drizzle-orm/pg-core";
 import { sql, relations } from "drizzle-orm";
 import { users } from "../schema";
-import { createInsertSchema as createZodInsertSchema, createSelectSchema as createZodSelectSchema } from "drizzle-zod";
 
 export const telegramUsers = pgTable('telegram_users', {
   telegramId: text('telegram_id').primaryKey(),
@@ -59,15 +58,6 @@ export const challengeEntries = pgTable('challenge_entries', {
   updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`)
 });
 
-// Bot state storage for persistence
-export const telegramBotState = pgTable('telegram_bot_state', {
-  id: text('id').primaryKey(),
-  stateType: text('state_type').notNull(),
-  data: json('data').notNull(),
-  createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`)
-});
-
 // Define relations
 export const telegramUserRelations = relations(telegramUsers, ({ one }) => ({
   platformUser: one(users, {
@@ -75,26 +65,3 @@ export const telegramUserRelations = relations(telegramUsers, ({ one }) => ({
     references: [users.id],
   }),
 }));
-
-// Create zod schemas for validation
-export const insertTelegramBotStateSchema = createZodInsertSchema(telegramBotState);
-export const selectTelegramBotStateSchema = createZodSelectSchema(telegramBotState);
-export const insertTelegramUserSchema = createZodInsertSchema(telegramUsers);
-export const selectTelegramUserSchema = createZodSelectSchema(telegramUsers);
-export const insertVerificationRequestSchema = createZodInsertSchema(verificationRequests);
-export const selectVerificationRequestSchema = createZodSelectSchema(verificationRequests);
-export const insertChallengeSchema = createZodInsertSchema(challenges);
-export const selectChallengeSchema = createZodSelectSchema(challenges);
-export const insertChallengeEntrySchema = createZodInsertSchema(challengeEntries);
-export const selectChallengeEntrySchema = createZodSelectSchema(challengeEntries);
-
-export type InsertTelegramBotState = typeof telegramBotState.$inferInsert;
-export type SelectTelegramBotState = typeof telegramBotState.$inferSelect;
-export type InsertTelegramUser = typeof telegramUsers.$inferInsert;
-export type SelectTelegramUser = typeof telegramUsers.$inferSelect;
-export type InsertVerificationRequest = typeof verificationRequests.$inferInsert;
-export type SelectVerificationRequest = typeof verificationRequests.$inferSelect;
-export type InsertChallenge = typeof challenges.$inferInsert;
-export type SelectChallenge = typeof challenges.$inferSelect;
-export type InsertChallengeEntry = typeof challengeEntries.$inferInsert;
-export type SelectChallengeEntry = typeof challengeEntries.$inferSelect;

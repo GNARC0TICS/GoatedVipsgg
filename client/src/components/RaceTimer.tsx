@@ -42,7 +42,9 @@ export function RaceTimer() {
       }
       return response.json();
     },
-    refetchInterval: 30000,
+    refetchInterval: 300000, // 5 minutes instead of 30 seconds
+    staleTime: 240000, // 4 minutes
+    cacheTime: 360000, // 6 minutes
     retry: 3,
     enabled: !showPrevious,
     onError: (error) => {
@@ -109,20 +111,32 @@ export function RaceTimer() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    // Add console log to debug the date information
-    console.log('Race date formatting:', { 
-      originalString: dateString, 
-      parsedDate: date, 
-      month: date.getMonth() + 1,
-      year: date.getFullYear()
-    });
-    
-    // Force UTC interpretation to avoid timezone issues
     return date.toLocaleDateString('en-US', { 
       year: 'numeric',
-      month: 'long',
-      timeZone: 'UTC'
+      month: 'long'
     });
+  };
+  
+  // Generate race title from ID (e.g., 202502 -> February 2025 Race)
+  const getRaceTitle = (raceData: RaceData) => {
+    if (raceData.title) return raceData.title;
+    
+    // If no title is provided, try to extract from ID or date
+    if (raceData.id && raceData.id.length === 6) {
+      const year = raceData.id.substring(0, 4);
+      const month = parseInt(raceData.id.substring(4, 6));
+      
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      
+      return `${monthNames[month-1]} ${year} Race`;
+    }
+    
+    // Fallback to extracting from start date
+    const startDate = new Date(raceData.startDate);
+    return `${startDate.toLocaleString('default', { month: 'long' })} ${startDate.getFullYear()} Race`;
   };
 
   if (error) {
@@ -159,7 +173,36 @@ export function RaceTimer() {
     );
   }
 
-  if (!raceData) return null;
+  if (!raceData) {
+    if (showPrevious) {
+      return (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed bottom-4 right-4 z-50 w-80"
+        >
+          <div className="bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-[#D7FF00]" />
+                <span className="font-heading text-white">Previous Month's Race</span>
+              </div>
+              <button 
+                onClick={() => setShowPrevious(false)}
+                className="p-1 rounded hover:bg-[#2A2B31] transition-colors"
+              >
+                <History className="h-4 w-4 text-[#8A8B91]" />
+              </button>
+            </div>
+            <div className="mt-4 text-center text-[#8A8B91]">
+              No data available for previous race
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+    return null;
+  }
 
   return (
     <motion.div 
@@ -176,7 +219,8 @@ export function RaceTimer() {
             <div className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-[#D7FF00]" />
               <span className="font-heading text-white">
-                {raceData.title || (showPrevious ? 'Previous Race' : 'Monthly Race')}
+                {/* Display "Monthly Race" instead of using our custom function */}
+                {showPrevious ? 'Previous Race' : 'Monthly Race'}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -191,7 +235,11 @@ export function RaceTimer() {
 
           <div className="flex justify-between items-center mt-2">
             <span className="text-[#8A8B91] text-sm">
-              {formatDate(raceData.startDate)}
+              {/* Extract month/year directly from race ID for accuracy */}
+              {raceData.id && raceData.id.length === 6 
+                ? `${new Date(parseInt(raceData.id.substring(0, 4)), parseInt(raceData.id.substring(4, 6)) - 1).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}`
+                : formatDate(raceData.startDate)
+              }
             </span>
             <div className="flex items-center gap-2">
               <button 
@@ -250,10 +298,8 @@ export function RaceTimer() {
                     </span>
                   </div>
                 ))}
-                <Link href="/wager-races">
-                  <a className="block text-center text-[#D7FF00] mt-4 hover:underline">
-                    View Full Leaderboard
-                  </a>
+                <Link href="/wager-races" className="block text-center text-[#D7FF00] mt-4 hover:underline">
+                  View Full Leaderboard
                 </Link>
               </div>
             </motion.div>

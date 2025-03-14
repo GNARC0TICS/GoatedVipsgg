@@ -10,9 +10,6 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { useQuery } from "@tanstack/react-query";
-import { AFFILIATE_STATS_KEY } from "@/hooks/use-leaderboard";
-
 type AffiliateData = {
   timestamp: string;
   referredUsers: number;
@@ -22,8 +19,7 @@ type AffiliateData = {
 
 export function AffiliateStats() {
   const { data, isLoading } = useQuery<AffiliateData[]>({
-    queryKey: [AFFILIATE_STATS_KEY],
-    staleTime: 60000, // 1 minute
+    queryKey: ["/api/affiliate/stats"],
   });
 
   if (isLoading) {
