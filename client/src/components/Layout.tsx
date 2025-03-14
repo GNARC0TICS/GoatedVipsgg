@@ -353,4 +353,128 @@ export function Layout({ children }: { children: ReactNode }) {
                       <div className={dropdownClasses.item}>
                         <span className="relative">
                           <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">→</span>
-                          <span className="relative ml-0 group
+                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
+                            All Time
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+
+              {/* User Section */}
+              <div className={headerClasses.userSection}>
+                {isAuthenticated ? (
+                  <>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="flex items-center gap-2">
+                          <User className="h-5 w-5" />
+                          <span>{user.name}</span>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className={dropdownClasses.content}>
+                        <DropdownMenuLabel>Account</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={handleLogout}>
+                          Log out
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
+                ) : (
+                  <Button onClick={() => setOpenMobile(true)} variant="primary">
+                    Sign in
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+          {/* Mobile Menu Button */}
+          <div className={headerClasses.menuButton}>
+            <button
+              className="p-2 rounded-full bg-[#2A2B31]/50 hover:bg-[#2A2B31]/80 transition-all duration-200"
+              onClick={() => setOpenMobile(!openMobile)}
+            >
+              <Menu className="h-6 w-6 text-[#D7FF00]" />
+            </button>
+          </div>
+
+          {/* Mobile Menu */}
+          {openMobile && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className="absolute top-16 right-0 md:hidden bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl p-4 w-full"
+            >
+              <MobileNavLink href="/" label="Home" onClose={() => setOpenMobile(false)} isTitle />
+              <MobileNavLink href="/how-it-works" label="How it Works" onClose={() => setOpenMobile(false)} />
+              <MobileNavLink href="/vip-transfer" label="VIP Transfer" onClose={() => setOpenMobile(false)} />
+              <MobileNavLink href="/tips-and-strategies" label="Tips & Strategies" onClose={() => setOpenMobile(false)} />
+              <MobileNavLink href="/vip-program" label="VIP Program" onClose={() => setOpenMobile(false)} />
+              <MobileNavLink href="/promotions" label="Promotions" onClose={() => setOpenMobile(false)} />
+              <MobileNavLink href="/leaderboard?period=daily" label="Leaderboards" onClose={() => setOpenMobile(false)} />
+              {isAuthenticated && (
+                <>
+                  <MobileNavLink href="/profile" label="Profile" onClose={() => setOpenMobile(false)} />
+                  <MobileNavLink href="/bonus-codes" label="Bonus Codes" onClose={() => setOpenMobile(false)} />
+                  <MobileNavLink href="/settings" label="Settings" onClose={() => setOpenMobile(false)} />
+                  <MobileNavLink href="/logout" label="Logout" onClose={() => setOpenMobile(false)} />
+                </>
+              )}
+              {!isAuthenticated && (
+                <MobileNavLink href="/login" label="Sign In" onClose={() => setOpenMobile(false)} />
+              )}
+            </motion.div>
+          )}
+        </nav>
+      </header>
+      <main className="flex-grow">{children}</main>
+      <footer ref={footerRef} className={footerClasses.wrapper}>
+        <div className={footerClasses.container}>
+          <div className={footerClasses.grid}>
+            <div>
+              <h2 className={footerClasses.heading}>GOATED</h2>
+              <p className="mt-4 text-lg text-[#14151A]/70">
+                GOATED is a revolutionary platform that revolutionizes how we wager and race.
+              </p>
+            </div>
+            <div className="flex flex-col space-y-4">
+              <div className="flex items-center gap-2">
+                <ExternalLink className="h-4 w-4 text-[#14151A]" />
+                <a href="https://goated.gg" target="_blank" rel="noreferrer" className="text-[#14151A]">
+                  Visit Website
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+      {showFloatingSupport && <FloatingSupport />}
+      <AuthModal open={openMobile} onClose={() => setOpenMobile(false)} />
+      <ScrollToTop />
+    </div>
+  );
+}
+
+function NavLink({ href, label }: { href: string; label: string | React.ReactNode }) {
+  const [location] = useLocation();
+  const isActive = location === href;
+
+  return (
+    <Link href={href}>
+      <motion.div
+        variants={hoverVariants}
+        initial="initial"
+        whileHover="hover"
+        className={`transition-all duration-300 font-heading text-white hover:text-[#D7FF00] ${isActive ? "font-bold" : ""}`}
+      >
+        {label}
+      </motion.div>
+    </Link>
+  );
+}
