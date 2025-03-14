@@ -2,6 +2,9 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
 import * as schema from "./schema";
 import { log } from "../server/vite";
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
