@@ -1,127 +1,85 @@
-
-import { useState } from "react";
-import { z } from "zod";
+import React, { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useAuth } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { FcGoogle } from "react-icons/fc";
 
-type AuthModalProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  defaultMode?: "login" | "register";
-};
-
-// Schemas for form validation
-const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
+const authSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters").max(50),
+  email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-const registerSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string()
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+type AuthFormData = z.infer<typeof authSchema>;
 
-type LoginFormValues = z.infer<typeof loginSchema>;
-type RegisterFormValues = z.infer<typeof registerSchema>;
-
-export function AuthModal({ isOpen, onClose, defaultMode = "login" }: AuthModalProps) {
-  const [mode, setMode] = useState<"login" | "register">(defaultMode);
+export default function AuthModal() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [isLoading, setIsLoading] = useState(false);
-  const { login, registerWithEmail, loginWithGoogle } = useAuth();
+  const { login, register } = useAuth();
   const { toast } = useToast();
 
-  // Form for login/register
-  const form = useForm<LoginFormValues | RegisterFormValues>({
-    resolver: zodResolver(mode === "login" ? loginSchema : registerSchema),
+  const form = useForm<AuthFormData>({
+    resolver: zodResolver(authSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
-      ...(mode === "register" ? { confirmPassword: "" } : {}),
+      email: "",
     },
   });
 
-  // Handle form submission
-  const onSubmit = async (values: LoginFormValues | RegisterFormValues) => {
+  const onSubmit = async (values: AuthFormData) => {
     setIsLoading(true);
     try {
-      if (mode === "login") {
-        const { email, password } = values as LoginFormValues;
-        const result = await login({ email, password });
-        if (result.ok) {
-          toast({
-            title: "Success",
-            description: "You've been successfully logged in",
-          });
-          onClose();
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: result.message || "Invalid credentials",
-          });
-        }
-      } else {
-        const { email, password } = values as RegisterFormValues;
-        const result = await registerWithEmail({ email, password });
-        if (result.ok) {
-          toast({
-            title: "Success",
-            description: "Account created successfully",
-          });
-          onClose();
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: result.message || "Registration failed",
-          });
-        }
-      }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      const formData = {
+        username: values.username.trim(),
+        password: values.password.trim(),
+        email: values.email.trim(),
+      };
 
-  // Handle Google sign-in
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      const result = await loginWithGoogle();
+      const authFn = mode === "login" ? login : register;
+      const result = await authFn(formData);
+
       if (result.ok) {
         toast({
           title: "Success",
-          description: "You've been successfully logged in with Google",
+          description: mode === "login" 
+            ? "Welcome back! You can now access your bonus codes and notifications." 
+            : "Account created successfully! You can now access bonus codes and receive notifications.",
         });
-        onClose();
+        setIsOpen(false);
+        form.reset();
       } else {
         toast({
           variant: "destructive",
-          title: "Error",
-          description: result.message || "Google sign-in failed",
+          title: mode === "login" ? "Login Failed" : "Registration Failed",
+          description: result.message || "Please check your credentials and try again",
         });
       }
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
       });
     } finally {
       setIsLoading(false);
@@ -129,136 +87,86 @@ export function AuthModal({ isOpen, onClose, defaultMode = "login" }: AuthModalP
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px] bg-background border-neutral-800 text-white">
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button 
+          variant="outline" 
+          className="font-heading uppercase bg-[#1A1B21] border-[#2A2B31] hover:bg-[#2A2B31] hover:border-[#D7FF00] transition-all duration-300"
+        >
+          <span className="text-white">LOGIN</span>
+          <span className="text-[#8A8B91]"> / </span>
+          <span className="text-[#D7FF00] group-hover:text-[#D7FF00]">REGISTER</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px] bg-[#1A1B21] text-white border-[#2A2B31]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold tracking-tight font-heading text-center text-white">
-            {mode === "login" ? "Sign In" : "Create Account"}
+          <DialogTitle className="text-[#D7FF00]">
+            {mode === "login" ? "Welcome Back!" : "Create an Account"}
           </DialogTitle>
-          <DialogDescription className="text-center text-neutral-400">
-            {mode === "login"
-              ? "Sign in to access your account"
-              : "Create a new account to get started"}
+          <DialogDescription className="text-[#8A8B91]">
+            {mode === "login" 
+              ? "Sign in to access bonus codes and manage your notification preferences"
+              : "Join us to get exclusive bonus codes and personalized notifications"}
           </DialogDescription>
         </DialogHeader>
-
-        <Button
-          variant="outline"
-          className="w-full flex gap-2 items-center justify-center bg-white text-black hover:bg-neutral-100"
-          onClick={handleGoogleSignIn}
-          disabled={isLoading}
-        >
-          <FcGoogle className="h-5 w-5" />
-          <span>Continue with Google</span>
-        </Button>
-
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-neutral-700" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-background px-2 text-neutral-400">OR</span>
-          </div>
-        </div>
-
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <FormControl>
+                    <Input {...field} className="bg-[#2A2B31]" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-white">Email</FormLabel>
+                  <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="Enter your email"
-                      type="email"
-                      autoComplete="email"
-                      className="bg-neutral-900 border-neutral-700"
-                    />
+                    <Input {...field} type="email" className="bg-[#2A2B31]" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-white">Password</FormLabel>
+                  <FormLabel>Password</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder="Enter your password"
                       type="password"
-                      autoComplete={mode === "login" ? "current-password" : "new-password"}
-                      className="bg-neutral-900 border-neutral-700"
+                      className="bg-[#2A2B31]"
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            {mode === "register" && (
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-white">Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="Confirm your password"
-                        type="password"
-                        autoComplete="new-password"
-                        className="bg-neutral-900 border-neutral-700"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-            <div className="flex flex-col gap-2 pt-2">
+            <div className="flex flex-col gap-2">
               <Button
                 type="submit"
-                className="w-full bg-primary hover:bg-primary/90 text-black font-heading uppercase tracking-tight"
+                className="w-full font-heading uppercase tracking-tight text-black bg-[#D7FF00] hover:bg-[#b2d000]"
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <>
-                    <span className="mr-2">
-                      <svg
-                        className="animate-spin h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                    </span>
-                    <span>{mode === "login" ? "Signing In..." : "Creating Account..."}</span>
-                  </>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    {mode === "login" ? "Signing In..." : "Creating Account..."}
+                  </div>
                 ) : (
-                  <span>{mode === "login" ? "Sign In" : "Create Account"}</span>
+                  mode === "login" ? "Sign In" : "Create Account"
                 )}
               </Button>
               <Button

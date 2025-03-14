@@ -10,7 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
-import { challenges, challengeEntries } from './schema/telegram';
+import { challenges, challengeEntries, telegramBotState, telegramUsers, verificationRequests } from './schema/telegram';
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -20,6 +20,7 @@ export const users = pgTable("users", {
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastLogin: timestamp("last_login"),
+  lastLoginIp: text("last_login_ip"),
   
   // Goated.com account linking fields
   goatedUid: text("goated_uid").unique(),
@@ -306,4 +307,10 @@ export type SelectGoatedVerificationRequest = typeof goatedVerificationRequests.
 export type InsertTelegramVerificationRequest = typeof telegramVerificationRequests.$inferInsert;
 export type SelectTelegramVerificationRequest = typeof telegramVerificationRequests.$inferSelect;
 
-export { challenges, challengeEntries };
+export { 
+  challenges, 
+  challengeEntries,
+  telegramBotState,
+  telegramUsers,
+  verificationRequests
+};

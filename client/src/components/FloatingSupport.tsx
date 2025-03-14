@@ -1,7 +1,7 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, Minus } from "lucide-react";
+import { MessageCircle, X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
@@ -13,58 +13,26 @@ interface FloatingSupportProps {
   onClose: () => void;
 }
 
-interface SupportMessage {
-  username: string;
-  message: string;
-}
-
 export function FloatingSupport({ onClose }: FloatingSupportProps) {
   const [isMinimized, setIsMinimized] = useState(true);
   const [hasUnreadMessage, setHasUnreadMessage] = useState(true);
-  const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
+  const [supportMessages, setSupportMessages] = useState<any[]>([]);
   const [replyText, setReplyText] = useState("");
-  const [loadingMessages, setLoadingMessages] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Get current user to check if admin
   const { data: user } = useQuery<SelectUser>({
     queryKey: ["/api/user"],
   });
 
-  // Fetch support messages when component is opened
+  // Fetch support messages (implement API endpoint)
   useEffect(() => {
-    const fetchMessages = async () => {
-      if (user?.isAdmin && !isMinimized) {
-        setLoadingMessages(true);
-        try {
-          const res = await fetch('/api/support/messages');
-          const data = await res.json();
-          setSupportMessages(data);
-        } catch (err) {
-          console.error('Error fetching support messages:', err);
-        } finally {
-          setLoadingMessages(false);
-        }
-      }
-    };
-
-    fetchMessages();
-    
-    // Auto-focus input when opening
-    if (!isMinimized && inputRef.current) {
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 300);
+    if (user?.isAdmin && !isMinimized) {
+      fetch('/api/support/messages')
+        .then(res => res.json())
+        .then(data => setSupportMessages(data))
+        .catch(err => console.error('Error fetching support messages:', err));
     }
   }, [user?.isAdmin, isMinimized]);
-
-  // Scroll to bottom of messages when new messages arrive
-  useEffect(() => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-    }
-  }, [supportMessages]);
 
   const handleSendReply = async () => {
     if (!replyText.trim()) return;
@@ -87,13 +55,6 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendReply();
-    }
-  };
-
   return (
     <AnimatePresence>
       <motion.div
@@ -110,7 +71,7 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
                 setHasUnreadMessage(false);
               }}
               size="icon"
-              className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90 text-background shadow-lg transition-all duration-300"
+              className="h-14 w-14 rounded-full bg-[#D7FF00] hover:bg-[#D7FF00]/90 text-[#14151A] shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <MessageCircle className="h-7 w-7" />
               {hasUnreadMessage && (
@@ -119,76 +80,55 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
             </Button>
           </div>
         ) : (
-          <Card className="w-[350px] sm:w-[400px] bg-card border border-border shadow-xl overflow-hidden">
-            <div className="p-4 border-b border-border flex justify-between items-center bg-muted/30">
+          <Card className="w-[400px] bg-[#1A1B21] border-[#2A2B31]">
+            <div className="p-4 border-b border-[#2A2B31] flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 bg-primary rounded-full animate-pulse" />
-                <h3 className="font-heading text-lg">
-                  {user?.isAdmin ? "Support Dashboard" : "VIP Support"}
+                <span className="h-2 w-2 bg-[#D7FF00] rounded-full animate-pulse" />
+                <h3 className="font-heading text-lg text-white">
+                  {user?.isAdmin ? 'Support Dashboard' : 'VIP Support'}
                 </h3>
               </div>
               <div className="flex gap-2">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 hover:bg-muted"
+                  className="h-8 w-8"
                   onClick={() => setIsMinimized(true)}
-                  aria-label="Minimize"
                 >
-                  <Minus className="h-4 w-4" />
+                  <span className="sr-only">Minimize</span>
+                  <span className="h-1 w-4 bg-current rounded-full" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 hover:bg-muted"
+                  className="h-8 w-8"
                   onClick={onClose}
-                  aria-label="Close"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
             </div>
-
+            
             <div className="p-6 space-y-4">
               {user?.isAdmin ? (
                 // Admin Interface
                 <div className="space-y-4">
-                  <div 
-                    ref={messagesContainerRef} 
-                    className="h-[300px] overflow-y-auto space-y-3 mb-4 pr-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
-                  >
-                    {loadingMessages ? (
-                      <div className="flex justify-center items-center h-full">
-                        <div className="animate-pulse text-muted-foreground">Loading messages...</div>
+                  <div className="h-[300px] overflow-y-auto space-y-3 mb-4">
+                    {supportMessages.map((msg, i) => (
+                      <div key={i} className="p-3 rounded-lg bg-[#2A2B31]/50">
+                        <div className="text-sm text-[#8A8B91]">{msg.username}</div>
+                        <div className="text-white">{msg.message}</div>
                       </div>
-                    ) : supportMessages.length > 0 ? (
-                      supportMessages.map((msg, i) => (
-                        <div key={i} className="p-3 rounded-lg bg-muted/50">
-                          <div className="text-sm text-muted-foreground">{msg.username}</div>
-                          <div>{msg.message}</div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="flex justify-center items-center h-full">
-                        <div className="text-muted-foreground">No messages yet</div>
-                      </div>
-                    )}
+                    ))}
                   </div>
                   <div className="flex gap-2">
                     <Input
-                      ref={inputRef}
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
-                      onKeyDown={handleKeyDown}
                       placeholder="Type your reply..."
                       className="flex-1"
                     />
-                    <Button 
-                      onClick={handleSendReply} 
-                      disabled={!replyText.trim()}
-                      size="icon"
-                      aria-label="Send"
-                    >
+                    <Button onClick={handleSendReply}>
                       <Send className="h-4 w-4" />
                     </Button>
                   </div>
@@ -196,27 +136,45 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
               ) : (
                 // User Interface
                 <div className="space-y-3">
-                  <p className="text-muted-foreground mb-6">
-                    Our VIP support team is here to help you. Choose an option below:
+                  <p className="text-[#8A8B91] mb-6">
+                    Our VIP support team is here to help you. Choose an option
+                    below:
                   </p>
-                  <Link href="/support">
-                    <Button variant="default" className="w-full justify-start text-left">
+                  <Link href="/support" className="block">
+                    <Button
+                      variant="secondary"
+                      className="w-full justify-start text-left hover:bg-[#D7FF00] hover:text-black transition-colors"
+                    >
                       <MessageCircle className="h-4 w-4 mr-2" />
                       Live Chat with VIP Support
                     </Button>
                   </Link>
-                  <Link href="/faq">
-                    <Button variant="secondary" className="w-full justify-start text-left">
+                  <Link href="/faq" className="block">
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-left hover:bg-[#2A2B31]/50"
+                    >
                       📚 Browse FAQ
                     </Button>
                   </Link>
-                  <a href="https://t.me/xGoombas" target="_blank" rel="noopener noreferrer">
-                    <Button variant="ghost" className="w-full justify-start text-left">
+                  <a
+                    href="https://t.me/xGoombas"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-left hover:bg-[#2A2B31]/50"
+                    >
                       💬 Contact on Telegram
                     </Button>
                   </a>
-                  <Link href="/telegram">
-                    <Button variant="ghost" className="w-full justify-start text-left hover:bg-muted">
+                  <Link href="/telegram" className="block">
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-left hover:bg-[#2A2B31]/50"
+                    >
                       👥 Join Telegram Community
                     </Button>
                   </Link>

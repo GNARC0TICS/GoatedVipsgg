@@ -2,78 +2,72 @@ import TelegramBot from 'node-telegram-bot-api';
 import type { Message as TelegramMessage, ChatMember, ChatPermissions as TelegramChatPermissions } from 'node-telegram-bot-api';
 import { db } from '@db';
 import { eq } from 'drizzle-orm';
-import * as schema from '../../db/schema';
-import * as telegramSchema from '../../db/schema/telegram';
-
-// Extract schema entities to avoid import issues
-const { users } = schema;
-const { telegramUsers, verificationRequests, challenges, challengeEntries } = telegramSchema;
+import { users } from '../../db/schema';
+import { telegramUsers, verificationRequests, challenges, challengeEntries } from '../../db/schema/telegram';
 import { scheduleJob } from 'node-schedule';
 import { randomUUID } from 'crypto';
+import { logger, stateManager, BotConfig, MessageTemplates, LogContext } from './utils';
+import { validateConfig } from './utils/config';
+import { ApiError, ApiErrorType } from './utils/api';
 
 // Type declarations - keep minimal for now
 type Message = TelegramMessage;
 type ChatPermissions = TelegramChatPermissions;
 
-console.log('[Telegram Bot] Loading bot module...');
+logger.info('Loading bot module...');
 
 // Singleton implementation with proper instance tracking
 let botInstance: TelegramBot | null = null;
 let isPolling = false;
 
-// Ensure environment variables are properly loaded
-import { config } from 'dotenv';
-config(); // Reload environment variables
-
 // Config validation
-const token = process.env.TELEGRAM_BOT_TOKEN;
-if (!token) {
-  console.error('[Telegram Bot] TELEGRAM_BOT_TOKEN is not provided. Bot will not function.');
-  // Instead of throwing, we'll return early and not initialize the bot
-  // This allows the rest of the application to continue running
-  // throw new Error('TELEGRAM_BOT_TOKEN must be provided');
-} else {
-  console.log('[Telegram Bot] Token validation successful');
+if (!validateConfig()) {
+  throw new Error('Invalid bot configuration');
 }
 
-// Check for allowed group IDs
-const allowedGroups = process.env.ALLOWED_GROUP_IDS?.split(',') || [];
-console.log(`[Telegram Bot] Configured allowed groups: ${allowedGroups.length ? allowedGroups.join(', ') : 'None'}`);
+logger.info('Token validation successful');
 
 // Create bot instance with proper error handling
 function createBot(): TelegramBot {
   if (botInstance) {
-    console.log('[Telegram Bot] Using existing instance');
+    logger.info('Using existing instance');
     return botInstance;
   }
 
-  console.log('[Telegram Bot] Creating new bot instance...');
+  logger.info('Creating new bot instance...');
 
-  // Ensure we have a valid token string for the constructor
-  const validToken = token || 'placeholder_token_for_initialization';
+  if (!BotConfig.TOKEN) {
+    throw new Error('TELEGRAM_BOT_TOKEN must be provided');
+  }
 
   // Create with polling disabled initially to avoid instant conflicts
-  const bot = new TelegramBot(validToken, { polling: false });
+  if (!BotConfig.TOKEN) {
+    throw new Error('TELEGRAM_BOT_TOKEN must be provided');
+  }
+  const bot = new TelegramBot(BotConfig.TOKEN, { polling: false });
 
   // Handle polling errors
   bot.on('polling_error', (error) => {
-    console.error(`[Telegram Bot] Polling error: ${error.message}`);
+    logger.error('Polling error', { 
+      error: error.message,
+      stack: error.stack
+    });
 
     // If we get a conflict error, stop polling to prevent cascading errors
     if (error.message.includes('409 Conflict')) {
-      console.log('[Telegram Bot] Detected polling conflict, stopping polling');
+      logger.warn('Detected polling conflict, stopping polling');
       bot.stopPolling().catch(e => {
-        console.error('[Telegram Bot] Error stopping polling after conflict:', e);
+        logger.error('Error stopping polling after conflict', { error: e });
       });
       isPolling = false;
 
       // Wait and attempt to restart polling
       setTimeout(() => {
         if (!isPolling) {
-          console.log('[Telegram Bot] Attempting to restart polling after conflict');
+          logger.info('Attempting to restart polling after conflict');
           startPolling(bot);
         }
-      }, 5000);
+      }, BotConfig.POLLING_RESTART_DELAY);
     }
   });
 
@@ -85,43 +79,38 @@ function createBot(): TelegramBot {
 // Start polling with error handling
 function startPolling(bot: TelegramBot): void {
   if (isPolling) {
-    console.log('[Telegram Bot] Already polling, ignoring start request');
+    logger.info('Already polling, ignoring start request');
     return;
   }
 
-  console.log('[Telegram Bot] Starting polling...');
+  logger.info('Starting polling...');
   bot.startPolling({ restart: false })
     .then(() => {
-      console.log('[Telegram Bot] Polling started successfully');
+      logger.info('Polling started successfully');
       isPolling = true;
     })
     .catch(error => {
-      console.error('[Telegram Bot] Failed to start polling:', error);
+      logger.error('Failed to start polling', { 
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
       isPolling = false;
 
       // Try again after delay
-      setTimeout(() => startPolling(bot), 5000);
+      setTimeout(() => startPolling(bot), BotConfig.POLLING_RESTART_DELAY);
     });
 }
 
-// Create and initialize the bot only if token is available
-let bot: TelegramBot;
-if (token) {
-  bot = createBot();
-  startPolling(bot);
-} else {
-  // Create a dummy bot that logs operations but doesn't actually connect to Telegram
-  // This allows the application to continue running even without the Telegram functionality
-  console.log('[Telegram Bot] Creating dummy bot instance due to missing token');
-  bot = {
-    sendMessage: (chatId: number | string, text: string) => {
-      console.log(`[Telegram Bot DUMMY] Would send to ${chatId}: ${text}`);
-      return Promise.resolve({ message_id: 0 } as any);
-    },
-    on: () => {},
-    onText: () => {},
-  } as unknown as TelegramBot;
-}
+// Initialize state manager
+stateManager.init().catch(error => {
+  logger.error('Failed to initialize state manager', { 
+    error: error instanceof Error ? error.message : String(error)
+  });
+});
+
+// Create and initialize the bot
+const bot = createBot();
+startPolling(bot);
 
 // Simple ping command to verify bot is working
 bot.onText(/\/ping/, (msg) => {
@@ -131,34 +120,6 @@ bot.onText(/\/ping/, (msg) => {
   }).catch(err => {
     console.error('[Telegram Bot] Error sending pong:', err);
   });
-});
-
-// Start command to initialize interaction with the bot
-bot.onText(/\/start/, async (msg) => {
-  const chatId = msg.chat.id;
-  const firstName = msg.from?.first_name || 'there';
-  console.log(`[Telegram Bot] Received start command from ${msg.from?.username || 'unknown user'}`);
-
-  try {
-    const welcomeMessage = `👋 *Welcome to GoatedVIPs Bot, ${firstName}\\!*\n\n`
-      + `I'm your assistant for Goated\\-related services\\.\n\n`
-      + `*What can I do for you?*\n`
-      + `• Track your wager statistics\n`
-      + `• Check your race position\n`
-      + `• View leaderboards\n`
-      + `• Get affiliate links\n\n`
-      + `Type /help to see all available commands\\.`;
-
-    await bot.sendMessage(chatId, welcomeMessage, {
-      parse_mode: 'MarkdownV2'
-    });
-    console.log('[Telegram Bot] Sent welcome message');
-  } catch (error) {
-    console.error('[Telegram Bot] Error sending welcome message:', error);
-    // Fallback to plain text if markdown fails
-    bot.sendMessage(chatId, `👋 Welcome to GoatedVIPs Bot, ${firstName}! Type /help to see available commands.`)
-      .catch(err => console.error('[Telegram Bot] Error sending fallback welcome message:', err));
-  }
 });
 
 // Constants
@@ -584,177 +545,34 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
   }
 });
 
-// Leaderboard command - fetch and display leaderboard data
-bot.onText(/\/leaderboard/, async (msg) => {
-  const chatId = msg.chat.id;
-
-  try {
-    console.log("[Telegram Bot] Fetching leaderboard data for /leaderboard command");
-
-    // Use our internal API endpoint (no external API call needed)
-    const apiBaseUrl = 'http://localhost:5000';
-
-    // Fetch current race data which has the most accurate monthly data
-    const raceResponse = await fetch(`${apiBaseUrl}/api/wager-races/current`);
-    if (!raceResponse.ok) {
-      throw new Error(`Race API request failed: ${raceResponse.status}`);
-    }
-
-    const raceData = await raceResponse.json();
-
-    if (!raceData || !raceData.participants || raceData.participants.length === 0) {
-      // Fallback to regular leaderboard if race data isn't available
-      const leaderboardResponse = await fetch(`${apiBaseUrl}/api/affiliate/stats`);
-      if (!leaderboardResponse.ok) {
-        throw new Error(`Leaderboard API request failed: ${leaderboardResponse.status}`);
-      }
-
-      const leaderboardData = await leaderboardResponse.json();
-      const monthlyData = leaderboardData.data.monthly.data.slice(0, 10);
-
-      if (!monthlyData || monthlyData.length === 0) {
-        await bot.sendMessage(chatId, "No leaderboard data available at the moment.");
-        return;
-      }
-
-      let message = "🏆 *Monthly Race Leaderboard* 🏆\n\n";
-
-      monthlyData.forEach((player, index) => {
-        const position = index + 1;
-        const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : `${position}\\)`;
-        message += `${medal} *${escapeMarkdownV2(player.name || 'Unknown')}*: $${escapeMarkdownV2(formatNumber(player.wagered?.this_month || 0))}\n`;
-      });
-
-      message += "\n👉 [View full leaderboard on GoatedVIPs](https://goatedvips.replit.app/leaderboard?period=monthly)";
-
-      const options = {
-        parse_mode: 'MarkdownV2',
-        disable_web_page_preview: true,
-        reply_markup: JSON.stringify({
-          inline_keyboard: [
-            [{ text: 'Refresh', callback_data: 'refresh_leaderboard' }],
-            [{ text: 'My Stats', callback_data: 'my_stats' }]
-          ]
-        })
-      };
-
-      await bot.sendMessage(chatId, message, options);
-      return;
-    }
-
-    // Use race participants data which is more accurate
-    let message = "🏆 *Monthly Race Leaderboard* 🏆\n\n";
-    message += `Prize Pool: $${escapeMarkdownV2(formatNumber(raceData.prizePool))}\n\n`;
-
-    raceData.participants.forEach((player, index) => {
-      const position = index + 1;
-      const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : `${position}\\)`;
-      message += `${medal} *${escapeMarkdownV2(player.name || 'Unknown')}*: $${escapeMarkdownV2(formatNumber(player.wagered || 0))}\n`;
-    });
-
-    // Add time left in race if available
-    if (raceData.endDate) {
-      const endDate = new Date(raceData.endDate);
-      const now = new Date();
-      const diffTime = endDate.getTime() - now.getTime();
-
-      if (diffTime > 0) {
-        const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        message += `\n⏱️ *Time Left*: ${days}d ${hours}h\n`;
-      }
-    }
-
-    message += "\n👉 [View full details on GoatedVIPs](https://goatedvips.replit.app/wager-races)";
-
-    const options = {
-      parse_mode: 'MarkdownV2',
-      disable_web_page_preview: true,
-      reply_markup: JSON.stringify({
-        inline_keyboard: [
-          [{ text: 'Refresh', callback_data: 'refresh_leaderboard' }],
-          [{ text: 'My Stats', callback_data: 'my_stats' }]
-        ]
-      })
-    };
-
-    await bot.sendMessage(chatId, message, options);
-
-    console.log("[Telegram Bot] Successfully sent leaderboard data");
-  } catch (error) {
-    console.error("[Telegram Bot] Error fetching leaderboard:", error);
-    await bot.sendMessage(chatId, "Sorry, I couldn't fetch the leaderboard data right now. Please try again later.");
-  }
-});
-
-// Helper function to escape markdown v2 special characters
-function escapeMarkdownV2(text) {
-  if (!text) return '';
-  return String(text).replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
-}
-
-// Format number with commas for thousands
-function formatNumber(num) {
-  if (typeof num !== 'number') {
-    num = parseFloat(num) || 0;
-  }
-  return num.toLocaleString('en-US');
-}
-
 // Check bot status - this can be useful for debugging
-export function getBotStatus() {
+export async function getBotStatus() {
   return {
-    isInitialized: !!botInstance,
     isPolling,
-    telegramToken: !!token,
-    commands: bot.getMyCommands()
+    hasInstance: !!botInstance,
+    uptime: process.uptime(),
+    token: !!BotConfig.TOKEN,
+    commands: await bot.getMyCommands()
   };
 }
 
 // Export bot instance and stop function
 export default bot;
 
+// Stop the bot and clean up resources
 export async function stopBot() {
   try {
-    console.log('[Telegram Bot] Stopping polling...');
+    logger.info('Stopping polling...');
     if (botInstance && isPolling) {
       await bot.stopPolling();
-      console.log('[Telegram Bot] Polling stopped');
+      logger.info('Polling stopped');
       isPolling = false;
     }
   } catch (error) {
-    console.error('[Telegram Bot] Error stopping polling:', error);
+    logger.error('Error stopping polling', { error });
   }
 }
 
 // Handle cleanup on server shutdown
 process.on('SIGINT', stopBot);
 process.on('SIGTERM', stopBot);
-
-// Global callback query handler
-bot.on('callback_query', async (callbackQuery) => {
-  const action = callbackQuery.data;
-  const msg = callbackQuery.message;
-
-  console.log(`[Telegram Bot] Received callback: ${action}`);
-
-  switch (action) {
-    case 'refresh_leaderboard':
-      await bot.answerCallbackQuery(callbackQuery.id, {
-        text: "Refreshing leaderboard data..."
-      });
-      await leaderboardHandler(msg);
-      break;
-
-    case 'my_stats':
-      await bot.answerCallbackQuery(callbackQuery.id, {
-        text: "Fetching your stats..."
-      });
-      await statsHandler(msg);
-      break;
-
-    default:
-      await bot.answerCallbackQuery(callbackQuery.id);
-      break;
-  }
-});

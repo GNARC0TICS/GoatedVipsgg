@@ -1,171 +1,218 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { 
-  auth, 
-  loginWithEmailAndPassword, 
-  registerWithEmailAndPassword, 
-  signInWithGoogle,
-  logout as firebaseLogout,
-  getCurrentUser
-} from './firebase';
-import { User as FirebaseUser } from 'firebase/auth';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import type { SelectUser } from "@db/schema";
 
-// Define paths that require authentication
-const PROTECTED_ROUTES = [
-  '/admin',
-  '/profile',
-  '/settings',
-  '/challenges',
-  '/races/manage'
-];
-
-// Types for our auth context
-type AuthContextType = {
-  user: FirebaseUser | null;
+interface AuthContextType {
+  user: SelectUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<{ 
-    ok: boolean;
-    message?: string;
-    errors?: Record<string, string[]>;
-  }>;
-  registerWithEmail: (credentials: { 
-    email: string; 
+  login: (credentials: { 
+    username: string; 
     password: string; 
-    username?: string;
-  }) => Promise<{
-    ok: boolean;
-    message?: string;
-    errors?: Record<string, string[]>;
+    email?: string;
+  }) => Promise<{ 
+    ok: boolean; 
+    message?: string; 
+    errors?: Record<string, string>; 
   }>;
-  loginWithGoogle: () => Promise<{
-    ok: boolean;
-    message?: string;
+  register: (credentials: {
+    username: string;
+    password: string;
+    email: string;
+  }) => Promise<{ 
+    ok: boolean; 
+    message?: string; 
+    errors?: Record<string, string>; 
   }>;
   logout: () => Promise<void>;
-};
+}
 
-// Create the context with default values
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Props for our provider
-type AuthProviderProps = {
-  children: ReactNode;
-};
+// Protected routes that require authentication
+export const PROTECTED_ROUTES = [
+  '/bonus-codes',
+  '/notification-preferences',
+  '/user/',
+  '/admin/',
+];
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Setup auth state listener
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
-      setUser(firebaseUser);
-      setIsAuthenticated(!!firebaseUser);
-      setIsLoading(false);
+  const { data: user } = useQuery<SelectUser | null>({
+    queryKey: ["/api/user"],
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/user", {
+          credentials: "include",
+        });
 
-      // Invalidate queries that might depend on auth state
-      if (firebaseUser) {
-        queryClient.invalidateQueries({ queryKey: ['user'] });
+        if (response.status === 401) {
+          setIsAuthenticated(false);
+          return null;
+        }
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch user data');
+        }
+
+        const userData = await response.json();
+        setIsAuthenticated(true);
+        return userData;
+      } catch (error) {
+        console.error('User fetch error:', error);
+        setIsAuthenticated(false);
+        return null;
       }
-    });
+    },
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 
-    return () => unsubscribe();
-  }, [queryClient]);
-
-  // Handle email/password login
   const loginMutation = useMutation({
-    mutationFn: async (credentials: { email: string; password: string }) => {
-      const result = await loginWithEmailAndPassword(credentials.email, credentials.password);
+    mutationFn: async (credentials: { username: string; password: string; email?: string }) => {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(credentials),
+        credentials: "include"
+      });
 
-      if (!result.success) {
+      const data = await response.json();
+
+      if (!response.ok) {
         return {
           ok: false,
-          message: "Invalid email or password"
+          message: data.message || "Login failed",
+          errors: data.errors
         };
       }
 
       setIsAuthenticated(true);
       return {
-        ok: true
+        ok: true,
+        user: data
       };
+    },
+    onSuccess: (data) => {
+      if (data.ok && data.user) {
+        queryClient.setQueryData(["/api/user"], data.user);
+      }
     }
   });
 
-  // Handle email/password registration
   const registerMutation = useMutation({
-    mutationFn: async (credentials: { email: string; password: string; username?: string }) => {
-      const result = await registerWithEmailAndPassword(credentials.email, credentials.password);
+    mutationFn: async (credentials: {
+      username: string;
+      password: string;
+      email: string;
+    }) => {
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(credentials),
+        credentials: "include"
+      });
 
-      if (!result.success) {
+      const data = await response.json();
+
+      if (!response.ok) {
         return {
           ok: false,
-          message: "Registration failed. Please try again."
+          message: data.message || "Registration failed",
+          errors: data.errors
         };
       }
 
       setIsAuthenticated(true);
       return {
-        ok: true
+        ok: true,
+        user: data
       };
-    }
-  });
-
-  // Handle Google sign in
-  const googleLoginMutation = useMutation({
-    mutationFn: async () => {
-      const result = await signInWithGoogle();
-
-      if (!result.success) {
-        return {
-          ok: false,
-          message: "Google sign in failed. Please try again."
-        };
+    },
+    onSuccess: (data) => {
+      if (data.ok && data.user) {
+        queryClient.setQueryData(["/api/user"], data.user);
       }
-
-      setIsAuthenticated(true);
-      return {
-        ok: true
-      };
     }
   });
 
-  // Handle logout
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await firebaseLogout();
+      const response = await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Logout failed");
+      }
+
       setIsAuthenticated(false);
-      queryClient.invalidateQueries({ queryKey: ['user'] });
-    }
+      return { ok: true };
+    },
+    onSuccess: () => {
+      queryClient.setQueryData(["/api/user"], null);
+    },
   });
+
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        await queryClient.prefetchQuery({
+          queryKey: ["/api/user"],
+          queryFn: async () => {
+            const response = await fetch("/api/user", {
+              credentials: "include",
+            });
+            if (response.status === 401) {
+              setIsAuthenticated(false);
+              return null;
+            }
+            if (!response.ok) throw new Error('Failed to fetch user data');
+            const userData = await response.json();
+            setIsAuthenticated(true);
+            return userData;
+          }
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initAuth();
+  }, [queryClient]);
 
   return (
     <AuthContext.Provider
       value={{
-        user,
+        user: user ?? null,
         isLoading,
         isAuthenticated,
         login: async (credentials) => {
           const result = await loginMutation.mutateAsync(credentials);
           return {
             ok: result.ok,
-            message: result.message
+            message: result.message,
+            errors: result.errors
           };
         },
-        registerWithEmail: async (credentials) => {
+        register: async (credentials) => {
           const result = await registerMutation.mutateAsync(credentials);
           return {
             ok: result.ok,
-            message: result.message
-          };
-        },
-        loginWithGoogle: async () => {
-          const result = await googleLoginMutation.mutateAsync();
-          return {
-            ok: result.ok,
-            message: result.message
+            message: result.message,
+            errors: result.errors
           };
         },
         logout: async () => {

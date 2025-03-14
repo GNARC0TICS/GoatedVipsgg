@@ -136,6 +136,3 @@ export {
   SheetTitle,
   SheetDescription,
 };
-
-// Add explicit named exports to help TypeScript
-export const ExplicitSheetTrigger = SheetTrigger;

@@ -18,25 +18,6 @@ async function handleRequest(
   body?: InsertUser,
 ): Promise<RequestResult> {
   try {
-    // Validate input before sending
-    if (method === 'POST' && body) {
-      if (!body.username || !body.password) {
-        return { 
-          ok: false, 
-          message: "Username and password are required" 
-        };
-      }
-      
-      if (url.includes('/register') && !body.email) {
-        return { 
-          ok: false, 
-          message: "Email is required for registration" 
-        };
-      }
-    }
-    
-    console.log(`Making ${method} request to ${url}`);
-    
     const response = await fetch(url, {
       method,
       headers: body ? { "Content-Type": "application/json" } : undefined,
@@ -44,26 +25,12 @@ async function handleRequest(
       credentials: "include",
     });
 
-    let data;
-    try {
-      data = await response.json();
-    } catch (e) {
-      console.error('Error parsing JSON response:', e);
-      return { 
-        ok: false, 
-        message: "Invalid response from server. Please try again later." 
-      };
-    }
-    
     if (!response.ok) {
-      console.error('API error:', url, data);
       if (response.status >= 500) {
-        return { 
-          ok: false, 
-          message: data.message || "Server error occurred. Please try again later." 
-        };
+        return { ok: false, message: "Server error occurred" };
       }
 
+      const data = await response.json();
       return { 
         ok: false, 
         message: data.message || "Authentication failed",
@@ -71,25 +38,13 @@ async function handleRequest(
       };
     }
 
-    // If this is a login or register response, user data is in the 'user' property
-    if (data.user) {
-      return { 
-        ok: true,
-        user: data.user
-      };
-    }
-    
-    // Otherwise, assume the full response is the user data
+    const data = await response.json();
     return { 
       ok: true,
       user: data
     };
   } catch (e: any) {
-    console.error('Request error:', e);
-    return { 
-      ok: false, 
-      message: "Network error. Please check your connection and try again." 
-    };
+    return { ok: false, message: e.toString() };
   }
 }
 
@@ -136,8 +91,7 @@ export function useUser() {
 
   return {
     user,
-    isLoading,  // Fix property name to match the interface in types.d.ts
-    loading: isLoading,  // Keep both for backward compatibility
+    isLoading,
     error,
     login: loginMutation.mutateAsync,
     logout: logoutMutation.mutateAsync,

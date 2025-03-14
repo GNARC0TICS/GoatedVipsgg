@@ -1,65 +1,89 @@
-import * as React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 interface PreLoaderProps {
-  onLoadComplete?: () => void;
+  onLoadComplete: () => void;
 }
 
-export function PreLoader({ onLoadComplete = () => {} }: PreLoaderProps) {
-  const [progress, setProgress] = React.useState(0);
+export const PreLoader: React.FC<PreLoaderProps> = ({ onLoadComplete }) => {
+  const [progress, setProgress] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+  const [loadingText, setLoadingText] = useState("Loading");
 
-  React.useEffect(() => {
-    // Start with a bit of delay to ensure animation starts properly
-    const startDelay = setTimeout(() => {
-      const timer = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(timer);
-            setTimeout(onLoadComplete, 500);
-            return 100;
-          }
-          // Increase faster initially, then slower towards the end
-          const increment = prev < 50 ? 2 : prev < 85 ? 1 : 0.5;
-          return Math.min(100, prev + increment);
-        });
-      }, 30);
-      
-      return () => clearInterval(timer);
-    }, 200);
-    
-    return () => clearTimeout(startDelay);
-  }, [onLoadComplete]);
+  // Simulate loading progress
+  useEffect(() => {
+    const startTime = Date.now();
+    const minDuration = 2000; // Minimum loading time in ms
+    const interval = 30; // Update interval in ms
+
+    // Calculate progress increment per interval to complete in minDuration
+    const incrementPerInterval = (100 * interval) / minDuration;
+
+    const timer = setInterval(() => {
+      const elapsedTime = Date.now() - startTime;
+      const calculatedProgress = Math.min((elapsedTime / minDuration) * 100, 99.5);
+
+      if (calculatedProgress >= 99.5) {
+        clearInterval(timer);
+        setProgress(100);
+        setIsComplete(true);
+      } else {
+        setProgress(calculatedProgress);
+      }
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Trigger onLoadComplete when loading is finished
+  useEffect(() => {
+    if (isComplete) {
+      // Delay completion to ensure animations finish
+      const completeTimer = setTimeout(() => {
+        onLoadComplete();
+      }, 800);
+      return () => clearTimeout(completeTimer);
+    }
+  }, [isComplete, onLoadComplete]);
+
+  // Animation for loading text
+  useEffect(() => {
+    const textTimer = setInterval(() => {
+      setLoadingText(prev => {
+        if (prev === "Loading...") return "Loading";
+        return prev + ".";
+      });
+    }, 500);
+
+    return () => clearInterval(textTimer);
+  }, []);
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-[#14151A] z-50 flex flex-col items-center justify-center"
+      className="fixed inset-0 flex flex-col items-center justify-center bg-[#14151A] z-50"
+      style={{ 
+        willChange: "opacity, transform",
+      }}
     >
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.2 }}
-        className="flex flex-col items-center gap-8"
-      >
-        <img
-          src="/images/preload.PNG"
-          alt="Goated Preloader"
-          className="w-64 h-64 object-contain animate-pulse"
+      <div className="flex flex-col items-center">
+        <img 
+          src="/images/preload.PNG" 
+          alt="Goated VIPs" 
+          className="mb-8 w-64 h-auto object-contain"
         />
-        <div className="w-64 h-1 bg-[#2A2B31] rounded-full overflow-hidden">
+        <div className="w-64 h-2 bg-[#2A2B31] rounded-full overflow-hidden mb-4">
           <motion.div
             className="h-full bg-[#D7FF00]"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.2 }}
+            transition={{ ease: "easeInOut" }}
           />
         </div>
-        <p className="text-[#D7FF00] font-heading text-xl">
-          {progress}%
-        </p>
-      </motion.div>
+        <p className="text-[#8A8B91] font-mono">{loadingText}</p>
+      </div>
     </motion.div>
   );
-}
+};
