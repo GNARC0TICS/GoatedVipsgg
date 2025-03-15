@@ -62,7 +62,7 @@ function createBot(): TelegramBot {
   const bot = new TelegramBot(BotConfig.TOKEN, { 
   polling: true,
   webHook: {
-    port: TELEGRAM_PORT
+    port: process.env.TELEGRAM_BOT_PORT || 5173
   }
 });
 
