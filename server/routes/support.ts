@@ -122,4 +122,7 @@ router.post("/reply", async (req, res) => {
   }
 });
 
+// Define support routes here
+// This is a placeholder implementation
+
 export default router; 
