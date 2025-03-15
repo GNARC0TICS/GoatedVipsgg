@@ -18,11 +18,6 @@ externalPort = 80
 [[ports]]
 localPort = 5001
 
-[[ports]]
-localPort = 5173
-externalPort = 6800
-exposeLocalhost = true
-
 [workflows]
 runButton = "Start application"
 
