@@ -11,13 +11,6 @@ build = ["npm", "run", "build"]
 run = ["npm", "run", "start"]
 ignorePorts = false
 
-[[ports]]
-localPort = 5000
-externalPort = 80
-
-[[ports]]
-localPort = 5001
-
 [workflows]
 runButton = "Start Application"
 
