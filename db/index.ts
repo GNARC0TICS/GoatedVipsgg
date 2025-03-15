@@ -1,7 +1,10 @@
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
-import * as schema from "@db/schema";
+import * as schema from "./schema";
 import { log } from "../server/vite";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -24,5 +27,23 @@ sql`SELECT 1`
     log(`Database connection error: ${error.message}`);
     // Don't throw here - let the application continue but log the error
   });
+
+// Re-export schema types and utils
+export * from "./schema";
+export * from "./schema/telegram";
+
+// Declare global Express.User type to match our schema
+declare global {
+  namespace Express {
+    interface User {
+      id: number;
+      username: string;
+      email: string;
+      isAdmin: boolean;
+      createdAt: Date;
+      lastLogin: Date | null;
+    }
+  }
+}
 
 export default db;

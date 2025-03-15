@@ -1,64 +1,92 @@
-
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useEffect } from "react";
 
 interface PreLoaderProps {
   onLoadComplete: () => void;
 }
 
-export function PreLoader({ onLoadComplete }: PreLoaderProps) {
+export const PreLoader: React.FC<PreLoaderProps> = ({ onLoadComplete }) => {
+  const [progress, setProgress] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+  const [loadingText, setLoadingText] = useState("Loading");
+
+  // Simulate loading progress
   useEffect(() => {
-    // Reduced delay to 1.5s for better UX
-    const timer = setTimeout(() => {
-      onLoadComplete();
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [onLoadComplete]);
+    const startTime = Date.now();
+    const minDuration = 2000; // Minimum loading time in ms
+    const interval = 30; // Update interval in ms
+
+    // Calculate progress increment per interval to complete in minDuration
+    const incrementPerInterval = (100 * interval) / minDuration;
+
+    const timer = setInterval(() => {
+      const elapsedTime = Date.now() - startTime;
+      const calculatedProgress = Math.min(
+        (elapsedTime / minDuration) * 100,
+        99.5,
+      );
+
+      if (calculatedProgress >= 99.5) {
+        clearInterval(timer);
+        setProgress(100);
+        setIsComplete(true);
+      } else {
+        setProgress(calculatedProgress);
+      }
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Trigger onLoadComplete when loading is finished
+  useEffect(() => {
+    if (isComplete) {
+      // Delay completion to ensure animations finish
+      const completeTimer = setTimeout(() => {
+        onLoadComplete();
+      }, 800);
+      return () => clearTimeout(completeTimer);
+    }
+  }, [isComplete, onLoadComplete]);
+
+  // Animation for loading text
+  useEffect(() => {
+    const textTimer = setInterval(() => {
+      setLoadingText((prev) => {
+        if (prev === "Loading...") return "Loading";
+        return prev + ".";
+      });
+    }, 500);
+
+    return () => clearInterval(textTimer);
+  }, []);
 
   return (
     <motion.div
-      initial={{ opacity: 1 }}
+      initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="fixed inset-0 bg-[#14151A] z-50 flex flex-col items-center justify-center"
+      className="fixed inset-0 flex flex-col items-center justify-center bg-[#14151A] z-50"
+      style={{
+        willChange: "opacity, transform",
+      }}
     >
-      <motion.div
-        initial={{ scale: 0.98, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="flex flex-col items-center gap-8"
-      >
-        <motion.img
+      <div className="flex flex-col items-center">
+        <img
           src="/images/preload.PNG"
-          alt="Goated Preloader"
-          className="w-64 h-64 object-contain"
-          animate={{ scale: [1, 1.02, 1] }}
-          transition={{ duration: 1.5, repeat: 1, ease: "easeInOut" }}
+          alt="Goated VIPs"
+          className="mb-8 w-64 h-auto object-contain"
         />
-
-        <div className="w-64 h-1 bg-[#2A2B31] rounded-full overflow-hidden">
+        <div className="w-64 h-2 bg-[#2A2B31] rounded-full overflow-hidden mb-4">
           <motion.div
-            initial={{ x: "-100%" }}
-            animate={{ x: "100%" }}
-            transition={{ 
-              duration: 1.5,
-              ease: "easeInOut",
-              repeat: 0
-            }}
-            className="h-full w-full bg-[#D7FF00]"
-            style={{ willChange: "transform" }}
+            className="h-full bg-[#D7FF00]"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ ease: "easeInOut" }}
           />
         </div>
-
-        <motion.p 
-          className="text-[#D7FF00] font-heading text-xl"
-          animate={{ opacity: [1, 0.7, 1] }}
-          transition={{ duration: 1, repeat: 1, ease: "easeInOut" }}
-        >
-          Loading...
-        </motion.p>
-      </motion.div>
+        <p className="text-[#8A8B91] font-mono">{loadingText}</p>
+      </div>
     </motion.div>
   );
-}
+};

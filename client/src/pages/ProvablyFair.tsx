@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 export default function ProvablyFair() {
   return (
     <PageTransition>
-      <div className="min-h-screen bg-[#14151A] py-12 overflow-y-auto">
+      <div className="min-h-screen bg-[#14151A] py-12">
         <main className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

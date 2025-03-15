@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { differenceInSeconds } from 'date-fns';
+import { useState, useEffect } from "react";
+import { differenceInSeconds } from "date-fns";
 
 interface CountdownTimerProps {
   endDate: string;
@@ -10,7 +10,7 @@ interface CountdownTimerProps {
 export function CountdownTimer({
   endDate,
   large = false,
-  onComplete
+  onComplete,
 }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
@@ -42,7 +42,9 @@ export function CountdownTimer({
   }, [endDate, onComplete]);
 
   return (
-    <div className={`grid grid-cols-4 gap-2 ${large ? 'text-4xl' : 'text-2xl'} font-bold`}>
+    <div
+      className={`grid grid-cols-4 gap-2 ${large ? "text-4xl" : "text-2xl"} font-bold`}
+    >
       <div className="text-center">
         <div className="bg-[#1A1B21]/50 backdrop-blur-sm p-2 rounded-lg border border-[#2A2B31]">
           {timeLeft.days}

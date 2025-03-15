@@ -1,0 +1,398 @@
+Goated Vips: Goated Vips: # Enhanced Badge Component
+
+I'll transform your badge component into a versatile status and tier indicator system perfect for your casino VIP platform:
+
+```tsx
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/lib/utils";
+
+const badgeVariants = cva(
+  "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-mona-sans font-semibold uppercase tracking-wide transition-all focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default: "border-transparent bg-primary text-background hover:bg-primary/90",
+        secondary: "border-transparent bg-background-alt text-text-primary hover:bg-border",
+        destructive: "border-transparent bg-[#FF3D54] text-white hover:bg-[#E83249]",
+        outline: "border-border text-text-primary hover:bg-background-alt",
+        success: "border-transparent bg-[#14B87D] text-white hover:bg-[#12A771]",
+        warning: "border-transparent bg-[#FFB800] text-black hover:bg-[#F0AD00]",
+        premium: "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20",
+        ghost: "border-transparent bg-transparent text-text-secondary hover:bg-background-alt",
+        glass: "border-border/50 bg-background-overlay/30 text-text-primary backdrop-blur-md hover:bg-background-overlay/40",
+      },
+      size: {
+        default: "px-2.5 py-0.5 text-xs",
+        sm: "px-2 py-0.5 text-[10px]",
+        lg: "px-3 py-1 text-sm",
+      },
+      glow: {
+        true: "shadow-[0_0_8px_rgba(215,255,0,0.2)]",
+        false: "",
+      },
+      pill: {
+        true: "rounded-full",
+        false: "rounded-md",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+      glow: false,
+      pill: true,
+    },
+  }
+);
+
+export interface BadgeProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof badgeVariants> {
+  icon?: React.ReactNode;
+  count?: number | string;
+  pulse?: boolean;
+}
+
+function Badge({
+  className,
+  variant,
+  size,
+  glow,
+  pill,
+  icon,
+  count,
+  pulse,
+  children,
+  ...props
+}: BadgeProps) {
+  return (
+    <div 
+      className={cn(
+        badgeVariants({ variant, size, glow, pill, className }),
+        pulse && "animate-pulse",
+      )}
+      {...props}
+    >
+      {icon && <span className="-ml-0.5 flex-shrink-0">{icon}</span>}
+      <span>{children}</span>
+      {count !== undefined && (
+        <span className={cn(
+          "flex h-4 min-w-4 items-center justify-center rounded-full bg-background-overlay/50 px-1 text-[10px] leading-none",
+          variant === 'default' && "text-text-primary",
+          variant === 'premium' && "bg-primary/30",
+          variant === 'success' && "bg-[#14B87D]/70 text-white",
+          variant === 'warning' && "bg-[#FFB800]/70 text-black",
+          variant === 'destructive' && "bg-[#FF3D54]/80 text-white",
+        )}>
+          {count}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// NEW: TierBadge component specifically for VIP tiers
+function TierBadge({
+  tier,
+  showIcon = true,
+  size = "default",
+  className,
+  ...props
+}: {
+  tier: "Bronze" | "Silver" | "Gold" | "Platinum" | "Diamond" | "VIP" | string;
+  showIcon?: boolean;
+  size?: VariantProps<typeof badgeVariants>["size"];
+  className?: string;
+  [key: string]: any;
+}) {
+  const tierConfig: Record<string, {
+    icon: React.ReactNode;
+    styles: string;
+  }> = {
+    "Bronze": {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="#CD7F32">
+          <circle cx="12" cy="12" r="10" />
+        </svg>
+      ),
+      styles: "border-[#CD7F32]/30 bg-[#CD7F32]/10 text-[#CD7F32] hover:bg-[#CD7F32]/20"
+    },
+    "Silver": {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="#C0C0C0">
+          <circle cx="12" cy="12" r="10" />
+        </svg>
+      ),
+      styles: "border-[#C0C0C0]/30 bg-[#C0C0C0]/10 text-[#C0C0C0] hover:bg-[#C0C0C0]/20"
+    },
+    "Gold": {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="#FFD700">
+          <circle cx="12" cy="12" r="10" />
+        </svg>
+      ),
+      styles: "border-[#FFD700]/30 bg-[#FFD700]/10 text-[#FFD700] hover:bg-[#FFD700]/20"
+    },
+    "Platinum": {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="#E5E4E2">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      ),
+      styles: "border-[#E5E4E2]/30 bg-[#E5E4E2]/10 text-[#E5E4E2] hover:bg-[#E5E4E2]/20"
+    },
+    "Diamond": {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="#B9F2FF">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      ),
+      styles: "border-[#B9F2FF]/30 bg-gradient-to-r from-[#B9F2FF]/20 to-[#B9F2FF]/5 text-[#B9F2FF] shadow-[0_0_8px_rgba(185,242,255,0.2)]"
+    },
+    "VIP": {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      ),
+      styles: "border-primary/30 bg-gradient-to-r from-primary/20 to-primary/5 text-primary shadow-[0_0_8px_rgba(215,255,0,0.15)] font-bold"
+    },
+  };
+
+  // Default to custom tier if not found in our predefined tiers
+  const tierStyle = tierConfig[tier] || {
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="12" r="10" />
+      </svg>
+    ),
+    styles: "border-border bg-background-alt text-text-primary"
+  };
+
+  return (
+    <div
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md border px-2.5 py-0.5 font-mono-sans font-bold uppercase",
+        tierStyle.styles,
+        badgeVariants({ size, pill: false }),
+        className
+      )}
+      {...props}
+    >
+      {showIcon && <span className="flex-shrink-0">{tierStyle.icon}</span>}
+      <span>{tier}</span>
+    </div>
+  );
+}
+
+// NEW: Status badge specifically for game/bet/transaction status
+function StatusBadge({
+  status,
+  size = "default",
+  className,
+  ...props
+}: {
+  status: "active" | "pending" | "completed" | "failed" | "won" | "lost" | string;
+  size?: VariantProps<typeof badgeVariants>["size"];
+  className?: string;
+  [key: string]: any;
+}) {
+  const statusConfig: Record<string, {
+    variant: VariantProps<typeof badgeVariants>["variant"];
+    icon: React.ReactNode;
+    label: string;
+  }> = {
+    "active": {
+      variant: "success",
+      icon: (
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+        </span>
+      ),
+      label: "Active"
+    },
+    "pending": {
+      variant: "warning",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 6v6l4 2" />
+        </svg>
+      ),
+      label: "Pending"
+    },
+    "completed": {
+      variant: "success",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+      ),
+      label: "Completed"
+    },
+    "failed": {
+      variant: "destructive",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      ),
+      label: "Failed"
+    },
+    "won": {
+      variant: "success",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="8" r="7" />
+          <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+        </svg>
+      ),
+      label: "Won"
+    },
+    "lost": {
+      variant: "secondary",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      ),
+      label: "Lost"
+    },
+  };
+
+  // Use provided status or default to a generic one
+  const statusData = statusConfig[status.toLowerCase()] || {
+    variant: "secondary",
+    icon: null,
+    label: status
+  };
+
+  return (
+    <Badge
+      variant={statusData.variant}
+      size={size}
+      icon={statusData.icon}
+      className={className}
+      {...props}
+    >
+      {statusData.label}
+    </Badge>
+  );
+}
+
+export { Badge, TierBadge, StatusBadge, badgeVariants };
+```
+
+## Key Enhancements
+
+1. **Base Badge Improvements**
+   - Added size variants (sm, default, lg)
+   - Added pill/rounded-md toggle
+   - Added glow effect for premium badges
+   - Added pulse animation option
+   - Added icon and count support
+   - Improved typography with your font system
+   - Enhanced hover states and transitions
+
+2. **New Variant System**
+   - Success variant for positive actions/statuses
+   - Warning variant for notifications/alerts
+   - Premium variant for highlighting VIP features
+   - Ghost variant for subtle labels
+   - Glass variant for overlays
+
+3. **Specialized Badge Components**
+   - **TierBadge**: Purpose-built for displaying player levels
+     - Custom styling for each tier (Bronze, Silver, Gold, etc.)
+     - Consistent visual language for player rankings
+     - Subtle glows and gradient effects for higher tiers
+
+   - **StatusBadge**: Purpose-built for game/transaction status
+     - Semantic status colors (green for success, yellow for pending, etc.)
+     - Built-in icons for common statuses
+     - Animated indicator for active status
+     - Case-insensitive status matching
+
+4. **Visual Refinements**
+   - Improved spacing with gap utility
+   - Better contrast for counter badges
+   - Thoughtful color palette for casino theme
+   - Consistent border treatments
+
+## Usage Examples
+
+```tsx
+// Basic badge variations
+<div className="flex gap-2 flex-wrap">
+  <Badge>Default</Badge>
+  <Badge variant="secondary">Secondary</Badge>
+  <Badge variant="destructive">Destructive</Badge>
+  <Badge variant="outline">Outline</Badge>
+  <Badge variant="success">Success</Badge>
+  <Badge variant="warning">Warning</Badge>
+  <Badge variant="premium" glow>Premium</Badge>
+  <Badge variant="ghost">Ghost</Badge>
+  <Badge variant="glass">Glass</Badge>
+</div>
+
+// Badge with count
+<Badge variant="destructive" count={5}>Notifications</Badge>
+
+// Badge with icon
+<Badge 
+  variant="premium" 
+  icon={
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>
+  }
+>
+  Boosted
+</Badge>
+
+// Player tier examples
+<div className="flex gap-4 flex-wrap">
+  <TierBadge tier="Bronze" />
+  <TierBadge tier="Silver" />
+  <TierBadge tier="Gold" />
+  <TierBadge tier="Platinum" />
+  <TierBadge tier="Diamond" />
+  <TierBadge tier="VIP" />
+</div>
+
+// Game status examples
+<div className="flex gap-4 flex-wrap">
+  <StatusBadge status="active" />
+  <StatusBadge status="pending" />
+  <StatusBadge status="completed" />
+  <StatusBadge status="failed" />
+  <StatusBadge status="won" />
+  <StatusBadge status="lost" />
+</div>
+
+// Live game badge with animation
+<Badge variant="success" pulse icon={
+  <span className="relative flex h-2 w-2">
+    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+    <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+  </span>
+}>
+  Live
+</Badge>
+
+// VIP benefit indicator
+<Badge 
+  variant="premium" 
+  size="lg" 
+  glow 
+  pill={false}
+  icon={<svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>}
+>
+  VIP Only
+</Badge>
+```
+
+Would you like me to enhance another component next? The input.tsx and switch.tsx components would be excellent candidates for improvement to match your premium badge styling approach.

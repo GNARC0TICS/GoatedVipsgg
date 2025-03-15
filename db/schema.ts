@@ -2,78 +2,45 @@ import {
   pgTable,
   text,
   serial,
+  integer,
   timestamp,
   boolean,
   decimal,
   jsonb,
-  integer,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
-import { telegramUsers, telegramUserRelations, type InsertTelegramUser, type SelectTelegramUser } from "./schema/telegram";
-import { verificationRequests, verificationRequestRelations, type InsertVerificationRequest, type SelectVerificationRequest } from "./schema/verification";
+import {
+  challenges,
+  challengeEntries,
+  telegramBotState,
+  telegramUsers,
+  verificationRequests,
+} from "./schema/telegram";
 
-// Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
+  username: text("username").unique().notNull(),
   password: text("password").notNull(),
-  email: text("email").notNull().unique(),
+  email: text("email").unique().notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
-  telegramId: text("telegram_id").unique(),
-  telegramVerified: boolean("telegram_verified").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  emailVerified: boolean("email_verified").default(false),
+  lastLogin: timestamp("last_login"),
+  lastLoginIp: text("last_login_ip"),
+
+  // Goated.com account linking fields
+  goatedUid: text("goated_uid").unique(),
+  goatedUsername: text("goated_username"),
+  isGoatedVerified: boolean("is_goated_verified").default(false),
+  goatedVerifiedAt: timestamp("goated_verified_at"),
+
+  // Telegram account linking fields
+  telegramId: text("telegram_id").unique(),
+  telegramUsername: text("telegram_username"),
+  isTelegramVerified: boolean("is_telegram_verified").default(false),
+  telegramVerifiedAt: timestamp("telegram_verified_at"),
 });
 
-// Define relations
-export const userRelations = relations(users, ({ one }) => ({
-  telegramUser: one(telegramUsers, {
-    fields: [users.telegramId],
-    references: [telegramUsers.telegramId],
-  }),
-}));
-
-// Export schemas for validation
-export const insertUserSchema = createInsertSchema(users);
-export const selectUserSchema = createSelectSchema(users);
-
-// Export types
-export type InsertUser = typeof users.$inferInsert;
-export type SelectUser = typeof users.$inferSelect;
-
-// Re-export telegram and verification types
-export {
-  telegramUsers,
-  telegramUserRelations,
-  type InsertTelegramUser,
-  type SelectTelegramUser,
-  verificationRequests,
-  verificationRequestRelations,
-  type InsertVerificationRequest,
-  type SelectVerificationRequest,
-};
-
-// Wheel spins table
-export const wheelSpins = pgTable("wheel_spins", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  segmentIndex: integer("segment_index").notNull(),
-  rewardCode: text("reward_code"),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
-});
-
-// Bonus codes table
-export const bonusCodes = pgTable("bonus_codes", {
-  id: serial("id").primaryKey(),
-  code: text("code").notNull().unique(),
-  userId: integer("user_id").references(() => users.id),
-  claimedAt: timestamp("claimed_at").defaultNow().notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  isUsed: boolean("is_used").default(false).notNull(),
-});
-
-// Wager races and related tables
 export const wagerRaces = pgTable("wager_races", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -84,6 +51,7 @@ export const wagerRaces = pgTable("wager_races", {
   endDate: timestamp("end_date").notNull(),
   minWager: decimal("min_wager", { precision: 18, scale: 2 }).notNull(),
   prizeDistribution: jsonb("prize_distribution").notNull(), // { "1": 25, "2": 15, ... }
+  createdBy: integer("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   rules: text("rules"),
@@ -92,151 +60,20 @@ export const wagerRaces = pgTable("wager_races", {
 
 export const wagerRaceParticipants = pgTable("wager_race_participants", {
   id: serial("id").primaryKey(),
-  raceId: integer("race_id").references(() => wagerRaces.id),
-  userId: integer("user_id").references(() => users.id),
-  totalWager: decimal("total_wager", { precision: 18, scale: 2 }).notNull(),
+  race_id: integer("race_id").references(() => wagerRaces.id),
+  user_id: integer("user_id").references(() => users.id),
+  total_wager: decimal("total_wager", { precision: 18, scale: 2 }).notNull(),
   rank: integer("rank"),
-  joinedAt: timestamp("joined_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  wagerHistory: jsonb("wager_history"), // Track wager progress over time
-});
-
-// Support System tables
-export const supportTickets = pgTable("support_tickets", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  subject: text("subject").notNull(),
-  description: text("description").notNull(),
-  status: text("status").notNull().default("open"), // 'open' | 'in_progress' | 'closed'
-  priority: text("priority").notNull().default("medium"), // 'low' | 'medium' | 'high'
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const ticketMessages = pgTable("ticket_messages", {
-  id: serial("id").primaryKey(),
-  ticketId: integer("ticket_id").references(() => supportTickets.id),
-  userId: integer("user_id").references(() => users.id),
-  message: text("message").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  isStaffReply: boolean("is_staff_reply").default(false).notNull(),
-});
-
-// Relations
-export const wheelSpinRelations = relations(wheelSpins, ({ one }) => ({
-  user: one(users, {
-    fields: [wheelSpins.userId],
-    references: [users.id],
-  }),
-}));
-
-export const bonusCodeRelations = relations(bonusCodes, ({ one }) => ({
-  user: one(users, {
-    fields: [bonusCodes.userId],
-    references: [users.id],
-  }),
-}));
-
-export const wagerRaceRelations = relations(wagerRaces, ({ many }) => ({
-  participants: many(wagerRaceParticipants),
-}));
-
-export const wagerRaceParticipantRelations = relations(
-  wagerRaceParticipants,
-  ({ one }) => ({
-    race: one(wagerRaces, {
-      fields: [wagerRaceParticipants.raceId],
-      references: [wagerRaces.id],
-    }),
-    user: one(users, {
-      fields: [wagerRaceParticipants.userId],
-      references: [users.id],
-    }),
-  }),
-);
-
-export const supportTicketRelations = relations(supportTickets, ({ one, many }) => ({
-  user: one(users, {
-    fields: [supportTickets.userId],
-    references: [users.id],
-  }),
-  messages: many(ticketMessages),
-}));
-
-export const ticketMessageRelations = relations(ticketMessages, ({ one }) => ({
-  ticket: one(supportTickets, {
-    fields: [ticketMessages.ticketId],
-    references: [supportTickets.id],
-  }),
-  user: one(users, {
-    fields: [ticketMessages.userId],
-    references: [users.id],
-  }),
-}));
-
-// Schema validation with Zod
-export const insertWheelSpinSchema = createInsertSchema(wheelSpins);
-export const selectWheelSpinSchema = createSelectSchema(wheelSpins);
-export const insertBonusCodeSchema = createInsertSchema(bonusCodes);
-export const selectBonusCodeSchema = createSelectSchema(bonusCodes);
-
-export const insertWagerRaceSchema = createInsertSchema(wagerRaces);
-export const selectWagerRaceSchema = createSelectSchema(wagerRaces);
-export const insertWagerRaceParticipantSchema = createInsertSchema(
-  wagerRaceParticipants,
-);
-export const selectWagerRaceParticipantSchema = createSelectSchema(
-  wagerRaceParticipants,
-);
-export const insertSupportTicketSchema = createInsertSchema(supportTickets);
-export const selectSupportTicketSchema = createSelectSchema(supportTickets);
-export const insertTicketMessageSchema = createInsertSchema(ticketMessages);
-export const selectTicketMessageSchema = createSelectSchema(ticketMessages);
-
-// TypeScript type definitions
-export type InsertWheelSpin = typeof wheelSpins.$inferInsert;
-export type SelectWheelSpin = typeof wheelSpins.$inferSelect;
-export type InsertBonusCode = typeof bonusCodes.$inferInsert;
-export type SelectBonusCode = typeof bonusCodes.$inferSelect;
-
-export type InsertWagerRace = typeof wagerRaces.$inferInsert;
-export type SelectWagerRace = typeof wagerRaces.$inferSelect;
-export type InsertWagerRaceParticipant = typeof wagerRaceParticipants.$inferInsert;
-export type SelectWagerRaceParticipant = typeof wagerRaceParticipants.$inferSelect;
-export type InsertSupportTicket = typeof supportTickets.$inferInsert;
-export type SelectSupportTicket = typeof supportTickets.$inferSelect;
-export type InsertTicketMessage = typeof ticketMessages.$inferInsert;
-export type SelectTicketMessage = typeof ticketMessages.$inferSelect;
-
-
-export { challenges, challengeEntries } from "./schema/challenges";
-
-export const historicalRaces = pgTable("historical_races", {
-  id: serial("id").primaryKey(),
-  month: text("month").notNull(),
-  year: text("year").notNull(),
-  prizePool: decimal("prize_pool", { precision: 10, scale: 2 }).notNull(),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
-  participants: jsonb("participants").notNull(),
-  totalWagered: decimal("total_wagered", { precision: 18, scale: 2 }).notNull(),
-  participantCount: text("participant_count").notNull(),
-  status: text("status").notNull().default("completed"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  metadata: jsonb("metadata").default({}).notNull(),
-});
-
-export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
-  id: serial("id").primaryKey(),
-  email: text("email").unique().notNull(),
-  isSubscribed: boolean("is_subscribed").default(true).notNull(),
-  subscribedAt: timestamp("subscribed_at").defaultNow().notNull(),
-  unsubscribedAt: timestamp("unsubscribed_at"),
-  source: text("source"),
+  joined_at: timestamp("joined_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+  wager_history: jsonb("wager_history"), // Track wager progress over time
 });
 
 export const notificationPreferences = pgTable("notification_preferences", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
   wagerRaceUpdates: boolean("wager_race_updates").default(true).notNull(),
   vipStatusChanges: boolean("vip_status_changes").default(true).notNull(),
   promotionalOffers: boolean("promotional_offers").default(true).notNull(),
@@ -248,81 +85,260 @@ export const notificationPreferences = pgTable("notification_preferences", {
 
 export const affiliateStats = pgTable("affiliate_stats", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
   totalWager: decimal("total_wager", { precision: 18, scale: 8 }).notNull(),
   commission: decimal("commission", { precision: 18, scale: 8 }).notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
-export const mockWagerData = pgTable("mock_wager_data", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  username: text("username").notNull(),
-  wageredToday: decimal("wagered_today", { precision: 18, scale: 8 })
-    .default("0")
-    .notNull(),
-  wageredThisWeek: decimal("wagered_this_week", { precision: 18, scale: 8 })
-    .default("0")
-    .notNull(),
-  wageredThisMonth: decimal("wagered_this_month", { precision: 18, scale: 8 })
-    .default("0")
-    .notNull(),
-  wageredAllTime: decimal("wagered_all_time", { precision: 18, scale: 8 })
-    .default("0")
-    .notNull(),
-  isMocked: boolean("is_mocked").default(true).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  createdBy: integer("created_by").references(() => users.id),
-});
-
-export const mockWagerDataRelations = relations(mockWagerData, ({ one }) => ({
+export const affiliateStatsRelations = relations(affiliateStats, ({ one }) => ({
   user: one(users, {
-    fields: [mockWagerData.userId],
-    references: [users.id],
-  }),
-  creator: one(users, {
-    fields: [mockWagerData.createdBy],
+    fields: [affiliateStats.userId],
     references: [users.id],
   }),
 }));
 
-export const transformationLogs = pgTable("transformation_logs", {
+// New tables for additional features
+
+export const supportTickets = pgTable("support_tickets", {
   id: serial("id").primaryKey(),
-  type: text("type").notNull(), // 'info' | 'error' | 'warning'
-  message: text("message").notNull(),
-  payload: jsonb("payload"),
-  duration_ms: decimal("duration_ms", { precision: 10, scale: 2 }),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  resolved: boolean("resolved").default(false).notNull(),
-  error_message: text("error_message"),
+  userId: integer("user_id").references(() => users.id),
+  subject: text("subject").notNull(),
+  description: text("description").notNull(),
+  status: text("status").notNull().default("open"), // 'open' | 'in_progress' | 'closed'
+  priority: text("priority").notNull().default("medium"), // 'low' | 'medium' | 'high'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  assignedTo: integer("assigned_to").references(() => users.id),
 });
 
+export const ticketMessages = pgTable("ticket_messages", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").references(() => supportTickets.id),
+  userId: integer("user_id").references(() => users.id),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isStaffReply: boolean("is_staff_reply").default(false).notNull(),
+});
+
+export const bonusCodes = pgTable("bonus_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").unique().notNull(),
+  description: text("description").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expired: boolean("expired").default(false).notNull(),
+  createdBy: integer("created_by").references(() => users.id),
+});
+
+export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
+  id: serial("id").primaryKey(),
+  email: text("email").unique().notNull(),
+  isSubscribed: boolean("is_subscribed").default(true).notNull(),
+  subscribedAt: timestamp("subscribed_at").defaultNow().notNull(),
+  unsubscribedAt: timestamp("unsubscribed_at"),
+  source: text("source"), // Track where the subscription came from
+});
+
+export const historicalRaces = pgTable("historical_races", {
+  id: serial("id").primaryKey(),
+  month: integer("month").notNull(), // Removed extra argument
+  year: integer("year").notNull(),
+  prizePool: decimal("prize_pool", { precision: 10, scale: 2 }).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  participants: jsonb("participants").notNull(), // Store all participants
+  totalWagered: decimal("total_wagered", { precision: 18, scale: 2 }).notNull(),
+  participantCount: integer("participant_count").notNull(),
+  status: text("status").notNull().default("completed"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  metadata: jsonb("metadata").default({}).notNull(), // For future extensibility
+});
+
+// Account verification request tables
+export const goatedVerificationRequests = pgTable(
+  "goated_verification_requests",
+  {
+    id: serial("id").primaryKey(),
+    platformUserId: integer("platform_user_id")
+      .references(() => users.id)
+      .notNull(),
+    goatedUsername: text("goated_username").notNull(),
+    goatedUid: text("goated_uid").notNull(),
+    requestedAt: timestamp("requested_at").defaultNow().notNull(),
+    status: text("status").default("pending").notNull(),
+    adminNotes: text("admin_notes"),
+    verifiedAt: timestamp("verified_at"),
+    verifiedBy: integer("verified_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+);
+
+export const telegramVerificationRequests = pgTable(
+  "telegram_verification_requests",
+  {
+    id: serial("id").primaryKey(),
+    platformUserId: integer("platform_user_id")
+      .references(() => users.id)
+      .notNull(),
+    telegramId: text("telegram_id").notNull(),
+    telegramUsername: text("telegram_username"),
+    requestedAt: timestamp("requested_at").defaultNow().notNull(),
+    status: text("status").default("pending").notNull(),
+    adminNotes: text("admin_notes"),
+    verifiedAt: timestamp("verified_at"),
+    verifiedBy: integer("verified_by").references(() => users.id),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+);
+
+export const userRelations = relations(users, ({ one, many }) => ({
+  preferences: one(notificationPreferences, {
+    fields: [users.id],
+    references: [notificationPreferences.userId],
+  }),
+  createdRaces: many(wagerRaces),
+  raceParticipations: many(wagerRaceParticipants),
+  supportTickets: many(supportTickets),
+  assignedTickets: many(supportTickets, { relationName: "assignedTickets" }),
+  // New relations for account linking
+  goatedVerifications: many(goatedVerificationRequests),
+  telegramVerifications: many(telegramVerificationRequests),
+}));
+
+export const wagerRaceRelations = relations(wagerRaces, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [wagerRaces.createdBy],
+    references: [users.id],
+  }),
+  participants: many(wagerRaceParticipants),
+}));
+
+export const supportTicketRelations = relations(
+  supportTickets,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [supportTickets.userId],
+      references: [users.id],
+    }),
+    assignedStaff: one(users, {
+      fields: [supportTickets.assignedTo],
+      references: [users.id],
+    }),
+    messages: many(ticketMessages),
+  }),
+);
+
+// Verification request relations
+export const goatedVerificationRequestRelations = relations(
+  goatedVerificationRequests,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [goatedVerificationRequests.platformUserId],
+      references: [users.id],
+    }),
+    verifier: one(users, {
+      fields: [goatedVerificationRequests.verifiedBy],
+      references: [users.id],
+      relationName: "goatedVerifier",
+    }),
+  }),
+);
+
+export const telegramVerificationRequestRelations = relations(
+  telegramVerificationRequests,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [telegramVerificationRequests.platformUserId],
+      references: [users.id],
+    }),
+    verifier: one(users, {
+      fields: [telegramVerificationRequests.verifiedBy],
+      references: [users.id],
+      relationName: "telegramVerifier",
+    }),
+  }),
+);
+
+export const insertUserSchema = createInsertSchema(users);
+export const selectUserSchema = createSelectSchema(users);
+export const insertNotificationPreferencesSchema = createInsertSchema(
+  notificationPreferences,
+);
+export const selectNotificationPreferencesSchema = createSelectSchema(
+  notificationPreferences,
+);
+export const insertWagerRaceSchema = createInsertSchema(wagerRaces);
+export const selectWagerRaceSchema = createSelectSchema(wagerRaces);
+export const insertWagerRaceParticipantSchema = createInsertSchema(
+  wagerRaceParticipants,
+);
+export const selectWagerRaceParticipantSchema = createSelectSchema(
+  wagerRaceParticipants,
+);
+export const insertSupportTicketSchema = createInsertSchema(supportTickets);
+export const selectSupportTicketSchema = createSelectSchema(supportTickets);
 export const insertNewsletterSubscriptionSchema = createInsertSchema(
   newsletterSubscriptions,
 );
 export const selectNewsletterSubscriptionSchema = createSelectSchema(
   newsletterSubscriptions,
 );
+
 export const insertHistoricalRaceSchema = createInsertSchema(historicalRaces);
 export const selectHistoricalRaceSchema = createSelectSchema(historicalRaces);
-export const insertAffiliateStatsSchema = createInsertSchema(affiliateStats);
-export const selectAffiliateStatsSchema = createSelectSchema(affiliateStats);
 
+// Verification request schemas
+export const insertGoatedVerificationRequestSchema = createInsertSchema(
+  goatedVerificationRequests,
+);
+export const selectGoatedVerificationRequestSchema = createSelectSchema(
+  goatedVerificationRequests,
+);
+export const insertTelegramVerificationRequestSchema = createInsertSchema(
+  telegramVerificationRequests,
+);
+export const selectTelegramVerificationRequestSchema = createSelectSchema(
+  telegramVerificationRequests,
+);
 
-export const insertMockWagerDataSchema = createInsertSchema(mockWagerData);
-export const selectMockWagerDataSchema = createSelectSchema(mockWagerData);
-export type InsertMockWagerData = typeof mockWagerData.$inferInsert;
-export type SelectMockWagerData = typeof mockWagerData.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
+export type SelectUser = typeof users.$inferSelect;
+export type InsertNotificationPreferences =
+  typeof notificationPreferences.$inferInsert;
+export type SelectNotificationPreferences =
+  typeof notificationPreferences.$inferSelect;
+export type InsertWagerRace = typeof wagerRaces.$inferInsert;
+export type SelectWagerRace = typeof wagerRaces.$inferSelect;
+export type InsertWagerRaceParticipant =
+  typeof wagerRaceParticipants.$inferInsert;
+export type SelectWagerRaceParticipant =
+  typeof wagerRaceParticipants.$inferSelect;
+export type InsertSupportTicket = typeof supportTickets.$inferInsert;
+export type SelectSupportTicket = typeof supportTickets.$inferSelect;
+export type InsertNewsletterSubscription =
+  typeof newsletterSubscriptions.$inferInsert;
+export type SelectNewsletterSubscription =
+  typeof newsletterSubscriptions.$inferSelect;
 
-export type InsertNewsletterSubscription = typeof newsletterSubscriptions.$inferInsert;
-export type SelectNewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
 export type InsertHistoricalRace = typeof historicalRaces.$inferInsert;
 export type SelectHistoricalRace = typeof historicalRaces.$inferSelect;
-export type InsertAffiliateStats = typeof affiliateStats.$inferInsert;
-export type SelectAffiliateStats = typeof affiliateStats.$inferSelect;
 
-export const insertTransformationLogSchema = createInsertSchema(transformationLogs);
-export const selectTransformationLogSchema = createSelectSchema(transformationLogs);
+// Verification request types
+export type InsertGoatedVerificationRequest =
+  typeof goatedVerificationRequests.$inferInsert;
+export type SelectGoatedVerificationRequest =
+  typeof goatedVerificationRequests.$inferSelect;
+export type InsertTelegramVerificationRequest =
+  typeof telegramVerificationRequests.$inferInsert;
+export type SelectTelegramVerificationRequest =
+  typeof telegramVerificationRequests.$inferSelect;
 
-export type InsertTransformationLog = typeof transformationLogs.$inferInsert;
-export type SelectTransformationLog = typeof transformationLogs.$inferSelect;
+export {
+  challenges,
+  challengeEntries,
+  telegramBotState,
+  telegramUsers,
+  verificationRequests,
+};

@@ -1,71 +1,101 @@
-
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import type { ReactNode } from "react";
+import { PreLoader } from "./PreLoader";
 import { useState, useEffect } from "react";
-import { LoadingSpinner } from "./LoadingSpinner";
-import { useLocation } from "wouter";
 
 interface PageTransitionProps {
   children: ReactNode;
   isLoading?: boolean;
 }
 
-export function PageTransition({ children, isLoading = false }: PageTransitionProps) {
+// Define the animation variants
+const pageVariants = {
+  initial: {
+    opacity: 0,
+    y: 10,
+  },
+  animate: {
+    opacity: 1,
+    y: 0,
+  },
+  exit: {
+    opacity: 0,
+    y: -10,
+  },
+};
+
+export function PageTransition({
+  children,
+  isLoading = false,
+}: PageTransitionProps) {
   const [showLoading, setShowLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [location] = useLocation();
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [shouldRenderContent, setShouldRenderContent] = useState(!isLoading);
 
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
-
+  // Only show loader if loading takes more than 250ms to avoid flicker for fast loads
   useEffect(() => {
     let timeout: NodeJS.Timeout;
+
     if (isLoading) {
-      // Show loader after a brief delay to prevent flashing
-      timeout = setTimeout(() => setShowLoading(true), 150);
-    } else {
-      setShowLoading(false);
+      setIsCompleted(false);
+      setShouldRenderContent(false);
+      timeout = setTimeout(() => setShowLoading(true), 250);
+    } else if (!isCompleted) {
+      if (showLoading) {
+        // If we were showing the loader, wait for the complete animation
+        // This ensures we don't cut off animations in the middle
+      } else {
+        // If loading is done but we weren't showing the loader, render content immediately
+        setShouldRenderContent(true);
+        // Scroll to top when new content loads
+        window.scrollTo({ top: 0, behavior: "instant" });
+        timeout = setTimeout(() => {
+          setShowLoading(false);
+          setIsCompleted(false);
+        }, 500);
+      }
     }
+
     return () => clearTimeout(timeout);
-  }, [isLoading]);
+  }, [isLoading, isCompleted, showLoading]);
 
-  // Reset loading state on route change
-  useEffect(() => {
-    setShowLoading(false);
-  }, [location]);
+  // Handle loading completion
+  const handleLoadComplete = () => {
+    setIsCompleted(true);
+    // Wait a moment before rendering content to allow for transition
+    setTimeout(() => {
+      setShowLoading(false);
+      setShouldRenderContent(true);
+    }, 800); // Increased from 600ms to ensure smoother transition
+  };
 
-  if (!mounted) return null;
+  if (isLoading && showLoading && !isCompleted) {
+    return <PreLoader onLoadComplete={handleLoadComplete} />;
+  }
+
+  // Only render content when we should
+  if (!shouldRenderContent) {
+    return null; // Return empty during transition
+  }
 
   return (
-    <AnimatePresence mode="wait">
-      {isLoading && showLoading ? (
-        <motion.div
-          key="loader"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 flex items-center justify-center bg-[#14151A]/80 backdrop-blur-sm z-50"
-        >
-          <LoadingSpinner size="lg" />
-        </motion.div>
-      ) : (
-        <motion.div
-          key={`content-${location}`}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{
-            duration: 0.3,
-            ease: "easeInOut"
-          }}
-          className="min-h-screen w-full"
-        >
-          {children}
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <motion.div
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={pageVariants}
+      transition={{
+        type: "tween",
+        duration: 0.3,
+        ease: "easeOut",
+      }}
+      style={{
+        willChange: "opacity, transform",
+        backfaceVisibility: "hidden",
+      }}
+      className="w-full"
+    >
+      {children}
+    </motion.div>
   );
 }

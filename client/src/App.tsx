@@ -1,36 +1,24 @@
-import React, { Suspense } from "react";
-// Imports necessary components for routing and state management
+import React, { Suspense, useEffect } from "react";
 import { Switch, Route, useLocation } from "wouter";
-// Imports for error handling and boundary
-import { ErrorBoundary } from "react-error-boundary";
-// Imports the authentication provider
-import { AuthProvider } from "@/hooks/use-auth";
-// Imports a custom error fallback component
-import { ErrorFallback } from "@/components/ErrorFallback";
-// Imports the tooltip provider
-import { TooltipProvider } from "@/components/ui/tooltip";
-// Imports for animation
-import { AnimatePresence, motion } from "framer-motion";
-// Imports the toaster for notifications
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
-// Imports the main layout component
-import { Layout } from "@/components/Layout";
-// Imports a loading spinner component
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-// Imports a protected route component
-import { ProtectedRoute } from "@/lib/protected-route";
-// Imports a preloader component
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider, useAuth, requiresAuth } from "@/lib/auth";
+import { AnimatePresence } from "framer-motion";
+import { ErrorBoundary } from "react-error-boundary";
 import { PreLoader } from "@/components/PreLoader";
-// Imports the not found component
+import { Layout } from "@/components/Layout";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Redirect } from "@/lib/navigation";
+
+// Import all pages
 import NotFound from "@/pages/not-found";
-// Imports the home page component
 import Home from "@/pages/Home";
-// Imports the authentication page component
-import AuthPage from "@/pages/auth-page";
 import VipTransfer from "@/pages/VipTransfer";
 import ProvablyFair from "@/pages/ProvablyFair";
 import WagerRaces from "@/pages/WagerRaces";
-import BonusCodes from "@/pages/BonusCodes";
+import BonusCodes from "@/pages/bonus-codes";
 import NotificationPreferences from "@/pages/notification-preferences";
 import WagerRaceManagement from "@/pages/admin/WagerRaceManagement";
 import UserManagement from "@/pages/admin/UserManagement";
@@ -38,119 +26,192 @@ import NotificationManagement from "@/pages/admin/NotificationManagement";
 import BonusCodeManagement from "@/pages/admin/BonusCodeManagement";
 import SupportManagement from "@/pages/admin/SupportManagement";
 import Leaderboard from "@/pages/Leaderboard";
-import Help from "@/pages/Help";
+import Help from "./pages/Help";
 import UserProfile from "@/pages/UserProfile";
 import Telegram from "@/pages/Telegram";
 import HowItWorks from "@/pages/HowItWorks";
 import GoatedToken from "@/pages/GoatedToken";
 import Support from "@/pages/support";
 import FAQ from "@/pages/faq";
-import VipProgram from "@/pages/VipProgram";
+import VipProgram from "./pages/VipProgram";
 import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
-import WheelChallenge from "@/pages/WheelChallenge";
-import { AdminRoute } from "@/components/AdminRoute";
+import AdminDashboard from "./pages/admin/Dashboard"; // Added import for AdminDashboard
 
-// MainContent Component
-// Handles the core application rendering logic including preloader and route management
-function MainContent() {
-  const [isInitialLoad, setIsInitialLoad] = React.useState(true);
-
-  React.useEffect(() => {
-    const hasVisited = sessionStorage.getItem('hasVisited');
-    if (hasVisited) {
-      setIsInitialLoad(false);
-    } else {
-      const timeout = setTimeout(() => {
-        sessionStorage.setItem('hasVisited', 'true');
-        setIsInitialLoad(false);
-      }, 1500);
-      return () => clearTimeout(timeout);
-    }
-  }, []);
-
+function ErrorFallback({ error }: { error: Error }) {
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="max-w-md w-full mx-4 p-6 text-center">
+        <h2 className="text-2xl font-bold text-destructive mb-4">
+          Something went wrong
+        </h2>
+        <pre className="text-sm bg-muted p-4 rounded-lg overflow-auto">
+          {error.message}
+        </pre>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg"
+        >
+          Reload page
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+  const [location] = useLocation();
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!user && requiresAuth(location)) {
+    return <Redirect to="/" />;
+  }
+
+  return <>{children}</>;
+}
+
+function Router() {
+  return (
+    <Layout>
       <AnimatePresence mode="wait">
-        {isInitialLoad ? (
-          // Show preloader on initial visit
-          <PreLoader key="preloader" onLoadComplete={() => setIsInitialLoad(false)} />
-        ) : (
-          // Main application content with loading state
-          <Suspense fallback={
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 flex items-center justify-center bg-[#14151A] z-50"
-            >
-              <LoadingSpinner size="lg" />
-            </motion.div>
-          }>
-            <TooltipProvider>
-              <Layout>
-                {/* Main routing configuration */}
-                <Switch>
-                  {/* Public Routes */}
-                  <Route path="/" component={Home} />
-                  <Route path="/auth" component={AuthPage} />
-                  <Route path="/wager-races" component={WagerRaces} />
-                  <Route path="/leaderboard" component={Leaderboard} />
-                  <Route path="/tips-and-strategies" component={TipsAndStrategies} />
-                  <Route path="/promotions" component={Promotions} />
-                  <Route path="/help" component={Help} />
-                  <Route path="/provably-fair" component={ProvablyFair} />
-                  <Route path="/telegram" component={Telegram} />
-                  <Route path="/how-it-works" component={HowItWorks} />
-                  <Route path="/goated-token" component={GoatedToken} />
-                  <Route path="/faq" component={FAQ} />
-                  <Route path="/vip-program" component={VipProgram} />
-                  <Route path="/challenges" component={Challenges} />
-                  <Route path="/wager-races" component={WagerRaces} />
-                  <Route path="/bonus-codes" component={BonusCodes} />
-                  <Route path="/provably-fair" component={ProvablyFair} />
-                  <Route path="/vip-transfer" component={VipTransfer} />
-                  <Route path="*" component={NotFound} />
-
-                  {/* Protected Routes - Require Authentication */}
-                  <ProtectedRoute path="/bonus-codes" component={BonusCodes} />
-                  <ProtectedRoute path="/notification-preferences" component={NotificationPreferences} />
-                  <ProtectedRoute path="/vip-transfer" component={VipTransfer} />
-                  <ProtectedRoute path="/support" component={Support} />
-                  <ProtectedRoute path="/wheel-challenge" component={WheelChallenge} />
-                  <ProtectedRoute path="/user/:id" component={UserProfile} />
-
-                  {/* Admin Routes - Require Admin Privileges */}
-                  <AdminRoute path="/admin/user-management" component={UserManagement} />
-                  <AdminRoute path="/admin/wager-races" component={WagerRaceManagement} />
-                  <AdminRoute path="/admin/bonus-codes" component={BonusCodeManagement} />
-                  <AdminRoute path="/admin/notifications" component={NotificationManagement} />
-                  <AdminRoute path="/admin/support" component={SupportManagement} />
-
-                  {/* Fallback Route */}
-                  <Route component={NotFound} />
-                </Switch>
-              </Layout>
-              <Toaster />
-            </TooltipProvider>
-          </Suspense>
-        )}
+        <ErrorBoundary FallbackComponent={ErrorFallback}>
+          <Switch>
+            {/* Public Routes */}
+            <Route path="/" component={Home} />
+            <Route path="/wager-races" component={WagerRaces} />
+            <Route path="/leaderboard" component={Leaderboard} />
+            <Route path="/tips-and-strategies" component={TipsAndStrategies} />
+            <Route path="/promotions" component={Promotions} />
+            <Route path="/help" component={Help} />
+            <Route path="/provably-fair" component={ProvablyFair} />
+            <Route path="/telegram" component={Telegram} />
+            <Route path="/how-it-works" component={HowItWorks} />
+            <Route path="/goated-token" component={GoatedToken} />
+            <Route path="/faq" component={FAQ} />
+            <Route path="/vip-program" component={VipProgram} />
+            <Route path="/challenges" component={Challenges} />
+            {/* Protected Routes */}
+            <Route path="/bonus-codes">
+              <ProtectedRoute>
+                <BonusCodes />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/notification-preferences">
+              <ProtectedRoute>
+                <NotificationPreferences />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/vip-transfer">
+              <ProtectedRoute>
+                <VipTransfer />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/support">
+              <ProtectedRoute>
+                <Support />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/user/:id">
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            </Route>
+            {/* Admin Routes */}
+            <Route path="/admin/wager-races">
+              <ProtectedRoute>
+                <WagerRaceManagement />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/admin/users">
+              <ProtectedRoute>
+                <UserManagement />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/admin/notifications">
+              <ProtectedRoute>
+                <NotificationManagement />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/admin/bonus-codes">
+              <ProtectedRoute>
+                <BonusCodeManagement />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/admin/support">
+              <ProtectedRoute>
+                <SupportManagement />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/admin">
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            </Route>{" "}
+            {/* Added route for AdminDashboard */}
+            {/* 404 Route */}
+            <Route component={NotFound} />
+          </Switch>
+        </ErrorBoundary>
       </AnimatePresence>
-    </ErrorBoundary>
+    </Layout>
   );
 }
 
-// Main App Component
-// Provides global providers and error boundaries for the application
-export default function App() {
+function App() {
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <AuthProvider>
-        <TooltipProvider>
-          <MainContent />
-        </TooltipProvider>
-      </AuthProvider>
-    </ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ErrorBoundary>
+    </QueryClientProvider>
   );
 }
+
+function AppContent() {
+  // Force initial load to true on first visit or when explicitly testing
+  const [isInitialLoad, setIsInitialLoad] = React.useState(() => {
+    // Always show initial load on first visit
+    return !sessionStorage.getItem("hasVisited");
+  });
+
+  // Handle session storage separately from loading state
+  useEffect(() => {
+    if (isInitialLoad) {
+      // Only set the hasVisited flag after loading completes
+      // This is now handled by the onLoadComplete callback
+    }
+  }, [isInitialLoad]);
+
+  const handleLoadComplete = () => {
+    // Set the session storage flag to prevent showing the loader on subsequent visits
+    sessionStorage.setItem("hasVisited", "true");
+    // Delay state update to ensure animation completes
+    setTimeout(() => {
+      setIsInitialLoad(false);
+    }, 600); // Adding delay to ensure animation completes
+  };
+
+  return (
+    <AnimatePresence mode="wait">
+      {isInitialLoad ? (
+        <PreLoader onLoadComplete={handleLoadComplete} />
+      ) : (
+        <Suspense fallback={<LoadingSpinner />}>
+          <TooltipProvider>
+            <Router />
+            <Toaster />
+          </TooltipProvider>
+        </Suspense>
+      )}
+    </AnimatePresence>
+  );
+}
+
+export default App;

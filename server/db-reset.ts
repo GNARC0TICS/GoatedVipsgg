@@ -38,13 +38,29 @@ async function resetDatabase() {
     const apiData = await response.json();
     const users_data = apiData.data || apiData.results || apiData;
 
+    // Create sample wager race
+    const [currentRace] = await db
+      .insert(wagerRaces)
+      .values({
+        title: "Weekly Wager Race",
+        type: "weekly",
+        status: "live",
+        prizePool: "1000.00",
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        minWager: "10.00",
+        prizeDistribution: { "1": 50, "2": 30, "3": 20 },
+        rules: "Compete for the highest wager amount in 7 days",
+        description: "Weekly competition for top wagerers",
+      })
+      .returning();
+
     // Create new entries
     for (const entry of users_data) {
-      // Insert user with API uid as id
+      // Insert user
       const [user] = await db
         .insert(users)
         .values({
-          id: parseInt(entry.uid, 36) % 2147483647, // Convert uid to int32
           username: entry.name,
           email: `${entry.name.toLowerCase()}@placeholder.com`,
           password: "placeholder",
@@ -53,13 +69,23 @@ async function resetDatabase() {
         })
         .returning();
 
-      // Insert affiliate stats with API uid and name
+      // Insert affiliate stats
       await db.insert(affiliateStats).values({
-        id: parseInt(entry.uid, 36) % 2147483647, // Convert uid to int32
-        userId: user.id,
-        totalWager: entry.wagered.all_time || 0,
-        commission: 0,
+        user_id: user.id,
+        total_wager: entry.wagered.all_time || "0",
+        commission: "0",
         timestamp: new Date(),
+      });
+
+      // Insert race participant data
+      await db.insert(wagerRaceParticipants).values({
+        race_id: currentRace.id,
+        user_id: user.id,
+        total_wager: entry.wagered.weekly || "0",
+        rank: null,
+        wager_history: [],
+        joined_at: new Date(),
+        updated_at: new Date(),
       });
 
       // Insert default notification preferences

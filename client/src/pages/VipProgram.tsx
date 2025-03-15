@@ -108,8 +108,6 @@ const benefits = [
   { name: "Goated Event Invitations", startingTier: "EMERALD" },
 ];
 
-import { PageTransition } from "@/components/PageTransition";
-
 export default function VipProgram() {
   const [expandedTier, setExpandedTier] = useState<string | null>(null);
 
@@ -132,7 +130,7 @@ export default function VipProgram() {
         </div>
 
         <button
-          onClick={() => window.location.href = '/'}
+          onClick={() => (window.location.href = "/")}
           className="mb-8 px-4 py-2 flex items-center gap-2 text-white hover:text-[#D7FF00] transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />

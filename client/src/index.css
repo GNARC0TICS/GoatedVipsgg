@@ -1,25 +1,6 @@
-html {
-  scroll-behavior: smooth;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  -webkit-tap-highlight-color: transparent;
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
 @font-face {
-  font-family: 'MonaSansCondensed-ExtraBold';
-  src: url('/fonts/MonaSansCondensed-ExtraBold.woff2') format('woff2');
+  font-family: "MonaSansCondensed-ExtraBold";
+  src: url("/fonts/MonaSansCondensed-ExtraBold.woff2") format("woff2");
   font-weight: 800;
   font-style: normal;
   font-stretch: condensed;
@@ -33,18 +14,18 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: #14151A;
+  background: #14151a;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2A2B31;
+  background: #2a2b31;
   border-radius: 4px;
   transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #D7FF00;
+  background: #d7ff00;
 }
 
 @keyframes fadeInOut {
@@ -85,14 +66,26 @@ html {
 @tailwind utilities;
 
 @keyframes flicker {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 @keyframes wiggle {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-10deg); }
-  75% { transform: rotate(10deg); }
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
 }
 
 .animate-flicker {
@@ -112,7 +105,9 @@ html {
   .dropdown-content-enter-active {
     opacity: 1;
     transform: translateY(0);
-    transition: opacity 200ms, transform 200ms;
+    transition:
+      opacity 200ms,
+      transform 200ms;
   }
 
   .mobile-nav-item-enter {
@@ -123,7 +118,9 @@ html {
   .mobile-nav-item-enter-active {
     opacity: 1;
     transform: translateX(0);
-    transition: opacity 200ms, transform 200ms;
+    transition:
+      opacity 200ms,
+      transform 200ms;
   }
 }
 
@@ -261,10 +258,18 @@ html {
 }
 
 @keyframes trophyShake {
-  0% { transform: rotate(0deg); }
-  25% { transform: rotate(-5deg); }
-  75% { transform: rotate(5deg); }
-  100% { transform: rotate(0deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-5deg);
+  }
+  75% {
+    transform: rotate(5deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
 }
 
 @layer components {
@@ -390,7 +395,8 @@ html {
 }
 
 @keyframes pulse-subtle {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -415,198 +421,4 @@ html {
 
 .animate-scroll {
   animation: scroll 15s linear infinite;
-}
-
-
-/* ================================
-   🔹 WHEEL COMPONENT STYLES 🔹
-================================ */
-
-/* 🎰 1. Core Wheel Styles */
-.wheel-segment-hover {
-  transition: all 0.3s ease-out;
-}
-
-.wheel-segment-hover:hover {
-  filter: brightness(1.3) contrast(1.2);
-  transform: scale(1.03);
-}
-
-.wheel-text {
-  transform-origin: center;
-  paint-order: stroke;
-  stroke: rgba(0, 0, 0, 0.8);
-  stroke-width: 0.6px;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  font-weight: bold;
-  text-shadow: 
-    0 1px 2px rgba(0, 0, 0, 0.8),
-    0 2px 4px rgba(0, 0, 0, 0.6),
-    0 0 6px rgba(255, 255, 255, 0.2);
-}
-
-/* 🏆 2. Wheel Center Effects */
-.wheel-center {
-  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
-}
-
-.wheel-ring {
-  animation: ringPulse 2.5s infinite;
-}
-
-.wheel-emblem {
-  transform-origin: center;
-  paint-order: stroke;
-  stroke: rgba(0, 0, 0, 0.7);
-  stroke-width: 0.4px;
-  text-shadow: 
-    0 0 6px rgba(255, 215, 0, 0.6),
-    0 0 12px rgba(255, 215, 0, 0.4);
-}
-
-/* 🌟 3. Animated Glow & Metallic Shine */
-@keyframes glowPulse {
-  0%, 100% { filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.4)); }
-  50% { filter: drop-shadow(0 0 14px rgba(255, 215, 0, 0.6)); }
-}
-
-@keyframes metallicShine {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-@keyframes ringPulse {
-  0%, 100% { 
-    stroke-opacity: 0.4;
-    stroke-width: 0.6;
-  }
-  50% { 
-    stroke-opacity: 0.9;
-    stroke-width: 0.9;
-  }
-}
-
-/* ✨ 4. Win Effects & Highlights */
-@keyframes segmentPulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.07); opacity: 0.9; }
-}
-
-@keyframes sparkleFloat {
-  0% {
-    transform: translate(0, 0) rotate(0deg) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--float-x, 30px), var(--float-y, -30px)) rotate(360deg) scale(0);
-    opacity: 0;
-  }
-}
-
-.wheel-glow {
-  animation: glowPulse 3s infinite;
-}
-
-.segment-pulse {
-  animation: segmentPulse 1.5s ease-in-out infinite;
-}
-
-.sparkle {
-  --float-x: random(-40px, 40px);
-  --float-y: random(-40px, 40px);
-  animation: sparkleFloat 1.2s ease-out forwards;
-}
-
-/* 🎆 Confetti Win Effect */
-@keyframes confettiPop {
-  0% { transform: translateY(0px) scale(1); opacity: 1; }
-  100% { transform: translateY(-40px) scale(0.7); opacity: 0; }
-}
-
-.confetti {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background-color: var(--confetti-color, #FFD700);
-  border-radius: 50%;
-  animation: confettiPop 1.2s ease-out forwards;
-}
-
-/* 🎇 Final Prize Win Effects */
-@keyframes pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-  100% { transform: scale(1); }
-}
-
-.animate-pop {
-  animation: pop 0.4s ease-in-out;
-}
-
-.shadow-glow {
-  box-shadow: 
-    0 0 25px rgba(255, 215, 0, 0.5),
-    0 0 50px rgba(255, 215, 0, 0.3);
-}
-
-/* 📢 Toast Animations for Wins */
-@keyframes winReveal {
-  0% { transform: scale(0.85); opacity: 0; }
-  50% { transform: scale(1.15); opacity: 0.8; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.win-toast {
-  animation: winReveal 0.6s ease-out forwards;
-}
-
-/* 🏆 Special Bonus Effects */
-.gold-tier {
-  background: linear-gradient(45deg, #FFD700, #FFEC8B);
-  background-size: 200% 200%;
-  animation: metallicShine 2s linear infinite;
-}
-
-.silver-tier {
-  background: linear-gradient(45deg, #C0C0C0, #D3D3D3);
-  background-size: 200% 200%;
-  animation: metallicShine 2.5s linear infinite;
-}
-
-.platinum-tier {
-  background: linear-gradient(45deg, #E5E4E2, #B4C4D4);
-  background-size: 200% 200%;
-  animation: metallicShine 3s linear infinite;
-}
-
-.diamond-tier {
-  background: linear-gradient(45deg, #B9F2FF, #00BFFF);
-  background-size: 200% 200%;
-  animation: metallicShine 3.5s linear infinite;
-}
-
-@layer utilities {
-  .dropdown-content-enter {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-
-  .dropdown-content-enter-active {
-    opacity: 1;
-    transform: translateY(0);
-    transition: opacity 200ms, transform 200ms;
-  }
-
-  .mobile-nav-item-enter {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-
-  .mobile-nav-item-enter-active {
-    opacity: 1;
-    transform: translateX(0);
-    transition: opacity 200ms, transform 200ms;
-  }
 }

@@ -1,45 +1,11 @@
 import React from "react";
-import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Card, CardContent } from "@/components/ui/card";
+import { TrendingUp, Calendar, Clock, Crown } from "lucide-react";
+import { motion } from "framer-motion";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "./LoadingSpinner";
-import { Sheet, SheetContent } from "@/components/ui/sheet"
-import {Button} from "@/components/ui/button";
-import {ArrowRight} from "lucide-react";
-import {VerificationBadge} from "@/components/VerificationBadge";
-import { useLocation } from "wouter";
-import { useState } from "react";
-import { User, Trophy, Award, Settings } from "lucide-react";
-import { Portal } from '@radix-ui/react-portal';
-
-// Add these interfaces at the top with other imports
-interface VerificationBadgeProps {
-  size: 'sm' | 'lg';
-}
-
-interface LeaderboardEntry {
-  uid: string;
-  wagered: {
-    today: number;
-    this_week: number;
-    this_month: number;
-    all_time: number;
-  };
-}
-
-interface LeaderboardData {
-  data: {
-    today: { data: LeaderboardEntry[] };
-    weekly: { data: LeaderboardEntry[] };
-    monthly: { data: LeaderboardEntry[] };
-    all_time: { data: LeaderboardEntry[] };
-  };
-}
-
-interface UserData {
-  isVerified: boolean;
-  verifiedAt?: string;
-}
 
 interface QuickProfileProps {
   userId: string;
@@ -47,171 +13,209 @@ interface QuickProfileProps {
   children: React.ReactNode;
 }
 
-export function QuickProfile({ userId, username, children }: QuickProfileProps) {
-  const { data: userData, isError, isLoading: isUserLoading } = useQuery<UserData>({
-    queryKey: [`/api/users/${userId}/quick-stats`],
-    staleTime: 30000,
-    enabled: !!userId,
-    retry: 1,
-    onError: (error) => {
-      console.error('QuickProfile fetch error:', error);
-    }
-  });
+interface UserStats {
+  wagered: {
+    today: number;
+    this_week: number;
+    this_month: number;
+    all_time: number;
+  };
+  position?: {
+    daily?: number;
+    weekly?: number;
+    monthly?: number;
+  };
+}
 
-  // Allow viewing profile without authentication
-  const isViewable = !isUserLoading && (userData || isError);
-
-  const quickActions = [
-    { label: "View Profile", icon: User, href: `/profile/${userId}` },
-    { label: "Race History", icon: Trophy, href: `/profile/${userId}/races` },
-    { label: "Achievements", icon: Award, href: `/profile/${userId}/achievements` },
-    { label: "Settings", icon: Settings, href: `/profile/${userId}/settings` }
-  ];
-  const { data: leaderboardData, isLoading: isLeaderboardLoading } = useQuery<LeaderboardData>({
+export function QuickProfile({
+  userId,
+  username,
+  children,
+}: QuickProfileProps) {
+  const { data: leaderboardData, isLoading } = useQuery({
     queryKey: ["/api/affiliate/stats"],
     staleTime: 30000,
+    retry: 3,
+    refetchOnWindowFocus: false,
+    initialData: {
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    },
   });
+
+  interface LeaderboardPlayer {
+    uid: string;
+    wagered: {
+      today: number;
+      this_week: number;
+      this_month: number;
+      all_time: number;
+    };
+  }
 
   const stats = React.useMemo(() => {
     if (!leaderboardData?.data) return null;
 
-    // Add proper typing for leaderboard data
-    interface LeaderboardEntry {
-      uid: string;
-      wagered: {
-        today: number;
-        this_week: number;
-        this_month: number;
-        all_time: number;
-      };
-    }
-
     const userStats = {
-      today: leaderboardData.data.today.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.today || 0,
-      this_week: leaderboardData.data.weekly.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.this_week || 0,
-      this_month: leaderboardData.data.monthly.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.this_month || 0,
-      all_time: leaderboardData.data.all_time.data.find((p: LeaderboardEntry) => p.uid === userId)?.wagered?.all_time || 0,
+      today:
+        leaderboardData.data.today.data.find(
+          (p: LeaderboardPlayer) => p.uid === userId,
+        )?.wagered?.today || 0,
+      this_week:
+        leaderboardData.data.weekly.data.find(
+          (p: LeaderboardPlayer) => p.uid === userId,
+        )?.wagered?.this_week || 0,
+      this_month:
+        leaderboardData.data.monthly.data.find(
+          (p: LeaderboardPlayer) => p.uid === userId,
+        )?.wagered?.this_month || 0,
+      all_time:
+        leaderboardData.data.all_time.data.find(
+          (p: LeaderboardPlayer) => p.uid === userId,
+        )?.wagered?.all_time || 0,
     };
 
-    const rankings = {
-      weekly: (leaderboardData.data.weekly.data.findIndex((p: LeaderboardEntry) => p.uid === userId) + 1) || undefined,
-      monthly: (leaderboardData.data.monthly.data.findIndex((p: LeaderboardEntry) => p.uid === userId) + 1) || undefined,
-      all_time: (leaderboardData.data.all_time.data.findIndex((p: LeaderboardEntry) => p.uid === userId) + 1) || undefined,
+    const position = {
+      weekly:
+        leaderboardData.data.weekly.data.findIndex(
+          (p: LeaderboardPlayer) => p.uid === userId,
+        ) + 1 || undefined,
+      monthly:
+        leaderboardData.data.monthly.data.findIndex(
+          (p: LeaderboardPlayer) => p.uid === userId,
+        ) + 1 || undefined,
     };
 
-    return { wagered: userStats, rankings };
+    return {
+      wagered: userStats,
+      position,
+    };
   }, [leaderboardData, userId]);
 
-  const [open, setOpen] = useState(false);
-  const [, setLocation] = useLocation();
-
   return (
-    <>
-      <HoverCard>
-        <HoverCardTrigger asChild>
-          <span className="cursor-pointer">{children}</span>
-        </HoverCardTrigger>
-        <Portal>
-          <HoverCardContent side="top" align="center" className="w-80 bg-[#1A1B21] border border-[#2A2B31] p-4 z-50">
-            {isUserLoading ? (
-              <div className="flex justify-center p-4">
-                <LoadingSpinner />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={getTierIcon(getTierFromWager(stats?.wagered.all_time || 0))}
-                    alt="VIP Tier"
-                    className="w-8 h-8"
-                  />
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-heading text-white">{username}</span>
-                    {userData?.isVerified && <VerificationBadge size="sm" />}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center p-2 rounded bg-black/20">
-                    <span className="text-white/70 text-sm">Weekly Rank:</span>
-                    <span className="text-[#10B981] font-mono">#{stats?.rankings.weekly || '-'}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded bg-black/20">
-                    <span className="text-white/70 text-sm">Monthly Rank:</span>
-                    <span className="text-[#F59E0B] font-mono">#{stats?.rankings.monthly || '-'}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded bg-black/20">
-                    <span className="text-white/70 text-sm">All-Time Rank:</span>
-                    <span className="text-[#EC4899] font-mono">#{stats?.rankings.all_time || '-'}</span>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded bg-[#D7FF00]/10 border border-[#D7FF00]/20">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#D7FF00] text-sm font-semibold">All-Time Wagered:</span>
-                    <span className="text-white font-mono font-bold">
-                      ${stats?.wagered.all_time.toLocaleString() || '0'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </HoverCardContent>
-        </Portal>
-      </HoverCard>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-full sm:w-[540px] bg-[#1A1B21] border-l border-[#2A2B31] p-6">
-          <div className="space-y-6">
+    <Sheet>
+      <SheetTrigger asChild>
+        <span className="cursor-pointer hover:text-[#D7FF00] transition-colors">
+          {children}
+        </span>
+      </SheetTrigger>
+      <SheetContent
+        side="right"
+        className="fixed inset-y-0 right-0 w-[90vw] md:w-[400px] bg-[#1A1B21]/95 backdrop-blur-lg border-[#2A2B31] overflow-y-auto data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right"
+      >
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <LoadingSpinner />
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6 pt-6"
+          >
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-[#2A2B31] flex items-center justify-center">
+              <div
+                className={`h-16 w-16 rounded-full bg-[#2A2B31] flex items-center justify-center ${stats?.position?.monthly === 1 ? "ring-4 ring-[#D7FF00] animate-pulse" : ""}`}
+              >
                 <img
-                  src={getTierIcon(getTierFromWager(stats?.wagered.all_time || 0))}
-                  alt="VIP Tier"
-                  className="w-12 h-12"
+                  src={getTierIcon(
+                    getTierFromWager(stats?.wagered?.all_time || 0),
+                  )}
+                  alt="Tier"
+                  className="h-12 w-12"
                 />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-heading text-white">{username}</h2>
-                  {userData?.isVerified && <VerificationBadge size="lg" />}
-                </div>
-                <Button
-                  variant="link"
-                  className="text-[#D7FF00] p-0 h-auto text-sm"
-                  onClick={() => setLocation(`/profile/${userId}`)}
+                <h2
+                  className={`text-2xl font-heading ${stats?.position?.monthly === 1 ? "text-[#D7FF00]" : "text-white"}`}
                 >
-                  View Full Profile <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid gap-4">
-              <div className="p-4 rounded-lg bg-black/20">
-                <div className="flex justify-between items-center">
-                  <span className="text-white/70">Weekly Rank</span>
-                  <span className="text-[#D7FF00] font-mono font-bold">#{stats?.rankings.weekly || '-'}</span>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-lg bg-black/20">
-                <div className="flex justify-between items-center">
-                  <span className="text-white/70">Total Wagered</span>
-                  <span className="text-[#D7FF00] font-mono font-bold">${stats?.wagered.all_time.toLocaleString() || '0'}</span>
-                </div>
-              </div>
-
-              {userData?.isVerified && (
-                <div className="p-4 rounded-lg bg-[#D7FF00]/10 border border-[#D7FF00]/20">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#D7FF00]">Verified Member</span>
-                    <span className="text-white font-mono">Since {new Date(userData.verifiedAt).toLocaleDateString()}</span>
+                  {username}
+                  {stats?.position?.monthly === 1 && (
+                    <span className="ml-2 inline-flex items-center">
+                      <Crown className="h-5 w-5 text-[#D7FF00] animate-bounce" />
+                    </span>
+                  )}
+                </h2>
+                <p className="text-[#8A8B91]">Profile Stats</p>
+                {stats?.position && (
+                  <div className="flex gap-2 mt-1">
+                    {stats.position.monthly && (
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded ${
+                          stats.position.monthly === 1
+                            ? "bg-[#D7FF00] text-black font-bold"
+                            : "bg-[#2A2B31] text-white"
+                        }`}
+                      >
+                        #{stats.position.monthly} Monthly
+                      </span>
+                    )}
+                    {stats.position.weekly && (
+                      <span className="text-xs px-2 py-0.5 rounded bg-[#2A2B31] text-white">
+                        #{stats.position.weekly} Weekly
+                      </span>
+                    )}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        </SheetContent>
-      </Sheet>
-    </>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+              <Card className="bg-[#1A1B21] border-[#2A2B31]">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="h-4 w-4 text-[#D7FF00]" />
+                    <span className="text-[#8A8B91] text-sm">Today</span>
+                  </div>
+                  <p className="text-xl font-bold text-white">
+                    ${stats?.wagered?.today.toLocaleString() || "0"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#1A1B21] border-[#2A2B31]">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="h-4 w-4 text-[#D7FF00]" />
+                    <span className="text-[#8A8B91] text-sm">Weekly</span>
+                  </div>
+                  <p className="text-xl font-bold text-white">
+                    ${stats?.wagered?.this_week.toLocaleString() || "0"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#1A1B21] border-[#2A2B31]">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="h-4 w-4 text-[#D7FF00]" />
+                    <span className="text-[#8A8B91] text-sm">Monthly</span>
+                  </div>
+                  <p className="text-xl font-bold text-white">
+                    ${stats?.wagered?.this_month.toLocaleString() || "0"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#1A1B21] border-[#2A2B31]">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-4 w-4 text-[#D7FF00]" />
+                    <span className="text-[#8A8B91] text-sm">All Time</span>
+                  </div>
+                  <p className="text-xl font-bold text-white">
+                    ${stats?.wagered?.all_time.toLocaleString() || "0"}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </motion.div>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }

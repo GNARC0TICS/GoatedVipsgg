@@ -27,7 +27,7 @@ import {
 import { useAuth } from "@/lib/auth";
 
 export default function Home() {
-    const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   return (
     <div className="min-h-screen bg-[#14151A]">
       <main className="container mx-auto px-4 py-12">
@@ -55,9 +55,9 @@ export default function Home() {
             transition={{ delay: 0.2 }}
             className="mb-8"
           >
-            <a 
-              href="https://www.Goated.com/r/VIPBOOST" 
-              target="_blank" 
+            <a
+              href="https://www.Goated.com/r/VIPBOOST"
+              target="_blank"
               rel="noopener noreferrer"
               className="block group"
             >
@@ -74,7 +74,8 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="absolute inset-x-0 bottom-full mb-2 opacity-0 group-hover:opacity-100 text-[#D7FF00] text-sm text-center transition-all duration-300 bg-[#1A1B21] p-2 rounded-lg">
-                  Use code VIPBOOST when signing up to instantly join our VIP program
+                  Use code VIPBOOST when signing up to instantly join our VIP
+                  program
                 </div>
               </div>
             </a>
@@ -97,8 +98,8 @@ export default function Home() {
               className="text-xl text-[#8A8B91] max-w-2xl mx-auto mb-12"
             >
               Join an elite community of players at Goated.com, where your
-              wagering transforms into rewards. Compete in exclusive wager races,
-              claim daily bonus codes, and earn monthly payouts in our
+              wagering transforms into rewards. Compete in exclusive wager
+              races, claim daily bonus codes, and earn monthly payouts in our
               player-first ecosystem. From live streams to exclusive insights,
               become part of a thriving community where winning strategies are
               shared daily.
@@ -140,10 +141,12 @@ export default function Home() {
                     <Gift className="h-8 w-8 text-[#D7FF00] mb-4" />
                     <h3 className="text-2xl font-heading uppercase mb-4 text-white text-center flex items-center gap-2 justify-center">
                       Bonus Codes
-                      {!isAuthenticated && <Lock className="h-4 w-4 text-[#8A8B91]" />}
+                      {!isAuthenticated && (
+                        <Lock className="h-4 w-4 text-[#8A8B91]" />
+                      )}
                     </h3>
                     <p className="text-[#8A8B91] mb-6 font-body">
-                      {isAuthenticated 
+                      {isAuthenticated
                         ? "Exclusive bonus codes updated regularly. Claim special rewards and boost your gaming experience."
                         : "Sign in to access exclusive bonus codes and rewards"}
                     </p>
@@ -178,8 +181,8 @@ export default function Home() {
                         VIP Transfer
                       </h3>
                       <p className="text-[#8A8B91] mb-6 font-body">
-                        Transfer your VIP status from other platforms and get cash
-                        bonuses.
+                        Transfer your VIP status from other platforms and get
+                        cash bonuses.
                       </p>
                       <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
                         Find out more <ArrowRight className="h-4 w-4" />
@@ -202,8 +205,8 @@ export default function Home() {
                         </div>
                       </div>
                       <p className="text-[#8A8B91] mb-6 font-body">
-                        Compete in exclusive wager races for massive prize pools and
-                        rewards.
+                        Compete in exclusive wager races for massive prize pools
+                        and rewards.
                       </p>
                       <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
                         How it works <ArrowRight className="h-4 w-4" />
@@ -211,7 +214,7 @@ export default function Home() {
                     </div>
                   </div>
                 </Link>
-                
+
                 <Link href="/challenges" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                     <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
@@ -226,39 +229,11 @@ export default function Home() {
                         </span>
                       </div>
                       <p className="text-[#8A8B91] mb-6 font-body">
-                        Complete daily and weekly challenges to earn exclusive rewards and boost your earnings.
+                        Complete daily and weekly challenges to earn exclusive
+                        rewards and boost your earnings.
                       </p>
                       <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
                         View Challenges <ArrowRight className="h-4 w-4" />
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-                <Link href="/wheel-challenge" className="block">
-                  <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
-                    <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
-                    <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 card-hover h-full w-full flex flex-col justify-between">
-                      <Gift className="h-8 w-8 text-[#D7FF00] mb-4" />
-                      <div className="flex items-center justify-center gap-2 mb-4">
-                        <h3 className="text-2xl font-heading uppercase text-white">
-                          Wheel Spin
-                        </h3>
-                        {!isAuthenticated ? (
-                          <span className="text-xs font-heading text-[#D7FF00] px-2 py-1 bg-[#D7FF00]/10 rounded-full">
-                            SIGN IN TO PLAY
-                          </span>
-                        ) : (
-                          <span className="text-xs font-heading text-[#D7FF00] px-2 py-1 bg-[#D7FF00]/10 rounded-full">
-                            PLAY NOW
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[#8A8B91] mb-6 font-body">
-                        Spin the wheel daily for a chance to win exclusive bonus codes and rewards!
-                        {!isAuthenticated && " Sign in to start winning daily prizes."}
-                      </p>
-                      <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
-                        {isAuthenticated ? "Try Your Luck" : "Sign In to Play"} <ArrowRight className="h-4 w-4" />
                       </span>
                     </div>
                   </div>
@@ -280,8 +255,8 @@ export default function Home() {
                     </h3>
                     <p className="text-[#8A8B91] mb-6 font-body">
                       All in-house games use a provably fair algorithm to ensure
-                      complete transparency and fairness. Each game outcome can be
-                      independently verified.
+                      complete transparency and fairness. Each game outcome can
+                      be independently verified.
                     </p>
                     <Link href="/provably-fair">
                       <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors cursor-pointer">
@@ -290,7 +265,6 @@ export default function Home() {
                     </Link>
                   </div>
                 </div>
-
 
                 <Link href="/goated-token" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
@@ -306,9 +280,9 @@ export default function Home() {
                         </span>
                       </div>
                       <p className="text-[#8A8B91] mb-6 font-body">
-                        Upcoming token launch with exclusive benefits for holders. Get
-                        airdrops based on your wagered amount and unlock special
-                        perks.
+                        Upcoming token launch with exclusive benefits for
+                        holders. Get airdrops based on your wagered amount and
+                        unlock special perks.
                       </p>
                       <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
                         Learn About Airdrops <ArrowRight className="h-4 w-4" />
@@ -331,8 +305,9 @@ export default function Home() {
                         </span>
                       </div>
                       <p className="text-[#8A8B91] mb-6 font-body">
-                        Discover daily promotions, bonuses, and special events. Take advantage
-                        of exclusive offers and boost your gaming experience.
+                        Discover daily promotions, bonuses, and special events.
+                        Take advantage of exclusive offers and boost your gaming
+                        experience.
                       </p>
                       <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
                         View Promotions <ArrowRight className="h-4 w-4" />
@@ -355,8 +330,9 @@ export default function Home() {
                         </span>
                       </div>
                       <p className="text-[#8A8B91] mb-6 font-body">
-                        Join our Telegram community for exclusive updates, bonus codes,
-                        and instant support. Stay connected with fellow players.
+                        Join our Telegram community for exclusive updates, bonus
+                        codes, and instant support. Stay connected with fellow
+                        players.
                       </p>
                       <span className="font-heading text-[#D7FF00] inline-flex items-center gap-2 hover:text-[#D7FF00]/80 transition-colors">
                         Join Community <ArrowRight className="h-4 w-4" />
@@ -380,14 +356,14 @@ export default function Home() {
                 </div>
               </motion.div>
 
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="text-center mt-16"
               >
-                <a 
-                  href="https://www.Goated.com/r/VIPBOOST" 
-                  target="_blank" 
+                <a
+                  href="https://www.Goated.com/r/VIPBOOST"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="inline-block bg-[#D7FF00] text-black font-heading text-xl px-8 py-4 rounded-lg hover:bg-[#D7FF00]/90 transition-all duration-300 transform hover:scale-105"
                 >

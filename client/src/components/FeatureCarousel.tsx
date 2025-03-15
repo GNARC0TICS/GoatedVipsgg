@@ -1,25 +1,66 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/lib/auth"; // Hypothetical auth context
+import { useAuth } from "@/lib/auth"; //Hypothetical auth context
 import { useToast } from "@/hooks/use-toast";
 
+// Create a custom hook for fetching wager totals
 const useWagerTotal = () => {
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["wager-total"],
     queryFn: async () => {
-      const response = await fetch("/api/affiliate/stats");
-      const data = await response.json();
-      const total = data?.data?.all_time?.data?.reduce(
-        (sum: number, entry: any) => sum + (entry?.wagered?.all_time || 0),
-        0
-      );
-      return total || 2147483;
+      try {
+        const response = await fetch("/api/affiliate/stats");
+        const data = await response.json();
+
+        // Extract all time wager total
+        const total = data?.data?.all_time?.data?.reduce((sum: number, entry: any) => {
+          return sum + (entry?.wagered?.all_time || 0);
+        }, 0);
+
+        return total || 0;
+      } catch (error) {
+        console.error("Error fetching wager total:", error);
+        return 0;
+      }
     },
-    refetchInterval: 86400000,
+    staleTime: 60000, // 1 minute
+    refetchInterval: 300000, // 5 minutes
   });
-  return data || 2147483;
+
+  return isLoading ? undefined : data;
+};
+
+// Add animated counting number component
+const AnimatedNumber = ({ value }: { value: number }) => {
+  const [displayValue, setDisplayValue] = useState(0);
+  
+  useEffect(() => {
+    // Don't animate if value is undefined
+    if (value === undefined) return;
+    
+    // Simple animation to count up
+    const duration = 1000; // 1 second animation
+    const steps = 20; // Number of steps
+    const stepTime = duration / steps;
+    const increment = value / steps;
+    let current = 0;
+    
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= value) {
+        setDisplayValue(value);
+        clearInterval(timer);
+      } else {
+        setDisplayValue(Math.floor(current));
+      }
+    }, stepTime);
+    
+    return () => clearInterval(timer);
+  }, [value]);
+  
+  return <>{displayValue.toLocaleString()}</>;
 };
 
 const announcements = [
@@ -35,7 +76,7 @@ const announcements = [
   { text: "CHALLENGES & GIVEAWAYS", link: "/wager-races" },
   { text: "BECOME AN AFFILIATE", link: "/vip-program" },
   { text: "JOIN THE GOATS TODAY!", link: "/auth" },
-  { text: "NEWSLETTER SUBSCRIPTION", link: "/notification-preferences" }
+  { text: "NEWSLETTER SUBSCRIPTION", link: "/notification-preferences" },
 ];
 
 export const FeatureCarousel = () => {
@@ -48,21 +89,29 @@ export const FeatureCarousel = () => {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
 
-  // Memoize the items array
-  const items = useMemo(() => {
-    return totalWager
-      ? [{ text: `+${totalWager.toLocaleString()} WAGERED`, link: "/leaderboard" }, ...announcements]
-      : [];
-  }, [totalWager]);
+  const items = [
+    ...(totalWager !== undefined
+      ? [
+          {
+            text: (
+              <div className="flex gap-1 items-center">
+                <span>+</span>
+                <AnimatedNumber value={totalWager} />
+                <span>WAGERED</span>
+              </div>
+            ),
+            link: "/leaderboard",
+          },
+        ]
+      : [{ text: "LOADING STATS...", link: "/leaderboard" }]),
+    ...announcements,
+  ];
 
-  const wrap = useCallback(
-    (index: number) => {
-      if (index < 0) return items.length - 1;
-      if (index >= items.length) return 0;
-      return index;
-    },
-    [items.length]
-  );
+  const wrap = (index: number) => {
+    if (index < 0) return items.length - 1;
+    if (index >= items.length) return 0;
+    return index;
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -72,16 +121,20 @@ export const FeatureCarousel = () => {
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [isDragging, wrap]);
+  }, [isDragging, items.length]);
 
-  const handleDragStart = useCallback((event: React.TouchEvent | React.MouseEvent) => {
+  const handleDragStart = (event: React.TouchEvent | React.MouseEvent) => {
     setIsDragging(true);
     setDragStart("touches" in event ? event.touches[0].clientX : event.clientX);
-  }, []);
+  };
 
-  const handleDragEnd = useCallback((event: React.TouchEvent | React.MouseEvent) => {
+  const handleDragEnd = (event: React.TouchEvent | React.MouseEvent) => {
     if (!isDragging) return;
-    const endX = "changedTouches" in event ? event.changedTouches[0].clientX : event.clientX;
+
+    const endX =
+      "changedTouches" in event
+        ? event.changedTouches[0].clientX
+        : event.clientX;
     const diff = endX - dragStart;
     const threshold = window.innerWidth * 0.15;
 
@@ -94,16 +147,16 @@ export const FeatureCarousel = () => {
         setCurrentIndex((prev) => wrap(prev + 1));
       }
     }
-    setIsDragging(false);
-  }, [dragStart, isDragging, wrap]);
 
-  const handleClick = useCallback((link: string) => {
+    setIsDragging(false);
+  };
+
+  const handleClick = (link: string) => {
     if (!isDragging) {
       if (link === "/bonus-codes" && !isAuthenticated) {
         toast({
-          variant: "warning",
           title: "Authentication Required",
-          description: "Please sign in to access bonus codes"
+          description: "Please sign in to access bonus codes",
         });
         setLocation("/");
         return;
@@ -115,7 +168,7 @@ export const FeatureCarousel = () => {
         setLocation(link);
       }
     }
-  }, [isDragging, isAuthenticated, setLocation, toast]);
+  };
 
   const variants = {
     enter: (direction: "next" | "prev") => ({
@@ -133,8 +186,8 @@ export const FeatureCarousel = () => {
         x: { type: "spring", stiffness: 300, damping: 25 },
         opacity: { duration: 0.2 },
         scale: { type: "spring", stiffness: 200, damping: 20 },
-        rotateY: { type: "spring", stiffness: 250, damping: 25 }
-      }
+        rotateY: { type: "spring", stiffness: 250, damping: 25 },
+      },
     },
     exit: (direction: "next" | "prev") => ({
       x: direction === "next" ? -1000 : 1000,
@@ -145,8 +198,11 @@ export const FeatureCarousel = () => {
   };
 
   return (
-    <div className="relative h-24 overflow-hidden mb-8 select-none" style={{ perspective: "1000px" }}>
-      <div 
+    <div
+      className="relative h-24 overflow-hidden mb-8 select-none"
+      style={{ perspective: "1000px" }}
+    >
+      <div
         className="flex justify-center items-center h-full relative"
         onTouchStart={handleDragStart}
         onTouchEnd={handleDragEnd}
@@ -155,7 +211,7 @@ export const FeatureCarousel = () => {
         onMouseLeave={handleDragEnd}
       >
         <AnimatePresence initial={false} custom={direction} mode="wait">
-          {items.length > 0 && (
+          {items.length > 0 && ( //Added conditional rendering
             <motion.div
               key={currentIndex}
               custom={direction}
@@ -165,7 +221,7 @@ export const FeatureCarousel = () => {
               exit="exit"
               transition={{
                 x: { type: "spring", stiffness: 300, damping: 30 },
-                opacity: { duration: 0.2 }
+                opacity: { duration: 0.2 },
               }}
               className="absolute w-full flex justify-center items-center cursor-pointer"
             >

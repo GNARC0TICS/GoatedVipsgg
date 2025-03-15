@@ -26,12 +26,13 @@ export default function SupportManagement() {
   });
 
   useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const websocket = new WebSocket(`${protocol}//${window.location.host}/ws/chat`);
-    
+    const websocket = new WebSocket(
+      `ws://${window.location.hostname}:5000/ws/chat`,
+    );
+
     websocket.onmessage = (event) => {
       const newMessage = JSON.parse(event.data);
-      setMessages(prev => [...prev, newMessage]);
+      setMessages((prev) => [...prev, newMessage]);
     };
 
     websocket.onclose = () => {
@@ -47,20 +48,22 @@ export default function SupportManagement() {
 
   const sendMessage = async (content: string) => {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    
-    ws.send(JSON.stringify({
-      type: "chat_message",
-      message: content,
-      isStaffReply: true
-    }));
-    
+
+    ws.send(
+      JSON.stringify({
+        type: "chat_message",
+        message: content,
+        isStaffReply: true,
+      }),
+    );
+
     setMessage("");
   };
 
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-2xl font-bold mb-6">Support Management</h1>
-      
+
       <Card className="h-[600px] flex flex-col">
         <CardHeader>
           <CardTitle>Live Support Chat</CardTitle>
@@ -85,27 +88,10 @@ export default function SupportManagement() {
               ))}
             </div>
           </ScrollArea>
-          
+
           <form
-            onSubmit={async (e) => {
+            onSubmit={(e) => {
               e.preventDefault();
-              if (selectedTicket?.email) {
-                // Send email response
-                await fetch('/api/support/email/respond', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    userEmail: selectedTicket.email,
-                    subject: selectedTicket.subject,
-                    message: message,
-                    ticketId: selectedTicket.id
-                  })
-                });
-                toast({
-                  title: "Response Sent",
-                  description: "Email response has been sent to the user"
-                });
-              }
               sendMessage(message);
             }}
             className="flex gap-2"

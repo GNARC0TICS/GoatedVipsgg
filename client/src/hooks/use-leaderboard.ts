@@ -1,149 +1,133 @@
-import { useQuery } from "@tanstack/react-query";
-import React, { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-type WageredData = {
+export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
+
+type Wager = {
   today: number;
   this_week: number;
   this_month: number;
   all_time: number;
 };
 
-type LeaderboardEntry = {
+type Entry = {
   uid: string;
   name: string;
-  wagered: WageredData;
-  wagerChange?: number;
-  isWagering?: boolean;
+  wagered: Wager;
 };
 
-type LeaderboardPeriodData = {
-  data: LeaderboardEntry[];
+type PeriodData = {
+  data: Entry[];
 };
 
 type APIResponse = {
-  status: "success";
-  metadata?: {
+  status: string;
+  metadata: {
     totalUsers: number;
     lastUpdated: string;
   };
   data: {
-    today: LeaderboardPeriodData;
-    weekly: LeaderboardPeriodData;
-    monthly: LeaderboardPeriodData;
-    all_time: LeaderboardPeriodData;
+    today: PeriodData;
+    weekly: PeriodData;
+    monthly: PeriodData;
+    all_time: PeriodData;
   };
 };
 
-export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
+// Create a constant key for the affiliate stats endpoint to avoid string duplication
+export const AFFILIATE_STATS_KEY = "/api/affiliate/stats";
 
-export function useLeaderboard(
-  timePeriod: TimePeriod = "today",
-  page: number = 0,
-) {
-  const [ws, setWs] = React.useState<WebSocket | null>(null);
-  const [previousData, setPreviousData] = useState<LeaderboardEntry[]>([]);
+export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
+  const queryClient = useQueryClient();
 
-  React.useEffect(() => {
-    let reconnectTimer: NodeJS.Timeout;
-    let ws: WebSocket;
-
-    const connect = () => {
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      ws = new WebSocket(`${protocol}//${window.location.host}/ws/leaderboard`);
-
-      ws.onmessage = (event: MessageEvent) => {
-        try {
-          const update = JSON.parse(event.data);
-          if (update.type === "LEADERBOARD_UPDATE") {
-            refetch();
-          }
-        } catch (err) {
-          console.error('WebSocket message parsing error:', err);
-        }
-      };
-
-      ws.onclose = () => {
-        reconnectTimer = setTimeout(connect, 3000);
-      };
-
-      ws.onerror = (error: Event) => {
-        console.error('WebSocket error:', error);
-        ws.close();
-      };
-
-      setWs(ws);
-    };
-
-    connect();
-
-    return () => {
-      clearTimeout(reconnectTimer);
-      if (ws) ws.close();
-    };
-  }, []);
-
-  const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
-    queryKey: ["/api/affiliate/stats", timePeriod, page],
+  const { data, isLoading, error, refetch } = useQuery<APIResponse>({
+    // Unique key for React Query cache - changes when time period or page changes
+    queryKey: [AFFILIATE_STATS_KEY, timePeriod, page],
     queryFn: async () => {
-      const response = await fetch(`/api/affiliate/stats?page=${page}&limit=10`, {
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
+      // Check if we already have the data in the query cache
+      const existingData = queryClient.getQueryData<APIResponse>([
+        AFFILIATE_STATS_KEY,
+      ]);
+      if (existingData) {
+        return existingData;
+      }
+
+      // Only make one API call with no time period parameter, and get all data at once
+      const response = await fetch(
+        `${AFFILIATE_STATS_KEY}?page=${page}&limit=100`,
+        {
+          headers: {
+            Accept: "application/json",
+          },
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      return response.json();
+      const freshData = (await response.json()) as APIResponse;
+      
+      // Cache the full response
+      queryClient.setQueryData([AFFILIATE_STATS_KEY], freshData);
+      
+      return freshData;
     },
-    refetchInterval: 60000,
-    staleTime: 30000,
-    gcTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false
+    refetchInterval: 60000, // 1 minute
+    staleTime: 55000, // Just under the refetch interval
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const periodKey =
-    timePeriod === "weekly"
-      ? "weekly"
-      : timePeriod === "monthly"
-        ? "monthly"
-        : timePeriod === "today"
-          ? "today"
-          : "all_time";
+  const periodKey = timePeriod;
 
-  const periodWagerKey =
-    timePeriod === "weekly"
-      ? "this_week"
-      : timePeriod === "monthly"
-        ? "this_month"
-        : timePeriod === "today"
-          ? "today"
-          : "all_time";
-
-  const sortedData = data?.data[periodKey]?.data.map((entry: LeaderboardEntry) => {
-    const prevEntry = previousData.find((p) => p.uid === entry.uid);
-    const currentWager = entry.wagered[periodWagerKey];
-    const previousWager = prevEntry ? prevEntry.wagered[periodWagerKey] : 0;
-
-    return {
-      ...entry,
-      isWagering: currentWager > previousWager,
-      wagerChange: currentWager - previousWager,
-    };
-  }) || [];
-
-  useEffect(() => {
-    if (data?.data[periodKey]?.data) {
-      setPreviousData(data.data[periodKey].data);
-    }
-  }, [data, periodKey]);
+  // No need to prefetch since we're getting all data at once
+  // and storing it in the cache
 
   return {
-    data: sortedData,
-    metadata: data?.metadata,
+    data: data?.data[periodKey]?.data || [],
     isLoading,
     error,
     refetch,
+    totalUsers: data?.metadata?.totalUsers || 0,
+    lastUpdated: data?.metadata?.lastUpdated || "",
   };
+}
+
+// Custom hook to access just the totals from the affiliate stats
+export function useWagerTotals() {
+  const queryClient = useQueryClient();
+
+  return useQuery({
+    queryKey: ["wager-total"],
+    queryFn: async () => {
+      // Try to use existing data first
+      const existingData = queryClient.getQueryData<APIResponse>([
+        AFFILIATE_STATS_KEY,
+      ]);
+
+      if (existingData) {
+        const total = existingData?.data?.all_time?.data?.reduce(
+          (sum: number, entry: Entry) => {
+            return sum + (entry?.wagered?.all_time || 0);
+          },
+          0,
+        );
+        return total || 0;
+      }
+
+      // If no existing data, fetch new data
+      const response = await fetch(AFFILIATE_STATS_KEY);
+      const data = await response.json() as APIResponse;
+
+      // Store the full response in the query cache
+      queryClient.setQueryData([AFFILIATE_STATS_KEY], data);
+
+      const total = data?.data?.all_time?.data?.reduce((sum: number, entry: Entry) => {
+        return sum + (entry?.wagered?.all_time || 0);
+      }, 0);
+
+      return total || 0;
+    },
+    staleTime: 60000, // 1 minute
+    refetchInterval: 300000, // 5 minutes
+  });
 }
