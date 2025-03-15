@@ -16,10 +16,10 @@ export default function Leaderboard() {
     // Start loading when period changes
     setIsLoading(true);
 
-    // Give the loader time to show the full animation (at least 2.5s)
+    // Use a shorter loading time since our data is now cached
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2500);
+    }, 1000); // Reduced from 2500ms to 1000ms for better user experience
 
     return () => clearTimeout(timer);
   }, [period]);

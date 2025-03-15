@@ -8,7 +8,6 @@ import {
   Settings,
   User,
   LogOut,
-  ChevronDown,
   Gift,
   Lock,
   ExternalLink,
@@ -53,7 +52,7 @@ const headerClasses = {
 const dropdownClasses = {
   content:
     "w-56 bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1",
-  item: "px-4 py-2.5 font-medium text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer group",
+  item: "px-4 py-2 font-medium text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer group",
 };
 
 // Footer styling
@@ -209,11 +208,10 @@ export function Layout({ children }: { children: ReactNode }) {
                     className="flex items-center gap-1.5 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                   >
                     <span className="font-bold">GET STARTED</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
                 <div className="absolute left-0 mt-2 w-full min-w-[200px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
-                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                     <Link href="/how-it-works">
                       <div className={dropdownClasses.item}>
                         <span className="relative">
@@ -288,11 +286,10 @@ export function Layout({ children }: { children: ReactNode }) {
                     className="flex items-center gap-1.5 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                   >
                     <span className="font-bold">PROMOTIONS</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
                 <div className="absolute left-0 mt-2 w-full min-w-[200px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
-                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                     <Link href="/promotions">
                       <div className={dropdownClasses.item}>
                         <span className="relative">
@@ -358,11 +355,10 @@ export function Layout({ children }: { children: ReactNode }) {
                     className="flex items-center gap-1.5 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                   >
                     <span className="font-bold">LEADERBOARDS</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
                 <div className="absolute left-0 mt-2 w-full min-w-[200px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
-                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                     <Link href="/leaderboard?period=daily">
                       <div className={dropdownClasses.item}>
                         <span className="relative">
@@ -423,11 +419,10 @@ export function Layout({ children }: { children: ReactNode }) {
                     className="flex items-center gap-1.5 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                   >
                     <span className="font-bold">SOCIALS</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
                 <div className="absolute left-0 mt-2 w-full min-w-[200px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
-                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                     <Link href="/telegram">
                       <div className={dropdownClasses.item}>
                         <span className="relative">
@@ -452,11 +447,10 @@ export function Layout({ children }: { children: ReactNode }) {
                     className="flex items-center gap-1.5 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                   >
                     <span className="font-bold">HELP & FAQ</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
                 <div className="absolute left-0 mt-2 w-full min-w-[200px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
-                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                     <Link href="/help">
                       <div className={dropdownClasses.item}>
                         <span className="relative">
@@ -504,10 +498,9 @@ export function Layout({ children }: { children: ReactNode }) {
                     className="flex items-center gap-1.5 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                   >
                     <span className="font-bold">ADMIN</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                   <div className="absolute left-0 mt-2 w-full min-w-[200px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
-                    <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                    <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                       <Link href="/admin/user-management">
                         <div className={dropdownClasses.item}>
                           <span className="relative">

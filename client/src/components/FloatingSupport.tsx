@@ -14,7 +14,7 @@ interface FloatingSupportProps {
 
 export function FloatingSupport({ onClose }: FloatingSupportProps) {
   const [isMinimized, setIsMinimized] = useState(true);
-  const [hasUnreadMessage, setHasUnreadMessage] = useState(true);
+  const [hasUnreadMessage, setHasUnreadMessage] = useState(false);
   const [supportMessages, setSupportMessages] = useState<any[]>([]);
   const [replyText, setReplyText] = useState("");
 
@@ -23,12 +23,30 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
     queryKey: ["/api/user"],
   });
 
+  // Fetch support messages and check for unread ones
+  useEffect(() => {
+    // Only check for unread messages if we're an admin or user with access to messages
+    if (user) {
+      fetch("/api/support/unread-count")
+        .then((res) => res.json())
+        .then((data) => {
+          // Only set notification if we have unread messages
+          setHasUnreadMessage(data.count > 0);
+        })
+        .catch((err) => console.error("Error fetching unread count:", err));
+    }
+  }, [user]);
+
   // Fetch support messages (implement API endpoint)
   useEffect(() => {
     if (user?.isAdmin && !isMinimized) {
       fetch("/api/support/messages")
         .then((res) => res.json())
-        .then((data) => setSupportMessages(data))
+        .then((data) => {
+          setSupportMessages(data);
+          // Clear notification once viewed
+          setHasUnreadMessage(false);
+        })
         .catch((err) => console.error("Error fetching support messages:", err));
     }
   }, [user?.isAdmin, isMinimized]);
