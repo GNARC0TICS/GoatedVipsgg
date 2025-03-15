@@ -18,7 +18,8 @@ import fetch from "node-fetch";
 
 const execAsync = promisify(exec);
 const app = express();
-const PORT = 5000;
+const FRONTEND_PORT = 3000; // Added frontend port
+const TELEGRAM_BOT_PORT = 5173; // Added Telegram bot port
 
 async function setupMiddleware() {
   // Basic middleware
@@ -115,15 +116,15 @@ async function checkDatabase() {
   }
 }
 
-async function cleanupPort() {
+async function cleanupPort(port: number) {
   try {
-    await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
+    await execAsync(`lsof -ti:${port} | xargs kill -9`);
     // Wait for port to be released
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    log(`Port ${PORT} is now available`);
+    log(`Port ${port} is now available`);
     return true;
   } catch (error) {
-    log("No existing process found on port " + PORT);
+    log("No existing process found on port " + port);
     return true;
   }
 }
@@ -152,10 +153,14 @@ async function startServer() {
       throw new Error("Database connection failed");
     }
 
-    // Ensure port is available
-    if (!(await cleanupPort())) {
-      throw new Error("Failed to clean up port");
+    // Ensure ports are available
+    if (!(await cleanupPort(FRONTEND_PORT))) {
+      throw new Error("Failed to clean up frontend port");
     }
+    if (!(await cleanupPort(TELEGRAM_BOT_PORT))) {
+      throw new Error("Failed to clean up Telegram bot port");
+    }
+
 
     const server = createServer(app);
 
@@ -166,11 +171,13 @@ async function startServer() {
     registerRoutes(app);
     initializeAdmin().catch(console.error);
 
-    // Initialize Telegram bot
+    // Initialize Telegram bot - moved to separate process
     log("Initializing Telegram bot...");
     if (!process.env.TELEGRAM_BOT_TOKEN) {
       throw new Error("TELEGRAM_BOT_TOKEN must be provided");
     }
+    const botProcess = require("child_process").fork("./telegram/bot-server.js", [TELEGRAM_BOT_PORT]);
+
 
     if (app.get("env") === "development") {
       await setupVite(app, server);
@@ -181,28 +188,33 @@ async function startServer() {
     // Start server with proper error handling
     await new Promise<void>((resolve, reject) => {
       server
-        .listen(PORT, "0.0.0.0") //The provided change was applied here.
+        .listen(FRONTEND_PORT, "0.0.0.0")
         .once("error", (err: NodeJS.ErrnoException) => {
           if (err.code === "EADDRINUSE") {
-            log(`Port ${PORT} is in use, attempting to free it...`);
-            cleanupPort().then(() => {
-              server.listen(PORT, "0.0.0.0");
+            log(`Port ${FRONTEND_PORT} is in use, attempting to free it...`);
+            cleanupPort(FRONTEND_PORT).then(() => {
+              server.listen(FRONTEND_PORT, "0.0.0.0");
             });
           } else {
             reject(err);
           }
         })
         .once("listening", () => {
-          log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-          log("Telegram bot started successfully");
+          log(`Server running on port ${FRONTEND_PORT} (http://0.0.0.0:${FRONTEND_PORT})`);
+          log("Telegram bot started successfully on port " + TELEGRAM_BOT_PORT);
           resolve();
         });
     });
 
     // Wait for server to be ready
-    if (!(await waitForPort(PORT))) {
+    if (!(await waitForPort(FRONTEND_PORT))) {
       throw new Error("Server failed to become ready");
     }
+    if (!(await waitForPort(TELEGRAM_BOT_PORT))) {
+      throw new Error("Telegram bot failed to become ready");
+    }
+
+
   } catch (error) {
     console.error("Failed to start application:", error);
     process.exit(1);
@@ -212,13 +224,13 @@ async function startServer() {
 // Add Telegram bot shutdown handling
 process.on("SIGTERM", () => {
   log("Received SIGTERM signal. Shutting down gracefully...");
-  stopBot(); // Stop the Telegram bot
+  // stopBot(); // Stop the Telegram bot - handled by bot-server.js
   process.exit(0);
 });
 
 process.on("SIGINT", () => {
   log("Received SIGINT signal. Shutting down gracefully...");
-  stopBot(); // Stop the Telegram bot
+  // stopBot(); // Stop the Telegram bot - handled by bot-server.js
   process.exit(0);
 });
 

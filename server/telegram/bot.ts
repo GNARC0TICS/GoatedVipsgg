@@ -59,7 +59,12 @@ function createBot(): TelegramBot {
   if (!BotConfig.TOKEN) {
     throw new Error("TELEGRAM_BOT_TOKEN must be provided");
   }
-  const bot = new TelegramBot(BotConfig.TOKEN, { polling: false });
+  const bot = new TelegramBot(BotConfig.TOKEN, { 
+  polling: true,
+  webHook: {
+    port: TELEGRAM_PORT
+  }
+});
 
   // Handle polling errors
   bot.on("polling_error", (error) => {
