@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "../../db";
-import { supportMessages, supportReadStatus } from "@/db/schema/support";
+import { supportMessages, supportReadStatus } from "../../db/schema/support";
 import { eq, and, desc } from "drizzle-orm";
 
 const router = Router();

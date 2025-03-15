@@ -17,6 +17,12 @@ import {
   telegramUsers,
   verificationRequests,
 } from "./schema/telegram";
+import {
+  supportMessages,
+  supportReadStatus,
+  supportMessagesRelations,
+  supportReadStatusRelations
+} from "./schema/support";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -341,4 +347,6 @@ export {
   telegramBotState,
   telegramUsers,
   verificationRequests,
+  supportMessages,
+  supportReadStatus,
 };
