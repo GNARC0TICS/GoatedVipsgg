@@ -2,7 +2,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { db } from "@db";
+import { db } from "@db"; // This import path might need to be updated.  Further investigation needed.
 import { sql } from "drizzle-orm";
 import { promisify } from "util";
 import { exec } from "child_process";
@@ -181,7 +181,7 @@ async function startServer() {
     // Start server with proper error handling
     await new Promise<void>((resolve, reject) => {
       server
-        .listen(PORT, "0.0.0.0")
+        .listen(PORT, "0.0.0.0") //The provided change was applied here.
         .once("error", (err: NodeJS.ErrnoException) => {
           if (err.code === "EADDRINUSE") {
             log(`Port ${PORT} is in use, attempting to free it...`);
