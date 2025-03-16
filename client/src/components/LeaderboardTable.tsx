@@ -16,7 +16,6 @@ import type { TimePeriod } from "@/hooks/use-leaderboard";
 import { QuickProfile } from "@/components/QuickProfile";
 import { motion } from "framer-motion";
 
-
 const ITEMS_PER_PAGE = 10;
 
 interface LeaderboardTableProps {
@@ -40,6 +39,19 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
         return <Star className="h-5 w-5 text-zinc-600" />;
     }
   };
+
+  const filteredData = useMemo(() => {
+    return data.filter((entry) =>
+      entry.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [data, searchQuery]);
+
+  const paginatedData = useMemo(() => {
+    const start = currentPage * ITEMS_PER_PAGE;
+    return filteredData.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredData, currentPage]);
+
+  const pageCount = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
 
   if (isLoading) {
     return (
@@ -76,42 +88,15 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
     return <div className="text-center text-red-500">Error loading leaderboard data</div>;
   }
 
-  const filteredData = useMemo(() => {
-    return data?.data?.[timePeriod]?.data.filter((entry) =>
-      entry.name.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
-  }, [data, searchQuery, timePeriod]);
-
-  const paginatedData = filteredData.slice(
-    currentPage * ITEMS_PER_PAGE,
-    (currentPage + 1) * ITEMS_PER_PAGE
-  );
-
-  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
-
-  const handlePrevPage = () => {
-    setCurrentPage((prev) => Math.max(0, prev - 1));
-  };
-
-  const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1));
-  };
-
-  const getWagerAmount = (entry: any) => {
-    return entry.wagered[timePeriod === "today" ? "today" : 
-           timePeriod === "weekly" ? "this_week" :
-           timePeriod === "monthly" ? "this_month" : "all_time"];
-  };
-
   return (
     <div className="space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center space-x-2">
+        <Search className="w-4 h-4 text-muted-foreground" />
         <Input
           placeholder="Search players..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 bg-[#1A1B21] border-[#2A2B31]"
+          className="max-w-sm bg-transparent border-[#2A2B31] focus:border-[#D7FF00] focus:ring-[#D7FF00]"
         />
       </div>
 
@@ -125,56 +110,45 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.map((entry, index) => (
-              <TableRow key={entry.uid} className="hover:bg-white/5">
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
-                    {getTrophyIcon(currentPage * ITEMS_PER_PAGE + index + 1)}
-                    {currentPage * ITEMS_PER_PAGE + index + 1}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <QuickProfile userId={entry.uid} username={entry.name}>
-                    <div className="flex items-center gap-2 cursor-pointer">
-                      <img
-                        src={getTierIcon(getTierFromWager(entry.wagered.all_time))}
-                        alt="Tier"
-                        className="w-5 h-5"
-                      />
-                      <span className="truncate text-white hover:text-[#D7FF00] transition-colors">
-                        {entry.name}
-                      </span>
+            {paginatedData.map((entry, index) => {
+              const rank = currentPage * ITEMS_PER_PAGE + index + 1;
+              return (
+                <TableRow key={entry.uid} className="hover:bg-white/5">
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {getTrophyIcon(rank)}
+                      <span className="text-white">{rank}</span>
                     </div>
-                  </QuickProfile>
-                </TableCell>
-                <TableCell className="text-right">
-                  ${getWagerAmount(entry).toFixed(2)}
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell>
+                    <QuickProfile userId={entry.uid} username={entry.name} />
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
+                    ${entry.wagered[timePeriod].toFixed(2)}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
 
-      <div className="flex justify-between items-center">
+      <div className="flex justify-center gap-2">
         <Button
           variant="outline"
-          onClick={handlePrevPage}
+          onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
           disabled={currentPage === 0}
+          className="border-[#2A2B31] hover:border-[#D7FF00] hover:text-[#D7FF00]"
         >
-          <ChevronLeft className="h-4 w-4 mr-2" />
-          Previous
+          <ChevronLeft className="h-4 w-4" />
         </Button>
-        <div className="text-sm text-muted-foreground">
-          Page {currentPage + 1} of {totalPages}
-        </div>
         <Button
           variant="outline"
-          onClick={handleNextPage}
-          disabled={currentPage >= totalPages - 1}
+          onClick={() => setCurrentPage((p) => Math.min(pageCount - 1, p + 1))}
+          disabled={currentPage === pageCount - 1}
+          className="border-[#2A2B31] hover:border-[#D7FF00] hover:text-[#D7FF00]"
         >
-          Next
-          <ChevronRight className="h-4 w-4 ml-2" />
+          <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
     </div>
