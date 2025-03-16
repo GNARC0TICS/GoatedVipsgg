@@ -39,6 +39,7 @@ export const useHistoricalStats = () => {
   });
 };
 
+// Consolidated useWagerTotals hook
 export const useWagerTotals = () => {
   const { data: historicalStats } = useHistoricalStats();
   const { data: currentStats } = useQuery<PlatformStats>({
