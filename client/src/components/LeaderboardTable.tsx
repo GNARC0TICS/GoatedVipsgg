@@ -93,9 +93,9 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
   };
 
   const totalDailyWager = useMemo(() => {
-    if (!data) return 0;
-    return data.reduce((total, entry) => total + getWagerAmount(entry), 0);
-  }, [data, timePeriod]);
+    if (!leaderboardResponse?.data?.[timePeriod]?.data) return 0;
+    return leaderboardResponse.data[timePeriod].data.reduce((total, entry) => total + getWagerAmount(entry), 0);
+  }, [leaderboardResponse, timePeriod]);
 
   if (isLoading) {
     return (
