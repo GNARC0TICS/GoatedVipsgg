@@ -961,7 +961,7 @@ async function handleChatConnection(ws: WebSocket) {
             type: "error",
             message: "Invalid message format",
           })
-        );        );
+        );
         return;
       }
 
