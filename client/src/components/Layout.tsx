@@ -650,6 +650,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </header>
 
       <main className="flex-grow pt-16">
+        <ParticleBackground /> {/* Added ParticleBackground component here */}
         {children}
         {user?.isAdmin && isMobile && <MobileAdminBadge />}
       </main>

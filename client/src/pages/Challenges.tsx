@@ -84,7 +84,7 @@ export default function Challenges() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: challenge.id * 0.1 }}
                 >
-                  <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31] overflow-hidden group hover:border-[#D7FF00]/50 transition-all duration-300">
+                  <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31] overflow-hidden group hover:border-[#D7FF00]/50 transition-all duration-300 hover:transform hover:-translate-y-2 hover:shadow-neon">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between mb-4">
                         <Trophy className="h-8 w-8 text-[#D7FF00]" />
