@@ -413,6 +413,15 @@ bot.onText(/\/help/, async (msg) => {
   });
 });
 
+import { commandRegistry } from './commands';
+import { startCommand, statsCommand, playCommand } from './commands/basic';
+
+// Register commands
+commandRegistry.register(startCommand);
+commandRegistry.register(statsCommand);
+commandRegistry.register(playCommand);
+commandRegistry.registerWithBot(bot);
+
 // Verification command
 bot.onText(/\/verify (.+)/, async (msg, match) => {
   await handleCommand(msg, async () => {
