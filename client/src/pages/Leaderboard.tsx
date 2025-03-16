@@ -10,22 +10,15 @@ import type { TimePeriod } from "@/hooks/use-leaderboard";
 export default function Leaderboard() {
   const [location] = useLocation();
   const [period, setPeriod] = useState<TimePeriod>("today");
-  const [isLoading, setIsLoading] = useState(false); // Start with false to avoid infinite loading
-  const [renderKey, setRenderKey] = useState(0); // Use to force re-render of child components
-
-  console.log("Leaderboard page: Initial period =", period);
+  const [isLoading, setIsLoading] = useState(true); // Start with true to ensure loader shows first
+  const [renderKey, setRenderKey] = useState(0);
 
   useEffect(() => {
-    // When period changes, briefly show the loading animation, but ensure it completes
     setIsLoading(true);
-    console.log("Leaderboard page: Period changed to", period);
-    
-    // Use a very short timer to ensure the page shows quickly even if data isn't available
     const timer = setTimeout(() => {
       setIsLoading(false);
-      // Force re-render of LeaderboardTable with new key
       setRenderKey(prev => prev + 1);
-    }, 500);
+    }, 800); // Increased slightly to ensure smooth transition
     
     return () => clearTimeout(timer);
   }, [period]);

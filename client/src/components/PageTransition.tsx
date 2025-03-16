@@ -56,19 +56,14 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
         // If we were showing the loader, wait for the complete animation
         // This ensures we don't cut off animations in the middle
         // But also set a timeout to ensure content shows after a short delay
+        window.scrollTo({ top: 0, behavior: "instant" });
         timeout = setTimeout(() => {
           setShouldRenderContent(true);
           setShowLoading(false);
-        }, 800);
+        }, 600);
       } else {
-        // If loading is done but we weren't showing the loader, render content immediately
         setShouldRenderContent(true);
-        // Scroll to top when new content loads
-        window.scrollTo({ top: 0, behavior: "instant" });
-        timeout = setTimeout(() => {
-          setShowLoading(false);
-          setIsCompleted(false);
-        }, 500);
+        setShowLoading(false);
       }
     }
 
