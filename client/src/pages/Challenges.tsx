@@ -10,7 +10,7 @@ const CHALLENGES = [
   {
     id: 1,
     title: "Daily High Roller",
-    description: "Reach $50,000 in wagers",
+    description: "Reach $100,000 in wagers",
     reward: "$45 Bonus",
     category: "Achievement",
     isActive: true,
