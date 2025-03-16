@@ -10,6 +10,7 @@ import { db } from "@db";
 // Import specific schemas from the updated schema structure
 import * as schema from "@db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { platformStats } from "@db/schema";
 import { z } from "zod";
 import { affiliateRateLimiter, raceRateLimiter } from "./middleware/rate-limiter"; // Import rate limiters with correct path
 import { registerBasicVerificationRoutes } from "./basic-verification-routes";
@@ -647,8 +648,8 @@ function setupRESTRoutes(app: Express) {
     try {
       const [latestStats] = await db
         .select()
-        .from(platformStats)
-        .orderBy(sql`${platformStats.timestamp} DESC`)
+        .from(schema.platformStats)
+        .orderBy(sql`${schema.platformStats.timestamp} DESC`)
         .limit(1);
 
       res.json(latestStats || {
@@ -693,7 +694,7 @@ function setupRESTRoutes(app: Express) {
       }, {});
 
       // Store the latest stats
-      await db.insert(platformStats).values({
+      await db.insert(schema.platformStats).values({
         ...totals,
         playerCount: data.length,
         timestamp: new Date()
