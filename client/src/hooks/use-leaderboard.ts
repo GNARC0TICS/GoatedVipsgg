@@ -18,6 +18,44 @@ type PeriodData = {
   data: Entry[];
 };
 
+type PlatformStats = {
+  totalWagered: number;
+  dailyTotal: number;
+  weeklyTotal: number;
+  monthlyTotal: number;
+  playerCount: number;
+  timestamp: string;
+};
+
+export const useHistoricalStats = () => {
+  return useQuery<PlatformStats>({
+    queryKey: ['platformStats'],
+    queryFn: async () => {
+      const response = await fetch('/api/stats/historical');
+      if (!response.ok) throw new Error('Failed to fetch historical stats');
+      return response.json();
+    },
+    staleTime: 60000, // Consider data fresh for 1 minute
+  });
+};
+
+export const useWagerTotals = () => {
+  const { data: historicalStats } = useHistoricalStats();
+  const { data: currentStats } = useQuery<PlatformStats>({
+    queryKey: ['platformStats', 'current'],
+    queryFn: async () => {
+      const response = await fetch('/api/stats/current');
+      if (!response.ok) throw new Error('Failed to fetch current stats');
+      return response.json();
+    },
+  });
+
+  return {
+    data: currentStats?.totalWagered || historicalStats?.totalWagered || 0,
+    isLoading: !historicalStats && !currentStats,
+  };
+};
+
 type APIResponse = {
   status: string;
   metadata: {

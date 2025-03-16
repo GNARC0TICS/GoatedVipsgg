@@ -298,7 +298,7 @@ function setupRESTRoutes(app: Express) {
       // Generate explicit dates to ensure correct month
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
-      
+
       const raceData = {
         id: `${currentYear}${(currentMonth + 1).toString().padStart(2, '0')}`,
         status: 'live',
@@ -312,7 +312,7 @@ function setupRESTRoutes(app: Express) {
           position: index + 1
         })).slice(0, 10) // Top 10 participants
       };
-      
+
       // Log race data for debugging
       console.log(`Race data for month ${currentMonth + 1}, year ${currentYear}`);
 
@@ -635,6 +635,78 @@ function setupRESTRoutes(app: Express) {
       res.json(stats);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
+
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "healthy", timestamp: new Date().toISOString() });
+  });
+
+  // Platform stats endpoints
+  app.get("/api/stats/historical", async (_req, res) => {
+    try {
+      const [latestStats] = await db
+        .select()
+        .from(platformStats)
+        .orderBy(sql`${platformStats.timestamp} DESC`)
+        .limit(1);
+
+      res.json(latestStats || {
+        totalWagered: 0,
+        dailyTotal: 0,
+        weeklyTotal: 0,
+        monthlyTotal: 0,
+        playerCount: 0,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      log(`Error fetching historical stats: ${error}`);
+      res.status(500).json({ error: "Failed to fetch historical stats" });
+    }
+  });
+
+  app.get("/api/stats/current", async (_req, res) => {
+    try {
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const rawData = await response.json();
+      const data = rawData.data || rawData.results || rawData;
+
+      const totals = data.reduce((acc: any, entry: any) => {
+        acc.totalWagered = (acc.totalWagered || 0) + (entry.wagered?.all_time || 0);
+        acc.dailyTotal = (acc.dailyTotal || 0) + (entry.wagered?.today || 0);
+        acc.weeklyTotal = (acc.weeklyTotal || 0) + (entry.wagered?.this_week || 0);
+        acc.monthlyTotal = (acc.monthlyTotal || 0) + (entry.wagered?.this_month || 0);
+        return acc;
+      }, {});
+
+      // Store the latest stats
+      await db.insert(platformStats).values({
+        ...totals,
+        playerCount: data.length,
+        timestamp: new Date()
+      });
+
+      res.json({
+        ...totals,
+        playerCount: data.length,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      log(`Error fetching current stats: ${error}`);
+      res.status(500).json({ error: "Failed to fetch current stats" });
     }
   });
 }

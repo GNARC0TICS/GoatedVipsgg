@@ -135,6 +135,16 @@ export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
   source: text("source"), // Track where the subscription came from
 });
 
+export const platformStats = pgTable("platform_stats", {
+  id: serial("id").primaryKey(),
+  totalWagered: decimal("total_wagered", { precision: 18, scale: 2 }).notNull(),
+  dailyTotal: decimal("daily_total", { precision: 18, scale: 2 }).notNull(),
+  weeklyTotal: decimal("weekly_total", { precision: 18, scale: 2 }).notNull(),
+  monthlyTotal: decimal("monthly_total", { precision: 18, scale: 2 }).notNull(),
+  playerCount: integer("player_count").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
 export const historicalRaces = pgTable("historical_races", {
   id: serial("id").primaryKey(),
   month: integer("month").notNull(),  // Removed extra argument
