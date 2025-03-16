@@ -106,7 +106,10 @@ export default function Challenges() {
                           <span>{challenge.proofInstructions}</span>
                         </div>
                       )}
-                      <Button className="w-full mt-4 bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90">
+                      <Button 
+                        className="w-full mt-4 bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
+                        onClick={() => window.location.href = 'https://www.goated.com/r/GOATEDVIPS'}
+                      >
                         Start Challenge
                       </Button>
                     </CardContent>
