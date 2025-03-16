@@ -14,6 +14,7 @@ import { platformStats } from "@db/schema";
 import { z } from "zod";
 import { affiliateRateLimiter, raceRateLimiter } from "./middleware/rate-limiter"; // Import rate limiters with correct path
 import { registerBasicVerificationRoutes } from "./basic-verification-routes";
+import botRoutes from "./api/bot-routes";
 
 // Add missing type definitions
 interface ExtendedWebSocket extends WebSocket {
@@ -176,6 +177,8 @@ export function registerRoutes(app: Express): Server {
 }
 
 function setupRESTRoutes(app: Express) {
+  // Register bot-specific routes
+  app.use('/api/bot', botRoutes);
   // Add endpoint to fetch previous month's results
   app.get("/api/wager-races/previous", async (_req, res) => {
     try {
