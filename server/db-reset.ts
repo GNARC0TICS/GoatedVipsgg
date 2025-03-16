@@ -83,11 +83,11 @@ async function resetDatabase() {
         })
         .returning();
 
-      // Insert affiliate stats
+      // Insert affiliate stats with proper defaults
       await db.insert(affiliateStats).values({
-        user_id: user.id,
-        total_wager: entry.wagered.all_time || "0",
-        commission: "0",
+        userId: user.id,
+        totalWager: entry.wagered?.all_time || "0.00000000",
+        commission: "0.00000000",
         timestamp: new Date(),
       });
 
