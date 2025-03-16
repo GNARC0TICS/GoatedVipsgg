@@ -78,9 +78,9 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
               <Button
                 onClick={() => setIsVisible(false)}
                 size="icon"
-                className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-[#2A2B31] hover:bg-[#2A2B31]/90 border border-[#D7FF00]"
+                className="absolute top-1 -left-2 h-5 w-5 rounded-full bg-[#2A2B31] hover:bg-[#2A2B31]/90 border border-[#D7FF00]"
               >
-                <X className="h-3 w-3" />
+                <X className="h-2.5 w-2.5" />
               </Button>
             </div>
           </div>
