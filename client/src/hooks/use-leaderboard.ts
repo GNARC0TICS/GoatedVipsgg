@@ -35,7 +35,7 @@ export const useHistoricalStats = () => {
       if (!response.ok) throw new Error('Failed to fetch historical stats');
       return response.json();
     },
-    staleTime: 60000, // Consider data fresh for 1 minute
+    staleTime: 300000, // Consider data fresh for 5 minutes
   });
 };
 
@@ -100,8 +100,8 @@ export function useLeaderboard(timePeriod: string, page: number = 1) {
       const freshData = await response.json() as APIResponse;
       return freshData;
     },
-    refetchInterval: 60000, // Increased to 1 minute
-    staleTime: 55000,       // Just under the refetch interval
+    refetchInterval: 300000, // Increased to 5 minutes
+    staleTime: 270000,       // Just under the refetch interval
     cacheTime: 300000,      // 5 minutes
     retry: 3,
     gcTime: 5 * 60 * 1000,
