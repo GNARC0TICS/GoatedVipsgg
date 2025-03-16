@@ -166,7 +166,6 @@ async function startServer() {
         })
         .once('listening', () => {
           log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-          log('Telegram bot started successfully');
           resolve();
         });
     });

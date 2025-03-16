@@ -7,21 +7,16 @@ import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import { db } from "@db";
-// Import specific schemas from the updated schema structure
 import * as schema from "@db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { platformStats } from "@db/schema";
 import { z } from "zod";
-import { affiliateRateLimiter, raceRateLimiter } from "./middleware/rate-limiter"; // Import rate limiters with correct path
-import { registerBasicVerificationRoutes } from "./basic-verification-routes";
-import botRoutes from "./api/bot-routes";
+import { affiliateRateLimiter, raceRateLimiter } from "./middleware/rate-limiter";
 
-// Add missing type definitions
 interface ExtendedWebSocket extends WebSocket {
   isAlive: boolean;
 }
 
-// Add utility functions
 function getTierFromWager(wagerAmount: number): string {
   if (wagerAmount >= 1000000) return 'Diamond';
   if (wagerAmount >= 500000) return 'Platinum';
@@ -30,8 +25,7 @@ function getTierFromWager(wagerAmount: number): string {
   return 'Bronze';
 }
 
-// Constants
-const PRIZE_POOL_BASE = 500; // Base prize pool amount
+const PRIZE_POOL_BASE = 500;
 const prizePool = PRIZE_POOL_BASE;
 
 function handleLeaderboardConnection(ws: ExtendedWebSocket) {
@@ -63,7 +57,6 @@ function handleLeaderboardConnection(ws: ExtendedWebSocket) {
     clearInterval(pingInterval);
   });
 
-  // Send initial data with rate limiting
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({
       type: "CONNECTED",
@@ -73,7 +66,6 @@ function handleLeaderboardConnection(ws: ExtendedWebSocket) {
   }
 }
 
-// Broadcast leaderboard updates to all connected clients
 export function broadcastLeaderboardUpdate(data: any) {
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
@@ -87,7 +79,6 @@ export function broadcastLeaderboardUpdate(data: any) {
 
 let wss: WebSocketServer;
 
-// Helper functions
 function sortByWagered(data: any[], period: string) {
   return [...data].sort(
     (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0)
@@ -97,7 +88,6 @@ function sortByWagered(data: any[], period: string) {
 const transformMVPData = (mvpData: any) => {
   return Object.entries(mvpData).reduce((acc: Record<string, any>, [period, data]: [string, any]) => {
     if (data) {
-      // Calculate if there was a wager change
       const currentWager = data.wagered[period === 'daily' ? 'today' : period === 'weekly' ? 'this_week' : 'this_month'];
       const previousWager = data.wagered?.previous || 0;
       const hasIncrease = currentWager > previousWager;
@@ -118,10 +108,7 @@ const transformMVPData = (mvpData: any) => {
   }, {});
 };
 
-// Transforms raw API data into our standardized leaderboard format
-// This is the central data transformation function used by both web and Telegram interfaces
 function transformLeaderboardData(apiData: any) {
-  // Extract data from various possible API response formats
   const responseData = apiData.data || apiData.results || apiData;
   if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
     return {
@@ -171,18 +158,16 @@ export function registerRoutes(app: Express): Server {
   setupAuth(app);
   setupRESTRoutes(app);
   setupWebSocket(httpServer);
-  // Register verification routes
-  registerBasicVerificationRoutes(app);
   return httpServer;
 }
 
 function setupRESTRoutes(app: Express) {
-  // Register bot-specific routes
-  app.use('/api/bot', botRoutes);
-  // Add endpoint to fetch previous month's results
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "healthy", timestamp: new Date().toISOString() });
+  });
+
   app.get("/api/wager-races/previous", async (_req, res) => {
     try {
-      // Temporarily return empty data until next race
       res.status(404).json({
         status: "error",
         message: "No previous race data found",
@@ -196,7 +181,6 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  // Modified current race endpoint to handle month end
   app.get("/api/wager-races/current", raceRateLimiter, async (_req, res) => {
     try {
       const response = await fetch(
@@ -216,39 +200,34 @@ function setupRESTRoutes(app: Express) {
       const rawData = await response.json();
       const stats = transformLeaderboardData(rawData);
 
-      // Get current month's info
       const now = new Date();
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-      // Check if previous month needs to be archived
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
 
-      // If it's the first day of the month and we haven't archived yet
       if (now.getDate() === 1 && now.getHours() < 1) {
         const previousMonth = now.getMonth() === 0 ? 12 : now.getMonth();
         const previousYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
 
-        // Check if we already have an entry for the previous month
         const [existingEntry] = await db
           .select()
-          .from(historicalRaces)
+          .from(schema.historicalRaces)
           .where(
             and(
-              eq(historicalRaces.month, previousMonth),
-              eq(historicalRaces.year, previousYear)
+              eq(schema.historicalRaces.month, previousMonth),
+              eq(schema.historicalRaces.year, previousYear)
             )
           )
           .limit(1);
 
-        const prizeDistribution = [0.5, 0.3, 0.1, 0.05, 0.05, 0, 0, 0, 0, 0]; //Example distribution, needs to be defined elsewhere
+        const prizeDistribution = [0.5, 0.3, 0.1, 0.05, 0.05, 0, 0, 0, 0, 0];
 
         if (!existingEntry && stats.data.monthly.data.length > 0) {
           const now = new Date();
           const currentMonth = now.getMonth();
           const currentYear = now.getFullYear();
 
-          // Store complete race results with detailed participant data
           const winners = stats.data.monthly.data.slice(0, 10).map((participant: any, index: number) => ({
             uid: participant.uid,
             name: participant.name,
@@ -260,8 +239,7 @@ function setupRESTRoutes(app: Express) {
             timestamp: new Date().toISOString()
           }));
 
-          // Store race completion data
-          await db.insert(historicalRaces).values({
+          await db.insert(schema.historicalRaces).values({
             month: currentMonth,
             year: currentYear,
             prizePool: prizePool,
@@ -278,7 +256,8 @@ function setupRESTRoutes(app: Express) {
             }
           });
 
-          await db.insert(historicalRaces).values({
+
+          await db.insert(schema.historicalRaces).values({
             month: previousMonth,
             year: previousYear,
             prizePool: 500,
@@ -288,7 +267,6 @@ function setupRESTRoutes(app: Express) {
             isCompleted: true
           });
 
-          // Broadcast race completion to all connected clients
           broadcastLeaderboardUpdate({
             type: "RACE_COMPLETED",
             data: {
@@ -299,7 +277,6 @@ function setupRESTRoutes(app: Express) {
         }
       }
 
-      // Generate explicit dates to ensure correct month
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
 
@@ -308,16 +285,15 @@ function setupRESTRoutes(app: Express) {
         status: 'live',
         startDate: new Date(currentYear, currentMonth, 1).toISOString(),
         endDate: endOfMonth.toISOString(),
-        prizePool: 500, // Monthly race prize pool
+        prizePool: 500, 
         participants: stats.data.monthly.data.map((participant: any, index: number) => ({
           uid: participant.uid,
           name: participant.name,
           wagered: participant.wagered.this_month,
           position: index + 1
-        })).slice(0, 10) // Top 10 participants
+        })).slice(0, 10) 
       };
 
-      // Log race data for debugging
       console.log(`Race data for month ${currentMonth + 1}, year ${currentYear}`);
 
       res.json(raceData);
@@ -337,7 +313,6 @@ function setupRESTRoutes(app: Express) {
   app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);
   app.get("/api/affiliate/stats", affiliateRateLimiter, handleAffiliateStats);
 
-  // Support system endpoints
   app.get("/api/support/messages", requireAuth, async (req, res) => {
     try {
       const messages = await db.query.ticketMessages.findMany({
@@ -394,7 +369,7 @@ function setupRESTRoutes(app: Express) {
 
   app.post("/api/support/tickets", requireAuth, async (req, res) => {
     try {
-      const [ticket] = await db.insert(supportTickets)
+      const [ticket] = await db.insert(schema.supportTickets)
         .values({
           userId: req.user!.id,
           subject: req.body.subject,
@@ -405,8 +380,7 @@ function setupRESTRoutes(app: Express) {
         })
         .returning();
 
-      // Create initial message
-      await db.insert(ticketMessages)
+      await db.insert(schema.ticketMessages)
         .values({
           ticketId: ticket.id,
           userId: req.user!.id,
@@ -440,7 +414,7 @@ function setupRESTRoutes(app: Express) {
       }
 
       const [savedMessage] = await db
-        .insert(ticketMessages)
+        .insert(schema.ticketMessages)
         .values({
           ticketId,
           message: message.trim(),
@@ -450,15 +424,13 @@ function setupRESTRoutes(app: Express) {
         })
         .returning();
 
-      // Update ticket status if admin replied
       if (req.user!.isAdmin) {
         await db
-          .update(supportTickets)
+          .update(schema.supportTickets)
           .set({ status: 'in_progress' })
-          .where(eq(supportTickets.id, ticketId));
+          .where(eq(schema.supportTickets.id, ticketId));
       }
 
-      // Broadcast message to WebSocket clients
       wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({
@@ -485,14 +457,14 @@ function setupRESTRoutes(app: Express) {
     try {
       const { status, priority, assignedTo } = req.body;
       const [updatedTicket] = await db
-        .update(supportTickets)
+        .update(schema.supportTickets)
         .set({
           status,
           priority,
           assignedTo,
           updatedAt: new Date()
         })
-        .where(eq(supportTickets.id, parseInt(req.params.id)))
+        .where(eq(schema.supportTickets.id, parseInt(req.params.id)))
         .returning();
 
       res.json({
@@ -508,7 +480,6 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  // Bonus code management routes
   app.get("/api/admin/bonus-codes", requireAdmin, async (_req, res) => {
     try {
       const codes = await db.query.bonusCodes.findMany({
@@ -527,7 +498,7 @@ function setupRESTRoutes(app: Express) {
   app.post("/api/admin/bonus-codes", requireAdmin, async (req, res) => {
     try {
       const [code] = await db
-        .insert(bonusCodes)
+        .insert(schema.bonusCodes)
         .values({
           ...req.body,
           createdBy: req.user!.id,
@@ -546,9 +517,9 @@ function setupRESTRoutes(app: Express) {
   app.put("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
     try {
       const [code] = await db
-        .update(bonusCodes)
+        .update(schema.bonusCodes)
         .set(req.body)
-        .where(eq(bonusCodes.id, parseInt(req.params.id)))
+        .where(eq(schema.bonusCodes.id, parseInt(req.params.id)))
         .returning();
       res.json(code);
     } catch (error) {
@@ -563,8 +534,8 @@ function setupRESTRoutes(app: Express) {
   app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
     try {
       await db
-        .delete(bonusCodes)
-        .where(eq(bonusCodes.id, parseInt(req.params.id)));
+        .delete(schema.bonusCodes)
+        .where(eq(schema.bonusCodes.id, parseInt(req.params.id)));
       res.json({ status: "success" });
     } catch (error) {
       log(`Error deleting bonus code: ${error}`);
@@ -575,7 +546,6 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  // Chat history endpoint
   app.get("/api/chat/history", requireAuth, async (req, res) => {
     try {
       const messages = await db.query.ticketMessages.findMany({
@@ -611,7 +581,6 @@ function setupRESTRoutes(app: Express) {
       const rawData = await response.json();
       const data = rawData.data || rawData.results || rawData;
 
-      // Calculate totals
       const totals = data.reduce((acc: any, entry: any) => {
         acc.dailyTotal += entry.wagered?.today || 0;
         acc.weeklyTotal += entry.wagered?.this_week || 0;
@@ -626,8 +595,8 @@ function setupRESTRoutes(app: Express) {
       });
 
       const [userCount, raceCount] = await Promise.all([
-        db.select({ count: sql`count(*)` }).from(users),
-        db.select({ count: sql`count(*)` }).from(wagerRaces).where(eq(wagerRaces.status, 'live')),
+        db.select({ count: sql`count(*)` }).from(schema.users),
+        db.select({ count: sql`count(*)` }).from(schema.wagerRaces).where(eq(schema.wagerRaces.status, 'live')),
       ]);
 
       const stats = {
@@ -642,11 +611,6 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  app.get("/api/health", (_req, res) => {
-    res.json({ status: "healthy", timestamp: new Date().toISOString() });
-  });
-
-  // Platform stats endpoints
   app.get("/api/stats/historical", async (_req, res) => {
     try {
       const [latestStats] = await db
@@ -696,7 +660,6 @@ function setupRESTRoutes(app: Express) {
         return acc;
       }, {});
 
-      // Store the latest stats
       await db.insert(schema.platformStats).values({
         ...totals,
         playerCount: data.length,
@@ -715,21 +678,19 @@ function setupRESTRoutes(app: Express) {
   });
 }
 
-// Request handlers
 async function handleProfileRequest(req: any, res: any) {
   try {
-    // Fetch user data
     const [user] = await db
       .select({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        isAdmin: users.isAdmin,
-        createdAt: users.createdAt,
-        lastLogin: users.lastLogin,
+        id: schema.users.id,
+        username: schema.users.username,
+        email: schema.users.email,
+        isAdmin: schema.users.isAdmin,
+        createdAt: schema.users.createdAt,
+        lastLogin: schema.users.lastLogin,
       })
-      .from(users)
-      .where(eq(users.id, req.user!.id))
+      .from(schema.users)
+      .where(eq(schema.users.id, req.user!.id))
       .limit(1);
 
     if (!user) {
@@ -739,7 +700,6 @@ async function handleProfileRequest(req: any, res: any) {
       });
     }
 
-    // Fetch current leaderboard data
     const response = await fetch(
       `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
       {
@@ -757,7 +717,6 @@ async function handleProfileRequest(req: any, res: any) {
     const leaderboardData = await response.json();
     const data = leaderboardData.data || leaderboardData.results || leaderboardData;
 
-    // Find user positions
     const position = {
       weekly: data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined,
       monthly: data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined
@@ -811,7 +770,6 @@ async function handleAffiliateStats(req: any, res: any) {
     res.json(transformedData);
   } catch (error) {
     log(`Error in /api/affiliate/stats: ${error}`);
-    // Return empty data structure to prevent UI breaking
     res.json({
       status: "success",
       metadata: {
@@ -842,8 +800,8 @@ async function handleAdminLogin(req: any, res: any) {
     const { username, password } = result.data;
     const [user] = await db
       .select()
-      .from(users)
-      .where(eq(users.username, username))
+      .from(schema.users)
+      .where(eq(schema.users.username, username))
       .limit(1);
 
     if (!user || !user.isAdmin) {
@@ -853,7 +811,6 @@ async function handleAdminLogin(req: any, res: any) {
       });
     }
 
-    // Verify password and generate token
     const token = generateToken({
       userId: user.id,
       email: user.email,
@@ -888,15 +845,15 @@ async function handleAdminUsersRequest(_req: any, res: any) {
   try {
     const usersList = await db
       .select({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        isAdmin: users.isAdmin,
-        createdAt: users.createdAt,
-        lastLogin: users.lastLogin,
+        id: schema.users.id,
+        username: schema.users.username,
+        email: schema.users.email,
+        isAdmin: schema.users.isAdmin,
+        createdAt: schema.users.createdAt,
+        lastLogin: schema.users.lastLogin,
       })
-      .from(users)
-      .orderBy(users.createdAt);
+      .from(schema.users)
+      .orderBy(schema.users.createdAt);
 
     res.json({
       status: "success",
@@ -932,14 +889,13 @@ async function handleWagerRacesRequest(_req: any, res: any) {
 async function handleCreateWagerRace(req: any, res: any) {
   try {
     const race = await db
-      .insert(wagerRaces)
+      .insert(schema.wagerRaces)
       .values({
         ...req.body,
         createdBy: req.user!.id,
       })
       .returning();
 
-    // Broadcast update to all connected clients
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({ type: "RACE_UPDATE", data: race[0] }));
@@ -964,7 +920,6 @@ function setupWebSocket(httpServer: Server) {
   wss = new WebSocketServer({ noServer: true });
 
   httpServer.on("upgrade", (request, socket, head) => {
-    // Skip vite HMR requests
     if (request.headers["sec-websocket-protocol"] === "vite-hmr") {
       return;
     }
@@ -973,11 +928,6 @@ function setupWebSocket(httpServer: Server) {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit("connection", ws, request);
         handleLeaderboardConnection(ws);
-      });
-    } else if (request.url === "/ws/chat") {
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit("connection", ws, request);
-        handleChatConnection(ws);
       });
     }
   });
@@ -994,7 +944,6 @@ async function handleChatConnection(ws: WebSocket) {
   log("Chat WebSocket client connected");
   let pingInterval: NodeJS.Timeout;
 
-  // Setup ping interval
   pingInterval = setInterval(() => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.ping();
@@ -1012,15 +961,14 @@ async function handleChatConnection(ws: WebSocket) {
             type: "error",
             message: "Invalid message format",
           })
-        );
+        );        );
         return;
       }
 
       const { message: messageText, userId, isStaffReply } = result.data;
 
-      // Save message to database
       const [savedMessage] = await db
-        .insert(ticketMessages)
+        .insert(schema.ticketMessages)
         .values({
           message: messageText,
           userId: userId || null,
@@ -1029,7 +977,6 @@ async function handleChatConnection(ws: WebSocket) {
         })
         .returning();
 
-      // Broadcast message to all connected clients
       const broadcastMessage = {
         id: savedMessage.id,
         message: savedMessage.message,
@@ -1065,7 +1012,6 @@ async function handleChatConnection(ws: WebSocket) {
     ws.terminate();
   });
 
-  // Send welcome message
   const welcomeMessage = {
     id: Date.now(),
     message:
@@ -1083,6 +1029,5 @@ const adminLoginSchema = z.object({
 });
 
 function generateToken(payload: any): string {
-  //Implementation for generateToken is missing in original code, but it's not relevant to the fix.  Leaving as is.
   return "";
 }
