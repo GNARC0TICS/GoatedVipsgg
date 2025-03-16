@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Menu, Bell, Settings, User, LogOut, ChevronDown, Gift, Lock, ExternalLink } from "lucide-react";
+import { ParticleBackground } from "./ParticleBackground";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
