@@ -351,8 +351,29 @@ async function muteUser(chatId: number | string, userId: number, duration: numbe
 }
 
 // Command handlers
+// Rate limit middleware
+async function handleCommand(msg: TelegramMessage, handler: () => Promise<void>) {
+  const userId = msg.from?.id.toString();
+  if (!userId) return;
+
+  if (!sessionManager.updateActivity(userId)) {
+    await bot.sendMessage(msg.chat.id, 
+      '⚠️ You are sending too many commands. Please wait a minute and try again.');
+    return;
+  }
+
+  try {
+    await handler();
+  } catch (error) {
+    logger.error('Command handler error', { error, userId });
+    await bot.sendMessage(msg.chat.id,
+      '❌ An error occurred while processing your command. Please try again later.');
+  }
+}
+
 // Help command
 bot.onText(/\/help/, async (msg) => {
+  await handleCommand(msg, async () => {
   const chatId = msg.chat.id;
 
   let message = `🐐 *Welcome to Goated Stats Bot\\!*\n\n`;
@@ -389,6 +410,27 @@ bot.onText(/\/help/, async (msg) => {
 
   await bot.sendMessage(chatId, message, {
     parse_mode: 'MarkdownV2'
+  });
+});
+
+// Verification command
+bot.onText(/\/verify (.+)/, async (msg, match) => {
+  await handleCommand(msg, async () => {
+    const chatId = msg.chat.id;
+    const telegramId = msg.from?.id.toString();
+    const goatedUsername = match?.[1]?.trim();
+
+    if (!telegramId || !goatedUsername) {
+      return bot.sendMessage(chatId, 
+        '❌ Please provide your Goated username: /verify <username>');
+    }
+
+    const result = await VerificationManager.startVerification(
+      telegramId,
+      goatedUsername
+    );
+
+    await bot.sendMessage(chatId, result.message);
   });
 });
 
