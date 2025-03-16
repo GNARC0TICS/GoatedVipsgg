@@ -434,6 +434,137 @@ bot.onText(/\/verify (.+)/, async (msg, match) => {
   });
 });
 
+// Start command
+bot.onText(/\/start/, async (msg) => {
+  await handleCommand(msg, async () => {
+    const chatId = msg.chat.id;
+    await bot.sendMessage(chatId, 
+      '🐐 Welcome to Goated Stats Bot!\n\n' +
+      'Use /help to see available commands.\n' +
+      'To get started, verify your account with /verify');
+  });
+});
+
+// Race command
+bot.onText(/\/race/, async (msg) => {
+  await handleCommand(msg, async () => {
+    const chatId = msg.chat.id;
+    const telegramId = msg.from?.id.toString();
+
+    try {
+      const response = await fetch('http://0.0.0.0:5000/api/races/current');
+      const data = await response.json();
+      
+      if (!data.currentRace) {
+        return bot.sendMessage(chatId, 'No active race at the moment.');
+      }
+
+      await bot.sendMessage(chatId, 
+        `🏁 Current Race: ${data.currentRace.name}\n` +
+        `Your Position: ${data.position || 'Not participating'}\n` +
+        `Prize Pool: $${data.currentRace.prizePool.toLocaleString()}`);
+    } catch (error) {
+      logger.error('Error fetching race data', { error, telegramId });
+      await bot.sendMessage(chatId, 'Error fetching race data. Please try again later.');
+    }
+  });
+});
+
+// Play command
+bot.onText(/\/play/, async (msg) => {
+  await handleCommand(msg, async () => {
+    const chatId = msg.chat.id;
+    await bot.sendMessage(chatId,
+      '🎮 Play on Goated.com using our link:\n' +
+      'https://goated.com?ref=goatedvips');
+  });
+});
+
+// Website command
+bot.onText(/\/website/, async (msg) => {
+  await handleCommand(msg, async () => {
+    const chatId = msg.chat.id;
+    await bot.sendMessage(chatId,
+      '🌐 Visit our website:\n' +
+      'https://goatedvips.gg');
+  });
+});
+
+// Admin Commands
+// User info command
+bot.onText(/\/user_info (.+)/, async (msg, match) => {
+  await handleCommand(msg, async () => {
+    const chatId = msg.chat.id;
+    if (msg.from?.username !== 'xGoombas') {
+      return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+    }
+
+    const username = match?.[1]?.replace('@', '');
+    if (!username) {
+      return bot.sendMessage(chatId, '❌ Please provide a username.');
+    }
+
+    try {
+      const user = await db.select()
+        .from(telegramUsers)
+        .where(eq(telegramUsers.telegramUsername, username))
+        .execute();
+
+      if (!user?.[0]) {
+        return bot.sendMessage(chatId, '❌ User not found.');
+      }
+
+      await bot.sendMessage(chatId,
+        `📊 User Info for @${username}:\n` +
+        `Telegram ID: ${user[0].telegramId}\n` +
+        `Goated Username: ${user[0].goatedUsername || 'Not set'}\n` +
+        `Verified: ${user[0].isVerified ? '✅' : '❌'}\n` +
+        `Joined: ${user[0].createdAt.toLocaleDateString()}`);
+    } catch (error) {
+      logger.error('Error fetching user info', { error, username });
+      await bot.sendMessage(chatId, '❌ Error fetching user information.');
+    }
+  });
+});
+
+// Ban command
+bot.onText(/\/ban (@\w+) (.+)/, async (msg, match) => {
+  await handleCommand(msg, async () => {
+    const chatId = msg.chat.id;
+    if (msg.from?.username !== 'xGoombas') {
+      return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+    }
+
+    const username = match?.[1];
+    const reason = match?.[2];
+
+    try {
+      await bot.banChatMember(chatId, parseInt(username));
+      await bot.sendMessage(chatId,
+        `🚫 ${username} has been banned.\nReason: ${reason}`);
+    } catch (error) {
+      logger.error('Error banning user', { error, username });
+      await bot.sendMessage(chatId, '❌ Error banning user.');
+    }
+  });
+});
+
+// Warn command
+bot.onText(/\/warn (@\w+) (.+)/, async (msg, match) => {
+  await handleCommand(msg, async () => {
+    const chatId = msg.chat.id;
+    if (msg.from?.username !== 'xGoombas') {
+      return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+    }
+
+    const username = match?.[1];
+    const reason = match?.[2];
+
+    await bot.sendMessage(chatId,
+      `⚠️ Warning issued to ${username}\nReason: ${reason}`);
+  });
+});
+
 // Check stats command
 bot.onText(/\/check_stats (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
@@ -632,6 +763,77 @@ export async function getBotStatus() {
     commands: await bot.getMyCommands()
   };
 }
+
+// Recurring message commands
+bot.onText(/\/add_recurring_message/, async (msg) => {
+  await handleCommand(msg, async () => {
+    const chatId = msg.chat.id;
+    if (msg.from?.username !== 'xGoombas') {
+      return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+    }
+
+    const message = createRecurringMessage({
+      chatId,
+      message: 'Default recurring message',
+      schedule: '0 * * * *',
+      enabled: true,
+      targetGroups: [chatId.toString()]
+    });
+
+    await scheduleRecurringMessage(message);
+    await bot.sendMessage(chatId,
+      '✅ Recurring message added successfully!\n' +
+      `ID: ${message.id}\n` +
+      'Schedule: Every hour');
+  });
+});
+
+bot.onText(/\/list_recurring_messages/, async (msg) => {
+  await handleCommand(msg, async () => {
+    const chatId = msg.chat.id;
+    if (msg.from?.username !== 'xGoombas') {
+      return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+    }
+
+    const messages = Array.from(global.recurringMessages.values());
+    if (messages.length === 0) {
+      return bot.sendMessage(chatId, 'No recurring messages found.');
+    }
+
+    const messageList = messages.map(m =>
+      `ID: ${m.id}\n` +
+      `Schedule: ${m.schedule}\n` +
+      `Enabled: ${m.enabled ? '✅' : '❌'}\n` +
+      `Groups: ${m.targetGroups.join(', ')}\n`
+    ).join('\n');
+
+    await bot.sendMessage(chatId, `📝 Recurring Messages:\n\n${messageList}`);
+  });
+});
+
+bot.onText(/\/remove_recurring_message (.+)/, async (msg, match) => {
+  await handleCommand(msg, async () => {
+    const chatId = msg.chat.id;
+    if (msg.from?.username !== 'xGoombas') {
+      return bot.sendMessage(chatId, '❌ Only authorized users can use this command.');
+    }
+
+    const messageId = match?.[1];
+    if (!messageId) {
+      return bot.sendMessage(chatId, '❌ Please provide a message ID.');
+    }
+
+    const job = global.scheduledJobs.get(messageId);
+    if (job) {
+      job.cancel();
+      global.scheduledJobs.delete(messageId);
+      global.recurringMessages.delete(messageId);
+      await bot.sendMessage(chatId, '✅ Recurring message removed successfully.');
+    } else {
+      await bot.sendMessage(chatId, '❌ Message not found.');
+    }
+  });
+});
 
 // Export bot instance and stop function
 export default bot;
