@@ -10,16 +10,22 @@ import type { TimePeriod } from "@/hooks/use-leaderboard";
 export default function Leaderboard() {
   const [location] = useLocation();
   const [period, setPeriod] = useState<TimePeriod>("today");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Start with false to avoid infinite loading
+  const [renderKey, setRenderKey] = useState(0); // Use to force re-render of child components
+
+  console.log("Leaderboard page: Initial period =", period);
 
   useEffect(() => {
-    // Start loading when period changes
+    // When period changes, briefly show the loading animation, but ensure it completes
     setIsLoading(true);
+    console.log("Leaderboard page: Period changed to", period);
     
-    // Give the loader time to show the full animation (at least 2.5s)
+    // Use a very short timer to ensure the page shows quickly even if data isn't available
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2500);
+      // Force re-render of LeaderboardTable with new key
+      setRenderKey(prev => prev + 1);
+    }, 500);
     
     return () => clearTimeout(timer);
   }, [period]);
@@ -28,6 +34,8 @@ export default function Leaderboard() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const periodParam = params.get("period");
+    console.log("Leaderboard page: URL param =", periodParam);
+    
     if (periodParam) {
       const periodMap: Record<string, TimePeriod> = {
         daily: "today",
@@ -36,6 +44,7 @@ export default function Leaderboard() {
         all_time: "all_time"
       };
       if (periodParam in periodMap) {
+        console.log("Leaderboard page: Setting period from URL to", periodMap[periodParam]);
         setPeriod(periodMap[periodParam]);
       }
     }
@@ -107,7 +116,10 @@ export default function Leaderboard() {
             transition={{ delay: 0.2 }}
             className="rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm p-8"
           >
-            <LeaderboardTable key={period} timePeriod={period} />
+            <LeaderboardTable 
+              key={`${period}-${renderKey}`} 
+              timePeriod={period} 
+            />
           </motion.div>
         </main>
       </div>

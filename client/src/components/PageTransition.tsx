@@ -35,12 +35,31 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
 
     if (isLoading) {
       setIsCompleted(false);
-      setShouldRenderContent(false);
+      
+      // Keep a safety timeout to ensure content is shown even if loading never completes
+      const safetyTimeout = setTimeout(() => {
+        console.log("PageTransition: Safety timeout triggered");
+        setShouldRenderContent(true);
+        setShowLoading(false);
+        setIsCompleted(true);
+      }, 5000); // 5 seconds max loading time
+      
+      // Normal short timeout for showing loader
       timeout = setTimeout(() => setShowLoading(true), 250);
+      
+      return () => {
+        clearTimeout(timeout);
+        clearTimeout(safetyTimeout);
+      };
     } else if (!isCompleted) {
       if (showLoading) {
         // If we were showing the loader, wait for the complete animation
         // This ensures we don't cut off animations in the middle
+        // But also set a timeout to ensure content shows after a short delay
+        timeout = setTimeout(() => {
+          setShouldRenderContent(true);
+          setShowLoading(false);
+        }, 800);
       } else {
         // If loading is done but we weren't showing the loader, render content immediately
         setShouldRenderContent(true);

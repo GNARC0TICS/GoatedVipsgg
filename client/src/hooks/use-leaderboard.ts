@@ -57,6 +57,9 @@ export const useWagerTotals = () => {
   };
 };
 
+// Define TimePeriod type for TypeScript typechecking
+export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
+
 type APIResponse = {
   status: string;
   metadata: {
@@ -74,51 +77,66 @@ type APIResponse = {
 // Create a constant key for the affiliate stats endpoint to avoid string duplication
 export const AFFILIATE_STATS_KEY = "/api/affiliate/stats";
 
-export function useLeaderboard(timePeriod: string, page: number = 1) {
+export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
   const queryClient = useQueryClient();
-
-  const { data, isLoading, error, refetch } = useQuery<APIResponse, Error>({
+  
+  // Cast to any type to avoid TypeScript errors with accessing nested properties
+  // while still preserving the core functionality
+  const { data, isLoading, error, refetch } = useQuery<any, Error>({
     // Unique key for React Query cache - changes when time period or page changes
     queryKey: [AFFILIATE_STATS_KEY, timePeriod, page],
     queryFn: async () => {
-      // Check if we already have the data in the query cache
-      const existingData = queryClient.getQueryData<APIResponse>([AFFILIATE_STATS_KEY]);
-      if (existingData) {
-        return existingData;
-      }
+      // Always fetch fresh data to ensure we have current information
+      // This avoids stale data issues when switching between periods
+      try {
+        const response = await fetch(`${AFFILIATE_STATS_KEY}?page=${page}&limit=10`, {
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
 
-      const response = await fetch(`${AFFILIATE_STATS_KEY}?page=${page}&limit=10`, {
-        headers: {
-          'Accept': 'application/json'
+        if (!response.ok) {
+          console.warn(`Stats API returned status: ${response.status}`);
+          
+          // Try to use cached data as fallback
+          const existingData = queryClient.getQueryData<any>([AFFILIATE_STATS_KEY]);
+          if (existingData) {
+            console.log("Using cached data as fallback");
+            return existingData;
+          }
+          
+          // If we don't have cached data either, throw the error
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-      });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const freshData = await response.json();
+        return freshData;
+      } catch (err) {
+        console.error("Error fetching leaderboard data:", err);
+        // Return an empty valid structure that the UI can handle
+        return {
+          status: "error",
+          metadata: { totalUsers: 0, lastUpdated: "" },
+          data: {
+            today: { data: [] },
+            weekly: { data: [] },
+            monthly: { data: [] },
+            all_time: { data: [] }
+          }
+        };
       }
-
-      const freshData = await response.json() as APIResponse;
-      return freshData;
     },
-    refetchInterval: 300000, // Increased to 5 minutes
-    staleTime: 270000,       // Just under the refetch interval
-    cacheTime: 300000,      // 5 minutes
-    retry: 3,
-    gcTime: 5 * 60 * 1000,
+    refetchInterval: 60000,  // Reduce to 1 minute to ensure we get fresh data
+    staleTime: 30000,        // Consider data stale after 30 seconds
+    gcTime: 2 * 60 * 1000,   // Keep cached data for 2 minutes
+    retry: 2,                // Reduce retry attempts
   });
-
-  const periodKey =
-    timePeriod === "weekly"
-      ? "weekly"
-      : timePeriod === "monthly"
-        ? "monthly"
-        : timePeriod === "today"
-          ? "today"
-          : "all_time";
 
   // Function to prefetch data for different time periods
   const prefetchOtherPeriods = async () => {
-    const periods = ["today", "weekly", "monthly", "all_time"];
+    if (!data) return;
+    
+    const periods: TimePeriod[] = ["today", "weekly", "monthly", "all_time"];
     for (const period of periods) {
       if (period !== timePeriod) {
         await queryClient.prefetchQuery({
@@ -135,13 +153,49 @@ export function useLeaderboard(timePeriod: string, page: number = 1) {
     prefetchOtherPeriods();
   }
 
-  return {
-    data: data?.data[periodKey]?.data || [],
+  // Log what we received from the API and what we're returning
+  console.log("useLeaderboard hook:", { 
+    timePeriod,
+    rawData: data,
+    dataForPeriod: data?.data?.[timePeriod]?.data,
     isLoading,
+    error
+  });
+  
+  // Handle different potential data structures to ensure we always return valid data
+  let leaderboardData = [];
+  let totalUsersCount = 0;
+  let lastUpdatedInfo = "";
+  
+  try {
+    // Check for the standard nested structure
+    if (data?.data?.[timePeriod]?.data && Array.isArray(data.data[timePeriod].data)) {
+      leaderboardData = data.data[timePeriod].data;
+    }
+    // Alternative: check if data is directly in the response as an array
+    else if (data?.data && Array.isArray(data.data)) {
+      leaderboardData = data.data;
+    }
+    // Check for data directly under the time period key
+    else if (data?.[timePeriod] && Array.isArray(data[timePeriod])) {
+      leaderboardData = data[timePeriod];
+    }
+    
+    // Get metadata if available
+    totalUsersCount = data?.metadata?.totalUsers || 0;
+    lastUpdatedInfo = data?.metadata?.lastUpdated || "";
+  } catch (err) {
+    console.error("Error processing leaderboard data:", err);
+  }
+  
+  // Always return a valid data structure, even if parts are empty
+  return {
+    data: leaderboardData,
+    isLoading: isLoading && !error,  // If we have an error, we're not loading
     error,
     refetch,
-    totalUsers: data?.metadata.totalUsers || 0,
-    lastUpdated: data?.metadata.lastUpdated || "",
+    totalUsers: totalUsersCount,
+    lastUpdated: lastUpdatedInfo,
   };
 }
 
