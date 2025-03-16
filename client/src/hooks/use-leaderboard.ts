@@ -126,9 +126,9 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
         };
       }
     },
-    refetchInterval: 60000,  // Reduce to 1 minute to ensure we get fresh data
-    staleTime: 30000,        // Consider data stale after 30 seconds
-    gcTime: 2 * 60 * 1000,   // Keep cached data for 2 minutes
+    refetchInterval: 5 * 60 * 1000,  // Fetch every 5 minutes
+    staleTime: 4 * 60 * 1000,        // Consider data stale after 4 minutes
+    gcTime: 10 * 60 * 1000,          // Keep cached data for 10 minutes
     retry: 2,                // Reduce retry attempts
   });
 
