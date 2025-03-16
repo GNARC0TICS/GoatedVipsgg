@@ -6,13 +6,13 @@ interface EnhancedSkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
    * @default "rectangle"
    */
   variant?: "rectangle" | "circle" | "text" | "rounded";
-
+  
   /**
    * Set fixed dimensions, otherwise uses container dimensions
    */
   width?: string | number;
   height?: string | number;
-
+  
   /**
    * Apply more noticeable shimmer effect
    * @default true
@@ -22,7 +22,7 @@ interface EnhancedSkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
 
 /**
  * EnhancedSkeleton
- *
+ * 
  * Advanced skeleton component with customizable shapes and shimmer effect
  * Used for UI placeholders during component-level data loading
  */
@@ -38,7 +38,7 @@ export function EnhancedSkeleton({
     width: width,
     height: height,
   };
-
+  
   // Configure border radius based on variant
   const variantClasses = {
     rectangle: "rounded-none",
@@ -46,15 +46,16 @@ export function EnhancedSkeleton({
     circle: "rounded-full",
     text: "rounded h-4 w-3/4", // Default text line style
   };
-
+  
   // Combine all classes
   const skeletonClasses = cn(
-    "relative overflow-hidden bg-muted/80 animate-pulse",
-    shimmer &&
-      "after:absolute after:inset-0 after:-translate-x-full after:animate-shimmer after:bg-gradient-to-r after:from-transparent after:via-muted-foreground/10 after:to-transparent",
+    "relative overflow-hidden bg-muted/80 animate-pulse", 
+    shimmer && "after:absolute after:inset-0 after:-translate-x-full after:animate-shimmer after:bg-gradient-to-r after:from-transparent after:via-muted-foreground/10 after:to-transparent",
     variantClasses[variant],
-    className,
+    className
   );
-
-  return <div className={skeletonClasses} style={style} {...props} />;
+  
+  return (
+    <div className={skeletonClasses} style={style} {...props} />
+  );
 }

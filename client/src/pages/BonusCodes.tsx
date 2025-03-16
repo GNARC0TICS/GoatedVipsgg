@@ -53,10 +53,7 @@ export default function BonusCodes() {
               loop
               className="w-full h-48 md:h-64 object-contain rounded-xl"
             >
-              <source
-                src="/images/Page Headers/BONUSHEAD.MP4"
-                type="video/mp4"
-              />
+              <source src="/images/Page Headers/BONUSHEAD.MP4" type="video/mp4" />
             </video>
           </div>
 

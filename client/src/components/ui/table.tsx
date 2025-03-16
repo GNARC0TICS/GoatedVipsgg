@@ -24,21 +24,22 @@ const tableVariants = cva("w-full caption-bottom text-sm", {
 
 const Table = React.forwardRef<HTMLTableElement, TableProps>(
   ({ className, variant, dense, hoverable = true, striped, ...props }, ref) => (
-    <div
-      className={cn(
-        "relative w-full overflow-auto",
-        variant === "premium" && "shadow-card",
-        variant === "glass" && "shadow-glass rounded-lg",
-        className,
-      )}
-    >
+    <div className={cn(
+      "relative w-full overflow-auto",
+      variant === "premium" && "shadow-card",
+      variant === "glass" && "shadow-glass rounded-lg",
+      className
+    )}>
       <table
         ref={ref}
-        className={cn(tableVariants({ variant }), className)}
+        className={cn(
+          tableVariants({ variant }),
+          className
+        )}
         {...props}
       />
     </div>
-  ),
+  )
 );
 Table.displayName = "Table";
 
@@ -46,20 +47,20 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead
-    ref={ref}
+  <thead 
+    ref={ref} 
     className={cn(
       "[&_tr]:border-b [&_tr]:border-border/50 bg-background-alt/50",
-      className,
-    )}
-    {...props}
+      className
+    )} 
+    {...props} 
   />
 ));
 TableHeader.displayName = "TableHeader";
 
 const TableBody = React.forwardRef<
   HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement> & {
+  React.HTMLAttributes<HTMLTableSectionElement> & { 
     striped?: boolean;
     hoverable?: boolean;
   }
@@ -69,9 +70,8 @@ const TableBody = React.forwardRef<
     className={cn(
       "[&_tr:last-child]:border-0",
       striped && "[&_tr:nth-child(even)]:bg-background-alt/30",
-      hoverable &&
-        "[&_tr:hover]:bg-background-alt/50 [&_tr:hover]:shadow-sm [&_tr]:transition-all [&_tr]:duration-200",
-      className,
+      hoverable && "[&_tr:hover]:bg-background-alt/50 [&_tr:hover]:shadow-sm [&_tr]:transition-all [&_tr]:duration-200",
+      className
     )}
     {...props}
   />
@@ -101,10 +101,7 @@ interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {
 }
 
 const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
-  (
-    { className, highlighted, selected, isHeader, interactive, ...props },
-    ref,
-  ) => (
+  ({ className, highlighted, selected, isHeader, interactive, ...props }, ref) => (
     <tr
       ref={ref}
       className={cn(
@@ -112,13 +109,12 @@ const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
         !isHeader && "hover:bg-background-alt/50",
         highlighted && "bg-primary/5 hover:bg-primary/10",
         selected && "bg-background-alt/70 hover:bg-background-alt/90",
-        interactive &&
-          "cursor-pointer hover:-translate-y-[1px] hover:shadow-sm",
-        className,
+        interactive && "cursor-pointer hover:-translate-y-[1px] hover:shadow-sm",
+        className
       )}
       {...props}
     />
-  ),
+  )
 );
 TableRow.displayName = "TableRow";
 
@@ -135,7 +131,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
         "h-12 px-4 text-left align-middle font-mona-sans font-bold text-sm uppercase tracking-wide text-text-secondary [&:has([role=checkbox])]:pr-0",
         sortable && "cursor-pointer hover:text-text-primary",
         sorted && "text-primary",
-        className,
+        className
       )}
       {...props}
     >
@@ -143,49 +139,31 @@ const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
         {props.children}
         {sortable && (
           <div className="flex flex-col h-3 w-3">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
               className={cn(
-                "h-3 w-3",
-                sorted === "asc"
-                  ? "text-primary"
-                  : "text-text-muted opacity-50",
-              )}
+                "h-3 w-3", 
+                sorted === "asc" ? "text-primary" : "text-text-muted opacity-50"  
+              )} 
               viewBox="0 0 24 24"
             >
-              <path
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="m17 8l-5-5l-5 5"
-              />
+              <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m17 8l-5-5l-5 5"/>
             </svg>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
               className={cn(
-                "h-3 w-3",
-                sorted === "desc"
-                  ? "text-primary"
-                  : "text-text-muted opacity-50",
-              )}
+                "h-3 w-3", 
+                sorted === "desc" ? "text-primary" : "text-text-muted opacity-50"  
+              )} 
               viewBox="0 0 24 24"
             >
-              <path
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="m17 13l-5 5l-5-5"
-              />
+              <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m17 13l-5 5l-5-5"/>
             </svg>
           </div>
         )}
       </div>
     </th>
-  ),
+  )
 );
 TableHead.displayName = "TableHead";
 
@@ -205,11 +183,11 @@ const TableCell = React.forwardRef<HTMLTableCellElement, TableCellProps>(
         align === "center" && "text-center",
         align === "right" && "text-right",
         truncate && "max-w-[150px] truncate",
-        className,
+        className
       )}
       {...props}
     />
-  ),
+  )
 );
 TableCell.displayName = "TableCell";
 
@@ -235,7 +213,7 @@ const TableStatusIndicator = React.forwardRef<
 >(({ className, variant = "info", count, children, ...props }, ref) => {
   const variantStyles = {
     info: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-    warning: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+    warning: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20", 
     success: "bg-green-500/10 text-green-500 border-green-500/20",
     error: "bg-red-500/10 text-red-500 border-red-500/20",
   };
@@ -246,15 +224,13 @@ const TableStatusIndicator = React.forwardRef<
       className={cn(
         "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border",
         variantStyles[variant],
-        className,
+        className
       )}
       {...props}
     >
       {children}
       {count !== undefined && (
-        <span className="rounded-full bg-background-alt/50 px-1.5 py-0.5 text-xs">
-          {count}
-        </span>
+        <span className="rounded-full bg-background-alt/50 px-1.5 py-0.5 text-xs">{count}</span>
       )}
     </div>
   );
@@ -262,37 +238,28 @@ const TableStatusIndicator = React.forwardRef<
 TableStatusIndicator.displayName = "TableStatusIndicator";
 
 // NEW: Table loading skeleton
-const TableSkeleton = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & {
-    rows?: number;
-    columns?: number;
-  }
->(({ rows = 5, columns = 4, className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("w-full space-y-3 animate-pulse", className)}
+const TableSkeleton = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & {
+  rows?: number;
+  columns?: number;
+}>(({ rows = 5, columns = 4, className, ...props }, ref) => (
+  <div 
+    ref={ref} 
+    className={cn("w-full space-y-3 animate-pulse", className)} 
     {...props}
   >
     <div className="flex gap-4 pb-2 border-b border-border/50">
-      {Array(columns)
-        .fill(null)
-        .map((_, i) => (
-          <div key={i} className="h-8 bg-border/20 rounded w-28"></div>
-        ))}
+      {Array(columns).fill(null).map((_, i) => (
+        <div key={i} className="h-8 bg-border/20 rounded w-28"></div>
+      ))}
     </div>
 
-    {Array(rows)
-      .fill(null)
-      .map((_, i) => (
-        <div key={i} className="flex gap-4 py-2">
-          {Array(columns)
-            .fill(null)
-            .map((_, j) => (
-              <div key={j} className="h-6 bg-border/20 rounded w-28"></div>
-            ))}
-        </div>
-      ))}
+    {Array(rows).fill(null).map((_, i) => (
+      <div key={i} className="flex gap-4 py-2">
+        {Array(columns).fill(null).map((_, j) => (
+          <div key={j} className="h-6 bg-border/20 rounded w-28"></div>
+        ))}
+      </div>
+    ))}
   </div>
 ));
 TableSkeleton.displayName = "TableSkeleton";

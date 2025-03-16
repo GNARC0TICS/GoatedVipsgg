@@ -15,12 +15,12 @@ export default function Leaderboard() {
   useEffect(() => {
     // Start loading when period changes
     setIsLoading(true);
-
-    // Use a shorter loading time since our data is now cached
+    
+    // Give the loader time to show the full animation (at least 2.5s)
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1000); // Reduced from 2500ms to 1000ms for better user experience
-
+    }, 2500);
+    
     return () => clearTimeout(timer);
   }, [period]);
 
@@ -33,7 +33,7 @@ export default function Leaderboard() {
         daily: "today",
         weekly: "weekly",
         monthly: "monthly",
-        all_time: "all_time",
+        all_time: "all_time"
       };
       if (periodParam in periodMap) {
         setPeriod(periodMap[periodParam]);
@@ -46,15 +46,11 @@ export default function Leaderboard() {
       today: "daily",
       weekly: "weekly",
       monthly: "monthly",
-      all_time: "all_time",
+      all_time: "all_time"
     };
 
     setPeriod(newPeriod as TimePeriod);
-    window.history.pushState(
-      {},
-      "",
-      `/leaderboard?period=${urlPeriodMap[newPeriod]}`,
-    );
+    window.history.pushState({}, "", `/leaderboard?period=${urlPeriodMap[newPeriod]}`);
   };
 
   return (
@@ -73,10 +69,7 @@ export default function Leaderboard() {
                 playsInline
                 className="mx-auto h-48 md:h-64 w-auto object-contain"
               >
-                <source
-                  src="/images/Page Headers/WAGERLB.MP4"
-                  type="video/mp4"
-                />
+                <source src="/images/Page Headers/WAGERLB.MP4" type="video/mp4" />
               </video>
             </div>
 
@@ -85,7 +78,7 @@ export default function Leaderboard() {
                 { id: "today", label: "DAILY" },
                 { id: "weekly", label: "WEEKLY" },
                 { id: "monthly", label: "MONTHLY" },
-                { id: "all_time", label: "ALL TIME" },
+                { id: "all_time", label: "ALL TIME" }
               ].map(({ id, label }) => (
                 <motion.div
                   key={id}

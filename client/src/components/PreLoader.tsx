@@ -21,10 +21,7 @@ export const PreLoader: React.FC<PreLoaderProps> = ({ onLoadComplete }) => {
 
     const timer = setInterval(() => {
       const elapsedTime = Date.now() - startTime;
-      const calculatedProgress = Math.min(
-        (elapsedTime / minDuration) * 100,
-        99.5,
-      );
+      const calculatedProgress = Math.min((elapsedTime / minDuration) * 100, 99.5);
 
       if (calculatedProgress >= 99.5) {
         clearInterval(timer);
@@ -52,7 +49,7 @@ export const PreLoader: React.FC<PreLoaderProps> = ({ onLoadComplete }) => {
   // Animation for loading text
   useEffect(() => {
     const textTimer = setInterval(() => {
-      setLoadingText((prev) => {
+      setLoadingText(prev => {
         if (prev === "Loading...") return "Loading";
         return prev + ".";
       });
@@ -67,14 +64,14 @@ export const PreLoader: React.FC<PreLoaderProps> = ({ onLoadComplete }) => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 flex flex-col items-center justify-center bg-[#14151A] z-50"
-      style={{
+      style={{ 
         willChange: "opacity, transform",
       }}
     >
       <div className="flex flex-col items-center">
-        <img
-          src="/images/preload.PNG"
-          alt="Goated VIPs"
+        <img 
+          src="/images/preload.PNG" 
+          alt="Goated VIPs" 
           className="mb-8 w-64 h-auto object-contain"
         />
         <div className="w-64 h-2 bg-[#2A2B31] rounded-full overflow-hidden mb-4">

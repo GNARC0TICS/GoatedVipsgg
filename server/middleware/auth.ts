@@ -23,9 +23,7 @@ export const requireAuth = async (
     const sessionToken = req.cookies?.token;
     // Fallback to Bearer token if no session
     const authHeader = req.headers.authorization;
-    const token =
-      sessionToken ||
-      (authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null);
+    const token = sessionToken || (authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null);
 
     if (!token) {
       return res.status(401).json({ message: "Authentication required" });

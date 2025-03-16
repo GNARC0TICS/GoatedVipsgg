@@ -10,19 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
-import {
-  challenges,
-  challengeEntries,
-  telegramBotState,
-  telegramUsers,
-  verificationRequests,
-} from "./schema/telegram";
-import {
-  supportMessages,
-  supportReadStatus,
-  supportMessagesRelations,
-  supportReadStatusRelations
-} from "./schema/support";
+import { challenges, challengeEntries, telegramBotState, telegramUsers, verificationRequests } from './schema/telegram';
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -33,13 +21,13 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastLogin: timestamp("last_login"),
   lastLoginIp: text("last_login_ip"),
-
+  
   // Goated.com account linking fields
   goatedUid: text("goated_uid").unique(),
   goatedUsername: text("goated_username"),
   isGoatedVerified: boolean("is_goated_verified").default(false),
   goatedVerifiedAt: timestamp("goated_verified_at"),
-
+  
   // Telegram account linking fields
   telegramId: text("telegram_id").unique(),
   telegramUsername: text("telegram_username"),
@@ -149,7 +137,7 @@ export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
 
 export const historicalRaces = pgTable("historical_races", {
   id: serial("id").primaryKey(),
-  month: integer("month").notNull(), // Removed extra argument
+  month: integer("month").notNull(),  // Removed extra argument
   year: integer("year").notNull(),
   prizePool: decimal("prize_pool", { precision: 10, scale: 2 }).notNull(),
   startDate: timestamp("start_date").notNull(),
@@ -157,47 +145,37 @@ export const historicalRaces = pgTable("historical_races", {
   participants: jsonb("participants").notNull(), // Store all participants
   totalWagered: decimal("total_wagered", { precision: 18, scale: 2 }).notNull(),
   participantCount: integer("participant_count").notNull(),
-  status: text("status").notNull().default("completed"),
+  status: text("status").notNull().default('completed'),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  metadata: jsonb("metadata").default({}).notNull(), // For future extensibility
+  metadata: jsonb("metadata").default({}).notNull() // For future extensibility
 });
 
 // Account verification request tables
-export const goatedVerificationRequests = pgTable(
-  "goated_verification_requests",
-  {
-    id: serial("id").primaryKey(),
-    platformUserId: integer("platform_user_id")
-      .references(() => users.id)
-      .notNull(),
-    goatedUsername: text("goated_username").notNull(),
-    goatedUid: text("goated_uid").notNull(),
-    requestedAt: timestamp("requested_at").defaultNow().notNull(),
-    status: text("status").default("pending").notNull(),
-    adminNotes: text("admin_notes"),
-    verifiedAt: timestamp("verified_at"),
-    verifiedBy: integer("verified_by").references(() => users.id),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  },
-);
+export const goatedVerificationRequests = pgTable('goated_verification_requests', {
+  id: serial('id').primaryKey(),
+  platformUserId: integer('platform_user_id').references(() => users.id).notNull(),
+  goatedUsername: text('goated_username').notNull(),
+  goatedUid: text('goated_uid').notNull(),
+  requestedAt: timestamp('requested_at').defaultNow().notNull(),
+  status: text('status').default('pending').notNull(),
+  adminNotes: text('admin_notes'),
+  verifiedAt: timestamp('verified_at'),
+  verifiedBy: integer('verified_by').references(() => users.id),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
 
-export const telegramVerificationRequests = pgTable(
-  "telegram_verification_requests",
-  {
-    id: serial("id").primaryKey(),
-    platformUserId: integer("platform_user_id")
-      .references(() => users.id)
-      .notNull(),
-    telegramId: text("telegram_id").notNull(),
-    telegramUsername: text("telegram_username"),
-    requestedAt: timestamp("requested_at").defaultNow().notNull(),
-    status: text("status").default("pending").notNull(),
-    adminNotes: text("admin_notes"),
-    verifiedAt: timestamp("verified_at"),
-    verifiedBy: integer("verified_by").references(() => users.id),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  },
-);
+export const telegramVerificationRequests = pgTable('telegram_verification_requests', {
+  id: serial('id').primaryKey(),
+  platformUserId: integer('platform_user_id').references(() => users.id).notNull(),
+  telegramId: text('telegram_id').notNull(),
+  telegramUsername: text('telegram_username'),
+  requestedAt: timestamp('requested_at').defaultNow().notNull(),
+  status: text('status').default('pending').notNull(),
+  adminNotes: text('admin_notes'),
+  verifiedAt: timestamp('verified_at'),
+  verifiedBy: integer('verified_by').references(() => users.id),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
 
 export const userRelations = relations(users, ({ one, many }) => ({
   preferences: one(notificationPreferences, {
@@ -249,7 +227,7 @@ export const goatedVerificationRequestRelations = relations(
       references: [users.id],
       relationName: "goatedVerifier",
     }),
-  }),
+  })
 );
 
 export const telegramVerificationRequestRelations = relations(
@@ -264,7 +242,7 @@ export const telegramVerificationRequestRelations = relations(
       references: [users.id],
       relationName: "telegramVerifier",
     }),
-  }),
+  })
 );
 
 export const insertUserSchema = createInsertSchema(users);
@@ -296,18 +274,10 @@ export const insertHistoricalRaceSchema = createInsertSchema(historicalRaces);
 export const selectHistoricalRaceSchema = createSelectSchema(historicalRaces);
 
 // Verification request schemas
-export const insertGoatedVerificationRequestSchema = createInsertSchema(
-  goatedVerificationRequests,
-);
-export const selectGoatedVerificationRequestSchema = createSelectSchema(
-  goatedVerificationRequests,
-);
-export const insertTelegramVerificationRequestSchema = createInsertSchema(
-  telegramVerificationRequests,
-);
-export const selectTelegramVerificationRequestSchema = createSelectSchema(
-  telegramVerificationRequests,
-);
+export const insertGoatedVerificationRequestSchema = createInsertSchema(goatedVerificationRequests);
+export const selectGoatedVerificationRequestSchema = createSelectSchema(goatedVerificationRequests);
+export const insertTelegramVerificationRequestSchema = createInsertSchema(telegramVerificationRequests);
+export const selectTelegramVerificationRequestSchema = createSelectSchema(telegramVerificationRequests);
 
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
@@ -332,21 +302,15 @@ export type InsertHistoricalRace = typeof historicalRaces.$inferInsert;
 export type SelectHistoricalRace = typeof historicalRaces.$inferSelect;
 
 // Verification request types
-export type InsertGoatedVerificationRequest =
-  typeof goatedVerificationRequests.$inferInsert;
-export type SelectGoatedVerificationRequest =
-  typeof goatedVerificationRequests.$inferSelect;
-export type InsertTelegramVerificationRequest =
-  typeof telegramVerificationRequests.$inferInsert;
-export type SelectTelegramVerificationRequest =
-  typeof telegramVerificationRequests.$inferSelect;
+export type InsertGoatedVerificationRequest = typeof goatedVerificationRequests.$inferInsert;
+export type SelectGoatedVerificationRequest = typeof goatedVerificationRequests.$inferSelect;
+export type InsertTelegramVerificationRequest = typeof telegramVerificationRequests.$inferInsert;
+export type SelectTelegramVerificationRequest = typeof telegramVerificationRequests.$inferSelect;
 
-export {
-  challenges,
+export { 
+  challenges, 
   challengeEntries,
   telegramBotState,
   telegramUsers,
-  verificationRequests,
-  supportMessages,
-  supportReadStatus,
+  verificationRequests
 };

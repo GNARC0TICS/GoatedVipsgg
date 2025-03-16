@@ -3,27 +3,21 @@
  * Implements secure role-based access control
  */
 
-import type { Message } from "node-telegram-bot-api";
+import type { Message } from 'node-telegram-bot-api';
 
 // Extract admin IDs from environment variables with fallback
-const ADMIN_TELEGRAM_IDS = (process.env.ADMIN_TELEGRAM_IDS || "")
-  .split(",")
-  .filter(Boolean);
-const MOD_TELEGRAM_IDS = (process.env.MOD_TELEGRAM_IDS || "")
-  .split(",")
-  .filter(Boolean);
-const ALLOWED_GROUP_IDS = (process.env.ALLOWED_GROUP_IDS || "")
-  .split(",")
-  .filter(Boolean);
+const ADMIN_TELEGRAM_IDS = (process.env.ADMIN_TELEGRAM_IDS || '').split(',').filter(Boolean);
+const MOD_TELEGRAM_IDS = (process.env.MOD_TELEGRAM_IDS || '').split(',').filter(Boolean);
+const ALLOWED_GROUP_IDS = (process.env.ALLOWED_GROUP_IDS || '').split(',').filter(Boolean);
 
 /**
  * Role-based permission system
  */
 export enum UserRole {
-  ADMIN = "admin",
-  MODERATOR = "moderator",
-  USER = "user",
-  GUEST = "guest",
+  ADMIN = 'admin',
+  MODERATOR = 'moderator',
+  USER = 'user',
+  GUEST = 'guest',
 }
 
 /**
@@ -102,14 +96,10 @@ export function isAllowedGroupMessage(msg: Message): boolean {
  */
 export function verifyAuthConfiguration(): void {
   if (ADMIN_TELEGRAM_IDS.length === 0) {
-    console.warn(
-      "[Auth] Warning: No admin Telegram IDs configured. Set ADMIN_TELEGRAM_IDS env variable.",
-    );
+    console.warn('[Auth] Warning: No admin Telegram IDs configured. Set ADMIN_TELEGRAM_IDS env variable.');
   }
-
+  
   if (ALLOWED_GROUP_IDS.length === 0) {
-    console.warn(
-      "[Auth] Warning: No allowed group IDs configured. Set ALLOWED_GROUP_IDS env variable.",
-    );
+    console.warn('[Auth] Warning: No allowed group IDs configured. Set ALLOWED_GROUP_IDS env variable.');
   }
 }

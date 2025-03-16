@@ -8,7 +8,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default:
+        default: 
           "fill-animation text-[#14151A] bg-primary hover:text-primary hover:shadow-[0_0_10px_rgba(215,255,0,0.3)] active:shadow-none active:scale-[0.98]",
         destructive:
           "bg-[#FF3D54] text-white hover:bg-[#E83249] hover:shadow-[0_0_10px_rgba(255,61,84,0.2)] active:shadow-none active:scale-[0.98]",
@@ -16,12 +16,13 @@ const buttonVariants = cva(
           "border-2 border-border bg-transparent text-text-primary hover:border-primary hover:text-primary hover:shadow-[0_0_8px_rgba(215,255,0,0.15)] active:shadow-none",
         secondary:
           "bg-background-alt text-text-primary hover:bg-[#22232A] hover:shadow-card active:shadow-none active:scale-[0.98]",
-        glass:
+        glass: 
           "glassmorphism text-white backdrop-blur-md hover:bg-background-overlay/90 hover:shadow-glass active:shadow-sm active:scale-[0.98]",
-        ghost:
+        ghost: 
           "text-text-primary hover:bg-background-alt hover:text-text-accent hover:shadow-sm active:shadow-none",
-        link: "text-primary p-0 h-auto hover:text-primary/80 hover:underline underline-offset-4 after:content-['→'] after:ml-1 after:opacity-0 after:transition-all hover:after:opacity-100 hover:after:translate-x-1",
-        premium:
+        link: 
+          "text-primary p-0 h-auto hover:text-primary/80 hover:underline underline-offset-4 after:content-['→'] after:ml-1 after:opacity-0 after:transition-all hover:after:opacity-100 hover:after:translate-x-1",
+        premium: 
           "bg-gradient-to-r from-primary to-primary/90 text-background shadow-neon text-[#14151A] hover:shadow-neon-strong hover:scale-[1.02] active:scale-[0.98] active:shadow-neon",
       },
       size: {
@@ -34,7 +35,7 @@ const buttonVariants = cva(
       glow: {
         true: "hover:animate-glow",
         false: "",
-      },
+      }
     },
     defaultVariants: {
       variant: "default",
@@ -45,9 +46,9 @@ const buttonVariants = cva(
       {
         variant: "premium",
         glow: true,
-        className: "animate-glow",
+        className: "animate-glow"
       },
-    ],
+    ]
   },
 );
 
@@ -61,21 +62,7 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      className,
-      variant,
-      size,
-      glow,
-      asChild = false,
-      leftIcon,
-      rightIcon,
-      isLoading,
-      children,
-      ...props
-    },
-    ref,
-  ) => {
+  ({ className, variant, size, glow, asChild = false, leftIcon, rightIcon, isLoading, children, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
     return (
       <Comp
@@ -85,28 +72,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {isLoading && (
-          <svg
-            className="animate-spin -ml-1 mr-2"
-            xmlns="http://www.w3.org/2000/svg"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+          <svg className="animate-spin -ml-1 mr-2" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 12a9 9 0 1 1-6.219-8.56" />
           </svg>
         )}
-        {!isLoading && leftIcon && (
-          <span className="icon-left">{leftIcon}</span>
-        )}
+        {!isLoading && leftIcon && <span className="icon-left">{leftIcon}</span>}
         <span className="relative z-10">{children}</span>
-        {!isLoading && rightIcon && (
-          <span className="icon-right">{rightIcon}</span>
-        )}
+        {!isLoading && rightIcon && <span className="icon-right">{rightIcon}</span>}
       </Comp>
     );
   },

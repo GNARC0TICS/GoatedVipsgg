@@ -74,7 +74,6 @@ This document provides a visual structure of the codebase, highlighting key file
 #### Telegram Bot (server/telegram/)
 
 - **Commands (`server/telegram/commands/`)**: Bot command implementations
-
   - `verify.ts`: Account verification command
   - `verify-user.ts`: Admin verification command
   - `leaderboard.ts`: Leaderboard display command
@@ -101,7 +100,6 @@ This document provides a visual structure of the codebase, highlighting key file
 #### Schemas
 
 - **Telegram Schemas (`db/schema/telegram.ts`)**:
-
   - `telegramUsers`: Telegram user records
   - `telegramBotState`: Bot state persistence
   - `verificationRequests`: Account verification requests
@@ -115,13 +113,11 @@ This document provides a visual structure of the codebase, highlighting key file
 ## Data Flow
 
 1. **User Flow**:
-
    - Users interact with the frontend React application
    - API requests are made to backend endpoints
    - Authentication is handled through the auth system
 
 2. **Telegram Bot Flow**:
-
    - Users send commands to the Telegram bot
    - Commands are processed by the appropriate handler
    - Database queries validate and update user data

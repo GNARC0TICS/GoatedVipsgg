@@ -1,13 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Trophy,
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  AlertCircle,
-  History,
-} from "lucide-react";
+import { Trophy, ChevronDown, ChevronUp, Clock, AlertCircle, History } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -22,7 +15,7 @@ interface RaceParticipant {
 
 interface RaceData {
   id: string;
-  status: "live" | "ended" | "upcoming";
+  status: 'live' | 'ended' | 'upcoming';
   startDate: string;
   endDate: string;
   prizePool: number;
@@ -36,16 +29,16 @@ export function RaceTimer() {
   const [timeLeft, setTimeLeft] = useState<string>("");
   const { toast } = useToast();
 
-  const {
-    data: currentRaceData,
-    error: currentError,
-    isLoading: isCurrentLoading,
+  const { 
+    data: currentRaceData, 
+    error: currentError, 
+    isLoading: isCurrentLoading 
   } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/current"],
     queryFn: async () => {
-      const response = await fetch("/api/wager-races/current");
+      const response = await fetch('/api/wager-races/current');
       if (!response.ok) {
-        throw new Error("Failed to fetch current race data");
+        throw new Error('Failed to fetch current race data');
       }
       return response.json();
     },
@@ -53,26 +46,25 @@ export function RaceTimer() {
     retry: 3,
     enabled: !showPrevious,
     onError: (error) => {
-      console.error("Race data fetch error:", error);
+      console.error('Race data fetch error:', error);
       toast({
         title: "Error loading race data",
-        description:
-          error instanceof Error ? error.message : "Please try again later",
-        variant: "destructive",
+        description: error instanceof Error ? error.message : "Please try again later",
+        variant: "destructive"
       });
-    },
+    }
   });
 
-  const {
-    data: previousRaceData,
-    error: previousError,
-    isLoading: isPreviousLoading,
+  const { 
+    data: previousRaceData, 
+    error: previousError, 
+    isLoading: isPreviousLoading 
   } = useQuery<RaceData>({
     queryKey: ["/api/wager-races/previous"],
     queryFn: async () => {
-      const response = await fetch("/api/wager-races/previous");
+      const response = await fetch('/api/wager-races/previous');
       if (!response.ok) {
-        throw new Error("Failed to fetch previous race data");
+        throw new Error('Failed to fetch previous race data');
       }
       const data = await response.json();
       if (!data) return null;
@@ -80,10 +72,10 @@ export function RaceTimer() {
       return {
         ...data,
         startDate: data.startDate || new Date().toISOString(),
-        endDate: data.endDate || new Date().toISOString(),
+        endDate: data.endDate || new Date().toISOString()
       };
     },
-    enabled: showPrevious,
+    enabled: showPrevious
   });
 
   const raceData = showPrevious ? previousRaceData : currentRaceData;
@@ -104,9 +96,7 @@ export function RaceTimer() {
       }
 
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor(
-        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-      );
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
       setTimeLeft(`${days}d ${hours}h ${minutes}m`);
@@ -120,24 +110,24 @@ export function RaceTimer() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     // Add console log to debug the date information
-    console.log("Race date formatting:", {
-      originalString: dateString,
-      parsedDate: date,
+    console.log('Race date formatting:', { 
+      originalString: dateString, 
+      parsedDate: date, 
       month: date.getMonth() + 1,
-      year: date.getFullYear(),
+      year: date.getFullYear()
     });
-
+    
     // Force UTC interpretation to avoid timezone issues
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      timeZone: "UTC",
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric',
+      month: 'long',
+      timeZone: 'UTC'
     });
   };
 
   if (error) {
     return (
-      <motion.div
+      <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="fixed bottom-4 right-4 z-50"
@@ -154,7 +144,7 @@ export function RaceTimer() {
 
   if (isLoading) {
     return (
-      <motion.div
+      <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="fixed bottom-4 right-4 z-50 w-80"
@@ -172,13 +162,13 @@ export function RaceTimer() {
   if (!raceData) return null;
 
   return (
-    <motion.div
+    <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="fixed bottom-4 right-4 z-50 w-80"
     >
       <div className="bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg shadow-lg overflow-hidden">
-        <div
+        <div 
           className="p-4 cursor-pointer"
           onClick={() => setIsExpanded(!isExpanded)}
         >
@@ -186,8 +176,7 @@ export function RaceTimer() {
             <div className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-[#D7FF00]" />
               <span className="font-heading text-white">
-                {raceData.title ||
-                  (showPrevious ? "Previous Race" : "Monthly Race")}
+                {raceData.title || (showPrevious ? 'Previous Race' : 'Monthly Race')}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -205,7 +194,7 @@ export function RaceTimer() {
               {formatDate(raceData.startDate)}
             </span>
             <div className="flex items-center gap-2">
-              <button
+              <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowPrevious(!showPrevious);
@@ -238,20 +227,18 @@ export function RaceTimer() {
                   </span>
                 </div>
                 {raceData.participants.map((participant, index) => (
-                  <div
+                  <div 
                     key={participant.uid}
                     className="flex items-center justify-between py-2"
                   >
                     <div className="flex items-center gap-2">
-                      <span
-                        className={`
+                      <span className={`
                         w-5 h-5 flex items-center justify-center rounded-full text-sm font-medium
-                        ${index === 0 ? "bg-yellow-500 text-black" : ""}
-                        ${index === 1 ? "bg-gray-400 text-black" : ""}
-                        ${index === 2 ? "bg-amber-700 text-white" : ""}
-                        ${index > 2 ? "bg-[#2A2B31] text-white" : ""}
-                      `}
-                      >
+                        ${index === 0 ? 'bg-yellow-500 text-black' : ''}
+                        ${index === 1 ? 'bg-gray-400 text-black' : ''}
+                        ${index === 2 ? 'bg-amber-700 text-white' : ''}
+                        ${index > 2 ? 'bg-[#2A2B31] text-white' : ''}
+                      `}>
                         {index + 1}
                       </span>
                       <span className="text-white truncate max-w-[120px]">

@@ -17,13 +17,13 @@ const Form = FormProvider;
 
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
 > = {
   name: TName;
 };
 
 const FormFieldContext = React.createContext<FormFieldContextValue>(
-  {} as FormFieldContextValue,
+  {} as FormFieldContextValue
 );
 
 type FormItemContextValue = {
@@ -31,7 +31,7 @@ type FormItemContextValue = {
 };
 
 const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue,
+  {} as FormItemContextValue
 );
 
 const formItemVariants = cva("space-y-2", {
@@ -39,16 +39,16 @@ const formItemVariants = cva("space-y-2", {
     variant: {
       default: "",
       inline: "flex flex-row items-start gap-8 space-y-0",
-    },
+    }
   },
   defaultVariants: {
-    variant: "default",
-  },
+    variant: "default"
+  }
 });
 
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
 >({
   ...props
 }: ControllerProps<TFieldValues, TName>) => {
@@ -92,14 +92,14 @@ const FormItem = React.forwardRef<HTMLDivElement, FormItemProps>(
 
     return (
       <FormItemContext.Provider value={{ id }}>
-        <div
-          ref={ref}
-          className={cn(formItemVariants({ variant }), className)}
-          {...props}
+        <div 
+          ref={ref} 
+          className={cn(formItemVariants({ variant }), className)} 
+          {...props} 
         />
       </FormItemContext.Provider>
     );
-  },
+  }
 );
 FormItem.displayName = "FormItem";
 
@@ -115,7 +115,7 @@ const FormLabel = React.forwardRef<
       className={cn(
         "text-sm font-mona-sans font-bold uppercase tracking-wide",
         error && "text-destructive",
-        className,
+        className
       )}
       htmlFor={formItemId}
       {...props}
@@ -128,8 +128,7 @@ const FormControl = React.forwardRef<
   React.ElementRef<typeof Slot>,
   React.ComponentPropsWithoutRef<typeof Slot>
 >(({ ...props }, ref) => {
-  const { error, formItemId, formDescriptionId, formMessageId } =
-    useFormField();
+  const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
 
   return (
     <Slot
@@ -181,24 +180,14 @@ const FormMessage = React.forwardRef<
       id={formMessageId}
       className={cn(
         "text-sm font-medium text-destructive flex items-center gap-1.5 mt-1.5",
-        className,
+        className
       )}
       {...props}
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-3.5 w-3.5"
-        viewBox="0 0 24 24"
-        fill="none"
-      >
-        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-        <path
-          d="M12 8v4"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-        <circle cx="12" cy="16" r="1" fill="currentColor" />
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+        <path d="M12 8v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <circle cx="12" cy="16" r="1" fill="currentColor"/>
       </svg>
       {body}
     </p>

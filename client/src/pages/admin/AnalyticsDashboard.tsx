@@ -1,6 +1,11 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface WagerTotals {
   dailyTotal: number;
@@ -48,7 +53,7 @@ export default function AnalyticsDashboard() {
             <CardTitle>Daily Total</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-bold text-[#D7FF00]">
-            ${stats?.wagerTotals?.dailyTotal?.toLocaleString() || "0"}
+            ${stats?.wagerTotals?.dailyTotal?.toLocaleString() || '0'}
           </CardContent>
         </Card>
 
@@ -57,7 +62,7 @@ export default function AnalyticsDashboard() {
             <CardTitle>Weekly Total</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-bold text-[#D7FF00]">
-            ${stats?.wagerTotals?.weeklyTotal?.toLocaleString() || "0"}
+            ${stats?.wagerTotals?.weeklyTotal?.toLocaleString() || '0'}
           </CardContent>
         </Card>
 
@@ -66,7 +71,7 @@ export default function AnalyticsDashboard() {
             <CardTitle>Monthly Total</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-bold text-[#D7FF00]">
-            ${stats?.wagerTotals?.monthlyTotal?.toLocaleString() || "0"}
+            ${stats?.wagerTotals?.monthlyTotal?.toLocaleString() || '0'}
           </CardContent>
         </Card>
 
@@ -75,7 +80,7 @@ export default function AnalyticsDashboard() {
             <CardTitle>All-Time Total</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-bold text-[#D7FF00]">
-            ${stats?.wagerTotals?.allTimeTotal?.toLocaleString() || "0"}
+            ${stats?.wagerTotals?.allTimeTotal?.toLocaleString() || '0'}
           </CardContent>
         </Card>
       </div>

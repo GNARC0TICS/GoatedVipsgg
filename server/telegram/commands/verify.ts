@@ -3,36 +3,28 @@
  * Handles user verification flow to link Telegram and Goated accounts
  */
 
-import TelegramBot from "node-telegram-bot-api";
-import { CommandDefinition, CommandAccessLevel } from "./index";
-import { logger, stateManager, apiClient, MessageTemplates } from "../utils";
-import { db } from "@db";
-import {
-  telegramUsers,
-  verificationRequests,
-  insertVerificationRequestSchema,
-} from "../../../db/schema/telegram";
-import { eq } from "drizzle-orm";
+import TelegramBot from 'node-telegram-bot-api';
+import { CommandDefinition, CommandAccessLevel } from './index';
+import { logger, stateManager, apiClient, MessageTemplates } from '../utils';
+import { db } from '@db';
+import { telegramUsers, verificationRequests, insertVerificationRequestSchema } from '../../../db/schema/telegram';
+import { eq } from 'drizzle-orm';
 
 /**
  * Verification command handler
  */
 const verifyCommand: CommandDefinition = {
-  name: "verify",
-  description: "Link your Goated account",
+  name: 'verify',
+  description: 'Link your Goated account',
   accessLevel: CommandAccessLevel.PUBLIC,
   pattern: /^\/verify(?:\s+(.+))?$/,
   enabled: true,
   showInHelp: true,
-  handler: async (
-    bot: TelegramBot,
-    msg: TelegramBot.Message,
-    match: RegExpExecArray | null,
-  ): Promise<void> => {
+  handler: async (bot: TelegramBot, msg: TelegramBot.Message, match: RegExpExecArray | null): Promise<void> => {
     const chatId = msg.chat.id;
     const telegramId = msg.from?.id.toString();
     const telegramUsername = msg.from?.username;
-
+    
     if (!telegramId) {
       await bot.sendMessage(chatId, MessageTemplates.ERRORS.USER_NOT_FOUND);
       return;
@@ -50,7 +42,7 @@ const verifyCommand: CommandDefinition = {
       if (existingUser.length > 0 && existingUser[0].isVerified) {
         await bot.sendMessage(
           chatId,
-          `✅ Your account is already verified! You are linked to Goated username: ${existingUser[0].goatedUsername}`,
+          `✅ Your account is already verified! You are linked to Goated username: ${existingUser[0].goatedUsername}`
         );
         return;
       }
@@ -62,13 +54,10 @@ const verifyCommand: CommandDefinition = {
         .where(eq(verificationRequests.telegramId, telegramId))
         .execute();
 
-      if (
-        existingRequest.length > 0 &&
-        existingRequest[0].status === "pending"
-      ) {
+      if (existingRequest.length > 0 && existingRequest[0].status === 'pending') {
         await bot.sendMessage(
           chatId,
-          `⏳ You already have a pending verification request for Goated username: ${existingRequest[0].goatedUsername}\n\nPlease wait for an admin to verify your account.`,
+          `⏳ You already have a pending verification request for Goated username: ${existingRequest[0].goatedUsername}\n\nPlease wait for an admin to verify your account.`
         );
         return;
       }
@@ -78,36 +67,30 @@ const verifyCommand: CommandDefinition = {
         // Set user state to 'awaiting_username'
         if (msg.from) {
           stateManager.updateUserState(msg.from.id, {
-            verificationState: "awaiting_username",
-            lastAction: Date.now(),
+            verificationState: 'awaiting_username',
+            lastAction: Date.now()
           });
         }
-
+        
         await bot.sendMessage(
           chatId,
-          `👋 To verify your account, please provide your Goated.com username.\n\nReply with your username now.`,
+          `👋 To verify your account, please provide your Goated.com username.\n\nReply with your username now.`
         );
         return;
       }
 
       // Step 4: Process the provided username
       const goatedUsername = match[1].trim();
-      await createVerificationRequest(
-        bot,
-        chatId,
-        telegramId,
-        telegramUsername,
-        goatedUsername,
-      );
+      await createVerificationRequest(bot, chatId, telegramId, telegramUsername, goatedUsername);
     } catch (error) {
-      logger.error("Error in verify command", {
+      logger.error('Error in verify command', {
         error: error instanceof Error ? error.message : String(error),
         telegramId,
-        telegramUsername,
+        telegramUsername
       });
       await bot.sendMessage(chatId, MessageTemplates.ERRORS.SERVER_ERROR);
     }
-  },
+  }
 };
 
 /**
@@ -118,20 +101,17 @@ async function createVerificationRequest(
   chatId: number,
   telegramId: string,
   telegramUsername?: string,
-  goatedUsername?: string,
+  goatedUsername?: string
 ): Promise<void> {
   if (!goatedUsername) {
-    await bot.sendMessage(chatId, "Please provide a valid Goated username.");
+    await bot.sendMessage(chatId, 'Please provide a valid Goated username.');
     return;
   }
 
   try {
     // First validate the username format
     if (goatedUsername.length < 3) {
-      await bot.sendMessage(
-        chatId,
-        "Goated username must be at least 3 characters long.",
-      );
+      await bot.sendMessage(chatId, 'Goated username must be at least 3 characters long.');
       return;
     }
 
@@ -140,23 +120,19 @@ async function createVerificationRequest(
       telegramId,
       goatedUsername,
       telegramUsername: telegramUsername || null,
-      status: "pending",
+      status: 'pending',
       requestedAt: new Date(),
-      updatedAt: new Date(),
+      updatedAt: new Date()
     };
 
     // Validate with Zod
-    const validationResult =
-      insertVerificationRequestSchema.safeParse(verificationData);
+    const validationResult = insertVerificationRequestSchema.safeParse(verificationData);
     if (!validationResult.success) {
-      logger.error("Validation error in verification request", {
+      logger.error('Validation error in verification request', {
         errors: validationResult.error.errors,
-        telegramId,
+        telegramId
       });
-      await bot.sendMessage(
-        chatId,
-        "There was an error validating your verification request. Please try again.",
-      );
+      await bot.sendMessage(chatId, 'There was an error validating your verification request. Please try again.');
       return;
     }
 
@@ -169,9 +145,9 @@ async function createVerificationRequest(
         set: {
           goatedUsername,
           telegramUsername: telegramUsername || null,
-          status: "pending",
-          updatedAt: new Date(),
-        },
+          status: 'pending',
+          updatedAt: new Date()
+        }
       });
 
     // Create or update user record
@@ -184,7 +160,7 @@ async function createVerificationRequest(
         isVerified: false,
         createdAt: new Date(),
         lastActive: new Date(),
-        updatedAt: new Date(),
+        updatedAt: new Date()
       })
       .onConflictDoUpdate({
         target: telegramUsers.telegramId,
@@ -192,35 +168,32 @@ async function createVerificationRequest(
           telegramUsername: telegramUsername || null,
           goatedUsername,
           lastActive: new Date(),
-          updatedAt: new Date(),
-        },
+          updatedAt: new Date()
+        }
       });
 
     // Send confirmation message
     await bot.sendMessage(
       chatId,
-      `✅ Verification request submitted for Goated username: ${goatedUsername}\n\nAn admin will verify your account shortly. You'll receive a notification when your account is verified.`,
+      `✅ Verification request submitted for Goated username: ${goatedUsername}\n\nAn admin will verify your account shortly. You'll receive a notification when your account is verified.`
     );
 
     // Notify admin(s) of new verification request
-    const adminNotification = `🆕 New verification request:\nTelegram: ${telegramUsername || "No username"} (${telegramId})\nGoated: ${goatedUsername}\n\nUse /verify_user ${telegramId} to approve.`;
-
+    const adminNotification = `🆕 New verification request:\nTelegram: ${telegramUsername || 'No username'} (${telegramId})\nGoated: ${goatedUsername}\n\nUse /verify_user ${telegramId} to approve.`;
+    
     // TODO: Send to admin chat or admin users
-    logger.info("New verification request", {
+    logger.info('New verification request', {
       telegramId,
       telegramUsername,
-      goatedUsername,
+      goatedUsername
     });
   } catch (error) {
-    logger.error("Error creating verification request", {
+    logger.error('Error creating verification request', {
       error: error instanceof Error ? error.message : String(error),
       telegramId,
-      goatedUsername,
+      goatedUsername
     });
-    await bot.sendMessage(
-      chatId,
-      "An error occurred while processing your verification request. Please try again later.",
-    );
+    await bot.sendMessage(chatId, 'An error occurred while processing your verification request. Please try again later.');
   }
 }
 

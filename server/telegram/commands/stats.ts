@@ -3,15 +3,9 @@
  * Fetches and displays user statistics from the Goated platform
  */
 
-import TelegramBot from "node-telegram-bot-api";
-import { CommandAccessLevel, CommandDefinition } from "./index";
-import {
-  logger,
-  apiClient,
-  validateUsername,
-  MessageTemplates,
-  LogContext,
-} from "../utils";
+import TelegramBot from 'node-telegram-bot-api';
+import { CommandAccessLevel, CommandDefinition } from './index';
+import { logger, apiClient, validateUsername, MessageTemplates, LogContext } from '../utils';
 
 /**
  * Stats command handler
@@ -20,64 +14,67 @@ import {
 export const statsCommandHandler = async (
   bot: TelegramBot,
   msg: TelegramBot.Message,
-  match: RegExpExecArray | null,
+  match: RegExpExecArray | null
 ): Promise<void> => {
   const chatId = msg.chat.id;
-
+  
   try {
     // Extract username from command
     const username = match && match[1] ? match[1].trim() : null;
-
+    
     // If no username provided, check if the command issuer has a verified account
     if (!username) {
       const senderId = msg.from?.id;
-
+      
       if (!senderId) {
-        await bot.sendMessage(
-          chatId,
-          "Could not identify your Telegram ID. Please try again.",
-        );
+        await bot.sendMessage(chatId, 'Could not identify your Telegram ID. Please try again.');
         return;
       }
-
+      
       // TODO: In the future, look up the user's verified Goated account by Telegram ID
       await bot.sendMessage(
         chatId,
-        "Please provide a Goated username to check stats for.\nExample: `/stats username`",
+        'Please provide a Goated username to check stats for.\nExample: `/stats username`'
       );
       return;
     }
-
+    
     // Validate username format
     if (!validateUsername(username)) {
-      await bot.sendMessage(chatId, MessageTemplates.ERRORS.VALIDATION_ERROR);
+      await bot.sendMessage(
+        chatId,
+        MessageTemplates.ERRORS.VALIDATION_ERROR
+      );
       return;
     }
-
+    
     // Show typing indicator
-    await bot.sendChatAction(chatId, "typing");
-
+    await bot.sendChatAction(chatId, 'typing');
+    
     // Fetch user stats from API
     const stats = await fetchUserStats(username);
-
+    
     if (!stats) {
       await bot.sendMessage(
         chatId,
         `Could not find statistics for user *${username}*. Please check the username and try again.`,
-        { parse_mode: "Markdown" },
+        { parse_mode: 'Markdown' }
       );
       return;
     }
-
+    
     // Format and send stats message
     const statsMessage = formatStatsMessage(username, stats);
     await bot.sendMessage(chatId, statsMessage, {
-      parse_mode: "Markdown",
-      disable_web_page_preview: true,
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true
     });
   } catch (error) {
-    logger.error("Error in stats command", error as Error | LogContext);
-    await bot.sendMessage(chatId, MessageTemplates.ERRORS.SERVER_ERROR);
+    logger.error('Error in stats command', error as Error | LogContext);
+    await bot.sendMessage(
+      chatId,
+      MessageTemplates.ERRORS.SERVER_ERROR
+    );
   }
 };
 
@@ -92,9 +89,9 @@ async function fetchUserStats(username: string): Promise<any | null> {
     const response = await apiClient.getGoatedStats(username);
     return response;
   } catch (error) {
-    logger.error(`Error fetching stats for ${username}`, {
+    logger.error(`Error fetching stats for ${username}`, { 
       error: error instanceof Error ? error.message : String(error),
-      username,
+      username
     });
     return null;
   }
@@ -127,10 +124,7 @@ function formatStatsMessage(username: string, stats: any): string {
  * @returns Formatted number string
  */
 function formatNumber(num: number): string {
-  return num.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /**
@@ -140,7 +134,7 @@ function formatNumber(num: number): string {
  * @returns Win rate percentage
  */
 function calculateWinRate(won: number, wagered: number): string {
-  if (!wagered || wagered === 0) return "0.00";
+  if (!wagered || wagered === 0) return '0.00';
   const winRate = (won / wagered) * 100;
   return winRate.toFixed(2);
 }
@@ -149,10 +143,10 @@ function calculateWinRate(won: number, wagered: number): string {
  * Stats command definition
  */
 export const statsCommand: CommandDefinition = {
-  name: "stats",
+  name: 'stats',
   handler: statsCommandHandler,
   accessLevel: CommandAccessLevel.PUBLIC,
-  description: "Check your Goated.com statistics",
+  description: 'Check your Goated.com statistics',
   requiresArgs: false,
   enabled: true,
   showInHelp: true,

@@ -1,9 +1,9 @@
+
 # GoatedVIPs Telegram Bot Command Checklist
 
 Use this checklist to systematically verify all Telegram bot commands are working properly.
 
 ## Testing Prerequisites
-
 - Bot must be running
 - Telegram token must be valid
 - Database must be properly configured
@@ -11,41 +11,41 @@ Use this checklist to systematically verify all Telegram bot commands are workin
 
 ## User Commands
 
-| Command                   | Description        | Expected Behavior                          | Working? |
-| ------------------------- | ------------------ | ------------------------------------------ | -------- |
-| `/start`                  | Initialize bot     | Welcome message with instructions          | [ ]      |
-| `/verify`                 | Begin verification | Prompt user for verification details       | [ ]      |
-| `/stats`                  | View statistics    | Display user's wager statistics            | [ ]      |
-| `/check_stats <username>` | Check user stats   | Display stats for the specified user       | [ ]      |
-| `/race`                   | View race position | Show user's position in current wager race | [ ]      |
-| `/leaderboard`            | See top players    | Display leaderboard of top players         | [ ]      |
-| `/play`                   | Get affiliate link | Provide affiliate link to Goated.com       | [ ]      |
-| `/website`                | Visit website      | Provide link to GoatedVIPs.gg              | [ ]      |
-| `/help`                   | View command list  | Display list of available commands         | [ ]      |
+| Command | Description | Expected Behavior | Working? |
+|---------|-------------|-------------------|----------|
+| `/start` | Initialize bot | Welcome message with instructions | [ ] |
+| `/verify` | Begin verification | Prompt user for verification details | [ ] |
+| `/stats` | View statistics | Display user's wager statistics | [ ] |
+| `/check_stats <username>` | Check user stats | Display stats for the specified user | [ ] |
+| `/race` | View race position | Show user's position in current wager race | [ ] |
+| `/leaderboard` | See top players | Display leaderboard of top players | [ ] |
+| `/play` | Get affiliate link | Provide affiliate link to Goated.com | [ ] |
+| `/website` | Visit website | Provide link to GoatedVIPs.gg | [ ] |
+| `/help` | View command list | Display list of available commands | [ ] |
 
 ## Admin Commands
 
-| Command                            | Description                | Expected Behavior                     | Working? |
-| ---------------------------------- | -------------------------- | ------------------------------------- | -------- |
-| `/adminpanel`                      | Open admin panel           | Display admin control options         | [ ]      |
-| `/broadcast <message>`             | Send to all users          | Send message to all users             | [ ]      |
-| `/group_message <group> <message>` | Send to specific group     | Send message to specified group       | [ ]      |
-| `/pending`                         | View verification requests | Show pending verification requests    | [ ]      |
-| `/verify_user <username>`          | Approve verification       | Approve user verification             | [ ]      |
-| `/reject_user <username>`          | Reject verification        | Reject user verification              | [ ]      |
-| `/makeadmin`                       | Grant admin privileges     | Make user an admin                    | [ ]      |
-| `/setup_forwarding`                | Configure forwarding       | Setup message forwarding              | [ ]      |
-| `/stop_forwarding`                 | Disable forwarding         | Stop message forwarding               | [ ]      |
-| `/list_forwardings`                | View active forwards       | List active forwarding configurations | [ ]      |
+| Command | Description | Expected Behavior | Working? |
+|---------|-------------|-------------------|----------|
+| `/adminpanel` | Open admin panel | Display admin control options | [ ] |
+| `/broadcast <message>` | Send to all users | Send message to all users | [ ] |
+| `/group_message <group> <message>` | Send to specific group | Send message to specified group | [ ] |
+| `/pending` | View verification requests | Show pending verification requests | [ ] |
+| `/verify_user <username>` | Approve verification | Approve user verification | [ ] |
+| `/reject_user <username>` | Reject verification | Reject user verification | [ ] |
+| `/makeadmin` | Grant admin privileges | Make user an admin | [ ] |
+| `/setup_forwarding` | Configure forwarding | Setup message forwarding | [ ] |
+| `/stop_forwarding` | Disable forwarding | Stop message forwarding | [ ] |
+| `/list_forwardings` | View active forwards | List active forwarding configurations | [ ] |
 
 ## Moderation Commands
 
-| Command                      | Description | Expected Behavior              | Working? |
-| ---------------------------- | ----------- | ------------------------------ | -------- |
-| `/mute @username <duration>` | Mute user   | Temporarily mute user in group | [ ]      |
-| `/warn @username <reason>`   | Warn user   | Issue warning to user          | [ ]      |
-| `/ban @username <reason>`    | Ban user    | Ban user from group            | [ ]      |
-| `/bootfuck @username`        | Remove user | Remove user from group         | [ ]      |
+| Command | Description | Expected Behavior | Working? |
+|---------|-------------|-------------------|----------|
+| `/mute @username <duration>` | Mute user | Temporarily mute user in group | [ ] |
+| `/warn @username <reason>` | Warn user | Issue warning to user | [ ] |
+| `/ban @username <reason>` | Ban user | Ban user from group | [ ] |
+| `/bootfuck @username` | Remove user | Remove user from group | [ ] |
 
 ## Testing Notes
 

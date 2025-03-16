@@ -10,24 +10,21 @@ interface PageTransitionProps {
 
 // Define the animation variants
 const pageVariants = {
-  initial: {
-    opacity: 0,
-    y: 10,
+  initial: { 
+    opacity: 0, 
+    y: 10
   },
-  animate: {
-    opacity: 1,
-    y: 0,
+  animate: { 
+    opacity: 1, 
+    y: 0
   },
-  exit: {
-    opacity: 0,
-    y: -10,
-  },
+  exit: { 
+    opacity: 0, 
+    y: -10
+  }
 };
 
-export function PageTransition({
-  children,
-  isLoading = false,
-}: PageTransitionProps) {
+export function PageTransition({ children, isLoading = false }: PageTransitionProps) {
   const [showLoading, setShowLoading] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [shouldRenderContent, setShouldRenderContent] = useState(!isLoading);
@@ -87,11 +84,11 @@ export function PageTransition({
       transition={{
         type: "tween",
         duration: 0.3,
-        ease: "easeOut",
+        ease: "easeOut"
       }}
-      style={{
+      style={{ 
         willChange: "opacity, transform",
-        backfaceVisibility: "hidden",
+        backfaceVisibility: "hidden"
       }}
       className="w-full"
     >

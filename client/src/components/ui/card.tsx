@@ -8,12 +8,9 @@ const cardVariants = cva(
     variants: {
       variant: {
         default: "bg-background-card border-border text-text-primary",
-        premium:
-          "bg-gradient-to-b from-background-card to-background-card/90 border-primary/30 shadow-[0_4px_20px_rgba(0,0,0,0.2),0_0_0_1px_rgba(215,255,0,0.1)] text-text-primary",
-        glass:
-          "glassmorphism backdrop-blur-md shadow-glass border-border/50 text-text-primary",
-        highlight:
-          "bg-background-card border-primary border-2 shadow-[0_0_15px_rgba(215,255,0,0.1)] text-text-primary",
+        premium: "bg-gradient-to-b from-background-card to-background-card/90 border-primary/30 shadow-[0_4px_20px_rgba(0,0,0,0.2),0_0_0_1px_rgba(215,255,0,0.1)] text-text-primary",
+        glass: "glassmorphism backdrop-blur-md shadow-glass border-border/50 text-text-primary",
+        highlight: "bg-background-card border-primary border-2 shadow-[0_0_15px_rgba(215,255,0,0.1)] text-text-primary",
         dark: "bg-background border-border/50 text-text-primary",
       },
       interactive: {
@@ -34,8 +31,7 @@ const cardVariants = cva(
       {
         variant: "premium",
         interactive: true,
-        className:
-          "hover:shadow-[0_8px_25px_rgba(0,0,0,0.25),0_0_0_1px_rgba(215,255,0,0.2)]",
+        className: "hover:shadow-[0_8px_25px_rgba(0,0,0,0.25),0_0_0_1px_rgba(215,255,0,0.2)]",
       },
       {
         variant: "glass",
@@ -43,12 +39,12 @@ const cardVariants = cva(
         className: "hover:bg-background-overlay/80 hover:backdrop-blur-lg",
       },
     ],
-  },
+  }
 );
 
-interface CardProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof cardVariants> {
+interface CardProps extends
+  React.HTMLAttributes<HTMLDivElement>,
+  VariantProps<typeof cardVariants> {
   clickable?: boolean; // Another way to set interactive
 }
 
@@ -57,16 +53,16 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     <div
       ref={ref}
       className={cn(
-        cardVariants({
-          variant,
-          interactive: interactive || clickable,
+        cardVariants({ 
+          variant, 
+          interactive: interactive || clickable, 
           glowing,
-          className,
-        }),
+          className 
+        })
       )}
       {...props}
     />
-  ),
+  )
 );
 Card.displayName = "Card";
 
@@ -79,7 +75,7 @@ const CardHeader = React.forwardRef<
     className={cn(
       "flex flex-col space-y-2 p-6",
       withBorder && "border-b border-border/50 pb-4",
-      className,
+      className
     )}
     {...props}
   />
@@ -88,7 +84,7 @@ CardHeader.displayName = "CardHeader";
 
 const CardTitle = React.forwardRef<
   HTMLHeadingElement,
-  React.HTMLAttributes<HTMLHeadingElement> & {
+  React.HTMLAttributes<HTMLHeadingElement> & { 
     accent?: boolean;
     as?: "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
   }
@@ -104,7 +100,7 @@ const CardTitle = React.forwardRef<
       )}
       {...props}
     />
-  );
+  )
 });
 CardTitle.displayName = "CardTitle";
 
@@ -137,7 +133,7 @@ const CardFooter = React.forwardRef<
     className={cn(
       "flex items-center justify-between gap-4 p-6 pt-0",
       withBorder && "border-t border-border/50 mt-4 pt-4",
-      className,
+      className
     )}
     {...props}
   />
@@ -165,11 +161,11 @@ const CardBadge = React.forwardRef<
       className={cn(
         "absolute top-4 right-4 text-xs font-medium px-2.5 py-1 rounded-md border",
         variantClasses[variant],
-        className,
+        className
       )}
       {...props}
     />
-  );
+  )
 });
 CardBadge.displayName = "CardBadge";
 
@@ -178,9 +174,9 @@ const CardSkeleton = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <Card
-    ref={ref}
-    className={cn("animate-pulse overflow-hidden", className)}
+  <Card 
+    ref={ref} 
+    className={cn("animate-pulse overflow-hidden", className)} 
     {...props}
   >
     <div className="p-6 space-y-4">

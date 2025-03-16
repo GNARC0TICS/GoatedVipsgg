@@ -39,6 +39,7 @@ import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
 import AdminDashboard from "./pages/admin/Dashboard"; // Added import for AdminDashboard
 
+
 function ErrorFallback({ error }: { error: Error }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -95,6 +96,7 @@ function Router() {
             <Route path="/faq" component={FAQ} />
             <Route path="/vip-program" component={VipProgram} />
             <Route path="/challenges" component={Challenges} />
+
             {/* Protected Routes */}
             <Route path="/bonus-codes">
               <ProtectedRoute>
@@ -121,6 +123,7 @@ function Router() {
                 <UserProfile />
               </ProtectedRoute>
             </Route>
+
             {/* Admin Routes */}
             <Route path="/admin/wager-races">
               <ProtectedRoute>
@@ -151,8 +154,8 @@ function Router() {
               <ProtectedRoute>
                 <AdminDashboard />
               </ProtectedRoute>
-            </Route>{" "}
-            {/* Added route for AdminDashboard */}
+            </Route> {/* Added route for AdminDashboard */}
+
             {/* 404 Route */}
             <Route component={NotFound} />
           </Switch>
@@ -178,7 +181,7 @@ function AppContent() {
   // Force initial load to true on first visit or when explicitly testing
   const [isInitialLoad, setIsInitialLoad] = React.useState(() => {
     // Always show initial load on first visit
-    return !sessionStorage.getItem("hasVisited");
+    return !sessionStorage.getItem('hasVisited');
   });
 
   // Handle session storage separately from loading state
@@ -191,7 +194,7 @@ function AppContent() {
 
   const handleLoadComplete = () => {
     // Set the session storage flag to prevent showing the loader on subsequent visits
-    sessionStorage.setItem("hasVisited", "true");
+    sessionStorage.setItem('hasVisited', 'true');
     // Delay state update to ensure animation completes
     setTimeout(() => {
       setIsInitialLoad(false);

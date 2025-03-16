@@ -15,19 +15,19 @@ export interface LogContext {
 // Create structured logger
 const logger = {
   info: (message: string, context?: LogContext) => {
-    console.log(`[Telegram Bot] ${message}`, context || "");
+    console.log(`[Telegram Bot] ${message}`, context || '');
   },
   warn: (message: string, context?: LogContext) => {
-    console.warn(`[Telegram Bot] WARNING: ${message}`, context || "");
+    console.warn(`[Telegram Bot] WARNING: ${message}`, context || '');
   },
   error: (message: string, context?: LogContext) => {
-    console.error(`[Telegram Bot] ERROR: ${message}`, context || "");
+    console.error(`[Telegram Bot] ERROR: ${message}`, context || '');
   },
   debug: (message: string, context?: LogContext) => {
-    if (process.env.NODE_ENV === "development") {
-      console.debug(`[Telegram Bot] DEBUG: ${message}`, context || "");
+    if (process.env.NODE_ENV === 'development') {
+      console.debug(`[Telegram Bot] DEBUG: ${message}`, context || '');
     }
-  },
+  }
 };
 
 export { logger };

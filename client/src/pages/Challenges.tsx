@@ -25,9 +25,8 @@ const CHALLENGES = [
     isActive: true,
     isNew: true,
     requiresProof: true,
-    proofInstructions:
-      "Share your bet link in our Telegram group for verification",
-  },
+    proofInstructions: "Share your bet link in our Telegram group for verification"
+  }
 ];
 
 export default function Challenges() {
@@ -46,8 +45,7 @@ export default function Challenges() {
                 Challenges
               </h1>
               <p className="text-[#8A8B91] max-w-2xl mx-auto">
-                Complete challenges to earn bonus rewards. New challenges added
-                regularly!
+                Complete challenges to earn bonus rewards. New challenges added regularly!
               </p>
             </div>
 
@@ -55,36 +53,23 @@ export default function Challenges() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
               <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
                 <CardContent className="p-6 text-center">
-                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">
-                    ACTIVE CHALLENGES
-                  </h3>
-                  <p className="text-2xl font-bold text-white">
-                    {CHALLENGES.length}
-                  </p>
+                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">ACTIVE CHALLENGES</h3>
+                  <p className="text-2xl font-bold text-white">{CHALLENGES.length}</p>
                 </CardContent>
               </Card>
               <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
                 <CardContent className="p-6 text-center">
-                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">
-                    TOTAL REWARDS
-                  </h3>
+                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">TOTAL REWARDS</h3>
                   <p className="text-2xl font-bold text-[#D7FF00]">
-                    $
-                    {CHALLENGES.reduce(
-                      (sum, challenge) =>
-                        sum + parseInt(challenge.reward.replace(/\D/g, "")),
-                      0,
-                    )}
+                    ${CHALLENGES.reduce((sum, challenge) => sum + parseInt(challenge.reward.replace(/\D/g, '')), 0)}
                   </p>
                 </CardContent>
               </Card>
               <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
                 <CardContent className="p-6 text-center">
-                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">
-                    NEW CHALLENGES
-                  </h3>
+                  <h3 className="text-[#8A8B91] font-heading text-sm mb-2">NEW CHALLENGES</h3>
                   <p className="text-2xl font-bold text-white">
-                    {CHALLENGES.filter((c) => c.isNew).length}
+                    {CHALLENGES.filter(c => c.isNew).length}
                   </p>
                 </CardContent>
               </Card>
@@ -105,23 +90,15 @@ export default function Challenges() {
                         <Trophy className="h-8 w-8 text-[#D7FF00]" />
                         <div className="flex gap-2">
                           {challenge.isNew && (
-                            <Badge className="bg-[#D7FF00] text-[#14151A]">
-                              NEW
-                            </Badge>
+                            <Badge className="bg-[#D7FF00] text-[#14151A]">NEW</Badge>
                           )}
                           <Badge variant="outline">{challenge.category}</Badge>
                         </div>
                       </div>
-                      <h3 className="text-xl font-heading mb-2">
-                        {challenge.title}
-                      </h3>
-                      <p className="text-[#8A8B91] mb-4">
-                        {challenge.description}
-                      </p>
+                      <h3 className="text-xl font-heading mb-2">{challenge.title}</h3>
+                      <p className="text-[#8A8B91] mb-4">{challenge.description}</p>
                       <div className="flex items-center justify-between">
-                        <span className="text-[#D7FF00] font-heading">
-                          {challenge.reward}
-                        </span>
+                        <span className="text-[#D7FF00] font-heading">{challenge.reward}</span>
                       </div>
                       {challenge.requiresProof && (
                         <div className="mt-4 flex items-center gap-2 text-sm text-[#8A8B91]">

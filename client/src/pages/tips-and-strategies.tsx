@@ -42,8 +42,7 @@ const COMMUNITY_STRATEGIES = [
     title: "My Journey to Diamond VIP",
     author: "CasinoExpert",
     category: "Experience",
-    description:
-      "A detailed breakdown of my path to reaching Diamond VIP status...",
+    description: "A detailed breakdown of my path to reaching Diamond VIP status...",
     votes: 156,
     isPinned: false,
   },
@@ -69,10 +68,7 @@ export default function TipsAndStrategies() {
               playsInline
               className="w-full h-48 md:h-64 object-contain"
             >
-              <source
-                src="/images/Page Headers/TIPSHEAD.MP4"
-                type="video/mp4"
-              />
+              <source src="/images/Page Headers/TIPSHEAD.MP4" type="video/mp4" />
             </video>
           </div>
 
@@ -111,9 +107,7 @@ export default function TipsAndStrategies() {
 
             {/* Featured Strategies */}
             <section className="mb-12">
-              <h2 className="text-2xl font-heading text-white mb-6">
-                Featured Strategies
-              </h2>
+              <h2 className="text-2xl font-heading text-white mb-6">Featured Strategies</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {FEATURED_STRATEGIES.map((strategy) => (
                   <FeaturedStrategyCard key={strategy.id} strategy={strategy} />
@@ -124,9 +118,7 @@ export default function TipsAndStrategies() {
             {/* Community Strategies */}
             <section>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-heading text-white">
-                  Community Strategies
-                </h2>
+                <h2 className="text-2xl font-heading text-white">Community Strategies</h2>
                 <Button className="bg-[#D7FF00] text-[#14151A] hover:bg-[#D7FF00]/90">
                   Share Your Strategy
                 </Button>
@@ -146,9 +138,8 @@ export default function TipsAndStrategies() {
                     Share Your Knowledge
                   </h2>
                   <p className="text-[#8A8B91] mb-4">
-                    Have a winning strategy? Share it with the community and
-                    help others succeed! Your contributions make our community
-                    stronger.
+                    Have a winning strategy? Share it with the community and help others
+                    succeed! Your contributions make our community stronger.
                   </p>
                   <Button className="bg-[#D7FF00] text-[#14151A] hover:bg-[#D7FF00]/90">
                     Submit Your Strategy
@@ -170,12 +161,8 @@ function FeaturedStrategyCard({ strategy }: { strategy: any }) {
         <div className="absolute top-4 right-4">
           <Star className="h-5 w-5 text-[#D7FF00] fill-current" />
         </div>
-        <Badge className="bg-[#D7FF00] text-[#14151A] mb-4">
-          {strategy.category}
-        </Badge>
-        <h3 className="text-xl font-heading text-white mb-2">
-          {strategy.title}
-        </h3>
+        <Badge className="bg-[#D7FF00] text-[#14151A] mb-4">{strategy.category}</Badge>
+        <h3 className="text-xl font-heading text-white mb-2">{strategy.title}</h3>
         <p className="text-[#8A8B91] mb-4">{strategy.description}</p>
         <div className="flex items-center justify-between">
           <span className="text-sm text-[#8A8B91]">By {strategy.author}</span>
@@ -193,12 +180,8 @@ function StrategyCard({ strategy }: { strategy: any }) {
   return (
     <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
       <CardContent className="p-6">
-        <Badge className="bg-[#2A2B31] text-white mb-4">
-          {strategy.category}
-        </Badge>
-        <h3 className="text-xl font-heading text-white mb-2">
-          {strategy.title}
-        </h3>
+        <Badge className="bg-[#2A2B31] text-white mb-4">{strategy.category}</Badge>
+        <h3 className="text-xl font-heading text-white mb-2">{strategy.title}</h3>
         <p className="text-[#8A8B91] mb-4">{strategy.description}</p>
         <div className="flex items-center justify-between">
           <span className="text-sm text-[#8A8B91]">By {strategy.author}</span>

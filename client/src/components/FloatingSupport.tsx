@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send } from "lucide-react";
@@ -14,7 +15,7 @@ interface FloatingSupportProps {
 
 export function FloatingSupport({ onClose }: FloatingSupportProps) {
   const [isMinimized, setIsMinimized] = useState(true);
-  const [hasUnreadMessage, setHasUnreadMessage] = useState(false);
+  const [hasUnreadMessage, setHasUnreadMessage] = useState(true);
   const [supportMessages, setSupportMessages] = useState<any[]>([]);
   const [replyText, setReplyText] = useState("");
 
@@ -23,52 +24,34 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
     queryKey: ["/api/user"],
   });
 
-  // Fetch support messages and check for unread ones
-  useEffect(() => {
-    // Only check for unread messages if we're an admin or user with access to messages
-    if (user) {
-      fetch("/api/support/unread-count")
-        .then((res) => res.json())
-        .then((data) => {
-          // Only set notification if we have unread messages
-          setHasUnreadMessage(data.count > 0);
-        })
-        .catch((err) => console.error("Error fetching unread count:", err));
-    }
-  }, [user]);
-
   // Fetch support messages (implement API endpoint)
   useEffect(() => {
     if (user?.isAdmin && !isMinimized) {
-      fetch("/api/support/messages")
-        .then((res) => res.json())
-        .then((data) => {
-          setSupportMessages(data);
-          // Clear notification once viewed
-          setHasUnreadMessage(false);
-        })
-        .catch((err) => console.error("Error fetching support messages:", err));
+      fetch('/api/support/messages')
+        .then(res => res.json())
+        .then(data => setSupportMessages(data))
+        .catch(err => console.error('Error fetching support messages:', err));
     }
   }, [user?.isAdmin, isMinimized]);
 
   const handleSendReply = async () => {
     if (!replyText.trim()) return;
-
+    
     try {
-      await fetch("/api/support/reply", {
-        method: "POST",
+      await fetch('/api/support/reply', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ message: replyText }),
       });
       setReplyText("");
       // Refresh messages
-      const res = await fetch("/api/support/messages");
+      const res = await fetch('/api/support/messages');
       const data = await res.json();
       setSupportMessages(data);
     } catch (err) {
-      console.error("Error sending reply:", err);
+      console.error('Error sending reply:', err);
     }
   };
 
@@ -102,7 +85,7 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 bg-[#D7FF00] rounded-full animate-pulse" />
                 <h3 className="font-heading text-lg text-white">
-                  {user?.isAdmin ? "Support Dashboard" : "VIP Support"}
+                  {user?.isAdmin ? 'Support Dashboard' : 'VIP Support'}
                 </h3>
               </div>
               <div className="flex gap-2">
@@ -125,7 +108,7 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
                 </Button>
               </div>
             </div>
-
+            
             <div className="p-6 space-y-4">
               {user?.isAdmin ? (
                 // Admin Interface
@@ -133,9 +116,7 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
                   <div className="h-[300px] overflow-y-auto space-y-3 mb-4">
                     {supportMessages.map((msg, i) => (
                       <div key={i} className="p-3 rounded-lg bg-[#2A2B31]/50">
-                        <div className="text-sm text-[#8A8B91]">
-                          {msg.username}
-                        </div>
+                        <div className="text-sm text-[#8A8B91]">{msg.username}</div>
                         <div className="text-white">{msg.message}</div>
                       </div>
                     ))}

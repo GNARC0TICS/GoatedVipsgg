@@ -1,3 +1,4 @@
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -46,18 +47,14 @@ export default function BonusCodes() {
               loop
               className="w-[400px] mx-auto rounded-xl"
             >
-              <source
-                src="/images/Page Headers/BONUSHEAD.MP4"
-                type="video/mp4"
-              />
+              <source src="/images/Page Headers/BONUSHEAD.MP4" type="video/mp4" />
             </video>
           </div>
 
           <div className="flex items-center justify-center gap-2 text-[#D7FF00] mb-8">
             <Bell className="h-5 w-5" />
             <p className="text-sm">
-              Enable email notifications to get instant updates on new bonus
-              codes
+              Enable email notifications to get instant updates on new bonus codes
             </p>
           </div>
           <Link to="/" className="flex justify-center mt-6">

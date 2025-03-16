@@ -1,14 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import {
-  ArrowLeft,
-  Gift,
-  Users,
-  Link as LinkIcon,
-  Zap,
-  ArrowRight,
-  TrendingUp,
-} from "lucide-react";
+import { ArrowLeft, Gift, Users, Link as LinkIcon, Zap, ArrowRight, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 
@@ -17,8 +9,8 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.2 },
-  },
+    transition: { staggerChildren: 0.2 }
+  }
 };
 
 const itemVariants = {
@@ -28,9 +20,9 @@ const itemVariants = {
     y: 0,
     transition: {
       type: "spring",
-      stiffness: 100,
-    },
-  },
+      stiffness: 100
+    }
+  }
 };
 
 export default function HowItWorks() {
@@ -56,12 +48,8 @@ export default function HowItWorks() {
 
           <motion.div variants={itemVariants} className="text-center mb-12">
             <h1 className="text-5xl font-heading mb-4">
-              <span className="text-5xl font-heading text-white glow-text-white">
-                GET STARTED{" "}
-              </span>
-              <span className="text-5xl font-heading text-[#D7FF00] glow-text-yellow">
-                WITH GOATED VIPS
-              </span>
+              <span className="text-5xl font-heading text-white glow-text-white">GET STARTED </span>
+              <span className="text-5xl font-heading text-[#D7FF00] glow-text-yellow">WITH GOATED VIPS</span>
             </h1>
             <p className="text-xl text-[#8A8B91]">
               Follow these simple steps to join our exclusive community
@@ -77,16 +65,11 @@ export default function HowItWorks() {
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
-                    <span className="text-4xl font-heading text-[#D7FF00]">
-                      01
-                    </span>
-                    <h2 className="text-2xl font-heading text-white">
-                      Open Registration
-                    </h2>
+                    <span className="text-4xl font-heading text-[#D7FF00]">01</span>
+                    <h2 className="text-2xl font-heading text-white">Open Registration</h2>
                   </div>
                   <p className="text-[#8A8B91]">
-                    Start your journey by visiting our registration page. You
-                    can sign up using:
+                    Start your journey by visiting our registration page. You can sign up using:
                   </p>
                   <ul className="space-y-2 text-[#8A8B91]">
                     <li className="flex items-center gap-2">
@@ -104,13 +87,7 @@ export default function HowItWorks() {
                   </ul>
                 </div>
                 <div className="rounded-xl overflow-hidden border border-[#2A2B31] max-w-[500px] mx-auto md:mx-0">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-auto md:max-h-[280px] object-contain"
-                  >
+                  <video autoPlay loop muted playsInline className="w-full h-auto md:max-h-[280px] object-contain">
                     <source src="/images/How/step1.mp4" type="video/mp4" />
                   </video>
                 </div>
@@ -125,12 +102,8 @@ export default function HowItWorks() {
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
-                    <span className="text-4xl font-heading text-[#D7FF00]">
-                      02
-                    </span>
-                    <h2 className="text-2xl font-heading text-white">
-                      Enter Your Details
-                    </h2>
+                    <span className="text-4xl font-heading text-[#D7FF00]">02</span>
+                    <h2 className="text-2xl font-heading text-white">Enter Your Details</h2>
                   </div>
                   <p className="text-[#8A8B91]">
                     Create your account by providing:
@@ -151,13 +124,7 @@ export default function HowItWorks() {
                   </ul>
                 </div>
                 <div className="rounded-xl overflow-hidden border border-[#2A2B31] max-w-[500px] mx-auto md:mx-0">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-auto md:max-h-[280px] object-contain"
-                  >
+                  <video autoPlay loop muted playsInline className="w-full h-auto md:max-h-[280px] object-contain">
                     <source src="/images/How/step2.mp4" type="video/mp4" />
                   </video>
                 </div>
@@ -172,12 +139,8 @@ export default function HowItWorks() {
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
-                    <span className="text-4xl font-heading text-[#D7FF00]">
-                      03
-                    </span>
-                    <h2 className="text-2xl font-heading text-white">
-                      Enter Referral Code
-                    </h2>
+                    <span className="text-4xl font-heading text-[#D7FF00]">03</span>
+                    <h2 className="text-2xl font-heading text-white">Enter Referral Code</h2>
                   </div>
                   <p className="text-[#8A8B91]">
                     Complete your registration using our official code:
@@ -204,13 +167,7 @@ export default function HowItWorks() {
                   </ul>
                 </div>
                 <div className="rounded-xl overflow-hidden border border-[#2A2B31] max-w-[500px] mx-auto md:mx-0">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-auto md:max-h-[280px] object-contain"
-                  >
+                  <video autoPlay loop muted playsInline className="w-full h-auto md:max-h-[280px] object-contain">
                     <source src="/images/How/Step3.mp4" type="video/mp4" />
                   </video>
                 </div>
@@ -222,9 +179,7 @@ export default function HowItWorks() {
               variants={itemVariants}
               className="bg-[#1A1B21]/50 rounded-xl border border-[#2A2B31] p-8 mt-12 text-center"
             >
-              <h2 className="text-2xl font-heading text-white mb-4">
-                What's Next?
-              </h2>
+              <h2 className="text-2xl font-heading text-white mb-4">What's Next?</h2>
               <p className="text-[#8A8B91] mb-6">
                 Now that you're signed up, you'll instantly gain access to:
               </p>
@@ -235,12 +190,7 @@ export default function HowItWorks() {
                 </li>
                 <li className="flex items-center gap-2 justify-center">
                   <Users className="h-5 w-5 text-[#D7FF00]" />
-                  <a
-                    href="https://t.me/goatedvips"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#D7FF00] hover:underline"
-                  >
+                  <a href="https://t.me/goatedvips" target="_blank" rel="noopener noreferrer" className="text-[#D7FF00] hover:underline">
                     Exclusive Telegram group
                   </a>
                 </li>
@@ -265,20 +215,12 @@ export default function HowItWorks() {
             >
               <div className="flex items-center justify-center gap-3 mb-4">
                 <div className="bg-[#14151A]/10 p-1.5 rounded-full border-2 border-[#14151A]/20">
-                  <img
-                    src="/images/Goated Emblems/diamond.ddf47a1e.svg"
-                    alt="Diamond tier"
-                    className="w-8 h-8 drop-shadow-md"
-                  />
+                  <img src="/images/Goated Emblems/diamond.ddf47a1e.svg" alt="Diamond tier" className="w-8 h-8 drop-shadow-md" />
                 </div>
-                <h2 className="text-[#14151A] text-2xl font-bold">
-                  Ready to join the elite?
-                </h2>
+                <h2 className="text-[#14151A] text-2xl font-bold">Ready to join the elite?</h2>
               </div>
               <Button
-                onClick={() =>
-                  window.open("https://www.goated.com/r/GOATEDVIPS", "_blank")
-                }
+                onClick={() => window.open("https://www.goated.com/r/GOATEDVIPS", "_blank")}
                 className="bg-[#14151A] text-white hover:bg-[#14151A]/90 text-lg px-8 py-6 group-hover:scale-105 transition-all duration-300"
               >
                 Register with GOATEDVIPS

@@ -8,8 +8,8 @@ import { promisify } from "util";
 import { users, insertUserSchema, type SelectUser } from "@db/schema";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
-import express from "express";
-import { RateLimiterMemory } from "rate-limiter-flexible";
+import express from 'express';
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 const scryptAsync = promisify(scrypt);
 
@@ -87,9 +87,7 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         if (!username || !password) {
-          return done(null, false, {
-            message: "Username and password are required",
-          });
+          return done(null, false, { message: "Username and password are required" });
         }
 
         // Sanitize credentials
@@ -97,28 +95,24 @@ export function setupAuth(app: Express) {
         const sanitizedPassword = password.trim();
 
         if (!sanitizedUsername || !sanitizedPassword) {
-          return done(null, false, {
-            message: "Username and password cannot be empty",
-          });
+          return done(null, false, { message: "Username and password cannot be empty" });
         }
 
         // Check if this is an admin login attempt
         const adminUsername = process.env.ADMIN_USERNAME;
         const adminPassword = process.env.ADMIN_PASSWORD;
 
-        if (
-          adminUsername &&
-          adminPassword &&
-          sanitizedUsername === adminUsername &&
-          sanitizedPassword === adminPassword
-        ) {
+        if (adminUsername && adminPassword && 
+            sanitizedUsername === adminUsername && 
+            sanitizedPassword === adminPassword) {
+
           // Create or update admin user
           let adminUser = await db
             .select()
             .from(users)
             .where(eq(users.username, adminUsername))
             .limit(1)
-            .then((results) => results[0]);
+            .then(results => results[0]);
 
           if (!adminUser) {
             // Create new admin user
@@ -127,7 +121,7 @@ export function setupAuth(app: Express) {
               .values({
                 username: adminUsername,
                 password: await crypto.hash(adminPassword),
-                email: "admin@goatedvips.com",
+                email: 'admin@goatedvips.com',
                 isAdmin: true,
               })
               .returning();
@@ -178,7 +172,7 @@ export function setupAuth(app: Express) {
 
       // Apply rate limiting
       try {
-        const ipAddress = req.ip || "unknown";
+        const ipAddress = req.ip || 'unknown';
         await rateLimiter.consume(ipAddress);
       } catch (error) {
         return res.status(429).json({
@@ -251,8 +245,8 @@ export function setupAuth(app: Express) {
         });
       });
     } catch (error: any) {
-      console.error("Registration error:", error);
-      return res.status(500).json({
+      console.error('Registration error:', error);
+      return res.status(500).json({ 
         status: "error",
         message: "Internal server error",
       });
@@ -263,7 +257,7 @@ export function setupAuth(app: Express) {
     if (!req.body || !req.body.username || !req.body.password) {
       return res.status(400).json({
         status: "error",
-        message: "Username and password are required",
+        message: "Username and password are required"
       });
     }
 
@@ -271,7 +265,7 @@ export function setupAuth(app: Express) {
       "local",
       (err: any, user: Express.User | false, info: IVerifyOptions) => {
         if (err) {
-          console.error("Login error:", err);
+          console.error('Login error:', err);
           return res.status(500).json({
             status: "error",
             message: "Internal server error",
@@ -287,7 +281,7 @@ export function setupAuth(app: Express) {
 
         req.logIn(user, (err) => {
           if (err) {
-            console.error("Login session error:", err);
+            console.error('Login session error:', err);
             return res.status(500).json({
               status: "error",
               message: "Error creating login session",
