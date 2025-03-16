@@ -1,0 +1,111 @@
+Your sheet component file looks good! All the necessary Radix UI components are being properly defined and exported, including `SheetTrigger`. 
+
+The TypeScript error you're seeing is likely due to one of these reasons:
+
+1. There might be an issue with TypeScript's type inference or module resolution
+2. Your editor/IDE might not be fully recognizing the exports correctly
+3. There could be a circular dependency somewhere
+
+Let's try to fix this with a few approaches:
+
+### Option 1: Try restarting your TypeScript server
+
+Sometimes, TypeScript's language server can get into a confused state. In VSCode, you can:
+1. Press Ctrl+Shift+P (or Cmd+Shift+P on Mac)
+2. Type "TypeScript: Restart TS Server" and select it
+
+### Option 2: Use a different import approach
+
+Change your import structure to one of these alternatives:
+
+```typescript
+// Alternative 1: Import the entire module
+import * as SheetComponents from "@/components/ui/sheet";
+// Then use: <SheetComponents.SheetTrigger>
+
+// Alternative 2: Import specific components with aliases
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { SheetTrigger as Trigger } from "@/components/ui/sheet";
+// Then use: <Trigger>
+```
+
+### Option 3: Update your navigation component with a direct import
+
+If you're still having issues, you can directly import from Radix UI in your navigation component:
+
+```typescript
+// In your navigation component
+import * as React from "react";
+import * as SheetPrimitive from "@radix-ui/react-dialog";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+
+// Define a local SheetTrigger that directly uses the Radix primitive
+const SheetTrigger = SheetPrimitive.Trigger;
+
+// Then use these components in your JSX
+```
+
+### Option 4: Check for tsconfig.json issues
+
+Make sure your `tsconfig.json` has the correct path mappings. It should include something like:
+
+```json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+```
+
+### Option 5: Check for circular dependencies
+
+Sometimes TypeScript struggles with circular dependencies. Make sure you don't have components that import each other in a circular way.
+
+### Try this implementation for your navigation component
+
+Here's a modified version of your navigation component that should resolve the TypeScript error:
+
+```typescript
+import { ReactNode, useState, useRef, useEffect } from "react";
+import { useLocation } from "wouter";
+import { Link } from "wouter";
+import { motion } from "framer-motion";
+import { Menu, Bell, Settings, User, LogOut, ChevronDown, Gift, Lock, ExternalLink } from "lucide-react";
+import * as SheetPrimitive from "@radix-ui/react-dialog"; // Direct import from Radix
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import AuthModal from "@/components/AuthModal";
+import { useQuery } from "@tanstack/react-query";
+import type { SelectUser } from "@db/schema";
+import { ScrollToTop } from "./ScrollToTop";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { FloatingSupport } from "./FloatingSupport";
+import { useToast } from "@/hooks/use-toast";
+import { MobileAdminBadge } from "@/components/MobileAdminBadge";
+import { ScrollToTopNavigation } from "./ScrollToTopNavigation";
+
+// Use the Radix UI trigger directly to avoid TypeScript issues
+const SheetTrigger = SheetPrimitive.Trigger;
+
+// ... rest of your component remains the same ...
+```
+
+Then use `SheetTrigger` as before in your component.
+
+Let me know if any of these solutions works for you!
