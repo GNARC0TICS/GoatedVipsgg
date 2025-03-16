@@ -39,6 +39,20 @@ async function resetDatabase() {
     const users_data = apiData.data || apiData.results || apiData;
 
     // Create sample wager race
+
+  // Create platform_stats table
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS platform_stats (
+      id SERIAL PRIMARY KEY,
+      total_wagered DECIMAL(18,2) NOT NULL,
+      daily_total DECIMAL(18,2) NOT NULL,
+      weekly_total DECIMAL(18,2) NOT NULL, 
+      monthly_total DECIMAL(18,2) NOT NULL,
+      player_count INTEGER NOT NULL,
+      timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    );
+  `);
+
     const [currentRace] = await db
       .insert(wagerRaces)
       .values({
