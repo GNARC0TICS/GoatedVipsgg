@@ -145,37 +145,4 @@ export function useLeaderboard(timePeriod: string, page: number = 1) {
   };
 }
 
-// Custom hook to access just the totals from the affiliate stats
-export function useWagerTotals() {
-  const queryClient = useQueryClient();
-
-  return useQuery({
-    queryKey: ['wager-total'],
-    queryFn: async () => {
-      // Try to use existing data first
-      const existingData = queryClient.getQueryData<APIResponse>([AFFILIATE_STATS_KEY]);
-
-      if (existingData) {
-        const total = existingData?.data?.all_time?.data?.reduce((sum, entry) => {
-          return sum + (entry?.wagered?.all_time || 0);
-        }, 0);
-        return total || 2147483;
-      }
-
-      // If no existing data, fetch new data
-      const response = await fetch(AFFILIATE_STATS_KEY);
-      const data = await response.json();
-
-      // Store the full response in the query cache
-      queryClient.setQueryData([AFFILIATE_STATS_KEY], data);
-
-      const total = data?.data?.all_time?.data?.reduce((sum, entry) => {
-        return sum + (entry?.wagered?.all_time || 0);
-      }, 0);
-
-      return total || 2147483;
-    },
-    staleTime: 60000, // 1 minute
-    refetchInterval: 300000, // 5 minutes
-  });
-}
+// This space intentionally left empty to remove the duplicate hook
