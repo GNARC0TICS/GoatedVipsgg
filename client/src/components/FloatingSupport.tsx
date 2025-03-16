@@ -17,6 +17,9 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
   const [isMinimized, setIsMinimized] = useState(true);
   const [supportMessages, setSupportMessages] = useState<any[]>([]);
   const [replyText, setReplyText] = useState("");
+  const [isVisible, setIsVisible] = useState(true);
+
+  if (!isVisible) return null;
 
   // Get current user to check if admin
   const { data: user } = useQuery<SelectUser>({
@@ -64,13 +67,22 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
       >
         {isMinimized ? (
           <div className="relative">
-            <Button
-              onClick={() => setIsMinimized(false)}
-              size="icon"
-              className="h-14 w-14 rounded-full bg-[#D7FF00] hover:bg-[#D7FF00]/90 text-[#14151A] shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <MessageCircle className="h-7 w-7" />
-            </Button>
+            <div className="relative">
+              <Button
+                onClick={() => setIsMinimized(false)}
+                size="icon"
+                className="h-14 w-14 rounded-full bg-[#D7FF00] hover:bg-[#D7FF00]/90 text-[#14151A] shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <MessageCircle className="h-7 w-7" />
+              </Button>
+              <Button
+                onClick={() => setIsVisible(false)}
+                size="icon"
+                className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-[#2A2B31] hover:bg-[#2A2B31]/90 border border-[#D7FF00]"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
         ) : (
           <Card className="w-[400px] bg-[#1A1B21] border-[#2A2B31]">

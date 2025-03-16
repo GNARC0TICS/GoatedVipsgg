@@ -19,7 +19,7 @@ export default function Leaderboard() {
       setIsLoading(false);
       setRenderKey(prev => prev + 1);
     }, 800); // Increased slightly to ensure smooth transition
-    
+
     return () => clearTimeout(timer);
   }, [period]);
 
@@ -28,7 +28,7 @@ export default function Leaderboard() {
     const params = new URLSearchParams(window.location.search);
     const periodParam = params.get("period");
     console.log("Leaderboard page: URL param =", periodParam);
-    
+
     if (periodParam) {
       const periodMap: Record<string, TimePeriod> = {
         daily: "today",
