@@ -15,7 +15,6 @@ interface FloatingSupportProps {
 
 export function FloatingSupport({ onClose }: FloatingSupportProps) {
   const [isMinimized, setIsMinimized] = useState(true);
-  const [hasUnreadMessage, setHasUnreadMessage] = useState(true);
   const [supportMessages, setSupportMessages] = useState<any[]>([]);
   const [replyText, setReplyText] = useState("");
 
@@ -66,17 +65,11 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
         {isMinimized ? (
           <div className="relative">
             <Button
-              onClick={() => {
-                setIsMinimized(false);
-                setHasUnreadMessage(false);
-              }}
+              onClick={() => setIsMinimized(false)}
               size="icon"
               className="h-14 w-14 rounded-full bg-[#D7FF00] hover:bg-[#D7FF00]/90 text-[#14151A] shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <MessageCircle className="h-7 w-7" />
-              {hasUnreadMessage && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full border-2 border-background animate-pulse" />
-              )}
             </Button>
           </div>
         ) : (
