@@ -37,14 +37,29 @@ function createBot(): TelegramBot {
   logger.info('Creating new bot instance...');
 
   if (!BotConfig.TOKEN) {
-    throw new Error('TELEGRAM_BOT_TOKEN must be provided');
+    logger.error('Missing TELEGRAM_BOT_TOKEN');
+    throw new ApiError(ApiErrorType.CONFIGURATION, 'TELEGRAM_BOT_TOKEN must be provided');
+  }
+
+  // Validate other required configuration
+  if (!BotConfig.ADMIN_TELEGRAM_IDS?.length) {
+    logger.warn('No admin IDs configured - admin features will be disabled');
   }
 
   // Create with polling disabled initially to avoid instant conflicts
-  if (!BotConfig.TOKEN) {
-    throw new Error('TELEGRAM_BOT_TOKEN must be provided');
-  }
-  const bot = new TelegramBot(BotConfig.TOKEN, { polling: false });
+  const bot = new TelegramBot(BotConfig.TOKEN, { 
+    polling: false,
+    filepath: false // Disable file downloads for security
+  });
+
+  // Add global error handler
+  bot.on('error', (error) => {
+    logger.error('Bot encountered an error', { 
+      error: error.message,
+      stack: error.stack,
+      code: error.code
+    });
+  });
 
   // Handle polling errors
   bot.on('polling_error', (error) => {
@@ -77,28 +92,48 @@ function createBot(): TelegramBot {
 }
 
 // Start polling with error handling
-function startPolling(bot: TelegramBot): void {
+const INITIAL_RETRY_DELAY = 1000;
+const MAX_RETRY_DELAY = 30000;
+const MAX_RETRIES = 5;
+
+async function startPolling(bot: TelegramBot, retryCount = 0, delay = INITIAL_RETRY_DELAY): Promise<void> {
   if (isPolling) {
     logger.info('Already polling, ignoring start request');
     return;
   }
 
-  logger.info('Starting polling...');
-  bot.startPolling({ restart: false })
-    .then(() => {
-      logger.info('Polling started successfully');
-      isPolling = true;
-    })
-    .catch(error => {
-      logger.error('Failed to start polling', { 
+  try {
+    logger.info('Starting polling...', { retryCount, delay });
+    await bot.startPolling({ restart: false });
+    logger.info('Polling started successfully');
+    isPolling = true;
+    
+    // Reset retry count on successful connection
+    if (retryCount > 0) {
+      logger.info('Recovered from polling failure');
+    }
+  } catch (error) {
+    isPolling = false;
+    const nextDelay = Math.min(delay * 2, MAX_RETRY_DELAY);
+    
+    if (retryCount < MAX_RETRIES) {
+      logger.warn('Failed to start polling, retrying...', {
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+        retryCount,
+        nextDelay
       });
-      isPolling = false;
-
-      // Try again after delay
-      setTimeout(() => startPolling(bot), BotConfig.POLLING_RESTART_DELAY);
-    });
+      
+      setTimeout(() => {
+        startPolling(bot, retryCount + 1, nextDelay);
+      }, delay);
+    } else {
+      logger.error('Failed to start polling after max retries', {
+        error: error instanceof Error ? error.message : String(error),
+        maxRetries: MAX_RETRIES
+      });
+      throw new Error('Failed to start bot polling after max retries');
+    }
+  }
 }
 
 // Initialize state manager
