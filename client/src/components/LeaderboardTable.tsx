@@ -44,14 +44,14 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data = [], isLoading, error } = useLeaderboard(timePeriod);
+  const { data: leaderboardResponse, isLoading, error } = useLeaderboard(timePeriod);
 
   const filteredData = useMemo(() => {
-    if (!data) return [];
-    return data.filter((entry: LeaderboardEntry) =>
+    if (!leaderboardResponse?.data?.[timePeriod]?.data) return [];
+    return leaderboardResponse.data[timePeriod].data.filter((entry: LeaderboardEntry) =>
       entry.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [data, searchQuery]);
+  }, [leaderboardResponse, searchQuery, timePeriod]);
 
   const totalPages = Math.ceil((filteredData?.length || 0) / ITEMS_PER_PAGE);
 
