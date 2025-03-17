@@ -19,7 +19,8 @@ const PORT = process.env.PORT || (process.env.NODE_ENV === 'production' ? 80 : 3
 // Start server immediately in production
 if (process.env.NODE_ENV === 'production') {
   const server = app.listen(PORT, '0.0.0.0', () => {
-    log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+    log(`Backend API running on port ${PORT} (http://0.0.0.0:${PORT})`);
+    log('Frontend served through Vite on port 5173 in development');
   });
 }
 
