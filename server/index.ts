@@ -16,6 +16,22 @@ const execAsync = promisify(exec);
 const app = express();
 const PORT = process.env.NODE_ENV === 'production' ? 3000 : 3000;
 
+// Configure CORS for admin domain
+app.use((req, res, next) => {
+  const allowedOrigins = [
+    process.env.VITE_API_BASE_URL,
+    process.env.ADMIN_DOMAIN
+  ];
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  next();
+});
+
 // In production, serve both API and static files
 if (process.env.NODE_ENV === 'production') {
   serveStatic(app); // Serve frontend static files first
