@@ -28,7 +28,7 @@ type AdminLoginFormValues = z.infer<typeof adminLoginSchema>;
 export default function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const [, navigate] = useLocation();
+  const [, setLocation] = useLocation();
   
   const form = useForm<AdminLoginFormValues>({
     resolver: zodResolver(adminLoginSchema),
@@ -59,7 +59,7 @@ export default function AdminLogin() {
         description: "Admin access granted",
       });
       
-      navigate("/admin");
+      setLocation("/admin");
     } catch (error: any) {
       toast({
         variant: "destructive",

@@ -127,36 +127,38 @@ function Router() {
             </Route>
 
             {/* Admin Routes */}
+            <Route path="/admin/login" component={AdminLogin} />
+            
             <Route path="/admin/wager-races">
-              <ProtectedRoute>
+              <ProtectedAdminRoute>
                 <WagerRaceManagement />
-              </ProtectedRoute>
+              </ProtectedAdminRoute>
             </Route>
             <Route path="/admin/users">
-              <ProtectedRoute>
+              <ProtectedAdminRoute>
                 <UserManagement />
-              </ProtectedRoute>
+              </ProtectedAdminRoute>
             </Route>
             <Route path="/admin/notifications">
-              <ProtectedRoute>
+              <ProtectedAdminRoute>
                 <NotificationManagement />
-              </ProtectedRoute>
+              </ProtectedAdminRoute>
             </Route>
             <Route path="/admin/bonus-codes">
-              <ProtectedRoute>
+              <ProtectedAdminRoute>
                 <BonusCodeManagement />
-              </ProtectedRoute>
+              </ProtectedAdminRoute>
             </Route>
             <Route path="/admin/support">
-              <ProtectedRoute>
+              <ProtectedAdminRoute>
                 <SupportManagement />
-              </ProtectedRoute>
+              </ProtectedAdminRoute>
             </Route>
             <Route path="/admin">
-              <ProtectedRoute>
+              <ProtectedAdminRoute>
                 <AdminDashboard />
-              </ProtectedRoute>
-            </Route> {/* Added route for AdminDashboard */}
+              </ProtectedAdminRoute>
+            </Route>
 
             {/* 404 Route */}
             <Route component={NotFound} />
