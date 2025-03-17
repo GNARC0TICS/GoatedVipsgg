@@ -14,7 +14,7 @@ import { setupAuth } from './auth';
 
 const execAsync = promisify(exec);
 const app = express();
-const PORT = process.env.NODE_ENV === 'production' ? 3000 : 3000;
+const PORT = 3000;
 
 // Configure CORS for admin domain
 app.use((req, res, next) => {
@@ -193,16 +193,7 @@ async function startServer() {
     await new Promise<void>((resolve, reject) => {
       server
         .listen(PORT, "0.0.0.0")
-        .once('error', (err: NodeJS.ErrnoException) => {
-          if (err.code === 'EADDRINUSE') {
-            log(`Port ${PORT} is in use, attempting to free it...`);
-            cleanupPort().then(() => {
-              server.listen(PORT, "0.0.0.0");
-            });
-          } else {
-            reject(err);
-          }
-        })
+        .once('error', reject)
         .once('listening', () => {
           log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
           resolve();
