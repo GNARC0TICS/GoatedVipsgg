@@ -345,6 +345,27 @@ function setupRESTRoutes(app: Express) {
   app.get("/api/admin/verify", requireAdmin, (_req, res) => {
     res.json({ status: "success", message: "Admin access verified" });
   });
+  
+  // Test endpoint for authentication status
+  app.get("/api/auth/status", (req, res) => {
+    if (req.isAuthenticated()) {
+      res.json({
+        authenticated: true,
+        user: {
+          id: req.user.id,
+          username: req.user.username,
+          email: req.user.email,
+          isAdmin: req.user.isAdmin,
+        },
+        session: req.session
+      });
+    } else {
+      res.json({
+        authenticated: false,
+        message: "Not authenticated"
+      });
+    }
+  });
   app.get("/api/admin/users", requireAdmin, handleAdminUsersRequest);
   app.get("/api/admin/wager-races", requireAdmin, handleWagerRacesRequest);
   app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);

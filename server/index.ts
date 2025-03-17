@@ -10,6 +10,7 @@ import { createServer } from "http";
 import { initializeAdmin } from "./middleware/admin";
 import { apiRateLimiter, affiliateRateLimiter, raceRateLimiter } from './middleware/rate-limiter';
 import fetch from 'node-fetch';
+import { setupAuth } from './auth';
 
 const execAsync = promisify(exec);
 const app = express();
@@ -20,6 +21,9 @@ async function setupMiddleware() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
+
+  // Setup authentication system
+  setupAuth(app);
 
   // Rate limiters - apply before routes but after basic middleware
   app.use('/api', apiRateLimiter);
@@ -33,8 +37,6 @@ async function setupMiddleware() {
   app.get("/api/health", (_req, res) => {
     res.json({ status: "healthy", timestamp: new Date().toISOString() });
   });
-
-  
 }
 
 function requestLogger(
