@@ -14,7 +14,7 @@ import { setupAuth } from './auth';
 
 const execAsync = promisify(exec);
 const app = express();
-const PORT = 5000;
+const PORT = 80;
 
 async function setupMiddleware() {
   // Basic middleware
