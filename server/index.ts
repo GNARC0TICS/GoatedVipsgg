@@ -16,6 +16,10 @@ const execAsync = promisify(exec);
 const app = express();
 const PORT = process.env.NODE_ENV === 'production' ? 80 : 3000;
 
+// In production, we need to use port 80 since that's what the deployment expects
+// The .replit file maps internal port 80 -> external port 80 for the API
+// and internal port 5173 -> external port 3000 for the frontend
+
 async function setupMiddleware() {
   // Basic middleware
   app.use(express.json());
