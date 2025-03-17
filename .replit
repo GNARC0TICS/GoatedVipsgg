@@ -8,7 +8,7 @@ channel = "stable-24_05"
 [deployment]
 deploymentTarget = "gce"
 build = ["sh", "-c", "npm run build"]
-run = ["sh", "-c", "NODE_ENV=production ADMIN_USERNAME=admin ADMIN_PASSWORD=admin ADMIN_KEY=admin node dist/index.js"]
+run = ["sh", "-c", "NODE_ENV=production node dist/server/index.js"]
 ignorePorts = false
 
 [[ports]]
