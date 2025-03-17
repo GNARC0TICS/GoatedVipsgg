@@ -12,7 +12,7 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
+    "allowJs": true,
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "isolatedModules": true,

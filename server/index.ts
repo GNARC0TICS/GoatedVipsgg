@@ -14,7 +14,7 @@ import { setupAuth } from './auth';
 
 const execAsync = promisify(exec);
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Configure CORS for admin domain
 app.use((req, res, next) => {
