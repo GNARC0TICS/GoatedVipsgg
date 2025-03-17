@@ -14,14 +14,12 @@ import { setupAuth } from './auth';
 
 const execAsync = promisify(exec);
 const app = express();
-const PORT = process.env.NODE_ENV === 'production' ? 80 : 3000;
+const PORT = process.env.NODE_ENV === 'production' ? 3000 : 3000;
 
-// In production, serve both API and static files on port 80
+// In production, serve both API and static files
 if (process.env.NODE_ENV === 'production') {
   serveStatic(app); // Serve frontend static files first
-  const server = app.listen(PORT, '0.0.0.0', () => {
-    log(`Server running in production on port ${PORT}`);
-  });
+  log(`Will serve static files in production`);
 }
 
 // In production, we need to use port 80 since that's what the deployment expects
