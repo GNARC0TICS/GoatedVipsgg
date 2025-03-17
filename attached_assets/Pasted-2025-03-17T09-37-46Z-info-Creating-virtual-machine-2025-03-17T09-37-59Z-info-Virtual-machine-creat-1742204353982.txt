@@ -1,0 +1,162 @@
+2025-03-17T09:37:46Z info: Creating virtual machine
+2025-03-17T09:37:59Z info: Virtual machine created
+2025-03-17T09:37:59Z info: Waiting for deployment to be ready
+forwarding local port 3000 to external port 80
+starting up user application
+  ^
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:173:12)
+    at Module._load (node:internal/modules/cjs/loader:1051:27)
+  throw err;
+node:internal/modules/cjs/loader:1228
+
+  requireStack: []
+Error: Cannot find module '/home/runner/workspace/dist/server/index.js'
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+
+}
+Error: Cannot find module '/home/runner/workspace/dist/server/index.js'
+  ^
+    at node:internal/main/run_main_module:28:49 {
+  throw err;
+    at node:internal/main/run_main_module:28:49 {
+Node.js v20.18.1
+  ^
+  requireStack: []
+}
+command finished with error [sh -c NODE_ENV=production node dist/server/index.js]: exit status 1
+  ^
+command finished with error [sh -c NODE_ENV=production node dist/server/index.js]: exit status 1
+}
+node:internal/modules/cjs/loader:1228
+    at node:internal/main/run_main_module:28:49 {
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:173:12)
+
+  requireStack: []
+    at Module._load (node:internal/modules/cjs/loader:1051:27)
+Node.js v20.18.1
+Node.js v20.18.1
+    at Module._load (node:internal/modules/cjs/loader:1051:27)
+
+command finished with error [sh -c NODE_ENV=production node dist/server/index.js]: exit status 1
+    at Module._load (node:internal/modules/cjs/loader:1051:27)
+
+  code: 'MODULE_NOT_FOUND',
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:173:12)
+  ^
+command finished with error [sh -c NODE_ENV=production node dist/server/index.js]: exit status 1
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+  code: 'MODULE_NOT_FOUND',
+  code: 'MODULE_NOT_FOUND',
+
+node:internal/modules/cjs/loader:1228
+
+node:internal/modules/cjs/loader:1228
+Error: Cannot find module '/home/runner/workspace/dist/server/index.js'
+    at node:internal/main/run_main_module:28:49 {
+  code: 'MODULE_NOT_FOUND',
+Error: Cannot find module '/home/runner/workspace/dist/server/index.js'
+
+command finished with error [sh -c NODE_ENV=production node dist/server/index.js]: exit status 1
+
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:173:12)
+}
+}
+  throw err;
+    at Module._load (node:internal/modules/cjs/loader:1051:27)
+  requireStack: []
+  throw err;
+  requireStack: []
+
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+Node.js v20.18.1
+    at node:internal/main/run_main_module:28:49 {
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+Error: Cannot find module '/home/runner/workspace/dist/server/index.js'
+node:internal/modules/cjs/loader:1228
+  requireStack: []
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:173:12)
+command finished with error [sh -c NODE_ENV=production node dist/server/index.js]: exit status 1
+  throw err;
+  code: 'MODULE_NOT_FOUND',
+    at Module._load (node:internal/modules/cjs/loader:1051:27)
+
+  throw err;
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+
+}
+  code: 'MODULE_NOT_FOUND',
+Node.js v20.18.1
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+  ^
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:173:12)
+node:internal/modules/cjs/loader:1228
+    at node:internal/main/run_main_module:28:49 {
+Error: Cannot find module '/home/runner/workspace/dist/server/index.js'
+Node.js v20.18.1
+
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+node:internal/modules/cjs/loader:1228
+    at Module._load (node:internal/modules/cjs/loader:1051:27)
+command finished with error [sh -c NODE_ENV=production node dist/server/index.js]: exit status 1
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+  ^
+node:internal/modules/cjs/loader:1228
+  throw err;
+  requireStack: []
+command finished with error [sh -c NODE_ENV=production node dist/server/index.js]: exit status 1
+  code: 'MODULE_NOT_FOUND',
+Error: Cannot find module '/home/runner/workspace/dist/server/index.js'
+  ^
+
+  throw err;
+    at node:internal/main/run_main_module:28:49 {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: []
+Error: Cannot find module '/home/runner/workspace/dist/server/index.js'
+    at node:internal/main/run_main_module:28:49 {
+
+}
+}
+Node.js v20.18.1
+
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:173:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:173:12)
+Node.js v20.18.1
+    at Module._load (node:internal/modules/cjs/loader:1051:27)
+
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+node:internal/modules/cjs/loader:1228
+    at Module._load (node:internal/modules/cjs/loader:1051:27)
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+command finished with error [sh -c NODE_ENV=production node dist/server/index.js]: exit status 1
+  ^
+  requireStack: []
+node:internal/modules/cjs/loader:1228
+  throw err;
+command finished with error [sh -c NODE_ENV=production node dist/server/index.js]: exit status 1
+  code: 'MODULE_NOT_FOUND',
+Error: Cannot find module '/home/runner/workspace/dist/server/index.js'
+  throw err;
+    at node:internal/main/run_main_module:28:49 {
+
+  ^
+  code: 'MODULE_NOT_FOUND',
+  requireStack: []
+    at node:internal/main/run_main_module:28:49 {
+Error: Cannot find module '/home/runner/workspace/dist/server/index.js'
+
+}
+}
+
+Node.js v20.18.1
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:173:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:173:12)
+Node.js v20.18.1
+    at Module._load (node:internal/modules/cjs/loader:1051:27)
+Node.js v20.18.1
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:173:12)
+
+  throw err;
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:173:12)
+crash loop detected
+2025-03-17T09:39:04Z error: The deployment is crash looping. This can happen if the run command fails or exits immediately after starting. Check the logs for more information.
