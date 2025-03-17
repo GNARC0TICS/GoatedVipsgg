@@ -4,7 +4,7 @@
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
-    "noEmit": process.env.NODE_ENV === 'production' ? false : true,
+    "noEmit": false,
     "module": "ESNext",
     "target": "ESNext",
     "lib": ["esnext", "dom", "dom.iterable"],
