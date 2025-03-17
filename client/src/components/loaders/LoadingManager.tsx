@@ -1,5 +1,5 @@
 import { useLoading } from "../../contexts/LoadingContext";
-import { MainPreloader } from "./MainPreloader";
+import { PreLoader } from "../PreLoader";
 import { Spinner } from "./Spinner";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback } from "react";
@@ -27,10 +27,7 @@ export function LoadingManager() {
         <>
           {/* Full-screen preloader with logo and progress bar */}
           {loadingType === "full" && (
-            <MainPreloader 
-              onLoadComplete={handleLoadComplete} 
-              useRandomProgressBar={true}
-            />
+            <PreLoader onLoadComplete={handleLoadComplete} />
           )}
 
           {/* Simple spinner overlay for lighter loading states */}
