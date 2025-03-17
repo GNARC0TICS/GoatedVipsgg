@@ -14,13 +14,13 @@ import { setupAuth } from './auth';
 
 const execAsync = promisify(exec);
 const app = express();
-const PORT = process.env.PORT || (process.env.NODE_ENV === 'production' ? 80 : 3000);
+const PORT = process.env.NODE_ENV === 'production' ? 80 : 3000;
 
-// Start server immediately in production
+// In production, serve both API and static files on port 80
 if (process.env.NODE_ENV === 'production') {
+  serveStatic(app); // Serve frontend static files first
   const server = app.listen(PORT, '0.0.0.0', () => {
-    log(`Backend API running on port ${PORT} (http://0.0.0.0:${PORT})`);
-    log('Frontend served through Vite on port 5173 in development');
+    log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
   });
 }
 

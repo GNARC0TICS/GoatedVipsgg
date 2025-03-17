@@ -36,7 +36,12 @@ export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 export const ADMIN_KEY = process.env.ADMIN_SECRET_KEY;
 
 if (!ADMIN_USERNAME || !ADMIN_PASSWORD || !ADMIN_KEY) {
-  console.error('Missing required admin environment variables');
+  if (process.env.NODE_ENV === 'production') {
+    console.error('ERROR: Admin credentials required in production - ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_KEY must be set');
+    process.exit(1); // Exit in production if admin credentials are missing
+  } else {
+    console.warn('Admin credentials not set in development - admin features will be disabled');
+  }
 }
 
 export async function initializeAdmin(
