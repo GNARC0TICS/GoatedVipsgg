@@ -1,0 +1,73 @@
+a workable environment for your backend admin access and ensure both your frontend and backend are deployed on the same server, follow these steps:
+
+Step 1: Set Up Your Authentication System
+User Model: Ensure you have a user model with fields like username, password, isAdmin, etc. This should be created in your database schema.
+
+Password Hashing: Use the existing hash and compare functions from your server/auth.ts file for user authentication.
+
+Session Management: Use express-session and passport to handle sessions. Verify that you have the setupAuth() function called in your main server file (e.g., server/index.ts).
+
+Step 2: Implement Login Functionality
+Add a new route for login in your server (e.g., in server/routes.ts):
+
+import { Router } from "express";
+import passport from "passport";
+import { checkAuthenticated } from "./middleware/auth"; // Middleware to check if user is authenticated
+const router = Router();
+// Auth Login Route
+router.post('/api/login', passport.authenticate('local'), (req, res) => {
+    res.json({ user: req.user, message: "Logged in successfully!" });
+});
+// Protect Admin Routes
+router.use('/admin', checkAuthenticated);
+// Admin Dashboard Route
+router.get('/admin', (req, res) => {
+    res.send("Welcome to the Admin Dashboard");
+});
+export default router;
+Step 3: Create the Admin Dashboard
+In your frontend, for your admin dashboard, ensure you navigate to the admin routes as per your condition in client/src/App.tsx. This is already implemented, but ensure the paths are correct.
+
+Step 4: Implement "Remember Me" Functionality
+For iOS compatibility, you can implement a "Remember Me" functionality using JWT (JSON Web Tokens) which will allow the user to stay logged in:
+
+Generate a JWT token on successful login and send it as a cookie (set with HttpOnly and secure flags when deployed with HTTPS).
+
+Modify the login route to include token generation:
+
+import jwt from "jsonwebtoken";
+// Replace your login success callback with this
+router.post('/api/login', passport.authenticate('local'), (req, res) => {
+    const token = jwt.sign({ userId: req.user.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+    res.cookie('token', token, { httpOnly: true, secure: true }); // Set secure to true in production
+    res.json({ message: "Logged in successfully!" });
+});
+Step 5: Fetch User Info and Wager Races
+Create endpoints in your server that your frontend can call to get user information and wager races. For example:
+
+// Middleware: Check Admin
+export const checkAdmin = (req, res, next) => {
+    if (req.user && req.user.isAdmin) {
+        return next();
+    }
+    return res.status(403).send("Not authorized");
+};
+// Example route to get user data
+router.get('/admin/users', checkAdmin, async (req, res) => {
+    const users = await getUsersFromDatabase(); // Implement this function to retrieve users
+    res.json(users);
+});
+Step 6: Frontend Integration
+Ensure your frontend is making API calls to fetch the data:
+
+Use fetch or your preferred HTTP client to call these endpoints from your admin components (e.g., UserManagement, NotificationManagement).
+Step 7: Deploy Both Frontend and Backend
+Since you already have the port configurations set up, make sure when deploying:
+
+Your backend is available at 0.0.0.0:5000 for API requests.
+Your frontend serves normally on port 80.
+Step 8: Test
+Once everything is set up, ensure to test:
+
+Admin access point: Only let admins get to the /admin routes.
+Functionality: Ensure you can log in, view user info, and manage wager races.
