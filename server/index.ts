@@ -16,6 +16,16 @@ const execAsync = promisify(exec);
 const app = express();
 const PORT = process.env.NODE_ENV === 'production' ? 80 : 3000;
 
+// Ensure quick startup in production
+const startupTimeout = setTimeout(() => {
+  if (process.env.NODE_ENV === 'production') {
+    log('Forcing early server start to meet deployment requirements');
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+    });
+  }
+}, 2000);
+
 // In production, we need to use port 80 since that's what the deployment expects
 // The .replit file maps internal port 80 -> external port 80 for the API
 // and internal port 5173 -> external port 3000 for the frontend
