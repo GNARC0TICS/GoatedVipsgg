@@ -20,7 +20,7 @@ const PORT = process.env.NODE_ENV === 'production' ? 80 : 3000;
 if (process.env.NODE_ENV === 'production') {
   serveStatic(app); // Serve frontend static files first
   const server = app.listen(PORT, '0.0.0.0', () => {
-    log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+    log(`Server running in production on port ${PORT}`);
   });
 }
 
