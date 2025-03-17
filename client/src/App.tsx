@@ -127,34 +127,34 @@ function Router() {
             </Route>
 
             {/* Admin Routes */}
-            <Route path="/admin/login" component={AdminLogin} />
+            <Route path="/login" component={AdminLogin} />
             
-            <Route path="/admin/wager-races">
+            <Route path="/wager-races">
               <ProtectedAdminRoute>
                 <WagerRaceManagement />
               </ProtectedAdminRoute>
             </Route>
-            <Route path="/admin/users">
+            <Route path="/users">
               <ProtectedAdminRoute>
                 <UserManagement />
               </ProtectedAdminRoute>
             </Route>
-            <Route path="/admin/notifications">
+            <Route path="/notifications">
               <ProtectedAdminRoute>
                 <NotificationManagement />
               </ProtectedAdminRoute>
             </Route>
-            <Route path="/admin/bonus-codes">
+            <Route path="/bonus-codes">
               <ProtectedAdminRoute>
                 <BonusCodeManagement />
               </ProtectedAdminRoute>
             </Route>
-            <Route path="/admin/support">
+            <Route path="/support">
               <ProtectedAdminRoute>
                 <SupportManagement />
               </ProtectedAdminRoute>
             </Route>
-            <Route path="/admin">
+            <Route path="/">
               <ProtectedAdminRoute>
                 <AdminDashboard />
               </ProtectedAdminRoute>

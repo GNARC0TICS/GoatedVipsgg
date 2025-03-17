@@ -61,7 +61,7 @@ export default function ProtectedAdminRoute({ children }: ProtectedAdminRoutePro
   }
 
   if (!user) {
-    return <Redirect to="/admin/login" />;
+    return <Redirect to="/login" />;
   }
 
   if (!isAdmin) {
