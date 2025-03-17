@@ -12,6 +12,10 @@ run = ["sh", "-c", "npm run start"]
 ignorePorts = false
 
 [[ports]]
+localPort = 80
+externalPort = 3000
+
+[[ports]]
 localPort = 5000
 externalPort = 5173
 
