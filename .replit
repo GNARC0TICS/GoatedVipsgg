@@ -13,12 +13,11 @@ ignorePorts = false
 
 [[ports]]
 localPort = 3000
-externalPort = 3000
+externalPort = 80
 
 [[ports]]
 localPort = 5173
-externalPort = 80
-exposeLocalhost = true
+externalPort = 3000
 
 [workflows]
 runButton = "Start application"
