@@ -38,6 +38,8 @@ import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
 import AdminDashboard from "./pages/admin/Dashboard"; // Added import for AdminDashboard
+import AdminLogin from "./pages/admin/Login"; // Admin login page
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute"; // Protected admin route component
 
 
 function ErrorFallback({ error }: { error: Error }) {
