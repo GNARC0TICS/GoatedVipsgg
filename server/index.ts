@@ -32,20 +32,31 @@ app.use((req, res, next) => {
   next();
 });
 
-// In production, serve both API and static files
+// Configure API routes first
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+
+// Setup routes
+registerRoutes(app);
+
+// In production, serve static files after API routes
 if (process.env.NODE_ENV === 'production') {
-  serveStatic(app); // Serve frontend static files first
+  serveStatic(app);
   log(`Will serve static files in production`);
+
+  // Handle client-side routing
+  app.get('*', (_req, res) => {
+    res.sendFile('index.html', { root: './dist' });
+  });
 }
+
 
 // In production, the .replit file maps internal port 3000 -> external port 80 for the API
 // and internal port 5173 -> external port 3000 for the frontend
 
 async function setupMiddleware() {
   // Basic middleware
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  app.use(cookieParser());
 
   // Setup authentication system
   setupAuth(app);
@@ -167,8 +178,9 @@ async function startServer() {
     // Setup middleware first
     await setupMiddleware();
 
+
     // Then register routes
-    registerRoutes(app);
+
     initializeAdmin().catch(console.error);
 
     if (app.get("env") === "development") {
