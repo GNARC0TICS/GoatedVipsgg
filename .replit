@@ -12,14 +12,12 @@ run = ["sh", "-c", "PORT=80 NODE_ENV=production node dist/index.js"]
 ignorePorts = false
 
 [[ports]]
-localPort = 5173
-externalPort = 80
-exposeLocalhost = true
-
-[[ports]]
 localPort = 3000
 externalPort = 3000
-exposeLocalhost = true
+
+[[ports]]
+localPort = 5173
+externalPort = 80
 
 [workflows]
 runButton = "Start application"
