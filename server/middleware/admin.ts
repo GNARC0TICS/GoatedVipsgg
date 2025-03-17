@@ -8,7 +8,7 @@ export async function requireAdmin(
   res: Response,
   next: NextFunction,
 ) {
-  if (!req.isAuthenticated()) {
+  if (!req.user) {
     return res.status(401).json({ error: "Authentication required" });
   }
 

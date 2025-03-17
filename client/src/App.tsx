@@ -37,7 +37,7 @@ import VipProgram from "./pages/VipProgram";
 import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
-import AdminDashboard from "./pages/admin/Dashboard"; // Added import for AdminDashboard
+import AdminDashboard from "@/pages/admin"; // Admin dashboard page
 import AdminLogin from "./pages/admin/Login"; // Admin login page
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute"; // Protected admin route component
 

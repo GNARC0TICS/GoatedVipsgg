@@ -5,6 +5,7 @@ import { log } from "./vite";
 import { setupAuth } from "./auth";
 import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
+import passport from "passport";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import { db } from "@db";
 import * as schema from "@db/schema";
@@ -307,7 +308,43 @@ function setupRESTRoutes(app: Express) {
   });
 
   app.get("/api/profile", requireAuth, handleProfileRequest);
-  app.post("/api/admin/login", handleAdminLogin);
+  app.post("/api/admin/login", (req, res, next) => {
+  passport.authenticate("local", (err, user, info) => {
+    if (err) {
+      return res.status(500).json({
+        status: "error",
+        message: "Internal server error",
+      });
+    }
+    if (!user || !user.isAdmin) {
+      return res.status(401).json({
+        status: "error",
+        message: info?.message || "Invalid admin credentials",
+      });
+    }
+    req.logIn(user, (loginErr) => {
+      if (loginErr) {
+        return res.status(500).json({
+          status: "error",
+          message: "Failed to create admin session",
+        });
+      }
+      return res.json({
+        status: "success",
+        message: "Admin login successful",
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          isAdmin: user.isAdmin,
+        },
+      });
+    });
+  })(req, res, next);
+});
+  app.get("/api/admin/verify", requireAdmin, (_req, res) => {
+    res.json({ status: "success", message: "Admin access verified" });
+  });
   app.get("/api/admin/users", requireAdmin, handleAdminUsersRequest);
   app.get("/api/admin/wager-races", requireAdmin, handleWagerRacesRequest);
   app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);
@@ -786,7 +823,7 @@ async function handleAffiliateStats(req: any, res: any) {
   }
 }
 
-async function handleAdminLogin(req: any, res: any) {
+async function handleAdminLogin(req: any, res: any, next: any) {
   try {
     const result = adminLoginSchema.safeParse(req.body);
     if (!result.success) {
@@ -797,41 +834,43 @@ async function handleAdminLogin(req: any, res: any) {
       });
     }
 
-    const { username, password } = result.data;
-    const [user] = await db
-      .select()
-      .from(schema.users)
-      .where(eq(schema.users.username, username))
-      .limit(1);
+    passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (err) {
+        log(`Admin login error: ${err}`);
+        return res.status(500).json({
+          status: "error",
+          message: "Failed to process admin login",
+        });
+      }
 
-    if (!user || !user.isAdmin) {
-      return res.status(401).json({
-        status: "error",
-        message: "Invalid admin credentials",
+      if (!user || !user.isAdmin) {
+        return res.status(401).json({
+          status: "error",
+          message: "Invalid admin credentials",
+        });
+      }
+
+      req.logIn(user, (loginErr) => {
+        if (loginErr) {
+          log(`Admin login session error: ${loginErr}`);
+          return res.status(500).json({
+            status: "error",
+            message: "Error creating admin session",
+          });
+        }
+
+        res.json({
+          status: "success",
+          message: "Admin login successful",
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            isAdmin: user.isAdmin,
+          },
+        });
       });
-    }
-
-    const token = generateToken({
-      userId: user.id,
-      email: user.email,
-      isAdmin: user.isAdmin,
-    });
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-    });
-
-    res.json({
-      status: "success",
-      message: "Admin login successful",
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        isAdmin: user.isAdmin,
-      },
-    });
+    })(req, res, next);
   } catch (error) {
     log(`Admin login error: ${error}`);
     res.status(500).json({
