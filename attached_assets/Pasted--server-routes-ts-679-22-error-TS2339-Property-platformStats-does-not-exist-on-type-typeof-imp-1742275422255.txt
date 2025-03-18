@@ -1,0 +1,362 @@
+
+server/routes.ts:679:22 - error TS2339: Property 'platformStats' does not exist on type 'typeof import("@db/schema")'.
+
+679         .from(schema.platformStats)
+                         ~~~~~~~~~~~~~
+
+server/routes.ts:680:31 - error TS2339: Property 'platformStats' does not exist on type 'typeof import("@db/schema")'.
+
+680         .orderBy(sql`${schema.platformStats.timestamp} DESC`)
+                                  ~~~~~~~~~~~~~
+
+server/routes.ts:724:30 - error TS2339: Property 'platformStats' does not exist on type 'typeof import("@db/schema")'.
+
+724       await db.insert(schema.platformStats).values({
+                                 ~~~~~~~~~~~~~
+
+server/routes.ts:746:20 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+746         id: schema.users.id,
+                       ~~~~~
+
+server/routes.ts:747:26 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+747         username: schema.users.username,
+                             ~~~~~
+
+server/routes.ts:748:23 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+748         email: schema.users.email,
+                          ~~~~~
+
+server/routes.ts:749:25 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+749         isAdmin: schema.users.isAdmin,
+                            ~~~~~
+
+server/routes.ts:750:27 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+750         createdAt: schema.users.createdAt,
+                              ~~~~~
+
+server/routes.ts:751:27 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+751         lastLogin: schema.users.lastLogin,
+                              ~~~~~
+
+server/routes.ts:753:20 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+753       .from(schema.users)
+                       ~~~~~
+
+server/routes.ts:754:24 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+754       .where(eq(schema.users.id, req.user!.id))
+                           ~~~~~
+
+server/routes.ts:877:24 - error TS7006: Parameter 'loginErr' implicitly has an 'any' type.
+
+877       req.logIn(user, (loginErr) => {
+                           ~~~~~~~~
+
+server/routes.ts:911:20 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+911         id: schema.users.id,
+                       ~~~~~
+
+server/routes.ts:912:26 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+912         username: schema.users.username,
+                             ~~~~~
+
+server/routes.ts:913:23 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+913         email: schema.users.email,
+                          ~~~~~
+
+server/routes.ts:914:25 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+914         isAdmin: schema.users.isAdmin,
+                            ~~~~~
+
+server/routes.ts:915:27 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+915         createdAt: schema.users.createdAt,
+                              ~~~~~
+
+server/routes.ts:916:27 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+916         lastLogin: schema.users.lastLogin,
+                              ~~~~~
+
+server/routes.ts:918:20 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+918       .from(schema.users)
+                       ~~~~~
+
+server/routes.ts:919:23 - error TS2339: Property 'users' does not exist on type 'typeof import("@db/schema")'.
+
+919       .orderBy(schema.users.createdAt);
+                          ~~~~~
+
+server/routes.ts:936:34 - error TS2339: Property 'wagerRaces' does not exist on type 'DrizzleTypeError<"Seems like the schema generic is missing - did you forget to add it to your DB type?">'.
+
+936     const races = await db.query.wagerRaces.findMany({
+                                     ~~~~~~~~~~
+
+server/routes.ts:937:17 - error TS7006: Parameter 'races' implicitly has an 'any' type.
+
+937       orderBy: (races, { desc }) => [desc(races.createdAt)],
+                    ~~~~~
+
+server/routes.ts:937:26 - error TS7031: Binding element 'desc' implicitly has an 'any' type.
+
+937       orderBy: (races, { desc }) => [desc(races.createdAt)],
+                             ~~~~
+
+server/routes.ts:955:22 - error TS2339: Property 'wagerRaces' does not exist on type 'typeof import("@db/schema")'.
+
+955       .insert(schema.wagerRaces)
+                         ~~~~~~~~~~
+
+server/routes.ts:993:37 - error TS2345: Argument of type 'WebSocket' is not assignable to parameter of type 'ExtendedWebSocket'.
+  Property 'isAlive' is missing in type 'WebSocket' but required in type 'ExtendedWebSocket'.
+
+993         handleLeaderboardConnection(ws);
+                                        ~~
+
+  server/routes.ts:20:3
+    20   isAlive: boolean;
+         ~~~~~~~
+    'isAlive' is declared here.
+
+server/routes.ts:1039:24 - error TS2339: Property 'ticketMessages' does not exist on type 'typeof import("@db/schema")'.
+
+1039         .insert(schema.ticketMessages)
+                            ~~~~~~~~~~~~~~
+
+server/verification-routes.ts:47:22 - error TS2339: Property 'goatedVerificationRequests' does not exist on type 'typeof import("@db/schema")'.
+
+47         .from(schema.goatedVerificationRequests)
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:50:23 - error TS2339: Property 'goatedVerificationRequests' does not exist on type 'typeof import("@db/schema")'.
+
+50             eq(schema.goatedVerificationRequests.platformUserId, req.user!.id),
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:51:23 - error TS2339: Property 'goatedVerificationRequests' does not exist on type 'typeof import("@db/schema")'.
+
+51             eq(schema.goatedVerificationRequests.status, "pending")
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:67:15 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+67         .from(goatedVerificationRequests)
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:70:16 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+70             eq(goatedVerificationRequests.goatedUsername, goatedUsername),
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:71:16 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+71             eq(goatedVerificationRequests.status, "approved")
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:85:17 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+85         .insert(goatedVerificationRequests)
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:127:15 - error TS2304: Cannot find name 'telegramVerificationRequests'.
+
+127         .from(telegramVerificationRequests)
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:130:16 - error TS2304: Cannot find name 'telegramVerificationRequests'.
+
+130             eq(telegramVerificationRequests.platformUserId, req.user!.id),
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:131:16 - error TS2304: Cannot find name 'telegramVerificationRequests'.
+
+131             eq(telegramVerificationRequests.status, "pending")
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:147:15 - error TS2304: Cannot find name 'telegramVerificationRequests'.
+
+147         .from(telegramVerificationRequests)
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:150:16 - error TS2304: Cannot find name 'telegramVerificationRequests'.
+
+150             eq(telegramVerificationRequests.telegramId, telegramId),
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:151:16 - error TS2304: Cannot find name 'telegramVerificationRequests'.
+
+151             eq(telegramVerificationRequests.status, "approved")
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:165:17 - error TS2304: Cannot find name 'telegramVerificationRequests'.
+
+165         .insert(telegramVerificationRequests)
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:251:17 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+251         .update(goatedVerificationRequests)
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:258:19 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+258         .where(eq(goatedVerificationRequests.id, id))
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:271:19 - error TS2304: Cannot find name 'users'.
+
+271           .update(users)
+                      ~~~~~
+
+server/verification-routes.ts:277:21 - error TS2304: Cannot find name 'users'.
+
+277           .where(eq(users.id, updatedRequest.platformUserId));
+                        ~~~~~
+
+server/verification-routes.ts:311:17 - error TS2304: Cannot find name 'telegramVerificationRequests'.
+
+311         .update(telegramVerificationRequests)
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:318:19 - error TS2304: Cannot find name 'telegramVerificationRequests'.
+
+318         .where(eq(telegramVerificationRequests.id, id))
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:331:19 - error TS2304: Cannot find name 'users'.
+
+331           .update(users)
+                      ~~~~~
+
+server/verification-routes.ts:337:21 - error TS2304: Cannot find name 'users'.
+
+337           .where(eq(users.id, updatedRequest.platformUserId));
+                        ~~~~~
+
+server/verification-routes.ts:359:15 - error TS2304: Cannot find name 'users'.
+
+359           id: users.id,
+                  ~~~~~
+
+server/verification-routes.ts:360:21 - error TS2304: Cannot find name 'users'.
+
+360           username: users.username,
+                        ~~~~~
+
+server/verification-routes.ts:361:27 - error TS2304: Cannot find name 'users'.
+
+361           goatedUsername: users.goatedUsername,
+                              ~~~~~
+
+server/verification-routes.ts:362:22 - error TS2304: Cannot find name 'users'.
+
+362           goatedUid: users.goatedUid,
+                         ~~~~~
+
+server/verification-routes.ts:363:27 - error TS2304: Cannot find name 'users'.
+
+363           goatedVerified: users.goatedVerified,
+                              ~~~~~
+
+server/verification-routes.ts:364:29 - error TS2304: Cannot find name 'users'.
+
+364           telegramUsername: users.telegramUsername,
+                                ~~~~~
+
+server/verification-routes.ts:365:23 - error TS2304: Cannot find name 'users'.
+
+365           telegramId: users.telegramId,
+                          ~~~~~
+
+server/verification-routes.ts:366:29 - error TS2304: Cannot find name 'users'.
+
+366           telegramVerified: users.telegramVerified,
+                                ~~~~~
+
+server/verification-routes.ts:368:15 - error TS2304: Cannot find name 'users'.
+
+368         .from(users)
+                  ~~~~~
+
+server/verification-routes.ts:369:19 - error TS2304: Cannot find name 'users'.
+
+369         .where(eq(users.id, req.user!.id))
+                      ~~~~~
+
+server/verification-routes.ts:382:15 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+382         .from(goatedVerificationRequests)
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:385:16 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+385             eq(goatedVerificationRequests.platformUserId, req.user!.id),
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:386:16 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+386             eq(goatedVerificationRequests.status, "pending")
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:393:15 - error TS2304: Cannot find name 'telegramVerificationRequests'.
+
+393         .from(telegramVerificationRequests)
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:396:16 - error TS2304: Cannot find name 'telegramVerificationRequests'.
+
+396             eq(telegramVerificationRequests.platformUserId, req.user!.id),
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:397:16 - error TS2304: Cannot find name 'telegramVerificationRequests'.
+
+397             eq(telegramVerificationRequests.status, "pending")
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Found 201 errors in 31 files.
+
+Errors  Files
+     1  client/src/components/AffiliateStats.tsx:14
+     1  client/src/components/FeatureCarousel.tsx:9
+     1  client/src/components/MVPCards.tsx:312
+     5  client/src/components/QuickProfile.tsx:2
+    11  client/src/components/RaceTimer.tsx:48
+     1  client/src/components/SocialShare.tsx:3
+     5  client/src/components/chat/ChatInterface.tsx:146
+     1  client/src/components/loaders/MainPreloader.tsx:84
+     1  client/src/components/ui/alert-dialog.tsx:5
+     1  client/src/components/ui/calendar.tsx:6
+     1  client/src/components/ui/chart.tsx:210
+     1  client/src/components/ui/pagination.tsx:5
+     1  client/src/components/ui/theme-toggle.tsx:3
+     5  client/src/components/ui/toaster.tsx:13
+     4  client/src/contexts/LoadingContext.tsx:18
+     2  client/src/hooks/use-api-with-loading.ts:31
+     3  client/src/lib/queryClient.ts:9
+     1  client/src/pages/BonusCodes.tsx:6
+     2  client/src/pages/WagerRaces.tsx:311
+     2  client/src/pages/admin/BonusCodeManagement.tsx:50
+     1  client/src/pages/admin/Dashboard.tsx:26
+    23  client/src/pages/admin/WagerRaceManagement.tsx:130
+     3  client/src/pages/auth-page.tsx:21
+     5  server/api/bot-routes.ts:29
+    10  server/auth.ts:8
+     1  server/config/auth.ts:2
+     3  server/index.ts:2
+     1  server/middleware/admin.ts:3
+     1  server/middleware/auth.ts:5
+    65  server/routes.ts:218
+    38  server/verification-routes.ts:47
