@@ -8,7 +8,8 @@ import { RateLimiterMemory } from "rate-limiter-flexible";
 import passport from "passport";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import { db } from "@db";
-import * as schema from "@db/schema";
+import { wagerRaces } from "@db/schema";
+import type { InsertWagerRace, SelectWagerRace } from "@db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 // The platformStats table is already imported via the * import
 // import { platformStats } from "@db/schema";

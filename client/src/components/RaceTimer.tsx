@@ -109,15 +109,12 @@ export function RaceTimer() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    // Add console log to debug the date information
     console.log('Race date formatting:', { 
       originalString: dateString, 
       parsedDate: date, 
       month: date.getMonth() + 1,
       year: date.getFullYear()
     });
-    
-    // Force UTC interpretation to avoid timezone issues
     return date.toLocaleDateString('en-US', { 
       year: 'numeric',
       month: 'long',
