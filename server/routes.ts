@@ -345,7 +345,7 @@ function setupRESTRoutes(app: Express) {
   app.get("/api/admin/verify", requireAdmin, (_req, res) => {
     res.json({ status: "success", message: "Admin access verified" });
   });
-  
+
   // Test endpoint for authentication status
   app.get("/api/auth/status", (req, res) => {
     if (req.isAuthenticated()) {
@@ -988,6 +988,11 @@ function setupWebSocket(httpServer: Server) {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit("connection", ws, request);
         handleLeaderboardConnection(ws);
+      });
+    } else if (request.url === "/ws/chat") {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit("connection", ws, request);
+        handleChatConnection(ws);
       });
     }
   });
