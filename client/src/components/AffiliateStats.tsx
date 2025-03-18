@@ -7,7 +7,7 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery as useTanstackQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useQuery } from "@tanstack/react-query";
@@ -21,7 +21,7 @@ type AffiliateData = {
 };
 
 export function AffiliateStats() {
-  const { data, isLoading } = useQuery<AffiliateData[]>({
+  const { data, isLoading } = useTanstackQuery<AffiliateData[]>({
     queryKey: [AFFILIATE_STATS_KEY],
     staleTime: 60000, // 1 minute
   });

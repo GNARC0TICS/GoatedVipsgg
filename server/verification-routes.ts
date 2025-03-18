@@ -7,6 +7,7 @@ import { z } from "zod";
 
 // Import schema directly
 import * as schema from "../db/schema";
+import { telegramVerificationRequests } from "../db/schema";
 
 // Schema validation
 const goatedVerificationSchema = z.object({

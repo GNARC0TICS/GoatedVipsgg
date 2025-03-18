@@ -1,5 +1,6 @@
 import React from "react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet } from "@/components/ui/sheet";
+import { SheetTrigger } from "@radix-ui/react-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, Calendar, Clock, Crown } from "lucide-react";
 import { motion } from "framer-motion";
