@@ -76,8 +76,8 @@ type APIResponse = {
   };
 };
 
-// Create a constant key for the affiliate stats endpoint to avoid string duplication
-export const AFFILIATE_STATS_KEY = "/api/affiliate/stats";
+// Already exported above, no need to re-export
+const AFFILIATE_STATS_ENDPOINT = "/api/affiliate/stats";
 
 export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
   const queryClient = useQueryClient();
