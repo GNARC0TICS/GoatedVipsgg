@@ -1,0 +1,1093 @@
+
+
+../dist/public/index.html                   1.70 kB │ gzip:   0.64 kB
+../dist/public/assets/index-lLnVCcjp.css  116.05 kB │ gzip:  18.40 kB
+../dist/public/assets/index-DJsTDVHw.js   817.17 kB │ gzip: 237.32 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.27s
+client/src/components/AffiliateStats.tsx:14:10 - error TS2305: Module '"@/hooks/use-leaderboard"' has no exported member 'AFFILIATE_STATS_KEY'.
+
+14 import { AFFILIATE_STATS_KEY } from "@/hooks/use-leaderboard";
+            ~~~~~~~~~~~~~~~~~~~
+
+client/src/components/FeatureCarousel.tsx:9:10 - error TS2305: Module '"@/hooks/use-leaderboard"' has no exported member 'useWagerTotals'.
+
+9 import { useWagerTotals } from '@/hooks/use-leaderboard';
+           ~~~~~~~~~~~~~~
+
+client/src/components/FeatureCarousel.tsx:92:11 - error TS2322: Type '"warning"' is not assignable to type '"default" | "destructive" | undefined'.
+
+92           variant: "warning",
+             ~~~~~~~
+
+  client/src/lib/types.d.ts:143:5
+    143     variant?: "default" | "destructive";
+            ~~~~~~~
+    The expected type comes from property 'variant' which is declared here on type 'ToastProps'
+
+client/src/components/MVPCards.tsx:302:22 - error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ today: { data: MVP[]; }; weekly: { data: MVP[]; }; monthly: { data: MVP[]; }; all_time: { data: MVP[]; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ today: { data: MVP[]; }; weekly: { data: MVP[]; }; monthly: { data: MVP[]; }; all_time: { data: MVP[]; }; }'.
+
+302               rank: (leaderboardData?.data[timeframe.period]?.data || []).findIndex((p:MVP)=> p.uid === mvps[timeframe.period as keyof typeof mvps]?.uid) +1
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/components/MVPCards.tsx:306:13 - error TS2322: Type 'LeaderboardData | undefined' is not assignable to type 'LeaderboardData'.
+  Type 'undefined' is not assignable to type 'LeaderboardData'.
+
+306             leaderboardData={leaderboardData}
+                ~~~~~~~~~~~~~~~
+
+  client/src/components/MVPCards.tsx:76:3
+    76   leaderboardData: LeaderboardData
+         ~~~~~~~~~~~~~~~
+    The expected type comes from property 'leaderboardData' which is declared here on type 'IntrinsicAttributes & { timeframe: { title: string; period: string; colors: { primary: string; accent: string; shine: string; }; }; mvp: MVP | undefined; isOpen: boolean; onOpenChange: (open: boolean) => void; leaderboardData: LeaderboardData; }'
+
+client/src/components/QuickProfile.tsx:2:17 - error TS2305: Module '"@/components/ui/sheet"' has no exported member 'SheetTrigger'.
+
+2 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
+                  ~~~~~~~~~~~~
+
+client/src/components/QuickProfile.tsx:65:60 - error TS2339: Property 'wagered' does not exist on type 'never'.
+
+65         .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.today || 0,
+                                                              ~~~~~~~
+
+client/src/components/QuickProfile.tsx:67:60 - error TS2339: Property 'wagered' does not exist on type 'never'.
+
+67         .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.this_week || 0,
+                                                              ~~~~~~~
+
+client/src/components/QuickProfile.tsx:69:60 - error TS2339: Property 'wagered' does not exist on type 'never'.
+
+69         .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.this_month || 0,
+                                                              ~~~~~~~
+
+client/src/components/QuickProfile.tsx:71:60 - error TS2339: Property 'wagered' does not exist on type 'never'.
+
+71         .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.all_time || 0,
+                                                              ~~~~~~~
+
+client/src/components/RaceTimer.tsx:48:5 - error TS2769: No overload matches this call.
+  Overload 1 of 3, '(options: DefinedInitialDataOptions<RaceData, Error, RaceData, QueryKey>, queryClient?: QueryClient | undefined): DefinedUseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'onError' does not exist in type 'DefinedInitialDataOptions<RaceData, Error, RaceData, QueryKey>'.
+  Overload 2 of 3, '(options: UndefinedInitialDataOptions<RaceData, Error, RaceData, QueryKey>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'onError' does not exist in type 'UndefinedInitialDataOptions<RaceData, Error, RaceData, QueryKey>'.
+  Overload 3 of 3, '(options: UseQueryOptions<RaceData, Error, RaceData, QueryKey>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'onError' does not exist in type 'UseQueryOptions<RaceData, Error, RaceData, QueryKey>'.
+
+48     onError: (error) => {
+       ~~~~~~~
+
+
+client/src/components/RaceTimer.tsx:48:15 - error TS7006: Parameter 'error' implicitly has an 'any' type.
+
+48     onError: (error) => {
+                 ~~~~~
+
+client/src/components/RaceTimer.tsx:86:27 - error TS2339: Property 'endDate' does not exist on type 'NonNullable<TQueryFnData>'.
+
+86     if (!currentRaceData?.endDate) return;
+                             ~~~~~~~
+
+client/src/components/RaceTimer.tsx:89:44 - error TS2339: Property 'endDate' does not exist on type 'NonNullable<TQueryFnData>'.
+
+89       const end = new Date(currentRaceData.endDate);
+                                              ~~~~~~~
+
+client/src/components/RaceTimer.tsx:108:24 - error TS2339: Property 'endDate' does not exist on type 'NonNullable<TQueryFnData>'.
+
+108   }, [currentRaceData?.endDate]);
+                           ~~~~~~~
+
+client/src/components/RaceTimer.tsx:176:27 - error TS2339: Property 'title' does not exist on type 'RaceData | NonNullable<TQueryFnData>'.
+  Property 'title' does not exist on type 'NonNullable<TQueryFnData>'.
+
+176                 {raceData.title || (showPrevious ? 'Previous Race' : 'Monthly Race')}
+                              ~~~~~
+
+client/src/components/RaceTimer.tsx:191:36 - error TS2339: Property 'startDate' does not exist on type 'RaceData | NonNullable<TQueryFnData>'.
+  Property 'startDate' does not exist on type 'NonNullable<TQueryFnData>'.
+
+191               {formatDate(raceData.startDate)}
+                                       ~~~~~~~~~
+
+client/src/components/RaceTimer.tsx:223:44 - error TS2339: Property 'prizePool' does not exist on type 'RaceData | NonNullable<TQueryFnData>'.
+  Property 'prizePool' does not exist on type 'NonNullable<TQueryFnData>'.
+
+223                     Prize Pool: ${raceData.prizePool.toLocaleString()}
+                                               ~~~~~~~~~
+
+client/src/components/RaceTimer.tsx:226:27 - error TS2339: Property 'participants' does not exist on type 'RaceData | NonNullable<TQueryFnData>'.
+  Property 'participants' does not exist on type 'NonNullable<TQueryFnData>'.
+
+226                 {raceData.participants.map((participant, index) => (
+                              ~~~~~~~~~~~~
+
+client/src/components/RaceTimer.tsx:226:45 - error TS7006: Parameter 'participant' implicitly has an 'any' type.
+
+226                 {raceData.participants.map((participant, index) => (
+                                                ~~~~~~~~~~~
+
+client/src/components/RaceTimer.tsx:226:58 - error TS7006: Parameter 'index' implicitly has an 'any' type.
+
+226                 {raceData.participants.map((participant, index) => (
+                                                             ~~~~~
+
+client/src/components/SocialShare.tsx:3:23 - error TS2307: Cannot find module './ui/use-toast' or its corresponding type declarations.
+
+3 import { toast } from "./ui/use-toast";
+                        ~~~~~~~~~~~~~~~~
+
+client/src/components/chat/ChatInterface.tsx:146:42 - error TS2367: This comparison appears to be unintentional because the types 'number | null' and 'string | undefined' have no overlap.
+
+146                 className={`flex gap-3 ${msg.userId === user?.id ? "justify-end" : ""}`}
+                                             ~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/components/chat/ChatInterface.tsx:148:18 - error TS2367: This comparison appears to be unintentional because the types 'number | null' and 'string | undefined' have no overlap.
+
+148                 {msg.userId !== user?.id && (
+                     ~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/components/chat/ChatInterface.tsx:154:40 - error TS2367: This comparison appears to be unintentional because the types 'number | null' and 'string | undefined' have no overlap.
+
+154                   className={`flex-1 ${msg.userId === user?.id ? "text-right" : ""}`}
+                                           ~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/components/chat/ChatInterface.tsx:158:23 - error TS2367: This comparison appears to be unintentional because the types 'number | null' and 'string | undefined' have no overlap.
+
+158                       msg.userId === user?.id
+                          ~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/components/chat/ChatInterface.tsx:169:18 - error TS2367: This comparison appears to be unintentional because the types 'number | null' and 'string | undefined' have no overlap.
+
+169                 {msg.userId === user?.id && (
+                     ~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/components/loaders/MainPreloader.tsx:84:9 - error TS2722: Cannot invoke an object which is possibly 'undefined'.
+
+84         onLoadComplete();
+           ~~~~~~~~~~~~~~
+
+client/src/components/ui/alert-dialog.tsx:5:10 - error TS2305: Module '"@/components/ui/button"' has no exported member 'buttonVariants'.
+
+5 import { buttonVariants } from "@/components/ui/button";
+           ~~~~~~~~~~~~~~
+
+client/src/components/ui/calendar.tsx:6:10 - error TS2305: Module '"@/components/ui/button"' has no exported member 'buttonVariants'.
+
+6 import { buttonVariants } from "@/components/ui/button";
+           ~~~~~~~~~~~~~~
+
+client/src/components/ui/chart.tsx:210:29 - error TS2345: Argument of type '{ "h-2.5 w-2.5": boolean; "w-1": boolean; "w-0 border-[1.5px] border-dashed bg-transparent": boolean; "my-0.5": boolean; }' is not assignable to parameter of type 'string | false | null | undefined'.
+
+210                             {
+                                ~
+211                               "h-2.5 w-2.5": indicator === "dot",
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+... 
+215                               "my-0.5": nestLabel && indicator === "dashed",
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+216                             },
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/components/ui/pagination.tsx:5:23 - error TS2305: Module '"@/components/ui/button"' has no exported member 'buttonVariants'.
+
+5 import { ButtonProps, buttonVariants } from "@/components/ui/button";
+                        ~~~~~~~~~~~~~~
+
+client/src/components/ui/theme-toggle.tsx:3:26 - error TS2307: Cannot find module '@/hooks/use-theme' or its corresponding type declarations.
+
+3 import { useTheme } from "@/hooks/use-theme";
+                           ~~~~~~~~~~~~~~~~~~~
+
+client/src/components/ui/toaster.tsx:13:11 - error TS2339: Property 'toasts' does not exist on type '{ toast: (props: ToastProps) => void; }'.
+
+13   const { toasts } = useToast();
+             ~~~~~~
+
+client/src/components/ui/toaster.tsx:17:31 - error TS7031: Binding element 'id' implicitly has an 'any' type.
+
+17       {toasts.map(function ({ id, title, description, action, ...props }) {
+                                 ~~
+
+client/src/components/ui/toaster.tsx:17:35 - error TS7031: Binding element 'title' implicitly has an 'any' type.
+
+17       {toasts.map(function ({ id, title, description, action, ...props }) {
+                                     ~~~~~
+
+client/src/components/ui/toaster.tsx:17:42 - error TS7031: Binding element 'description' implicitly has an 'any' type.
+
+17       {toasts.map(function ({ id, title, description, action, ...props }) {
+                                            ~~~~~~~~~~~
+
+client/src/components/ui/toaster.tsx:17:55 - error TS7031: Binding element 'action' implicitly has an 'any' type.
+
+17       {toasts.map(function ({ id, title, description, action, ...props }) {
+                                                         ~~~~~~
+
+client/src/contexts/LoadingContext.tsx:18:3 - error TS2717: Subsequent property declarations must have the same type.  Property 'startLoading' must be of type '(type?: LoadingType | undefined) => void', but here has type '(type?: LoadingType | undefined, minDuration?: number | undefined) => void'.
+
+18   startLoading: (type?: LoadingType, minDuration?: number) => void;
+     ~~~~~~~~~~~~
+
+  client/src/contexts/LoadingContext.tsx:10:3
+    10   startLoading: (type?: LoadingType) => void;
+         ~~~~~~~~~~~~
+    'startLoading' was also declared here.
+
+client/src/contexts/LoadingContext.tsx:36:27 - error TS2304: Cannot find name 'useRef'.
+
+36   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
+                             ~~~~~~
+
+client/src/contexts/LoadingContext.tsx:37:31 - error TS2304: Cannot find name 'useRef'.
+
+37   const loadingStartTimeRef = useRef<number>(0);
+                                 ~~~~~~
+
+client/src/contexts/LoadingContext.tsx:75:3 - error TS2304: Cannot find name 'useEffect'.
+
+75   useEffect(() => {
+     ~~~~~~~~~
+
+client/src/hooks/use-api-with-loading.ts:31:35 - error TS2554: Expected 0-1 arguments, but got 2.
+
+31         startLoading(loadingType, minLoadingTime);
+                                     ~~~~~~~~~~~~~~
+
+client/src/hooks/use-api-with-loading.ts:61:33 - error TS2554: Expected 0-1 arguments, but got 2.
+
+61       startLoading(loadingType, minLoadingTime);
+                                   ~~~~~~~~~~~~~~
+
+client/src/lib/queryClient.ts:9:53 - error TS2345: Argument of type 'string | QueryKey' is not assignable to parameter of type 'string'.
+  Type 'QueryKey' is not assignable to type 'string'.
+
+9           const cachedData = sessionStorage.getItem(cacheKey);
+                                                      ~~~~~~~~
+
+client/src/lib/queryClient.ts:36:34 - error TS2345: Argument of type 'string | QueryKey' is not assignable to parameter of type 'string'.
+  Type 'QueryKey' is not assignable to type 'string'.
+
+36           sessionStorage.setItem(cacheKey, JSON.stringify({
+                                    ~~~~~~~~
+
+client/src/lib/queryClient.ts:50:7 - error TS2353: Object literal may only specify known properties, and 'cacheTime' does not exist in type 'OmitKeyof<QueryObserverOptions<unknown, Error, unknown, unknown, QueryKey, never>, "suspense" | "queryKey", "strictly">'.
+
+50       cacheTime: 300000, // Keep unused data in cache for 5 minutes
+         ~~~~~~~~~
+
+client/src/pages/BonusCodes.tsx:6:18 - error TS2307: Cannot find module 'next/link' or its corresponding type declarations.
+
+6 import Link from "next/link";
+                   ~~~~~~~~~~~
+
+client/src/pages/WagerRaces.tsx:311:40 - error TS2339: Property 'status' does not exist on type 'any[]'.
+
+311                   ) : leaderboardData?.status === 'transition' ? (
+                                           ~~~~~~
+
+client/src/pages/WagerRaces.tsx:332:59 - error TS2339: Property 'status' does not exist on type 'any[]'.
+
+332                   {(showCompletedRace || leaderboardData?.status === 'transition') && (
+                                                              ~~~~~~
+
+client/src/pages/admin/BonusCodeManagement.tsx:50:11 - error TS2322: Type '"success"' is not assignable to type '"default" | "destructive" | undefined'.
+
+50           variant: "success",
+             ~~~~~~~
+
+  client/src/lib/types.d.ts:143:5
+    143     variant?: "default" | "destructive";
+            ~~~~~~~
+    The expected type comes from property 'variant' which is declared here on type 'ToastProps'
+
+client/src/pages/admin/BonusCodeManagement.tsx:74:11 - error TS2322: Type '"success"' is not assignable to type '"default" | "destructive" | undefined'.
+
+74           variant: "success",
+             ~~~~~~~
+
+  client/src/lib/types.d.ts:143:5
+    143     variant?: "default" | "destructive";
+            ~~~~~~~
+    The expected type comes from property 'variant' which is declared here on type 'ToastProps'
+
+client/src/pages/admin/Dashboard.tsx:26:13 - error TS2741: Property 'children' is missing in type '{ isLoading: true; }' but required in type 'PageTransitionProps'.
+
+26     return <PageTransition isLoading={true} />;
+               ~~~~~~~~~~~~~~
+
+  client/src/lib/types.d.ts:204:5
+    204     children: ReactNode;
+            ~~~~~~~~
+    'children' is declared here.
+
+client/src/pages/admin/WagerRaceManagement.tsx:130:26 - error TS2339: Property 'id' does not exist on type 'void'.
+
+130     mutationFn: async ({ id, status }) => {
+                             ~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:130:30 - error TS2339: Property 'status' does not exist on type 'void'.
+
+130     mutationFn: async ({ id, status }) => {
+                                 ~~~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:166:31 - error TS7006: Parameter 'race' implicitly has an 'any' type.
+
+166   const handleStatusToggle = (race) => {
+                                  ~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:168:29 - error TS2345: Argument of type '{ id: any; status: string; }' is not assignable to parameter of type 'void'.
+
+168     updateRaceStatus.mutate({ id: race.id, status: newStatus });
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:171:21 - error TS7006: Parameter 'data' implicitly has an 'any' type.
+
+171   const onSubmit = (data) => {
+                        ~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:175:23 - error TS7006: Parameter 'date' implicitly has an 'any' type.
+
+175   const formatDate = (date) => {
+                          ~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:185:30 - error TS7006: Parameter 'startDate' implicitly has an 'any' type.
+
+185   const calculateTimeLeft = (startDate, endDate) => {
+                                 ~~~~~~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:185:41 - error TS7006: Parameter 'endDate' implicitly has an 'any' type.
+
+185   const calculateTimeLeft = (startDate, endDate) => {
+                                            ~~~~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:199:27 - error TS7006: Parameter 'status' implicitly has an 'any' type.
+
+199   const getStatusColor = (status) => {
+                              ~~~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:226:18 - error TS18046: 'races' is of type 'unknown'.
+
+226                 {races.filter((r) => r.status === "live").length}
+                     ~~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:226:32 - error TS7006: Parameter 'r' implicitly has an 'any' type.
+
+226                 {races.filter((r) => r.status === "live").length}
+                                   ~
+
+client/src/pages/admin/WagerRaceManagement.tsx:241:18 - error TS18046: 'races' is of type 'unknown'.
+
+241                 {races
+                     ~~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:242:28 - error TS7006: Parameter 'acc' implicitly has an 'any' type.
+
+242                   .reduce((acc, race) => acc + Number(race.prizePool), 0)
+                               ~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:242:33 - error TS7006: Parameter 'race' implicitly has an 'any' type.
+
+242                   .reduce((acc, race) => acc + Number(race.prizePool), 0)
+                                    ~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:257:18 - error TS18046: 'races' is of type 'unknown'.
+
+257                 {races.filter((r) => r.status === "live").length * 10}+
+                     ~~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:257:32 - error TS7006: Parameter 'r' implicitly has an 'any' type.
+
+257                 {races.filter((r) => r.status === "live").length * 10}+
+                                   ~
+
+client/src/pages/admin/WagerRaceManagement.tsx:463:27 - error TS2322: Type '`prizeDistribution.${number}`' is not assignable to type '"status" | "description" | "title" | "type" | "prizePool" | "startDate" | "endDate" | "minWager" | "prizeDistribution" | "rules" | "prizeDistribution.1" | "prizeDistribution.2" | ... 7 more ... | "prizeDistribution.10"'.
+
+463                           name={`prizeDistribution.${position}`}
+                              ~~~~
+
+  node_modules/react-hook-form/dist/types/controller.d.ts:20:5
+    20     name: TName;
+           ~~~~
+    The expected type comes from property 'name' which is declared here on type 'IntrinsicAttributes & { render: ({ field, fieldState, formState, }: { field: ControllerRenderProps<{ title: string; type: string; status: string; prizePool: number; minWager: number; startDate: string; endDate: string; prizeDistribution: { ...; }; rules: string; description: string; }, "status" | ... 18 more ... | "...'
+
+client/src/pages/admin/WagerRaceManagement.tsx:473:45 - error TS2322: Type 'string | number | { "1": number; "2": number; "3": number; "4": number; "5": number; "6": number; "7": number; "8": number; "9": number; "10": number; }' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+
+473                                     value={[field.value]}
+                                                ~~~~~~~~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:480:37 - error TS2322: Type 'string | number | { "1": number; "2": number; "3": number; "4": number; "5": number; "6": number; "7": number; "8": number; "9": number; "10": number; }' is not assignable to type 'ReactNode'.
+  Type '{ "1": number; "2": number; "3": number; "4": number; "5": number; "6": number; "7": number; "8": number; "9": number; "10": number; }' is not assignable to type 'ReactNode'.
+
+480                                     {field.value}%
+                                        ~~~~~~~~~~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:559:10 - error TS18046: 'races' is of type 'unknown'.
+
+559         {races.length > 0 && (
+             ~~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:567:16 - error TS18046: 'races' is of type 'unknown'.
+
+567               {races.map((race) => (
+                   ~~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:567:27 - error TS7006: Parameter 'race' implicitly has an 'any' type.
+
+567               {races.map((race) => (
+                              ~~~~
+
+client/src/pages/admin/WagerRaceManagement.tsx:649:11 - error TS2322: Type 'Dispatch<SetStateAction<null>>' is not assignable to type '(open: boolean) => void'.
+  Types of parameters 'value' and 'open' are incompatible.
+    Type 'boolean' is not assignable to type 'SetStateAction<null>'.
+
+649           onOpenChange={setDeleteConfirm}
+              ~~~~~~~~~~~~
+
+  node_modules/@radix-ui/react-dialog/dist/index.d.ts:23:5
+    23     onOpenChange?(open: boolean): void;
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    The expected type comes from property 'onOpenChange' which is declared here on type 'IntrinsicAttributes & AlertDialogProps'
+
+client/src/pages/auth-page.tsx:21:10 - error TS2305: Module '"@db/schema"' has no exported member 'insertUserSchema'.
+
+21 import { insertUserSchema } from "@db/schema";
+            ~~~~~~~~~~~~~~~~
+
+client/src/pages/auth-page.tsx:28:11 - error TS2339: Property 'login' does not exist on type '{ user: User | null; loading: boolean; error: Error | null; logout: () => Promise<void>; }'.
+
+28   const { login, register } = useUser();
+             ~~~~~
+
+client/src/pages/auth-page.tsx:28:18 - error TS2339: Property 'register' does not exist on type '{ user: User | null; loading: boolean; error: Error | null; logout: () => Promise<void>; }'.
+
+28   const { login, register } = useUser();
+                    ~~~~~~~~
+
+server/api/bot-routes.ts:29:22 - error TS18046: 'data' is of type 'unknown'.
+
+29     const userData = data.data?.find((user: any) =>
+                        ~~~~
+
+server/api/bot-routes.ts:69:24 - error TS18046: 'data' is of type 'unknown'.
+
+69     const sortedData = data.data
+                          ~~~~
+
+server/api/bot-routes.ts:107:14 - error TS18046: 'data' is of type 'unknown'.
+
+107       daily: data.data.reduce((max: any, curr: any) =>
+                 ~~~~
+
+server/api/bot-routes.ts:109:15 - error TS18046: 'data' is of type 'unknown'.
+
+109       weekly: data.data.reduce((max: any, curr: any) =>
+                  ~~~~
+
+server/api/bot-routes.ts:111:16 - error TS18046: 'data' is of type 'unknown'.
+
+111       monthly: data.data.reduce((max: any, curr: any) =>
+                   ~~~~
+
+server/auth.ts:8:10 - error TS2459: Module '"@db/schema"' declares 'users' locally, but it is not exported.
+
+8 import { users, insertUserSchema, type SelectUser } from "@db/schema";
+           ~~~~~
+
+  db/types.d.ts:14:5
+    14     users,
+           ~~~~~
+    'users' is declared here.
+
+server/auth.ts:8:17 - error TS2305: Module '"@db/schema"' has no exported member 'insertUserSchema'.
+
+8 import { users, insertUserSchema, type SelectUser } from "@db/schema";
+                  ~~~~~~~~~~~~~~~~
+
+server/auth.ts:80:18 - error TS2345: Argument of type '{ [x: string]: any; }' is not assignable to parameter of type 'false | User | null | undefined'.
+
+80       done(null, user);
+                    ~~~~
+
+server/auth.ts:129:29 - error TS2345: Argument of type '{ [x: string]: any; }' is not assignable to parameter of type 'false | User | undefined'.
+
+129           return done(null, adminUser);
+                                ~~~~~~~~~
+
+server/auth.ts:154:27 - error TS2345: Argument of type '{ [x: string]: any; }' is not assignable to parameter of type 'false | User | undefined'.
+
+154         return done(null, user);
+                              ~~~~
+
+server/auth.ts:165:49 - error TS7006: Parameter 'i' implicitly has an 'any' type.
+
+165         const errors = result.error.issues.map((i) => i.message).join(", ");
+                                                    ~
+
+server/auth.ts:325:13 - error TS18048: 'user' is possibly 'undefined'.
+
+325         id: user.id,
+                ~~~~
+
+server/auth.ts:326:19 - error TS18048: 'user' is possibly 'undefined'.
+
+326         username: user.username,
+                      ~~~~
+
+server/auth.ts:327:16 - error TS18048: 'user' is possibly 'undefined'.
+
+327         email: user.email,
+                   ~~~~
+
+server/auth.ts:328:18 - error TS18048: 'user' is possibly 'undefined'.
+
+328         isAdmin: user.isAdmin,
+                     ~~~~
+
+server/config/auth.ts:2:17 - error TS7016: Could not find a declaration file for module 'jsonwebtoken'. '/home/runner/workspace/node_modules/jsonwebtoken/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/jsonwebtoken` if it exists or add a new declaration (.d.ts) file containing `declare module 'jsonwebtoken';`
+
+2 import jwt from "jsonwebtoken";
+                  ~~~~~~~~~~~~~~
+
+server/index.ts:2:26 - error TS7016: Could not find a declaration file for module 'cookie-parser'. '/home/runner/workspace/node_modules/cookie-parser/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/cookie-parser` if it exists or add a new declaration (.d.ts) file containing `declare module 'cookie-parser';`
+
+2 import cookieParser from "cookie-parser";
+                           ~~~~~~~~~~~~~~~
+
+server/index.ts:195:23 - error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'string' is not assignable to parameter of type '() => void'.
+
+195         .listen(PORT, "0.0.0.0")
+                          ~~~~~~~~~
+
+  node_modules/@types/node/net.d.ts:606:9
+    606         listen(handle: any, listeningListener?: () => void): this;
+                ~~~~~~
+    The last overload is declared here.
+
+server/index.ts:204:28 - error TS2345: Argument of type 'string | 3000' is not assignable to parameter of type 'number'.
+  Type 'string' is not assignable to type 'number'.
+
+204     if (!await waitForPort(PORT)) {
+                               ~~~~
+
+server/middleware/admin.ts:3:10 - error TS2459: Module '"@db/schema"' declares 'users' locally, but it is not exported.
+
+3 import { users } from "@db/schema";
+           ~~~~~
+
+  db/types.d.ts:14:5
+    14     users,
+           ~~~~~
+    'users' is declared here.
+
+server/middleware/auth.ts:5:10 - error TS2459: Module '"@db/schema"' declares 'users' locally, but it is not exported.
+
+5 import { users } from "@db/schema";
+           ~~~~~
+
+  db/types.d.ts:14:5
+    14     users,
+           ~~~~~
+    'users' is declared here.
+
+server/routes.ts:11:10 - error TS2459: Module '"@db/schema"' declares 'wagerRaces' locally, but it is not exported.
+
+11 import { wagerRaces } from "@db/schema";
+            ~~~~~~~~~~
+
+  db/types.d.ts:16:5
+    16     wagerRaces,
+           ~~~~~~~~~~
+    'wagerRaces' is declared here.
+
+server/routes.ts:218:17 - error TS2304: Cannot find name 'schema'.
+
+218           .from(schema.historicalRaces)
+                    ~~~~~~
+
+server/routes.ts:221:18 - error TS2304: Cannot find name 'schema'.
+
+221               eq(schema.historicalRaces.month, previousMonth),
+                     ~~~~~~
+
+server/routes.ts:222:18 - error TS2304: Cannot find name 'schema'.
+
+222               eq(schema.historicalRaces.year, previousYear)
+                     ~~~~~~
+
+server/routes.ts:245:27 - error TS2304: Cannot find name 'schema'.
+
+245           await db.insert(schema.historicalRaces).values({
+                              ~~~~~~
+
+server/routes.ts:263:27 - error TS2304: Cannot find name 'schema'.
+
+263           await db.insert(schema.historicalRaces).values({
+                              ~~~~~~
+
+server/routes.ts:314:35 - error TS7006: Parameter 'err' implicitly has an 'any' type.
+
+314   passport.authenticate("local", (err, user, info) => {
+                                      ~~~
+
+server/routes.ts:314:40 - error TS7006: Parameter 'user' implicitly has an 'any' type.
+
+314   passport.authenticate("local", (err, user, info) => {
+                                           ~~~~
+
+server/routes.ts:314:46 - error TS7006: Parameter 'info' implicitly has an 'any' type.
+
+314   passport.authenticate("local", (err, user, info) => {
+                                                 ~~~~
+
+server/routes.ts:357:15 - error TS18048: 'req.user' is possibly 'undefined'.
+
+357           id: req.user.id,
+                  ~~~~~~~~
+
+server/routes.ts:358:21 - error TS18048: 'req.user' is possibly 'undefined'.
+
+358           username: req.user.username,
+                        ~~~~~~~~
+
+server/routes.ts:359:18 - error TS18048: 'req.user' is possibly 'undefined'.
+
+359           email: req.user.email,
+                     ~~~~~~~~
+
+server/routes.ts:360:20 - error TS18048: 'req.user' is possibly 'undefined'.
+
+360           isAdmin: req.user.isAdmin,
+                       ~~~~~~~~
+
+server/routes.ts:378:39 - error TS2339: Property 'ticketMessages' does not exist on type 'DrizzleTypeError<"Seems like the schema generic is missing - did you forget to add it to your DB type?">'.
+
+378       const messages = await db.query.ticketMessages.findMany({
+                                          ~~~~~~~~~~~~~~
+
+server/routes.ts:379:19 - error TS7006: Parameter 'messages' implicitly has an 'any' type.
+
+379         orderBy: (messages, { desc }) => [desc(messages.createdAt)],
+                      ~~~~~~~~
+
+server/routes.ts:379:31 - error TS7031: Binding element 'desc' implicitly has an 'any' type.
+
+379         orderBy: (messages, { desc }) => [desc(messages.createdAt)],
+                                  ~~~~
+
+server/routes.ts:405:38 - error TS2339: Property 'supportTickets' does not exist on type 'DrizzleTypeError<"Seems like the schema generic is missing - did you forget to add it to your DB type?">'.
+
+405       const tickets = await db.query.supportTickets.findMany({
+                                         ~~~~~~~~~~~~~~
+
+server/routes.ts:406:19 - error TS7006: Parameter 'tickets' implicitly has an 'any' type.
+
+406         orderBy: (tickets, { desc }) => [desc(tickets.createdAt)],
+                      ~~~~~~~
+
+server/routes.ts:406:30 - error TS7031: Binding element 'desc' implicitly has an 'any' type.
+
+406         orderBy: (tickets, { desc }) => [desc(tickets.createdAt)],
+                                 ~~~~
+
+server/routes.ts:432:40 - error TS2304: Cannot find name 'schema'.
+
+432       const [ticket] = await db.insert(schema.supportTickets)
+                                           ~~~~~~
+
+server/routes.ts:443:23 - error TS2304: Cannot find name 'schema'.
+
+443       await db.insert(schema.ticketMessages)
+                          ~~~~~~
+
+server/routes.ts:477:17 - error TS2304: Cannot find name 'schema'.
+
+477         .insert(schema.ticketMessages)
+                    ~~~~~~
+
+server/routes.ts:489:19 - error TS2304: Cannot find name 'schema'.
+
+489           .update(schema.supportTickets)
+                      ~~~~~~
+
+server/routes.ts:491:21 - error TS2304: Cannot find name 'schema'.
+
+491           .where(eq(schema.supportTickets.id, ticketId));
+                        ~~~~~~
+
+server/routes.ts:520:17 - error TS2304: Cannot find name 'schema'.
+
+520         .update(schema.supportTickets)
+                    ~~~~~~
+
+server/routes.ts:527:19 - error TS2304: Cannot find name 'schema'.
+
+527         .where(eq(schema.supportTickets.id, parseInt(req.params.id)))
+                      ~~~~~~
+
+server/routes.ts:545:36 - error TS2339: Property 'bonusCodes' does not exist on type 'DrizzleTypeError<"Seems like the schema generic is missing - did you forget to add it to your DB type?">'.
+
+545       const codes = await db.query.bonusCodes.findMany({
+                                       ~~~~~~~~~~
+
+server/routes.ts:546:19 - error TS7006: Parameter 'codes' implicitly has an 'any' type.
+
+546         orderBy: (codes, { desc }) => [desc(codes.createdAt)],
+                      ~~~~~
+
+server/routes.ts:546:28 - error TS7031: Binding element 'desc' implicitly has an 'any' type.
+
+546         orderBy: (codes, { desc }) => [desc(codes.createdAt)],
+                               ~~~~
+
+server/routes.ts:561:17 - error TS2304: Cannot find name 'schema'.
+
+561         .insert(schema.bonusCodes)
+                    ~~~~~~
+
+server/routes.ts:580:17 - error TS2304: Cannot find name 'schema'.
+
+580         .update(schema.bonusCodes)
+                    ~~~~~~
+
+server/routes.ts:582:19 - error TS2304: Cannot find name 'schema'.
+
+582         .where(eq(schema.bonusCodes.id, parseInt(req.params.id)))
+                      ~~~~~~
+
+server/routes.ts:597:17 - error TS2304: Cannot find name 'schema'.
+
+597         .delete(schema.bonusCodes)
+                    ~~~~~~
+
+server/routes.ts:598:19 - error TS2304: Cannot find name 'schema'.
+
+598         .where(eq(schema.bonusCodes.id, parseInt(req.params.id)));
+                      ~~~~~~
+
+server/routes.ts:611:39 - error TS2339: Property 'ticketMessages' does not exist on type 'DrizzleTypeError<"Seems like the schema generic is missing - did you forget to add it to your DB type?">'.
+
+611       const messages = await db.query.ticketMessages.findMany({
+                                          ~~~~~~~~~~~~~~
+
+server/routes.ts:612:19 - error TS7006: Parameter 'messages' implicitly has an 'any' type.
+
+612         orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+                      ~~~~~~~~
+
+server/routes.ts:612:31 - error TS7031: Binding element 'asc' implicitly has an 'any' type.
+
+612         orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+                                  ~~~
+
+server/routes.ts:658:50 - error TS2304: Cannot find name 'schema'.
+
+658         db.select({ count: sql`count(*)` }).from(schema.users),
+                                                     ~~~~~~
+
+server/routes.ts:659:50 - error TS2304: Cannot find name 'schema'.
+
+659         db.select({ count: sql`count(*)` }).from(schema.wagerRaces).where(eq(schema.wagerRaces.status, 'live')),
+                                                     ~~~~~~
+
+server/routes.ts:659:78 - error TS2304: Cannot find name 'schema'.
+
+659         db.select({ count: sql`count(*)` }).from(schema.wagerRaces).where(eq(schema.wagerRaces.status, 'live')),
+                                                                                 ~~~~~~
+
+server/routes.ts:679:15 - error TS2304: Cannot find name 'schema'.
+
+679         .from(schema.platformStats)
+                  ~~~~~~
+
+server/routes.ts:680:24 - error TS2304: Cannot find name 'schema'.
+
+680         .orderBy(sql`${schema.platformStats.timestamp} DESC`)
+                           ~~~~~~
+
+server/routes.ts:724:23 - error TS2304: Cannot find name 'schema'.
+
+724       await db.insert(schema.platformStats).values({
+                          ~~~~~~
+
+server/routes.ts:746:13 - error TS2304: Cannot find name 'schema'.
+
+746         id: schema.users.id,
+                ~~~~~~
+
+server/routes.ts:747:19 - error TS2304: Cannot find name 'schema'.
+
+747         username: schema.users.username,
+                      ~~~~~~
+
+server/routes.ts:748:16 - error TS2304: Cannot find name 'schema'.
+
+748         email: schema.users.email,
+                   ~~~~~~
+
+server/routes.ts:749:18 - error TS2304: Cannot find name 'schema'.
+
+749         isAdmin: schema.users.isAdmin,
+                     ~~~~~~
+
+server/routes.ts:750:20 - error TS2304: Cannot find name 'schema'.
+
+750         createdAt: schema.users.createdAt,
+                       ~~~~~~
+
+server/routes.ts:751:20 - error TS2304: Cannot find name 'schema'.
+
+751         lastLogin: schema.users.lastLogin,
+                       ~~~~~~
+
+server/routes.ts:753:13 - error TS2304: Cannot find name 'schema'.
+
+753       .from(schema.users)
+                ~~~~~~
+
+server/routes.ts:754:17 - error TS2304: Cannot find name 'schema'.
+
+754       .where(eq(schema.users.id, req.user!.id))
+                    ~~~~~~
+
+server/routes.ts:877:24 - error TS7006: Parameter 'loginErr' implicitly has an 'any' type.
+
+877       req.logIn(user, (loginErr) => {
+                           ~~~~~~~~
+
+server/routes.ts:911:13 - error TS2304: Cannot find name 'schema'.
+
+911         id: schema.users.id,
+                ~~~~~~
+
+server/routes.ts:912:19 - error TS2304: Cannot find name 'schema'.
+
+912         username: schema.users.username,
+                      ~~~~~~
+
+server/routes.ts:913:16 - error TS2304: Cannot find name 'schema'.
+
+913         email: schema.users.email,
+                   ~~~~~~
+
+server/routes.ts:914:18 - error TS2304: Cannot find name 'schema'.
+
+914         isAdmin: schema.users.isAdmin,
+                     ~~~~~~
+
+server/routes.ts:915:20 - error TS2304: Cannot find name 'schema'.
+
+915         createdAt: schema.users.createdAt,
+                       ~~~~~~
+
+server/routes.ts:916:20 - error TS2304: Cannot find name 'schema'.
+
+916         lastLogin: schema.users.lastLogin,
+                       ~~~~~~
+
+server/routes.ts:918:13 - error TS2304: Cannot find name 'schema'.
+
+918       .from(schema.users)
+                ~~~~~~
+
+server/routes.ts:919:16 - error TS2304: Cannot find name 'schema'.
+
+919       .orderBy(schema.users.createdAt);
+                   ~~~~~~
+
+server/routes.ts:936:34 - error TS2339: Property 'wagerRaces' does not exist on type 'DrizzleTypeError<"Seems like the schema generic is missing - did you forget to add it to your DB type?">'.
+
+936     const races = await db.query.wagerRaces.findMany({
+                                     ~~~~~~~~~~
+
+server/routes.ts:937:17 - error TS7006: Parameter 'races' implicitly has an 'any' type.
+
+937       orderBy: (races, { desc }) => [desc(races.createdAt)],
+                    ~~~~~
+
+server/routes.ts:937:26 - error TS7031: Binding element 'desc' implicitly has an 'any' type.
+
+937       orderBy: (races, { desc }) => [desc(races.createdAt)],
+                             ~~~~
+
+server/routes.ts:955:15 - error TS2304: Cannot find name 'schema'.
+
+955       .insert(schema.wagerRaces)
+                  ~~~~~~
+
+server/routes.ts:993:37 - error TS2345: Argument of type 'WebSocket' is not assignable to parameter of type 'ExtendedWebSocket'.
+  Property 'isAlive' is missing in type 'WebSocket' but required in type 'ExtendedWebSocket'.
+
+993         handleLeaderboardConnection(ws);
+                                        ~~
+
+  server/routes.ts:20:3
+    20   isAlive: boolean;
+         ~~~~~~~
+    'isAlive' is declared here.
+
+server/routes.ts:1039:17 - error TS2304: Cannot find name 'schema'.
+
+1039         .insert(schema.ticketMessages)
+                     ~~~~~~
+
+server/verification-routes.ts:68:15 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+68         .from(goatedVerificationRequests)
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:71:16 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+71             eq(goatedVerificationRequests.goatedUsername, goatedUsername),
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:72:16 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+72             eq(goatedVerificationRequests.status, "approved")
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:86:17 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+86         .insert(goatedVerificationRequests)
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:252:17 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+252         .update(goatedVerificationRequests)
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:259:19 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+259         .where(eq(goatedVerificationRequests.id, id))
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:272:19 - error TS2304: Cannot find name 'users'.
+
+272           .update(users)
+                      ~~~~~
+
+server/verification-routes.ts:278:21 - error TS2304: Cannot find name 'users'.
+
+278           .where(eq(users.id, updatedRequest.platformUserId));
+                        ~~~~~
+
+server/verification-routes.ts:332:19 - error TS2304: Cannot find name 'users'.
+
+332           .update(users)
+                      ~~~~~
+
+server/verification-routes.ts:338:21 - error TS2304: Cannot find name 'users'.
+
+338           .where(eq(users.id, updatedRequest.platformUserId));
+                        ~~~~~
+
+server/verification-routes.ts:360:15 - error TS2304: Cannot find name 'users'.
+
+360           id: users.id,
+                  ~~~~~
+
+server/verification-routes.ts:361:21 - error TS2304: Cannot find name 'users'.
+
+361           username: users.username,
+                        ~~~~~
+
+server/verification-routes.ts:362:27 - error TS2304: Cannot find name 'users'.
+
+362           goatedUsername: users.goatedUsername,
+                              ~~~~~
+
+server/verification-routes.ts:363:22 - error TS2304: Cannot find name 'users'.
+
+363           goatedUid: users.goatedUid,
+                         ~~~~~
+
+server/verification-routes.ts:364:27 - error TS2304: Cannot find name 'users'.
+
+364           goatedVerified: users.goatedVerified,
+                              ~~~~~
+
+server/verification-routes.ts:365:29 - error TS2304: Cannot find name 'users'.
+
+365           telegramUsername: users.telegramUsername,
+                                ~~~~~
+
+server/verification-routes.ts:366:23 - error TS2304: Cannot find name 'users'.
+
+366           telegramId: users.telegramId,
+                          ~~~~~
+
+server/verification-routes.ts:367:29 - error TS2304: Cannot find name 'users'.
+
+367           telegramVerified: users.telegramVerified,
+                                ~~~~~
+
+server/verification-routes.ts:369:15 - error TS2304: Cannot find name 'users'.
+
+369         .from(users)
+                  ~~~~~
+
+server/verification-routes.ts:370:19 - error TS2304: Cannot find name 'users'.
+
+370         .where(eq(users.id, req.user!.id))
+                      ~~~~~
+
+server/verification-routes.ts:383:15 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+383         .from(goatedVerificationRequests)
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:386:16 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+386             eq(goatedVerificationRequests.platformUserId, req.user!.id),
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/verification-routes.ts:387:16 - error TS2304: Cannot find name 'goatedVerificationRequests'.
+
+387             eq(goatedVerificationRequests.status, "pending")
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Found 189 errors in 31 files.
+
+Errors  Files
+     1  client/src/components/AffiliateStats.tsx:14
+     2  client/src/components/FeatureCarousel.tsx:9
+     2  client/src/components/MVPCards.tsx:302
+     5  client/src/components/QuickProfile.tsx:2
+    11  client/src/components/RaceTimer.tsx:48
+     1  client/src/components/SocialShare.tsx:3
+     5  client/src/components/chat/ChatInterface.tsx:146
+     1  client/src/components/loaders/MainPreloader.tsx:84
+     1  client/src/components/ui/alert-dialog.tsx:5
+     1  client/src/components/ui/calendar.tsx:6
+     1  client/src/components/ui/chart.tsx:210
+     1  client/src/components/ui/pagination.tsx:5
+     1  client/src/components/ui/theme-toggle.tsx:3
+     5  client/src/components/ui/toaster.tsx:13
+     4  client/src/contexts/LoadingContext.tsx:18
+     2  client/src/hooks/use-api-with-loading.ts:31
+     3  client/src/lib/queryClient.ts:9
+     1  client/src/pages/BonusCodes.tsx:6
+     2  client/src/pages/WagerRaces.tsx:311
+     2  client/src/pages/admin/BonusCodeManagement.tsx:50
+     1  client/src/pages/admin/Dashboard.tsx:26
+    23  client/src/pages/admin/WagerRaceManagement.tsx:130
+     3  client/src/pages/auth-page.tsx:21
+     5  server/api/bot-routes.ts:29
+    10  server/auth.ts:8
+     1  server/config/auth.ts:2
+     3  server/index.ts:2
+     1  server/middleware/admin.ts:3
+     1  server/middleware/auth.ts:5
+    66  server/routes.ts:11
+    23  server/verification-routes.ts:68
