@@ -10,7 +10,8 @@ import { requireAdmin, requireAuth } from "./middleware/auth";
 import { db } from "@db";
 import * as schema from "@db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
-import { platformStats } from "@db/schema";
+// The platformStats table is already imported via the * import
+// import { platformStats } from "@db/schema";
 import { z } from "zod";
 import { affiliateRateLimiter, raceRateLimiter } from "./middleware/rate-limiter";
 
@@ -671,6 +672,7 @@ function setupRESTRoutes(app: Express) {
 
   app.get("/api/stats/historical", async (_req, res) => {
     try {
+      // Using properly qualified reference to platformStats via schema
       const [latestStats] = await db
         .select()
         .from(schema.platformStats)

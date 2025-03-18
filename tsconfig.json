@@ -32,7 +32,6 @@
       "./db/types.d.ts",
       "./client/src/lib"
     ],
-    "allowJs": true,
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,

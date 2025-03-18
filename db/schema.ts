@@ -320,6 +320,7 @@ export type SelectTelegramVerificationRequest = typeof telegramVerificationReque
 export { 
   challenges, 
   challengeEntries,
+  platformStats,
   telegramBotState,
   telegramUsers,
   verificationRequests
