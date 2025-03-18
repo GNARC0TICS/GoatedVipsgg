@@ -2,8 +2,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { db } from "@db";
-import { sql } from "drizzle-orm";
+import { db, sql, checkDatabaseConnection, closeDatabaseConnections } from "../db/connection";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
@@ -14,29 +13,78 @@ import {
   affiliateRateLimiter,
   raceRateLimiter,
 } from "./middleware/rate-limiter";
+import { errorHandler, notFoundHandler } from "./middleware/error-handler";
 import fetch from "node-fetch";
+import helmet from "helmet";
 
 const execAsync = promisify(exec);
 const app = express();
 const PORT = 5000;
 
 async function setupMiddleware() {
+  // Security middleware
+  if (process.env.NODE_ENV === 'production') {
+    // Use helmet in production for security headers
+    app.use(helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+          imgSrc: ["'self'", "data:", "https://*"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com"],
+          connectSrc: ["'self'", "https://*"],
+        },
+      },
+      crossOriginEmbedderPolicy: false, // Allow embedding of resources
+      crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow cross-origin resource sharing
+    }));
+  }
+
   // Basic middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
+
+  // Request logging
+  app.use(requestLogger);
 
   // Rate limiters - apply before routes but after basic middleware
   app.use("/api", apiRateLimiter);
   app.use("/api/affiliate/stats", affiliateRateLimiter);
   app.use("/api/races", raceRateLimiter);
 
-  // Logging and error handling
-  app.use(requestLogger);
-  app.use(errorHandler);
-
-  app.get("/api/health", (_req, res) => {
-    res.json({ status: "healthy", timestamp: new Date().toISOString() });
+  // Enhanced health check endpoint with database status
+  app.get("/api/health", async (_req, res) => {
+    try {
+      // Check database connection
+      const dbStatus = await checkDatabaseConnection();
+      
+      // Determine overall health status
+      const isHealthy = dbStatus.connected;
+      
+      res.json({ 
+        status: isHealthy ? "healthy" : "degraded",
+        environment: process.env.NODE_ENV || 'development',
+        timestamp: new Date().toISOString(),
+        services: {
+          database: {
+            status: dbStatus.connected ? "connected" : "disconnected",
+            ...(dbStatus.connected ? {} : { error: dbStatus.error })
+          },
+          api: {
+            status: "running",
+            uptime: process.uptime()
+          }
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        message: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString()
+      });
+    }
   });
 
   // Add a Telegram bot status endpoint for debugging
@@ -88,7 +136,8 @@ function requestLogger(
   next();
 }
 
-function errorHandler(
+// Legacy error handler - keeping for reference but using the new one from middleware
+function legacyErrorHandler(
   err: Error,
   _req: express.Request,
   res: express.Response,
@@ -99,17 +148,19 @@ function errorHandler(
 }
 
 async function checkDatabase() {
-  try {
-    await db.execute(sql`SELECT 1`);
+  const result = await checkDatabaseConnection();
+  
+  if (result.connected) {
     log("Database connection successful");
     return true;
-  } catch (error: any) {
-    if (error.message?.includes("endpoint is disabled")) {
+  } else {
+    const errorMessage = result.error || "Unknown database error";
+    if (errorMessage.includes("endpoint is disabled")) {
       log(
         "Database endpoint is disabled. Please enable the database in the Replit Database tab.",
       );
     } else {
-      console.error("Database connection error:", error);
+      console.error("Database connection error:", errorMessage);
     }
     return false;
   }
@@ -178,6 +229,14 @@ async function startServer() {
       serveStatic(app);
     }
 
+    // Add 404 handler after all routes
+    app.use("*", notFoundHandler);
+    
+    // Add error handler as the last middleware
+    app.use(errorHandler);
+    
+    log("All middleware and routes registered");
+
     // Start server with proper error handling
     await new Promise<void>((resolve, reject) => {
       server
@@ -209,17 +268,24 @@ async function startServer() {
   }
 }
 
-// Add Telegram bot shutdown handling
-process.on("SIGTERM", () => {
-  log("Received SIGTERM signal. Shutting down gracefully...");
-  stopBot(); // Stop the Telegram bot
+// Graceful shutdown handler
+async function gracefulShutdown(signal: string) {
+  log(`Received ${signal} signal. Shutting down gracefully...`);
+  
+  // Stop the Telegram bot
+  stopBot();
+  
+  // Close database connections
+  await closeDatabaseConnections();
+  
+  // Add any other cleanup tasks here
+  
+  log("All connections closed. Exiting process.");
   process.exit(0);
-});
+}
 
-process.on("SIGINT", () => {
-  log("Received SIGINT signal. Shutting down gracefully...");
-  stopBot(); // Stop the Telegram bot
-  process.exit(0);
-});
+// Add shutdown handlers
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 startServer();

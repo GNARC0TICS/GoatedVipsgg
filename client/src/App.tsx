@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth, requiresAuth } from "@/lib/auth";
 import { AnimatePresence } from "framer-motion";
-import { ErrorBoundary } from "react-error-boundary";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { PreLoader } from "@/components/PreLoader";
 import { Layout } from "@/components/Layout";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -79,7 +79,7 @@ function Router() {
   return (
     <Layout>
       <AnimatePresence mode="wait">
-        <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <ErrorBoundary fallback={<ErrorFallback error={new Error()} />}>
           <Switch>
             {/* Public Routes */}
             <Route path="/" component={Home} />
@@ -165,7 +165,7 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <ErrorBoundary fallback={<ErrorFallback error={new Error()} />}>
         <AuthProvider>
           <AppContent />
         </AuthProvider>

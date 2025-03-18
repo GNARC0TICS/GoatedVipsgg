@@ -22,6 +22,7 @@ This document provides a visual structure of the codebase, highlighting key file
 │   ├── schema              # Database schema definitions
 │   │   ├── telegram.ts     # Telegram-related schemas
 │   │   └── users.ts        # User-related schemas
+│   ├── connection.ts       # Enhanced database connection with production optimizations
 │   ├── index.ts            # Database connection setup
 │   └── schema.ts           # Main schema file with exports
 ├── server                  # Backend server
@@ -31,9 +32,14 @@ This document provides a visual structure of the codebase, highlighting key file
 │   │   └── bot.ts          # Main bot implementation
 │   ├── config              # Server configuration
 │   ├── middleware          # Express middleware
+│   │   ├── error-handler.ts # Enhanced error handling middleware
+│   │   ├── rate-limiter.ts  # API rate limiting
+│   │   └── ...             # Other middleware
 │   ├── routes.ts           # API routes definition
-│   └── index.ts            # Server entry point
+│   └── index.ts            # Server entry point with production optimizations
+├── PRODUCTION.md           # Production deployment guide
 └── config files            # Various configuration files
+    ├── .env.example        # Example environment variables template
     ├── drizzle.config.ts   # Drizzle ORM configuration
     ├── package.json        # Node.js dependencies
     ├── tailwind.config.ts  # Tailwind CSS configuration
@@ -52,6 +58,7 @@ This document provides a visual structure of the codebase, highlighting key file
   - `AffiliateStats.tsx`: Displays affiliate statistics
   - `LeaderboardTable.tsx`: Renders user leaderboards
   - `RaceTimer.tsx`: Timer component for wager races
+  - `ErrorBoundary.tsx`: Enhanced error boundary for better error handling
 
 #### Pages
 
@@ -70,6 +77,12 @@ This document provides a visual structure of the codebase, highlighting key file
   - `use-user.ts`: User authentication state management
 
 ### Backend (server/)
+
+#### Middleware (server/middleware/)
+
+- **Error Handling (`server/middleware/error-handler.ts`)**: Enhanced error handling with structured responses
+- **Rate Limiting (`server/middleware/rate-limiter.ts`)**: API rate limiting for security and stability
+- **Authentication (`server/middleware/auth.ts`)**: User authentication middleware
 
 #### Telegram Bot (server/telegram/)
 
@@ -98,6 +111,14 @@ This document provides a visual structure of the codebase, highlighting key file
 
 ### Database (db/)
 
+#### Connection Management
+
+- **Enhanced Connection (`db/connection.ts`)**: Production-optimized database connection with:
+  - Connection pooling
+  - Health check functionality
+  - Graceful shutdown handling
+  - WebSocket support for production
+
 #### Schemas
 
 - **Telegram Schemas (`db/schema/telegram.ts`)**:
@@ -111,6 +132,27 @@ This document provides a visual structure of the codebase, highlighting key file
 - **User Schemas (`db/schema/users.ts`)**:
   - `users`: Platform user records
   - User-related data definitions
+
+## Production Enhancements
+
+### Security
+
+- **Helmet Integration**: Security headers for production environment
+- **Rate Limiting**: Tiered rate limiting for API endpoints
+- **Error Handling**: Structured error responses with appropriate information hiding in production
+- **Environment Variables**: Secure management with .env.example template
+
+### Performance
+
+- **Database Optimization**: Connection pooling and WebSocket support for production
+- **Graceful Shutdown**: Proper resource cleanup on server shutdown
+- **Health Monitoring**: Enhanced health check endpoint with service status
+
+### Reliability
+
+- **Error Boundaries**: Improved client-side error handling
+- **API Caching**: Session-based caching for API responses
+- **Structured Logging**: Better logging for debugging and monitoring
 
 ## Data Flow
 
@@ -140,3 +182,7 @@ This document provides a visual structure of the codebase, highlighting key file
 - Telegram bot uses node-telegram-bot-api
 - Authentication uses Passport.js
 - State management combines React Context and React Query
+
+## Deployment
+
+See `PRODUCTION.md` for detailed deployment instructions and best practices.
