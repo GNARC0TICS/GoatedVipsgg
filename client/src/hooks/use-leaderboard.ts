@@ -40,6 +40,8 @@ export const useHistoricalStats = () => {
 };
 
 // Consolidated useWagerTotals hook
+export const AFFILIATE_STATS_KEY = '/api/affiliate/stats';
+
 export const useWagerTotals = () => {
   const { data: historicalStats } = useHistoricalStats();
   const { data: currentStats } = useQuery<PlatformStats>({

@@ -6,31 +6,36 @@ import { QuickProfile } from "./QuickProfile";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { Dialog, DialogContent } from "./ui/dialog";
 
-interface LeaderboardData {
-  data: {
-    today: { data: MVP[] };
-    weekly: { data: MVP[] };
-    monthly: { data: MVP[] };
-    all_time: { data: MVP[] };
-  };
-}
-
-type MVP = {
-  username: string;
+interface MVP {
   uid: string;
-  wagerAmount: number;
-  avatarUrl?: string;
-  rank: number;
-  wageredAllTime?: number;
-  lastWagerChange?: number;
+  name: string;
   wagered: {
     today: number;
     this_week: number;
     this_month: number;
     all_time: number;
   };
-  name?: string;
-};
+  username: string;
+  wagerAmount: number;
+  avatarUrl?: string;
+  rank: number;
+  wageredAllTime?: number;
+  lastWagerChange?: number;
+}
+
+interface LeaderboardData {
+  data: {
+    today: { data: MVP[]; };
+    weekly: { data: MVP[]; };
+    monthly: { data: MVP[]; };
+    all_time: { data: MVP[]; };
+  };
+  metadata: {
+    totalUsers: number;
+    lastUpdated: string;
+  };
+  status: string;
+}
 
 const timeframes = [
   { 
@@ -294,12 +299,13 @@ export function MVPCards() {
             timeframe={timeframe}
             mvp={mvps[timeframe.period as keyof typeof mvps] ? {
               name: mvps[timeframe.period as keyof typeof mvps]?.name || '', 
-              username: mvps[timeframe.period as keyof typeof mvps]?.name || '',
+              username: mvps[timeframe.period as keyof typeof mvps]?.username || '',
               uid: mvps[timeframe.period as keyof typeof mvps]?.uid || '',
               wagerAmount: mvps[timeframe.period as keyof typeof mvps]?.wagered[timeframe.period === 'daily' ? 'today' : timeframe.period === 'weekly' ? 'this_week' : 'this_month'] || 0,
               wagered: mvps[timeframe.period as keyof typeof mvps]?.wagered || {today:0, this_week:0, this_month:0, all_time:0},
               avatarUrl: mvps[timeframe.period as keyof typeof mvps]?.avatarUrl,
-              rank: (leaderboardData?.data[timeframe.period]?.data || []).findIndex((p:MVP)=> p.uid === mvps[timeframe.period as keyof typeof mvps]?.uid) +1
+              rank: (leaderboardData?.data[timeframe.period as keyof typeof leaderboardData.data]?.data || []).findIndex((p:MVP)=> p.uid === mvps[timeframe.period as keyof typeof mvps]?.uid) +1,
+              lastWagerChange: mvps[timeframe.period as keyof typeof mvps]?.lastWagerChange
             } : undefined}
             isOpen={openCard === timeframe.period}
             onOpenChange={(open) => handleDialogChange(open, timeframe.period)}
