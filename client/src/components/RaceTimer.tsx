@@ -59,7 +59,7 @@ export function RaceTimer() {
     data: previousRaceData, 
     error: previousError, 
     isLoading: isPreviousLoading 
-  } = useQuery<RaceData>({
+  } = useQuery<RaceData | null>({ // Added null type for potential null values
     queryKey: ["/api/wager-races/previous"],
     queryFn: async () => {
       const response = await fetch('/api/wager-races/previous');
