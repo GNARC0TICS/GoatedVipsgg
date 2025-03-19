@@ -52,7 +52,7 @@ const headerClasses = {
 const dropdownClasses = {
   content:
     "w-56 bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1",
-  item: "px-4 py-2 font-medium text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer group",
+  item: "px-4 py-2 font-medium text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-colors duration-200 cursor-pointer",
 };
 
 // Footer styling
@@ -200,7 +200,9 @@ export function Layout({ children }: { children: ReactNode }) {
 
             {/* Desktop Navigation */}
             <div className={headerClasses.desktopNav}>
-              {/* GET STARTED dropdown - now first */}
+              <NavLink href="/" label="HOME" />
+              
+              {/* GET STARTED dropdown - moved after HOME */}
               <div className="relative group">
                 <Link href="/how-it-works">
                   <Button
@@ -214,62 +216,32 @@ export function Layout({ children }: { children: ReactNode }) {
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                     <Link href="/how-it-works">
                       <div className={dropdownClasses.item}>
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                            →
-                          </span>
-                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                            How It Works
-                          </span>
-                        </span>
+                        How It Works
                       </div>
                     </Link>
                     <Link href="/vip-transfer">
                       <div className={dropdownClasses.item}>
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                            →
-                          </span>
-                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                            VIP Transfer
-                          </span>
-                        </span>
+                        VIP Transfer
                       </div>
                     </Link>
                     <Link href="/tips-and-strategies">
                       <div className={dropdownClasses.item}>
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                            →
-                          </span>
-                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                            Tips & Strategies
-                          </span>
-                        </span>
+                        Tips & Strategies
                       </div>
                     </Link>
                     <Link href="/vip-program">
                       <div className={dropdownClasses.item}>
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                            →
-                          </span>
-                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                            VIP Program
-                          </span>
-                        </span>
+                        VIP Program
                       </div>
                     </Link>
                   </div>
                 </div>
               </div>
-
-              <NavLink href="/" label="HOME" />
               <NavLink
                 href="/wager-races"
                 label={
                   <div className="flex items-center gap-2 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300">
-                    <span>MONTHLY RACE</span>
+                    <span className="font-bold">MONTHLY RACE</span>
                     <div className="flex items-center gap-1">
                       <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
                       <span className="text-xs text-red-500">LIVE</span>
@@ -292,53 +264,34 @@ export function Layout({ children }: { children: ReactNode }) {
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                     <Link href="/promotions">
                       <div className={dropdownClasses.item}>
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                            →
-                          </span>
-                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                            News & Promotions
-                          </span>
-                        </span>
+                        News & Promotions
                       </div>
                     </Link>
                     <Link href="/goated-token">
                       <div className={dropdownClasses.item}>
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                            →
-                          </span>
-                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                            Goated Airdrop
-                          </span>
-                        </span>
+                        Goated Airdrop
                       </div>
                     </Link>
                     <Link href="/bonus-codes">
                       <div className={dropdownClasses.item}>
-                        <span className="relative flex items-center gap-2">
-                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                            →
-                          </span>
-                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                            {isAuthenticated ? (
-                              "Bonus Codes"
-                            ) : (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger className="flex items-center gap-2 opacity-50 cursor-not-allowed">
-                                    <span>Bonus Codes</span>
-                                    <Lock className="h-4 w-4" />
-                                  </TooltipTrigger>
-                                  <TooltipContent className="bg-[#1A1B21] border-[#2A2B31] text-white">
-                                    <p>
-                                      Sign in to access bonus codes and rewards
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </span>
+                        <span className="flex items-center gap-2">
+                          {isAuthenticated ? (
+                            "Bonus Codes"
+                          ) : (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger className="flex items-center gap-2 opacity-50 cursor-not-allowed">
+                                  <span>Bonus Codes</span>
+                                  <Lock className="h-4 w-4" />
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-[#1A1B21] border-[#2A2B31] text-white">
+                                  <p>
+                                    Sign in to access bonus codes and rewards
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                           <Gift className="h-4 w-4" />
                         </span>
                       </div>
@@ -361,50 +314,22 @@ export function Layout({ children }: { children: ReactNode }) {
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                     <Link href="/leaderboard?period=daily">
                       <div className={dropdownClasses.item}>
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                            →
-                          </span>
-                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                            Daily
-                          </span>
-                        </span>
+                        Daily
                       </div>
                     </Link>
                     <Link href="/leaderboard?period=weekly">
                       <div className={dropdownClasses.item}>
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                            →
-                          </span>
-                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                            Weekly
-                          </span>
-                        </span>
+                        Weekly
                       </div>
                     </Link>
                     <Link href="/leaderboard?period=monthly">
                       <div className={dropdownClasses.item}>
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                            →
-                          </span>
-                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                            Monthly
-                          </span>
-                        </span>
+                        Monthly
                       </div>
                     </Link>
                     <Link href="/leaderboard?period=all_time">
                       <div className={dropdownClasses.item}>
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                            →
-                          </span>
-                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                            All Time
-                          </span>
-                        </span>
+                        All Time
                       </div>
                     </Link>
                   </div>
@@ -425,14 +350,7 @@ export function Layout({ children }: { children: ReactNode }) {
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                     <Link href="/telegram">
                       <div className={dropdownClasses.item}>
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                            →
-                          </span>
-                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                            Telegram Community
-                          </span>
-                        </span>
+                        Telegram Community
                       </div>
                     </Link>
                   </div>
@@ -453,38 +371,17 @@ export function Layout({ children }: { children: ReactNode }) {
                   <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                     <Link href="/help">
                       <div className={dropdownClasses.item}>
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                            →
-                          </span>
-                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                            Help Center
-                          </span>
-                        </span>
+                        Help Center
                       </div>
                     </Link>
                     <Link href="/faq">
                       <div className={dropdownClasses.item}>
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                            →
-                          </span>
-                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                            FAQ
-                          </span>
-                        </span>
+                        FAQ
                       </div>
                     </Link>
                     <Link href="/support">
                       <div className={dropdownClasses.item}>
-                        <span className="relative">
-                          <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                            →
-                          </span>
-                          <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                            Contact Support
-                          </span>
-                        </span>
+                        Contact Support
                       </div>
                     </Link>
                   </div>
@@ -503,62 +400,27 @@ export function Layout({ children }: { children: ReactNode }) {
                     <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                       <Link href="/admin/user-management">
                         <div className={dropdownClasses.item}>
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                              →
-                            </span>
-                            <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                              User Management
-                            </span>
-                          </span>
+                          User Management
                         </div>
                       </Link>
                       <Link href="/admin/notifications">
                         <div className={dropdownClasses.item}>
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                              →
-                            </span>
-                            <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                              Notification Management
-                            </span>
-                          </span>
+                          Notification Management
                         </div>
                       </Link>
                       <Link href="/admin/support">
                         <div className={dropdownClasses.item}>
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                              →
-                            </span>
-                            <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                              Support Management
-                            </span>
-                          </span>
+                          Support Management
                         </div>
                       </Link>
                       <Link href="/admin/wager-races">
                         <div className={dropdownClasses.item}>
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                              →
-                            </span>
-                            <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                              Wager Race Management
-                            </span>
-                          </span>
+                          Wager Race Management
                         </div>
                       </Link>
                       <Link href="/admin/bonus-codes">
                         <div className={dropdownClasses.item}>
-                          <span className="relative">
-                            <span className="absolute -left-2 opacity-0 group-hover:opacity-100 group-hover:left-0 transition-all duration-200">
-                              →
-                            </span>
-                            <span className="relative ml-0 group-hover:ml-2 transition-all duration-200">
-                              Bonus Code Management
-                            </span>
-                          </span>
+                          Bonus Code Management
                         </div>
                       </Link>
                     </div>

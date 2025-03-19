@@ -129,12 +129,14 @@ export default function Home() {
                 EXPLORE OUR FEATURES
               </h2>
 
+              {/* Combined feature cards grid with consistent layout */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12 max-w-7xl mx-auto px-4"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20 max-w-7xl mx-auto px-4"
               >
+                {/* Card 1: Bonus Codes */}
                 <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                   <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
                   <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 card-hover h-full w-full flex flex-col justify-between">
@@ -173,6 +175,8 @@ export default function Home() {
                     )}
                   </div>
                 </div>
+
+                {/* Card 2: VIP Transfer */}
                 <Link href="/vip-transfer" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                     <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
@@ -191,6 +195,7 @@ export default function Home() {
                   </div>
                 </Link>
 
+                {/* Card 3: Wager Races */}
                 <Link href="/wager-races" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                     <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
@@ -215,6 +220,7 @@ export default function Home() {
                   </div>
                 </Link>
 
+                {/* Card 4: Challenges */}
                 <Link href="/challenges" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                     <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
@@ -238,14 +244,8 @@ export default function Home() {
                     </div>
                   </div>
                 </Link>
-              </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="grid md:grid-cols-3 gap-6 mb-20"
-              >
+                {/* Card 5: Provably Fair */}
                 <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                   <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
                   <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 card-hover h-full w-full flex flex-col justify-between">
@@ -266,6 +266,7 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Card 6: Goated Token */}
                 <Link href="/goated-token" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                     <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
@@ -291,6 +292,7 @@ export default function Home() {
                   </div>
                 </Link>
 
+                {/* Card 7: Promotions */}
                 <Link href="/promotions" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                     <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
@@ -316,6 +318,7 @@ export default function Home() {
                   </div>
                 </Link>
 
+                {/* Card 8: Telegram Group */}
                 <Link href="/telegram" className="block">
                   <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
                     <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
