@@ -17,6 +17,13 @@ import {
 } from "./middleware/rate-limiter"; // Import rate limiters with correct path
 import { registerBasicVerificationRoutes } from "./basic-verification-routes";
 import supportRoutes from "./routes/support";
+import { 
+  getLeaderboardData, 
+  invalidateLeaderboardCache, 
+  transformMVPData, 
+  LeaderboardData 
+} from "./utils/leaderboard-cache";
+import { generateToken } from "./utils/token";
 
 // Add missing type definitions
 interface ExtendedWebSocket extends WebSocket {
@@ -35,72 +42,6 @@ function getTierFromWager(wagerAmount: number): string {
 // Constants
 const PRIZE_POOL_BASE = 500; // Base prize pool amount
 const prizePool = PRIZE_POOL_BASE;
-
-// Define a type for the leaderboard data cache
-type LeaderboardData = {
-  status: string;
-  metadata: {
-    totalUsers: number;
-    lastUpdated: string;
-  };
-  data: {
-    today: { data: any[] };
-    weekly: { data: any[] };
-    monthly: { data: any[] };
-    all_time: { data: any[] };
-  };
-};
-
-// Update the cache variable with proper typing
-let cachedLeaderboardData: LeaderboardData | null = null;
-let lastFetchTime = 0;
-const CACHE_DURATION = 60000; // 1 minute cache
-
-/**
- * Centralized function to get leaderboard data with caching
- * This reduces redundant API calls by storing the data for a period of time
- */
-async function getLeaderboardData() {
-  const now = Date.now();
-  // Return cached data if it's still fresh
-  if (cachedLeaderboardData && now - lastFetchTime < CACHE_DURATION) {
-    return cachedLeaderboardData;
-  }
-  
-  // Fetch fresh data from the API
-  try {
-    const response = await fetch(
-      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
-    }
-
-    const rawData = await response.json();
-    // Transform once and cache
-    const transformedData = transformLeaderboardData(rawData);
-    
-    // Update cache
-    cachedLeaderboardData = transformedData;
-    lastFetchTime = now;
-    
-    return transformedData;
-  } catch (error) {
-    log(`Error fetching leaderboard data: ${error}`);
-    // If there's an error, return the stale cache if available
-    if (cachedLeaderboardData) {
-      return cachedLeaderboardData;
-    }
-    throw error;
-  }
-}
 
 function handleLeaderboardConnection(ws: WebSocket) {
   const extendedWs = ws as ExtendedWebSocket;
@@ -160,98 +101,6 @@ export function broadcastLeaderboardUpdate(data: any) {
 }
 
 let wss: WebSocketServer;
-
-// Helper functions
-function sortByWagered(data: any[], period: string) {
-  return [...data].sort(
-    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0),
-  );
-}
-
-const transformMVPData = (mvpData: any) => {
-  return Object.entries(mvpData).reduce(
-    (acc: Record<string, any>, [period, data]: [string, any]) => {
-      if (data) {
-        // Calculate if there was a wager change
-        const currentWager =
-          data.wagered[
-            period === "daily"
-              ? "today"
-              : period === "weekly"
-                ? "this_week"
-                : "this_month"
-          ];
-        const previousWager = data.wagered?.previous || 0;
-        const hasIncrease = currentWager > previousWager;
-
-        acc[period] = {
-          username: data.name,
-          wagerAmount: currentWager,
-          rank: 1,
-          lastWagerChange: hasIncrease ? Date.now() : undefined,
-          stats: {
-            winRate: data.stats?.winRate || 0,
-            favoriteGame: data.stats?.favoriteGame || "Unknown",
-            totalGames: data.stats?.totalGames || 0,
-          },
-        };
-      }
-      return acc;
-    },
-    {},
-  );
-};
-
-// Transforms raw API data into our standardized leaderboard format
-// This is the central data transformation function used by both web and Telegram interfaces
-function transformLeaderboardData(apiData: any) {
-  // Extract data from various possible API response formats
-  const responseData = apiData.data || apiData.results || apiData;
-  if (
-    !responseData ||
-    (Array.isArray(responseData) && responseData.length === 0)
-  ) {
-    return {
-      status: "success",
-      metadata: {
-        totalUsers: 0,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: { data: [] },
-        weekly: { data: [] },
-        monthly: { data: [] },
-        all_time: { data: [] },
-      },
-    };
-  }
-
-  const dataArray = Array.isArray(responseData) ? responseData : [responseData];
-  const transformedData = dataArray.map((entry) => ({
-    uid: entry.uid || "",
-    name: entry.name || "",
-    wagered: {
-      today: entry.wagered?.today || 0,
-      this_week: entry.wagered?.this_week || 0,
-      this_month: entry.wagered?.this_month || 0,
-      all_time: entry.wagered?.all_time || 0,
-    },
-  }));
-
-  return {
-    status: "success",
-    metadata: {
-      totalUsers: transformedData.length,
-      lastUpdated: new Date().toISOString(),
-    },
-    data: {
-      today: { data: sortByWagered(transformedData, "today") },
-      weekly: { data: sortByWagered(transformedData, "this_week") },
-      monthly: { data: sortByWagered(transformedData, "this_month") },
-      all_time: { data: sortByWagered(transformedData, "all_time") },
-    },
-  };
-}
 
 export function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
@@ -727,22 +576,9 @@ function setupRESTRoutes(app: Express) {
 
   app.get("/api/admin/analytics", requireAdmin, async (_req, res) => {
     try {
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const rawData = await response.json();
-      const data = rawData.data || rawData.results || rawData;
+      // Use the cached leaderboard data instead of making a direct API call
+      const leaderboardData = await getLeaderboardData();
+      const data = leaderboardData.data.all_time.data;
 
       // Calculate totals
       const totals = data.reduce(
@@ -822,31 +658,16 @@ async function handleProfileRequest(req: any, res: any) {
       });
     }
 
-    // Fetch current leaderboard data
-    const response = await fetch(
-      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-          "Content-Type": "application/json",
-        },
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
-    }
-
-    const leaderboardData = await response.json();
-    const data =
-      leaderboardData.data || leaderboardData.results || leaderboardData;
+    // Use the cached leaderboard data instead of making a direct API call
+    const leaderboardData = await getLeaderboardData();
+    const data = leaderboardData.data.all_time.data;
 
     // Find user positions
     const position = {
       weekly:
-        data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined,
+        leaderboardData.data.weekly.data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined,
       monthly:
-        data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined,
+        leaderboardData.data.monthly.data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined,
     };
 
     res.json({
@@ -1141,16 +962,3 @@ const adminLoginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
 });
-
-function generateToken(payload: any): string {
-  // In a real application, you would use a proper JWT library
-  // This is a placeholder implementation
-  const header = { alg: "HS256", typ: "JWT" };
-  const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64').replace(/=/g, '');
-  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64').replace(/=/g, '');
-  
-  // In a real app, you would sign this with a secret key
-  const signature = Buffer.from('signature').toString('base64').replace(/=/g, '');
-  
-  return `${encodedHeader}.${encodedPayload}.${signature}`;
-}
