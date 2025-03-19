@@ -16,7 +16,6 @@ import {
   raceRateLimiter,
 } from "./middleware/rate-limiter"; // Import rate limiters with correct path
 import { registerBasicVerificationRoutes } from "./basic-verification-routes";
-import supportRoutes from "./routes/support";
 import { 
   getLeaderboardData, 
   invalidateLeaderboardCache, 
@@ -113,9 +112,6 @@ export function registerRoutes(app: Express): Server {
 }
 
 function setupRESTRoutes(app: Express) {
-  // Import and use support routes
-  app.use("/api/support", requireAuth, supportRoutes);
-
   // Add endpoint to fetch previous month's results
   app.get("/api/wager-races/previous", async (_req, res) => {
     try {
@@ -859,6 +855,11 @@ const chatMessageSchema = z.object({
   isStaffReply: z.boolean().default(false),
 });
 
+const adminLoginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
 async function handleChatConnection(ws: WebSocket) {
   log("Chat WebSocket client connected");
   const extendedWs = ws as ExtendedWebSocket;
@@ -957,8 +958,3 @@ async function handleChatConnection(ws: WebSocket) {
   };
   ws.send(JSON.stringify(welcomeMessage));
 }
-
-const adminLoginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
-});

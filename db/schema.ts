@@ -100,27 +100,6 @@ export const affiliateStatsRelations = relations(affiliateStats, ({ one }) => ({
 
 // New tables for additional features
 
-export const supportTickets = pgTable("support_tickets", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  subject: text("subject").notNull(),
-  description: text("description").notNull(),
-  status: text("status").notNull().default("open"), // 'open' | 'in_progress' | 'closed'
-  priority: text("priority").notNull().default("medium"), // 'low' | 'medium' | 'high'
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  assignedTo: integer("assigned_to").references(() => users.id),
-});
-
-export const ticketMessages = pgTable("ticket_messages", {
-  id: serial("id").primaryKey(),
-  ticketId: integer("ticket_id").references(() => supportTickets.id),
-  userId: integer("user_id").references(() => users.id),
-  message: text("message").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  isStaffReply: boolean("is_staff_reply").default(false).notNull(),
-});
-
 export const bonusCodes = pgTable("bonus_codes", {
   id: serial("id").primaryKey(),
   code: text("code").unique().notNull(),
@@ -143,7 +122,7 @@ export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
 
 export const historicalRaces = pgTable("historical_races", {
   id: serial("id").primaryKey(),
-  month: integer("month").notNull(), // Removed extra argument
+  month: integer("month").notNull(),
   year: integer("year").notNull(),
   prizePool: decimal("prize_pool", { precision: 10, scale: 2 }).notNull(),
   startDate: timestamp("start_date").notNull(),
@@ -200,8 +179,6 @@ export const userRelations = relations(users, ({ one, many }) => ({
   }),
   createdRaces: many(wagerRaces),
   raceParticipations: many(wagerRaceParticipants),
-  supportTickets: many(supportTickets),
-  assignedTickets: many(supportTickets, { relationName: "assignedTickets" }),
   // New relations for account linking
   goatedVerifications: many(goatedVerificationRequests),
   telegramVerifications: many(telegramVerificationRequests),
@@ -214,21 +191,6 @@ export const wagerRaceRelations = relations(wagerRaces, ({ one, many }) => ({
   }),
   participants: many(wagerRaceParticipants),
 }));
-
-export const supportTicketRelations = relations(
-  supportTickets,
-  ({ one, many }) => ({
-    user: one(users, {
-      fields: [supportTickets.userId],
-      references: [users.id],
-    }),
-    assignedStaff: one(users, {
-      fields: [supportTickets.assignedTo],
-      references: [users.id],
-    }),
-    messages: many(ticketMessages),
-  }),
-);
 
 // Verification request relations
 export const goatedVerificationRequestRelations = relations(
@@ -277,8 +239,6 @@ export const insertWagerRaceParticipantSchema = createInsertSchema(
 export const selectWagerRaceParticipantSchema = createSelectSchema(
   wagerRaceParticipants,
 );
-export const insertSupportTicketSchema = createInsertSchema(supportTickets);
-export const selectSupportTicketSchema = createSelectSchema(supportTickets);
 export const insertNewsletterSubscriptionSchema = createInsertSchema(
   newsletterSubscriptions,
 );
@@ -315,8 +275,6 @@ export type InsertWagerRaceParticipant =
   typeof wagerRaceParticipants.$inferInsert;
 export type SelectWagerRaceParticipant =
   typeof wagerRaceParticipants.$inferSelect;
-export type InsertSupportTicket = typeof supportTickets.$inferInsert;
-export type SelectSupportTicket = typeof supportTickets.$inferSelect;
 export type InsertNewsletterSubscription =
   typeof newsletterSubscriptions.$inferInsert;
 export type SelectNewsletterSubscription =
