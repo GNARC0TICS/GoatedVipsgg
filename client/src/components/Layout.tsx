@@ -12,7 +12,8 @@ import {
   Lock,
   ExternalLink,
 } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+// Import from the fixed sheet component
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet-fix";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
 import { useQuery } from "@tanstack/react-query";

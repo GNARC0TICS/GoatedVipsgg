@@ -1,5 +1,5 @@
 import React from "react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet-fix";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, Calendar, Clock, Crown } from "lucide-react";
 import { motion } from "framer-motion";
@@ -47,6 +47,7 @@ export function QuickProfile({
     },
   });
 
+  // Define the LeaderboardPlayer interface with proper typing
   interface LeaderboardPlayer {
     uid: string;
     wagered: {
@@ -57,36 +58,49 @@ export function QuickProfile({
     };
   }
 
+  // Type assertion for the data structure
+  type LeaderboardData = {
+    data: {
+      today: { data: LeaderboardPlayer[] };
+      weekly: { data: LeaderboardPlayer[] };
+      monthly: { data: LeaderboardPlayer[] };
+      all_time: { data: LeaderboardPlayer[] };
+    }
+  };
+
   const stats = React.useMemo(() => {
     if (!leaderboardData?.data) return null;
 
+    // Type assertion to help TypeScript understand the data structure
+    const typedData = leaderboardData as LeaderboardData;
+
     const userStats = {
       today:
-        leaderboardData.data.today.data.find(
-          (p: LeaderboardPlayer) => p.uid === userId,
+        typedData.data.today.data.find(
+          (p) => p.uid === userId,
         )?.wagered?.today || 0,
       this_week:
-        leaderboardData.data.weekly.data.find(
-          (p: LeaderboardPlayer) => p.uid === userId,
+        typedData.data.weekly.data.find(
+          (p) => p.uid === userId,
         )?.wagered?.this_week || 0,
       this_month:
-        leaderboardData.data.monthly.data.find(
-          (p: LeaderboardPlayer) => p.uid === userId,
+        typedData.data.monthly.data.find(
+          (p) => p.uid === userId,
         )?.wagered?.this_month || 0,
       all_time:
-        leaderboardData.data.all_time.data.find(
-          (p: LeaderboardPlayer) => p.uid === userId,
+        typedData.data.all_time.data.find(
+          (p) => p.uid === userId,
         )?.wagered?.all_time || 0,
     };
 
     const position = {
       weekly:
-        leaderboardData.data.weekly.data.findIndex(
-          (p: LeaderboardPlayer) => p.uid === userId,
+        typedData.data.weekly.data.findIndex(
+          (p) => p.uid === userId,
         ) + 1 || undefined,
       monthly:
-        leaderboardData.data.monthly.data.findIndex(
-          (p: LeaderboardPlayer) => p.uid === userId,
+        typedData.data.monthly.data.findIndex(
+          (p) => p.uid === userId,
         ) + 1 || undefined,
     };
 

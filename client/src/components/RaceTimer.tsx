@@ -44,7 +44,7 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
     data: currentRaceData,
     error: currentError,
     isLoading: isCurrentLoading,
-  } = useQuery<RaceData>({
+  } = useQuery<RaceData, Error>({
     queryKey: ["/api/wager-races/current"],
     queryFn: async () => {
       const response = await fetch("/api/wager-races/current");
@@ -56,22 +56,25 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
     refetchInterval: 30000,
     retry: 3,
     enabled: !showPrevious,
-    onError: (error) => {
-      console.error("Race data fetch error:", error);
+  });
+
+  // Handle error separately since onError is not supported in the options
+  useEffect(() => {
+    if (currentError) {
+      console.error("Race data fetch error:", currentError);
       toast({
         title: "Error loading race data",
-        description:
-          error instanceof Error ? error.message : "Please try again later",
+        description: currentError.message || "Please try again later",
         variant: "destructive",
       });
-    },
-  });
+    }
+  }, [currentError, toast]);
 
   const {
     data: previousRaceData,
     error: previousError,
     isLoading: isPreviousLoading,
-  } = useQuery<RaceData>({
+  } = useQuery<RaceData, Error>({
     queryKey: ["/api/wager-races/previous"],
     queryFn: async () => {
       const response = await fetch("/api/wager-races/previous");
@@ -90,7 +93,20 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
     enabled: showPrevious,
   });
 
-  const raceData = showPrevious ? previousRaceData : currentRaceData;
+  // Handle previous race error
+  useEffect(() => {
+    if (previousError && showPrevious) {
+      console.error("Previous race data fetch error:", previousError);
+      toast({
+        title: "Error loading previous race data",
+        description: previousError.message || "Please try again later",
+        variant: "destructive",
+      });
+    }
+  }, [previousError, showPrevious, toast]);
+
+  // Type assertion to help TypeScript understand the shape
+  const raceData: RaceData | undefined = showPrevious ? previousRaceData : currentRaceData;
   const error = showPrevious ? previousError : currentError;
   const isLoading = showPrevious ? isPreviousLoading : isCurrentLoading;
 
@@ -252,7 +268,7 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
                     Prize Pool: ${raceData.prizePool.toLocaleString()}
                   </span>
                 </div>
-                {raceData.participants.map((participant, index) => (
+                {raceData.participants.map((participant: RaceParticipant, index: number) => (
                   <div
                     key={participant.uid}
                     className="flex items-center justify-between py-2"
