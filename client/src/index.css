@@ -641,7 +641,13 @@ html {
 }
 
 .play-icon {
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, color 0.3s ease;
+  color: black;
+}
+
+.group:hover .play-icon {
+  transform: scale(1.2);
+  color: #D7FF00;
 }
 
 .group:hover .play-icon {
