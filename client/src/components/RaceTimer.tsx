@@ -39,10 +39,11 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPrevious, setShowPrevious] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-
-  if (!isVisible) return null;
   const [timeLeft, setTimeLeft] = useState<string>("");
   const { toast } = useToast();
+
+  // Early return after all hooks are declared
+  if (!isVisible) return null;
 
   const {
     data: currentRaceData,
