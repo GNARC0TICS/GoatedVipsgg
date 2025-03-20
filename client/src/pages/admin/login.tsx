@@ -64,6 +64,20 @@ export default function AdminLoginPage() {
 
       const result = await response.json();
 
+      if (response.ok && result.status === 'success') {
+        toast({
+          title: "Success",
+          description: "Logged in successfully",
+        });
+        setLocation('/admin');
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.message || "Login failed",
+        });
+      }
+
       if (response.ok && result.token) {
         // Store the token in localStorage for subsequent API requests
         localStorage.setItem('adminToken', result.token);
