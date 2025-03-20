@@ -653,12 +653,12 @@ html {
   animation-play-state: running !important;
 }
 
-/* Set animations to paused by default */
+/* Play icon animations are now set to run by default */
 .play-icon-animate {
-  animation-play-state: paused !important;
+  animation-play-state: running !important;
 }
 
-/* Override the begin attribute with JavaScript */
+/* No need to override begin attribute anymore since we set it to 0s in the SVG */
 .group:hover .play-icon path animate {
-  begin: 0s !important;
+  animation-play-state: running !important;
 }

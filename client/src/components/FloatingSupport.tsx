@@ -32,9 +32,9 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
             <Button
               onClick={onClose}
               size="icon"
-              className="absolute -top-2 -left-2 h-6 w-6 rounded-full bg-[#14151A] border border-[#D7FF00] hover:bg-[#14151A]/90 text-[#D7FF00] shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+              className="absolute -top-2 -left-2 h-6 w-6 rounded-full bg-[#14151A] border border-[#D7FF00] hover:bg-[#14151A]/90 text-white hover:text-[#D7FF00] shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
             >
-              <X className="h-3 w-3" />
+              <X className="h-4 w-4" />
             </Button>
           </div>
         ) : (
