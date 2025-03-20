@@ -195,14 +195,11 @@ function setupRESTRoutes(app: Express) {
         }
       }
 
-      // Generate explicit dates to ensure correct month
-      const now = new Date();
+      // Use dates to ensure correct month/year
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
-
-      // Ensure we're working with the current month/year
-      const actualYear = now.getFullYear();
-      const actualMonth = now.getMonth();
+      const actualYear = currentYear;
+      const actualMonth = currentMonth;
 
       const raceData = {
         id: `${actualYear}${(actualMonth + 1).toString().padStart(2, "0")}`,
