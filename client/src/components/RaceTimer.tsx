@@ -195,7 +195,7 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
 
   if (!raceData) return null;
 
-  return (
+  const content = (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -319,4 +319,6 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
       </div>
     </motion.div>
   );
+
+  return content;
 }
