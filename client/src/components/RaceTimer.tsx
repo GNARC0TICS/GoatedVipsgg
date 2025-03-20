@@ -205,9 +205,9 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
         {onClose && (
           <button 
             onClick={onClose}
-            className="absolute top-2 right-2 z-10 text-[#8A8B91] hover:text-white p-1"
+            className="absolute -top-2 -right-2 z-10 h-6 w-6 rounded-full bg-[#14151A] border border-[#D7FF00] hover:bg-[#14151A]/90 flex items-center justify-center group"
           >
-            <X size={14} />
+            <X className="h-3 w-3 text-black group-hover:text-[#D7FF00] transition-colors duration-300" />
           </button>
         )}
         <div
