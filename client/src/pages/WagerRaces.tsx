@@ -55,27 +55,17 @@ export default function WagerRaces() {
   const ws = useRef<WebSocket | null>(null);
   const { data: rawLeaderboardData, isLoading, error } = useLeaderboard("monthly");
   
-  // Define interface for leaderboard response structure
-  interface LeaderboardResponse {
-    status?: string;
-    data?: {
-      monthly?: {
-        data?: LeaderboardEntry[];
-      };
-    };
-  }
+  // The useLeaderboard hook returns an array of entries directly
+  // Add better error handling and logging for debugging
+  console.log("Raw leaderboard data:", rawLeaderboardData);
   
-  // Transform data to the expected format - extract both the data array and any metadata
-  // Cast rawLeaderboardData to our expected structure
-  const leaderboardResponse = (rawLeaderboardData as LeaderboardResponse) || {};
-  
-  // Extract the actual leaderboard data array
-  const leaderboardData = Array.isArray(leaderboardResponse?.data?.monthly?.data) 
-    ? leaderboardResponse.data.monthly.data 
+  // Ensure leaderboardData is always an array
+  const leaderboardData = Array.isArray(rawLeaderboardData) 
+    ? rawLeaderboardData 
     : [];
     
-  // Extract status from metadata if available
-  const raceStatus = leaderboardResponse?.status || 'active';
+  // Default race status
+  const raceStatus: string = 'active';
 
   // Log data for debugging purposes
   useEffect(() => {
@@ -88,22 +78,50 @@ export default function WagerRaces() {
   }, [leaderboardData, error]);
 
   useEffect(() => {
-    // Fix WebSocket connection to use /ws/leaderboard endpoint instead of /ws
-    try {
-      const isSecure = window.location.protocol === 'https:';
-      const wsProtocol = isSecure ? 'wss:' : 'ws:';
-      ws.current = new WebSocket(`${wsProtocol}//${window.location.hostname}/ws/leaderboard`);
-      
-      ws.current.addEventListener('error', (error) => {
-        console.error('WebSocket connection error:', error);
-      });
-    } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
-    }
+    let wsInstance: WebSocket | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+    
+    const connectWebSocket = () => {
+      try {
+        const isSecure = window.location.protocol === 'https:';
+        const wsProtocol = isSecure ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.hostname}/ws/leaderboard`;
+        
+        console.log(`Attempting WebSocket connection to ${wsUrl}`);
+        wsInstance = new WebSocket(wsUrl);
+        ws.current = wsInstance;
+        
+        wsInstance.addEventListener('open', () => {
+          console.log('WebSocket connection established');
+        });
+        
+        wsInstance.addEventListener('error', (error) => {
+          console.error('WebSocket connection error:', error);
+        });
+        
+        wsInstance.addEventListener('close', (event) => {
+          console.log(`WebSocket connection closed: ${event.code} ${event.reason}`);
+          // Attempt to reconnect after a delay if not intentionally closed
+          if (event.code !== 1000) {
+            console.log('Attempting to reconnect in 5 seconds...');
+            reconnectTimeout = setTimeout(connectWebSocket, 5000);
+          }
+        });
+      } catch (error) {
+        console.error('Failed to create WebSocket connection:', error);
+        // Attempt to reconnect after a delay
+        reconnectTimeout = setTimeout(connectWebSocket, 5000);
+      }
+    };
+    
+    connectWebSocket();
 
     return () => {
-      if (ws.current) {
-        ws.current.close();
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+      if (wsInstance) {
+        wsInstance.close();
       }
     };
   }, []);

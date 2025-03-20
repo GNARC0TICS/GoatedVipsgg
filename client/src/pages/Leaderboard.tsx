@@ -5,22 +5,31 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { PageTransition } from "@/components/PageTransition";
-import type { TimePeriod } from "@/hooks/use-leaderboard";
+import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 
 export default function Leaderboard() {
   const [location] = useLocation();
   const [period, setPeriod] = useState<TimePeriod>("today");
   const [isLoading, setIsLoading] = useState(true);
-
+  
+  // Use the actual loading state from the useLeaderboard hook
+  const { isLoading: dataLoading } = useLeaderboard(period);
+  
+  // Combine our local loading state with the data loading state
+  const isPageLoading = isLoading || dataLoading;
+  
   useEffect(() => {
     // Start loading when period changes
     setIsLoading(true);
-
-    // Use a shorter loading time since our data is now cached
+    
+    // Add a minimum loading time to prevent flicker
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1000); // Reduced from 2500ms to 1000ms for better user experience
-
+    }, 500); // Reduced from 1000ms for better user experience
+    
+    // Log for debugging
+    console.log(`Period changed to ${period}, setting loading state`);
+    
     return () => clearTimeout(timer);
   }, [period]);
 
@@ -58,7 +67,7 @@ export default function Leaderboard() {
   };
 
   return (
-    <PageTransition isLoading={isLoading}>
+    <PageTransition isLoading={isPageLoading}>
       <div className="min-h-screen bg-[#14151A]">
         <main className="container mx-auto px-4 py-12">
           <motion.div

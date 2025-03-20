@@ -1,17 +1,9 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
 
 // Define loading types for different scenarios
 export type LoadingType = "full" | "spinner" | "skeleton" | "none";
 
 // Interface for the context value
-interface LoadingContextValue {
-  isLoading: boolean;
-  loadingType: LoadingType;
-  startLoading: (type?: LoadingType) => void;
-  stopLoading: () => void;
-}
-
-// Create the context with a default value
 interface LoadingContextValue {
   isLoading: boolean;
   loadingType: LoadingType;

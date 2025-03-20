@@ -35,11 +35,21 @@ export function PageTransition({
   // Only show loader if loading takes more than 250ms to avoid flicker for fast loads
   useEffect(() => {
     let timeout: NodeJS.Timeout;
+    let safetyTimeout: NodeJS.Timeout;
 
     if (isLoading) {
       setIsCompleted(false);
       setShouldRenderContent(false);
       timeout = setTimeout(() => setShowLoading(true), 250);
+      
+      // Add safety timeout to prevent infinite loading
+      safetyTimeout = setTimeout(() => {
+        if (!isCompleted && !shouldRenderContent) {
+          console.warn('Loading timeout exceeded, forcing content render');
+          setShowLoading(false);
+          setShouldRenderContent(true);
+        }
+      }, 10000); // 10 second safety timeout
     } else if (!isCompleted) {
       if (showLoading) {
         // If we were showing the loader, wait for the complete animation
@@ -56,7 +66,10 @@ export function PageTransition({
       }
     }
 
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      clearTimeout(safetyTimeout);
+    };
   }, [isLoading, isCompleted, showLoading]);
 
   // Handle loading completion
