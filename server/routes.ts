@@ -201,8 +201,8 @@ function setupRESTRoutes(app: Express) {
       const currentMonth = now.getMonth();
 
       // Ensure we're working with the current month/year
-      const actualYear = new Date().getFullYear();
-      const actualMonth = new Date().getMonth();
+      const actualYear = now.getFullYear();
+      const actualMonth = now.getMonth();
 
       const raceData = {
         id: `${actualYear}${(actualMonth + 1).toString().padStart(2, "0")}`,
