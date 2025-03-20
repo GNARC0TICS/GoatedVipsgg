@@ -48,8 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     queryKey: ["/api/user"],
     queryFn: async () => {
       try {
+        // Add admin token to the headers if it exists
+        const headers = addAuthHeaders({});
+        
         const response = await fetch("/api/user", {
           credentials: "include",
+          headers
         });
 
         if (response.status === 401) {
@@ -176,8 +180,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await queryClient.prefetchQuery({
           queryKey: ["/api/user"],
           queryFn: async () => {
+            // Add admin token to the headers if it exists
+            const headers = addAuthHeaders({});
+            
             const response = await fetch("/api/user", {
               credentials: "include",
+              headers
             });
             if (response.status === 401) {
               setIsAuthenticated(false);
@@ -240,4 +248,21 @@ export function useAuth() {
 // Helper function to check if a route requires authentication
 export function requiresAuth(path: string): boolean {
   return PROTECTED_ROUTES.some((route) => path.startsWith(route));
+}
+
+// Helper function to get admin token if available
+export function getAdminToken(): string | null {
+  return localStorage.getItem('adminToken');
+}
+
+// Helper function to add auth headers to fetch requests
+export function addAuthHeaders(headers: Record<string, string> = {}): Record<string, string> {
+  const adminToken = getAdminToken();
+  if (adminToken && window.location.pathname.startsWith('/admin')) {
+    return {
+      ...headers,
+      'Authorization': `Bearer ${adminToken}`
+    };
+  }
+  return headers;
 }

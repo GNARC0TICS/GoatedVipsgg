@@ -47,11 +47,9 @@ export default function AdminLoginPage() {
   const onSubmit = async (values: AdminLoginFormData) => {
     setIsLoading(true);
     try {
-      // Determine if this is an email or username
-      const isEmail = values.identifier.includes('@');
-      
+      // Send the identifier field directly to match our backend changes
       const formData = {
-        [isEmail ? 'email' : 'username']: values.identifier.trim(),
+        identifier: values.identifier.trim(),
         password: values.password.trim(),
       };
 
@@ -66,13 +64,16 @@ export default function AdminLoginPage() {
 
       const result = await response.json();
 
-      if (response.ok) {
+      if (response.ok && result.token) {
+        // Store the token in localStorage for subsequent API requests
+        localStorage.setItem('adminToken', result.token);
+        
         toast({
           title: "Login Successful",
           description: "Welcome to the admin dashboard",
         });
         // Redirect to admin dashboard
-        setLocation("/admin/dashboard");
+        setLocation("/admin");
       } else {
         toast({
           variant: "destructive",

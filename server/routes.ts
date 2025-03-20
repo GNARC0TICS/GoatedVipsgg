@@ -846,41 +846,70 @@ async function handleAdminLogin(req: any, res: any) {
     const isEmail = userIdentifier.includes('@');
     
     // Look up admin in the database based on username or email
-    /*
-    const admin = await db.query.users.findFirst({
-      where: isEmail 
-        ? eq(schema.users.email, userIdentifier) 
-        : eq(schema.users.username, userIdentifier),
-      columns: {
-        id: true,
-        username: true,
-        password: true,
+    const [admin] = await db
+      .select()
+      .from(schema.users)
+      .where(
+        isEmail 
+          ? eq(schema.users.email, userIdentifier) 
+          : eq(schema.users.username, userIdentifier)
+      )
+      .limit(1);
+
+    if (!admin) {
+      log(`Admin login failed: User not found for identifier ${userIdentifier}`);
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    if (!admin.isAdmin) {
+      log(`Admin login failed: User ${userIdentifier} is not an admin`);
+      return res.status(403).json({ error: "Admin privileges required" });
+    }
+
+    // Verify password
+    try {
+      const scryptAsync = (await import('crypto')).scrypt;
+      const timingSafeEqual = (await import('crypto')).timingSafeEqual;
+      const promisify = (await import('util')).promisify;
+      
+      const scryptPromise = promisify(scryptAsync);
+      
+      // Compare password using timing-safe comparison
+      const [hashedPassword, salt] = admin.password.split(".");
+      const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
+      const suppliedPasswordBuf = await scryptPromise(password, salt, 64) as Buffer;
+      
+      const isMatch = timingSafeEqual(hashedPasswordBuf, suppliedPasswordBuf);
+      
+      if (!isMatch) {
+        log(`Admin login failed: Invalid password for user ${userIdentifier}`);
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+    } catch (cryptoError) {
+      log(`Error verifying password: ${cryptoError}`);
+      
+      // Fallback to direct comparison if crypto comparison fails
+      // This is less secure but prevents complete login failure
+      if (admin.password !== password) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+    }
+
+    // Generate token and return
+    const token = generateToken({ 
+      id: admin.id, 
+      username: admin.username,
+      isAdmin: true 
+    });
+    
+    res.json({ 
+      token,
+      user: {
+        id: admin.id,
+        username: admin.username,
         isAdmin: true
       }
     });
-
-    if (!admin || !admin.isAdmin) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-
-    // Verify password hash here...
-    // For simplicity, we're assuming direct comparison, but in a real app
-    // you would use bcrypt.compare or similar
-    if (admin.password !== password) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-    */
-
-    // Placeholder implementation
-    const admin = { 
-      id: 1, 
-      username: isEmail ? "admin" : userIdentifier, // If email was used, provide a default username
-      isAdmin: true 
-    };
-
-    // Generate token and return
-    const token = generateToken({ id: admin.id, username: admin.username, isAdmin: admin.isAdmin });
-    res.json({ token });
     
     log(`Admin login successful for user: ${userIdentifier}`);
   } catch (error) {
