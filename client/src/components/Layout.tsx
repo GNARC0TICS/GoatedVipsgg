@@ -753,7 +753,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 onClick={() =>
                   window.open("https://www.goated.com/r/EARLYACCESS", "_blank")
                 }
-                className="bg-[#14151A] text-white hover:bg-[#14151A]/80 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 font-medium gap-2 flex items-center"
+                className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 font-medium gap-2 flex items-center"
               >
                 <span>Sign Up Now</span>
                 <ExternalLink className="h-4 w-4" />
