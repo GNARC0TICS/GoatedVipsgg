@@ -64,10 +64,10 @@ export const PreLoader: React.FC<PreLoaderProps> = ({ onLoadComplete }) => {
   // Pulse animation keyframes
   const pulseVariants = {
     pulse: {
-      scale: [1, 1.15, 1],
-      opacity: [0.7, 1, 0.7],
+      scale: [1, 1.1, 1],
+      opacity: [0.6, 0.8, 0.6],
       transition: {
-        duration: 2,
+        duration: 1.5,
         repeat: Infinity,
         ease: "easeInOut",
       },
@@ -99,7 +99,7 @@ export const PreLoader: React.FC<PreLoaderProps> = ({ onLoadComplete }) => {
               zIndex: -1 
             }}
           />
-          
+
           {/* Logo with subtle pulse animation */}
           <motion.img
             src="/images/logo-neon.png"
@@ -115,7 +115,7 @@ export const PreLoader: React.FC<PreLoaderProps> = ({ onLoadComplete }) => {
             }}
           />
         </div>
-        
+
         <div className="w-64 h-2 bg-[#2A2B31] rounded-full overflow-hidden mb-4">
           <motion.div
             className="h-full bg-[#D7FF00]"
