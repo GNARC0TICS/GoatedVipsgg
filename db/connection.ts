@@ -7,9 +7,13 @@ const env = { DATABASE_URL: process.env.DATABASE_URL };
 // Create a pool with extended options
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  max: 10,
+  idleTimeoutMillis: 60000,
+  connectionTimeoutMillis: 5000,
+  statement_timeout: 10000,
+  query_timeout: 10000,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10000
 });
 
 // Add error handler to the pool
@@ -23,16 +27,25 @@ export const db = drizzle(pool, { schema });
 export const pgPool = pool;
 
 export async function initDatabase() {
-  try {
-    const client = await pool.connect();
-    console.log("Database connection established successfully");
-    
-    // Test the connection with a simple query
-    await client.query('SELECT NOW()');
-    client.release();
-    return true;
-  } catch (error) {
-    console.error("Error connecting to database:", error);
-    return false;
+  let retries = 3;
+  while (retries > 0) {
+    try {
+      const client = await pool.connect();
+      console.log("Database connection established successfully");
+      
+      // Test the connection with a simple query
+      await client.query('SELECT NOW()');
+      client.release();
+      return true;
+    } catch (error) {
+      retries--;
+      if (retries === 0) {
+        console.error("Error connecting to database after all retries:", error);
+        return false;
+      }
+      console.log(`Connection failed, retrying... (${retries} attempts remaining)`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
   }
+  return false;
 }
