@@ -90,7 +90,7 @@ export const PreLoader: React.FC<PreLoaderProps> = ({ onLoadComplete }) => {
           <motion.div
             variants={pulseVariants}
             animate="pulse"
-            className="absolute inset-0 bg-[#D7FF00]/10 rounded-full filter blur-[8px] scale-105"
+            className="absolute inset-0 bg-[#D7FF00]/20 rounded-full filter blur-[15px] scale-110"
             style={{ 
               width: '100%', 
               height: '100%',
