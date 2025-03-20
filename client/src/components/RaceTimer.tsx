@@ -62,8 +62,6 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
     enabled: !showPrevious,
   });
 
-  if (!isVisible) return null;
-
   useEffect(() => {
     if (currentError) {
       console.error("Race data fetch error:", currentError);
@@ -186,6 +184,8 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
 
   if (!raceData) return null;
 
+  if (!isVisible) return null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -194,14 +194,14 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
     >
       <div className="relative">
         {onClose && (
-          <button 
-            onClick={onClose}
-            className="absolute -top-2 -right-2 z-20 bg-[#1A1B21] border border-[#2A2B31] rounded-full p-1.5 text-[#8A8B91] hover:text-white hover:bg-[#2A2B31] transition-colors"
-          >
-            <X size={14} />
-          </button>
-        )}
-        <div className="bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg shadow-lg overflow-hidden">
+        <button 
+          onClick={onClose}
+          className="absolute -top-2 -right-2 z-20 bg-[#1A1B21] border border-[#2A2B31] rounded-full p-1.5 text-[#8A8B91] hover:text-white hover:bg-[#2A2B31] transition-colors"
+        >
+          <X size={14} />
+        </button>
+      )}
+      <div className="bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg shadow-lg overflow-hidden">
           <div
             className="p-4 cursor-pointer"
             onClick={() => setIsExpanded(!isExpanded)}
