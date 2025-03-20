@@ -12,10 +12,7 @@ import {
   Lock,
   ExternalLink,
 } from "lucide-react";
-<<<<<<< HEAD
-=======
 import { LineMdPlayFilled } from "@/components/icons/LineMdPlayFilled";
->>>>>>> e5a18dcf187180c7ebaaa4e6850ec21b2a9720af
 // Import from the fixed sheet component
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet-fix";
 import { Button } from "@/components/ui/button";
