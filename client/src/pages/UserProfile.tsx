@@ -55,6 +55,10 @@ export default function UserProfile() {
 
   const { data: user, isLoading } = useQuery<UserStats>({
     queryKey: [`/api/users/${id}`],
+    enabled: !!id,
+    staleTime: 30000,
+    retry: 3,
+    refetchOnWindowFocus: false,
   });
 
   if (isLoading) return <LoadingSpinner />;

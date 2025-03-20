@@ -79,7 +79,9 @@ export default function AdminLoginPage() {
       }
 
       if (response.ok && result.token) {
-        // Store the token in localStorage for subsequent API requests
+        localStorage.setItem('adminToken', result.token);
+        localStorage.setItem('user', JSON.stringify(result.user));
+        setLocation('/admin');
         localStorage.setItem('adminToken', result.token);
         
         toast({
