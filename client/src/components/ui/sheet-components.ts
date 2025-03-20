@@ -10,4 +10,4 @@ export {
   SheetFooter,
   SheetTitle,
   SheetDescription
-} from "@/components/ui/sheet";
+} from "./sheet-fix";

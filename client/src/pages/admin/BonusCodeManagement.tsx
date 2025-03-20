@@ -49,7 +49,7 @@ export default function BonusCodeManagement() {
       if (response.ok) {
         toast({
           title: `Bonus code ${isEditing ? "updated" : "created"} successfully`,
-          variant: "success",
+          variant: "default",
         });
         fetchCodes();
         setFormData({ code: "", description: "", value: "", expiresAt: "" });
@@ -73,7 +73,7 @@ export default function BonusCodeManagement() {
       if (response.ok) {
         toast({
           title: "Bonus code deleted successfully",
-          variant: "success",
+          variant: "default",
         });
         fetchCodes();
       }

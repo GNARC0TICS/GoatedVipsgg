@@ -109,7 +109,7 @@ export function ChatInterface() {
     const message = {
       type: "chat_message",
       message: newMessage,
-      userId: user?.id,
+      userId: user?.id ? Number(user.id) : null,
       isStaffReply: user?.isAdmin || false,
     };
 
@@ -143,19 +143,19 @@ export function ChatInterface() {
             {messages.map((msg, idx) => (
               <div
                 key={msg.id || idx}
-                className={`flex gap-3 ${msg.userId === user?.id ? "justify-end" : ""}`}
+                className={`flex gap-3 ${msg.userId === (user?.id ? Number(user.id) : null) ? "justify-end" : ""}`}
               >
-                {msg.userId !== user?.id && (
+                {msg.userId !== (user?.id ? Number(user.id) : null) && (
                   <Avatar className="h-8 w-8 bg-[#D7FF00]">
                     <Bot className="h-4 w-4 text-[#14151A]" />
                   </Avatar>
                 )}
                 <div
-                  className={`flex-1 ${msg.userId === user?.id ? "text-right" : ""}`}
+                  className={`flex-1 ${msg.userId === (user?.id ? Number(user.id) : null) ? "text-right" : ""}`}
                 >
                   <div
                     className={`inline-block rounded-lg p-4 ${
-                      msg.userId === user?.id
+                      msg.userId === (user?.id ? Number(user.id) : null)
                         ? "bg-[#D7FF00] text-[#14151A] ml-auto"
                         : "bg-[#2A2B31] text-white"
                     } max-w-[80%]`}
@@ -166,7 +166,7 @@ export function ChatInterface() {
                     {formatTime(msg.createdAt)}
                   </span>
                 </div>
-                {msg.userId === user?.id && (
+                {msg.userId === (user?.id ? Number(user.id) : null) && (
                   <Avatar className="h-8 w-8 bg-[#2A2B31]">
                     <User className="h-4 w-4 text-white" />
                   </Avatar>

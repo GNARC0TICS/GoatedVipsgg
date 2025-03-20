@@ -1,7 +1,7 @@
 import * as React from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast, type Toast } from "@/hooks/use-toast.tsx";
 import {
-  Toast,
+  Toast as ToastComponent,
   ToastClose,
   ToastDescription,
   ToastProvider,
@@ -14,9 +14,13 @@ export function Toaster() {
 
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
+      {toasts.map(function ({ id, title, description, action, type, ...props }: Toast) {
+        // Convert the toast type to a variant that the Toast component accepts
+        const variant = type === "destructive" ? "destructive" : 
+                        type === "success" ? "success" : "default";
+                        
         return (
-          <Toast key={id} {...props}>
+          <ToastComponent key={id} variant={variant} {...props}>
             <div className="grid gap-1">
               {title && <ToastTitle>{title}</ToastTitle>}
               {description && (
@@ -25,7 +29,7 @@ export function Toaster() {
             </div>
             {action}
             <ToastClose />
-          </Toast>
+          </ToastComponent>
         );
       })}
       <ToastViewport />

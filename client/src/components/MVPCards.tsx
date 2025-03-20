@@ -6,6 +6,25 @@ import { QuickProfile } from "./QuickProfile";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { Dialog, DialogContent } from "./ui/dialog";
 
+// Helper function to safely get rank value
+function getRankValue(
+  leaderboardData: LeaderboardData | undefined,
+  period: string,
+  uid: string
+): string | number {
+  if (!leaderboardData || !leaderboardData.data || !leaderboardData.data[period as keyof typeof leaderboardData.data]) {
+    return "-";
+  }
+  
+  const periodData = leaderboardData.data[period as keyof typeof leaderboardData.data];
+  if (!periodData || !periodData.data || !Array.isArray(periodData.data)) {
+    return "-";
+  }
+  
+  const index = periodData.data.findIndex((p: MVP) => p.uid === uid);
+  return index >= 0 ? index + 1 : "-";
+}
+
 interface LeaderboardData {
   data: {
     today: { data: MVP[] };
@@ -73,7 +92,7 @@ function MVPCard({
   mvp: MVP | undefined;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  leaderboardData: LeaderboardData;
+  leaderboardData: LeaderboardData | undefined;
 }) {
   const [showIncrease, setShowIncrease] = useState(false);
 
@@ -207,34 +226,22 @@ function MVPCard({
                 {[
                   {
                     label: "Daily Rank",
-                    value:
-                      leaderboardData?.data?.today?.data.findIndex(
-                        (p: MVP) => p.uid === mvp.uid,
-                      ) + 1 || "-",
+                    value: getRankValue(leaderboardData, "today", mvp.uid),
                     color: "#8B5CF6",
                   },
                   {
                     label: "Weekly Rank",
-                    value:
-                      leaderboardData?.data?.weekly?.data.findIndex(
-                        (p: MVP) => p.uid === mvp.uid,
-                      ) + 1 || "-",
+                    value: getRankValue(leaderboardData, "weekly", mvp.uid),
                     color: "#10B981",
                   },
                   {
                     label: "Monthly Rank",
-                    value:
-                      leaderboardData?.data?.monthly?.data.findIndex(
-                        (p: MVP) => p.uid === mvp.uid,
-                      ) + 1 || "-",
+                    value: getRankValue(leaderboardData, "monthly", mvp.uid),
                     color: "#F59E0B",
                   },
                   {
                     label: "All-Time Rank",
-                    value:
-                      leaderboardData?.data?.all_time?.data.findIndex(
-                        (p: MVP) => p.uid === mvp.uid,
-                      ) + 1 || "-",
+                    value: getRankValue(leaderboardData, "all_time", mvp.uid),
                     color: "#EC4899",
                   },
                 ].map((stat, index) => (
@@ -370,7 +377,13 @@ export function MVPCards() {
                       mvps[timeframe.period as keyof typeof mvps]?.avatarUrl,
                     rank:
                       (
-                        leaderboardData?.data[timeframe.period]?.data || []
+                        leaderboardData?.data[
+                          timeframe.period === "daily" 
+                            ? "today" 
+                            : timeframe.period === "weekly" 
+                              ? "weekly" 
+                              : "monthly"
+                        ]?.data || []
                       ).findIndex(
                         (p: MVP) =>
                           p.uid ===

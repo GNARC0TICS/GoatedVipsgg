@@ -22,7 +22,11 @@ export default function AdminDashboard() {
   const isMobile = useIsMobile();
 
   if (loading) {
-    return <PageTransition isLoading={true} />;
+    return (
+      <PageTransition isLoading={true}>
+        <div className="min-h-screen"></div>
+      </PageTransition>
+    );
   }
 
   if (!user?.isAdmin) {

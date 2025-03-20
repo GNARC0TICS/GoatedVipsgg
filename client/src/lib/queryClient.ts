@@ -7,7 +7,7 @@ export const queryClient = new QueryClient({
         try {
           const cacheKey = Array.isArray(queryKey)
             ? queryKey.join("-")
-            : queryKey;
+            : String(queryKey);
           const cachedData = sessionStorage.getItem(cacheKey);
 
           if (cachedData) {
@@ -52,7 +52,7 @@ export const queryClient = new QueryClient({
       refetchInterval: 60000, // Increased refetch interval to 60 seconds
       refetchOnWindowFocus: true,
       staleTime: 60000, // Increased stale time to 60 seconds
-      cacheTime: 300000, // Keep unused data in cache for 5 minutes
+      gcTime: 300000, // Keep unused data in cache for 5 minutes
       retry: (failureCount, error) => {
         return failureCount < 3 && !error.message.includes("401");
       },

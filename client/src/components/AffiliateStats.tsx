@@ -9,9 +9,7 @@ import {
 } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-
-import { useQuery } from "@tanstack/react-query";
-import { AFFILIATE_STATS_KEY } from "@/hooks/use-leaderboard";
+import { AFFILIATE_STATS_KEY } from "@/hooks/use-leaderboard.ts";
 
 type AffiliateData = {
   timestamp: string;
