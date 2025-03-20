@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { queryClient } from "@/lib/queryClient";
+import { useLoading } from "@/contexts/LoadingContext";
 import {
   Table,
   TableBody,
@@ -53,9 +54,27 @@ export default function WagerRaces() {
   const [raceType] = useState<"weekly" | "monthly" | "weekend">("monthly");
   const [showCompletedRace, setShowCompletedRace] = useState(false);
   const ws = useRef<WebSocket | null>(null);
-  const { data: rawLeaderboardData, isLoading, error } = useLeaderboard("monthly");
+  const { startLoadingFor, stopLoadingFor, isLoadingFor } = useLoading();
+  const loadingKey = "wager-races-page";
   
-  // The useLeaderboard hook returns an array of entries directly
+  // Use the enhanced leaderboard hook with better error handling
+  const { 
+    data: rawLeaderboardData, 
+    isLoading: dataLoading, 
+    error, 
+    errorDetails = null,
+    refetch = () => Promise.resolve() 
+  } = useLeaderboard("monthly") as {
+    data: any[];
+    isLoading: boolean;
+    error: Error | null;
+    errorDetails?: string | null;
+    refetch?: () => Promise<any>;
+  };
+  
+  // Combine loading states
+  const isLoading = dataLoading || isLoadingFor(loadingKey);
+  
   // Add better error handling and logging for debugging
   console.log("Raw leaderboard data:", rawLeaderboardData);
   
@@ -66,6 +85,26 @@ export default function WagerRaces() {
     
   // Default race status
   const raceStatus: string = 'active';
+  
+  // Start loading when component mounts
+  useEffect(() => {
+    startLoadingFor(loadingKey, "spinner", 500);
+    
+    return () => {
+      if (isLoadingFor(loadingKey)) {
+        stopLoadingFor(loadingKey);
+      }
+    };
+  }, [loadingKey, startLoadingFor, stopLoadingFor, isLoadingFor]);
+  
+  // Stop loading when data is available or on error
+  useEffect(() => {
+    if ((!dataLoading && rawLeaderboardData) || error) {
+      if (isLoadingFor(loadingKey)) {
+        stopLoadingFor(loadingKey);
+      }
+    }
+  }, [dataLoading, rawLeaderboardData, error, loadingKey, isLoadingFor, stopLoadingFor]);
 
   // Log data for debugging purposes
   useEffect(() => {
@@ -73,9 +112,19 @@ export default function WagerRaces() {
       console.log("Leaderboard data:", leaderboardData);
     }
     if (error) {
-      console.error("Leaderboard error:", error);
+      console.error("Leaderboard error:", error, errorDetails);
     }
-  }, [leaderboardData, error]);
+  }, [leaderboardData, error, errorDetails]);
+  
+  // Retry loading on error
+  const handleRetry = useCallback(() => {
+    console.log('Retrying wager races data fetch');
+    startLoadingFor(loadingKey, "spinner", 500);
+    refetch().catch((err: Error) => {
+      console.error('Retry failed:', err);
+      stopLoadingFor(loadingKey);
+    });
+  }, [refetch, loadingKey, startLoadingFor, stopLoadingFor]);
 
   useEffect(() => {
     let wsInstance: WebSocket | null = null;
@@ -256,13 +305,16 @@ export default function WagerRaces() {
     );
   }
 
-  if (error) {
+  if (error && !isLoading) {
     console.error("Error loading wager race data:", error);
     return (
       <div className="min-h-screen bg-[#14151A] flex items-center justify-center flex-col">
         <div className="text-red-500 mb-4">Failed to load race data</div>
+        <div className="text-white/60 mb-6 text-sm max-w-md text-center">
+          {errorDetails || 'An unexpected error occurred while loading the wager races.'}
+        </div>
         <Button
-          onClick={() => window.location.reload()}
+          onClick={handleRetry}
           className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
         >
           Retry

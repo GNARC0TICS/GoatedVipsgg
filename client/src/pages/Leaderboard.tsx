@@ -1,37 +1,78 @@
 import React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { PageTransition } from "@/components/PageTransition";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
+import { useLoading } from "@/contexts/LoadingContext";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export default function Leaderboard() {
   const [location] = useLocation();
   const [period, setPeriod] = useState<TimePeriod>("today");
-  const [isLoading, setIsLoading] = useState(true);
+  const { startLoadingFor, stopLoadingFor, isLoadingFor } = useLoading();
+  const loadingKey = `leaderboard-page-${period}`;
   
-  // Use the actual loading state from the useLeaderboard hook
-  const { isLoading: dataLoading } = useLeaderboard(period);
+  // Use the enhanced leaderboard hook with better error handling
+  const { 
+    data: leaderboardData, 
+    isLoading: dataLoading, 
+    error, 
+    errorDetails = null,
+    refetch = () => Promise.resolve() 
+  } = useLeaderboard(period) as {
+    data: any[];
+    isLoading: boolean;
+    error: Error | null;
+    errorDetails?: string | null;
+    refetch?: () => Promise<any>;
+  };
   
-  // Combine our local loading state with the data loading state
-  const isPageLoading = isLoading || dataLoading;
+  // Combine our loading states
+  const isPageLoading = dataLoading || isLoadingFor(loadingKey);
   
+  // Handle period changes with loading state
   useEffect(() => {
+    console.log(`Period changed to ${period}, setting loading state`);
+    
     // Start loading when period changes
-    setIsLoading(true);
+    startLoadingFor(loadingKey, "spinner", 500);
     
     // Add a minimum loading time to prevent flicker
     const timer = setTimeout(() => {
-      setIsLoading(false);
+      stopLoadingFor(loadingKey);
     }, 500); // Reduced from 1000ms for better user experience
     
-    // Log for debugging
-    console.log(`Period changed to ${period}, setting loading state`);
-    
-    return () => clearTimeout(timer);
-  }, [period]);
+    return () => {
+      clearTimeout(timer);
+      // Ensure loading state is cleaned up if component unmounts
+      if (isLoadingFor(loadingKey)) {
+        stopLoadingFor(loadingKey);
+      }
+    };
+  }, [period, loadingKey, startLoadingFor, stopLoadingFor, isLoadingFor]);
+  
+  // Log data for debugging
+  useEffect(() => {
+    if (leaderboardData) {
+      console.log(`Leaderboard data received for ${period}:`, leaderboardData.length);
+    }
+    if (error) {
+      console.error(`Leaderboard error for ${period}:`, error, errorDetails);
+    }
+  }, [leaderboardData, error, errorDetails, period]);
+  
+  // Retry loading on error
+  const handleRetry = useCallback(() => {
+    console.log('Retrying leaderboard data fetch');
+    startLoadingFor(loadingKey, "spinner", 500);
+    refetch().catch((err: Error) => {
+      console.error('Retry failed:', err);
+      stopLoadingFor(loadingKey);
+    });
+  }, [refetch, loadingKey, startLoadingFor, stopLoadingFor]);
 
   // Update period based on URL parameters
   useEffect(() => {
@@ -65,6 +106,24 @@ export default function Leaderboard() {
       `/leaderboard?period=${urlPeriodMap[newPeriod]}`,
     );
   };
+
+  // Show error state if needed
+  if (error && !isPageLoading) {
+    return (
+      <div className="min-h-screen bg-[#14151A] flex items-center justify-center flex-col">
+        <div className="text-red-500 mb-4">Failed to load leaderboard data</div>
+        <div className="text-white/60 mb-6 text-sm max-w-md text-center">
+          {errorDetails || 'An unexpected error occurred while loading the leaderboard.'}
+        </div>
+        <Button
+          onClick={handleRetry}
+          className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <PageTransition isLoading={isPageLoading}>
