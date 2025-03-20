@@ -205,12 +205,9 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
         {onClose && (
           <button 
             onClick={onClose}
-            className="absolute top-2 right-2 z-10 h-6 w-6 flex items-center justify-center rounded-full bg-[#2A2B31] hover:bg-[#3A3B41] text-white transition-colors duration-200"
+            className="absolute top-2 right-2 z-10 text-[#8A8B91] hover:text-white p-1"
           >
-            <span className="sr-only">Close</span>
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+            <X size={14} />
           </button>
         )}
         <div
