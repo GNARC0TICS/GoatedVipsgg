@@ -45,9 +45,9 @@ const prizePool = PRIZE_POOL_BASE;
 function handleLeaderboardConnection(ws: WebSocket) {
   const extendedWs = ws as ExtendedWebSocket;
   extendedWs.isAlive = true;
-  
+
   log("Leaderboard WebSocket client connected");
-  
+
   const clientId = Date.now().toString();
   const pingInterval = setInterval(() => {
     if (!extendedWs.isAlive) {
@@ -196,14 +196,19 @@ function setupRESTRoutes(app: Express) {
       }
 
       // Generate explicit dates to ensure correct month
+      const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
 
+      // Ensure we're working with the current month/year
+      const actualYear = new Date().getFullYear();
+      const actualMonth = new Date().getMonth();
+
       const raceData = {
-        id: `${currentYear}${(currentMonth + 1).toString().padStart(2, "0")}`,
-        status: "live",
-        startDate: new Date(currentYear, currentMonth, 1).toISOString(),
-        endDate: endOfMonth.toISOString(),
+        id: `${actualYear}${(actualMonth + 1).toString().padStart(2, "0")}`,
+        status: "live", 
+        startDate: new Date(actualYear, actualMonth, 1).toISOString(),
+        endDate: new Date(actualYear, actualMonth + 1, 0, 23, 59, 59).toISOString(),
         prizePool: 500, // Monthly race prize pool
         participants: stats.data.monthly.data
           .map((participant: any, index: number) => ({
@@ -247,7 +252,7 @@ function setupRESTRoutes(app: Express) {
         .from(schema.ticketMessages)
         .orderBy(schema.ticketMessages.createdAt);
       */
-      
+
       // Use a placeholder for now
       const messages: any[] = [];
 
@@ -301,7 +306,7 @@ function setupRESTRoutes(app: Express) {
         messages: messages.filter(message => message.ticketId === ticket.id)
       }));
       */
-      
+
       // Use a placeholder for now
       const ticketsWithRelations: any[] = [];
 
@@ -686,7 +691,7 @@ async function handleAffiliateStats(req: any, res: any) {
   try {
     // Use the cached data function instead of making a direct API call
     const data = await getLeaderboardData();
-    
+
     // Store the leaderboard data in the database for persistence
     try {
       // First, let's store affiliate stats for today's data
@@ -697,7 +702,7 @@ async function handleAffiliateStats(req: any, res: any) {
           [entry.uid, entry.name, entry.wagered.today, 'today']
         );
       }
-      
+
       // Store the current wager race data
       const now = new Date();
       const currentYear = now.getFullYear();
@@ -705,13 +710,13 @@ async function handleAffiliateStats(req: any, res: any) {
       const raceId = `${currentYear}${(currentMonth + 1).toString().padStart(2, "0")}`;
       const endOfMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
       const startDate = new Date(currentYear, currentMonth, 1);
-      
+
       // Insert or update race
       await pgPool.query(
         'INSERT INTO wager_races (id, status, start_date, end_date, prize_pool, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) ON CONFLICT (id) DO UPDATE SET updated_at = NOW()',
         [raceId, 'live', startDate, endOfMonth, 500]
       );
-      
+
       // Store the top 10 participants
       for (const [index, participant] of data.data.monthly.data.slice(0, 10).entries()) {
         await pgPool.query(
@@ -719,17 +724,17 @@ async function handleAffiliateStats(req: any, res: any) {
           [raceId, participant.uid, participant.name, participant.wagered.this_month, index + 1]
         );
       }
-      
+
       log(`Stored leaderboard data in database successfully`);
     } catch (dbError) {
       // If database storage fails, we log the error but still return the data from cache
       log(`Error storing leaderboard data in database: ${dbError}`);
     }
-    
+
     // Return the complete data object with all time periods
     // This allows the frontend to extract what it needs without additional API calls
     res.json(data);
-    
+
     // Broadcast updates to any connected WebSocket clients
     broadcastLeaderboardUpdate(data);
   } catch (error) {
@@ -744,11 +749,11 @@ async function handleAffiliateStats(req: any, res: any) {
 async function handleAdminLogin(req: any, res: any) {
   try {
     const { username, password } = req.body;
-    
+
     if (!username || !password) {
       return res.status(400).json({ error: "Username and password required" });
     }
-    
+
     // Look up admin in the database
     /*
     const admin = await db.query.users.findFirst({
@@ -760,11 +765,11 @@ async function handleAdminLogin(req: any, res: any) {
         isAdmin: true
       }
     });
-    
+
     if (!admin || !admin.isAdmin) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
-    
+
     // Verify password hash here...
     // For simplicity, we're assuming direct comparison, but in a real app
     // you would use bcrypt.compare or similar
@@ -772,14 +777,14 @@ async function handleAdminLogin(req: any, res: any) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
     */
-    
+
     // Placeholder implementation
     const admin = { 
       id: 1, 
       username, 
       isAdmin: true 
     };
-    
+
     // Generate token and return
     const token = generateToken({ id: admin.id, username: admin.username, isAdmin: admin.isAdmin });
     res.json({ token });
@@ -799,7 +804,7 @@ async function handleAdminUsersRequest(_req: any, res: any) {
     */
     // Placeholder implementation
     const dbUsers: any[] = [];
-    
+
     res.json({ users: dbUsers });
   } catch (error) {
     log(`Error fetching admin users: ${error}`);
