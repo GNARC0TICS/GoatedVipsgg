@@ -233,6 +233,8 @@ function setupRESTRoutes(app: Express) {
   });
 
   app.get("/api/profile", requireAuth, handleProfileRequest);
+  // Add user profile endpoint by ID for user profile page
+  app.get("/api/users/:id", requireAuth, handleUserProfileRequest);
   app.post("/api/admin/login", handleAdminLogin);
   app.get("/api/admin/users", requireAdmin, handleAdminUsersRequest);
   app.get("/api/admin/wager-races", requireAdmin, handleWagerRacesRequest);
@@ -684,6 +686,91 @@ async function handleProfileRequest(req: any, res: any) {
   }
 }
 
+// Handler for user profile by ID
+async function handleUserProfileRequest(req: any, res: any) {
+  try {
+    // Get the requested user ID from URL parameters
+    const userId = req.params.id;
+    
+    // Fetch user data from the database 
+    // Uncomment in production - for now we'll use a placeholder
+    /*
+    const [user] = await db
+      .select({
+        id: schema.users.id,
+        username: schema.users.username,
+        isAdmin: schema.users.isAdmin,
+        createdAt: schema.users.createdAt,
+      })
+      .from(schema.users)
+      .where(eq(schema.users.id, userId))
+      .limit(1);
+    */
+    
+    // Get leaderboard data
+    const leaderboardData = await getLeaderboardData();
+    
+    // Find user in the leaderboard data
+    const userData = leaderboardData.data.all_time.data.find((entry: any) => entry.uid == userId);
+    
+    if (!userData) {
+      // If user not found in leaderboard, create a basic profile
+      // In a real implementation, we would check the database first
+      const basicUser = {
+        username: req.user?.username || "User",
+        totalWagered: 0,
+        currentRank: 0,
+        bestRank: 0,
+        races: {
+          participated: 0,
+          won: 0,
+          totalPrizes: 0,
+        },
+        achievements: [],
+        history: [],
+      };
+      
+      return res.json(basicUser);
+    }
+    
+    // Format user statistics in the expected structure
+    const userStats = {
+      username: userData.name,
+      totalWagered: userData.wagered.all_time,
+      currentRank: leaderboardData.data.monthly.data.findIndex((entry: any) => entry.uid == userId) + 1 || 0,
+      bestRank: leaderboardData.data.monthly.data.findIndex((entry: any) => entry.uid == userId) + 1 || 0,
+      races: {
+        participated: 1,
+        won: leaderboardData.data.monthly.data[0]?.uid == userId ? 1 : 0,
+        totalPrizes: 0,
+      },
+      achievements: [
+        {
+          name: "Platform Member",
+          description: "Joined the platform",
+          earned: new Date().toISOString(),
+        },
+      ],
+      history: [
+        {
+          period: "Current Month",
+          wagered: userData.wagered.this_month || 0,
+          rank: leaderboardData.data.monthly.data.findIndex((entry: any) => entry.uid == userId) + 1 || 0,
+          prize: 0,
+        },
+      ],
+    };
+    
+    res.json(userStats);
+  } catch (error) {
+    log(`Error fetching user profile: ${error}`);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to fetch user profile",
+    });
+  }
+}
+
 async function handleAffiliateStats(req: any, res: any) {
   try {
     // Use the cached data function instead of making a direct API call
@@ -745,16 +832,25 @@ async function handleAffiliateStats(req: any, res: any) {
 
 async function handleAdminLogin(req: any, res: any) {
   try {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-      return res.status(400).json({ error: "Username and password required" });
+    // Accept both email and username fields, plus a generic "identifier" that can be either
+    const { username, email, password, identifier } = req.body;
+    
+    // Check for credentials - allow either username+password, email+password, or identifier+password
+    const userIdentifier = identifier || username || email;
+    
+    if (!userIdentifier || !password) {
+      return res.status(400).json({ error: "Username/email and password required" });
     }
 
-    // Look up admin in the database
+    // Determine if the identifier is an email (contains @) or username
+    const isEmail = userIdentifier.includes('@');
+    
+    // Look up admin in the database based on username or email
     /*
     const admin = await db.query.users.findFirst({
-      where: eq(schema.users.username, username),
+      where: isEmail 
+        ? eq(schema.users.email, userIdentifier) 
+        : eq(schema.users.username, userIdentifier),
       columns: {
         id: true,
         username: true,
@@ -778,13 +874,15 @@ async function handleAdminLogin(req: any, res: any) {
     // Placeholder implementation
     const admin = { 
       id: 1, 
-      username, 
+      username: isEmail ? "admin" : userIdentifier, // If email was used, provide a default username
       isAdmin: true 
     };
 
     // Generate token and return
     const token = generateToken({ id: admin.id, username: admin.username, isAdmin: admin.isAdmin });
     res.json({ token });
+    
+    log(`Admin login successful for user: ${userIdentifier}`);
   } catch (error) {
     log(`Error in admin login: ${error}`);
     res.status(500).json({ error: "Server error" });
@@ -897,8 +995,14 @@ const chatMessageSchema = z.object({
 });
 
 const adminLoginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
+  // Accept either username, email, or a generic identifier field
+  username: z.string().min(1, "Username is required").optional(),
+  email: z.string().email("Please enter a valid email").optional(),
+  identifier: z.string().min(1, "Email or username is required").optional(),
   password: z.string().min(1, "Password is required"),
+}).refine(data => !!(data.username || data.email || data.identifier), {
+  message: "Either username, email, or identifier is required",
+  path: ["identifier"] 
 });
 
 async function handleChatConnection(ws: WebSocket) {

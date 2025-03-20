@@ -1,5 +1,5 @@
-import React, { Suspense, useEffect } from "react";
-import { Switch, Route, useLocation } from "wouter";
+import React, { Suspense, useEffect, useState } from "react";
+import { Switch, Route, useLocation, useRouter } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -37,7 +37,8 @@ import VipProgram from "./pages/VipProgram";
 import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
-import AdminDashboard from "./pages/admin/Dashboard"; // Added import for AdminDashboard
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminLogin from "./pages/admin/login"; // Add import for AdminLogin
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -76,6 +77,67 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
+  const [, setLocation] = useLocation();
+  // Detect admin domain - goombas.net
+  const isAdminDomain = typeof window !== 'undefined' && window.location.hostname === 'goombas.net';
+  
+  // On first load of admin domain, redirect to admin login
+  useEffect(() => {
+    if (isAdminDomain && window.location.pathname === '/') {
+      setLocation('/admin/login');
+    }
+  }, [isAdminDomain, setLocation]);
+
+  // For admin domain, use a simpler layout or no layout
+  if (isAdminDomain) {
+    return (
+      <AnimatePresence mode="wait">
+        <ErrorBoundary fallback={<ErrorFallback error={new Error()} />}>
+          <Switch>
+            {/* Admin domain routes */}
+            <Route path="/" component={AdminLogin} />
+            <Route path="/admin/login" component={AdminLogin} />
+            <Route path="/admin">
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/admin/wager-races">
+              <ProtectedRoute>
+                <WagerRaceManagement />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/admin/users">
+              <ProtectedRoute>
+                <UserManagement />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/admin/notifications">
+              <ProtectedRoute>
+                <NotificationManagement />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/admin/bonus-codes">
+              <ProtectedRoute>
+                <BonusCodeManagement />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/admin/support">
+              <ProtectedRoute>
+                <SupportManagement />
+              </ProtectedRoute>
+            </Route>
+            {/* Default route - redirect to login */}
+            <Route>
+              <Redirect to="/admin/login" />
+            </Route>
+          </Switch>
+        </ErrorBoundary>
+      </AnimatePresence>
+    );
+  }
+
+  // Main domain with full layout
   return (
     <Layout>
       <AnimatePresence mode="wait">
@@ -122,6 +184,7 @@ function Router() {
               </ProtectedRoute>
             </Route>
             {/* Admin Routes */}
+            <Route path="/admin/login" component={AdminLogin} />
             <Route path="/admin/wager-races">
               <ProtectedRoute>
                 <WagerRaceManagement />
@@ -151,8 +214,7 @@ function Router() {
               <ProtectedRoute>
                 <AdminDashboard />
               </ProtectedRoute>
-            </Route>{" "}
-            {/* Added route for AdminDashboard */}
+            </Route>
             {/* 404 Route */}
             <Route component={NotFound} />
           </Switch>
