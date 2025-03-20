@@ -202,16 +202,17 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
       animate={{ opacity: 1, y: 0 }}
       className="fixed bottom-4 right-4 z-50 w-80"
     >
-      <div className="bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg shadow-lg overflow-hidden relative">
+      <div className="relative">
         {onClose && (
           <button 
             onClick={onClose}
-            className="absolute top-2 left-2 z-10 text-[#8A8B91] hover:text-white p-1"
+            className="absolute -top-2 -right-2 z-20 bg-[#1A1B21] border border-[#2A2B31] rounded-full p-1.5 text-[#8A8B91] hover:text-white hover:bg-[#2A2B31] transition-colors"
           >
             <X size={14} />
           </button>
         )}
-        <div
+        <div className="bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg shadow-lg overflow-hidden">
+          <div
           className="p-4 cursor-pointer"
           onClick={() => setIsExpanded(!isExpanded)}
         >
