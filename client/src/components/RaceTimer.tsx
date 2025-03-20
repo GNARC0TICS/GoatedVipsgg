@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -51,7 +52,8 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
     queryFn: async () => {
       const response = await fetch("/api/wager-races/current");
       if (!response.ok) {
-        throw new Error("Failed to fetch current race data");
+        const errorMessage = await response.text();
+        throw new Error(`Failed to fetch current race data: ${errorMessage}`);
       }
       return response.json();
     },
@@ -60,10 +62,8 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
     enabled: !showPrevious,
   });
 
-  // Early return after all hooks are declared
   if (!isVisible) return null;
 
-  // Handle error separately since onError is not supported in the options
   useEffect(() => {
     if (currentError) {
       console.error("Race data fetch error:", currentError);
@@ -84,7 +84,8 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
     queryFn: async () => {
       const response = await fetch("/api/wager-races/previous");
       if (!response.ok) {
-        throw new Error("Failed to fetch previous race data");
+        const errorMessage = await response.text();
+        throw new Error(`Failed to fetch previous race data: ${errorMessage}`);
       }
       const data = await response.json();
       if (!data) return null;
@@ -98,7 +99,6 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
     enabled: showPrevious,
   });
 
-  // Handle previous race error
   useEffect(() => {
     if (previousError && showPrevious) {
       console.error("Previous race data fetch error:", previousError);
@@ -110,7 +110,6 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
     }
   }, [previousError, showPrevious, toast]);
 
-  // Type assertion to help TypeScript understand the shape
   const raceData: RaceData | undefined = showPrevious ? previousRaceData : currentRaceData;
   const error = showPrevious ? previousError : currentError;
   const isLoading = showPrevious ? isPreviousLoading : isCurrentLoading;
@@ -144,15 +143,6 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    // Add console log to debug the date information
-    console.log("Race date formatting:", {
-      originalString: dateString,
-      parsedDate: date,
-      month: date.getMonth() + 1,
-      year: date.getFullYear(),
-    });
-
-    // Force UTC interpretation to avoid timezone issues
     return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -196,7 +186,7 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
 
   if (!raceData) return null;
 
-  const content = (
+  return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -213,111 +203,110 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
         )}
         <div className="bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg shadow-lg overflow-hidden">
           <div
-          className="p-4 cursor-pointer"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-[#D7FF00]" />
-              <span className="font-heading text-white">
-                {raceData.title ||
-                  (showPrevious ? "Previous Race" : "Monthly Race")}
+            className="p-4 cursor-pointer"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-[#D7FF00]" />
+                <span className="font-heading text-white">
+                  {raceData.title ||
+                    (showPrevious ? "Previous Race" : "Monthly Race")}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsVisible(false);
+                  }}
+                  className="text-[#8A8B91] hover:text-white p-1"
+                >
+                  <X size={14} />
+                </button>
+                {!showPrevious && (
+                  <>
+                    <Clock className="h-4 w-4 text-[#D7FF00]" />
+                    <span className="text-white font-mono">{timeLeft}</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center mt-2">
+              <span className="text-[#8A8B91] text-sm">
+                {formatDate(raceData.startDate)}
               </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsVisible(false);
-                }}
-                className="text-[#8A8B91] hover:text-white p-1"
-              >
-                <X size={14} />
-              </button>
-              {!showPrevious && (
-                <>
-                  <Clock className="h-4 w-4 text-[#D7FF00]" />
-                  <span className="text-white font-mono">{timeLeft}</span>
-                </>
-              )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowPrevious(!showPrevious);
+                  }}
+                  className="p-1 rounded hover:bg-[#2A2B31] transition-colors"
+                >
+                  <History className="h-4 w-4 text-[#8A8B91]" />
+                </button>
+                {isExpanded ? (
+                  <ChevronUp className="h-4 w-4 text-[#8A8B91]" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-[#8A8B91]" />
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-between items-center mt-2">
-            <span className="text-[#8A8B91] text-sm">
-              {formatDate(raceData.startDate)}
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowPrevious(!showPrevious);
-                }}
-                className="p-1 rounded hover:bg-[#2A2B31] transition-colors"
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: "auto" }}
+                exit={{ height: 0 }}
+                className="overflow-hidden"
               >
-                <History className="h-4 w-4 text-[#8A8B91]" />
-              </button>
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4 text-[#8A8B91]" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-[#8A8B91]" />
-              )}
-            </div>
-          </div>
-        </div>
-
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              initial={{ height: 0 }}
-              animate={{ height: "auto" }}
-              exit={{ height: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="p-4 border-t border-[#2A2B31]">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-[#8A8B91] text-sm">
-                    Prize Pool: ${raceData.prizePool.toLocaleString()}
-                  </span>
-                </div>
-                {raceData.participants.map((participant: RaceParticipant, index: number) => (
-                  <div
-                    key={participant.uid}
-                    className="flex items-center justify-between py-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`
-                        w-5 h-5 flex items-center justify-center rounded-full text-sm font-medium
-                        ${index === 0 ? "bg-yellow-500 text-black" : ""}
-                        ${index === 1 ? "bg-gray-400 text-black" : ""}
-                        ${index === 2 ? "bg-amber-700 text-white" : ""}
-                        ${index > 2 ? "bg-[#2A2B31] text-white" : ""}
-                      `}
-                      >
-                        {index + 1}
-                      </span>
-                      <span className="text-white truncate max-w-[120px]">
-                        {participant.name}
-                      </span>
-                    </div>
-                    <span className="text-[#D7FF00] font-mono">
-                      ${participant.wagered.toLocaleString()}
+                <div className="p-4 border-t border-[#2A2B31]">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-[#8A8B91] text-sm">
+                      Prize Pool: ${raceData.prizePool.toLocaleString()}
                     </span>
                   </div>
-                ))}
-                <Link href="/wager-races">
-                  <a className="block text-center text-[#D7FF00] mt-4 hover:underline">
-                    View Full Leaderboard
-                  </a>
-                </Link>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  {raceData.participants.map((participant: RaceParticipant, index: number) => (
+                    <div
+                      key={participant.uid}
+                      className="flex items-center justify-between py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`
+                            w-5 h-5 flex items-center justify-center rounded-full text-sm font-medium
+                            ${index === 0 ? "bg-yellow-500 text-black" : ""}
+                            ${index === 1 ? "bg-gray-400 text-black" : ""}
+                            ${index === 2 ? "bg-amber-700 text-white" : ""}
+                            ${index > 2 ? "bg-[#2A2B31] text-white" : ""}
+                          `}
+                        >
+                          {index + 1}
+                        </span>
+                        <span className="text-white truncate max-w-[120px]">
+                          {participant.name}
+                        </span>
+                      </div>
+                      <span className="text-[#D7FF00] font-mono">
+                        ${participant.wagered.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                  <Link href="/wager-races">
+                    <a className="block text-center text-[#D7FF00] mt-4 hover:underline">
+                      View Full Leaderboard
+                    </a>
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </motion.div>
   );
-
-  return content;
 }
