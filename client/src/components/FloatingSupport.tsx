@@ -21,20 +21,20 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
         className="fixed bottom-20 left-4 z-50"
       >
         {isMinimized ? (
-          <div className="relative flex items-center gap-2">
-            <Button
-              onClick={onClose}
-              size="icon"
-              className="h-10 w-10 rounded-full bg-[#D7FF00] hover:bg-[#D7FF00]/90 text-[#14151A] shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <X className="h-5 w-5" />
-            </Button>
+          <div className="relative">
             <Button
               onClick={() => setIsMinimized(false)}
               size="icon"
               className="h-14 w-14 rounded-full bg-[#D7FF00] hover:bg-[#D7FF00]/90 text-[#14151A] shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <MessageCircle className="h-7 w-7" />
+            </Button>
+            <Button
+              onClick={onClose}
+              size="icon"
+              className="absolute -top-2 -left-2 h-6 w-6 rounded-full bg-[#14151A] border border-[#D7FF00] hover:bg-[#14151A]/90 text-[#D7FF00] shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+            >
+              <X className="h-3 w-3" />
             </Button>
           </div>
         ) : (
