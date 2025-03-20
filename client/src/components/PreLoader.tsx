@@ -90,7 +90,7 @@ export const PreLoader: React.FC<PreLoaderProps> = ({ onLoadComplete }) => {
           <motion.div
             variants={pulseVariants}
             animate="pulse"
-            className="absolute inset-0 bg-[#D7FF00]/30 rounded-full filter blur-[20px] scale-125"
+            className="absolute inset-0 bg-[#D7FF00]/20 rounded-full filter blur-[15px] scale-110"
             style={{ 
               width: '100%', 
               height: '100%',
@@ -104,11 +104,11 @@ export const PreLoader: React.FC<PreLoaderProps> = ({ onLoadComplete }) => {
           <motion.img
             src="/images/logo-neon.png"
             alt="Goated VIPs"
-            className="w-64 h-auto object-contain relative z-10"
+            className="w-48 h-auto object-contain relative z-10"
             animate={{
-              scale: [1, 1.02, 1],
+              scale: [1, 1.015, 1],
               transition: {
-                duration: 2,
+                duration: 1.5,
                 repeat: Infinity,
                 ease: "easeInOut",
               },
