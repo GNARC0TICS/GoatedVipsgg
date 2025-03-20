@@ -1,16 +1,3 @@
-// Define interface for leaderboard entries
-interface LeaderboardEntry {
-  uid: string;
-  name: string;
-  wagered: {
-    this_month: number;
-    this_week: number;
-    today: number;
-    all_time: number;
-  };
-  lastUpdate?: string;
-}
-
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
