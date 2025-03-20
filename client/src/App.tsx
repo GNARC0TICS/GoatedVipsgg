@@ -11,6 +11,9 @@ import { PreLoader } from "@/components/PreLoader";
 import { Layout } from "@/components/Layout";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Redirect } from "@/lib/navigation";
+import { motion } from "framer-motion";
+import { ParticleBackground } from "./components/ParticleBackground"; // Added import
+
 
 // Import all pages
 import NotFound from "@/pages/not-found";
@@ -80,7 +83,7 @@ function Router() {
   const [, setLocation] = useLocation();
   // Detect admin domain - goombas.net
   const isAdminDomain = typeof window !== 'undefined' && window.location.hostname === 'goombas.net';
-  
+
   // On first load of admin domain, redirect to admin login
   useEffect(() => {
     if (isAdminDomain && window.location.pathname === '/') {
@@ -262,18 +265,45 @@ function AppContent() {
 
   return (
     <AnimatePresence mode="wait">
-      {isInitialLoad ? (
-        <PreLoader onLoadComplete={handleLoadComplete} />
-      ) : (
-        <Suspense fallback={<LoadingSpinner />}>
-          <TooltipProvider>
-            <Router />
-            <Toaster />
-          </TooltipProvider>
-        </Suspense>
-      )}
+      <>
+        <ParticleBackground /> {/* Added ParticleBackground */}
+        {isInitialLoad ? (
+          <PreLoader onLoadComplete={handleLoadComplete} />
+        ) : (
+          <Suspense fallback={<LoadingSpinner />}>
+            <TooltipProvider>
+              <Router />
+              <Toaster />
+            </TooltipProvider>
+          </Suspense>
+        )}
+      </>
     </AnimatePresence>
   );
 }
 
 export default App;
+
+
+// Added Component
+const ParticleBackground = () => {
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      zIndex: -1, // Ensure it's behind other content
+      pointerEvents: 'none', // Prevent particles from interfering with clicks
+    }}>
+      {/* Add your particle effect code here using a library like particles.js or similar */}
+      <div style={{
+          backgroundColor: 'rgba(215, 255, 0, 0.1)', // Subtle neon green background
+          backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(215, 255, 0, 0.1) 0%, transparent 80%)' // Radial gradient for subtle effect
+        }}></div>
+      {/* Or integrate other particle library here */}
+
+    </div>
+  );
+};
