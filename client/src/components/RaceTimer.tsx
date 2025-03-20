@@ -30,7 +30,11 @@ interface RaceData {
   participants: RaceParticipant[];
 }
 
-export function RaceTimer() {
+interface RaceTimerProps {
+  onClose?: () => void;
+}
+
+export function RaceTimer({ onClose }: RaceTimerProps = {}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPrevious, setShowPrevious] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
@@ -177,7 +181,18 @@ export function RaceTimer() {
       animate={{ opacity: 1, y: 0 }}
       className="fixed bottom-4 right-4 z-50 w-80"
     >
-      <div className="bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg shadow-lg overflow-hidden">
+      <div className="bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg shadow-lg overflow-hidden relative">
+        {onClose && (
+          <button 
+            onClick={onClose}
+            className="absolute top-2 right-2 z-10 h-6 w-6 flex items-center justify-center rounded-full bg-[#2A2B31] hover:bg-[#3A3B41] text-white transition-colors duration-200"
+          >
+            <span className="sr-only">Close</span>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </button>
+        )}
         <div
           className="p-4 cursor-pointer"
           onClick={() => setIsExpanded(!isExpanded)}

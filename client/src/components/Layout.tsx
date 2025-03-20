@@ -643,7 +643,14 @@ export function Layout({ children }: { children: ReactNode }) {
                         className="w-full relative overflow-hidden group bg-[#D7FF00] text-[#14151A] hover:text-[#D7FF00] transition-colors duration-300 rounded-md flex items-center justify-center gap-2 py-2.5"
                       >
                         <span className="relative z-10">PLAY NOW</span>
-                        <ExternalLink className="h-4 w-4 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+                        <div className="relative z-10 play-icon-container">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" className="play-icon">
+                            <path fill="currentColor" fillOpacity="0" stroke="currentColor" strokeDasharray="40" strokeDashoffset="40" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 6l10 6l-10 6Z">
+                              <animate className="play-icon-animate" fill="freeze" attributeName="fill-opacity" begin="indefinite" dur="0.5s" values="0;1" />
+                              <animate className="play-icon-animate" fill="freeze" attributeName="stroke-dashoffset" begin="indefinite" dur="0.5s" values="40;0" />
+                            </path>
+                          </svg>
+                        </div>
                         <div className="absolute inset-0 bg-[#14151A] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
                       </Button>
                     </div>
@@ -707,7 +714,14 @@ export function Layout({ children }: { children: ReactNode }) {
               className="relative overflow-hidden group bg-[#D7FF00] text-[#14151A] hover:text-[#D7FF00] transition-colors duration-300 rounded-md flex items-center gap-2 h-8 md:h-10 px-3 md:px-4 text-sm md:text-base font-heading"
             >
               <span className="relative z-10">PLAY</span>
-              <ExternalLink className="h-4 w-4 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+              <div className="relative z-10 play-icon-container">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" className="play-icon">
+                  <path fill="currentColor" fillOpacity="0" stroke="currentColor" strokeDasharray="40" strokeDashoffset="40" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 6l10 6l-10 6Z">
+                    <animate className="play-icon-animate" fill="freeze" attributeName="fill-opacity" begin="indefinite" dur="0.5s" values="0;1" />
+                    <animate className="play-icon-animate" fill="freeze" attributeName="stroke-dashoffset" begin="indefinite" dur="0.5s" values="40;0" />
+                  </path>
+                </svg>
+              </div>
               <div className="absolute inset-0 bg-[#14151A] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
             </Button>
           </div>
@@ -784,7 +798,7 @@ export function Layout({ children }: { children: ReactNode }) {
                   placeholder="Enter your email"
                   className="flex-1 px-4 py-2 rounded-lg border border-[#14151A]/20 focus:outline-none focus:border-[#14151A] focus:ring-1 focus:ring-[#14151A]/30 transition-all duration-300 bg-white/95"
                 />
-                <Button className="bg-[#14151A] text-white hover:bg-[#14151A]/80 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                <Button className="bg-[#14151A] text-black hover:bg-[#14151A]/80 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 font-medium">
                   Subscribe
                 </Button>
               </form>

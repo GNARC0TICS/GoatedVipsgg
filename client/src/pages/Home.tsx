@@ -111,7 +111,7 @@ export default function Home() {
               transition={{ delay: 0.2 }}
               className="mb-24"
             >
-              <h2 className="text-4xl font-heading text-white mb-12 text-center flex items-center justify-center gap-3">
+              <h2 className="text-4xl font-heading text-white mb-12 text-center flex items-center justify-center gap-3 glitch-text" data-text="TOP PERFORMERS">
                 <Crown className="w-8 h-8 text-[#D7FF00] animate-wiggle" />
                 TOP PERFORMERS
               </h2>
@@ -124,7 +124,7 @@ export default function Home() {
               transition={{ delay: 0.3 }}
               className="mb-24"
             >
-              <h2 className="text-4xl font-heading text-white mb-12 text-center flex items-center justify-center gap-3">
+              <h2 className="text-4xl font-heading text-white mb-12 text-center flex items-center justify-center gap-3 glitch-text" data-text="EXPLORE OUR FEATURES">
                 <Zap className="w-8 h-8 text-[#D7FF00] animate-flicker" />
                 EXPLORE OUR FEATURES
               </h2>
@@ -368,7 +368,8 @@ export default function Home() {
                   href="https://www.Goated.com/r/VIPBOOST"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block bg-[#D7FF00] text-black font-heading text-xl px-8 py-4 rounded-lg hover:bg-[#D7FF00]/90 transition-all duration-300 transform hover:scale-105"
+                  className="inline-block bg-[#D7FF00] text-black font-heading text-xl px-8 py-4 rounded-lg hover:bg-[#D7FF00]/90 transition-all duration-300 transform hover:scale-105 glitch-text-button"
+                  data-text="JOIN THE GOATS TODAY! 🐐"
                 >
                   JOIN THE GOATS TODAY! 🐐
                 </a>

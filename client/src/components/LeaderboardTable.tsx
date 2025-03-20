@@ -284,16 +284,20 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
             </Button>
           </div>
         </div>
-        <div className="text-right mt-4 text-[#D7FF00] font-mono text-lg">
-          Total Wagered{" "}
-          {timePeriod === "all_time"
-            ? "All Time"
-            : timePeriod === "monthly"
-              ? "This Month"
-              : timePeriod === "weekly"
-                ? "This Week"
-                : "Today"}
-          : ${totalDailyWager.toLocaleString()}
+        <div className="p-4 border-t border-[#2A2B31] mt-4 flex items-center justify-center">
+          <div className="bg-[#1A1B21]/80 backdrop-blur-sm border border-[#2A2B31] rounded-lg px-6 py-3">
+            <span className="text-[#D7FF00] font-mono text-lg font-bold">
+              Total Wagered{" "}
+              {timePeriod === "all_time"
+                ? "All Time"
+                : timePeriod === "monthly"
+                  ? "This Month"
+                  : timePeriod === "weekly"
+                    ? "This Week"
+                    : "Today"}
+              : ${totalDailyWager.toLocaleString()}
+            </span>
+          </div>
         </div>
       </div>
     </div>
