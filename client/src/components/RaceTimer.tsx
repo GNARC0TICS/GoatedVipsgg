@@ -39,8 +39,6 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPrevious, setShowPrevious] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-
-  if (!isVisible) return null;
   const [timeLeft, setTimeLeft] = useState<string>("");
   const { toast } = useToast();
 
@@ -61,6 +59,9 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
     retry: 3,
     enabled: !showPrevious,
   });
+
+  // Early return after all hooks are declared
+  if (!isVisible) return null;
 
   // Handle error separately since onError is not supported in the options
   useEffect(() => {
