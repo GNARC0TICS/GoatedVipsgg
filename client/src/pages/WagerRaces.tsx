@@ -1,3 +1,16 @@
+// Define interface for leaderboard entries
+interface LeaderboardEntry {
+  uid: string;
+  name: string;
+  wagered: {
+    this_month: number;
+    this_week: number;
+    today: number;
+    all_time: number;
+  };
+  lastUpdate?: string;
+}
+
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -53,7 +66,29 @@ export default function WagerRaces() {
   const [raceType] = useState<"weekly" | "monthly" | "weekend">("monthly");
   const [showCompletedRace, setShowCompletedRace] = useState(false);
   const ws = useRef<WebSocket | null>(null);
-  const { data: leaderboardData, isLoading, error } = useLeaderboard("monthly");
+  const { data: rawLeaderboardData, isLoading, error } = useLeaderboard("monthly");
+  
+  // Define interface for leaderboard response structure
+  interface LeaderboardResponse {
+    status?: string;
+    data?: {
+      monthly?: {
+        data?: LeaderboardEntry[];
+      };
+    };
+  }
+  
+  // Transform data to the expected format - extract both the data array and any metadata
+  // Cast rawLeaderboardData to our expected structure
+  const leaderboardResponse = (rawLeaderboardData as LeaderboardResponse) || {};
+  
+  // Extract the actual leaderboard data array
+  const leaderboardData = Array.isArray(leaderboardResponse?.data?.monthly?.data) 
+    ? leaderboardResponse.data.monthly.data 
+    : [];
+    
+  // Extract status from metadata if available
+  const raceStatus = leaderboardResponse?.status || 'active';
 
   // Log data for debugging purposes
   useEffect(() => {
@@ -66,7 +101,18 @@ export default function WagerRaces() {
   }, [leaderboardData, error]);
 
   useEffect(() => {
-    ws.current = new WebSocket(`wss://${window.location.hostname}/ws`);
+    // Fix WebSocket connection to use /ws/leaderboard endpoint instead of /ws
+    try {
+      const isSecure = window.location.protocol === 'https:';
+      const wsProtocol = isSecure ? 'wss:' : 'ws:';
+      ws.current = new WebSocket(`${wsProtocol}//${window.location.hostname}/ws/leaderboard`);
+      
+      ws.current.addEventListener('error', (error) => {
+        console.error('WebSocket connection error:', error);
+      });
+    } catch (error) {
+      console.error('Failed to create WebSocket connection:', error);
+    }
 
     return () => {
       if (ws.current) {
@@ -221,7 +267,7 @@ export default function WagerRaces() {
   }
 
   // Check if leaderboard data is empty
-  if (!leaderboardData || leaderboardData.length === 0) {
+  if (!Array.isArray(leaderboardData) || leaderboardData.length === 0) {
     return (
       <div className="min-h-screen bg-[#14151A] flex items-center justify-center flex-col">
         <div className="text-white mb-4">
@@ -320,7 +366,7 @@ export default function WagerRaces() {
                         Goated account within 24 hours of race completion
                       </div>
                     </div>
-                  ) : leaderboardData?.status === "transition" ? (
+                  ) : raceStatus === "transition" ? (
                     <div className="bg-orange-500/10 text-orange-500 px-6 py-2 rounded-full border border-orange-500 backdrop-blur-sm">
                       In Transition Period
                     </div>
@@ -341,8 +387,7 @@ export default function WagerRaces() {
                   )}
 
                   {/* Next Race Countdown */}
-                  {(showCompletedRace ||
-                    leaderboardData?.status === "transition") && (
+                  {(showCompletedRace || raceStatus === "transition") && (
                     <div className="text-center">
                       <div className="text-[#8A8B91] mb-2">
                         Next Race Starts In

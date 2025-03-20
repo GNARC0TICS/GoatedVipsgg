@@ -264,6 +264,22 @@ async function startServer() {
   }
 }
 
+// Function to close database connections
+async function closeDatabaseConnections() {
+  try {
+    log("Closing database connections...");
+    // Close Drizzle ORM connection if needed
+    
+    // Close PostgreSQL connection pool
+    await pgPool.end();
+    log("Database connections closed successfully");
+    return true;
+  } catch (error) {
+    console.error("Error closing database connections:", error);
+    return false;
+  }
+}
+
 // Graceful shutdown handler
 async function gracefulShutdown(signal: string) {
   log(`Received ${signal} signal. Shutting down gracefully...`);
