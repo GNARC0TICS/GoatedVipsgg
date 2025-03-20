@@ -37,6 +37,9 @@ interface RaceTimerProps {
 export function RaceTimer({ onClose }: RaceTimerProps = {}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPrevious, setShowPrevious] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+
+  if (!isVisible) return null;
   const [timeLeft, setTimeLeft] = useState<string>("");
   const { toast } = useToast();
 
@@ -222,6 +225,15 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
               </span>
             </div>
             <div className="flex items-center gap-2">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsVisible(false);
+                }}
+                className="text-[#8A8B91] hover:text-white p-1"
+              >
+                <X size={14} />
+              </button>
               {!showPrevious && (
                 <>
                   <Clock className="h-4 w-4 text-[#D7FF00]" />
