@@ -2,9 +2,18 @@ import { ReactNode, useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Menu, Bell, Settings, User, LogOut, ChevronDown, Gift, Lock, ExternalLink } from "lucide-react";
-import { ParticleBackground } from "./ParticleBackground";
-import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
+import {
+  Menu,
+  Bell,
+  Settings,
+  User,
+  LogOut,
+  Gift,
+  Lock,
+  ExternalLink,
+} from "lucide-react";
+// Import from the fixed sheet component
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet-fix";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
 import { useQuery } from "@tanstack/react-query";
@@ -31,7 +40,8 @@ import { ScrollToTopNavigation } from "./ScrollToTopNavigation";
 
 // Improved header styling
 const headerClasses = {
-  container: "fixed top-0 left-0 right-0 z-50 bg-[#14151A]/80 backdrop-blur-xl border-b border-[#2A2B31]/50 shadow-sm transition-all duration-300",
+  container:
+    "fixed top-0 left-0 right-0 z-50 bg-[#14151A]/80 backdrop-blur-xl border-b border-[#2A2B31]/50 shadow-sm transition-all duration-300",
   nav: "container mx-auto h-16 px-4 flex items-center justify-between",
   logo: "h-8 w-auto relative z-10 transition-all duration-300 hover:scale-105 hover:brightness-110",
   menuButton: "md:hidden relative overflow-hidden group",
@@ -41,8 +51,9 @@ const headerClasses = {
 
 // Consolidated dropdown styling
 const dropdownClasses = {
-  content: "w-56 bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1",
-  item: "px-4 py-2.5 font-medium text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-all duration-200 cursor-pointer group",
+  content:
+    "w-56 bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1",
+  item: "px-4 py-2 font-medium text-white hover:text-[#D7FF00] hover:bg-[#2A2B31]/50 rounded-lg transition-colors duration-200 cursor-pointer",
 };
 
 // Footer styling
@@ -59,7 +70,17 @@ const hoverVariants = {
   hover: { x: 5, transition: { duration: 0.3 } },
 };
 
-function MobileNavLink({ href, label, onClose, isTitle = false }: { href: string; label: string | React.ReactNode; onClose: () => void; isTitle?: boolean; }) {
+function MobileNavLink({
+  href,
+  label,
+  onClose,
+  isTitle = false,
+}: {
+  href: string;
+  label: string | React.ReactNode;
+  onClose: () => void;
+  isTitle?: boolean;
+}) {
   const [location] = useLocation();
   const isActive = location === href;
   const isHome = href === "/";
@@ -74,7 +95,9 @@ function MobileNavLink({ href, label, onClose, isTitle = false }: { href: string
         window.location.href = href;
       }}
       className={`px-4 py-2.5 rounded-lg transition-all duration-200 cursor-pointer ${
-        isActive ? "bg-[#D7FF00]/10 text-[#D7FF00]" : "text-white hover:bg-[#2A2B31]"
+        isActive
+          ? "bg-[#D7FF00]/10 text-[#D7FF00]"
+          : "text-white hover:bg-[#2A2B31]"
       } ${isTitle || isHome ? "text-base font-bold" : "text-sm"}`}
     >
       {label}
@@ -109,10 +132,10 @@ export function Layout({ children }: { children: ReactNode }) {
     handleResize();
 
     // Add event listener
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
 
     // Clean up
-    return () => window.removeEventListener('resize', handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Handle scroll events
@@ -121,8 +144,8 @@ export function Layout({ children }: { children: ReactNode }) {
       setScrolled(window.scrollY > 20);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
@@ -132,7 +155,7 @@ export function Layout({ children }: { children: ReactNode }) {
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => setIsFooterVisible(entry.isIntersecting),
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     if (footerRef.current) {
@@ -161,21 +184,26 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-[#14151A] text-white">
       <ScrollToTopNavigation />
-      <header className={`${headerClasses.container} ${scrolled ? 'h-16 shadow-md' : 'h-16'}`}>
+      <header
+        className={`${headerClasses.container} ${scrolled ? "h-16 shadow-md" : "h-16"}`}
+      >
         <nav className={headerClasses.nav}>
           {/* Navigation content */}
           <div className="flex items-center gap-8">
             <Link href="/" className="group relative">
-              <img src="/images/logo-neon.png" alt="GOATED" className={headerClasses.logo} />
+              <img
+                src="/images/logo-neon.png"
+                alt="GOATED"
+                className={headerClasses.logo}
+              />
               <div className="absolute inset-0 bg-[#D7FF00]/0 rounded-full filter blur-md transition-all duration-300 group-hover:bg-[#D7FF00]/30 group-hover:blur-xl -z-10"></div>
             </Link>
 
             {/* Desktop Navigation */}
             <div className={headerClasses.desktopNav}>
-              {/* HOME - now first */}
               <NavLink href="/" label="HOME" />
-
-              {/* GET STARTED dropdown - now second */}
+              
+              {/* GET STARTED dropdown - moved after HOME */}
               <div className="relative group">
                 <Link href="/how-it-works">
                   <Button
@@ -183,44 +211,33 @@ export function Layout({ children }: { children: ReactNode }) {
                     className="flex items-center gap-1.5 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                   >
                     <span className="font-bold">GET STARTED</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
                 <div className="absolute left-0 mt-2 w-full min-w-[200px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
-                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                     <Link href="/how-it-works">
                       <div className={dropdownClasses.item}>
-                        <span className="relative ml-0 transition-all duration-200">
-                          How It Works
-                        </span>
+                        How It Works
                       </div>
                     </Link>
                     <Link href="/vip-transfer">
                       <div className={dropdownClasses.item}>
-                        <span className="relative ml-0 transition-all duration-200">
-                          VIP Transfer
-                        </span>
+                        VIP Transfer
                       </div>
                     </Link>
                     <Link href="/tips-and-strategies">
                       <div className={dropdownClasses.item}>
-                        <span className="relative ml-0 transition-all duration-200">
-                          Tips & Strategies
-                        </span>
+                        Tips & Strategies
                       </div>
                     </Link>
                     <Link href="/vip-program">
                       <div className={dropdownClasses.item}>
-                        <span className="relative ml-0 transition-all duration-200">
-                          VIP Program
-                        </span>
+                        VIP Program
                       </div>
                     </Link>
                   </div>
                 </div>
               </div>
-
-              {/* MONTHLY RACE - now third with bold text */}
               <NavLink
                 href="/wager-races"
                 label={
@@ -242,45 +259,40 @@ export function Layout({ children }: { children: ReactNode }) {
                     className="flex items-center gap-1.5 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                   >
                     <span className="font-bold">PROMOTIONS</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
                 <div className="absolute left-0 mt-2 w-full min-w-[200px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
-                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                     <Link href="/promotions">
                       <div className={dropdownClasses.item}>
-                        <span className="relative ml-0 transition-all duration-200">
-                          News & Promotions
-                        </span>
+                        News & Promotions
                       </div>
                     </Link>
                     <Link href="/goated-token">
                       <div className={dropdownClasses.item}>
-                        <span className="relative ml-0 transition-all duration-200">
-                          Goated Airdrop
-                        </span>
+                        Goated Airdrop
                       </div>
                     </Link>
                     <Link href="/bonus-codes">
                       <div className={dropdownClasses.item}>
-                        <span className="relative flex items-center gap-2">
-                          <span className="relative ml-0 transition-all duration-200">
-                            {isAuthenticated ? (
-                              "Bonus Codes"
-                            ) : (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger className="flex items-center gap-2 opacity-50 cursor-not-allowed">
-                                    <span>Bonus Codes</span>
-                                    <Lock className="h-4 w-4" />
-                                  </TooltipTrigger>
-                                  <TooltipContent className="bg-[#1A1B21] border-[#2A2B31] text-white">
-                                    <p>Sign in to access bonus codes and rewards</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </span>
+                        <span className="flex items-center gap-2">
+                          {isAuthenticated ? (
+                            "Bonus Codes"
+                          ) : (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger className="flex items-center gap-2 opacity-50 cursor-not-allowed">
+                                  <span>Bonus Codes</span>
+                                  <Lock className="h-4 w-4" />
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-[#1A1B21] border-[#2A2B31] text-white">
+                                  <p>
+                                    Sign in to access bonus codes and rewards
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                           <Gift className="h-4 w-4" />
                         </span>
                       </div>
@@ -297,37 +309,28 @@ export function Layout({ children }: { children: ReactNode }) {
                     className="flex items-center gap-1.5 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                   >
                     <span className="font-bold">LEADERBOARDS</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
                 <div className="absolute left-0 mt-2 w-full min-w-[200px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
-                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                     <Link href="/leaderboard?period=daily">
                       <div className={dropdownClasses.item}>
-                        <span className="relative ml-0 transition-all duration-200">
-                          Daily
-                        </span>
+                        Daily
                       </div>
                     </Link>
                     <Link href="/leaderboard?period=weekly">
                       <div className={dropdownClasses.item}>
-                        <span className="relative ml-0 transition-all duration-200">
-                          Weekly
-                        </span>
+                        Weekly
                       </div>
                     </Link>
                     <Link href="/leaderboard?period=monthly">
                       <div className={dropdownClasses.item}>
-                        <span className="relative ml-0 transition-all duration-200">
-                          Monthly
-                        </span>
+                        Monthly
                       </div>
                     </Link>
                     <Link href="/leaderboard?period=all_time">
                       <div className={dropdownClasses.item}>
-                        <span className="relative ml-0 transition-all duration-200">
-                          All Time
-                        </span>
+                        All Time
                       </div>
                     </Link>
                   </div>
@@ -342,16 +345,13 @@ export function Layout({ children }: { children: ReactNode }) {
                     className="flex items-center gap-1.5 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                   >
                     <span className="font-bold">SOCIALS</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
                 <div className="absolute left-0 mt-2 w-full min-w-[200px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
-                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                     <Link href="/telegram">
                       <div className={dropdownClasses.item}>
-                        <span className="relative ml-0 transition-all duration-200">
-                          Telegram Community
-                        </span>
+                        Telegram Community
                       </div>
                     </Link>
                   </div>
@@ -366,30 +366,23 @@ export function Layout({ children }: { children: ReactNode }) {
                     className="flex items-center gap-1.5 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                   >
                     <span className="font-bold">HELP & FAQ</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                 </Link>
                 <div className="absolute left-0 mt-2 w-full min-w-[200px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
-                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                  <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                     <Link href="/help">
                       <div className={dropdownClasses.item}>
-                        <span className="relative ml-0 transition-all duration-200">
-                          Help Center
-                        </span>
+                        Help Center
                       </div>
                     </Link>
                     <Link href="/faq">
                       <div className={dropdownClasses.item}>
-                        <span className="relative ml-0 transition-all duration-200">
-                          FAQ
-                        </span>
+                        FAQ
                       </div>
                     </Link>
                     <Link href="/support">
                       <div className={dropdownClasses.item}>
-                        <span className="relative ml-0 transition-all duration-200">
-                          Contact Support
-                        </span>
+                        Contact Support
                       </div>
                     </Link>
                   </div>
@@ -403,43 +396,32 @@ export function Layout({ children }: { children: ReactNode }) {
                     className="flex items-center gap-1.5 font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 hover:bg-transparent px-2"
                   >
                     <span className="font-bold">ADMIN</span>
-                    <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
                   </Button>
                   <div className="absolute left-0 mt-2 w-full min-w-[200px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
-                    <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 px-1">
+                    <div className="bg-[#1A1B21]/95 backdrop-blur-xl border border-[#2A2B31] rounded-xl shadow-2xl py-2 mt-1">
                       <Link href="/admin/user-management">
                         <div className={dropdownClasses.item}>
-                          <span className="relative ml-0 transition-all duration-200">
-                            User Management
-                          </span>
+                          User Management
                         </div>
                       </Link>
                       <Link href="/admin/notifications">
                         <div className={dropdownClasses.item}>
-                          <span className="relative ml-0 transition-all duration-200">
-                            Notification Management
-                          </span>
+                          Notification Management
                         </div>
                       </Link>
                       <Link href="/admin/support">
                         <div className={dropdownClasses.item}>
-                          <span className="relative ml-0 transition-all duration-200">
-                            Support Management
-                          </span>
+                          Support Management
                         </div>
                       </Link>
                       <Link href="/admin/wager-races">
                         <div className={dropdownClasses.item}>
-                          <span className="relative ml-0 transition-all duration-200">
-                            Wager Race Management
-                          </span>
+                          Wager Race Management
                         </div>
                       </Link>
                       <Link href="/admin/bonus-codes">
                         <div className={dropdownClasses.item}>
-                          <span className="relative ml-0 transition-all duration-200">
-                            Bonus Code Management
-                          </span>
+                          Bonus Code Management
                         </div>
                       </Link>
                     </div>
@@ -471,15 +453,24 @@ export function Layout({ children }: { children: ReactNode }) {
                     transition={{ duration: 0.3 }}
                     className="flex flex-col gap-4 pt-8"
                   >
-                    <div className="px-4 py-2 text-[#D7FF00] font-heading text-base font-bold">MENU</div>
-                    <MobileNavLink href="/" label="HOME" onClose={() => setOpenMobile(false)} isTitle={true} />
+                    <div className="px-4 py-2 text-[#D7FF00] font-heading text-base font-bold">
+                      MENU
+                    </div>
+                    <MobileNavLink
+                      href="/"
+                      label="HOME"
+                      onClose={() => setOpenMobile(false)}
+                      isTitle={true}
+                    />
 
-                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">EVENTS</div>
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">
+                      EVENTS
+                    </div>
                     <MobileNavLink
                       href="/wager-races"
                       label={
                         <div className="flex items-center justify-between w-full">
-                          <span className="font-bold">Monthly Race</span>
+                          <span>Monthly Race</span>
                           <div className="ml-2 flex items-center gap-1">
                             <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
                             <span className="text-xs text-red-500">LIVE</span>
@@ -495,22 +486,52 @@ export function Layout({ children }: { children: ReactNode }) {
                           <span>Challenges</span>
                           <div className="ml-2 flex items-center gap-1">
                             <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-                            <span className="text-xs text-green-500">ONGOING</span>
+                            <span className="text-xs text-green-500">
+                              ONGOING
+                            </span>
                           </div>
                         </div>
                       }
                       onClose={() => setOpenMobile(false)}
                     />
 
-                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">GET STARTED</div>
-                    <MobileNavLink href="/how-it-works" label="How It Works" onClose={() => setOpenMobile(false)} />
-                    <MobileNavLink href="/vip-transfer" label="VIP Transfer" onClose={() => setOpenMobile(false)} />
-                    <MobileNavLink href="/tips-and-strategies" label="Tips & Strategies" onClose={() => setOpenMobile(false)} />
-                    <MobileNavLink href="/vip-program" label="VIP Program" onClose={() => setOpenMobile(false)} />
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">
+                      GET STARTED
+                    </div>
+                    <MobileNavLink
+                      href="/how-it-works"
+                      label="How It Works"
+                      onClose={() => setOpenMobile(false)}
+                    />
+                    <MobileNavLink
+                      href="/vip-transfer"
+                      label="VIP Transfer"
+                      onClose={() => setOpenMobile(false)}
+                    />
+                    <MobileNavLink
+                      href="/tips-and-strategies"
+                      label="Tips & Strategies"
+                      onClose={() => setOpenMobile(false)}
+                    />
+                    <MobileNavLink
+                      href="/vip-program"
+                      label="VIP Program"
+                      onClose={() => setOpenMobile(false)}
+                    />
 
-                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">PROMOTIONS</div>
-                    <MobileNavLink href="/promotions" label="News & Promotions" onClose={() => setOpenMobile(false)} />
-                    <MobileNavLink href="/goated-token" label="Goated Airdrop" onClose={() => setOpenMobile(false)} />
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">
+                      PROMOTIONS
+                    </div>
+                    <MobileNavLink
+                      href="/promotions"
+                      label="News & Promotions"
+                      onClose={() => setOpenMobile(false)}
+                    />
+                    <MobileNavLink
+                      href="/goated-token"
+                      label="Goated Airdrop"
+                      onClose={() => setOpenMobile(false)}
+                    />
                     <MobileNavLink
                       href="/bonus-codes"
                       label={
@@ -536,7 +557,9 @@ export function Layout({ children }: { children: ReactNode }) {
                       onClose={() => setOpenMobile(false)}
                     />
 
-                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">LEADERBOARDS</div>
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">
+                      LEADERBOARDS
+                    </div>
                     <MobileNavLink
                       href="/leaderboard?period=daily"
                       label="Daily Leaderboard"
@@ -558,20 +581,54 @@ export function Layout({ children }: { children: ReactNode }) {
                       onClose={() => setOpenMobile(false)}
                     />
 
-                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">SOCIALS</div>
-                    <MobileNavLink href="/telegram" label="Telegram Community" onClose={() => setOpenMobile(false)} />
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">
+                      SOCIALS
+                    </div>
+                    <MobileNavLink
+                      href="/telegram"
+                      label="Telegram Community"
+                      onClose={() => setOpenMobile(false)}
+                    />
 
-                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">HELP & SUPPORT</div>
-                    <MobileNavLink href="/help" label="Help Center" onClose={() => setOpenMobile(false)} />
-                    <MobileNavLink href="/faq" label="FAQ" onClose={() => setOpenMobile(false)} />
-                    <MobileNavLink href="/support" label="Contact Support" onClose={() => setOpenMobile(false)} />
+                    <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">
+                      HELP & SUPPORT
+                    </div>
+                    <MobileNavLink
+                      href="/help"
+                      label="Help Center"
+                      onClose={() => setOpenMobile(false)}
+                    />
+                    <MobileNavLink
+                      href="/faq"
+                      label="FAQ"
+                      onClose={() => setOpenMobile(false)}
+                    />
+                    <MobileNavLink
+                      href="/support"
+                      label="Contact Support"
+                      onClose={() => setOpenMobile(false)}
+                    />
 
                     {user?.isAdmin && (
                       <>
-                        <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">ADMIN</div>
-                        <MobileNavLink href="/admin/user-management" label="User Management" onClose={() => setOpenMobile(false)} />
-                        <MobileNavLink href="/admin/wager-races" label="Wager Race Management" onClose={() => setOpenMobile(false)} />
-                        <MobileNavLink href="/admin/bonus-codes" label="Bonus Code Management" onClose={() => setOpenMobile(false)} />
+                        <div className="mt-6 px-4 py-2 text-[#D7FF00] font-heading text-sm font-bold border-t border-[#2A2B31]/50 pt-6">
+                          ADMIN
+                        </div>
+                        <MobileNavLink
+                          href="/admin/user-management"
+                          label="User Management"
+                          onClose={() => setOpenMobile(false)}
+                        />
+                        <MobileNavLink
+                          href="/admin/wager-races"
+                          label="Wager Race Management"
+                          onClose={() => setOpenMobile(false)}
+                        />
+                        <MobileNavLink
+                          href="/admin/bonus-codes"
+                          label="Bonus Code Management"
+                          onClose={() => setOpenMobile(false)}
+                        />
                       </>
                     )}
 
@@ -579,12 +636,24 @@ export function Layout({ children }: { children: ReactNode }) {
                       <Button
                         onClick={() => {
                           setOpenMobile(false);
-                          window.open("https://www.goated.com/r/SPIN", "_blank");
+                          window.open(
+                            "https://www.goated.com/r/SPIN",
+                            "_blank",
+                          );
                         }}
                         className="w-full relative overflow-hidden group bg-[#D7FF00] text-[#14151A] hover:text-[#D7FF00] transition-colors duration-300 rounded-md flex items-center justify-center gap-2 py-2.5"
                       >
-                        <span className="relative z-10">PLAY NOW</span>
-                        <ExternalLink className="h-4 w-4 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+                        <div className="flex items-center gap-2">
+                          <span className="relative z-10">PLAY NOW</span>
+                          <div className="relative z-10 play-icon-container">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" className="play-icon">
+                              <path fill="currentColor" fillOpacity="0" stroke="currentColor" strokeDasharray="40" strokeDashoffset="40" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 6l10 6l-10 6Z">
+                                <animate className="play-icon-animate" fill="freeze" attributeName="fill-opacity" begin="0s" dur="0.5s" values="0;1" />
+                                <animate className="play-icon-animate" fill="freeze" attributeName="stroke-dashoffset" begin="0s" dur="0.5s" values="40;0" />
+                              </path>
+                            </svg>
+                          </div>
+                        </div>
                         <div className="absolute inset-0 bg-[#14151A] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
                       </Button>
                     </div>
@@ -608,8 +677,13 @@ export function Layout({ children }: { children: ReactNode }) {
                     <User className="h-5 w-5 md:h-6 md:w-6" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className={dropdownClasses.content}>
-                  <DropdownMenuLabel className="text-white font-heading">My Account</DropdownMenuLabel>
+                <DropdownMenuContent
+                  align="end"
+                  className={dropdownClasses.content}
+                >
+                  <DropdownMenuLabel className="text-white font-heading">
+                    My Account
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-[#2A2B31]/50" />
                   <Link href={`/user/${user.id}`}>
                     <DropdownMenuItem className={dropdownClasses.item}>
@@ -642,8 +716,17 @@ export function Layout({ children }: { children: ReactNode }) {
               }
               className="relative overflow-hidden group bg-[#D7FF00] text-[#14151A] hover:text-[#D7FF00] transition-colors duration-300 rounded-md flex items-center gap-2 h-8 md:h-10 px-3 md:px-4 text-sm md:text-base font-heading"
             >
-              <span className="relative z-10">PLAY</span>
-              <ExternalLink className="h-4 w-4 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+              <div className="flex items-center gap-2">
+                <span className="relative z-10">PLAY</span>
+                <div className="relative z-10 play-icon-container">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" className="play-icon">
+                    <path fill="currentColor" fillOpacity="0" stroke="currentColor" strokeDasharray="40" strokeDashoffset="40" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 6l10 6l-10 6Z">
+                      <animate className="play-icon-animate" fill="freeze" attributeName="fill-opacity" begin="0s" dur="0.5s" values="0;1" />
+                      <animate className="play-icon-animate" fill="freeze" attributeName="stroke-dashoffset" begin="0s" dur="0.5s" values="40;0" />
+                    </path>
+                  </svg>
+                </div>
+              </div>
               <div className="absolute inset-0 bg-[#14151A] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
             </Button>
           </div>
@@ -651,7 +734,6 @@ export function Layout({ children }: { children: ReactNode }) {
       </header>
 
       <main className="flex-grow pt-16">
-        <ParticleBackground /> {/* Added ParticleBackground component here */}
         {children}
         {user?.isAdmin && isMobile && <MobileAdminBadge />}
       </main>
@@ -668,9 +750,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <div className={footerClasses.grid}>
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <h4 className={footerClasses.heading}>
-                  Ready to get Goated?
-                </h4>
+                <h4 className={footerClasses.heading}>Ready to get Goated?</h4>
                 <a
                   href="https://www.goated.com/r/VIPBOOST"
                   target="_blank"
@@ -685,14 +765,14 @@ export function Layout({ children }: { children: ReactNode }) {
                 </a>
               </div>
               <p className="text-[#14151A] mb-6">
-                Sign up now and enjoy additional rewards from our platform. Start
-                your journey to becoming a casino legend!
+                Sign up now and enjoy additional rewards from our platform.
+                Start your journey to becoming a casino legend!
               </p>
               <Button
                 onClick={() =>
                   window.open("https://www.goated.com/r/EARLYACCESS", "_blank")
                 }
-                className="bg-[#14151A] text-black hover:bg-[#14151A]/80 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 font-medium gap-2 flex items-center"
+                className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 font-medium gap-2 flex items-center"
               >
                 <span>Sign Up Now</span>
                 <ExternalLink className="h-4 w-4" />
@@ -700,9 +780,7 @@ export function Layout({ children }: { children: ReactNode }) {
             </div>
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <h4 className={footerClasses.heading}>
-                  Stay Updated
-                </h4>
+                <h4 className={footerClasses.heading}>Stay Updated</h4>
                 <a
                   href="https://t.me/+iFlHl5V9VcszZTVh"
                   target="_blank"
@@ -725,7 +803,7 @@ export function Layout({ children }: { children: ReactNode }) {
                   placeholder="Enter your email"
                   className="flex-1 px-4 py-2 rounded-lg border border-[#14151A]/20 focus:outline-none focus:border-[#14151A] focus:ring-1 focus:ring-[#14151A]/30 transition-all duration-300 bg-white/95"
                 />
-                <Button className="bg-[#14151A] text-black hover:bg-[#14151A]/80 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                <Button className="bg-[#14151A] text-black hover:bg-[#14151A]/80 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 font-medium">
                   Subscribe
                 </Button>
               </form>
@@ -762,11 +840,10 @@ export function Layout({ children }: { children: ReactNode }) {
                 </a>
               </div>
             </div>
+            <p className="mb-2">© 2024 GoatedVips.gg. All rights reserved.</p>
             <p className="mb-2">
-              © 2024 GoatedVips.gg. All rights reserved.
-            </p>
-            <p className="mb-2">
-              Disclaimer: This is an independent platform not affiliated with or operated by Goated.com.
+              Disclaimer: This is an independent platform not affiliated with or
+              operated by Goated.com.
             </p>
             <p>Gamble responsibly. 18+ only. BeGambleAware.org</p>
           </div>
@@ -776,7 +853,15 @@ export function Layout({ children }: { children: ReactNode }) {
   );
 }
 
-function NavLink({ href, label, tooltip }: { href: string; label: string | React.ReactNode; tooltip?: string; }) {
+function NavLink({
+  href,
+  label,
+  tooltip,
+}: {
+  href: string;
+  label: string | React.ReactNode;
+  tooltip?: string;
+}) {
   const [location] = useLocation();
   const isActive = location === href;
 

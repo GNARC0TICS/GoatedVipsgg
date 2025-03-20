@@ -1,6 +1,6 @@
 import { Twitter, Facebook, Link as LinkIcon } from "lucide-react";
 import { Button } from "./ui/button";
-import { toast } from "./ui/use-toast";
+import { toast } from "@/hooks/use-toast.tsx";
 
 export function SocialShare() {
   const shareUrl = window.location.href;

@@ -39,20 +39,6 @@ async function resetDatabase() {
     const users_data = apiData.data || apiData.results || apiData;
 
     // Create sample wager race
-
-  // Create platform_stats table
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS platform_stats (
-      id SERIAL PRIMARY KEY,
-      total_wagered DECIMAL(18,2) NOT NULL,
-      daily_total DECIMAL(18,2) NOT NULL,
-      weekly_total DECIMAL(18,2) NOT NULL, 
-      monthly_total DECIMAL(18,2) NOT NULL,
-      player_count INTEGER NOT NULL,
-      timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
-    );
-  `);
-
     const [currentRace] = await db
       .insert(wagerRaces)
       .values({
@@ -83,11 +69,11 @@ async function resetDatabase() {
         })
         .returning();
 
-      // Insert affiliate stats with proper defaults
+      // Insert affiliate stats
       await db.insert(affiliateStats).values({
-        userId: user.id,
-        totalWager: entry.wagered?.all_time || "0.00000000",
-        commission: "0.00000000",
+        user_id: user.id,
+        total_wager: entry.wagered.all_time || "0",
+        commission: "0",
         timestamp: new Date(),
       });
 
@@ -99,7 +85,7 @@ async function resetDatabase() {
         rank: null,
         wager_history: [],
         joined_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       // Insert default notification preferences

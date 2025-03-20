@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 
 const Sheet = SheetPrimitive.Root;
 
+// Explicitly define and export SheetTrigger
+// Explicitly define and export SheetTrigger
 const SheetTrigger = SheetPrimitive.Trigger;
 
 const SheetClose = SheetPrimitive.Close;
@@ -124,7 +126,22 @@ const SheetDescription = React.forwardRef<
 ));
 SheetDescription.displayName = SheetPrimitive.Description.displayName;
 
+// Make sure all components are properly exported
 export {
+  Sheet,
+  SheetPortal,
+  SheetOverlay,
+  SheetTrigger,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+};
+
+// Also export as default for easier imports if needed
+export default {
   Sheet,
   SheetPortal,
   SheetOverlay,

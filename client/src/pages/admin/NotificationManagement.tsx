@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,16 +35,18 @@ export default function NotificationManagement() {
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-2xl font-bold mb-6">Notification Management</h1>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Send Platform Notification</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            sendNotification.mutate({ title, message });
-          }}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendNotification.mutate({ title, message });
+            }}
+          >
             <div className="space-y-4">
               <div>
                 <Input
@@ -62,12 +63,16 @@ export default function NotificationManagement() {
                   rows={4}
                 />
               </div>
-              <Button 
+              <Button
                 type="submit"
                 disabled={sendNotification.isPending}
                 className="w-full"
               >
-                {sendNotification.isPending ? <LoadingSpinner /> : "Send Notification"}
+                {sendNotification.isPending ? (
+                  <LoadingSpinner />
+                ) : (
+                  "Send Notification"
+                )}
               </Button>
             </div>
           </form>

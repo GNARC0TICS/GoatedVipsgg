@@ -1,5 +1,5 @@
 import React from "react";
-import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet-fix";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, Calendar, Clock, Crown } from "lucide-react";
 import { motion } from "framer-motion";
@@ -42,11 +42,12 @@ export function QuickProfile({
         today: { data: [] },
         weekly: { data: [] },
         monthly: { data: [] },
-        all_time: { data: [] }
-      }
-    }
+        all_time: { data: [] },
+      },
+    },
   });
 
+  // Define the LeaderboardPlayer interface with proper typing
   interface LeaderboardPlayer {
     uid: string;
     wagered: {
@@ -57,28 +58,55 @@ export function QuickProfile({
     };
   }
 
+  // Type assertion for the data structure
+  type LeaderboardData = {
+    data: {
+      today: { data: LeaderboardPlayer[] };
+      weekly: { data: LeaderboardPlayer[] };
+      monthly: { data: LeaderboardPlayer[] };
+      all_time: { data: LeaderboardPlayer[] };
+    }
+  };
+
   const stats = React.useMemo(() => {
     if (!leaderboardData?.data) return null;
 
+    // Type assertion to help TypeScript understand the data structure
+    const typedData = leaderboardData as LeaderboardData;
+
     const userStats = {
-      today: leaderboardData.data.today.data
-        .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.today || 0,
-      this_week: leaderboardData.data.weekly.data
-        .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.this_week || 0,
-      this_month: leaderboardData.data.monthly.data
-        .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.this_month || 0,
-      all_time: leaderboardData.data.all_time.data
-        .find((p: LeaderboardPlayer) => p.uid === userId)?.wagered?.all_time || 0,
+      today:
+        typedData.data.today.data.find(
+          (p) => p.uid === userId,
+        )?.wagered?.today || 0,
+      this_week:
+        typedData.data.weekly.data.find(
+          (p) => p.uid === userId,
+        )?.wagered?.this_week || 0,
+      this_month:
+        typedData.data.monthly.data.find(
+          (p) => p.uid === userId,
+        )?.wagered?.this_month || 0,
+      all_time:
+        typedData.data.all_time.data.find(
+          (p) => p.uid === userId,
+        )?.wagered?.all_time || 0,
     };
 
     const position = {
-      weekly: leaderboardData.data.weekly.data.findIndex((p: LeaderboardPlayer) => p.uid === userId) + 1 || undefined,
-      monthly: leaderboardData.data.monthly.data.findIndex((p: LeaderboardPlayer) => p.uid === userId) + 1 || undefined
+      weekly:
+        typedData.data.weekly.data.findIndex(
+          (p) => p.uid === userId,
+        ) + 1 || undefined,
+      monthly:
+        typedData.data.monthly.data.findIndex(
+          (p) => p.uid === userId,
+        ) + 1 || undefined,
     };
 
-    return { 
+    return {
       wagered: userStats,
-      position
+      position,
     };
   }, [leaderboardData, userId]);
 
@@ -104,7 +132,9 @@ export function QuickProfile({
             className="space-y-6 pt-6"
           >
             <div className="flex items-center gap-4">
-              <div className={`h-16 w-16 rounded-full bg-[#2A2B31] flex items-center justify-center ${stats?.position?.monthly === 1 ? 'ring-4 ring-[#D7FF00] animate-pulse' : ''}`}>
+              <div
+                className={`h-16 w-16 rounded-full bg-[#2A2B31] flex items-center justify-center ${stats?.position?.monthly === 1 ? "ring-4 ring-[#D7FF00] animate-pulse" : ""}`}
+              >
                 <img
                   src={getTierIcon(
                     getTierFromWager(stats?.wagered?.all_time || 0),
@@ -114,21 +144,27 @@ export function QuickProfile({
                 />
               </div>
               <div>
-                <h2 className={`text-2xl font-heading ${stats?.position?.monthly === 1 ? 'text-[#D7FF00]' : 'text-white'}`}>
+                <h2
+                  className={`text-2xl font-heading ${stats?.position?.monthly === 1 ? "text-[#D7FF00]" : "text-white"}`}
+                >
                   {username}
-                  {stats?.position?.monthly === 1 && 
+                  {stats?.position?.monthly === 1 && (
                     <span className="ml-2 inline-flex items-center">
                       <Crown className="h-5 w-5 text-[#D7FF00] animate-bounce" />
                     </span>
-                  }
+                  )}
                 </h2>
                 <p className="text-[#8A8B91]">Profile Stats</p>
                 {stats?.position && (
                   <div className="flex gap-2 mt-1">
                     {stats.position.monthly && (
-                      <span className={`text-xs px-2 py-0.5 rounded ${
-                        stats.position.monthly === 1 ? 'bg-[#D7FF00] text-black font-bold' : 'bg-[#2A2B31] text-white'
-                      }`}>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded ${
+                          stats.position.monthly === 1
+                            ? "bg-[#D7FF00] text-black font-bold"
+                            : "bg-[#2A2B31] text-white"
+                        }`}
+                      >
                         #{stats.position.monthly} Monthly
                       </span>
                     )}

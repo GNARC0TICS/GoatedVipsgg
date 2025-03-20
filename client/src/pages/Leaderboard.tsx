@@ -1,43 +1,91 @@
 import React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { PageTransition } from "@/components/PageTransition";
-import type { TimePeriod } from "@/hooks/use-leaderboard";
+import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
+import { useLoading } from "@/contexts/LoadingContext";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export default function Leaderboard() {
   const [location] = useLocation();
   const [period, setPeriod] = useState<TimePeriod>("today");
-  const [isLoading, setIsLoading] = useState(true); // Start with true to ensure loader shows first
-  const [renderKey, setRenderKey] = useState(0);
-
+  const { startLoadingFor, stopLoadingFor, isLoadingFor } = useLoading();
+  const loadingKey = `leaderboard-page-${period}`;
+  
+  // Use the enhanced leaderboard hook with better error handling
+  const { 
+    data: leaderboardData, 
+    isLoading: dataLoading, 
+    error, 
+    errorDetails = null,
+    refetch = () => Promise.resolve() 
+  } = useLeaderboard(period) as {
+    data: any[];
+    isLoading: boolean;
+    error: Error | null;
+    errorDetails?: string | null;
+    refetch?: () => Promise<any>;
+  };
+  
+  // Combine our loading states
+  const isPageLoading = dataLoading || isLoadingFor(loadingKey);
+  
+  // Handle period changes with loading state
   useEffect(() => {
-    setIsLoading(true);
+    console.log(`Period changed to ${period}, setting loading state`);
+    
+    // Start loading when period changes
+    startLoadingFor(loadingKey, "spinner", 500);
+    
+    // Add a minimum loading time to prevent flicker
     const timer = setTimeout(() => {
-      setIsLoading(false);
-      setRenderKey(prev => prev + 1);
-    }, 800); // Increased slightly to ensure smooth transition
-
-    return () => clearTimeout(timer);
-  }, [period]);
+      stopLoadingFor(loadingKey);
+    }, 500); // Reduced from 1000ms for better user experience
+    
+    return () => {
+      clearTimeout(timer);
+      // Ensure loading state is cleaned up if component unmounts
+      if (isLoadingFor(loadingKey)) {
+        stopLoadingFor(loadingKey);
+      }
+    };
+  }, [period, loadingKey, startLoadingFor, stopLoadingFor, isLoadingFor]);
+  
+  // Log data for debugging
+  useEffect(() => {
+    if (leaderboardData) {
+      console.log(`Leaderboard data received for ${period}:`, leaderboardData.length);
+    }
+    if (error) {
+      console.error(`Leaderboard error for ${period}:`, error, errorDetails);
+    }
+  }, [leaderboardData, error, errorDetails, period]);
+  
+  // Retry loading on error
+  const handleRetry = useCallback(() => {
+    console.log('Retrying leaderboard data fetch');
+    startLoadingFor(loadingKey, "spinner", 500);
+    refetch().catch((err: Error) => {
+      console.error('Retry failed:', err);
+      stopLoadingFor(loadingKey);
+    });
+  }, [refetch, loadingKey, startLoadingFor, stopLoadingFor]);
 
   // Update period based on URL parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const periodParam = params.get("period");
-    console.log("Leaderboard page: URL param =", periodParam);
-
     if (periodParam) {
       const periodMap: Record<string, TimePeriod> = {
         daily: "today",
         weekly: "weekly",
         monthly: "monthly",
-        all_time: "all_time"
+        all_time: "all_time",
       };
       if (periodParam in periodMap) {
-        console.log("Leaderboard page: Setting period from URL to", periodMap[periodParam]);
         setPeriod(periodMap[periodParam]);
       }
     }
@@ -48,15 +96,37 @@ export default function Leaderboard() {
       today: "daily",
       weekly: "weekly",
       monthly: "monthly",
-      all_time: "all_time"
+      all_time: "all_time",
     };
 
     setPeriod(newPeriod as TimePeriod);
-    window.history.pushState({}, "", `/leaderboard?period=${urlPeriodMap[newPeriod]}`);
+    window.history.pushState(
+      {},
+      "",
+      `/leaderboard?period=${urlPeriodMap[newPeriod]}`,
+    );
   };
 
+  // Show error state if needed
+  if (error && !isPageLoading) {
+    return (
+      <div className="min-h-screen bg-[#14151A] flex items-center justify-center flex-col">
+        <div className="text-red-500 mb-4">Failed to load leaderboard data</div>
+        <div className="text-white/60 mb-6 text-sm max-w-md text-center">
+          {errorDetails || 'An unexpected error occurred while loading the leaderboard.'}
+        </div>
+        <Button
+          onClick={handleRetry}
+          className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <PageTransition isLoading={isLoading}>
+    <PageTransition isLoading={isPageLoading}>
       <div className="min-h-screen bg-[#14151A]">
         <main className="container mx-auto px-4 py-12">
           <motion.div
@@ -71,7 +141,10 @@ export default function Leaderboard() {
                 playsInline
                 className="mx-auto h-48 md:h-64 w-auto object-contain"
               >
-                <source src="/images/Page Headers/WAGERLB.MP4" type="video/mp4" />
+                <source
+                  src="/images/Page Headers/WAGERLB.MP4"
+                  type="video/mp4"
+                />
               </video>
             </div>
 
@@ -80,7 +153,7 @@ export default function Leaderboard() {
                 { id: "today", label: "DAILY" },
                 { id: "weekly", label: "WEEKLY" },
                 { id: "monthly", label: "MONTHLY" },
-                { id: "all_time", label: "ALL TIME" }
+                { id: "all_time", label: "ALL TIME" },
               ].map(({ id, label }) => (
                 <motion.div
                   key={id}
@@ -109,10 +182,7 @@ export default function Leaderboard() {
             transition={{ delay: 0.2 }}
             className="rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm p-8"
           >
-            <LeaderboardTable 
-              key={`${period}-${renderKey}`} 
-              timePeriod={period} 
-            />
+            <LeaderboardTable key={period} timePeriod={period} />
           </motion.div>
         </main>
       </div>

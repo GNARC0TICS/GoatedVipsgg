@@ -10,11 +10,11 @@ const __dirname = dirname(__filename);
 export default defineConfig({
   plugins: [
     react({
-      jsxRuntime: 'automatic',
-      jsxImportSource: 'react',
-    }), 
-    runtimeErrorOverlay(), 
-    themePlugin()
+      jsxRuntime: "automatic",
+      jsxImportSource: "react",
+    }),
+    runtimeErrorOverlay(),
+    themePlugin(),
   ],
   resolve: {
     alias: {

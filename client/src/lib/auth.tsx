@@ -7,23 +7,23 @@ interface AuthContextType {
   user: SelectUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: { 
-    username: string; 
-    password: string; 
+  login: (credentials: {
+    username: string;
+    password: string;
     email?: string;
-  }) => Promise<{ 
-    ok: boolean; 
-    message?: string; 
-    errors?: Record<string, string>; 
+  }) => Promise<{
+    ok: boolean;
+    message?: string;
+    errors?: Record<string, string>;
   }>;
   register: (credentials: {
     username: string;
     password: string;
     email: string;
-  }) => Promise<{ 
-    ok: boolean; 
-    message?: string; 
-    errors?: Record<string, string>; 
+  }) => Promise<{
+    ok: boolean;
+    message?: string;
+    errors?: Record<string, string>;
   }>;
   logout: () => Promise<void>;
 }
@@ -32,10 +32,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Protected routes that require authentication
 export const PROTECTED_ROUTES = [
-  '/bonus-codes',
-  '/notification-preferences',
-  '/user/',
-  '/admin/',
+  "/bonus-codes",
+  "/notification-preferences",
+  "/user/",
+  "/admin/",
 ];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -58,14 +58,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (!response.ok) {
-          throw new Error('Failed to fetch user data');
+          throw new Error("Failed to fetch user data");
         }
 
         const userData = await response.json();
         setIsAuthenticated(true);
         return userData;
       } catch (error) {
-        console.error('User fetch error:', error);
+        console.error("User fetch error:", error);
         setIsAuthenticated(false);
         return null;
       }
@@ -76,14 +76,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: { username: string; password: string; email?: string }) => {
+    mutationFn: async (credentials: {
+      username: string;
+      password: string;
+      email?: string;
+    }) => {
       const response = await fetch("/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(credentials),
-        credentials: "include"
+        credentials: "include",
       });
 
       const data = await response.json();
@@ -92,21 +96,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return {
           ok: false,
           message: data.message || "Login failed",
-          errors: data.errors
+          errors: data.errors,
         };
       }
 
       setIsAuthenticated(true);
       return {
         ok: true,
-        user: data
+        user: data,
       };
     },
     onSuccess: (data) => {
       if (data.ok && data.user) {
         queryClient.setQueryData(["/api/user"], data.user);
       }
-    }
+    },
   });
 
   const registerMutation = useMutation({
@@ -117,11 +121,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }) => {
       const response = await fetch("/api/register", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(credentials),
-        credentials: "include"
+        credentials: "include",
       });
 
       const data = await response.json();
@@ -130,21 +134,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return {
           ok: false,
           message: data.message || "Registration failed",
-          errors: data.errors
+          errors: data.errors,
         };
       }
 
       setIsAuthenticated(true);
       return {
         ok: true,
-        user: data
+        user: data,
       };
     },
     onSuccess: (data) => {
       if (data.ok && data.user) {
         queryClient.setQueryData(["/api/user"], data.user);
       }
-    }
+    },
   });
 
   const logoutMutation = useMutation({
@@ -179,11 +183,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setIsAuthenticated(false);
               return null;
             }
-            if (!response.ok) throw new Error('Failed to fetch user data');
+            if (!response.ok) throw new Error("Failed to fetch user data");
             const userData = await response.json();
             setIsAuthenticated(true);
             return userData;
-          }
+          },
         });
       } finally {
         setIsLoading(false);
@@ -204,7 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return {
             ok: result.ok,
             message: result.message,
-            errors: result.errors
+            errors: result.errors,
           };
         },
         register: async (credentials) => {
@@ -212,7 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return {
             ok: result.ok,
             message: result.message,
-            errors: result.errors
+            errors: result.errors,
           };
         },
         logout: async () => {
@@ -235,5 +239,5 @@ export function useAuth() {
 
 // Helper function to check if a route requires authentication
 export function requiresAuth(path: string): boolean {
-  return PROTECTED_ROUTES.some(route => path.startsWith(route));
+  return PROTECTED_ROUTES.some((route) => path.startsWith(route));
 }

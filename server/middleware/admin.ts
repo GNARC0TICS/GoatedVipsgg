@@ -8,7 +8,7 @@ export async function requireAdmin(
   res: Response,
   next: NextFunction,
 ) {
-  if (!req.user) {
+  if (!req.isAuthenticated()) {
     return res.status(401).json({ error: "Authentication required" });
   }
 
@@ -36,18 +36,13 @@ export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 export const ADMIN_KEY = process.env.ADMIN_SECRET_KEY;
 
 if (!ADMIN_USERNAME || !ADMIN_PASSWORD || !ADMIN_KEY) {
-  if (process.env.NODE_ENV === 'production') {
-    console.error('ERROR: Admin credentials required in production - ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_KEY must be set');
-    process.exit(1); // Exit in production if admin credentials are missing
-  } else {
-    console.warn('Admin credentials not set in development - admin features will be disabled');
-  }
+  console.error("Missing required admin environment variables");
 }
 
 export async function initializeAdmin(
-  username: string = ADMIN_USERNAME ?? '',
-  password: string = ADMIN_PASSWORD ?? '',
-  adminKey: string = ADMIN_KEY ?? '',
+  username: string = ADMIN_USERNAME ?? "",
+  password: string = ADMIN_PASSWORD ?? "",
+  adminKey: string = ADMIN_KEY ?? "",
 ) {
   try {
     // Check if required credentials exist
@@ -69,7 +64,7 @@ export async function initializeAdmin(
         .select({
           id: users.id,
           username: users.username,
-          isAdmin: users.isAdmin
+          isAdmin: users.isAdmin,
         })
         .from(users)
         .where(eq(users.isAdmin, true))
@@ -93,7 +88,10 @@ export async function initializeAdmin(
         return existingAdmin;
       }
     } catch (e) {
-      console.warn("Error checking for existing admin, will try to create a new one", e);
+      console.warn(
+        "Error checking for existing admin, will try to create a new one",
+        e,
+      );
       // Continue with creating a new admin
     }
 
@@ -102,7 +100,7 @@ export async function initializeAdmin(
       const [existingUser] = await db
         .select({
           id: users.id,
-          username: users.username
+          username: users.username,
         })
         .from(users)
         .where(eq(users.username, username))

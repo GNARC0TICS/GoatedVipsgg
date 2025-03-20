@@ -1,12 +1,12 @@
 import { useLoading } from "../../contexts/LoadingContext";
-import { PreLoader } from "../PreLoader";
+import { MainPreloader } from "./MainPreloader";
 import { Spinner } from "./Spinner";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback } from "react";
 
 /**
  * LoadingManager
- * 
+ *
  * Central component that manages and displays different types of loading states
  * This is used by the LoadingProvider to show the appropriate loading UI
  */
@@ -27,7 +27,10 @@ export function LoadingManager() {
         <>
           {/* Full-screen preloader with logo and progress bar */}
           {loadingType === "full" && (
-            <PreLoader onLoadComplete={handleLoadComplete} />
+            <MainPreloader
+              onLoadComplete={handleLoadComplete}
+              useRandomProgressBar={true}
+            />
           )}
 
           {/* Simple spinner overlay for lighter loading states */}

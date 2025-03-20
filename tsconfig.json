@@ -4,7 +4,7 @@
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
-    "noEmit": false,
+    "noEmit": true,
     "module": "ESNext",
     "target": "ESNext",
     "lib": ["esnext", "dom", "dom.iterable"],
@@ -12,7 +12,7 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "allowJs": true,
+    "allowImportingTsExtensions": true,
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -32,6 +32,7 @@
       "./db/types.d.ts",
       "./client/src/lib"
     ],
+    "allowJs": true,
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,

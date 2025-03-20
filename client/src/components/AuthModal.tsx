@@ -62,9 +62,10 @@ export default function AuthModal() {
       if (result.ok) {
         toast({
           title: "Success",
-          description: mode === "login" 
-            ? "Welcome back! You can now access your bonus codes and notifications." 
-            : "Account created successfully! You can now access bonus codes and receive notifications.",
+          description:
+            mode === "login"
+              ? "Welcome back! You can now access your bonus codes and notifications."
+              : "Account created successfully! You can now access bonus codes and receive notifications.",
         });
         setIsOpen(false);
         form.reset();
@@ -72,14 +73,18 @@ export default function AuthModal() {
         toast({
           variant: "destructive",
           title: mode === "login" ? "Login Failed" : "Registration Failed",
-          description: result.message || "Please check your credentials and try again",
+          description:
+            result.message || "Please check your credentials and try again",
         });
       }
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred",
       });
     } finally {
       setIsLoading(false);
@@ -89,13 +94,15 @@ export default function AuthModal() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="font-heading uppercase bg-[#1A1B21] border-[#2A2B31] hover:bg-[#2A2B31] hover:border-[#D7FF00] transition-all duration-300"
         >
           <span className="text-white">LOGIN</span>
           <span className="text-[#8A8B91]"> / </span>
-          <span className="text-[#D7FF00] group-hover:text-[#D7FF00]">REGISTER</span>
+          <span className="text-[#D7FF00] group-hover:text-[#D7FF00]">
+            REGISTER
+          </span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] bg-[#1A1B21] text-white border-[#2A2B31]">
@@ -104,7 +111,7 @@ export default function AuthModal() {
             {mode === "login" ? "Welcome Back!" : "Create an Account"}
           </DialogTitle>
           <DialogDescription className="text-[#8A8B91]">
-            {mode === "login" 
+            {mode === "login"
               ? "Sign in to access bonus codes and manage your notification preferences"
               : "Join us to get exclusive bonus codes and personalized notifications"}
           </DialogDescription>
@@ -165,8 +172,10 @@ export default function AuthModal() {
                     <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
                     {mode === "login" ? "Signing In..." : "Creating Account..."}
                   </div>
+                ) : mode === "login" ? (
+                  "Sign In"
                 ) : (
-                  mode === "login" ? "Sign In" : "Create Account"
+                  "Create Account"
                 )}
               </Button>
               <Button

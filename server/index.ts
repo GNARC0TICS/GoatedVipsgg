@@ -2,76 +2,106 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { db } from "@db";
-import { sql } from "drizzle-orm";
+import { db, pgPool, initDatabase } from "../db/connection";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
 import { initializeAdmin } from "./middleware/admin";
-import { apiRateLimiter, affiliateRateLimiter, raceRateLimiter } from './middleware/rate-limiter';
-import fetch from 'node-fetch';
-import { setupAuth } from './auth';
+import bot, { stopBot, getBotStatus } from "./telegram/bot";
+import {
+  apiRateLimiter,
+  affiliateRateLimiter,
+  raceRateLimiter,
+} from "./middleware/rate-limiter";
+import { errorHandler, notFoundHandler } from "./middleware/error-handler";
+import fetch from "node-fetch";
+import helmet from "helmet";
 
 const execAsync = promisify(exec);
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Configure CORS for admin domain
-app.use((req, res, next) => {
-  const allowedOrigins = [
-    process.env.VITE_API_BASE_URL,
-    process.env.ADMIN_DOMAIN
-  ];
-  const origin = req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  next();
-});
-
-// Configure API routes first
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-
-// Setup routes
-registerRoutes(app);
-
-// In production, serve static files after API routes
-if (process.env.NODE_ENV === 'production') {
-  serveStatic(app);
-  log(`Will serve static files in production`);
-
-  // Handle client-side routing
-  app.get('*', (_req, res) => {
-    res.sendFile('index.html', { root: './dist' });
-  });
-}
-
-
-// In production, the .replit file maps internal port 3000 -> external port 80 for the API
-// and internal port 5173 -> external port 3000 for the frontend
+const PORT = 5000;
 
 async function setupMiddleware() {
-  // Basic middleware
+  // Security middleware
+  if (process.env.NODE_ENV === 'production') {
+    // Use helmet in production for security headers
+    app.use(helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+          imgSrc: ["'self'", "data:", "https://*"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com"],
+          connectSrc: ["'self'", "https://*"],
+        },
+      },
+      crossOriginEmbedderPolicy: false, // Allow embedding of resources
+      crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow cross-origin resource sharing
+    }));
+  }
 
-  // Setup authentication system
-  setupAuth(app);
+  // Basic middleware
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
+  app.use(cookieParser());
+
+  // Request logging
+  app.use(requestLogger);
 
   // Rate limiters - apply before routes but after basic middleware
-  app.use('/api', apiRateLimiter);
-  app.use('/api/affiliate/stats', affiliateRateLimiter);
-  app.use('/api/races', raceRateLimiter);
+  app.use("/api", apiRateLimiter);
+  app.use("/api/affiliate/stats", affiliateRateLimiter);
+  app.use("/api/races", raceRateLimiter);
 
-  // Logging and error handling
-  app.use(requestLogger);
-  app.use(errorHandler);
+  // Enhanced health check endpoint with database status
+  app.get("/api/health", async (_req, res) => {
+    try {
+      // Test connection by running a simple query
+      const client = await pgPool.connect();
+      await client.query('SELECT NOW()');
+      client.release();
+      
+      res.json({ 
+        status: "healthy",
+        environment: process.env.NODE_ENV || 'development',
+        timestamp: new Date().toISOString(),
+        services: {
+          database: {
+            status: "connected"
+          },
+          api: {
+            status: "running",
+            uptime: process.uptime()
+          }
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        message: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
 
-  app.get("/api/health", (_req, res) => {
-    res.json({ status: "healthy", timestamp: new Date().toISOString() });
+  // Add a Telegram bot status endpoint for debugging
+  app.get("/api/telegram/status", (_req, res) => {
+    try {
+      const status = getBotStatus();
+      res.json({
+        status: "ok",
+        telegramBot: status,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error getting bot status:", error);
+      res.status(500).json({
+        status: "error",
+        message: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString(),
+      });
+    }
   });
 }
 
@@ -104,7 +134,8 @@ function requestLogger(
   next();
 }
 
-function errorHandler(
+// Legacy error handler - keeping for reference but using the new one from middleware
+function legacyErrorHandler(
   err: Error,
   _req: express.Request,
   res: express.Response,
@@ -116,17 +147,17 @@ function errorHandler(
 
 async function checkDatabase() {
   try {
-    await db.execute(sql`SELECT 1`);
-    log("Database connection successful");
-    return true;
-  } catch (error: any) {
-    if (error.message?.includes("endpoint is disabled")) {
-      log(
-        "Database endpoint is disabled. Please enable the database in the Replit Database tab.",
-      );
+    const result = await initDatabase();
+    
+    if (result) {
+      log("Database connection successful");
+      return true;
     } else {
-      console.error("Database connection error:", error);
+      log("Database connection failed");
+      return false;
     }
+  } catch (error) {
+    console.error("Database connection error:", error);
     return false;
   }
 }
@@ -135,7 +166,7 @@ async function cleanupPort() {
   try {
     await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
     // Wait for port to be released
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     log(`Port ${PORT} is now available`);
     return true;
   } catch (error) {
@@ -153,7 +184,7 @@ async function waitForPort(port: number, retries = 5): Promise<boolean> {
         return true;
       }
     } catch (error) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
   return false;
@@ -164,12 +195,12 @@ async function startServer() {
     log("Starting server initialization...");
 
     // Ensure database is ready
-    if (!await checkDatabase()) {
+    if (!(await checkDatabase())) {
       throw new Error("Database connection failed");
     }
 
     // Ensure port is available
-    if (!await cleanupPort()) {
+    if (!(await cleanupPort())) {
       throw new Error("Failed to clean up port");
     }
 
@@ -178,10 +209,15 @@ async function startServer() {
     // Setup middleware first
     await setupMiddleware();
 
-
     // Then register routes
-
+    registerRoutes(app);
     initializeAdmin().catch(console.error);
+
+    // Initialize Telegram bot
+    log("Initializing Telegram bot...");
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+      throw new Error("TELEGRAM_BOT_TOKEN must be provided");
+    }
 
     if (app.get("env") === "development") {
       await setupVite(app, server);
@@ -189,36 +225,79 @@ async function startServer() {
       serveStatic(app);
     }
 
+    // Add 404 handler after all routes
+    app.use("*", notFoundHandler);
+    
+    // Add error handler as the last middleware
+    app.use(errorHandler);
+    
+    log("All middleware and routes registered");
+
     // Start server with proper error handling
     await new Promise<void>((resolve, reject) => {
       server
         .listen(PORT, "0.0.0.0")
-        .once('error', reject)
-        .once('listening', () => {
+        .once("error", (err: NodeJS.ErrnoException) => {
+          if (err.code === "EADDRINUSE") {
+            log(`Port ${PORT} is in use, attempting to free it...`);
+            cleanupPort().then(() => {
+              server.listen(PORT, "0.0.0.0");
+            });
+          } else {
+            reject(err);
+          }
+        })
+        .once("listening", () => {
           log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+          log("Telegram bot started successfully");
           resolve();
         });
     });
 
     // Wait for server to be ready
-    if (!await waitForPort(PORT)) {
+    if (!(await waitForPort(PORT))) {
       throw new Error("Server failed to become ready");
     }
-
   } catch (error) {
     console.error("Failed to start application:", error);
     process.exit(1);
   }
 }
 
-process.on('SIGTERM', () => {
-  log('Received SIGTERM signal. Shutting down gracefully...');
-  process.exit(0);
-});
+// Function to close database connections
+async function closeDatabaseConnections() {
+  try {
+    log("Closing database connections...");
+    // Close Drizzle ORM connection if needed
+    
+    // Close PostgreSQL connection pool
+    await pgPool.end();
+    log("Database connections closed successfully");
+    return true;
+  } catch (error) {
+    console.error("Error closing database connections:", error);
+    return false;
+  }
+}
 
-process.on('SIGINT', () => {
-  log('Received SIGINT signal. Shutting down gracefully...');
+// Graceful shutdown handler
+async function gracefulShutdown(signal: string) {
+  log(`Received ${signal} signal. Shutting down gracefully...`);
+  
+  // Stop the Telegram bot
+  stopBot();
+  
+  // Close database connections
+  await closeDatabaseConnections();
+  
+  // Add any other cleanup tasks here
+  
+  log("All connections closed. Exiting process.");
   process.exit(0);
-});
+}
+
+// Add shutdown handlers
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 startServer();

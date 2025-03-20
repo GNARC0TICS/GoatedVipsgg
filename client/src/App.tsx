@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth, requiresAuth } from "@/lib/auth";
 import { AnimatePresence } from "framer-motion";
-import { ErrorBoundary } from "react-error-boundary";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { PreLoader } from "@/components/PreLoader";
 import { Layout } from "@/components/Layout";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -37,10 +37,7 @@ import VipProgram from "./pages/VipProgram";
 import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
-import AdminDashboard from "@/pages/admin"; // Admin dashboard page
-import AdminLogin from "./pages/admin/Login"; // Admin login page
-import ProtectedAdminRoute from "./components/ProtectedAdminRoute"; // Protected admin route component
-
+import AdminDashboard from "./pages/admin/Dashboard"; // Added import for AdminDashboard
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -82,7 +79,7 @@ function Router() {
   return (
     <Layout>
       <AnimatePresence mode="wait">
-        <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <ErrorBoundary fallback={<ErrorFallback error={new Error()} />}>
           <Switch>
             {/* Public Routes */}
             <Route path="/" component={Home} />
@@ -98,7 +95,6 @@ function Router() {
             <Route path="/faq" component={FAQ} />
             <Route path="/vip-program" component={VipProgram} />
             <Route path="/challenges" component={Challenges} />
-
             {/* Protected Routes */}
             <Route path="/bonus-codes">
               <ProtectedRoute>
@@ -125,41 +121,38 @@ function Router() {
                 <UserProfile />
               </ProtectedRoute>
             </Route>
-
             {/* Admin Routes */}
-            <Route path="/login" component={AdminLogin} />
-            
-            <Route path="/wager-races">
-              <ProtectedAdminRoute>
+            <Route path="/admin/wager-races">
+              <ProtectedRoute>
                 <WagerRaceManagement />
-              </ProtectedAdminRoute>
+              </ProtectedRoute>
             </Route>
-            <Route path="/users">
-              <ProtectedAdminRoute>
+            <Route path="/admin/users">
+              <ProtectedRoute>
                 <UserManagement />
-              </ProtectedAdminRoute>
+              </ProtectedRoute>
             </Route>
-            <Route path="/notifications">
-              <ProtectedAdminRoute>
+            <Route path="/admin/notifications">
+              <ProtectedRoute>
                 <NotificationManagement />
-              </ProtectedAdminRoute>
+              </ProtectedRoute>
             </Route>
-            <Route path="/bonus-codes">
-              <ProtectedAdminRoute>
+            <Route path="/admin/bonus-codes">
+              <ProtectedRoute>
                 <BonusCodeManagement />
-              </ProtectedAdminRoute>
+              </ProtectedRoute>
             </Route>
-            <Route path="/support">
-              <ProtectedAdminRoute>
+            <Route path="/admin/support">
+              <ProtectedRoute>
                 <SupportManagement />
-              </ProtectedAdminRoute>
+              </ProtectedRoute>
             </Route>
-            <Route path="/">
-              <ProtectedAdminRoute>
+            <Route path="/admin">
+              <ProtectedRoute>
                 <AdminDashboard />
-              </ProtectedAdminRoute>
-            </Route>
-
+              </ProtectedRoute>
+            </Route>{" "}
+            {/* Added route for AdminDashboard */}
             {/* 404 Route */}
             <Route component={NotFound} />
           </Switch>
@@ -172,7 +165,7 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <ErrorBoundary fallback={<ErrorFallback error={new Error()} />}>
         <AuthProvider>
           <AppContent />
         </AuthProvider>
@@ -185,7 +178,7 @@ function AppContent() {
   // Force initial load to true on first visit or when explicitly testing
   const [isInitialLoad, setIsInitialLoad] = React.useState(() => {
     // Always show initial load on first visit
-    return !sessionStorage.getItem('hasVisited');
+    return !sessionStorage.getItem("hasVisited");
   });
 
   // Handle session storage separately from loading state
@@ -198,7 +191,7 @@ function AppContent() {
 
   const handleLoadComplete = () => {
     // Set the session storage flag to prevent showing the loader on subsequent visits
-    sessionStorage.setItem('hasVisited', 'true');
+    sessionStorage.setItem("hasVisited", "true");
     // Delay state update to ensure animation completes
     setTimeout(() => {
       setIsInitialLoad(false);

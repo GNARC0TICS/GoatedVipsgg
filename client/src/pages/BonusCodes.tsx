@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Gift, Copy, Bell, CheckCircle, ArrowLeft } from "lucide-react";
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "@/components/ui/link";
 
 export default function BonusCodes() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -53,7 +53,10 @@ export default function BonusCodes() {
               loop
               className="w-full h-48 md:h-64 object-contain rounded-xl"
             >
-              <source src="/images/Page Headers/BONUSHEAD.MP4" type="video/mp4" />
+              <source
+                src="/images/Page Headers/BONUSHEAD.MP4"
+                type="video/mp4"
+              />
             </video>
           </div>
 

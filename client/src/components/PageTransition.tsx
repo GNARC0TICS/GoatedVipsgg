@@ -10,21 +10,24 @@ interface PageTransitionProps {
 
 // Define the animation variants
 const pageVariants = {
-  initial: { 
-    opacity: 0, 
-    y: 10
+  initial: {
+    opacity: 0,
+    y: 10,
   },
-  animate: { 
-    opacity: 1, 
-    y: 0
+  animate: {
+    opacity: 1,
+    y: 0,
   },
-  exit: { 
-    opacity: 0, 
-    y: -10
-  }
+  exit: {
+    opacity: 0,
+    y: -10,
+  },
 };
 
-export function PageTransition({ children, isLoading = false }: PageTransitionProps) {
+export function PageTransition({
+  children,
+  isLoading = false,
+}: PageTransitionProps) {
   const [showLoading, setShowLoading] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [shouldRenderContent, setShouldRenderContent] = useState(!isLoading);
@@ -32,60 +35,81 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
   // Only show loader if loading takes more than 250ms to avoid flicker for fast loads
   useEffect(() => {
     let timeout: NodeJS.Timeout;
+    let safetyTimeout: NodeJS.Timeout;
+    let debugTimeout: NodeJS.Timeout;
 
     if (isLoading) {
+      console.log('PageTransition: Loading started');
       setIsCompleted(false);
-      
-      // Keep a safety timeout to ensure content is shown even if loading never completes
-      const safetyTimeout = setTimeout(() => {
-        console.log("PageTransition: Safety timeout triggered");
-        setShouldRenderContent(true);
-        setShowLoading(false);
-        setIsCompleted(true);
-      }, 5000); // 5 seconds max loading time
-      
-      // Normal short timeout for showing loader
+      setShouldRenderContent(false);
       timeout = setTimeout(() => setShowLoading(true), 250);
       
-      return () => {
-        clearTimeout(timeout);
-        clearTimeout(safetyTimeout);
-      };
+      // Add safety timeout to prevent infinite loading
+      safetyTimeout = setTimeout(() => {
+        if (!isCompleted && !shouldRenderContent) {
+          console.warn('Loading timeout exceeded, forcing content render');
+          setShowLoading(false);
+          setShouldRenderContent(true);
+        }
+      }, 5000); // Reduced from 10s to 5s for better user experience
+      
+      // Add debug logging for long-running loads
+      debugTimeout = setTimeout(() => {
+        if (isLoading) {
+          console.warn('PageTransition: Loading taking longer than expected');
+        }
+      }, 2000);
     } else if (!isCompleted) {
+      console.log('PageTransition: Loading finished');
       if (showLoading) {
         // If we were showing the loader, wait for the complete animation
         // This ensures we don't cut off animations in the middle
-        // But also set a timeout to ensure content shows after a short delay
+        console.log('PageTransition: Waiting for animation completion');
+      } else {
+        // If loading is done but we weren't showing the loader, render content immediately
+        console.log('PageTransition: Rendering content immediately');
+        setShouldRenderContent(true);
+        // Scroll to top when new content loads
         window.scrollTo({ top: 0, behavior: "instant" });
         timeout = setTimeout(() => {
-          setShouldRenderContent(true);
           setShowLoading(false);
-        }, 600);
-      } else {
-        setShouldRenderContent(true);
-        setShowLoading(false);
+          setIsCompleted(false);
+        }, 500);
       }
     }
 
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      clearTimeout(safetyTimeout);
+      clearTimeout(debugTimeout);
+    };
   }, [isLoading, isCompleted, showLoading]);
 
   // Handle loading completion
   const handleLoadComplete = () => {
+    console.log('PageTransition: Load complete callback triggered');
     setIsCompleted(true);
     // Wait a moment before rendering content to allow for transition
     setTimeout(() => {
       setShowLoading(false);
       setShouldRenderContent(true);
+      console.log('PageTransition: Content rendering after animation');
     }, 800); // Increased from 600ms to ensure smoother transition
   };
 
+  // Add debug logging for component state
+  useEffect(() => {
+    console.log(`PageTransition state: isLoading=${isLoading}, showLoading=${showLoading}, isCompleted=${isCompleted}, shouldRenderContent=${shouldRenderContent}`);
+  }, [isLoading, showLoading, isCompleted, shouldRenderContent]);
+
   if (isLoading && showLoading && !isCompleted) {
+    console.log('PageTransition: Rendering PreLoader');
     return <PreLoader onLoadComplete={handleLoadComplete} />;
   }
 
   // Only render content when we should
   if (!shouldRenderContent) {
+    console.log('PageTransition: Waiting for content to be ready');
     return null; // Return empty during transition
   }
 
@@ -98,11 +122,11 @@ export function PageTransition({ children, isLoading = false }: PageTransitionPr
       transition={{
         type: "tween",
         duration: 0.3,
-        ease: "easeOut"
+        ease: "easeOut",
       }}
-      style={{ 
+      style={{
         willChange: "opacity, transform",
-        backfaceVisibility: "hidden"
+        backfaceVisibility: "hidden",
       }}
       className="w-full"
     >

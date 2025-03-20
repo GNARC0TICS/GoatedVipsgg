@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet-fix";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
@@ -277,14 +277,16 @@ const SidebarTrigger = React.forwardRef<
       ref={ref}
       data-sidebar="trigger"
       variant="ghost"
-      className={cn("h-8 px-4 transition-all duration-300 hover:scale-105 hover:bg-[#2A2B31] active:scale-95", className)}
+      size="icon"
+      className={cn("h-7 w-7", className)}
       onClick={(event) => {
         onClick?.(event);
         toggleSidebar();
       }}
       {...props}
     >
-      <span className="font-medium">Play</span>
+      <PanelLeft />
+      <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );
 });

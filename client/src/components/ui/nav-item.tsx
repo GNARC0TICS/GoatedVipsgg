@@ -26,7 +26,7 @@ export function NavItem({ href, children, className, onClick }: NavItemProps) {
         className={cn(
           "flex items-center gap-2 px-3 py-2 rounded-md transition-colors",
           isDisabled && "opacity-50 cursor-not-allowed pointer-events-none",
-          className
+          className,
         )}
         onClick={(e) => {
           if (isDisabled) {
@@ -44,9 +44,7 @@ export function NavItem({ href, children, className, onClick }: NavItemProps) {
   if (isDisabled) {
     return (
       <Tooltip>
-        <TooltipTrigger asChild>
-          {content}
-        </TooltipTrigger>
+        <TooltipTrigger asChild>{content}</TooltipTrigger>
         <TooltipContent side="right">
           <p>Sign in to access bonus codes and rewards</p>
         </TooltipContent>
