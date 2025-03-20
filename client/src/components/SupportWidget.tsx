@@ -15,7 +15,7 @@ export function SupportWidget() {
             e.stopPropagation();
             setIsVisible(false);
           }}
-          className="absolute top-2 left-2 text-[#8A8B91] hover:text-white p-1"
+          className="absolute top-2 left-2 text-black hover:text-[#2A2B31] p-1"
         >
           <X size={14} />
         </button>
