@@ -647,15 +647,7 @@ export function Layout({ children }: { children: ReactNode }) {
                         <div className="flex items-center gap-2">
                           <span className="relative z-10">PLAY NOW</span>
                           <div className="relative z-10 play-icon-container">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" className="play-icon">
-                              <path fill="currentColor" fillOpacity="0" stroke="currentColor" strokeDasharray="40" strokeDashoffset="40" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 6l10 6l-10 6Z">
-                                <animate className="play-icon-animate" fill="freeze" attributeName="fill-opacity" begin="0s" dur="0.5s" values="0;1" />
-                                <animate className="play-icon-animate" fill="freeze" attributeName="stroke-dashoffset" begin="0s" dur="0.5s" values="40;0" />
-                              </path>
-                            </svg>
-=======
                             <LineMdPlayFilled className="play-icon" />
->>>>>>> e5a18dcf187180c7ebaaa4e6850ec21b2a9720af
                           </div>
                         </div>
                         <div className="absolute inset-0 bg-[#14151A] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
@@ -723,13 +715,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <div className="flex items-center gap-2">
                 <span className="relative z-10">PLAY</span>
                 <div className="relative z-10 play-icon-container">
-                  <LineMdPlayFilled className="h-5 w-5" />
-                      <animate className="play-icon-animate" fill="freeze" attributeName="stroke-dashoffset" begin="0s" dur="0.5s" values="40;0" />
-                    </path>
-                  </svg>
-=======
                   <LineMdPlayFilled className="play-icon" />
->>>>>>> e5a18dcf187180c7ebaaa4e6850ec21b2a9720af
                 </div>
               </div>
               <div className="absolute inset-0 bg-[#14151A] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>

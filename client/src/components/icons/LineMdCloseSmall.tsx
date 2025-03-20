@@ -1,20 +1,36 @@
-import { SVGProps } from "react";
+import React from 'react';
+import type { SVGProps } from 'react';
 
 export function LineMdCloseSmall(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <path
-        d="M6.75 17.25L12 12L17.25 17.25M17.25 6.75L12 12L6.75 6.75"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" {...props}>
+      <g 
+        fill="none" 
+        stroke="currentColor" 
+        strokeDasharray={16} 
+        strokeDashoffset={16} 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        strokeWidth={2}
+      >
+        <path d="M7 7l10 10">
+          <animate 
+            fill="freeze" 
+            attributeName="stroke-dashoffset" 
+            dur="0.4s" 
+            values="16;0"
+          />
+        </path>
+        <path d="M17 7l-10 10">
+          <animate 
+            fill="freeze" 
+            attributeName="stroke-dashoffset" 
+            begin="0.4s" 
+            dur="0.4s" 
+            values="16;0"
+          />
+        </path>
+      </g>
     </svg>
   );
 }

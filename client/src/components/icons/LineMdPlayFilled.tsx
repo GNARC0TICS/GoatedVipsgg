@@ -1,17 +1,34 @@
-import { SVGProps } from "react";
+import React from 'react';
+import type { SVGProps } from 'react';
 
 export function LineMdPlayFilled(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <path
-        d="M8 5.14v13.72c0 .23.26.37.44.24l11.12-6.86c.17-.1.17-.34 0-.44L8.44 4.9c-.18-.13-.44.01-.44.24z"
-        fill="currentColor"
-      />
+    <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" {...props}>
+      <path 
+        fill="currentColor" 
+        fillOpacity={0} 
+        stroke="currentColor" 
+        strokeDasharray={40} 
+        strokeDashoffset={40} 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        strokeWidth={2} 
+        d="M8 6l10 6l-10 6Z"
+      >
+        <animate 
+          fill="freeze" 
+          attributeName="fill-opacity" 
+          begin="0.5s" 
+          dur="0.5s" 
+          values="0;1"
+        />
+        <animate 
+          fill="freeze" 
+          attributeName="stroke-dashoffset" 
+          dur="0.5s" 
+          values="40;0"
+        />
+      </path>
     </svg>
   );
 }
