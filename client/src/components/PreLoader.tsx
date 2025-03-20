@@ -64,7 +64,7 @@ export const PreLoader: React.FC<PreLoaderProps> = ({ onLoadComplete }) => {
   // Pulse animation keyframes
   const pulseVariants = {
     pulse: {
-      scale: [1, 1.05, 1],
+      scale: [1, 1.15, 1],
       opacity: [0.7, 1, 0.7],
       transition: {
         duration: 2,
@@ -106,7 +106,7 @@ export const PreLoader: React.FC<PreLoaderProps> = ({ onLoadComplete }) => {
             alt="Goated VIPs"
             className="w-48 h-auto object-contain relative z-10"
             animate={{
-              scale: [1, 1.015, 1],
+              scale: [1, 1.05, 1],
               transition: {
                 duration: 1.5,
                 repeat: Infinity,
