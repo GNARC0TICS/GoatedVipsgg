@@ -6,7 +6,7 @@ import { setupAuth } from "./auth";
 import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
-import { db } from "@db";
+import { db, pgPool } from "../db/connection";
 // Import specific schemas from the updated schema structure
 import * as schema from "@db/schema";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
@@ -686,6 +686,45 @@ async function handleAffiliateStats(req: any, res: any) {
   try {
     // Use the cached data function instead of making a direct API call
     const data = await getLeaderboardData();
+    
+    // Store the leaderboard data in the database for persistence
+    try {
+      // First, let's store affiliate stats for today's data
+      // Store daily stats
+      for (const entry of data.data.today.data) {
+        await pgPool.query(
+          'INSERT INTO affiliate_stats (uid, name, wagered, period, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW()) ON CONFLICT (uid, period) DO UPDATE SET name = EXCLUDED.name, wagered = EXCLUDED.wagered, updated_at = NOW()',
+          [entry.uid, entry.name, entry.wagered.today, 'today']
+        );
+      }
+      
+      // Store the current wager race data
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      const raceId = `${currentYear}${(currentMonth + 1).toString().padStart(2, "0")}`;
+      const endOfMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
+      const startDate = new Date(currentYear, currentMonth, 1);
+      
+      // Insert or update race
+      await pgPool.query(
+        'INSERT INTO wager_races (id, status, start_date, end_date, prize_pool, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) ON CONFLICT (id) DO UPDATE SET updated_at = NOW()',
+        [raceId, 'live', startDate, endOfMonth, 500]
+      );
+      
+      // Store the top 10 participants
+      for (const [index, participant] of data.data.monthly.data.slice(0, 10).entries()) {
+        await pgPool.query(
+          'INSERT INTO wager_race_participants (race_id, uid, name, wagered, position, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) ON CONFLICT (race_id, uid) DO UPDATE SET name = EXCLUDED.name, wagered = EXCLUDED.wagered, position = EXCLUDED.position, updated_at = NOW()',
+          [raceId, participant.uid, participant.name, participant.wagered.this_month, index + 1]
+        );
+      }
+      
+      log(`Stored leaderboard data in database successfully`);
+    } catch (dbError) {
+      // If database storage fails, we log the error but still return the data from cache
+      log(`Error storing leaderboard data in database: ${dbError}`);
+    }
     
     // Return the complete data object with all time periods
     // This allows the frontend to extract what it needs without additional API calls

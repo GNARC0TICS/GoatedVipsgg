@@ -1,75 +1,38 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon, neonConfig } from "@neondatabase/serverless";
-import * as schema from "./schema";
-import { log } from "../server/vite";
-import dotenv from "dotenv";
+import pkg from 'pg';
+const { Pool } = pkg;
+import { drizzle } from "drizzle-orm/node-postgres";
+import * as schema from "@db/schema";
+const env = { DATABASE_URL: process.env.DATABASE_URL };
 
-dotenv.config();
+// Create a pool with extended options
+const pool = new Pool({
+  connectionString: env.DATABASE_URL,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
 
-// Production optimizations for Neon
-if (process.env.NODE_ENV === 'production') {
-  // Enable connection caching for better performance
-  neonConfig.fetchConnectionCache = true;
-  
-  // Use WebSockets in production for better connection stability
-  neonConfig.useSecureWebSocket = true;
-  
-  // Log production configuration
-  log("Neon database configured for production with connection caching and secure WebSockets");
-}
+// Add error handler to the pool
+pool.on('error', (err, client) => {
+  console.error('Unexpected error on idle client', err);
+  process.exit(-1);
+});
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
+// Export both the drizzle instance and the pool
+export const db = drizzle(pool, { schema });
+export const pgPool = pool;
 
-// Create SQL connection
-const sql = neon(process.env.DATABASE_URL!);
-
-// Initialize drizzle with neon-http
-export const db = drizzle(sql, { schema });
-
-// Health check function to verify database connection
-export async function checkDatabaseConnection() {
+export async function initDatabase() {
   try {
-    // Simple query to check if the database is accessible
-    const result = await sql`SELECT 1 as connected`;
-    return { connected: true, result };
-  } catch (error) {
-    console.error("Database connection error:", error);
-    return { 
-      connected: false, 
-      error: error instanceof Error ? error.message : "Unknown error" 
-    };
-  }
-}
-
-// Graceful shutdown function to close all connections
-export async function closeDatabaseConnections() {
-  try {
-    log("Closing database connections...");
-    // Any cleanup needed for Neon connections
+    const client = await pool.connect();
+    console.log("Database connection established successfully");
+    
+    // Test the connection with a simple query
+    await client.query('SELECT NOW()');
+    client.release();
     return true;
   } catch (error) {
-    console.error("Error closing database connections:", error);
+    console.error("Error connecting to database:", error);
     return false;
   }
 }
-
-// Verify connection on startup
-sql`SELECT 1`
-  .then(() => {
-    log("Database connection established successfully");
-  })
-  .catch((error) => {
-    log(`Database connection error: ${error.message}`);
-    // Don't throw here - let the application continue but log the error
-  });
-
-// Re-export schema types and utils
-export * from "./schema";
-export * from "./schema/telegram";
-
-// Export the raw SQL executor for complex queries
-export { sql };

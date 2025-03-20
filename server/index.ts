@@ -2,7 +2,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { db, sql, checkDatabaseConnection, closeDatabaseConnections } from "../db/connection";
+import { db, pgPool, initDatabase } from "../db/connection";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
@@ -57,20 +57,18 @@ async function setupMiddleware() {
   // Enhanced health check endpoint with database status
   app.get("/api/health", async (_req, res) => {
     try {
-      // Check database connection
-      const dbStatus = await checkDatabaseConnection();
-      
-      // Determine overall health status
-      const isHealthy = dbStatus.connected;
+      // Test connection by running a simple query
+      const client = await pgPool.connect();
+      await client.query('SELECT NOW()');
+      client.release();
       
       res.json({ 
-        status: isHealthy ? "healthy" : "degraded",
+        status: "healthy",
         environment: process.env.NODE_ENV || 'development',
         timestamp: new Date().toISOString(),
         services: {
           database: {
-            status: dbStatus.connected ? "connected" : "disconnected",
-            ...(dbStatus.connected ? {} : { error: dbStatus.error })
+            status: "connected"
           },
           api: {
             status: "running",
@@ -148,20 +146,18 @@ function legacyErrorHandler(
 }
 
 async function checkDatabase() {
-  const result = await checkDatabaseConnection();
-  
-  if (result.connected) {
-    log("Database connection successful");
-    return true;
-  } else {
-    const errorMessage = result.error || "Unknown database error";
-    if (errorMessage.includes("endpoint is disabled")) {
-      log(
-        "Database endpoint is disabled. Please enable the database in the Replit Database tab.",
-      );
+  try {
+    const result = await initDatabase();
+    
+    if (result) {
+      log("Database connection successful");
+      return true;
     } else {
-      console.error("Database connection error:", errorMessage);
+      log("Database connection failed");
+      return false;
     }
+  } catch (error) {
+    console.error("Database connection error:", error);
     return false;
   }
 }
