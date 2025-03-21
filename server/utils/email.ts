@@ -1,4 +1,3 @@
-
 import nodemailer from 'nodemailer';
 import { log } from '../vite';
 
@@ -12,7 +11,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendConfirmationEmail = async (to: string, username: string) => {
+export const sendConfirmationEmail = async (to: string, username: string, verificationToken: string) => {
   try {
     await transporter.sendMail({
       from: process.env.SMTP_USER,
@@ -44,7 +43,6 @@ export const sendConfirmationEmail = async (to: string, username: string) => {
             <p style="margin-top: 10px;">© 2024 Goated VIPs. All rights reserved.</p>
           </div>
         </div>
-      `,
       `,
     });
     log('Confirmation email sent successfully');

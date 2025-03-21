@@ -22,7 +22,8 @@ import testEmailRouter from './routes/test-email'; // Added import for test emai
 
 const execAsync = promisify(exec);
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || process.env.API_PORT || 5000;
+app.set('port', PORT);
 
 async function setupMiddleware() {
   // Security middleware
