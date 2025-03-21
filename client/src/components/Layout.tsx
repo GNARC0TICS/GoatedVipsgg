@@ -107,6 +107,26 @@ function MobileNavLink({
   );
 }
 
+function NavLink({ href, label }: { href: string; label: string | React.ReactNode }) {
+  const [location] = useLocation();
+  const isActive = location === href;
+
+  return (
+    <Link href={href}>
+      <motion.div
+        variants={hoverVariants}
+        initial="initial"
+        whileHover="hover"
+        className={`font-heading text-white hover:text-[#D7FF00] transition-colors duration-300 ${
+          isActive ? "text-[#D7FF00]" : ""
+        }`}
+      >
+        {label}
+      </motion.div>
+    </Link>
+  );
+}
+
 // Main Layout Component
 export function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
@@ -710,3 +730,74 @@ export function Layout({ children }: { children: ReactNode }) {
                       Settings
                     </DropdownMenuItem>
                   </Link>
+                  <DropdownMenuSeparator className="bg-[#2A2B31]/50" />
+                  <DropdownMenuItem 
+                    className={dropdownClasses.item}
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-[#8A8B91] hover:text-white relative h-8 w-8 md:h-10 md:w-10 transition-all duration-300 rounded-full"
+                onClick={() => setShowAuthModal(true)}
+              >
+                <div className="absolute inset-0 bg-[#2A2B31]/50 opacity-0 hover:opacity-100 transition-opacity duration-300 rounded-full"></div>
+                <User className="h-5 w-5 md:h-6 md:w-6" />
+              </Button>
+            )}
+          </div>
+        </nav>
+      </header>
+
+      {/* Rest of the component */}
+      {children}
+
+      {/* Footer */}
+      <footer
+        ref={footerRef}
+        className={`${footerClasses.wrapper} ${
+          isFooterVisible ? "border-t-4 border-[#2A2B31]" : "border-t-4 border-transparent"
+        }`}
+      >
+        <div className={footerClasses.container}>
+          <div className={footerClasses.grid}>
+            <div>
+              <h2 className={footerClasses.heading}>About Us</h2>
+              <p>
+                We are passionate about providing the best experience for our users.
+              </p>
+            </div>
+            <div>
+              <h2 className={footerClasses.heading}>Quick Links</h2>
+              <ul>
+                <li>
+                  <Link href="/">Home</Link>
+                </li>
+                <li>
+                  <Link href="/how-it-works">How It Works</Link>
+                </li>
+                <li>
+                  <Link href="/promotions">Promotions</Link>
+                </li>
+                <li>
+                  <Link href="/leaderboard?period=daily">Leaderboards</Link>
+                </li>
+                <li>
+                  <Link href="/socials">Socials</Link>
+                </li>
+                <li>
+                  <Link href="/help">Help & FAQ</Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
