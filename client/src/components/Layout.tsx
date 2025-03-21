@@ -13,6 +13,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { LineMdPlayFilled } from "@/components/icons/LineMdPlayFilled";
+import { Present3DIcon } from "@/components/icons/PresentIcon";
 // Import from the fixed sheet component
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet-fix";
 import { Button } from "@/components/ui/button";
@@ -661,6 +662,24 @@ export function Layout({ children }: { children: ReactNode }) {
 
           {/* User section */}
           <div className={headerClasses.userSection}>
+            {/* Bonus Code Icon for Mobile */}
+            {isMobile && (
+              <Link href="/bonus-codes">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-[#8A8B91] hover:text-white relative h-8 w-8 transition-all duration-300 rounded-full"
+                >
+                  <div className="absolute inset-0 bg-[#2A2B31]/50 opacity-0 hover:opacity-100 transition-opacity duration-300 rounded-full"></div>
+                  <Present3DIcon 
+                    size={24} 
+                    color="#D7FF00" 
+                    hasNotification={true} 
+                  />
+                </Button>
+              </Link>
+            )}
+            
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -691,202 +710,3 @@ export function Layout({ children }: { children: ReactNode }) {
                       Settings
                     </DropdownMenuItem>
                   </Link>
-                  <DropdownMenuSeparator className="bg-[#2A2B31]/50" />
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    className="px-4 py-2.5 font-medium text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200 cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <LogOut className="h-4 w-4" />
-                      <span>Logout</span>
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <AuthModal />
-            )}
-            <Button
-              onClick={() =>
-                window.open("https://www.goated.com/r/SPIN", "_blank")
-              }
-              className="relative overflow-hidden group bg-[#D7FF00] text-[#14151A] hover:text-[#D7FF00] transition-colors duration-300 rounded-md flex items-center gap-2 h-8 md:h-10 px-3 md:px-4 text-sm md:text-base font-heading"
-            >
-              <div className="flex items-center gap-2">
-                <span className="relative z-10">PLAY</span>
-                <div className="relative z-10 play-icon-container">
-                  <LineMdPlayFilled className="play-icon" />
-                </div>
-              </div>
-              <div className="absolute inset-0 bg-[#14151A] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
-            </Button>
-          </div>
-        </nav>
-      </header>
-
-      <main className="flex-grow pt-16">
-        {children}
-        {user?.isAdmin && isMobile && <MobileAdminBadge />}
-      </main>
-
-      {showFloatingSupport && (
-        <FloatingSupport onClose={() => setShowFloatingSupport(false)} />
-      )}
-
-      <ScrollToTop />
-
-      <footer ref={footerRef} className={footerClasses.wrapper}>
-        <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent pointer-events-none" />
-        <div className={footerClasses.container}>
-          <div className={footerClasses.grid}>
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <h4 className={footerClasses.heading}>Ready to get Goated?</h4>
-                <a
-                  href="https://www.goated.com/r/VIPBOOST"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transform transition-transform duration-300 hover:scale-110"
-                >
-                  <img
-                    src="/images/Goated Logo - Black.png"
-                    alt="Goated"
-                    className="h-8 w-auto"
-                  />
-                </a>
-              </div>
-              <p className="text-[#14151A] mb-6">
-                Sign up now and enjoy additional rewards from our platform.
-                Start your journey to becoming a casino legend!
-              </p>
-              <Button
-                onClick={() =>
-                  window.open("https://www.goated.com/r/EARLYACCESS", "_blank")
-                }
-                className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 font-medium gap-2 flex items-center"
-              >
-                <span>Sign Up Now</span>
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <h4 className={footerClasses.heading}>Stay Updated</h4>
-                <a
-                  href="https://t.me/+iFlHl5V9VcszZTVh"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transform transition-transform duration-300 hover:scale-110"
-                >
-                  <img
-                    src="/images/Goated logo with text.png"
-                    alt="Goated"
-                    className="h-[4.5rem] w-auto object-contain"
-                  />
-                </a>
-              </div>
-              <p className="text-[#14151A] mb-6">
-                Subscribe to our newsletter for exclusive offers and updates!
-              </p>
-              <form onSubmit={(e) => e.preventDefault()} className="flex gap-2">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="flex-1 px-4 py-2 rounded-lg border border-[#14151A]/20 focus:outline-none focus:border-[#14151A] focus:ring-1 focus:ring-[#14151A]/30 transition-all duration-300 bg-white/95"
-                />
-                <Button className="bg-[#14151A] text-black hover:bg-[#14151A]/80 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 font-medium">
-                  Subscribe
-                </Button>
-              </form>
-            </div>
-          </div>
-        </div>
-        <div className="bg-[#14151A] text-[#8A8B91] text-sm py-6">
-          <div className="container mx-auto px-4 text-center">
-            <div className="flex flex-col items-center gap-4 mb-6">
-              <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 px-4">
-                <a
-                  href="https://www.goated.com/r/VIPBOOST"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transform transition-all duration-300 hover:scale-105 hover:brightness-110"
-                >
-                  <img
-                    src="/images/Goated logo with text.png"
-                    alt="Goated"
-                    className="h-10 md:h-12 w-auto object-contain max-w-[200px]"
-                  />
-                </a>
-                <a
-                  href="https://t.me/+iFlHl5V9VcszZTVh"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transform transition-all duration-300 hover:scale-105 hover:brightness-110"
-                >
-                  <img
-                    src="/images/Goated logo with text1.png"
-                    alt="Goated Partner"
-                    className="h-10 md:h-12 w-auto object-contain max-w-[200px]"
-                  />
-                </a>
-              </div>
-            </div>
-            <p className="mb-2">© 2024 GoatedVips.gg. All rights reserved.</p>
-            <p className="mb-2">
-              Disclaimer: This is an independent platform not affiliated with or
-              operated by Goated.com.
-            </p>
-            <p>Gamble responsibly. 18+ only. BeGambleAware.org</p>
-          </div>
-        </div>
-      </footer>
-    </div>
-  );
-}
-
-function NavLink({
-  href,
-  label,
-  tooltip,
-}: {
-  href: string;
-  label: string | React.ReactNode;
-  tooltip?: string;
-}) {
-  const [location] = useLocation();
-  const isActive = location === href;
-
-  const linkContent = (
-    <motion.div
-      className={`relative font-heading cursor-pointer ${
-        isActive ? "text-[#D7FF00]" : "text-white"
-      } hover:text-[#D7FF00] transition-all duration-300`}
-      whileHover={{ x: 5 }}
-      whileTap={{ scale: 0.95 }}
-    >
-      {label}
-      <motion.div
-        className="absolute -bottom-1 left-0 h-0.5 bg-[#D7FF00] origin-left"
-        initial={{ scaleX: isActive ? 1 : 0 }}
-        animate={{ scaleX: isActive ? 1 : 0 }}
-        whileHover={{ scaleX: 1 }}
-        transition={{ duration: 0.3 }}
-      />
-    </motion.div>
-  );
-
-  return tooltip ? (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Link href={href}>{linkContent}</Link>
-        </TooltipTrigger>
-        <TooltipContent className="bg-[#1A1B21] border-[#2A2B31] text-white">
-          <p>{tooltip}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  ) : (
-    <Link href={href}>{linkContent}</Link>
-  );
-}
