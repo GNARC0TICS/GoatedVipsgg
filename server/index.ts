@@ -16,6 +16,8 @@ import {
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
 import fetch from "node-fetch";
 import helmet from "helmet";
+import nodemailer from 'nodemailer';
+import testEmailRouter from './routes/test-email'; // Added import for test email route
 
 const execAsync = promisify(exec);
 const app = express();
@@ -61,7 +63,7 @@ async function setupMiddleware() {
       const client = await pgPool.connect();
       await client.query('SELECT NOW()');
       client.release();
-      
+
       res.json({ 
         status: "healthy",
         environment: process.env.NODE_ENV || 'development',
@@ -148,7 +150,7 @@ function legacyErrorHandler(
 async function checkDatabase() {
   try {
     const result = await initDatabase();
-    
+
     if (result) {
       log("Database connection successful");
       return true;
@@ -211,6 +213,7 @@ async function startServer() {
 
     // Then register routes
     registerRoutes(app);
+    app.use('/api', testEmailRouter); // Register test email route
     initializeAdmin().catch(console.error);
 
     // Initialize Telegram bot
@@ -227,10 +230,10 @@ async function startServer() {
 
     // Add 404 handler after all routes
     app.use("*", notFoundHandler);
-    
+
     // Add error handler as the last middleware
     app.use(errorHandler);
-    
+
     log("All middleware and routes registered");
 
     // Start server with proper error handling
@@ -269,7 +272,7 @@ async function closeDatabaseConnections() {
   try {
     log("Closing database connections...");
     // Close Drizzle ORM connection if needed
-    
+
     // Close PostgreSQL connection pool
     await pgPool.end();
     log("Database connections closed successfully");
@@ -283,15 +286,15 @@ async function closeDatabaseConnections() {
 // Graceful shutdown handler
 async function gracefulShutdown(signal: string) {
   log(`Received ${signal} signal. Shutting down gracefully...`);
-  
+
   // Stop the Telegram bot
   stopBot();
-  
+
   // Close database connections
   await closeDatabaseConnections();
-  
+
   // Add any other cleanup tasks here
-  
+
   log("All connections closed. Exiting process.");
   process.exit(0);
 }
