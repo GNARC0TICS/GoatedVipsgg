@@ -293,6 +293,7 @@ export type InsertTelegramVerificationRequest =
 export type SelectTelegramVerificationRequest =
   typeof telegramVerificationRequests.$inferSelect;
 
+// Export necessary variables and schemas
 export {
   challenges,
   challengeEntries,
