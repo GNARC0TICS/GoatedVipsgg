@@ -42,6 +42,7 @@ import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminLogin from "./pages/admin/login"; // Add import for AdminLogin
+import Profile from "@/pages/profile";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -161,6 +162,11 @@ function Router() {
             <Route path="/vip-program" component={VipProgram} />
             <Route path="/challenges" component={Challenges} />
             {/* Protected Routes */}
+            <Route path="/profile">
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            </Route>
             <Route path="/bonus-codes">
               <ProtectedRoute>
                 <BonusCodes />
@@ -265,19 +271,21 @@ function AppContent() {
 
   return (
     <AnimatePresence mode="wait">
-      <>
-        <ParticleBackground /> {/* Added ParticleBackground */}
-        {isInitialLoad ? (
-          <PreLoader onLoadComplete={handleLoadComplete} />
-        ) : (
-          <Suspense fallback={<LoadingSpinner />}>
-            <TooltipProvider>
-              <Router />
-              <Toaster />
-            </TooltipProvider>
-          </Suspense>
-        )}
-      </>
+      <div className="relative min-h-screen">
+        <ParticleBackground />
+        <div className="relative z-10">
+          {isInitialLoad ? (
+            <PreLoader onLoadComplete={handleLoadComplete} />
+          ) : (
+            <Suspense fallback={<LoadingSpinner />}>
+              <TooltipProvider>
+                <Router />
+                <Toaster />
+              </TooltipProvider>
+            </Suspense>
+          )}
+        </div>
+      </div>
     </AnimatePresence>
   );
 }

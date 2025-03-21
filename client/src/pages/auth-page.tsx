@@ -22,29 +22,48 @@ import { insertUserSchema } from "@db/schema";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { z } from "zod";
+
+// Extended schema to include confirm password
+const authSchema = insertUserSchema.extend({
+  confirmPassword: z.string().optional(),
+}).refine((data) => !data.confirmPassword || data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+type AuthFormData = z.infer<typeof authSchema>;
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const { login, register } = useUser();
   const { toast } = useToast();
 
-  const form = useForm({
-    resolver: zodResolver(insertUserSchema),
+  const form = useForm<AuthFormData>({
+    resolver: zodResolver(authSchema),
     defaultValues: {
       username: "",
       password: "",
+      confirmPassword: "",
     },
+    mode: "onChange"
   });
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: AuthFormData) => {
     try {
-      const result = await (isLogin ? login(values) : register(values));
+      const { confirmPassword, ...submitValues } = values;
+      const result = await (isLogin ? login(submitValues) : register(submitValues));
       if (!result.ok) {
         toast({
           variant: "destructive",
           title: "Error",
           description: result.message,
         });
+      } else {
+        // Redirect to profile page after successful registration
+        if (!isLogin) {
+          window.location.href = "/profile";
+        }
       }
     } catch (error: any) {
       toast({
@@ -105,6 +124,21 @@ export default function AuthPage() {
                     </FormItem>
                   )}
                 />
+                {!isLogin && (
+                  <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-sans">Confirm Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage className="font-sans" />
+                      </FormItem>
+                    )}
+                  />
+                )}
                 <Button type="submit" className="w-full uppercase font-heading">
                   {isLogin ? "Sign In" : "Create Account"}
                 </Button>

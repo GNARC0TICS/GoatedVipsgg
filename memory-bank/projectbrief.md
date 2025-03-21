@@ -1,4 +1,3 @@
-
 # Codebase Overview
 
 This document provides a visual structure of the codebase, highlighting key files and their relationships.
@@ -16,6 +15,9 @@ This document provides a visual structure of the codebase, highlighting key file
 │   │   ├── hooks           # Custom React hooks
 │   │   ├── lib             # Utility libraries
 │   │   ├── pages           # Application pages/routes
+│   │   │   ├── profile.tsx # User's personal profile page
+│   │   │   ├── UserProfile.tsx # Public profile view (other users)
+│   │   │   └── ...         # Other application pages
 │   │   └── utils           # Helper functions
 │   ├── index.html          # Entry HTML file
 │   └── tailwind.config.ts  # Tailwind CSS configuration
@@ -69,6 +71,8 @@ This document provides a visual structure of the codebase, highlighting key file
   - `Leaderboard.tsx`: Leaderboard display
   - `Challenges.tsx`: User challenges
   - `Telegram.tsx`: Telegram integration page
+  - `profile.tsx`: User's personal profile page with edit capabilities
+  - `UserProfile.tsx`: Public profile view for viewing other users' profiles
 
 #### Hooks & Utilities
 
@@ -1428,3 +1432,35 @@ As your user base grows, consider these scaling options:
    - Use connection pooling
    - Consider read replicas for heavy read operations
    - Implement database sharding for very large datasets
+
+## User Experience Enhancements
+
+### Authentication and User Profile
+
+#### Registration Process
+- **Enhanced Registration Forms**:
+  - Added confirm password field for improved security validation
+  - Implemented proper password matching validation using zod refinement
+  - Added automatic redirection to profile page after successful registration
+  - Fixed mobile zoom issues with form inputs using viewport meta settings
+
+#### Profile Management
+- **Dual Profile Page System**:
+  - `profile.tsx`: Personal profile management page featuring:
+    - Account information display and editing
+    - Linked accounts management (Telegram and Goated)
+    - User statistics dashboard
+    - Account activity overview
+  - `UserProfile.tsx`: Public profile view for other users featuring:
+    - User stats and achievements
+    - Wager race history and performance
+    - Read-only view of public user information
+
+- **Profile Functionality**:
+  - Edit capabilities for personal information
+  - Visual indicators for account linking status
+  - Integration with platform features (races, challenges, etc.)
+  - Responsive design for all device types
+  - Clear empty state handling for new users
+
+These enhancements provide a more complete user journey from registration through ongoing platform engagement, with secure authentication practices and intuitive profile management.

@@ -681,7 +681,7 @@ export function Layout({ children }: { children: ReactNode }) {
                     My Account
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-[#2A2B31]/50" />
-                  <Link href={`/user/${user.id}`}>
+                  <Link href="/profile">
                     <DropdownMenuItem className={dropdownClasses.item}>
                       Profile
                     </DropdownMenuItem>

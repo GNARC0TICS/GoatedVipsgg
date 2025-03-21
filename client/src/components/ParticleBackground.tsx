@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react';
 
 export const ParticleBackground = () => {
@@ -22,14 +21,14 @@ export const ParticleBackground = () => {
 
     // Particle configuration
     const particleConfig = {
-      count: 25, // Reduced number of particles
-      sizeMin: 0.1,
-      sizeMax: 1.2, // Smaller max size
-      speedMin: 0.03, // Slower movement
-      speedMax: 0.08,
-      colorPrimary: 'rgba(215, 255, 0, 0.15)', // More subtle color
-      colorSecondary: 'rgba(215, 255, 0, 0)', 
-      fadeSpeed: 0.02 // Controls how quickly the trail fades
+      count: 35, // Increased number of particles
+      sizeMin: 0.2,
+      sizeMax: 2, // Increased max size
+      speedMin: 0.05,
+      speedMax: 0.12,
+      colorPrimary: 'rgba(215, 255, 0, 0.25)', // Increased opacity
+      colorSecondary: 'rgba(215, 255, 0, 0.05)', // Slightly increased secondary color
+      fadeSpeed: 0.015 // Slower fade for more visible trails
     };
 
     // Particle interface
@@ -186,10 +185,10 @@ export const ParticleBackground = () => {
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
-        zIndex: -10, // Negative z-index to ensure it stays behind content
-        opacity: 0.8, // Slightly reduced opacity
+        zIndex: 0, // Changed to 0 to ensure it's visible but behind content
+        opacity: 1, // Full opacity
       }}
-      aria-hidden="true" // Accessibility improvement
+      aria-hidden="true"
     />
   );
 };

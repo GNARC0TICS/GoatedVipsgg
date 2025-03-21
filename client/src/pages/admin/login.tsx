@@ -47,13 +47,11 @@ export default function AdminLoginPage() {
   const onSubmit = async (values: AdminLoginFormData) => {
     setIsLoading(true);
     try {
-      // Send the identifier field directly to match our backend changes
       const formData = {
         identifier: values.identifier.trim(),
         password: values.password.trim(),
       };
 
-      // Call the admin login endpoint
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: {
@@ -65,36 +63,25 @@ export default function AdminLoginPage() {
       const result = await response.json();
 
       if (response.ok && result.status === 'success') {
-        toast({
-          title: "Success",
-          description: "Logged in successfully",
-        });
-        setLocation('/admin');
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: result.message || "Login failed",
-        });
-      }
-
-      if (response.ok && result.token) {
+        // Store admin token and user data
         localStorage.setItem('adminToken', result.token);
         localStorage.setItem('user', JSON.stringify(result.user));
-        setLocation('/admin');
-        localStorage.setItem('adminToken', result.token);
         
         toast({
-          title: "Login Successful",
+          title: "Success",
           description: "Welcome to the admin dashboard",
         });
+        
         // Redirect to admin dashboard
         setLocation("/admin");
       } else {
+        // Handle specific error cases
+        let errorMessage = result.message || "Login failed";
+        
         toast({
           variant: "destructive",
-          title: "Login Failed",
-          description: result.error || "Invalid credentials",
+          title: "Error",
+          description: errorMessage,
         });
       }
     } catch (error) {

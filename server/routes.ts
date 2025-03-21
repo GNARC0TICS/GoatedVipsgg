@@ -832,20 +832,18 @@ async function handleAffiliateStats(req: any, res: any) {
 
 async function handleAdminLogin(req: any, res: any) {
   try {
-    // Accept both email and username fields, plus a generic "identifier" that can be either
     const { username, email, password, identifier } = req.body;
-    
-    // Check for credentials - allow either username+password, email+password, or identifier+password
     const userIdentifier = identifier || username || email;
     
     if (!userIdentifier || !password) {
-      return res.status(400).json({ error: "Username/email and password required" });
+      return res.status(400).json({ 
+        status: "error",
+        message: "Username/email and password required" 
+      });
     }
 
-    // Determine if the identifier is an email (contains @) or username
     const isEmail = userIdentifier.includes('@');
     
-    // Look up admin in the database based on username or email
     const [admin] = await db
       .select()
       .from(schema.users)
@@ -858,15 +856,20 @@ async function handleAdminLogin(req: any, res: any) {
 
     if (!admin) {
       log(`Admin login failed: User not found for identifier ${userIdentifier}`);
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(401).json({ 
+        status: "error",
+        message: "Invalid credentials" 
+      });
     }
 
     if (!admin.isAdmin) {
       log(`Admin login failed: User ${userIdentifier} is not an admin`);
-      return res.status(403).json({ error: "Admin privileges required" });
+      return res.status(403).json({ 
+        status: "error",
+        message: "Admin privileges required" 
+      });
     }
 
-    // Verify password
     try {
       const scryptAsync = (await import('crypto')).scrypt;
       const timingSafeEqual = (await import('crypto')).timingSafeEqual;
@@ -874,7 +877,6 @@ async function handleAdminLogin(req: any, res: any) {
       
       const scryptPromise = promisify(scryptAsync);
       
-      // Compare password using timing-safe comparison
       const [hashedPassword, salt] = admin.password.split(".");
       const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
       const suppliedPasswordBuf = await scryptPromise(password, salt, 64) as Buffer;
@@ -883,19 +885,22 @@ async function handleAdminLogin(req: any, res: any) {
       
       if (!isMatch) {
         log(`Admin login failed: Invalid password for user ${userIdentifier}`);
-        return res.status(401).json({ error: "Invalid credentials" });
+        return res.status(401).json({ 
+          status: "error",
+          message: "Invalid credentials" 
+        });
       }
     } catch (cryptoError) {
       log(`Error verifying password: ${cryptoError}`);
       
-      // Fallback to direct comparison if crypto comparison fails
-      // This is less secure but prevents complete login failure
       if (admin.password !== password) {
-        return res.status(401).json({ error: "Invalid credentials" });
+        return res.status(401).json({ 
+          status: "error",
+          message: "Invalid credentials" 
+        });
       }
     }
 
-    // Generate token and return
     const token = generateToken({ 
       id: admin.id, 
       username: admin.username,
@@ -903,6 +908,7 @@ async function handleAdminLogin(req: any, res: any) {
     });
     
     res.json({ 
+      status: "success",
       token,
       user: {
         id: admin.id,
@@ -914,7 +920,10 @@ async function handleAdminLogin(req: any, res: any) {
     log(`Admin login successful for user: ${userIdentifier}`);
   } catch (error) {
     log(`Error in admin login: ${error}`);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ 
+      status: "error",
+      message: "Server error" 
+    });
   }
 }
 
