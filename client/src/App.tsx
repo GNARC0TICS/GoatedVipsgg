@@ -285,4 +285,4 @@ function AppContent() {
 export default App;
 
 
-// ParticleBackground component is imported from "./components/ParticleBackground"
+// ParticleBackground component is now imported from "./components/ParticleBackground"
