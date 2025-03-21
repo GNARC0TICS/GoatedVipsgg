@@ -1,4 +1,5 @@
 import express from "express";
+import testEmailRouter from './routes/test-email';
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -45,6 +46,7 @@ async function setupMiddleware() {
 
   // Basic middleware
   app.use(express.json());
+app.use('/api', testEmailRouter);
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
 
