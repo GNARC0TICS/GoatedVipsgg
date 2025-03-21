@@ -18,7 +18,6 @@ import { errorHandler, notFoundHandler } from "./middleware/error-handler";
 import fetch from "node-fetch";
 import helmet from "helmet";
 import nodemailer from 'nodemailer';
-import testEmailRouter from './routes/test-email'; // Added import for test email route
 
 const execAsync = promisify(exec);
 const app = express();
