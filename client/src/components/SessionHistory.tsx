@@ -1,13 +1,9 @@
 import React from "react";
+import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { Monitor, Smartphone, Clock, MapPin } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Monitor, Smartphone, Tablet, Laptop, Globe, Clock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-
-interface SessionHistoryProps {
-  userId: number;
-}
 
 interface Session {
   id: number;
@@ -18,25 +14,27 @@ interface Session {
   createdAt: string;
 }
 
+interface SessionHistoryProps {
+  userId: number;
+}
+
 export function SessionHistory({ userId }: SessionHistoryProps) {
   const { toast } = useToast();
   
-  const { data: sessions, isLoading, refetch } = useQuery<Session[]>({
-    queryKey: ["user-sessions", userId],
-    queryFn: async () => {
-      const response = await fetch("/api/user/sessions");
-      if (!response.ok) {
-        throw new Error("Failed to fetch sessions");
-      }
-      return response.json();
-    },
+  const { data: sessions, isLoading, error, refetch } = useQuery<Session[]>({
+    queryKey: ["/api/user/sessions", userId],
+    enabled: !!userId,
+    retry: 2,
     refetchOnWindowFocus: false,
   });
   
   const terminateSession = async (sessionId: number) => {
     try {
-      const response = await fetch(`/api/user/sessions/${sessionId}`, {
-        method: "DELETE",
+      const response = await fetch(`/api/user/sessions/${sessionId}/terminate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
       
       if (!response.ok) {
@@ -48,6 +46,7 @@ export function SessionHistory({ userId }: SessionHistoryProps) {
         description: "Session terminated successfully",
       });
       
+      // Refetch sessions to update the list
       refetch();
     } catch (error) {
       toast({
@@ -58,152 +57,195 @@ export function SessionHistory({ userId }: SessionHistoryProps) {
     }
   };
   
+  // Helper function to determine device icon based on user agent
   const getDeviceIcon = (userAgent: string) => {
-    if (userAgent.toLowerCase().includes("mobile")) {
+    const ua = userAgent.toLowerCase();
+    
+    if (ua.includes("iphone") || ua.includes("android") && ua.includes("mobile")) {
       return <Smartphone className="h-5 w-5 text-[#D7FF00]" />;
+    } else if (ua.includes("ipad") || ua.includes("android") && !ua.includes("mobile")) {
+      return <Tablet className="h-5 w-5 text-[#D7FF00]" />;
+    } else if (ua.includes("windows") || ua.includes("macintosh") || ua.includes("linux")) {
+      return <Laptop className="h-5 w-5 text-[#D7FF00]" />;
+    } else {
+      return <Globe className="h-5 w-5 text-[#D7FF00]" />;
     }
-    return <Monitor className="h-5 w-5 text-[#D7FF00]" />;
   };
   
-  const getDeviceName = (userAgent: string) => {
-    if (!userAgent) return "Unknown Device";
-    
-    if (userAgent.includes("iPhone") || userAgent.includes("iPad")) {
-      return userAgent.includes("iPhone") ? "iPhone" : "iPad";
-    } else if (userAgent.includes("Android")) {
-      return "Android Device";
-    } else if (userAgent.includes("Windows")) {
-      return "Windows PC";
-    } else if (userAgent.includes("Mac")) {
-      return "Mac";
-    } else if (userAgent.includes("Linux")) {
-      return "Linux";
-    }
-    
-    return "Unknown Device";
-  };
-  
+  // Helper function to format date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleString();
+    return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+  };
+  
+  // Helper function to get device name
+  const getDeviceName = (userAgent: string) => {
+    const ua = userAgent.toLowerCase();
+    
+    if (ua.includes("iphone")) {
+      return "iPhone";
+    } else if (ua.includes("ipad")) {
+      return "iPad";
+    } else if (ua.includes("android") && ua.includes("mobile")) {
+      return "Android Phone";
+    } else if (ua.includes("android")) {
+      return "Android Tablet";
+    } else if (ua.includes("macintosh")) {
+      return "Mac";
+    } else if (ua.includes("windows")) {
+      return "Windows PC";
+    } else if (ua.includes("linux")) {
+      return "Linux";
+    } else {
+      return "Unknown Device";
+    }
+  };
+  
+  // Helper function to get browser name
+  const getBrowserName = (userAgent: string) => {
+    const ua = userAgent.toLowerCase();
+    
+    if (ua.includes("chrome") && !ua.includes("edg")) {
+      return "Chrome";
+    } else if (ua.includes("firefox")) {
+      return "Firefox";
+    } else if (ua.includes("safari") && !ua.includes("chrome")) {
+      return "Safari";
+    } else if (ua.includes("edg")) {
+      return "Edge";
+    } else if (ua.includes("opera") || ua.includes("opr")) {
+      return "Opera";
+    } else {
+      return "Unknown Browser";
+    }
   };
   
   if (isLoading) {
     return (
-      <div className="flex justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#D7FF00]"></div>
+      <div className="bg-[#1A1B21]/50 backdrop-blur-sm border border-[#2A2B31] rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Monitor className="h-5 w-5 text-[#D7FF00]" />
+          <h3 className="text-xl font-heading text-white">Active Sessions</h3>
+        </div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-16 bg-[#2A2B31] rounded-md w-full"></div>
+          <div className="h-16 bg-[#2A2B31] rounded-md w-full"></div>
+        </div>
       </div>
     );
   }
   
+  if (error || !sessions) {
+    return (
+      <div className="bg-[#1A1B21]/50 backdrop-blur-sm border border-[#2A2B31] rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Monitor className="h-5 w-5 text-[#D7FF00]" />
+          <h3 className="text-xl font-heading text-white">Active Sessions</h3>
+        </div>
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <p className="text-[#8A8B91]">
+            Unable to load session data. Please try again later.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
+  const currentSession = sessions.find(session => session.isActive);
+  const otherSessions = sessions.filter(session => !session.isActive);
+  
   return (
-    <div className="space-y-6">
-      <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
-        <CardContent className="p-6">
-          <h3 className="text-xl font-bold text-[#D7FF00] mb-4">Active Sessions</h3>
-          
-          {sessions && sessions.length > 0 ? (
-            <div className="space-y-4">
-              {sessions.map((session) => (
-                <div 
-                  key={session.id} 
-                  className="flex items-start justify-between p-4 bg-[#2A2B31] rounded-lg"
+    <div className="bg-[#1A1B21]/50 backdrop-blur-sm border border-[#2A2B31] rounded-xl p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Monitor className="h-5 w-5 text-[#D7FF00]" />
+        <h3 className="text-xl font-heading text-white">Active Sessions</h3>
+      </div>
+      
+      <div className="space-y-6">
+        {currentSession && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="bg-green-500 h-2 w-2 rounded-full"></div>
+              <h4 className="text-white font-medium">Current Session</h4>
+            </div>
+            
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-[#2A2B31]/50 rounded-lg p-4 border border-[#3A3B41]"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  {getDeviceIcon(currentSession.userAgent)}
+                  <div>
+                    <div className="text-white font-medium">
+                      {getDeviceName(currentSession.userAgent)} • {getBrowserName(currentSession.userAgent)}
+                    </div>
+                    <div className="text-[#8A8B91] text-sm flex items-center gap-1 mt-1">
+                      <Clock className="h-3 w-3" />
+                      <span>Active since {formatDate(currentSession.createdAt)}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-green-500/20 text-green-500 px-2 py-0.5 rounded-full text-xs">
+                  Current
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+        
+        {otherSessions.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="bg-[#8A8B91] h-2 w-2 rounded-full"></div>
+              <h4 className="text-white font-medium">Other Sessions</h4>
+            </div>
+            
+            <div className="space-y-3">
+              {otherSessions.map((session) => (
+                <motion.div 
+                  key={session.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-[#2A2B31]/50 rounded-lg p-4 border border-[#3A3B41]"
                 >
-                  <div className="flex items-start gap-3">
-                    {getDeviceIcon(session.userAgent)}
-                    <div>
-                      <h4 className="font-medium text-white">{getDeviceName(session.userAgent)}</h4>
-                      <div className="text-sm text-[#8A8B91] space-y-1 mt-1">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5" />
-                          <span>Last active: {formatDate(session.lastActive)}</span>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      {getDeviceIcon(session.userAgent)}
+                      <div>
+                        <div className="text-white font-medium">
+                          {getDeviceName(session.userAgent)} • {getBrowserName(session.userAgent)}
                         </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3.5 w-3.5" />
-                          <span>IP: {session.ipAddress}</span>
+                        <div className="text-[#8A8B91] text-sm flex items-center gap-1 mt-1">
+                          <Clock className="h-3 w-3" />
+                          <span>Last active {formatDate(session.lastActive)}</span>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  {session.isActive && (
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="ghost"
                       size="sm"
-                      className="border-red-500 text-red-500 hover:bg-red-500/10"
+                      className="text-red-500 hover:text-red-400 hover:bg-red-500/10"
                       onClick={() => terminateSession(session.id)}
                     >
-                      Terminate
+                      <X className="h-4 w-4" />
                     </Button>
-                  )}
-                </div>
+                  </div>
+                </motion.div>
               ))}
             </div>
-          ) : (
-            <p className="text-[#8A8B91] text-center py-4">No active sessions found</p>
-          )}
-          
-          <div className="mt-6 pt-4 border-t border-[#2A2B31]">
-            <Button 
-              variant="outline" 
-              className="w-full border-red-500 text-red-500 hover:bg-red-500/10"
-              onClick={async () => {
-                try {
-                  const response = await fetch("/api/user/sessions/all", {
-                    method: "DELETE",
-                  });
-                  
-                  if (!response.ok) {
-                    throw new Error("Failed to terminate all sessions");
-                  }
-                  
-                  toast({
-                    title: "Success",
-                    description: "All sessions terminated. You will be logged out shortly.",
-                  });
-                  
-                  // Redirect to login after a short delay
-                  setTimeout(() => {
-                    window.location.href = "/auth";
-                  }, 2000);
-                } catch (error) {
-                  toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: error instanceof Error ? error.message : "An unknown error occurred",
-                  });
-                }
-              }}
-            >
-              Terminate All Sessions
-            </Button>
           </div>
-        </CardContent>
-      </Card>
-      
-      <Card className="bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31]">
-        <CardContent className="p-6">
-          <h3 className="text-xl font-bold text-[#D7FF00] mb-4">Security Tips</h3>
-          <ul className="space-y-2 text-[#8A8B91]">
-            <li className="flex items-start gap-2">
-              <span className="text-[#D7FF00] font-bold">•</span>
-              <span>Regularly review your active sessions and terminate any that you don't recognize.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#D7FF00] font-bold">•</span>
-              <span>Use a strong, unique password for your account.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#D7FF00] font-bold">•</span>
-              <span>Enable two-factor authentication for an extra layer of security.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#D7FF00] font-bold">•</span>
-              <span>Be cautious when accessing your account from public or shared devices.</span>
-            </li>
-          </ul>
-        </CardContent>
-      </Card>
+        )}
+        
+        {sessions.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <p className="text-[#8A8B91]">
+              No active sessions found.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

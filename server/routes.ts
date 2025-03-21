@@ -25,6 +25,7 @@ import {
   LeaderboardData 
 } from "./utils/leaderboard-cache";
 import { generateToken } from "./utils/token";
+import NodeCache from "node-cache";
 
 // Add missing type definitions
 interface ExtendedWebSocket extends WebSocket {
@@ -43,6 +44,35 @@ function getTierFromWager(wagerAmount: number): string {
 // Constants
 const PRIZE_POOL_BASE = 500; // Base prize pool amount
 const prizePool = PRIZE_POOL_BASE;
+
+// Initialize cache with 5 minutes TTL
+const profileCache = new NodeCache({ stdTTL: 300 });
+
+// Profile update validation schema
+const profileUpdateSchema = z.object({
+  username: z.string().min(3).max(50),
+  telegramUsername: z.string().optional(),
+  bio: z.string().max(500).optional(),
+  profileColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+});
+
+// Validation middleware
+const validateProfileUpdate = (req: any, res: any, next: any) => {
+  try {
+    profileUpdateSchema.parse(req.body);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({
+        status: "error",
+        message: "Invalid profile data",
+        errors: error.errors,
+      });
+    } else {
+      next(error);
+    }
+  }
+};
 
 function handleLeaderboardConnection(ws: WebSocket) {
   const extendedWs = ws as ExtendedWebSocket;
@@ -110,10 +140,10 @@ export function registerRoutes(app: Express): Server {
   setupWebSocket(httpServer);
   // Register verification routes
   registerBasicVerificationRoutes(app);
-  
+  // Register user sessions routes
+  app.use(userSessionsRouter);
   // Register user profile routes
-  app.use("/api/user-profile", userProfileRouter);
-  
+  app.use(userProfileRouter);
   return httpServer;
 }
 
@@ -238,7 +268,74 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  app.get("/api/profile", requireAuth, handleProfileRequest);
+  // Modified profile endpoint with caching
+  app.get("/api/profile", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      // Check cache first
+      const cachedProfile = profileCache.get(`profile_${userId}`);
+      if (cachedProfile) {
+        return res.json(cachedProfile);
+      }
+
+      const user = await db.query.users.findFirst({
+        where: eq(schema.users.id, userId),
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Cache the profile
+      profileCache.set(`profile_${userId}`, user);
+
+      res.json(user);
+    } catch (error) {
+      log(`Error fetching profile: ${error}`);
+      res.status(500).json({ error: "Failed to fetch profile" });
+    }
+  });
+
+  // Modified profile update endpoint with validation
+  app.post("/api/user/update", requireAuth, validateProfileUpdate, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { username, telegramUsername, bio, profileColor } = req.body;
+
+      const updatedUser = await db
+        .update(schema.users)
+        .set({
+          username,
+          telegramUsername,
+          bio,
+          profileColor,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.users.id, userId))
+        .returning();
+
+      if (!updatedUser[0]) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Invalidate cache
+      profileCache.del(`profile_${userId}`);
+
+      res.json(updatedUser[0]);
+    } catch (error) {
+      log(`Error updating profile: ${error}`);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
   // Add user profile endpoint by ID for user profile page
   app.get("/api/users/:id", requireAuth, handleUserProfileRequest);
   app.post("/api/admin/login", handleAdminLogin);
@@ -630,69 +727,6 @@ function setupRESTRoutes(app: Express) {
 }
 
 // Request handlers
-async function handleProfileRequest(req: any, res: any) {
-  try {
-    // Fetch user data
-    /*
-    const [user] = await db
-      .select({
-        id: schema.users.id,
-        username: schema.users.username,
-        email: schema.users.email,
-        isAdmin: schema.users.isAdmin,
-        createdAt: schema.users.createdAt,
-        lastLogin: schema.users.lastLogin,
-      })
-      .from(schema.users)
-      .where(eq(schema.users.id, req.user!.id))
-      .limit(1);
-    */
-    // Placeholder implementation
-    const user = {
-      id: req.user!.id,
-      username: req.user!.username,
-      email: req.user!.email,
-      isAdmin: req.user!.isAdmin,
-      createdAt: new Date(),
-      lastLogin: null,
-    };
-
-    if (!user) {
-      return res.status(404).json({
-        status: "error",
-        message: "User not found",
-      });
-    }
-
-    // Use the cached leaderboard data instead of making a direct API call
-    const leaderboardData = await getLeaderboardData();
-    const data = leaderboardData.data.all_time.data;
-
-    // Find user positions
-    const position = {
-      weekly:
-        leaderboardData.data.weekly.data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined,
-      monthly:
-        leaderboardData.data.monthly.data.findIndex((entry: any) => entry.uid === user.id) + 1 || undefined,
-    };
-
-    res.json({
-      status: "success",
-      data: {
-        ...user,
-        position,
-      },
-    });
-  } catch (error) {
-    log(`Error fetching profile: ${error}`);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to fetch profile",
-    });
-  }
-}
-
-// Handler for user profile by ID
 async function handleUserProfileRequest(req: any, res: any) {
   try {
     // Get the requested user ID from URL parameters
@@ -782,6 +816,9 @@ async function handleAffiliateStats(req: any, res: any) {
     // Use the cached data function instead of making a direct API call
     const data = await getLeaderboardData();
 
+    // Send the data back to the client immediately
+    res.json(data);
+
     // Store the leaderboard data in the database for persistence
     try {
       // First, let's store affiliate stats for today's data
@@ -814,24 +851,16 @@ async function handleAffiliateStats(req: any, res: any) {
           [raceId, participant.uid, participant.name, participant.wagered.this_month, index + 1]
         );
       }
-
-      log(`Stored leaderboard data in database successfully`);
     } catch (dbError) {
-      // If database storage fails, we log the error but still return the data from cache
-      log(`Error storing leaderboard data in database: ${dbError}`);
+      // Log database errors but don't fail the request
+      log(`Error storing leaderboard data: ${dbError}`);
     }
-
-    // Return the complete data object with all time periods
-    // This allows the frontend to extract what it needs without additional API calls
-    res.json(data);
-
-    // Broadcast updates to any connected WebSocket clients
-    broadcastLeaderboardUpdate(data);
   } catch (error) {
-    log(`Error in affiliate stats handler: ${error}`);
+    log(`Error fetching leaderboard data: ${error}`);
     res.status(500).json({
       status: "error",
-      message: "Failed to fetch affiliate statistics",
+      message: "Failed to fetch leaderboard data",
+      error: error instanceof Error ? error.message : "Unknown error"
     });
   }
 }

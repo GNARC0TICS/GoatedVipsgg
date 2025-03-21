@@ -1,118 +1,171 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Trophy, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 interface WagerRacePositionProps {
   userId: number;
-  goatedUsername?: string | null;
+  goatedUsername?: string;
+}
+
+interface RacePosition {
+  position: number;
+  totalParticipants: number;
+  wagerAmount: number;
+  previousPosition?: number;
+  raceType: "daily" | "weekly" | "monthly";
+  raceTitle: string;
+  endDate: string;
 }
 
 export function WagerRacePosition({ userId, goatedUsername }: WagerRacePositionProps) {
-  // Fetch current race data
-  const { data: raceData, isLoading } = useQuery({
-    queryKey: ["wager-race-current"],
-    queryFn: async () => {
-      const response = await fetch("/api/wager-races/current");
-      if (!response.ok) {
-        throw new Error("Failed to fetch race data");
-      }
-      return response.json();
-    },
-    enabled: !!goatedUsername, // Only fetch if user has linked Goated account
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+  // Fetch the user's current race position
+  const { data: racePosition, isLoading, error } = useQuery<RacePosition>({
+    queryKey: ["/api/wager-race/position", userId, goatedUsername],
+    enabled: !!userId && !!goatedUsername,
+    retry: 2,
+    refetchOnWindowFocus: false,
   });
-  
-  // Find user's position in the race
-  const userPosition = raceData?.participants?.find(
-    (p: any) => p.uid === userId || p.name === goatedUsername
-  );
-  
-  const isParticipating = !!userPosition;
-  
+
+  if (!goatedUsername) {
+    return (
+      <div className="bg-[#1A1B21]/50 backdrop-blur-sm border border-[#2A2B31] rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Trophy className="h-5 w-5 text-[#D7FF00]" />
+          <h3 className="text-xl font-heading text-white">Wager Race Position</h3>
+        </div>
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <p className="text-[#8A8B91] mb-4">
+            Link your Goated.com account to see your wager race position
+          </p>
+          <button 
+            className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-all duration-300 px-4 py-2 rounded-md font-medium"
+            onClick={() => window.open("https://www.goated.com/r/EARLYACCESS", "_blank")}
+          >
+            Connect to Goated
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="bg-[#1A1B21]/50 backdrop-blur-sm border border-[#2A2B31] rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Trophy className="h-5 w-5 text-[#D7FF00]" />
+          <h3 className="text-xl font-heading text-white">Wager Race Position</h3>
+        </div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-[#2A2B31] rounded-md w-3/4 mx-auto"></div>
+          <div className="h-16 bg-[#2A2B31] rounded-md w-full"></div>
+          <div className="h-8 bg-[#2A2B31] rounded-md w-1/2 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !racePosition) {
+    return (
+      <div className="bg-[#1A1B21]/50 backdrop-blur-sm border border-[#2A2B31] rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Trophy className="h-5 w-5 text-[#D7FF00]" />
+          <h3 className="text-xl font-heading text-white">Wager Race Position</h3>
+        </div>
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <p className="text-[#8A8B91]">
+            Unable to load race position data. Please try again later.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate position change indicator
+  const getPositionChange = () => {
+    if (!racePosition.previousPosition) return null;
+    
+    if (racePosition.position < racePosition.previousPosition) {
+      // Improved position (lower number is better)
+      return {
+        icon: <TrendingUp className="h-4 w-4 text-green-500" />,
+        text: `+${racePosition.previousPosition - racePosition.position}`,
+        color: "text-green-500",
+      };
+    } else if (racePosition.position > racePosition.previousPosition) {
+      // Worse position
+      return {
+        icon: <TrendingDown className="h-4 w-4 text-red-500" />,
+        text: `-${racePosition.position - racePosition.previousPosition}`,
+        color: "text-red-500",
+      };
+    } else {
+      // No change
+      return {
+        icon: <Minus className="h-4 w-4 text-[#8A8B91]" />,
+        text: "0",
+        color: "text-[#8A8B91]",
+      };
+    }
+  };
+
+  const positionChange = getPositionChange();
+
+  // Calculate days remaining
+  const endDate = new Date(racePosition.endDate);
+  const today = new Date();
+  const daysRemaining = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
   return (
-    <Card className="bg-[#1A1B21]/80 backdrop-blur-md border border-[#2A2B31] rounded-xl shadow-lg">
-      <CardContent className="p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Trophy className="h-6 w-6 text-[#D7FF00]" />
-          <h3 className="text-xl font-bold text-white">Monthly Wager Race</h3>
+    <div className="bg-[#1A1B21]/50 backdrop-blur-sm border border-[#2A2B31] rounded-xl p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Trophy className="h-5 w-5 text-[#D7FF00]" />
+          <h3 className="text-xl font-heading text-white">Wager Race Position</h3>
+        </div>
+        <span className="text-sm text-[#8A8B91] font-medium capitalize">
+          {racePosition.raceType} Race
+        </span>
+      </div>
+      
+      <div className="space-y-6">
+        <div className="flex flex-col items-center justify-center py-4">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="text-4xl font-bold text-white mb-2"
+          >
+            #{racePosition.position}
+          </motion.div>
+          <div className="text-sm text-[#8A8B91]">
+            of {racePosition.totalParticipants} participants
+          </div>
+          
+          {positionChange && (
+            <div className={`flex items-center gap-1 mt-2 ${positionChange.color}`}>
+              {positionChange.icon}
+              <span className="text-sm font-medium">{positionChange.text}</span>
+            </div>
+          )}
         </div>
         
-        {isLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#D7FF00]"></div>
+        <div className="space-y-2">
+          <div className="flex justify-between items-center py-2 border-b border-[#2A2B31]">
+            <span className="text-[#8A8B91]">Current Wager:</span>
+            <span className="text-white font-mono">${racePosition.wagerAmount.toLocaleString()}</span>
           </div>
-        ) : !goatedUsername ? (
-          <div className="text-center py-6">
-            <p className="text-[#8A8B91] mb-4">
-              Link your Goated.com account to participate in monthly wager races and earn rewards!
-            </p>
-            <Button 
-              className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-all duration-300 gap-2"
-              onClick={() => window.open("https://www.goated.com/r/EARLYACCESS", "_blank")}
-            >
-              <span>Connect to Goated</span>
-              <ExternalLink className="h-4 w-4" />
-            </Button>
+          
+          <div className="flex justify-between items-center py-2 border-b border-[#2A2B31]">
+            <span className="text-[#8A8B91]">Race:</span>
+            <span className="text-white">{racePosition.raceTitle}</span>
           </div>
-        ) : isParticipating ? (
-          <div className="space-y-4">
-            <div className="bg-[#2A2B31] rounded-lg p-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-[#8A8B91]">Your Position</span>
-                <span className="text-2xl font-bold text-[#D7FF00]">#{userPosition.position}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[#8A8B91]">Total Wagered</span>
-                <span className="text-white font-bold">${userPosition.wagered.toLocaleString()}</span>
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="text-white font-medium mb-2">Race Details</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center py-1 border-b border-[#2A2B31]">
-                  <span className="text-[#8A8B91]">Prize Pool</span>
-                  <span className="text-white">${raceData?.prizePool?.toLocaleString() || 0}</span>
-                </div>
-                <div className="flex justify-between items-center py-1 border-b border-[#2A2B31]">
-                  <span className="text-[#8A8B91]">End Date</span>
-                  <span className="text-white">
-                    {raceData?.endDate ? new Date(raceData.endDate).toLocaleDateString() : "N/A"}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-1 border-b border-[#2A2B31]">
-                  <span className="text-[#8A8B91]">Status</span>
-                  <span className="bg-red-500/20 text-red-500 px-2 py-0.5 rounded-full text-xs">LIVE</span>
-                </div>
-              </div>
-            </div>
-            
-            <Button 
-              variant="outline"
-              className="w-full border-[#D7FF00] text-[#D7FF00] hover:bg-[#D7FF00]/10"
-              onClick={() => window.location.href = "/wager-races"}
-            >
-              View Full Leaderboard
-            </Button>
+          
+          <div className="flex justify-between items-center py-2 border-b border-[#2A2B31]">
+            <span className="text-[#8A8B91]">Ends In:</span>
+            <span className="text-white">{daysRemaining} days</span>
           </div>
-        ) : (
-          <div className="text-center py-6">
-            <p className="text-[#8A8B91] mb-4">
-              You haven't wagered enough to appear on the leaderboard yet. Start playing to join the race!
-            </p>
-            <Button 
-              className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-all duration-300 gap-2"
-              onClick={() => window.open("https://www.goated.com/r/SPIN", "_blank")}
-            >
-              <span>Play Now</span>
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,82 +1,55 @@
 import React from "react";
 
-interface Present3DIconProps {
-  size?: number;
+interface PresentIconProps {
+  className?: string;
   color?: string;
-  hasNotification?: boolean;
 }
 
-export function Present3DIcon({ 
-  size = 24, 
-  color = "#FFFFFF",
-  hasNotification = false 
-}: Present3DIconProps) {
+export function PresentIcon({ className = "", color = "#D7FF00" }: PresentIconProps) {
   return (
-    <div className="relative">
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Base of the present */}
-        <path
-          d="M3 8h18v12a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"
-          fill="#1A1B21"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-        />
-        
-        {/* Top of the present */}
-        <path
-          d="M2 5a1 1 0 011-1h18a1 1 0 011 1v3H2V5z"
-          fill="#1A1B21"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-        />
-        
-        {/* Ribbon vertical */}
-        <path
-          d="M12 4v18"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-        
-        {/* Ribbon horizontal */}
-        <path
-          d="M3 12h18"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-        
-        {/* Bow left */}
-        <path
-          d="M7.5 4C7.5 2.5 9 1 12 2"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-        
-        {/* Bow right */}
-        <path
-          d="M16.5 4C16.5 2.5 15 1 12 2"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-      </svg>
-      
-      {/* Notification indicator */}
-      {hasNotification && (
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse">
-          <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-75"></div>
-        </div>
-      )}
-    </div>
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <path
+        d="M20 12V22H4V12"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M22 7H2V12H22V7Z"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 22V7"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 7H7.5C6.83696 7 6.20107 6.73661 5.73223 6.26777C5.26339 5.79893 5 5.16304 5 4.5C5 3.83696 5.26339 3.20107 5.73223 2.73223C6.20107 2.26339 6.83696 2 7.5 2C11 2 12 7 12 7Z"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 7H16.5C17.163 7 17.7989 6.73661 18.2678 6.26777C18.7366 5.79893 19 5.16304 19 4.5C19 3.83696 18.7366 3.20107 18.2678 2.73223C17.7989 2.26339 17.163 2 16.5 2C13 2 12 7 12 7Z"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
