@@ -13,6 +13,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Redirect } from "@/lib/navigation";
 import { motion } from "framer-motion";
 import { ParticleBackground } from "./components/ParticleBackground"; 
+import "../styles/enhanced-effects.css"; // Import enhanced effects
 
 // Import all pages
 import NotFound from "@/pages/not-found";
@@ -41,7 +42,7 @@ import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminLogin from "./pages/admin/login"; 
-import Profile from "@/pages/profile";
+import Profile from "./pages/profile";
 import EmailVerification from './pages/EmailVerification'; // Added import
 
 
@@ -216,7 +217,7 @@ function Router() {
                 <AdminDashboard />
               </ProtectedRoute>
             </Route>
-            <Route path="/verify-email" element={<EmailVerification />} /> {/* Added route */}
+            <Route path="/verify-email" component={EmailVerification} /> {/* Added route */}
             <Route component={NotFound} />
           </Switch>
         </ErrorBoundary>
