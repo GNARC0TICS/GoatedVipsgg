@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PresentIcon } from '@/components/icons/PresentIcon';
 import { RankProgressDisplay } from '@/components/RankProgressDisplay';
+import { PlayerSearch } from '@/components/PlayerSearch';
 import AuthModal from '@/components/AuthModal';
 import { LineMdPlayFilled } from '@/components/icons/LineMdPlayFilled';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -39,6 +40,9 @@ export function UserSection({ user, isMobile, onLogout }: UserSectionProps) {
           />
         </Link>
       )}
+      
+      {/* Player search button */}
+      <PlayerSearch />
       
       {user ? (
         <DropdownMenu>

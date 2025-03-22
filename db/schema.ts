@@ -117,6 +117,13 @@ export const affiliateStats = pgTable("affiliate_stats", {
   totalWager: decimal("total_wager", { precision: 18, scale: 8 }).notNull(),
   commission: decimal("commission", { precision: 18, scale: 8 }).notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
+  // Leaderboard data fields
+  uid: text("uid"),
+  name: text("name"),
+  wagered: decimal("wagered", { precision: 18, scale: 2 }),
+  period: text("period"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const affiliateStatsRelations = relations(affiliateStats, ({ one }) => ({

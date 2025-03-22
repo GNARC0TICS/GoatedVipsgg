@@ -860,8 +860,8 @@ async function handleAffiliateStats(req: any, res: any) {
       // Store daily stats
       for (const entry of data.data.today.data) {
         await pgPool.query(
-          'INSERT INTO affiliate_stats (uid, name, wagered, period, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW()) ON CONFLICT (uid, period) DO UPDATE SET name = EXCLUDED.name, wagered = EXCLUDED.wagered, updated_at = NOW()',
-          [entry.uid, entry.name, entry.wagered.today, 'today']
+          'INSERT INTO affiliate_stats (uid, name, wagered, period, total_wager, commission, timestamp, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), NOW()) ON CONFLICT (uid, period) DO UPDATE SET name = EXCLUDED.name, wagered = EXCLUDED.wagered, updated_at = NOW()',
+          [entry.uid, entry.name, entry.wagered.today, 'today', entry.wagered.today, 0]
         );
       }
 
@@ -875,15 +875,15 @@ async function handleAffiliateStats(req: any, res: any) {
 
       // Insert or update race
       await pgPool.query(
-        'INSERT INTO wager_races (id, status, start_date, end_date, prize_pool, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) ON CONFLICT (id) DO UPDATE SET updated_at = NOW()',
-        [raceId, 'live', startDate, endOfMonth, 500]
+        'INSERT INTO wager_races (id, title, type, status, start_date, end_date, prize_pool, min_wager, prize_distribution, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()) ON CONFLICT (id) DO UPDATE SET updated_at = NOW()',
+        [raceId, `Monthly Race - ${currentMonth + 1}/${currentYear}`, 'monthly', 'live', startDate, endOfMonth, 500, 10, JSON.stringify({ "1": 50, "2": 30, "3": 20 })]
       );
 
       // Store the top 10 participants
       for (const [index, participant] of data.data.monthly.data.slice(0, 10).entries()) {
         await pgPool.query(
-          'INSERT INTO wager_race_participants (race_id, uid, name, wagered, position, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) ON CONFLICT (race_id, uid) DO UPDATE SET name = EXCLUDED.name, wagered = EXCLUDED.wagered, position = EXCLUDED.position, updated_at = NOW()',
-          [raceId, participant.uid, participant.name, participant.wagered.this_month, index + 1]
+          'INSERT INTO wager_race_participants (race_id, uid, name, wagered, position, total_wager, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) ON CONFLICT (race_id, uid) DO UPDATE SET name = EXCLUDED.name, wagered = EXCLUDED.wagered, position = EXCLUDED.position, total_wager = EXCLUDED.total_wager, updated_at = NOW()',
+          [raceId, participant.uid, participant.name, participant.wagered.this_month, index + 1, participant.wagered.this_month]
         );
       }
     } catch (dbError) {

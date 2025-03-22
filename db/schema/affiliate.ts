@@ -15,12 +15,17 @@ import { users } from "./users";
 // Updated affiliate stats schema to match the leaderboard data
 export const affiliateStats = pgTable("affiliate_stats", {
   id: serial("id").primaryKey(),
-  uid: varchar("uid", { length: 255 }).notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  wagered: decimal("wagered", { precision: 18, scale: 2 }).notNull(),
-  period: varchar("period", { length: 50 }).notNull(), // 'today', 'weekly', 'monthly', 'all_time'
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  userId: integer("user_id").references(() => users.id),
+  totalWager: decimal("total_wager", { precision: 18, scale: 8 }).notNull(),
+  commission: decimal("commission", { precision: 18, scale: 8 }).notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  // Leaderboard data fields
+  uid: varchar("uid", { length: 255 }),
+  name: varchar("name", { length: 255 }),
+  wagered: decimal("wagered", { precision: 18, scale: 2 }),
+  period: varchar("period", { length: 50 }), // 'today', 'weekly', 'monthly', 'all_time'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Updated wager races to use string ID instead of serial
