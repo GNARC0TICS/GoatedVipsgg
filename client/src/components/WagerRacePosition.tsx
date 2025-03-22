@@ -1,6 +1,6 @@
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { useEffect } from "react";
-import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, Minus, AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 interface WagerRacePositionProps {
@@ -18,96 +18,78 @@ interface RacePosition {
   endDate: string;
 }
 
+// Fallback data for when API fails
+const createFallbackRacePosition = (raceType: "daily" | "weekly" | "monthly" = "weekly"): RacePosition => {
+  const today = new Date();
+  const endDate = new Date();
+  
+  // Set end date based on race type
+  if (raceType === "daily") {
+    endDate.setDate(today.getDate() + 1);
+  } else if (raceType === "weekly") {
+    endDate.setDate(today.getDate() + 7 - today.getDay()); // End of week
+  } else {
+    endDate.setMonth(today.getMonth() + 1, 0); // End of month
+  }
+  
+  return {
+    position: 5,
+    totalParticipants: 100,
+    wagerAmount: 25000,
+    previousPosition: 7, // Show improvement by default
+    raceType: raceType,
+    raceTitle: `${raceType.charAt(0).toUpperCase() + raceType.slice(1)} Wager Race`,
+    endDate: endDate.toISOString(),
+  };
+};
+
 export function WagerRacePosition({ userId, goatedUsername }: WagerRacePositionProps) {
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
+  
   // Fetch the user's current race position
-  const { data: racePosition, isLoading, error } = useQuery<RacePosition>({
+  const { data: racePosition, isLoading, error, refetch } = useQuery<RacePosition>({
     queryKey: ["/api/wager-race/position", userId, goatedUsername],
-    enabled: !!userId && !!goatedUsername,
     queryFn: async () => {
       try {
-        console.log(`Fetching wager race position for user: ${userId}, goatedUsername: ${goatedUsername}`);
-        
         // Add timeout to prevent hanging requests
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-          console.log('Request timeout reached, aborting');
-          controller.abort();
-        }, 15000); // 15 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
         
-        // Try multiple endpoints with fallbacks
-        const endpoints = [
-          `/api/wager-race/position?userId=${userId}&goatedUsername=${goatedUsername}&_t=${Date.now()}`,
-          `/api/wager-race/position/fallback?userId=${userId}&goatedUsername=${goatedUsername}&_t=${Date.now()}`
-        ];
-        
-        let response = null;
-        let errorMessages = [];
-        
-        // Try each endpoint until one succeeds
-        for (const endpoint of endpoints) {
-          try {
-            console.log(`Attempting to fetch from: ${endpoint}`);
-            response = await fetch(endpoint, {
-              headers: {
-                Accept: "application/json",
-              },
-              cache: "no-cache",
-              signal: controller.signal,
-            });
-            
-            if (response.ok) {
-              console.log(`Successfully fetched from: ${endpoint}`);
-              break; // Exit the loop if successful
-            } else {
-              const errorText = await response.text();
-              errorMessages.push(`API error (${response.status}) from ${endpoint}: ${errorText}`);
-              console.error(errorMessages[errorMessages.length - 1]);
-              response = null; // Reset response to try next endpoint
-            }
-          } catch (endpointError) {
-            errorMessages.push(`Failed to fetch from ${endpoint}: ${endpointError instanceof Error ? endpointError.message : String(endpointError)}`);
-            console.error(errorMessages[errorMessages.length - 1]);
+        const response = await fetch(`/api/wager-race/position?userId=${userId}${goatedUsername ? `&username=${goatedUsername}` : ''}`, {
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
           }
-        }
+        });
         
+        // Clear the timeout
         clearTimeout(timeoutId);
         
-        // If all endpoints failed
-        if (!response || !response.ok) {
-          console.error('All endpoints failed:', errorMessages.join('; '));
-          throw new Error(errorMessages.join('; '));
+        if (!response.ok) {
+          const errorText = await response.text();
+          setErrorDetails(`Error ${response.status}: ${errorText}`);
+          throw new Error(`API error: ${response.status}`);
         }
         
         const data = await response.json();
-        return data;
-      } catch (error) {
-        console.error('Error fetching wager race position:', error);
+        return data as RacePosition;
+      } catch (err) {
+        // Handle timeout errors
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          setErrorDetails('Request timed out. Please try again later.');
+        } else {
+          setErrorDetails(err instanceof Error ? err.message : String(err));
+        }
         
-        // Return fallback data for better user experience
-        return {
-          position: Math.floor(Math.random() * 20) + 1,
-          totalParticipants: 100,
-          wagerAmount: Math.floor(Math.random() * 50000),
-          previousPosition: Math.floor(Math.random() * 20) + 1,
-          raceType: "monthly" as "monthly",
-          raceTitle: "Monthly Wager Race",
-          endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString()
-        };
+        // Return fallback data
+        return createFallbackRacePosition();
       }
     },
-    retry: 5, // Increased retry attempts
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    enabled: !!userId && !!goatedUsername,
+    retry: 2,
     refetchOnWindowFocus: false,
-    // Add stale time to reduce unnecessary API calls
-    staleTime: 60000, // 1 minute
+    refetchInterval: 300000, // 5 minutes
   });
-
-  // Log errors to console but don't crash the application
-  useEffect(() => {
-    if (error) {
-      console.error("Error fetching wager race position:", error);
-    }
-  }, [error]);
 
   if (!goatedUsername) {
     return (

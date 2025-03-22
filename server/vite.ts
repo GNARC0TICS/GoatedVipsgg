@@ -76,34 +76,10 @@ export function serveStatic(app: Express) {
     );
   }
 
-  // Log the static file path for debugging
-  log(`Serving static files from: ${distPath}`);
-
-  // Serve static files with caching headers
-  app.use(express.static(distPath, {
-    etag: true,
-    lastModified: true,
-    maxAge: '1d', // Cache static assets for 1 day
-    setHeaders: (res, filePath) => {
-      // Set different cache times based on file type
-      if (filePath.endsWith('.html')) {
-        // Don't cache HTML files
-        res.setHeader('Cache-Control', 'no-cache');
-      } else if (filePath.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg)$/)) {
-        // Cache assets with a hash in the filename for 1 year (they are immutable)
-        if (filePath.match(/\.[0-9a-f]{8,}\.(js|css|png|jpg|jpeg|gif|ico|svg)$/)) {
-          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-        } else {
-          // Cache regular assets for 1 day
-          res.setHeader('Cache-Control', 'public, max-age=86400');
-        }
-      }
-    }
-  }));
+  app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", (req, res) => {
-    log(`Serving index.html for path: ${req.originalUrl}`);
+  app.use("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

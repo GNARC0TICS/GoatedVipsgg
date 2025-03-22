@@ -14,10 +14,6 @@ import {
   MessageSquare,
   Lock,
 } from "lucide-react";
-import { PremiumCard } from "@/components/ui/enhanced-cards";
-import { GlitchButton } from "@/components/ui/enhanced-buttons";
-import { GradientHeading } from "@/components/ui/text-effects";
-import { useCardEffects } from "@/hooks/use-card-effects";
 import { FeatureCarousel } from "@/components/FeatureCarousel";
 import { MVPCards } from "@/components/MVPCards";
 import { RaceTimer } from "@/components/RaceTimer";
@@ -115,10 +111,10 @@ export default function Home() {
               transition={{ delay: 0.2 }}
               className="mb-24"
             >
-              <GradientHeading className="text-4xl font-heading mb-12 text-center flex items-center justify-center gap-3">
+              <h2 className="text-4xl font-heading text-white mb-12 text-center flex items-center justify-center gap-3">
                 <Crown className="w-8 h-8 text-[#D7FF00] animate-wiggle" />
                 TOP PERFORMERS
-              </GradientHeading>
+              </h2>
               <MVPCards />
             </motion.div>
 
@@ -128,10 +124,10 @@ export default function Home() {
               transition={{ delay: 0.3 }}
               className="mb-24"
             >
-              <GradientHeading className="text-4xl font-heading mb-12 text-center flex items-center justify-center gap-3">
+              <h2 className="text-4xl font-heading text-white mb-12 text-center flex items-center justify-center gap-3">
                 <Zap className="w-8 h-8 text-[#D7FF00] animate-flicker" />
                 EXPLORE OUR FEATURES
-              </GradientHeading>
+              </h2>
 
               {/* Combined feature cards grid with consistent layout */}
               <motion.div
@@ -142,7 +138,8 @@ export default function Home() {
               >
                 {/* Card 1: Bonus Codes */}
                 <div className="relative group transform transition-all duration-300 hover:scale-[1.02]">
-                  <PremiumCard className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 card-hover h-full w-full flex flex-col justify-between">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#D7FF00]/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
+                  <div className="relative p-6 md:p-8 rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm hover:border-[#D7FF00]/50 transition-all duration-300 shadow-lg hover:shadow-[#FFD700]/20 card-hover h-full w-full flex flex-col justify-between">
                     <Gift className="h-8 w-8 text-[#D7FF00] mb-4" />
                     <h3 className="text-2xl font-heading uppercase mb-4 text-white text-center flex items-center gap-2 justify-center">
                       Bonus Codes
@@ -176,7 +173,7 @@ export default function Home() {
                         </Tooltip>
                       </TooltipProvider>
                     )}
-                  </PremiumCard>
+                  </div>
                 </div>
 
                 {/* Card 2: VIP Transfer */}
@@ -367,13 +364,15 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 className="text-center mt-16"
               >
-                <GlitchButton
-                  text="JOIN THE GOATS TODAY! 🐐"
-                  onClick={() => window.open("https://www.Goated.com/r/VIPBOOST", "_blank")}
-                  className="bg-[#D7FF00] text-black font-heading text-xl px-8 py-4 rounded-lg hover:bg-[#D7FF00]/90 transition-all duration-300 transform hover:scale-105"
+                <a
+                  href="https://www.Goated.com/r/VIPBOOST"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-[#D7FF00] text-black font-heading text-xl px-8 py-4 rounded-lg hover:bg-[#D7FF00]/90 transition-all duration-300 transform hover:scale-105 glitch-text-button"
+                  data-text="JOIN THE GOATS TODAY! 🐐"
                 >
                   JOIN THE GOATS TODAY! 🐐
-                </GlitchButton>
+                </a>
               </motion.div>
             </motion.div>
           </motion.div>

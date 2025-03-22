@@ -107,12 +107,8 @@ export async function initializeAdmin(
         .limit(1);
 
       if (existingUser) {
-        // If user exists, make them admin
-        await db.update(users)
-          .set({ isAdmin: true })
-          .where(eq(users.username, "Goombas"));
-        console.log("Updated Goombas to admin status");
-        return existingUser;
+        console.warn(`Username ${username} already exists as non-admin user`);
+        return null;
       }
     } catch (e) {
       console.warn("Error checking for existing user", e);

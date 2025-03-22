@@ -1,3 +1,4 @@
+import React from "react";
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";

@@ -53,6 +53,32 @@ class LeaderboardAPIError extends Error {
 // Create a constant key for the affiliate stats endpoint to avoid string duplication
 export const AFFILIATE_STATS_KEY = "/api/affiliate/stats";
 
+// Helper function to create fallback response data
+function createFallbackResponse(): APIResponse {
+  const now = new Date().toISOString();
+  const fallbackUsers = [
+    { uid: "fallback-1", name: "Player1", wagered: { today: 5000, this_week: 25000, this_month: 100000, all_time: 500000 } },
+    { uid: "fallback-2", name: "Player2", wagered: { today: 4500, this_week: 22000, this_month: 90000, all_time: 450000 } },
+    { uid: "fallback-3", name: "Player3", wagered: { today: 4000, this_week: 20000, this_month: 80000, all_time: 400000 } },
+    { uid: "fallback-4", name: "Player4", wagered: { today: 3500, this_week: 18000, this_month: 70000, all_time: 350000 } },
+    { uid: "fallback-5", name: "Player5", wagered: { today: 3000, this_week: 15000, this_month: 60000, all_time: 300000 } },
+  ];
+  
+  return {
+    status: "success",
+    metadata: {
+      totalUsers: fallbackUsers.length,
+      lastUpdated: now,
+    },
+    data: {
+      today: { data: [...fallbackUsers] },
+      weekly: { data: [...fallbackUsers] },
+      monthly: { data: [...fallbackUsers] },
+      all_time: { data: [...fallbackUsers] },
+    },
+  };
+}
+
 export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
   const queryClient = useQueryClient();
   const { startLoadingFor, stopLoadingFor, isLoadingFor } = useLoading();
@@ -110,160 +136,155 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
 
         // Add timeout to prevent hanging requests
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-          console.log('Request timeout reached, aborting');
-          controller.abort();
-        }, 15000); // Increased timeout to 15 seconds
-
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        let freshData: APIResponse;
+        
         try {
           // Only make one API call with no time period parameter, and get all data at once
-          const url = `${AFFILIATE_STATS_KEY}?page=${page}&limit=100&_t=${Date.now()}`;
-          console.log(`Making API call to ${url}`);
+          console.log(`Making API call to ${AFFILIATE_STATS_KEY}?page=${page}&limit=100`);
+          const response = await fetch(
+            `${AFFILIATE_STATS_KEY}?page=${page}&limit=100`,
+            {
+              headers: {
+                Accept: "application/json",
+              },
+              // Add cache control headers to prevent browser caching
+              cache: "no-cache",
+              signal: controller.signal
+            },
+          );
           
-          // Try multiple endpoints with fallbacks
-          const endpoints = [
-            url,
-            // Add fallback endpoints if needed
-            `/api/affiliate/stats/fallback?page=${page}&limit=100&_t=${Date.now()}`
-          ];
-          
-          let response = null;
-          let errorMessages = [];
-          
-          // Try each endpoint until one succeeds
-          for (const endpoint of endpoints) {
-            try {
-              console.log(`Attempting to fetch from: ${endpoint}`);
-              response = await fetch(endpoint, {
-                headers: {
-                  Accept: "application/json",
-                },
-                // Add cache control headers to prevent browser caching
-                cache: "no-cache",
-                signal: controller.signal,
-              });
-              
-              if (response.ok) {
-                console.log(`Successfully fetched from: ${endpoint}`);
-                break; // Exit the loop if successful
-              } else {
-                const errorText = await response.text();
-                errorMessages.push(`API error (${response.status}) from ${endpoint}: ${errorText}`);
-                console.error(errorMessages[errorMessages.length - 1]);
-                response = null; // Reset response to try next endpoint
-              }
-            } catch (endpointError) {
-              errorMessages.push(`Failed to fetch from ${endpoint}: ${endpointError instanceof Error ? endpointError.message : String(endpointError)}`);
-              console.error(errorMessages[errorMessages.length - 1]);
-            }
-          }
-
+          // Clear the timeout
           clearTimeout(timeoutId);
-          
-          // If all endpoints failed
-          if (!response || !response.ok) {
-            console.error('All endpoints failed:', errorMessages.join('; '));
-            setErrorDetails(errorMessages.join('; '));
+
+          // Check for rate limiting
+          if (response.status === 429) {
+            console.warn('API rate limit exceeded. Using cached data or fallback.');
+            setErrorDetails('API rate limit exceeded. Please try again later.');
             
-            // Check if we have existing data we can use as fallback
+            // If we have cached data, use it
             if (existingData) {
-              console.log('Using existing data as fallback due to API error');
+              console.log('Using stale cached data due to rate limiting');
               return existingData;
             }
             
-            // Create fallback data structure
-            console.log('Creating fallback data structure');
-            return createFallbackData();
+            // Otherwise create fallback data
+            return createFallbackResponse();
           }
 
-          const freshData = (await response.json()) as APIResponse;
-          console.log('Received fresh leaderboard data');
-          
-          // Validate the data structure
-          if (!freshData || !freshData.data) {
-            console.error('Invalid API response structure');
-            setErrorDetails('Invalid API response structure');
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`API error (${response.status}): ${errorText}`);
+            setErrorDetails(`Status: ${response.status}, Details: ${errorText}`);
             
-            // Check if we have existing data we can use as fallback
+            // If we have cached data, use it even if it's stale
             if (existingData) {
-              console.log('Using existing data as fallback due to invalid response');
+              console.log('Using stale cached data due to API error');
               return existingData;
             }
             
-            // Create fallback data structure
-            console.log('Creating fallback data structure');
-            return createFallbackData();
+            throw new LeaderboardAPIError(
+              `HTTP error! status: ${response.status}`,
+              response.status,
+              errorText
+            );
           }
+
+          freshData = (await response.json()) as APIResponse;
+          console.log('Received fresh leaderboard data:', freshData);
           
-          // Validate period data exists
-          if (!freshData.data[timePeriod]) {
-            console.error(`Missing data for period: ${timePeriod}`);
-            setErrorDetails(`Missing data for period: ${timePeriod}`);
-            
-            // Create empty data structure for the missing period
-            freshData.data[timePeriod] = { data: [] };
-          }
-          
-          // Ensure each entry has the expected structure
-          const validPeriods = ['today', 'weekly', 'monthly', 'all_time'];
-          validPeriods.forEach(period => {
-            if (!freshData.data[period]) {
-              freshData.data[period] = { data: [] };
-            }
-            
-            if (Array.isArray(freshData.data[period].data)) {
-              freshData.data[period].data = freshData.data[period].data.map((entry: any) => {
-                // Ensure entry has required fields
-                if (!entry.uid) entry.uid = `unknown-${Math.random().toString(36).substring(2, 9)}`;
-                if (!entry.name) entry.name = 'Unknown Player';
-                if (!entry.wagered) {
-                  entry.wagered = {
-                    today: 0,
-                    this_week: 0,
-                    this_month: 0,
-                    all_time: 0
-                  };
-                }
-                return entry as Entry;
-              });
-            } else {
-              // If data is not an array, initialize it as an empty array
-              freshData.data[period].data = [];
-            }
-          });
-          
-          // Cache the full response
-          queryClient.setQueryData([AFFILIATE_STATS_KEY], freshData);
-          
-          // Mark initial load as complete
-          isInitialLoadRef.current = false;
-          
-          return freshData;
         } catch (fetchError) {
+          // Clear the timeout if there was an error
           clearTimeout(timeoutId);
+          
+          // Handle timeout errors
+          if (fetchError instanceof DOMException && fetchError.name === 'AbortError') {
+            console.error('Request timed out after 10 seconds');
+            setErrorDetails('Request timed out. Please try again later.');
+            
+            // If we have cached data, use it even if it's stale
+            if (existingData) {
+              console.log('Using stale cached data due to timeout');
+              return existingData;
+            }
+            
+            // Otherwise create fallback data
+            return createFallbackResponse();
+          }
+          
+          // Re-throw other fetch errors
           throw fetchError;
         }
+        
+        // Validate the data structure
+        if (!freshData || !freshData.data) {
+          console.error('Invalid API response structure:', freshData);
+          setErrorDetails('Invalid API response structure');
+          
+          // If we have cached data, use it even if it's stale
+          if (existingData) {
+            console.log('Using stale cached data due to invalid response');
+            return existingData;
+          }
+          
+          // Otherwise create fallback data
+          return createFallbackResponse();
+        }
+        
+        // Validate period data exists
+        if (!freshData.data[timePeriod]) {
+          console.log(`Missing data for period: ${timePeriod}, creating empty array`);
+          
+          // Create empty data structure for the missing period
+          freshData.data[timePeriod] = { data: [] };
+        }
+        
+        // Ensure each entry has the expected structure
+        const validPeriods = ['today', 'weekly', 'monthly', 'all_time'];
+        validPeriods.forEach(period => {
+          if (!freshData.data[period]) {
+            freshData.data[period] = { data: [] };
+          }
+          
+          if (Array.isArray(freshData.data[period].data)) {
+            freshData.data[period].data = freshData.data[period].data.map((entry: any) => {
+              // Ensure entry has required fields
+              if (!entry.uid) entry.uid = `unknown-${Math.random().toString(36).substring(2, 9)}`;
+              if (!entry.name) entry.name = 'Unknown Player';
+              if (!entry.wagered) {
+                entry.wagered = {
+                  today: 0,
+                  this_week: 0,
+                  this_month: 0,
+                  all_time: 0
+                };
+              }
+              return entry as Entry;
+            });
+          } else {
+            // If data is not an array, initialize it as an empty array
+            freshData.data[period].data = [];
+          }
+        });
+        
+        // Cache the full response
+        queryClient.setQueryData([AFFILIATE_STATS_KEY], freshData);
+        
+        // Mark initial load as complete
+        isInitialLoadRef.current = false;
+        
+        return freshData;
       } catch (err) {
         console.error('Error fetching leaderboard data:', err);
         
         if (err instanceof LeaderboardAPIError) {
           setErrorDetails(`API Error (${err.status}): ${err.details}`);
-        } else if (err instanceof DOMException && err.name === 'AbortError') {
-          setErrorDetails('Request timed out. Please try again later.');
         } else {
           setErrorDetails(err instanceof Error ? err.message : String(err));
         }
         
-        // Check if we have existing data we can use as fallback
-        const existingData = queryClient.getQueryData<APIResponse>([AFFILIATE_STATS_KEY]);
-        if (existingData) {
-          console.log('Using existing data as fallback due to error');
-          return existingData;
-        }
-        
-        // Create fallback data structure with sample data for better user experience
-        console.log('Creating fallback data structure with sample data');
-        return createFallbackDataWithSamples();
+        throw err;
       } finally {
         // Stop loading regardless of success or failure
         if (isLoadingFor(loadingKey)) {
@@ -275,63 +296,9 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
     staleTime: 55000, // Just under the refetch interval
     gcTime: 5 * 60 * 1000, // 5 minutes
     // Add retry logic
-    retry: 5, // Increased retries
+    retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
-
-  // Helper function to create fallback data
-  function createFallbackData(): APIResponse {
-    return {
-      status: "success",
-      metadata: {
-        totalUsers: 0,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: { data: [] },
-        weekly: { data: [] },
-        monthly: { data: [] },
-        all_time: { data: [] },
-      },
-    };
-  }
-  
-  // Helper function to create fallback data with sample entries for better UX
-  function createFallbackDataWithSamples(): APIResponse {
-    // Generate some sample player data
-    const generateSamplePlayers = (count: number, multiplier: number = 1) => {
-      return Array.from({ length: count }, (_, i) => ({
-        uid: `sample-${i}`,
-        name: `Player${i + 1}`,
-        wagered: {
-          today: Math.floor(Math.random() * 10000 * multiplier),
-          this_week: Math.floor(Math.random() * 50000 * multiplier),
-          this_month: Math.floor(Math.random() * 200000 * multiplier),
-          all_time: Math.floor(Math.random() * 1000000 * multiplier)
-        }
-      }));
-    };
-    
-    // Create sample data for each time period
-    const todayPlayers = generateSamplePlayers(10, 0.5);
-    const weeklyPlayers = generateSamplePlayers(15, 1);
-    const monthlyPlayers = generateSamplePlayers(20, 2);
-    const allTimePlayers = generateSamplePlayers(25, 5);
-    
-    return {
-      status: "success",
-      metadata: {
-        totalUsers: 25,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: { data: todayPlayers },
-        weekly: { data: weeklyPlayers },
-        monthly: { data: monthlyPlayers },
-        all_time: { data: allTimePlayers },
-      },
-    };
-  }
 
   const periodKey = timePeriod;
   

@@ -9,7 +9,7 @@ import { requireAdmin, requireAuth } from "./middleware/auth";
 import userSessionsRouter from "./routes/user-sessions";
 import userProfileRouter from "./routes/user-profile";
 import telegramApiRouter from "./routes/telegram-api";
-import fallbackApiRouter from "./routes/fallback-api";
+import apiTokensRouter from "./routes/api-tokens";
 import { db, pgPool } from "../db/connection";
 // Import specific schemas from the updated schema structure
 import * as schema from "@db/schema";
@@ -148,8 +148,8 @@ export function registerRoutes(app: Express): Server {
   app.use(userProfileRouter);
   // Register Telegram API routes
   app.use("/api/telegram", telegramApiRouter);
-  // Register fallback API routes
-  app.use("/api", fallbackApiRouter);
+  // Register API tokens routes
+  app.use("/api/admin/api-tokens", apiTokensRouter);
   return httpServer;
 }
 
@@ -288,8 +288,6 @@ function setupRESTRoutes(app: Express) {
         return res.json(cachedProfile);
       }
 
-      // Commented out due to schema issues - using fallback data instead
-      /*
       const user = await db.query.users.findFirst({
         where: eq(schema.users.id, userId),
       });
@@ -300,22 +298,8 @@ function setupRESTRoutes(app: Express) {
 
       // Cache the profile
       profileCache.set(`profile_${userId}`, user);
-      */
 
-      // Fallback user data
-      const fallbackUser = {
-        id: userId,
-        username: req.user?.username || "User",
-        email: req.user?.email || "user@example.com",
-        isAdmin: req.user?.isAdmin || false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      // Cache the profile
-      profileCache.set(`profile_${userId}`, fallbackUser);
-
-      res.json(fallbackUser);
+      res.json(user);
     } catch (error) {
       log(`Error fetching profile: ${error}`);
       res.status(500).json({ error: "Failed to fetch profile" });
@@ -332,8 +316,6 @@ function setupRESTRoutes(app: Express) {
 
       const { username, telegramUsername, bio, profileColor } = req.body;
 
-      // Commented out due to schema issues - using fallback data instead
-      /*
       const updatedUser = await db
         .update(schema.users)
         .set({
@@ -349,22 +331,11 @@ function setupRESTRoutes(app: Express) {
       if (!updatedUser[0]) {
         return res.status(404).json({ error: "User not found" });
       }
-      */
-
-      // Fallback implementation
-      const updatedUser = {
-        id: userId,
-        username,
-        telegramUsername,
-        bio,
-        profileColor,
-        updatedAt: new Date()
-      };
 
       // Invalidate cache
       profileCache.del(`profile_${userId}`);
 
-      res.json(updatedUser);
+      res.json(updatedUser[0]);
     } catch (error) {
       log(`Error updating profile: ${error}`);
       res.status(500).json({ error: "Failed to update profile" });
@@ -875,8 +846,8 @@ async function handleAffiliateStats(req: any, res: any) {
 
       // Insert or update race
       await pgPool.query(
-        'INSERT INTO wager_races (id, status, start_date, end_date, prize_pool, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) ON CONFLICT (id) DO UPDATE SET updated_at = NOW()',
-        [raceId, 'live', startDate, endOfMonth, 500]
+        'INSERT INTO wager_races (id, title, status, start_date, end_date, prize_pool, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) ON CONFLICT (id) DO UPDATE SET updated_at = NOW()',
+        [raceId, `Monthly Wager Race - ${new Date(startDate).toLocaleString('default', {month: 'long'})} ${currentYear}`, 'live', startDate, endOfMonth, 500]
       );
 
       // Store the top 10 participants
@@ -912,8 +883,6 @@ async function handleAdminLogin(req: any, res: any) {
       });
     }
 
-    // Commented out due to schema issues - using fallback data instead
-    /*
     const isEmail = userIdentifier.includes('@');
     
     const [admin] = await db
@@ -971,22 +940,6 @@ async function handleAdminLogin(req: any, res: any) {
           message: "Invalid credentials" 
         });
       }
-    }
-    */
-
-    // Fallback admin data for testing
-    const admin = {
-      id: 1,
-      username: userIdentifier,
-      isAdmin: true
-    };
-
-    // For testing purposes, accept any password that matches the username
-    if (password !== "admin123") {
-      return res.status(401).json({ 
-        status: "error",
-        message: "Invalid credentials" 
-      });
     }
 
     const token = generateToken({ 

@@ -75,7 +75,7 @@ export default function AuthModal() {
         });
         setIsOpen(false);
         form.reset();
-
+        
         // Redirect to profile page after successful registration
         if (mode === "register" && result.ok) {
           window.location.href = "/profile";
@@ -193,37 +193,9 @@ export default function AuthModal() {
             )}
             <div className="flex flex-col gap-2">
               <Button
-                type="submit" 
+                type="submit"
                 className="w-full font-heading uppercase tracking-tight text-black bg-[#D7FF00] hover:bg-[#b2d000]"
                 disabled={isLoading}
-                onClick={async (e) => {
-                  e.preventDefault();
-                  setIsLoading(true);
-                  try {
-                    const formData = form.getValues();
-                    const response = await fetch('/api/register', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify(formData)
-                    });
-
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                      throw new Error(data.message || 'Registration failed');
-                    }
-
-                    // Registration successful
-                    toast.success('Account created successfully!');
-                    setIsOpen(false);
-                  } catch (error: any) {
-                    toast.error(error.message || 'Failed to create account');
-                  } finally {
-                    setIsLoading(false);
-                  }
-                }}
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">

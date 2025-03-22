@@ -1,5 +1,6 @@
 import { addProfileEnhancements } from './add_profile_enhancements';
 import { addApiKeys } from './add_api_keys';
+import { optimizeDatabase } from './optimize_database';
 
 async function runMigrations() {
   console.log('Starting migrations...');
@@ -10,6 +11,9 @@ async function runMigrations() {
     
     // Run API keys migration
     await addApiKeys();
+    
+    // Run database optimization migration
+    await optimizeDatabase();
     
     console.log('All migrations completed successfully');
   } catch (error) {

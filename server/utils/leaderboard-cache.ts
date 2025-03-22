@@ -1,7 +1,6 @@
 import { CacheManager } from "./cache";
-import { API_CONFIG } from "../config/api";
 import { log } from "../vite";
-import { createEnhancedFallbackData } from "./fallback-data";
+import { apiService } from "./api-service";
 
 // Define a type for the leaderboard data
 export type LeaderboardData = {
@@ -19,7 +18,8 @@ export type LeaderboardData = {
 };
 
 // Create a singleton instance of the cache manager for leaderboard data
-const leaderboardCache = new CacheManager<LeaderboardData>("leaderboard", 60000); // 1 minute cache
+// Increase cache time to 5 minutes to reduce API load
+const leaderboardCache = new CacheManager<LeaderboardData>("leaderboard", 300000); // 5 minute cache
 
 /**
  * Transforms MVP data into a standardized format
@@ -134,91 +134,41 @@ export function transformLeaderboardData(apiData: any): LeaderboardData {
 export async function getLeaderboardData(forceRefresh = false): Promise<LeaderboardData> {
   return await leaderboardCache.getData(async () => {
     try {
-      log("Fetching leaderboard data from API...");
+      log(`Fetching fresh leaderboard data from API...`);
       
-      // Add timeout to prevent hanging requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        log("Request timeout reached, aborting");
-        controller.abort();
-      }, 15000); // 15 second timeout
+      // Use our ApiService to fetch data (handles tokens and retries)
+      const rawData = await apiService.getLeaderboardData();
+      log(`Successfully fetched leaderboard data. Transforming...`);
       
-      try {
-        // Try multiple endpoints with fallbacks
-        const endpoints = [
-          `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-          // Add fallback endpoints if needed
-          `${API_CONFIG.baseUrl}/fallback${API_CONFIG.endpoints.leaderboard}`
-        ];
-        
-        let response = null;
-        let errorMessages = [];
-        
-        // Try each endpoint until one succeeds
-        for (const endpoint of endpoints) {
-          try {
-            log(`Attempting to fetch from: ${endpoint}`);
-            response = await fetch(endpoint, {
-              headers: {
-                Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-                "Content-Type": "application/json",
-                "Cache-Control": "no-cache",
-                "Pragma": "no-cache"
-              },
-              signal: controller.signal,
-            });
-            
-            if (response.ok) {
-              log(`Successfully fetched from: ${endpoint}`);
-              break; // Exit the loop if successful
-            } else {
-              const errorText = await response.text();
-              errorMessages.push(`API error (${response.status}) from ${endpoint}: ${errorText}`);
-              log(errorMessages[errorMessages.length - 1]);
-              response = null; // Reset response to try next endpoint
-            }
-          } catch (endpointError) {
-            errorMessages.push(`Failed to fetch from ${endpoint}: ${endpointError instanceof Error ? endpointError.message : String(endpointError)}`);
-            log(errorMessages[errorMessages.length - 1]);
-          }
-        }
-        
-        clearTimeout(timeoutId);
-        
-        // If all endpoints failed
-        if (!response || !response.ok) {
-          log(`All endpoints failed: ${errorMessages.join('; ')}`);
-          // Use fallback data instead of throwing an error
-          log("Using fallback leaderboard data");
-          return createEnhancedFallbackData();
-        }
-        
-        const rawData = await response.json();
-        log("Successfully fetched leaderboard data");
-        
-        // Validate the data structure
-        if (!rawData || typeof rawData !== 'object') {
-          log("Invalid API response structure");
-          return createEnhancedFallbackData();
-        }
-        
-        // Transform the data
-        return transformLeaderboardData(rawData);
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        throw fetchError;
-      }
+      // Transform the data
+      return transformLeaderboardData(rawData);
     } catch (error) {
-      // Log the error but don't let it crash the application
-      log(`Error fetching leaderboard data: ${error instanceof Error ? error.message : String(error)}`);
-      log("Using enhanced fallback leaderboard data due to error");
-      // Return enhanced fallback data in case of any error
-      return createEnhancedFallbackData();
+      log(`Error fetching leaderboard data: ${error}`);
+      
+      // If we have cached data, use it even if it's stale
+      const cachedData = leaderboardCache.getCachedData();
+      if (cachedData) {
+        log(`Using stale cached data due to API error`);
+        return cachedData;
+      }
+      
+      // Create a basic empty data structure if everything fails
+      return {
+        status: "error",
+        metadata: {
+          totalUsers: 0,
+          lastUpdated: new Date().toISOString(),
+        },
+        data: {
+          today: { data: [] },
+          weekly: { data: [] },
+          monthly: { data: [] },
+          all_time: { data: [] },
+        },
+      };
     }
   }, forceRefresh);
 }
-
-// The createEnhancedFallbackData function is now imported from fallback-data.ts
 
 /**
  * Invalidates the leaderboard cache

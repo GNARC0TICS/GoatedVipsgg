@@ -112,4 +112,12 @@ export class CacheManager<T> {
   isCacheFresh(): boolean {
     return !!this.cache && (Date.now() - this.lastFetchTime < this.cacheDuration);
   }
+  
+  /**
+   * Gets the current cached data, even if stale
+   * @returns The current cached data or null if no data is cached
+   */
+  getCachedData(): T | null {
+    return this.cache;
+  }
 }

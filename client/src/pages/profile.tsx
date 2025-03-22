@@ -27,10 +27,9 @@ import { ProfileEmblem, ProfileEmblemEditor } from "@/components/ProfileEmblem";
 import { RankProgressDisplay } from "@/components/RankProgressDisplay";
 import { SessionHistory } from "@/components/SessionHistory";
 import { WagerRacePosition } from "@/components/WagerRacePosition";
-import { EmailVerificationStatus } from '../components/EmailVerificationStatus';
 import debounce from "lodash/debounce";
 
-export default function Profile() {
+export default function ProfilePage() {
   const { toast } = useToast();
   const [editMode, setEditMode] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -102,6 +101,36 @@ export default function Profile() {
     });
   };
 
+  const handleTelegramLogin = async (userData: any) => {
+    try {
+      const response = await fetch("/api/auth/telegram", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to link Telegram account");
+      }
+
+      toast({
+        title: "Success",
+        description: "Your Telegram account has been linked",
+      });
+      
+      refetch();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+      });
+    }
+  };
+
   if (isLoading) return <LoadingSpinner />;
   
   if (!user) {
@@ -125,6 +154,27 @@ export default function Profile() {
     );
   }
 
+  // Define animation variants for staggered animations
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: "spring", stiffness: 300, damping: 24 }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#14151A] to-[#1A1B21] text-white">
       {/* Subtle background pattern */}
@@ -132,27 +182,13 @@ export default function Profile() {
       
       <div className="container mx-auto px-4 py-8 md:py-16">
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
           className="space-y-8 max-w-4xl mx-auto"
         >
-          {/* Email Verification Status */}
           <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <section className="bg-[#1A1B21]/30 p-6 rounded-lg border border-[#2A2B31] mb-8">
-              <h2 className="text-xl font-heading text-white mb-4">Account Verification</h2>
-              <EmailVerificationStatus isVerified={user?.emailVerified} email={user?.email} />
-            </section>
-          </motion.div>
-
-          {/* Rest of profile content */}
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
+            variants={itemVariants}
             className="flex items-center gap-3"
           >
             <h1 className="text-2xl md:text-3xl font-heading text-[#D7FF00] tracking-wide">My Profile</h1>
@@ -160,13 +196,12 @@ export default function Profile() {
           </motion.div>
           
           {/* Profile Card */}
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
+          <motion.div variants={itemVariants}>
             <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.1)] group relative overflow-hidden">
+              {/* Subtle background pattern */}
               <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
+              
+              {/* Subtle hover effect */}
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#2A2B31]/0 via-[#D7FF00]/5 to-[#2A2B31]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-xl blur-sm" />
               
               <CardContent className="p-6 relative z-10">
@@ -247,6 +282,7 @@ export default function Profile() {
                   
                   <div className="space-y-4">
                     <h3 className="text-[#D7FF00] font-medium">Linked Accounts</h3>
+                    
                     <div className="space-y-3">
                       <div className="flex items-center justify-between p-3 bg-[#2A2B31] rounded-lg">
                         <div className="flex items-center gap-2">
@@ -297,12 +333,7 @@ export default function Profile() {
           </motion.div>
           
           {/* Stats Cards */}
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-          >
+          <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.05)] group relative overflow-hidden">
               <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
               <CardContent className="p-4 relative z-10">
@@ -353,11 +384,7 @@ export default function Profile() {
           </motion.div>
           
           {/* Bio Section */}
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.6 }}
-          >
+          <motion.div variants={itemVariants}>
             <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.1)] group relative overflow-hidden">
               <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#2A2B31]/0 via-[#D7FF00]/5 to-[#2A2B31]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-xl blur-sm" />
@@ -396,11 +423,7 @@ export default function Profile() {
           </motion.div>
           
           {/* Tabs Section */}
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.7 }}
-          >
+          <motion.div variants={itemVariants}>
             <Tabs defaultValue="stats" className="w-full" onValueChange={setActiveTab}>
               <TabsList className="bg-gradient-to-r from-[#1A1B21] via-[#2A2B31] to-[#1A1B21] border border-[#3A3B41] rounded-xl p-1 mb-6 flex w-full md:w-auto overflow-x-auto scrollbar-hide">
                 <TabsTrigger 
@@ -434,7 +457,53 @@ export default function Profile() {
                 className="mt-4 transition-all duration-500 animate-in fade-in-50"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Stats content */}
+                  <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.05)] group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
+                    <CardContent className="p-4 relative z-10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Trophy className="h-5 w-5 text-[#D7FF00]" />
+                        <h3 className="font-medium">Total Wagered</h3>
+                      </div>
+                      <p className="text-2xl font-bold">$0</p>
+                      <p className="text-xs text-[#8A8B91] mt-1">Connect your Goated account to track</p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.05)] group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
+                    <CardContent className="p-4 relative z-10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Award className="h-5 w-5 text-[#D7FF00]" />
+                        <h3 className="font-medium">Races Joined</h3>
+                      </div>
+                      <p className="text-2xl font-bold">0</p>
+                      <p className="text-xs text-[#8A8B91] mt-1">No race participation yet</p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.05)] group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
+                    <CardContent className="p-4 relative z-10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Star className="h-5 w-5 text-[#D7FF00]" />
+                        <h3 className="font-medium">Bonus Codes</h3>
+                      </div>
+                      <p className="text-2xl font-bold">0</p>
+                      <p className="text-xs text-[#8A8B91] mt-1">No bonus codes redeemed</p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.05)] group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
+                    <CardContent className="p-4 relative z-10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Clock className="h-5 w-5 text-[#D7FF00]" />
+                        <h3 className="font-medium">Last Activity</h3>
+                      </div>
+                      <p className="text-lg font-bold">Just Now</p>
+                      <p className="text-xs text-[#8A8B91] mt-1">Viewed profile page</p>
+                    </CardContent>
+                  </Card>
                 </div>
               </TabsContent>
               
@@ -462,13 +531,12 @@ export default function Profile() {
           </motion.div>
           
           {/* Call to Action */}
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.8 }}
-          >
+          <motion.div variants={itemVariants}>
             <Card className="bg-gradient-to-r from-[#1A1B21] to-[#2A2B31] border-[#2A2B31] relative overflow-hidden group">
+              {/* Animated gradient border */}
               <div className="absolute -inset-[1px] bg-gradient-to-r from-[#D7FF00]/0 via-[#D7FF00]/30 to-[#D7FF00]/0 opacity-0 group-hover:opacity-100 blur-sm transition-opacity duration-1000 rounded-xl"></div>
+              
+              {/* Animated background */}
               <div className="absolute inset-0 bg-gradient-to-r from-[#1A1B21] to-[#2A2B31] rounded-xl z-0"></div>
               
               <CardContent className="p-6 relative z-10">
@@ -499,4 +567,4 @@ export default function Profile() {
       </div>
     </div>
   );
-} 
+}

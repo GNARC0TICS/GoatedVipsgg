@@ -1,10 +1,8 @@
 import express from "express";
-import testEmailRouter from './routes/test-email';
-import fallbackApiRouter from "./routes/fallback-api";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { db, pgPool, initDatabase } from "../db/connection";
+import { db, pgPool, initDatabase, closeDatabase, getPoolStatus, checkIndexes } from "../db/connection";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
@@ -19,50 +17,12 @@ import {
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
 import fetch from "node-fetch";
 import helmet from "helmet";
-import nodemailer from 'nodemailer';
 
 const execAsync = promisify(exec);
 const app = express();
-const PORT = process.env.PORT || process.env.API_PORT || 5000;
-const ADMIN_PORT = process.env.ADMIN_PORT || 5001;
-app.set('port', PORT);
-
-// Define allowed admin domains
-const ADMIN_DOMAINS = (process.env.ADMIN_DOMAINS || 'admin.goatedvips.replit.app,goombas.net').split(',').map(domain => domain.trim());
+const PORT = 5000;
 
 async function setupMiddleware() {
-  // Domain-based routing middleware with improved logging
-  app.use((req, res, next) => {
-    const host = req.hostname;
-    log(`Request from hostname: ${host}, path: ${req.path}`);
-    
-    // Check if this is an admin domain
-    const isAdminDomain = ADMIN_DOMAINS.some(domain => 
-      host === domain || host.endsWith(`.${domain}`)
-    );
-    
-    log(`Domain check: ${host} is ${isAdminDomain ? 'an admin' : 'a public'} domain`);
-    
-    // For admin domain, only allow admin routes
-    if (isAdminDomain) {
-      if (req.path.startsWith('/admin') || req.path === '/api/admin/login') {
-        log(`Admin domain accessing admin route: ${req.path}`);
-        return next();
-      }
-      // Redirect non-admin routes to admin login
-      log(`Admin domain accessing non-admin route: ${req.path}, redirecting to /admin/login`);
-      return res.redirect('/admin/login');
-    }
-    
-    // For public domain, block direct access to admin routes
-    if (!isAdminDomain && req.path.startsWith('/admin')) {
-      log(`Public domain attempting to access admin route: ${req.path}, returning 404`);
-      return res.status(404).send('Not found');
-    }
-    
-    next();
-  });
-
   // Security middleware
   if (process.env.NODE_ENV === 'production') {
     // Use helmet in production for security headers
@@ -84,7 +44,6 @@ async function setupMiddleware() {
 
   // Basic middleware
   app.use(express.json());
-  app.use('/api', testEmailRouter);
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
 
@@ -96,21 +55,42 @@ async function setupMiddleware() {
   app.use("/api/affiliate/stats", affiliateRateLimiter);
   app.use("/api/races", raceRateLimiter);
 
-  // Enhanced health check endpoint with database status
+  // Enhanced health check endpoint with detailed database status
   app.get("/api/health", async (_req, res) => {
     try {
       // Test connection by running a simple query
       const client = await pgPool.connect();
-      await client.query('SELECT NOW()');
+      const result = await client.query('SELECT NOW() as current_time');
       client.release();
-
+      
+      // Get pool status
+      const poolStatus = await getPoolStatus();
+      
+      // Check if indexes exist by sampling a few key ones
+      let indexStatus = "unknown";
+      try {
+        const indexes = await checkIndexes();
+        indexStatus = indexes.length > 0 ? "available" : "missing";
+      } catch (err) {
+        indexStatus = "error";
+      }
+      
       res.json({ 
         status: "healthy",
         environment: process.env.NODE_ENV || 'development',
         timestamp: new Date().toISOString(),
         services: {
           database: {
-            status: "connected"
+            status: "connected",
+            currentTime: result.rows[0].current_time,
+            pool: {
+              total: poolStatus.total,
+              idle: poolStatus.idle,
+              waiting: poolStatus.waiting
+            },
+            indexes: {
+              status: indexStatus
+            }
           },
           api: {
             status: "running",
@@ -185,7 +165,7 @@ function legacyErrorHandler(
 async function checkDatabase() {
   try {
     const result = await initDatabase();
-
+    
     if (result) {
       log("Database connection successful");
       return true;
@@ -199,16 +179,15 @@ async function checkDatabase() {
   }
 }
 
-async function cleanupPort(port: number | string) {
-  const portNum = typeof port === 'string' ? parseInt(port, 10) : port;
+async function cleanupPort() {
   try {
-    await execAsync(`lsof -ti:${portNum} | xargs kill -9`);
+    await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
     // Wait for port to be released
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    log(`Port ${portNum} is now available`);
+    log(`Port ${PORT} is now available`);
     return true;
   } catch (error) {
-    log("No existing process found on port " + portNum);
+    log("No existing process found on port " + PORT);
     return true;
   }
 }
@@ -237,80 +216,59 @@ async function startServer() {
       throw new Error("Database connection failed");
     }
 
-    // Ensure ports are available
-    if (!(await cleanupPort(PORT as number))) {
-      throw new Error("Failed to clean up main port");
+    // Ensure port is available
+    if (!(await cleanupPort())) {
+      throw new Error("Failed to clean up port");
     }
-    
-    if (process.env.NODE_ENV === 'production') {
-      if (!(await cleanupPort(ADMIN_PORT as number))) {
-        throw new Error("Failed to clean up admin port");
-      }
-    }
+
+    const server = createServer(app);
 
     // Setup middleware first
     await setupMiddleware();
 
     // Then register routes
-    const httpServer = registerRoutes(app);
-    app.use('/api', testEmailRouter); // Register test email route
-    
-    // Register fallback API routes
-    app.use("/api", fallbackApiRouter);
-    
+    registerRoutes(app);
     initializeAdmin().catch(console.error);
 
     // Telegram bot is now a standalone service
     // See telegrambotcreationguide.md for details
 
     if (app.get("env") === "development") {
-      await setupVite(app, httpServer);
+      await setupVite(app, server);
     } else {
       serveStatic(app);
     }
 
     // Add 404 handler after all routes
     app.use("*", notFoundHandler);
-
+    
     // Add error handler as the last middleware
     app.use(errorHandler);
-
+    
     log("All middleware and routes registered");
 
-    // Helper function to start a server on a specific port
-    async function startServerOnPort(server: any, port: number | string, serverName: string = 'Server') {
-      return new Promise<void>((resolve, reject) => {
-        const serverInstance = server.listen(port, "0.0.0.0");
-        
-        serverInstance.on("error", (err: NodeJS.ErrnoException) => {
+    // Start server with proper error handling
+    await new Promise<void>((resolve, reject) => {
+      server
+        .listen(PORT, "0.0.0.0")
+        .once("error", (err: NodeJS.ErrnoException) => {
           if (err.code === "EADDRINUSE") {
-            log(`Port ${port} is in use, attempting to free it...`);
-            cleanupPort(port).then(() => {
-              server.listen(port, "0.0.0.0");
+            log(`Port ${PORT} is in use, attempting to free it...`);
+            cleanupPort().then(() => {
+              server.listen(PORT, "0.0.0.0");
             });
           } else {
             reject(err);
           }
-        });
-        
-        serverInstance.on("listening", () => {
-          log(`${serverName} running on port ${port} (http://0.0.0.0:${port})`);
+        })
+        .once("listening", () => {
+          log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
           resolve();
         });
-      });
-    }
-
-    // Start main server
-    await startServerOnPort(httpServer, PORT, "Main server");
-
-    // Start admin server in production
-    if (process.env.NODE_ENV === 'production') {
-      const adminServer = createServer(app);
-      await startServerOnPort(adminServer, ADMIN_PORT, "Admin server");
-    }
+    });
 
     // Wait for server to be ready
-    if (!(await waitForPort(PORT as number))) {
+    if (!(await waitForPort(PORT))) {
       throw new Error("Server failed to become ready");
     }
   } catch (error) {
@@ -323,12 +281,17 @@ async function startServer() {
 async function closeDatabaseConnections() {
   try {
     log("Closing database connections...");
-    // Close Drizzle ORM connection if needed
-
-    // Close PostgreSQL connection pool
-    await pgPool.end();
-    log("Database connections closed successfully");
-    return true;
+    
+    // Use our enhanced closeDatabase function
+    const result = await closeDatabase();
+    
+    if (result) {
+      log("Database connections closed successfully");
+    } else {
+      log("Warning: Database connections may not have closed properly");
+    }
+    
+    return result;
   } catch (error) {
     console.error("Error closing database connections:", error);
     return false;
@@ -338,12 +301,14 @@ async function closeDatabaseConnections() {
 // Graceful shutdown handler
 async function gracefulShutdown(signal: string) {
   log(`Received ${signal} signal. Shutting down gracefully...`);
-
+  
+  // Telegram bot is now a standalone service
+  
   // Close database connections
   await closeDatabaseConnections();
-
+  
   // Add any other cleanup tasks here
-
+  
   log("All connections closed. Exiting process.");
   process.exit(0);
 }
