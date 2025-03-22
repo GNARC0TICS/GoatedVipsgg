@@ -11,20 +11,18 @@ build = ["sh", "-c", "npm run build"]
 run = ["sh", "-c", "NODE_ENV=production npm run start"]
 ignorePorts = false
 
-# Main server port (public website)
 [[ports]]
 localPort = 5000
 externalPort = 80
 
-# Admin server port (admin portal)
 [[ports]]
 localPort = 5001
 externalPort = 443
 
-# Vite development server port
 [[ports]]
 localPort = 5173
 externalPort = 8080
+exposeLocalhost = true
 
 [workflows]
 runButton = "Start application"
