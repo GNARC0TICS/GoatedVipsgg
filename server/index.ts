@@ -23,9 +23,35 @@ import nodemailer from 'nodemailer';
 const execAsync = promisify(exec);
 const app = express();
 const PORT = process.env.PORT || process.env.API_PORT || 5000;
+const ADMIN_PORT = process.env.ADMIN_PORT || 5001;
 app.set('port', PORT);
 
+// Define allowed admin domains
+const ADMIN_DOMAINS = (process.env.ADMIN_DOMAINS || 'admin.goatedvips.replit.app,goombas.net').split(',');
+
 async function setupMiddleware() {
+  // Domain-based routing middleware
+  app.use((req, res, next) => {
+    const host = req.hostname;
+    const isAdminDomain = ADMIN_DOMAINS.includes(host);
+    
+    // For admin domain, only allow admin routes
+    if (isAdminDomain) {
+      if (req.path.startsWith('/admin') || req.path === '/api/admin/login') {
+        return next();
+      }
+      // Redirect non-admin routes to admin login
+      return res.redirect('/admin/login');
+    }
+    
+    // For public domain, block direct access to admin routes
+    if (!isAdminDomain && req.path.startsWith('/admin')) {
+      return res.status(404).send('Not found');
+    }
+    
+    next();
+  });
+
   // Security middleware
   if (process.env.NODE_ENV === 'production') {
     // Use helmet in production for security headers
@@ -47,7 +73,7 @@ async function setupMiddleware() {
 
   // Basic middleware
   app.use(express.json());
-app.use('/api', testEmailRouter);
+  app.use('/api', testEmailRouter);
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
 
@@ -162,15 +188,16 @@ async function checkDatabase() {
   }
 }
 
-async function cleanupPort() {
+async function cleanupPort(port: number | string) {
+  const portNum = typeof port === 'string' ? parseInt(port, 10) : port;
   try {
-    await execAsync(`lsof -ti:${PORT} | xargs kill -9`);
+    await execAsync(`lsof -ti:${portNum} | xargs kill -9`);
     // Wait for port to be released
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    log(`Port ${PORT} is now available`);
+    log(`Port ${portNum} is now available`);
     return true;
   } catch (error) {
-    log("No existing process found on port " + PORT);
+    log("No existing process found on port " + portNum);
     return true;
   }
 }
@@ -199,18 +226,22 @@ async function startServer() {
       throw new Error("Database connection failed");
     }
 
-    // Ensure port is available
-    if (!(await cleanupPort())) {
-      throw new Error("Failed to clean up port");
+    // Ensure ports are available
+    if (!(await cleanupPort(PORT as number))) {
+      throw new Error("Failed to clean up main port");
     }
-
-    const server = createServer(app);
+    
+    if (process.env.NODE_ENV === 'production') {
+      if (!(await cleanupPort(ADMIN_PORT as number))) {
+        throw new Error("Failed to clean up admin port");
+      }
+    }
 
     // Setup middleware first
     await setupMiddleware();
 
     // Then register routes
-    registerRoutes(app);
+    const httpServer = registerRoutes(app);
     app.use('/api', testEmailRouter); // Register test email route
     initializeAdmin().catch(console.error);
 
@@ -218,7 +249,7 @@ async function startServer() {
     // See telegrambotcreationguide.md for details
 
     if (app.get("env") === "development") {
-      await setupVite(app, server);
+      await setupVite(app, httpServer);
     } else {
       serveStatic(app);
     }
@@ -231,28 +262,40 @@ async function startServer() {
 
     log("All middleware and routes registered");
 
-    // Start server with proper error handling
-    await new Promise<void>((resolve, reject) => {
-      server
-        .listen(PORT, "0.0.0.0")
-        .once("error", (err: NodeJS.ErrnoException) => {
+    // Helper function to start a server on a specific port
+    async function startServerOnPort(server: any, port: number | string, serverName: string = 'Server') {
+      return new Promise<void>((resolve, reject) => {
+        const serverInstance = server.listen(port, "0.0.0.0");
+        
+        serverInstance.on("error", (err: NodeJS.ErrnoException) => {
           if (err.code === "EADDRINUSE") {
-            log(`Port ${PORT} is in use, attempting to free it...`);
-            cleanupPort().then(() => {
-              server.listen(PORT, "0.0.0.0");
+            log(`Port ${port} is in use, attempting to free it...`);
+            cleanupPort(port).then(() => {
+              server.listen(port, "0.0.0.0");
             });
           } else {
             reject(err);
           }
-        })
-        .once("listening", () => {
-          log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+        });
+        
+        serverInstance.on("listening", () => {
+          log(`${serverName} running on port ${port} (http://0.0.0.0:${port})`);
           resolve();
         });
-    });
+      });
+    }
+
+    // Start main server
+    await startServerOnPort(httpServer, PORT, "Main server");
+
+    // Start admin server in production
+    if (process.env.NODE_ENV === 'production') {
+      const adminServer = createServer(app);
+      await startServerOnPort(adminServer, ADMIN_PORT, "Admin server");
+    }
 
     // Wait for server to be ready
-    if (!(await waitForPort(PORT))) {
+    if (!(await waitForPort(PORT as number))) {
       throw new Error("Server failed to become ready");
     }
   } catch (error) {
@@ -280,9 +323,6 @@ async function closeDatabaseConnections() {
 // Graceful shutdown handler
 async function gracefulShutdown(signal: string) {
   log(`Received ${signal} signal. Shutting down gracefully...`);
-
-  // Stop the Telegram bot
-  stopBot();
 
   // Close database connections
   await closeDatabaseConnections();

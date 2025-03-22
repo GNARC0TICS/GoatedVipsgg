@@ -4,7 +4,7 @@
 
 - **Fixing API Integration Issues**: Resolving 404 errors with wager race and leaderboard components to ensure data loads properly for all visitors.
 - **Enhancing Error Handling**: Implementing robust error handling and fallback mechanisms throughout the application.
-- **Deployment Configuration**: Fixing Replit deployment issues to ensure proper port forwarding.
+- **Deployment Configuration**: Optimizing Replit deployment to support both admin and public user access.
 - **Updating Documentation**: Reflecting recent changes in the Memory Bank for consistent project knowledge.
 
 ## Recent Changes
@@ -12,7 +12,11 @@
 - **API Token Update**: Updated the expired API token with a new valid token to restore API connectivity.
 - **Enhanced Error Handling**: Improved error handling in the leaderboard cache utility to better handle API failures and use fallback data.
 - **Frontend Component Improvements**: Updated LeaderboardTable and WagerRacePosition components to display user-friendly error messages.
-- **Replit Deployment Fix**: Configured port forwarding in the .replit file to properly map port 5001 to external port 443.
+- **Dual-Port Server Configuration**: Implemented a dual-port server setup where:
+  - Port 5000 (mapped to external port 80) serves the public website
+  - Port 5001 (mapped to external port 443) serves the admin portal
+- **Domain-Based Routing**: Added server-side middleware to detect admin domains and route requests accordingly.
+- **Environment Configuration**: Added ADMIN_DOMAINS environment variable to control which domains are treated as admin domains.
 - **Timeout Handling**: Added request timeouts to prevent hanging API requests and improve user experience.
 - **Fallback Mechanisms**: Implemented fallback data structures to ensure components render even when API calls fail.
 

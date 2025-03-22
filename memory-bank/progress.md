@@ -58,3 +58,4 @@
 - **Search Optimization**: Further improve search functionality performance and accuracy.
 - **Mobile Responsiveness**: Fine-tune mobile navigation and dropdown interactions.
 - **API Token Management**: Implement a more sustainable solution for API token management to prevent future expirations.
+- **Environment Variable Management**: Consider implementing a more robust solution for managing environment variables across different deployment environments.

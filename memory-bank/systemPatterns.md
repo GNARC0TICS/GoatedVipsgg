@@ -6,6 +6,10 @@ The GoatedVIPs.gg platform is built with a modular architecture that separates c
 
 - **Frontend**: A React application written in TypeScript, located in `client/`. It uses Tailwind CSS for styling and Shadcn UI components for a consistent design system.
 - **Backend**: An Express.js server in `server/`, also written in TypeScript. It handles API requests, authentication, and business logic.
+  - **Dual-Port Configuration**: The server runs on two ports:
+    - Port 5000 (HTTP/80): Serves the public website
+    - Port 5001 (HTTPS/443): Serves the admin portal
+  - **Domain-Based Routing**: Server-side middleware detects admin domains and routes requests accordingly
 - **Database**: A PostgreSQL database managed with Drizzle ORM, with schema definitions in `db/schema/`.
 - **Telegram Bot**: Implemented using `node-telegram-bot-api`, residing in `server/telegram/`. It provides an alternative interface for users and admins.
 - **API Integration**: The platform integrates with the Goated.com API to fetch user wager data.
@@ -18,6 +22,8 @@ The system is designed to be scalable, maintainable, and optimized for performan
 - **Drizzle ORM**: Selected for its lightweight and efficient approach to database interactions.
 - **React Query**: Utilized for data fetching and state management on the frontend.
 - **Custom Middleware**: Developed custom Express middleware for error handling (`error-handler.ts`), rate limiting (`rate-limiter.ts`), and authentication (`auth.ts`).
+- **Domain-Based Routing**: Implemented server-side middleware to detect admin domains and route requests accordingly, enhancing security by separating admin and public interfaces.
+- **Dual-Port Server Architecture**: Configured the server to run on two ports (5000 for public, 5001 for admin) to provide better isolation and security.
 - **Account Linking Mechanism**: Implemented a unique three-way account linking system between the platform, Goated.com, and Telegram.
 - **Enhanced Database Connection**: Optimized for production with connection pooling, health checks, and graceful shutdowns (`db/connection.ts`).
 
