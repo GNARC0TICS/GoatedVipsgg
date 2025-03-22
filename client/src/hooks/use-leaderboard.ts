@@ -41,7 +41,7 @@ type APIResponse = {
 class LeaderboardAPIError extends Error {
   status: number;
   details: string;
-  
+
   constructor(message: string, status: number, details: string) {
     super(message);
     this.name = "LeaderboardAPIError";
@@ -57,26 +57,26 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
   const queryClient = useQueryClient();
   const { startLoadingFor, stopLoadingFor, isLoadingFor } = useLoading();
   const loadingKey = `leaderboard-${timePeriod}`;
-  
+
   // Create a state for detailed error information
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
-  
+
   // Track if this is the initial load
   const isInitialLoadRef = useRef(true);
-  
+
   // Track fetch attempts for better error handling
   const fetchAttemptsRef = useRef(0);
-  
+
   useEffect(() => {
     // Reset error details when time period changes
     setErrorDetails(null);
     fetchAttemptsRef.current = 0;
-    
+
     // Start loading when period changes
     if (!isLoadingFor(loadingKey)) {
       startLoadingFor(loadingKey, "spinner", 500);
     }
-    
+
     return () => {
       // Clean up loading state when component unmounts or period changes
       if (isLoadingFor(loadingKey)) {
@@ -92,17 +92,17 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
       try {
         console.log(`Fetching leaderboard data for period: ${timePeriod}, page: ${page}`);
         fetchAttemptsRef.current += 1;
-        
+
         // Start loading state if not already loading
         if (!isLoadingFor(loadingKey)) {
           startLoadingFor(loadingKey, "spinner", 500);
         }
-        
+
         // Check if we already have the data in the query cache
         const existingData = queryClient.getQueryData<APIResponse>([
           AFFILIATE_STATS_KEY,
         ]);
-        
+
         if (existingData && !isInitialLoadRef.current) {
           console.log('Using cached leaderboard data');
           return existingData;
@@ -119,17 +119,17 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
           // Only make one API call with no time period parameter, and get all data at once
           const url = `${AFFILIATE_STATS_KEY}?page=${page}&limit=100&_t=${Date.now()}`;
           console.log(`Making API call to ${url}`);
-          
+
           // Try multiple endpoints with fallbacks
           const endpoints = [
             url,
             // Add fallback endpoints if needed
             `/api/affiliate/stats/fallback?page=${page}&limit=100&_t=${Date.now()}`
           ];
-          
+
           let response = null;
           let errorMessages = [];
-          
+
           // Try each endpoint until one succeeds
           for (const endpoint of endpoints) {
             try {
@@ -142,7 +142,7 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
                 cache: "no-cache",
                 signal: controller.signal,
               });
-              
+
               if (response.ok) {
                 console.log(`Successfully fetched from: ${endpoint}`);
                 break; // Exit the loop if successful
@@ -159,18 +159,18 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
           }
 
           clearTimeout(timeoutId);
-          
+
           // If all endpoints failed
           if (!response || !response.ok) {
             console.error('All endpoints failed:', errorMessages.join('; '));
             setErrorDetails(errorMessages.join('; '));
-            
+
             // Check if we have existing data we can use as fallback
             if (existingData) {
               console.log('Using existing data as fallback due to API error');
               return existingData;
             }
-            
+
             // Create fallback data structure
             console.log('Creating fallback data structure');
             return createFallbackData();
@@ -178,39 +178,39 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
 
           const freshData = (await response.json()) as APIResponse;
           console.log('Received fresh leaderboard data');
-          
+
           // Validate the data structure
           if (!freshData || !freshData.data) {
             console.error('Invalid API response structure');
             setErrorDetails('Invalid API response structure');
-            
+
             // Check if we have existing data we can use as fallback
             if (existingData) {
               console.log('Using existing data as fallback due to invalid response');
               return existingData;
             }
-            
+
             // Create fallback data structure
             console.log('Creating fallback data structure');
             return createFallbackData();
           }
-          
+
           // Validate period data exists
           if (!freshData.data[timePeriod]) {
             console.error(`Missing data for period: ${timePeriod}`);
             setErrorDetails(`Missing data for period: ${timePeriod}`);
-            
+
             // Create empty data structure for the missing period
             freshData.data[timePeriod] = { data: [] };
           }
-          
+
           // Ensure each entry has the expected structure
           const validPeriods = ['today', 'weekly', 'monthly', 'all_time'];
           validPeriods.forEach(period => {
             if (!freshData.data[period]) {
               freshData.data[period] = { data: [] };
             }
-            
+
             if (Array.isArray(freshData.data[period].data)) {
               freshData.data[period].data = freshData.data[period].data.map((entry: any) => {
                 // Ensure entry has required fields
@@ -231,13 +231,13 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
               freshData.data[period].data = [];
             }
           });
-          
+
           // Cache the full response
           queryClient.setQueryData([AFFILIATE_STATS_KEY], freshData);
-          
+
           // Mark initial load as complete
           isInitialLoadRef.current = false;
-          
+
           return freshData;
         } catch (fetchError) {
           clearTimeout(timeoutId);
@@ -245,7 +245,7 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
         }
       } catch (err) {
         console.error('Error fetching leaderboard data:', err);
-        
+
         if (err instanceof LeaderboardAPIError) {
           setErrorDetails(`API Error (${err.status}): ${err.details}`);
         } else if (err instanceof DOMException && err.name === 'AbortError') {
@@ -253,17 +253,17 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
         } else {
           setErrorDetails(err instanceof Error ? err.message : String(err));
         }
-        
+
         // Check if we have existing data we can use as fallback
         const existingData = queryClient.getQueryData<APIResponse>([AFFILIATE_STATS_KEY]);
         if (existingData) {
           console.log('Using existing data as fallback due to error');
           return existingData;
         }
-        
+
         // Create fallback data structure with sample data for better user experience
-        console.log('Creating fallback data structure with sample data');
-        return createFallbackDataWithSamples();
+        console.log('Creating fallback data structure');
+        return createFallbackData();
       } finally {
         // Stop loading regardless of success or failure
         if (isLoadingFor(loadingKey)) {
@@ -295,46 +295,13 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
       },
     };
   }
-  
-  // Helper function to create fallback data with sample entries for better UX
+
   function createFallbackDataWithSamples(): APIResponse {
-    // Generate some sample player data
-    const generateSamplePlayers = (count: number, multiplier: number = 1) => {
-      return Array.from({ length: count }, (_, i) => ({
-        uid: `sample-${i}`,
-        name: `Player${i + 1}`,
-        wagered: {
-          today: Math.floor(Math.random() * 10000 * multiplier),
-          this_week: Math.floor(Math.random() * 50000 * multiplier),
-          this_month: Math.floor(Math.random() * 200000 * multiplier),
-          all_time: Math.floor(Math.random() * 1000000 * multiplier)
-        }
-      }));
-    };
-    
-    // Create sample data for each time period
-    const todayPlayers = generateSamplePlayers(10, 0.5);
-    const weeklyPlayers = generateSamplePlayers(15, 1);
-    const monthlyPlayers = generateSamplePlayers(20, 2);
-    const allTimePlayers = generateSamplePlayers(25, 5);
-    
-    return {
-      status: "success",
-      metadata: {
-        totalUsers: 25,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: { data: todayPlayers },
-        weekly: { data: weeklyPlayers },
-        monthly: { data: monthlyPlayers },
-        all_time: { data: allTimePlayers },
-      },
-    };
+    return createFallbackData(); // Use empty data instead of fake samples
   }
 
   const periodKey = timePeriod;
-  
+
   // Log when data changes
   useEffect(() => {
     if (data) {
@@ -347,10 +314,10 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
 
   // Create a fallback empty data structure if data is missing
   const fallbackData: Entry[] = [];
-  
+
   // Extract the data for the requested time period, with fallback
   const periodData = data?.data?.[periodKey]?.data || fallbackData;
-  
+
   // Stop loading when data is available or on error
   useEffect(() => {
     if ((!isLoading && data) || error) {
