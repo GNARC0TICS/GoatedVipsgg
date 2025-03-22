@@ -54,7 +54,7 @@
 ## Known Issues
 
 - **API Rate Limits**: Need to implement better handling of Goated.com API rate limits.
-- **Error Handling**: Improve error handling across the application, especially in edge cases.
 - **Database Performance**: Optimize queries that are causing slowdowns.
 - **Search Optimization**: Further improve search functionality performance and accuracy.
 - **Mobile Responsiveness**: Fine-tune mobile navigation and dropdown interactions.
+- **API Token Management**: Implement a more sustainable solution for API token management to prevent future expirations.

@@ -23,9 +23,19 @@ export function WagerRacePosition({ userId, goatedUsername }: WagerRacePositionP
   const { data: racePosition, isLoading, error } = useQuery<RacePosition>({
     queryKey: ["/api/wager-race/position", userId, goatedUsername],
     enabled: !!userId && !!goatedUsername,
-    retry: 2,
+    retry: 3, // Increase retry attempts
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
     refetchOnWindowFocus: false,
+    // Add stale time to reduce unnecessary API calls
+    staleTime: 60000, // 1 minute
   });
+
+  // Log errors to console but don't crash the application
+  React.useEffect(() => {
+    if (error) {
+      console.error("Error fetching wager race position:", error);
+    }
+  }, [error]);
 
   if (!goatedUsername) {
     return (

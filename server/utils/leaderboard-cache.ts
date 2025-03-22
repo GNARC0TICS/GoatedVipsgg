@@ -132,24 +132,39 @@ export function transformLeaderboardData(apiData: any): LeaderboardData {
  */
 export async function getLeaderboardData(forceRefresh = false): Promise<LeaderboardData> {
   return await leaderboardCache.getData(async () => {
-    // Fetch fresh data from the API
-    const response = await fetch(
-      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-          "Content-Type": "application/json",
-        },
+    try {
+      log("Fetching leaderboard data from API...");
+      // Fetch fresh data from the API
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+          // Add timeout to prevent hanging requests
+          signal: AbortSignal.timeout(10000), // 10 second timeout
+        }
+      );
+
+      if (!response.ok) {
+        log(`API request failed with status: ${response.status}`);
+        // Use fallback data instead of throwing an error
+        log("Using fallback leaderboard data");
+        return API_CONFIG.fallbackData.leaderboard;
       }
-    );
 
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
+      const rawData = await response.json();
+      log("Successfully fetched leaderboard data");
+      // Transform the data
+      return transformLeaderboardData(rawData);
+    } catch (error) {
+      // Log the error but don't let it crash the application
+      log(`Error fetching leaderboard data: ${error instanceof Error ? error.message : String(error)}`);
+      log("Using fallback leaderboard data due to error");
+      // Return fallback data in case of any error
+      return API_CONFIG.fallbackData.leaderboard;
     }
-
-    const rawData = await response.json();
-    // Transform the data
-    return transformLeaderboardData(rawData);
   }, forceRefresh);
 }
 

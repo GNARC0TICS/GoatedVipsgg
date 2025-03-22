@@ -108,94 +108,131 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
           return existingData;
         }
 
-        // Only make one API call with no time period parameter, and get all data at once
-        console.log(`Making API call to ${AFFILIATE_STATS_KEY}?page=${page}&limit=100`);
-        const response = await fetch(
-          `${AFFILIATE_STATS_KEY}?page=${page}&limit=100`,
-          {
-            headers: {
-              Accept: "application/json",
+        // Add timeout to prevent hanging requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+        try {
+          // Only make one API call with no time period parameter, and get all data at once
+          console.log(`Making API call to ${AFFILIATE_STATS_KEY}?page=${page}&limit=100`);
+          const response = await fetch(
+            `${AFFILIATE_STATS_KEY}?page=${page}&limit=100`,
+            {
+              headers: {
+                Accept: "application/json",
+              },
+              // Add cache control headers to prevent browser caching
+              cache: "no-cache",
+              signal: controller.signal,
             },
-            // Add cache control headers to prevent browser caching
-            cache: "no-cache",
-          },
-        );
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`API error (${response.status}): ${errorText}`);
-          setErrorDetails(`Status: ${response.status}, Details: ${errorText}`);
-          throw new LeaderboardAPIError(
-            `HTTP error! status: ${response.status}`,
-            response.status,
-            errorText
           );
-        }
 
-        const freshData = (await response.json()) as APIResponse;
-        console.log('Received fresh leaderboard data:', freshData);
-        
-        // Validate the data structure
-        if (!freshData || !freshData.data) {
-          console.error('Invalid API response structure:', freshData);
-          setErrorDetails('Invalid API response structure');
-          throw new Error('Invalid API response structure');
-        }
-        
-        // Validate period data exists
-        if (!freshData.data[timePeriod]) {
-          console.error(`Missing data for period: ${timePeriod}`, freshData);
-          setErrorDetails(`Missing data for period: ${timePeriod}`);
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`API error (${response.status}): ${errorText}`);
+            setErrorDetails(`Status: ${response.status}, Details: ${errorText}`);
+            
+            // Check if we have existing data we can use as fallback
+            if (existingData) {
+              console.log('Using existing data as fallback due to API error');
+              return existingData;
+            }
+            
+            // Create fallback data structure
+            console.log('Creating fallback data structure');
+            return createFallbackData();
+          }
+
+          const freshData = (await response.json()) as APIResponse;
+          console.log('Received fresh leaderboard data:', freshData);
           
-          // Create empty data structure for the missing period
-          freshData.data[timePeriod] = { data: [] };
-        }
-        
-        // Ensure each entry has the expected structure
-        const validPeriods = ['today', 'weekly', 'monthly', 'all_time'];
-        validPeriods.forEach(period => {
-          if (!freshData.data[period]) {
-            freshData.data[period] = { data: [] };
+          // Validate the data structure
+          if (!freshData || !freshData.data) {
+            console.error('Invalid API response structure:', freshData);
+            setErrorDetails('Invalid API response structure');
+            
+            // Check if we have existing data we can use as fallback
+            if (existingData) {
+              console.log('Using existing data as fallback due to invalid response');
+              return existingData;
+            }
+            
+            // Create fallback data structure
+            console.log('Creating fallback data structure');
+            return createFallbackData();
           }
           
-          if (Array.isArray(freshData.data[period].data)) {
-            freshData.data[period].data = freshData.data[period].data.map((entry: any) => {
-              // Ensure entry has required fields
-              if (!entry.uid) entry.uid = `unknown-${Math.random().toString(36).substring(2, 9)}`;
-              if (!entry.name) entry.name = 'Unknown Player';
-              if (!entry.wagered) {
-                entry.wagered = {
-                  today: 0,
-                  this_week: 0,
-                  this_month: 0,
-                  all_time: 0
-                };
-              }
-              return entry as Entry;
-            });
-          } else {
-            // If data is not an array, initialize it as an empty array
-            freshData.data[period].data = [];
+          // Validate period data exists
+          if (!freshData.data[timePeriod]) {
+            console.error(`Missing data for period: ${timePeriod}`, freshData);
+            setErrorDetails(`Missing data for period: ${timePeriod}`);
+            
+            // Create empty data structure for the missing period
+            freshData.data[timePeriod] = { data: [] };
           }
-        });
-        
-        // Cache the full response
-        queryClient.setQueryData([AFFILIATE_STATS_KEY], freshData);
-        
-        // Mark initial load as complete
-        isInitialLoadRef.current = false;
-        
-        return freshData;
+          
+          // Ensure each entry has the expected structure
+          const validPeriods = ['today', 'weekly', 'monthly', 'all_time'];
+          validPeriods.forEach(period => {
+            if (!freshData.data[period]) {
+              freshData.data[period] = { data: [] };
+            }
+            
+            if (Array.isArray(freshData.data[period].data)) {
+              freshData.data[period].data = freshData.data[period].data.map((entry: any) => {
+                // Ensure entry has required fields
+                if (!entry.uid) entry.uid = `unknown-${Math.random().toString(36).substring(2, 9)}`;
+                if (!entry.name) entry.name = 'Unknown Player';
+                if (!entry.wagered) {
+                  entry.wagered = {
+                    today: 0,
+                    this_week: 0,
+                    this_month: 0,
+                    all_time: 0
+                  };
+                }
+                return entry as Entry;
+              });
+            } else {
+              // If data is not an array, initialize it as an empty array
+              freshData.data[period].data = [];
+            }
+          });
+          
+          // Cache the full response
+          queryClient.setQueryData([AFFILIATE_STATS_KEY], freshData);
+          
+          // Mark initial load as complete
+          isInitialLoadRef.current = false;
+          
+          return freshData;
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          throw fetchError;
+        }
       } catch (err) {
         console.error('Error fetching leaderboard data:', err);
         
         if (err instanceof LeaderboardAPIError) {
           setErrorDetails(`API Error (${err.status}): ${err.details}`);
+        } else if (err instanceof DOMException && err.name === 'AbortError') {
+          setErrorDetails('Request timed out. Please try again later.');
         } else {
           setErrorDetails(err instanceof Error ? err.message : String(err));
         }
         
-        throw err;
+        // Check if we have existing data we can use as fallback
+        const existingData = queryClient.getQueryData<APIResponse>([AFFILIATE_STATS_KEY]);
+        if (existingData) {
+          console.log('Using existing data as fallback due to error');
+          return existingData;
+        }
+        
+        // Create fallback data structure
+        console.log('Creating fallback data structure');
+        return createFallbackData();
       } finally {
         // Stop loading regardless of success or failure
         if (isLoadingFor(loadingKey)) {
@@ -210,6 +247,23 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  // Helper function to create fallback data
+  function createFallbackData(): APIResponse {
+    return {
+      status: "success",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    };
+  }
 
   const periodKey = timePeriod;
   
