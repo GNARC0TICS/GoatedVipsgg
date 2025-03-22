@@ -2,16 +2,14 @@ import { ReactNode, useRef, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { Header } from "./header";
+import { Footer } from "./footer";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { FloatingSupport } from "@/components/FloatingSupport";
 import { MobileAdminBadge } from "@/components/MobileAdminBadge";
 import { ScrollToTopNavigation } from "@/components/ScrollToTopNavigation";
+import { useResponsive } from "./hooks/useResponsive";
 import type { SelectUser } from "@db/schema";
-
-// Import components from our refactored layout
-import { Header } from "@/components/layout/header";
-import { Footer } from "@/components/layout/footer";
-import { useResponsive } from "@/components/layout/hooks/useResponsive";
 
 interface LayoutProps {
   children: ReactNode;

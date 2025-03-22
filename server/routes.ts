@@ -8,6 +8,7 @@ import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
 import userSessionsRouter from "./routes/user-sessions";
 import userProfileRouter from "./routes/user-profile";
+import telegramApiRouter from "./routes/telegram-api";
 import { db, pgPool } from "../db/connection";
 // Import specific schemas from the updated schema structure
 import * as schema from "@db/schema";
@@ -144,6 +145,8 @@ export function registerRoutes(app: Express): Server {
   app.use(userSessionsRouter);
   // Register user profile routes
   app.use(userProfileRouter);
+  // Register Telegram API routes
+  app.use("/api/telegram", telegramApiRouter);
   return httpServer;
 }
 

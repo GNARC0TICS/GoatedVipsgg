@@ -7,7 +7,8 @@ import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
 import { initializeAdmin } from "./middleware/admin";
-import bot, { stopBot, getBotStatus } from "./telegram/bot";
+// Telegram bot has been moved to a standalone service
+// See telegrambotcreationguide.md for details
 import {
   apiRateLimiter,
   affiliateRateLimiter,
@@ -85,23 +86,18 @@ async function setupMiddleware() {
     }
   });
 
-  // Add a Telegram bot status endpoint for debugging
+  // Telegram bot status endpoint (placeholder)
+  // The actual Telegram bot is now a standalone service
+  // See telegrambotcreationguide.md for details
   app.get("/api/telegram/status", (_req, res) => {
-    try {
-      const status = getBotStatus();
-      res.json({
-        status: "ok",
-        telegramBot: status,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error("Error getting bot status:", error);
-      res.status(500).json({
-        status: "error",
-        message: error instanceof Error ? error.message : "Unknown error",
-        timestamp: new Date().toISOString(),
-      });
-    }
+    res.json({
+      status: "ok",
+      telegramBot: {
+        status: "external",
+        message: "Telegram bot is now a standalone service. See telegrambotcreationguide.md for details."
+      },
+      timestamp: new Date().toISOString(),
+    });
   });
 }
 
@@ -213,11 +209,8 @@ async function startServer() {
     registerRoutes(app);
     initializeAdmin().catch(console.error);
 
-    // Initialize Telegram bot
-    log("Initializing Telegram bot...");
-    if (!process.env.TELEGRAM_BOT_TOKEN) {
-      throw new Error("TELEGRAM_BOT_TOKEN must be provided");
-    }
+    // Telegram bot is now a standalone service
+    // See telegrambotcreationguide.md for details
 
     if (app.get("env") === "development") {
       await setupVite(app, server);
@@ -249,7 +242,6 @@ async function startServer() {
         })
         .once("listening", () => {
           log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-          log("Telegram bot started successfully");
           resolve();
         });
     });
@@ -284,8 +276,7 @@ async function closeDatabaseConnections() {
 async function gracefulShutdown(signal: string) {
   log(`Received ${signal} signal. Shutting down gracefully...`);
   
-  // Stop the Telegram bot
-  stopBot();
+  // Telegram bot is now a standalone service
   
   // Close database connections
   await closeDatabaseConnections();
