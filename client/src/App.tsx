@@ -12,8 +12,7 @@ import { Layout } from "@/components/Layout";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Redirect } from "@/lib/navigation";
 import { motion } from "framer-motion";
-import { ParticleBackground } from "./components/ParticleBackground"; // Added import
-
+import { ParticleBackground } from "./components/ParticleBackground"; 
 
 // Import all pages
 import NotFound from "@/pages/not-found";
@@ -41,8 +40,10 @@ import TipsAndStrategies from "@/pages/tips-and-strategies";
 import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
 import AdminDashboard from "./pages/admin/Dashboard";
-import AdminLogin from "./pages/admin/login"; // Add import for AdminLogin
+import AdminLogin from "./pages/admin/login"; 
 import Profile from "@/pages/profile";
+import EmailVerification from './pages/EmailVerification'; // Added import
+
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -82,23 +83,19 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function Router() {
   const [, setLocation] = useLocation();
-  // Detect admin domain - goombas.net
   const isAdminDomain = typeof window !== 'undefined' && window.location.hostname === 'goombas.net';
 
-  // On first load of admin domain, redirect to admin login
   useEffect(() => {
     if (isAdminDomain && window.location.pathname === '/') {
       setLocation('/admin/login');
     }
   }, [isAdminDomain, setLocation]);
 
-  // For admin domain, use a simpler layout or no layout
   if (isAdminDomain) {
     return (
       <AnimatePresence mode="wait">
         <ErrorBoundary fallback={<ErrorFallback error={new Error()} />}>
           <Switch>
-            {/* Admin domain routes */}
             <Route path="/" component={AdminLogin} />
             <Route path="/admin/login" component={AdminLogin} />
             <Route path="/admin">
@@ -131,7 +128,6 @@ function Router() {
                 <SupportManagement />
               </ProtectedRoute>
             </Route>
-            {/* Default route - redirect to login */}
             <Route>
               <Redirect to="/admin/login" />
             </Route>
@@ -141,13 +137,11 @@ function Router() {
     );
   }
 
-  // Main domain with full layout
   return (
     <Layout>
       <AnimatePresence mode="wait">
         <ErrorBoundary fallback={<ErrorFallback error={new Error()} />}>
           <Switch>
-            {/* Public Routes */}
             <Route path="/" component={Home} />
             <Route path="/wager-races" component={WagerRaces} />
             <Route path="/leaderboard" component={Leaderboard} />
@@ -161,7 +155,6 @@ function Router() {
             <Route path="/faq" component={FAQ} />
             <Route path="/vip-program" component={VipProgram} />
             <Route path="/challenges" component={Challenges} />
-            {/* Protected Routes */}
             <Route path="/profile">
               <ProtectedRoute>
                 <Profile />
@@ -192,7 +185,6 @@ function Router() {
                 <UserProfile />
               </ProtectedRoute>
             </Route>
-            {/* Admin Routes */}
             <Route path="/admin/login" component={AdminLogin} />
             <Route path="/admin/wager-races">
               <ProtectedRoute>
@@ -224,7 +216,7 @@ function Router() {
                 <AdminDashboard />
               </ProtectedRoute>
             </Route>
-            {/* 404 Route */}
+            <Route path="/verify-email" element={<EmailVerification />} /> {/* Added route */}
             <Route component={NotFound} />
           </Switch>
         </ErrorBoundary>
@@ -246,27 +238,20 @@ function App() {
 }
 
 function AppContent() {
-  // Force initial load to true on first visit or when explicitly testing
   const [isInitialLoad, setIsInitialLoad] = React.useState(() => {
-    // Always show initial load on first visit
     return !sessionStorage.getItem("hasVisited");
   });
 
-  // Handle session storage separately from loading state
   useEffect(() => {
     if (isInitialLoad) {
-      // Only set the hasVisited flag after loading completes
-      // This is now handled by the onLoadComplete callback
     }
   }, [isInitialLoad]);
 
   const handleLoadComplete = () => {
-    // Set the session storage flag to prevent showing the loader on subsequent visits
     sessionStorage.setItem("hasVisited", "true");
-    // Delay state update to ensure animation completes
     setTimeout(() => {
       setIsInitialLoad(false);
-    }, 600); // Adding delay to ensure animation completes
+    }, 600); 
   };
 
   return (
@@ -291,6 +276,3 @@ function AppContent() {
 }
 
 export default App;
-
-
-// ParticleBackground component is now imported from "./components/ParticleBackground"

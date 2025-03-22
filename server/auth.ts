@@ -231,6 +231,14 @@ export function setupAuth(app: Express) {
         })
         .returning();
 
+      // Send confirmation email
+      try {
+        await sendConfirmationEmail(newUser.email, newUser.username);
+      } catch (error) {
+        console.error("Failed to send confirmation email:", error);
+        // Continue with login even if email fails
+      }
+
       // Log the user in after registration
       req.login(newUser, (err) => {
         if (err) {

@@ -1,4 +1,5 @@
 import express from "express";
+import testEmailRouter from './routes/test-email';
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -17,10 +18,12 @@ import {
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
 import fetch from "node-fetch";
 import helmet from "helmet";
+import nodemailer from 'nodemailer';
 
 const execAsync = promisify(exec);
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || process.env.API_PORT || 5000;
+app.set('port', PORT);
 
 async function setupMiddleware() {
   // Security middleware
@@ -44,6 +47,7 @@ async function setupMiddleware() {
 
   // Basic middleware
   app.use(express.json());
+app.use('/api', testEmailRouter);
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
 
@@ -62,7 +66,7 @@ async function setupMiddleware() {
       const client = await pgPool.connect();
       await client.query('SELECT NOW()');
       client.release();
-      
+
       res.json({ 
         status: "healthy",
         environment: process.env.NODE_ENV || 'development',
@@ -144,7 +148,7 @@ function legacyErrorHandler(
 async function checkDatabase() {
   try {
     const result = await initDatabase();
-    
+
     if (result) {
       log("Database connection successful");
       return true;
@@ -207,6 +211,7 @@ async function startServer() {
 
     // Then register routes
     registerRoutes(app);
+    app.use('/api', testEmailRouter); // Register test email route
     initializeAdmin().catch(console.error);
 
     // Telegram bot is now a standalone service
@@ -220,10 +225,10 @@ async function startServer() {
 
     // Add 404 handler after all routes
     app.use("*", notFoundHandler);
-    
+
     // Add error handler as the last middleware
     app.use(errorHandler);
-    
+
     log("All middleware and routes registered");
 
     // Start server with proper error handling
@@ -261,7 +266,7 @@ async function closeDatabaseConnections() {
   try {
     log("Closing database connections...");
     // Close Drizzle ORM connection if needed
-    
+
     // Close PostgreSQL connection pool
     await pgPool.end();
     log("Database connections closed successfully");
@@ -275,14 +280,15 @@ async function closeDatabaseConnections() {
 // Graceful shutdown handler
 async function gracefulShutdown(signal: string) {
   log(`Received ${signal} signal. Shutting down gracefully...`);
-  
-  // Telegram bot is now a standalone service
-  
+
+  // Stop the Telegram bot
+  stopBot();
+
   // Close database connections
   await closeDatabaseConnections();
-  
+
   // Add any other cleanup tasks here
-  
+
   log("All connections closed. Exiting process.");
   process.exit(0);
 }
