@@ -13,7 +13,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Redirect } from "@/lib/navigation";
 import { motion } from "framer-motion";
 import { ParticleBackground } from "./components/ParticleBackground"; 
-import "../styles/enhanced-effects.css"; // Import enhanced effects
+import "./styles/enhanced-effects.css"; // Import enhanced effects
 
 // Import all pages
 import NotFound from "@/pages/not-found";
