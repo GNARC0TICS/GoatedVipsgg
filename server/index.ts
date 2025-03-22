@@ -1,5 +1,6 @@
 import express from "express";
 import testEmailRouter from './routes/test-email';
+import fallbackApiRouter from "./routes/fallback-api";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -27,25 +28,35 @@ const ADMIN_PORT = process.env.ADMIN_PORT || 5001;
 app.set('port', PORT);
 
 // Define allowed admin domains
-const ADMIN_DOMAINS = (process.env.ADMIN_DOMAINS || 'admin.goatedvips.replit.app,goombas.net').split(',');
+const ADMIN_DOMAINS = (process.env.ADMIN_DOMAINS || 'admin.goatedvips.replit.app,goombas.net').split(',').map(domain => domain.trim());
 
 async function setupMiddleware() {
-  // Domain-based routing middleware
+  // Domain-based routing middleware with improved logging
   app.use((req, res, next) => {
     const host = req.hostname;
-    const isAdminDomain = ADMIN_DOMAINS.includes(host);
+    log(`Request from hostname: ${host}, path: ${req.path}`);
+    
+    // Check if this is an admin domain
+    const isAdminDomain = ADMIN_DOMAINS.some(domain => 
+      host === domain || host.endsWith(`.${domain}`)
+    );
+    
+    log(`Domain check: ${host} is ${isAdminDomain ? 'an admin' : 'a public'} domain`);
     
     // For admin domain, only allow admin routes
     if (isAdminDomain) {
       if (req.path.startsWith('/admin') || req.path === '/api/admin/login') {
+        log(`Admin domain accessing admin route: ${req.path}`);
         return next();
       }
       // Redirect non-admin routes to admin login
+      log(`Admin domain accessing non-admin route: ${req.path}, redirecting to /admin/login`);
       return res.redirect('/admin/login');
     }
     
     // For public domain, block direct access to admin routes
     if (!isAdminDomain && req.path.startsWith('/admin')) {
+      log(`Public domain attempting to access admin route: ${req.path}, returning 404`);
       return res.status(404).send('Not found');
     }
     
@@ -243,6 +254,10 @@ async function startServer() {
     // Then register routes
     const httpServer = registerRoutes(app);
     app.use('/api', testEmailRouter); // Register test email route
+    
+    // Register fallback API routes
+    app.use("/api", fallbackApiRouter);
+    
     initializeAdmin().catch(console.error);
 
     // Telegram bot is now a standalone service

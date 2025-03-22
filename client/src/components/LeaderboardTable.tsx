@@ -21,7 +21,6 @@ import {
   ChevronRight,
   Users,
 } from "lucide-react";
-import React from "react";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { QuickProfile } from "@/components/QuickProfile";
@@ -104,72 +103,79 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
     return data.reduce((total, entry) => total + getWagerAmount(entry), 0);
   }, [data, timePeriod]);
 
-  if (isLoading) {
-    return (
-      <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-20 font-heading text-[#D7FF00]">
-                RANK
-              </TableHead>
-              <TableHead className="font-heading text-[#D7FF00]">
-                USERNAME
-              </TableHead>
-              <TableHead className="text-right font-heading text-[#D7FF00]">
-                WAGER
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {[...Array(5)].map((_, i) => (
-              <TableRow key={i} className="bg-[#1A1B21]/50 backdrop-blur-sm">
-                <TableCell>
-                  <div className="animate-pulse h-6 w-16 bg-muted rounded" />
-                </TableCell>
-                <TableCell>
-                  <div className="animate-pulse h-6 w-32 bg-muted rounded" />
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="animate-pulse h-6 w-24 bg-muted rounded ml-auto" />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
-  }
-
   // Log errors to console but don't crash the application
-  React.useEffect(() => {
+  useEffect(() => {
     if (error) {
       console.error("Error loading leaderboard data:", error);
     }
   }, [error]);
 
-  if (error) {
-    return (
-      <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden p-6">
-        <div className="text-center">
-          <div className="mb-4">
-            <svg className="h-12 w-12 text-red-500 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-heading text-white mb-2">Unable to Load Leaderboard</h3>
-          <p className="text-[#8A8B91] mb-4">
-            We're having trouble connecting to the server. Please try again later.
-          </p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-all duration-300 px-4 py-2 rounded-md font-medium"
-          >
-            Refresh Page
-          </button>
+  // Prepare loading UI
+  const loadingUI = (
+    <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="w-20 font-heading text-[#D7FF00]">
+              RANK
+            </TableHead>
+            <TableHead className="font-heading text-[#D7FF00]">
+              USERNAME
+            </TableHead>
+            <TableHead className="text-right font-heading text-[#D7FF00]">
+              WAGER
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {[...Array(5)].map((_, i) => (
+            <TableRow key={i} className="bg-[#1A1B21]/50 backdrop-blur-sm">
+              <TableCell>
+                <div className="animate-pulse h-6 w-16 bg-muted rounded" />
+              </TableCell>
+              <TableCell>
+                <div className="animate-pulse h-6 w-32 bg-muted rounded" />
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="animate-pulse h-6 w-24 bg-muted rounded ml-auto" />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
+  // Prepare error UI
+  const errorUI = (
+    <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden p-6">
+      <div className="text-center">
+        <div className="mb-4">
+          <svg className="h-12 w-12 text-red-500 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
         </div>
+        <h3 className="text-xl font-heading text-white mb-2">Unable to Load Leaderboard</h3>
+        <p className="text-[#8A8B91] mb-4">
+          We're having trouble connecting to the server. Please try again later.
+        </p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 transition-all duration-300 px-4 py-2 rounded-md font-medium"
+        >
+          Refresh Page
+        </button>
       </div>
-    );
+    </div>
+  );
+
+  // Return appropriate UI based on state
+  if (isLoading) {
+    return loadingUI;
+  }
+
+  if (error) {
+    return errorUI;
   }
 
   return (
