@@ -1,10 +1,36 @@
 import { LeaderboardData } from "./leaderboard-cache";
 
 /**
+ * Helper function to check if fallback data is allowed
+ * @returns True if fallback data is allowed, false otherwise
+ */
+export function isFallbackDataAllowed(): boolean {
+  return process.env.NODE_ENV !== 'production';
+}
+
+/**
  * Creates enhanced fallback data with sample entries for better UX
- * @returns Enhanced fallback leaderboard data
+ * @returns Enhanced fallback leaderboard data or empty data if in production
  */
 export function createEnhancedFallbackData(): LeaderboardData {
+  // For production, return empty data structure instead of mock data
+  if (process.env.NODE_ENV === 'production') {
+    // Return empty data structure
+    return {
+      status: "error",
+      metadata: {
+        totalUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      data: {
+        today: { data: [] },
+        weekly: { data: [] },
+        monthly: { data: [] },
+        all_time: { data: [] },
+      },
+    };
+  }
+  
   // Generate some sample player data
   const generateSamplePlayers = (count: number, multiplier: number = 1) => {
     return Array.from({ length: count }, (_, i) => ({
@@ -19,7 +45,7 @@ export function createEnhancedFallbackData(): LeaderboardData {
     }));
   };
   
-  // Create sample data for each time period
+  // Create sample data for each time period (only in development mode)
   const todayPlayers = generateSamplePlayers(10, 0.5);
   const weeklyPlayers = generateSamplePlayers(15, 1);
   const monthlyPlayers = generateSamplePlayers(20, 2);
@@ -44,9 +70,14 @@ export function createEnhancedFallbackData(): LeaderboardData {
  * Creates fallback data for wager race position
  * @param userId User ID
  * @param username Username
- * @returns Fallback wager race position data
+ * @returns Fallback wager race position data or null if in production mode
  */
 export function createFallbackWagerRacePosition(userId: string | number, username?: string) {
+  // Check if we're in production mode
+  if (process.env.NODE_ENV === 'production') {
+    return null; // Don't generate fallback data in production
+  }
+  
   // Generate a random position between 1 and 20
   const position = Math.floor(Math.random() * 20) + 1;
   

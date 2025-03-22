@@ -188,9 +188,17 @@ export async function getLeaderboardData(forceRefresh = false): Promise<Leaderbo
         // If all endpoints failed
         if (!response || !response.ok) {
           log(`All endpoints failed: ${errorMessages.join('; ')}`);
-          // Use fallback data instead of throwing an error
-          log("Using fallback leaderboard data");
-          return createEnhancedFallbackData();
+          
+          // Check if we're in production mode
+          if (process.env.NODE_ENV === 'production') {
+            // In production, don't use fallback data
+            log("In production mode - not using fallback data");
+            throw new Error("Failed to fetch leaderboard data from API in production mode");
+          } else {
+            // In development, use fallback data
+            log("Using fallback leaderboard data (development mode)");
+            return createEnhancedFallbackData();
+          }
         }
         
         const rawData = await response.json();
@@ -199,7 +207,13 @@ export async function getLeaderboardData(forceRefresh = false): Promise<Leaderbo
         // Validate the data structure
         if (!rawData || typeof rawData !== 'object') {
           log("Invalid API response structure");
-          return createEnhancedFallbackData();
+          if (process.env.NODE_ENV === 'production') {
+            log("In production mode - not using fallback data for invalid API response");
+            throw new Error("Invalid API response structure in production mode");
+          } else {
+            log("Using fallback data for invalid API response (development mode)");
+            return createEnhancedFallbackData();
+          }
         }
         
         // Transform the data
@@ -211,9 +225,16 @@ export async function getLeaderboardData(forceRefresh = false): Promise<Leaderbo
     } catch (error) {
       // Log the error but don't let it crash the application
       log(`Error fetching leaderboard data: ${error instanceof Error ? error.message : String(error)}`);
-      log("Using enhanced fallback leaderboard data due to error");
-      // Return enhanced fallback data in case of any error
-      return createEnhancedFallbackData();
+      
+      // Check if we're in production mode
+      if (process.env.NODE_ENV === 'production') {
+        log("In production mode - not using fallback data on error");
+        throw new Error(`Failed to fetch leaderboard data in production mode: ${error instanceof Error ? error.message : String(error)}`);
+      } else {
+        log("Using enhanced fallback leaderboard data due to error (development mode)");
+        // Return enhanced fallback data in case of any error
+        return createEnhancedFallbackData();
+      }
     }
   }, forceRefresh);
 }

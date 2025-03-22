@@ -10,6 +10,7 @@ import userSessionsRouter from "./routes/user-sessions";
 import userProfileRouter from "./routes/user-profile";
 import telegramApiRouter from "./routes/telegram-api";
 import fallbackApiRouter from "./routes/fallback-api";
+import testFallbackRouter from "./routes/test-fallback";
 import { db, pgPool } from "../db/connection";
 // Import specific schemas from the updated schema structure
 import * as schema from "@db/schema";
@@ -150,6 +151,8 @@ export function registerRoutes(app: Express): Server {
   app.use("/api/telegram", telegramApiRouter);
   // Register fallback API routes
   app.use("/api", fallbackApiRouter);
+  // Register test fallback route
+  app.use("/api", testFallbackRouter);
   return httpServer;
 }
 

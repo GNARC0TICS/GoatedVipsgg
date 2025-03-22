@@ -4,6 +4,16 @@ import { createEnhancedFallbackData } from "../utils/fallback-data";
 
 const router = express.Router();
 
+// Helper function to check if we should serve fallback data
+const shouldServeFallbackData = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  if (isProduction) {
+    log("Not serving fallback data in production mode");
+    return false;
+  }
+  return true;
+};
+
 /**
  * Fallback API routes to serve static data when the main API is unavailable
  * These routes mirror the structure of the main API but serve static data
@@ -11,7 +21,16 @@ const router = express.Router();
 
 // Fallback route for leaderboard data
 router.get("/affiliate/stats/fallback", (req, res) => {
-  log("Serving fallback leaderboard data");
+  log("Request for fallback leaderboard data");
+  
+  if (!shouldServeFallbackData()) {
+    return res.status(403).json({
+      status: "error",
+      message: "Fallback data is disabled in production mode"
+    });
+  }
+  
+  log("Serving fallback leaderboard data (development mode)");
   
   // Generate fallback data
   const fallbackData = createEnhancedFallbackData();
@@ -24,7 +43,16 @@ router.get("/affiliate/stats/fallback", (req, res) => {
 
 // Main route for leaderboard data with query parameters
 router.get("/affiliate/stats", (req, res) => {
-  log(`Serving leaderboard data with query params: ${JSON.stringify(req.query)}`);
+  log(`Request for leaderboard data with query params: ${JSON.stringify(req.query)}`);
+  
+  if (!shouldServeFallbackData()) {
+    return res.status(403).json({
+      status: "error",
+      message: "Fallback data is disabled in production mode"
+    });
+  }
+  
+  log(`Serving fallback leaderboard data with query params (development mode)`);
   
   // Generate fallback data
   const fallbackData = createEnhancedFallbackData();
@@ -37,10 +65,17 @@ router.get("/affiliate/stats", (req, res) => {
 
 // Fallback route for wager race position
 router.get("/wager-race/position/fallback", (req, res) => {
-  log("Serving fallback wager race position data");
-  
   const { userId, goatedUsername } = req.query;
-  log(`Fallback request for user: ${userId}, goatedUsername: ${goatedUsername}`);
+  log(`Request for fallback wager race position data - userId: ${userId}, goatedUsername: ${goatedUsername}`);
+  
+  if (!shouldServeFallbackData()) {
+    return res.status(403).json({
+      status: "error",
+      message: "Fallback data is disabled in production mode"
+    });
+  }
+  
+  log(`Serving fallback wager race position data (development mode)`);
   
   // Generate a random position between 1 and 20
   const position = Math.floor(Math.random() * 20) + 1;
@@ -71,7 +106,16 @@ router.get("/wager-race/position/fallback", (req, res) => {
 
 // Fallback route for current wager race
 router.get("/wager-races/current", (req, res) => {
-  log("Serving fallback current wager race data");
+  log("Request for fallback current wager race data");
+  
+  if (!shouldServeFallbackData()) {
+    return res.status(403).json({
+      status: "error",
+      message: "Fallback data is disabled in production mode"
+    });
+  }
+  
+  log("Serving fallback current wager race data (development mode)");
   
   // Calculate end date (end of current month)
   const now = new Date();
@@ -105,7 +149,16 @@ router.get("/wager-races/current", (req, res) => {
 
 // Fallback route for previous wager race
 router.get("/wager-races/previous", (req, res) => {
-  log("Serving fallback previous wager race data");
+  log("Request for fallback previous wager race data");
+  
+  if (!shouldServeFallbackData()) {
+    return res.status(403).json({
+      status: "error",
+      message: "Fallback data is disabled in production mode"
+    });
+  }
+  
+  log("Serving fallback previous wager race data (development mode)");
   
   // Calculate dates for previous month
   const now = new Date();
@@ -141,10 +194,17 @@ router.get("/wager-races/previous", (req, res) => {
 
 // Main route for wager race position with query parameters
 router.get("/wager-race/position", (req, res) => {
-  log(`Serving wager race position data with query params: ${JSON.stringify(req.query)}`);
-  
   const { userId, goatedUsername } = req.query;
-  log(`Request for user: ${userId}, goatedUsername: ${goatedUsername}`);
+  log(`Request for wager race position data with query params: ${JSON.stringify(req.query)}`);
+  
+  if (!shouldServeFallbackData()) {
+    return res.status(403).json({
+      status: "error",
+      message: "Fallback data is disabled in production mode"
+    });
+  }
+  
+  log(`Serving fallback wager race position data for user: ${userId}, goatedUsername: ${goatedUsername} (development mode)`);
   
   // Generate a random position between 1 and 20
   const position = Math.floor(Math.random() * 20) + 1;
