@@ -1,20 +1,7 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/node",
-      "config": {
-        "buildCommand": "npm run build"
-      }
-    }
-  ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "dist/index.js" },
-    { "src": "/(.*)", "dest": "dist/public/index.html" }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "regions": ["iad1"]
+    { "src": "/api/(.*)", "dest": "/api/index.js" },
+    { "src": "/(.*)", "dest": "/public/$1" }
+  ]
 }

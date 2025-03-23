@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
 export default defineConfig({
   plugins: [
     react({
@@ -19,12 +20,20 @@ export default defineConfig({
   resolve: {
     alias: {
       "@db": path.resolve(__dirname, "db"),
-      "@": path.resolve(__dirname, "client", "src"),
+      "@": path.resolve(__dirname, "client/src"),
     },
   },
   root: path.resolve(__dirname, "client"),
+  publicDir: path.resolve(__dirname, "client/public"),
   build: {
-    outDir: path.resolve(__dirname, "../public"),
+    outDir: path.resolve(__dirname, "public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        entryFileNames: `assets/[name].js`,
+        chunkFileNames: `assets/[name].js`,
+        assetFileNames: `assets/[name].[ext]`,
+      },
+    },
   },
 });
