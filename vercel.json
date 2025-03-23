@@ -5,12 +5,12 @@
       "src": "package.json",
       "use": "@vercel/node",
       "config": { 
-        "buildCommand": "npm run vercel-build"
+        "buildCommand": "npm run build"
       }
     }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "server/index.js" },
+    { "src": "/api/(.*)", "dest": "dist/index.js" },
     { "src": "/(.*)", "dest": "dist/public/index.html" }
   ],
   "env": {
