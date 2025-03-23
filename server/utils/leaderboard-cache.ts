@@ -135,23 +135,19 @@ export async function getLeaderboardData(forceRefresh = false): Promise<Leaderbo
     try {
       log("Fetching fresh leaderboard data...");
       
-      // Use the provided token
-      const API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsInNlc3Npb24iOiJpQWtJRjhLWm1QaE4iLCJpYXQiOjE3NDI3MjY5NDksImV4cCI6MTc0MjgxMzM0OX0.uDuhDLZQukn39N7lRRzSZ0v-UTIMOLk9o90QHWhSwN8";
+      // Construct full API URL with the baseUrl and endpoint
+      const apiUrl = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
+      log(`Making API request to: ${apiUrl}`);
       
-      // Fetch fresh data from the API
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-        {
-          headers: {
-            Authorization: `Bearer ${API_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      // Use the headers from the config
+      const response = await fetch(apiUrl, {
+        headers: API_CONFIG.headers,
+        method: 'GET'
+      });
 
       if (!response.ok) {
-        log(`API request failed with status: ${response.status}. Using sample data.`);
-        return createSampleLeaderboardData();
+        log(`API request failed with status: ${response.status}.`);
+        throw new Error(`API request failed with status: ${response.status}`);
       }
 
       const rawData = await response.json();
@@ -159,52 +155,10 @@ export async function getLeaderboardData(forceRefresh = false): Promise<Leaderbo
       // Transform the data
       return transformLeaderboardData(rawData);
     } catch (error) {
-      log(`Error fetching leaderboard data: ${error}. Using sample data.`);
-      return createSampleLeaderboardData();
+      log(`Error fetching leaderboard data: ${error}.`);
+      throw error; // Rethrow to let the calling code handle the error
     }
   }, forceRefresh);
-}
-
-/**
- * Creates sample leaderboard data for demonstration when API is unavailable
- * @returns Sample leaderboard data
- */
-function createSampleLeaderboardData(): LeaderboardData {
-  // Create sample users
-  const users = [
-    { id: "user1", name: "GamerPro99", wagered: { today: 9800, this_week: 45600, this_month: 158000, all_time: 350000 } },
-    { id: "user2", name: "BetMaster", wagered: { today: 8500, this_week: 41200, this_month: 145000, all_time: 320000 } },
-    { id: "user3", name: "LuckyStreak", wagered: { today: 7900, this_week: 38700, this_month: 132000, all_time: 290000 } },
-    { id: "user4", name: "VIPGamer", wagered: { today: 7200, this_week: 35500, this_month: 125000, all_time: 275000 } },
-    { id: "user5", name: "CasinoRoyal", wagered: { today: 6800, this_week: 33800, this_month: 118000, all_time: 260000 } },
-    { id: "user6", name: "HighRoller", wagered: { today: 6300, this_week: 31200, this_month: 112000, all_time: 245000 } },
-    { id: "user7", name: "FortuneHunter", wagered: { today: 5900, this_week: 29000, this_month: 105000, all_time: 230000 } },
-    { id: "user8", name: "SlotSlayer", wagered: { today: 5500, this_week: 27500, this_month: 98000, all_time: 215000 } },
-    { id: "user9", name: "BetChampion", wagered: { today: 5100, this_week: 25800, this_month: 92000, all_time: 200000 } },
-    { id: "user10", name: "JackpotKing", wagered: { today: 4800, this_week: 24200, this_month: 86000, all_time: 190000 } },
-  ];
-
-  // Transform users into the expected format
-  const transformedData = users.map(user => ({
-    uid: user.id,
-    name: user.name,
-    wagered: user.wagered
-  }));
-
-  // Create the leaderboard data structure
-  return {
-    status: "success",
-    metadata: {
-      totalUsers: transformedData.length,
-      lastUpdated: new Date().toISOString(),
-    },
-    data: {
-      today: { data: sortByWagered(transformedData, "today") },
-      weekly: { data: sortByWagered(transformedData, "this_week") },
-      monthly: { data: sortByWagered(transformedData, "this_month") },
-      all_time: { data: sortByWagered(transformedData, "all_time") },
-    },
-  };
 }
 
 /**
