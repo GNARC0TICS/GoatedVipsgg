@@ -23,8 +23,9 @@ export type LeaderboardData = {
 };
 
 // Create a singleton instance of the cache manager for leaderboard data
-// Reduced cache time to 2 minutes to ensure fresher data
-const leaderboardCache = new CacheManager<LeaderboardData>("leaderboard", 120000); // 2 minute cache
+// Reduced cache time to 2 minutes to ensure fresher data with Redis support
+// The third parameter (true) enables Redis caching if available
+const leaderboardCache = new CacheManager<LeaderboardData>("leaderboard", 120000, true); // 2 minute cache
 
 // Flag to track if the scheduled refresh is active
 let isScheduledRefreshActive = false;
@@ -145,7 +146,7 @@ export async function getLeaderboardData(forceRefresh = false): Promise<Leaderbo
       log(`Error fetching leaderboard data: ${error instanceof Error ? error.message : String(error)}`);
       
       // If we have cached data, use it even if it's stale
-      const cachedData = leaderboardCache.getCachedData();
+      const cachedData = await leaderboardCache.getCachedData();
       if (cachedData) {
         log(`Using stale cached data due to API error`);
         return getFallbackLeaderboardData(cachedData);
@@ -190,30 +191,30 @@ function startScheduledRefreshIfNeeded(): void {
 /**
  * Invalidates the leaderboard cache
  */
-export function invalidateLeaderboardCache(): void {
-  leaderboardCache.invalidateCache();
+export async function invalidateLeaderboardCache(): Promise<void> {
+  await leaderboardCache.invalidateCache();
 }
 
 /**
  * Gets the current leaderboard cache version
  * @returns The current cache version
  */
-export function getLeaderboardCacheVersion(): number {
-  return leaderboardCache.getCacheVersion();
+export async function getLeaderboardCacheVersion(): Promise<number> {
+  return await leaderboardCache.getCacheVersion();
 }
 
 /**
  * Gets the time elapsed since the last leaderboard cache update
  * @returns Time in milliseconds since the last cache update
  */
-export function getLeaderboardCacheAge(): number {
-  return leaderboardCache.getCacheAge();
+export async function getLeaderboardCacheAge(): Promise<number> {
+  return await leaderboardCache.getCacheAge();
 }
 
 /**
  * Checks if the leaderboard cache is currently fresh
  * @returns True if the cache is fresh, false otherwise
  */
-export function isLeaderboardCacheFresh(): boolean {
-  return leaderboardCache.isCacheFresh();
+export async function isLeaderboardCacheFresh(): Promise<boolean> {
+  return await leaderboardCache.isCacheFresh();
 }

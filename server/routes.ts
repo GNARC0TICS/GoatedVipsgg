@@ -7,7 +7,8 @@ import telegramApiRouter from "./routes/telegram-api";
 import apiTokensRouter from "./routes/api-tokens";
 import fallbackApiRouter from "./routes/fallback-api";
 import testFallbackRouter from "./routes/test-fallback";
-import { db, pgPool } from "../db/connection";
+import cronRouter from "./routes/cron";
+import { db } from "../db/connection";
 // Import specific schemas from the updated schema structure
 import * as schema from "@db/schema";
 
@@ -25,6 +26,9 @@ export function registerRoutes(app: Express) {
   app.use("/api/test-fallback", testFallbackRouter);
   // Register fallback API routes
   app.use("/api", fallbackApiRouter);
+  
+  // Register cron job routes
+  app.use("/api/cron", cronRouter);
   
   // Add any other routes here
 }
