@@ -111,7 +111,7 @@ export default function Home() {
               transition={{ delay: 0.2 }}
               className="mb-24"
             >
-              <h2 className="text-4xl font-heading text-white mb-12 text-center flex items-center justify-center gap-3">
+              <h2 className="text-4xl font-heading text-white mb-12 text-center flex items-center justify-center gap-3 text-shadow-sm">
                 <Crown className="w-8 h-8 text-[#D7FF00] animate-wiggle" />
                 TOP PERFORMERS
               </h2>
@@ -124,7 +124,7 @@ export default function Home() {
               transition={{ delay: 0.3 }}
               className="mb-24"
             >
-              <h2 className="text-4xl font-heading text-white mb-12 text-center flex items-center justify-center gap-3">
+              <h2 className="text-4xl font-heading text-white mb-12 text-center flex items-center justify-center gap-3 text-shadow-sm">
                 <Zap className="w-8 h-8 text-[#D7FF00] animate-flicker" />
                 EXPLORE OUR FEATURES
               </h2>
@@ -351,7 +351,7 @@ export default function Home() {
                 transition={{ delay: 0.4 }}
               >
                 <div className="rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm p-8 max-w-7xl mx-auto">
-                  <h2 className="text-3xl font-heading text-white mb-8 text-center flex items-center justify-center gap-3">
+                  <h2 className="text-3xl font-heading text-white mb-8 text-center flex items-center justify-center gap-3 text-shadow-sm">
                     <Trophy className="w-7 h-7 text-[#D7FF00]" />
                     DAILY LEADERBOARD
                   </h2>

@@ -1,8 +1,8 @@
 # Active Context
 
-## Current Focus: Enhancing API Token Resilience with Improved Caching Strategy (March 2025)
+## Current Focus: Enhancing API Token Resilience and UI Improvements (March 2025)
 
-We've completed a major update to the API token and data fetching logic in the system to make it more resilient to API outages while maintaining a good user experience.
+We've completed a major update to the API token and data fetching logic in the system to make it more resilient to API outages while maintaining a good user experience
 
 ### Key Changes Implemented
 
@@ -33,6 +33,8 @@ We've completed a major update to the API token and data fetching logic in the s
 2. **UI Components**
    - Updated `LeaderboardTable.tsx` to show visual indicators when displaying cached data
    - Added timestamp display to show users when the data was last refreshed
+   - Simplified text styling on main page headings to use subtle drop shadows instead of complex effects
+   - Added Tailwind text-shadow utilities for consistent text shadow application across the site
 
 ### Current API Token Strategy
 
