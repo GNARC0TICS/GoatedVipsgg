@@ -2,15 +2,20 @@ import { type Request, type Response, type NextFunction } from "express";
 import { verifyToken } from "../config/auth";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
-import * as schema from "@db/schema";
+import { users, SelectUser } from "@db/schema/index";
 
 // Extend Express Request type
 declare global {
   namespace Express {
     interface Request {
-      user?: typeof users.$inferSelect;
+      user?: SelectUser;
     }
   }
+}
+
+// Helper middleware to check authentication status
+export function isAuthenticated(req: Request): boolean {
+  return !!req.user;
 }
 
 export const requireAuth = async (

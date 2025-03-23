@@ -1,15 +1,28 @@
 import { motion } from "framer-motion";
-import { Gem } from "lucide-react";
+import { Gem, Loader2 } from "lucide-react";
 import { FC } from "react";
+import { cn } from "@/lib/utils";
 
-export const LoadingSpinner: FC = () => {
+interface LoadingSpinnerProps {
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}
+
+export const LoadingSpinner: FC<LoadingSpinnerProps> = ({ size = "lg", className }) => {
+  // Return a smaller spinner for "sm" size
+  if (size === "sm") {
+    return (
+      <Loader2 className={cn("h-4 w-4 animate-spin", className)} />
+    );
+  }
+  // For full-page loading (lg)
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
-      className="fixed inset-0 bg-background/80 backdrop-blur-[4px] z-50 flex flex-col items-center justify-center"
+      className={cn("fixed inset-0 bg-background/80 backdrop-blur-[4px] z-50 flex flex-col items-center justify-center", className)}
       style={{ willChange: "opacity" }}
     >
       <motion.div

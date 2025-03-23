@@ -2,7 +2,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { db, pgPool, initDatabase, closeDatabase, getPoolStatus, checkIndexes } from "../db/connection";
+import { db, initDatabase, closeDatabase, checkIndexes, checkDatabaseHealth } from "../db/connection";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
@@ -59,16 +59,11 @@ async function setupMiddleware() {
   app.use("/api/affiliate/stats", affiliateRateLimiter);
   app.use("/api/races", raceRateLimiter);
 
-  // Enhanced health check endpoint with detailed database status
+  // Enhanced health check endpoint for serverless
   app.get("/api/health", async (_req, res) => {
     try {
-      // Test connection by running a simple query
-      const client = await pgPool.connect();
-      const result = await client.query('SELECT NOW() as current_time');
-      client.release();
-      
-      // Get pool status
-      const poolStatus = await getPoolStatus();
+      // Test connection using our health check function
+      const isHealthy = await checkDatabaseHealth();
       
       // Check if indexes exist by sampling a few key ones
       let indexStatus = "unknown";
@@ -80,18 +75,13 @@ async function setupMiddleware() {
       }
       
       res.json({ 
-        status: "healthy",
+        status: isHealthy ? "healthy" : "degraded",
         environment: process.env.NODE_ENV || 'development',
         timestamp: new Date().toISOString(),
         services: {
           database: {
-            status: "connected",
-            currentTime: result.rows[0].current_time,
-            pool: {
-              total: poolStatus.total,
-              idle: poolStatus.idle,
-              waiting: poolStatus.waiting
-            },
+            status: isHealthy ? "connected" : "error",
+            serverless: true,
             indexes: {
               status: indexStatus
             }
