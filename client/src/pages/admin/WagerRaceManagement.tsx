@@ -49,6 +49,7 @@ import {
   X,
   AlertCircle,
 } from "lucide-react";
+import { type SelectWagerRace } from "@db/schema";
 
 const wagerRaceSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -63,14 +64,16 @@ const wagerRaceSchema = z.object({
   description: z.string().optional(),
 });
 
+type WagerRaceFormData = z.infer<typeof wagerRaceSchema>;
+
 export default function WagerRaceManagement() {
   const { toast } = useToast();
-  const [editingRace, setEditingRace] = useState(null);
+  const [editingRace, setEditingRace] = useState<SelectWagerRace | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<SelectWagerRace | null>(null);
   const queryClient = useQueryClient();
 
-  const form = useForm({
+  const form = useForm<WagerRaceFormData>({
     resolver: zodResolver(wagerRaceSchema),
     defaultValues: {
       title: "",
@@ -97,13 +100,13 @@ export default function WagerRaceManagement() {
     },
   });
 
-  const { data: races = [], isLoading } = useQuery({
+  const { data: races = [], isLoading } = useQuery<SelectWagerRace[]>({
     queryKey: ["/api/admin/wager-races"],
     refetchInterval: 5000, // Poll every 5 seconds
   });
 
   const createRace = useMutation({
-    mutationFn: async (data) => {
+    mutationFn: async (data: WagerRaceFormData) => {
       const response = await fetch("/api/admin/wager-races", {
         method: editingRace ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -127,7 +130,7 @@ export default function WagerRaceManagement() {
   });
 
   const updateRaceStatus = useMutation({
-    mutationFn: async ({ id, status }) => {
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
       const response = await fetch(`/api/admin/wager-races/${id}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -147,7 +150,7 @@ export default function WagerRaceManagement() {
   });
 
   const deleteRace = useMutation({
-    mutationFn: async (id) => {
+    mutationFn: async (id: number) => {
       const response = await fetch(`/api/admin/wager-races/${id}`, {
         method: "DELETE",
         credentials: "include",
@@ -163,16 +166,16 @@ export default function WagerRaceManagement() {
     },
   });
 
-  const handleStatusToggle = (race) => {
+  const handleStatusToggle = (race: SelectWagerRace) => {
     const newStatus = race.status === "live" ? "completed" : "live";
     updateRaceStatus.mutate({ id: race.id, status: newStatus });
   };
 
-  const onSubmit = (data) => {
+  const onSubmit = (data: WagerRaceFormData) => {
     createRace.mutate(data);
   };
 
-  const formatDate = (date) => {
+  const formatDate = (date: string | Date) => {
     return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
@@ -182,7 +185,7 @@ export default function WagerRaceManagement() {
     });
   };
 
-  const calculateTimeLeft = (startDate, endDate) => {
+  const calculateTimeLeft = (startDate: string | Date, endDate: string | Date) => {
     const now = new Date();
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -196,7 +199,7 @@ export default function WagerRaceManagement() {
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "upcoming":
         return "text-blue-400";
@@ -630,7 +633,7 @@ export default function WagerRaceManagement() {
                         size="sm"
                         variant="ghost"
                         className="text-red-500"
-                        onClick={() => setDeleteConfirm(race.id)}
+                        onClick={() => setDeleteConfirm(race)}
                       >
                         <TrashIcon className="h-4 w-4 mr-1" />
                         Delete
@@ -662,7 +665,7 @@ export default function WagerRaceManagement() {
                 className="bg-destructive text-destructive-foreground"
                 onClick={() => {
                   if (deleteConfirm) {
-                    deleteRace.mutate(deleteConfirm);
+                    deleteRace.mutate(deleteConfirm.id);
                     setDeleteConfirm(null);
                   }
                 }}

@@ -2,16 +2,8 @@ import { type Request, type Response, type NextFunction } from "express";
 import { verifyToken } from "../config/auth";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
-import { users, SelectUser } from "@db/schema/index";
-
-// Extend Express Request type
-declare global {
-  namespace Express {
-    interface Request {
-      user?: SelectUser;
-    }
-  }
-}
+// Import users directly from schema.ts to avoid export issues
+import { users } from "../../db/schema";
 
 // Helper middleware to check authentication status
 export function isAuthenticated(req: Request): boolean {

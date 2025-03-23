@@ -90,7 +90,10 @@ export default {
   plugins: [
     require("tailwindcss-animate"), 
     require("@tailwindcss/typography"),
-    function({ addUtilities, theme }) {
+    function({ addUtilities, theme }: { 
+      addUtilities: (utilities: Record<string, Record<string, string>>) => void; 
+      theme: (path: string) => Record<string, string>; 
+    }) {
       const textShadows = theme('textShadow');
       const utilities = {};
       

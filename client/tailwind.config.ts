@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import type { PluginAPI } from "tailwindcss/types/config";
 
 const config: Config = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
@@ -100,7 +101,7 @@ const config: Config = {
     },
   },
   plugins: [
-    function ({ addUtilities }) {
+    function ({ addUtilities }: PluginAPI) {
       const newUtilities = {
         ".fill-animation": {
           position: "relative",

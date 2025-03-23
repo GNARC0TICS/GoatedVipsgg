@@ -1,5 +1,11 @@
 import { sql } from "drizzle-orm";
-import { db, pgPool } from "../connection";
+import { db } from "../connection";
+import { neon } from '@neondatabase/serverless';
+
+// Define a generic Row type for database results
+interface DbRow {
+  [key: string]: any;
+}
 
 /**
  * Migration to optimize database performance by adding indexes
@@ -10,20 +16,19 @@ export async function optimizeDatabase() {
 
   try {
     // Get list of existing tables
-    const client = await pgPool.connect();
-    const tablesResult = await client.query(`
+    const neonSql = neon(process.env.DATABASE_URL!);
+    const tablesResult = await neonSql`
       SELECT tablename FROM pg_catalog.pg_tables 
       WHERE schemaname = 'public'
-    `);
-    client.release();
+    `;
     
-    const existingTables = tablesResult.rows.map(row => row.tablename);
+    const existingTables = tablesResult.map((row: DbRow) => row.tablename as string);
     console.log("Existing tables:", existingTables);
     
     // Helper function to create index if table exists
     async function createIndexIfTableExists(tableName: string, indexQuery: string) {
       if (existingTables.includes(tableName)) {
-        await db.execute(sql.raw(indexQuery));
+        await db.execute(sql`${sql.raw(indexQuery)}`);
         console.log(`Created index on ${tableName}`);
       } else {
         console.log(`Skipping index creation for non-existent table: ${tableName}`);
@@ -98,13 +103,13 @@ export async function optimizeDatabase() {
     // Add materialized view for fast leaderboard queries
     if (existingTables.includes('affiliate_stats')) {
       // Check if materialized view exists
-      const viewResult = await client.query(`
+      const viewResult = await neonSql`
         SELECT 1 FROM pg_class WHERE relname = 'leaderboard_summary' AND relkind = 'm';
-      `);
+      `;
       
-      if (viewResult.rows.length === 0) {
+      if (viewResult.length === 0) {
         // Create materialized view
-        await db.execute(sql.raw(`
+        await db.execute(sql`
           CREATE MATERIALIZED VIEW IF NOT EXISTS leaderboard_summary AS
           SELECT 
             uid,
@@ -118,10 +123,10 @@ export async function optimizeDatabase() {
           
           CREATE UNIQUE INDEX idx_leaderboard_summary_composite 
           ON leaderboard_summary(uid, period);
-        `));
+        `);
         
         // Create refresh function for the materialized view
-        await db.execute(sql.raw(`
+        await db.execute(sql`
           CREATE OR REPLACE FUNCTION refresh_leaderboard_summary()
           RETURNS TRIGGER AS $$
           BEGIN
@@ -136,7 +141,7 @@ export async function optimizeDatabase() {
           AFTER INSERT OR UPDATE OR DELETE ON affiliate_stats
           FOR EACH STATEMENT
           EXECUTE FUNCTION refresh_leaderboard_summary();
-        `));
+        `);
         
         console.log("Created materialized view and refresh trigger for leaderboard");
       } else {
@@ -145,7 +150,7 @@ export async function optimizeDatabase() {
     }
     
     // Performance settings tuning
-    await db.execute(sql.raw(`
+    await db.execute(sql`
       -- Set reasonable values for work_mem to improve sort operations
       SET work_mem = '8MB';
       
@@ -165,7 +170,7 @@ export async function optimizeDatabase() {
         autovacuum_vacuum_scale_factor = 0.1,
         autovacuum_analyze_scale_factor = 0.05
       );
-    `));
+    `);
     
     console.log("Migration completed: optimize_database");
     return true;

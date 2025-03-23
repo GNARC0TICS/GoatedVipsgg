@@ -18,14 +18,16 @@ import {
 import { useForm } from "react-hook-form";
 import { useUser } from "@/hooks/use-user";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertUserSchema } from "@db/schema";
+import { type InsertUser } from "@db/schema";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { z } from "zod";
 
 // Extended schema to include confirm password
-const authSchema = insertUserSchema.extend({
+const authSchema = z.object({
+  username: z.string().min(3),
+  password: z.string().min(6),
   confirmPassword: z.string().optional(),
 }).refine((data) => !data.confirmPassword || data.password === data.confirmPassword, {
   message: "Passwords do not match",
