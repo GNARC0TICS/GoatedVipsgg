@@ -1,6 +1,6 @@
 # Active Context
 
-## Current Focus: Enhancing API Token Resilience and UI Improvements (March 2025)
+## Current Focus: Enhancing API Token Resilience, UI Improvements, and Deployment Optimization (March 2025)
 
 We've completed a major update to the API token and data fetching logic in the system to make it more resilient to API outages while maintaining a good user experience
 
@@ -35,6 +35,26 @@ We've completed a major update to the API token and data fetching logic in the s
    - Added timestamp display to show users when the data was last refreshed
    - Simplified text styling on main page headings to use subtle drop shadows instead of complex effects
    - Added Tailwind text-shadow utilities for consistent text shadow application across the site
+
+#### Deployment Optimizations
+
+1. **Replit Configuration**
+   - Enhanced `.replit` file with proper port mapping (5000→80, 5001→443, 5173→8080)
+   - Added development and production workflow configurations
+   - Configured proper environment variables for different deployment modes
+   - Added proper build and start commands for reliable deployment
+
+2. **Domain Routing**
+   - Implemented `domain-router.ts` middleware for handling multi-domain routing
+   - Configured goombas.net to direct to admin interfaces
+   - Set up goatedvips.gg to handle public-facing features
+   - Added automatic redirects based on domain-specific access patterns
+
+3. **Environment Configuration**
+   - Created `.env.sample` with documented environment variables
+   - Added proper configuration flags for development vs. production
+   - Implemented feature flags for conditional functionality
+   - Set up Replit-specific environment settings
 
 ### Current API Token Strategy
 

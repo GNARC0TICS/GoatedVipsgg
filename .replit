@@ -1,13 +1,61 @@
-# replit.nix file, apps specification, etc. (existing content would be here)
+# Replit configuration file for GoatedVipsGG
+# Updated: March 2025
+
+# Package manager configuration
+run = "npm run start"
+entrypoint = "server/index.ts"
+hidden = [".build", ".config"]
+
+# Language configuration
+language = "nodejs"
+module = "ESM"
+
+# Environment configuration
+[env]
+NODE_ENV = { production = "production", development = "development" }
+ADMIN_DOMAIN = "goombas.net"
+PUBLIC_DOMAIN = "goatedvips.gg"
+
+# Port configuration
+[[ports]]
+localPort = 5000
+externalPort = 80
+protocol = "http"
+onOpen = "ignore"
 
 [[ports]]
 localPort = 5001
 externalPort = 443
+protocol = "https"
+onOpen = "ignore"
 
 [[ports]]
 localPort = 5173
 externalPort = 8080
 exposeLocalhost = true
+onOpen = "ignore"
 
+# Development mode configuration
+[dev]
+run = "npm run dev"
+onBoot = ["npm install"]
+
+# Production build configuration
+[packager]
+afterBuild = ["npm run build"]
+
+# Workflow configurations
 [workflows]
 runButton = "Start application"
+
+[workflows.dev]
+name = "Development Server"
+description = "Run the app in development mode"
+run = "npm run dev"
+persistent = true
+
+[workflows.production]
+name = "Production Build"
+description = "Build and start the app in production mode"
+run = "npm run build && npm run start"
+persistent = true

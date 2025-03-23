@@ -15,6 +15,7 @@ import {
   raceRateLimiter,
 } from "./middleware/rate-limiter";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
+import { domainRouter } from "./middleware/domain-router";
 import fetch from "node-fetch";
 import helmet from "helmet";
 
@@ -50,6 +51,9 @@ async function setupMiddleware() {
   // Request logging
   app.use(requestLogger);
 
+  // Apply domain router middleware
+  app.use(domainRouter);
+  
   // Rate limiters - apply before routes but after basic middleware
   app.use("/api", apiRateLimiter);
   app.use("/api/affiliate/stats", affiliateRateLimiter);
