@@ -1,0 +1,106 @@
+# Cline Rules for GoatedVIPs.gg Project
+
+This document captures important patterns, preferences, and project intelligence that help me work more effectively with the GoatedVIPs.gg project.
+
+## Deployment Patterns
+
+### Vercel Deployment
+
+1. **Build Process Requirements**
+   - The build process must compile both frontend and backend code
+   - Frontend is built with Vite to the `public/` directory
+   - Backend is bundled with esbuild to `api/index.js`
+   - The esbuild command requires `--outfile=` with an equals sign
+
+2. **Vercel Configuration**
+   - `vercel.json` needs explicit routing for both API and frontend
+   - API routes must point to `/api/index.js`
+   - Frontend routes must point to `/public/$1`
+   - Cron jobs should be configured for scheduled tasks
+
+3. **Environment Variables**
+   - Database connection must use `@neondatabase/serverless` for PostgreSQL
+   - Redis caching uses Upstash with `REDIS_URL` and `REDIS_TOKEN`
+   - All environment variables should be documented in `.env.example.vercel`
+
+### File Structure Conventions
+
+1. **Case Sensitivity**
+   - All file paths must respect case sensitivity for Linux (Vercel) compatibility
+   - Import statements must match exact case of file names
+   - Component files use PascalCase (e.g., `Profile.tsx`)
+   - Utility files use camelCase (e.g., `redis-client.ts`)
+
+2. **Directory Organization**
+   - Frontend code lives in `client/src/`
+   - Backend code lives in `server/`
+   - Database code lives in `db/`
+   - API endpoints are defined in `server/routes.ts`
+
+## Coding Patterns
+
+### Database Access
+
+1. **Serverless Database Connection**
+   - Use `@neondatabase/serverless` for PostgreSQL connections
+   - Implement connection caching for better cold start performance
+   - Avoid explicit connection pool management in serverless environments
+   - Use health check functions to verify database connectivity
+
+2. **Schema Organization**
+   - Schema definitions are in `db/schema/`
+   - All schemas are re-exported from `db/schema/index.ts`
+   - Use consistent import paths for schema access
+
+### API Data Strategy
+
+1. **Hierarchical Data Fetching**
+   - Try primary API endpoint first
+   - Fall back to secondary endpoints if primary fails
+   - Use cached data with visual indicators if all API requests fail
+   - Show empty structures instead of fake data if no cache exists
+
+2. **Caching Strategy**
+   - Use Redis for primary caching in production
+   - Implement in-memory fallback for development or when Redis is unavailable
+   - Include metadata with cached responses (timestamps, cache status)
+   - Implement background refresh mechanisms for cache data
+
+## Project Preferences
+
+1. **Documentation**
+   - Keep memory bank files updated with latest changes
+   - Document all environment variables in `.env.example` files
+   - Create comprehensive guides for complex processes
+   - Update progress.md with completed features
+
+2. **Error Handling**
+   - Implement graceful fallbacks for API failures
+   - Show clear visual indicators when using cached or fallback data
+   - Log detailed error information in development
+   - Sanitize error messages in production
+
+3. **Performance Optimization**
+   - Optimize database queries for serverless execution time limits
+   - Implement connection pooling and caching where appropriate
+   - Move long-running operations to background cron jobs
+   - Monitor function execution times and memory usage
+
+## Critical Implementation Paths
+
+1. **Authentication Flow**
+   - Authentication middleware in `server/middleware/auth.ts`
+   - Token service in `server/utils/token-service.ts`
+   - User session management in `server/routes/user-sessions.ts`
+
+2. **Leaderboard Data Flow**
+   - API service fetches data from external API
+   - Caching layer stores and retrieves data
+   - Leaderboard hook in frontend manages data fetching and state
+   - UI components display data with appropriate loading/error states
+
+3. **Deployment Process**
+   - Build both frontend and backend code
+   - Configure environment variables in Vercel dashboard
+   - Deploy to Vercel
+   - Verify API endpoints and frontend functionality

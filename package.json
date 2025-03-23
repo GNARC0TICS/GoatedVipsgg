@@ -12,11 +12,11 @@
     "telegram:test": "tsx ./server/telegram/test-commands.ts",
     "check": "tsc",
     "db:push": "drizzle-kit push",
-    "build": "vite build && npm run build:server",
+    "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
-    "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=cjs --outfile api/index.js",
+    "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=cjs --outdir=api --out-file=index.js",
     "vercel-build": "npm run build",
-    "start": "NODE_ENV=production public/index.html",
+    "start": "node api/index.js",
     "postinstall": "drizzle-kit generate:pg"
   },
   "dependencies": {
