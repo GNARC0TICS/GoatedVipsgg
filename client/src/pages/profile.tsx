@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { EmailVerificationStatus } from "@/components/EmailVerificationStatus";
+import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -31,6 +33,7 @@ import debounce from "lodash/debounce";
 
 export default function ProfilePage() {
   const { toast } = useToast();
+  const { user: authUser } = useAuth();
   const [editMode, setEditMode] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -43,6 +46,7 @@ export default function ProfilePage() {
     queryKey: ["/api/user"],
     retry: 3,
     refetchOnWindowFocus: false,
+    enabled: !!authUser,
   });
 
   useEffect(() => {
@@ -234,6 +238,14 @@ export default function ProfilePage() {
                       <p className="text-[#8A8B91] flex items-center gap-1">
                         <Mail className="h-4 w-4" /> {user.email || "No email provided"}
                       </p>
+                      {user.email && (
+                        <div className="mt-2">
+                          <EmailVerificationStatus
+                            verified={user.emailVerified || false}
+                            email={user.email}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                   {editMode ? (

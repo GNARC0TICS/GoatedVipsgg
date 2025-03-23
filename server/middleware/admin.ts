@@ -1,14 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import { db } from "@db";
-import { users } from "@db/schema";
+import { users } from "@db/schema/index";
 import { eq } from "drizzle-orm";
+
+import { isAuthenticated } from './auth';
 
 export async function requireAdmin(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
-  if (!req.isAuthenticated()) {
+  if (!isAuthenticated(req)) {
     return res.status(401).json({ error: "Authentication required" });
   }
 
