@@ -1,5 +1,4 @@
 import { db } from "@db/connection";
-import { apiKeys } from "@db/schema/api-keys";
 import { eq } from "drizzle-orm";
 import { log } from "../vite";
 import nodemailer from "nodemailer";
@@ -39,10 +38,31 @@ export class TokenService {
    * @returns The current API token or null if none exists
    */
   async getGoatedApiToken(): Promise<string | null> {
+    // First, try to get token from environment variable
+    if (process.env.API_TOKEN) {
+      return process.env.API_TOKEN;
+    }
+    
+    // If not in environment, try database as fallback
     try {
-      const apiKey = await db.query.apiKeys.findFirst({
-        where: eq(apiKeys.name, GOATED_API_KEY_NAME),
-      });
+      // Use dynamic import to avoid circular reference issues
+      let apiKeys;
+      let apiKeyResults;
+      
+      try {
+        const apiKeysModule = await import("@db/schema/api-keys");
+        apiKeys = apiKeysModule.apiKeys;
+        apiKeyResults = await db.select().from(apiKeys).where(eq(apiKeys.name, GOATED_API_KEY_NAME)).limit(1);
+      } catch (dbError) {
+        log(`DB error getting apiKeys: ${dbError}`);
+        return null;
+      }
+      
+      if (!apiKeyResults || apiKeyResults.length === 0) {
+        return null;
+      }
+      
+      const apiKey = apiKeyResults[0];
       
       if (!apiKey || !apiKey.isActive) {
         return null;
@@ -56,7 +76,7 @@ export class TokenService {
       
       return apiKey.key;
     } catch (error) {
-      log(`Error getting Goated API token: ${error}`);
+      log(`Error getting Goated API token from database: ${error}`);
       return null;
     }
   }
@@ -69,10 +89,21 @@ export class TokenService {
    */
   async saveGoatedApiToken(token: string, expirationDate?: Date): Promise<boolean> {
     try {
+      // Use dynamic import to avoid circular reference issues
+      let apiKeys;
+      let existingTokens;
+      
+      try {
+        const apiKeysModule = await import("@db/schema/api-keys");
+        apiKeys = apiKeysModule.apiKeys;
+        existingTokens = await db.select().from(apiKeys).where(eq(apiKeys.name, GOATED_API_KEY_NAME)).limit(1);
+      } catch (dbError) {
+        log(`DB error getting apiKeys: ${dbError}`);
+        return false;
+      }
+      
       // Check if a token already exists
-      const existingToken = await db.query.apiKeys.findFirst({
-        where: eq(apiKeys.name, GOATED_API_KEY_NAME),
-      });
+      const existingToken = existingTokens[0];
       
       // First, decode the JWT to extract expiration
       const decodedToken = this.decodeJwt(token);
@@ -128,9 +159,24 @@ export class TokenService {
    */
   async checkTokenExpiration(): Promise<{ isExpiring: boolean; daysLeft?: number; isExpired?: boolean }> {
     try {
-      const apiKey = await db.query.apiKeys.findFirst({
-        where: eq(apiKeys.name, GOATED_API_KEY_NAME),
-      });
+      // If using environment variable token, we can't check expiration
+      if (process.env.API_TOKEN) {
+        return { isExpiring: false };
+      }
+      
+      // Use dynamic import to avoid circular reference issues
+      let apiKeys;
+      let apiKeyResults;
+      
+      try {
+        const apiKeysModule = await import("@db/schema/api-keys");
+        apiKeys = apiKeysModule.apiKeys;
+        apiKeyResults = await db.select().from(apiKeys).where(eq(apiKeys.name, GOATED_API_KEY_NAME)).limit(1);
+      } catch (dbError) {
+        log(`DB error getting apiKeys for expiration check: ${dbError}`);
+        return { isExpiring: false };
+      }
+      const apiKey = apiKeyResults[0];
       
       if (!apiKey || !apiKey.expiresAt) {
         return { isExpiring: false };
@@ -165,9 +211,21 @@ export class TokenService {
    */
   async getTokenMetadata(): Promise<any> {
     try {
-      const apiKey = await db.query.apiKeys.findFirst({
-        where: eq(apiKeys.name, GOATED_API_KEY_NAME),
-      });
+      // If using environment variable token, provide simple metadata
+      if (process.env.API_TOKEN) {
+        return {
+          exists: true,
+          source: 'environment',
+          isActive: true,
+          isEnvironmentVariable: true
+        };
+      }
+      
+      // Use dynamic import to avoid circular reference issues
+      const { apiKeys } = await import("@db/schema/api-keys");
+      
+      const apiKeyResults = await db.select().from(apiKeys).where(eq(apiKeys.name, GOATED_API_KEY_NAME)).limit(1);
+      const apiKey = apiKeyResults[0];
       
       if (!apiKey) {
         return { exists: false };
@@ -177,6 +235,7 @@ export class TokenService {
       
       return {
         exists: true,
+        source: 'database',
         created: apiKey.createdAt,
         lastUsed: apiKey.lastUsedAt,
         isActive: apiKey.isActive,
@@ -186,7 +245,11 @@ export class TokenService {
       };
     } catch (error) {
       log(`Error getting token metadata: ${error}`);
-      return { exists: false, error: String(error) };
+      return { 
+        exists: !!process.env.API_TOKEN, 
+        source: process.env.API_TOKEN ? 'environment' : 'none',
+        error: String(error) 
+      };
     }
   }
   

@@ -51,6 +51,20 @@ import {
 } from "lucide-react";
 import { type SelectWagerRace } from "@db/schema";
 
+interface WagerRace {
+  id: number;
+  title: string;
+  type: "weekly" | "monthly" | "weekend";
+  status: "upcoming" | "live" | "completed";
+  prizePool: number;
+  minWager: number;
+  startDate: string;
+  endDate: string;
+  prizeDistribution: Record<string, number>;
+  rules?: string;
+  description?: string;
+}
+
 const wagerRaceSchema = z.object({
   title: z.string().min(1, "Title is required"),
   type: z.enum(["weekly", "monthly", "weekend"]),
@@ -68,9 +82,9 @@ type WagerRaceFormData = z.infer<typeof wagerRaceSchema>;
 
 export default function WagerRaceManagement() {
   const { toast } = useToast();
-  const [editingRace, setEditingRace] = useState<SelectWagerRace | null>(null);
+  const [editingRace, setEditingRace] = useState<WagerRace | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<SelectWagerRace | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<WagerRace | null>(null);
   const queryClient = useQueryClient();
 
   const form = useForm<WagerRaceFormData>({
@@ -100,7 +114,7 @@ export default function WagerRaceManagement() {
     },
   });
 
-  const { data: races = [], isLoading } = useQuery<SelectWagerRace[]>({
+  const { data: races = [], isLoading } = useQuery<WagerRace[]>({
     queryKey: ["/api/admin/wager-races"],
     refetchInterval: 5000, // Poll every 5 seconds
   });
@@ -166,7 +180,7 @@ export default function WagerRaceManagement() {
     },
   });
 
-  const handleStatusToggle = (race: SelectWagerRace) => {
+  const handleStatusToggle = (race: WagerRace) => {
     const newStatus = race.status === "live" ? "completed" : "live";
     updateRaceStatus.mutate({ id: race.id, status: newStatus });
   };

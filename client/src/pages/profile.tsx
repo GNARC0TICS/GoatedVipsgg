@@ -1,1 +1,0 @@
-import { EmailVerificationStatus } from "@/components/EmailVerificationStatus"; export default function ProfilePage() { return <div>Profile Page <EmailVerificationStatus verified={true} email="test@example.com" /></div>; }

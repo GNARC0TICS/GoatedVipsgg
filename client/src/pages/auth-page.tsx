@@ -18,7 +18,7 @@ import {
 import { useForm } from "react-hook-form";
 import { useUser } from "@/hooks/use-user";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { type InsertUser } from "@db/schema";
+import { type SelectUser } from "@db/schema";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -35,6 +35,12 @@ const authSchema = z.object({
 });
 
 type AuthFormData = z.infer<typeof authSchema>;
+
+interface AuthResponse {
+  ok: boolean;
+  message?: string;
+  user?: SelectUser;
+}
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -54,7 +60,7 @@ export default function AuthPage() {
   const onSubmit = async (values: AuthFormData) => {
     try {
       const { confirmPassword, ...submitValues } = values;
-      const result = await (isLogin ? login(submitValues) : register(submitValues));
+      const result = await (isLogin ? login(submitValues) : register(submitValues)) as AuthResponse;
       if (!result.ok) {
         toast({
           variant: "destructive",
