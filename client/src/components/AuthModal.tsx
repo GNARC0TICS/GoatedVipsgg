@@ -27,10 +27,6 @@ const authSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters").max(50),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(1, "Please confirm your password"),
-}).refine((data) => data.password === data.confirmPassword || data.confirmPassword === "", {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
 });
 
 type AuthFormData = z.infer<typeof authSchema>;
@@ -48,9 +44,7 @@ export default function AuthModal() {
       username: "",
       password: "",
       email: "",
-      confirmPassword: "",
     },
-    mode: "onChange"
   });
 
   const onSubmit = async (values: AuthFormData) => {
@@ -75,11 +69,6 @@ export default function AuthModal() {
         });
         setIsOpen(false);
         form.reset();
-        
-        // Redirect to profile page after successful registration
-        if (mode === "register" && result.ok) {
-          window.location.href = "/profile";
-        }
       } else {
         toast({
           variant: "destructive",
@@ -172,25 +161,6 @@ export default function AuthModal() {
                 </FormItem>
               )}
             />
-            {mode === "register" && (
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="password"
-                        className="bg-[#2A2B31]"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
             <div className="flex flex-col gap-2">
               <Button
                 type="submit"

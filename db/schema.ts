@@ -28,10 +28,6 @@ export const users = pgTable("users", {
   lastLogin: timestamp("last_login"),
   lastLoginIp: text("last_login_ip"),
 
-  // Profile customization fields
-  bio: text("bio"),
-  profileColor: text("profile_color"),
-
   // Goated.com account linking fields
   goatedUid: text("goated_uid").unique(),
   goatedUsername: text("goated_username"),
@@ -43,30 +39,6 @@ export const users = pgTable("users", {
   telegramUsername: text("telegram_username"),
   isTelegramVerified: boolean("is_telegram_verified").default(false),
   telegramVerifiedAt: timestamp("telegram_verified_at"),
-});
-
-// User sessions table for tracking login sessions
-export const userSessions = pgTable("user_sessions", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  sessionToken: text("session_token").notNull().unique(),
-  userAgent: text("user_agent"),
-  ipAddress: text("ip_address"),
-  lastActive: timestamp("last_active").defaultNow().notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  isActive: boolean("is_active").default(true).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-// User activity log
-export const userActivityLog = pgTable("user_activity_log", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  action: text("action").notNull(),
-  details: jsonb("details"),
-  ipAddress: text("ip_address"),
-  userAgent: text("user_agent"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const wagerRaces = pgTable("wager_races", {
@@ -210,23 +182,6 @@ export const userRelations = relations(users, ({ one, many }) => ({
   // New relations for account linking
   goatedVerifications: many(goatedVerificationRequests),
   telegramVerifications: many(telegramVerificationRequests),
-  // Session and activity tracking
-  sessions: many(userSessions),
-  activityLogs: many(userActivityLog),
-}));
-
-export const userSessionsRelations = relations(userSessions, ({ one }) => ({
-  user: one(users, {
-    fields: [userSessions.userId],
-    references: [users.id],
-  }),
-}));
-
-export const userActivityLogRelations = relations(userActivityLog, ({ one }) => ({
-  user: one(users, {
-    fields: [userActivityLog.userId],
-    references: [users.id],
-  }),
 }));
 
 export const wagerRaceRelations = relations(wagerRaces, ({ one, many }) => ({
@@ -328,12 +283,6 @@ export type SelectNewsletterSubscription =
 export type InsertHistoricalRace = typeof historicalRaces.$inferInsert;
 export type SelectHistoricalRace = typeof historicalRaces.$inferSelect;
 
-// User session and activity types
-export type InsertUserSession = typeof userSessions.$inferInsert;
-export type SelectUserSession = typeof userSessions.$inferSelect;
-export type InsertUserActivityLog = typeof userActivityLog.$inferInsert;
-export type SelectUserActivityLog = typeof userActivityLog.$inferSelect;
-
 // Verification request types
 export type InsertGoatedVerificationRequest =
   typeof goatedVerificationRequests.$inferInsert;
@@ -344,7 +293,6 @@ export type InsertTelegramVerificationRequest =
 export type SelectTelegramVerificationRequest =
   typeof telegramVerificationRequests.$inferSelect;
 
-// Export necessary variables and schemas
 export {
   challenges,
   challengeEntries,

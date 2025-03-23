@@ -294,20 +294,16 @@ export function setupAuth(app: Express) {
             });
           }
 
-          if (user.isAdmin) {
-            return res.redirect('/admin/dashboard');
-          } else {
-            return res.json({
-              status: "success",
-              message: "Login successful",
-              user: {
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                isAdmin: user.isAdmin,
-              },
-            });
-          }
+          return res.json({
+            status: "success",
+            message: "Login successful",
+            user: {
+              id: user.id,
+              username: user.username,
+              email: user.email,
+              isAdmin: user.isAdmin,
+            },
+          });
         });
       },
     )(req, res, next);

@@ -8,10 +8,8 @@ export const googleTokenSchema = z.object({
 });
 
 export const jwtPayloadSchema = z.object({
-  id: z.number(),
-  username: z.string().optional(),
-  userId: z.number().optional(), // For backward compatibility
-  email: z.string().email().optional(), // Make email optional for admin tokens
+  userId: z.number(),
+  email: z.string().email(),
   isAdmin: z.boolean(),
 });
 

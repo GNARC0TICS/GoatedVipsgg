@@ -53,32 +53,6 @@ class LeaderboardAPIError extends Error {
 // Create a constant key for the affiliate stats endpoint to avoid string duplication
 export const AFFILIATE_STATS_KEY = "/api/affiliate/stats";
 
-// Helper function to create fallback response data
-function createFallbackResponse(): APIResponse {
-  const now = new Date().toISOString();
-  const fallbackUsers = [
-    { uid: "fallback-1", name: "Player1", wagered: { today: 5000, this_week: 25000, this_month: 100000, all_time: 500000 } },
-    { uid: "fallback-2", name: "Player2", wagered: { today: 4500, this_week: 22000, this_month: 90000, all_time: 450000 } },
-    { uid: "fallback-3", name: "Player3", wagered: { today: 4000, this_week: 20000, this_month: 80000, all_time: 400000 } },
-    { uid: "fallback-4", name: "Player4", wagered: { today: 3500, this_week: 18000, this_month: 70000, all_time: 350000 } },
-    { uid: "fallback-5", name: "Player5", wagered: { today: 3000, this_week: 15000, this_month: 60000, all_time: 300000 } },
-  ];
-  
-  return {
-    status: "success",
-    metadata: {
-      totalUsers: fallbackUsers.length,
-      lastUpdated: now,
-    },
-    data: {
-      today: { data: [...fallbackUsers] },
-      weekly: { data: [...fallbackUsers] },
-      monthly: { data: [...fallbackUsers] },
-      all_time: { data: [...fallbackUsers] },
-    },
-  };
-}
-
 export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
   const queryClient = useQueryClient();
   const { startLoadingFor, stopLoadingFor, isLoadingFor } = useLoading();
@@ -134,107 +108,44 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
           return existingData;
         }
 
-        // Add timeout to prevent hanging requests
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-        
-        let freshData: APIResponse;
-        
-        try {
-          // Only make one API call with no time period parameter, and get all data at once
-          console.log(`Making API call to ${AFFILIATE_STATS_KEY}?page=${page}&limit=100`);
-          const response = await fetch(
-            `${AFFILIATE_STATS_KEY}?page=${page}&limit=100`,
-            {
-              headers: {
-                Accept: "application/json",
-              },
-              // Add cache control headers to prevent browser caching
-              cache: "no-cache",
-              signal: controller.signal
+        // Only make one API call with no time period parameter, and get all data at once
+        console.log(`Making API call to ${AFFILIATE_STATS_KEY}?page=${page}&limit=100`);
+        const response = await fetch(
+          `${AFFILIATE_STATS_KEY}?page=${page}&limit=100`,
+          {
+            headers: {
+              Accept: "application/json",
             },
+            // Add cache control headers to prevent browser caching
+            cache: "no-cache",
+          },
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`API error (${response.status}): ${errorText}`);
+          setErrorDetails(`Status: ${response.status}, Details: ${errorText}`);
+          throw new LeaderboardAPIError(
+            `HTTP error! status: ${response.status}`,
+            response.status,
+            errorText
           );
-          
-          // Clear the timeout
-          clearTimeout(timeoutId);
-
-          // Check for rate limiting
-          if (response.status === 429) {
-            console.warn('API rate limit exceeded. Using cached data or fallback.');
-            setErrorDetails('API rate limit exceeded. Please try again later.');
-            
-            // If we have cached data, use it
-            if (existingData) {
-              console.log('Using stale cached data due to rate limiting');
-              return existingData;
-            }
-            
-            // Otherwise create fallback data
-            return createFallbackResponse();
-          }
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`API error (${response.status}): ${errorText}`);
-            setErrorDetails(`Status: ${response.status}, Details: ${errorText}`);
-            
-            // If we have cached data, use it even if it's stale
-            if (existingData) {
-              console.log('Using stale cached data due to API error');
-              return existingData;
-            }
-            
-            throw new LeaderboardAPIError(
-              `HTTP error! status: ${response.status}`,
-              response.status,
-              errorText
-            );
-          }
-
-          freshData = (await response.json()) as APIResponse;
-          console.log('Received fresh leaderboard data:', freshData);
-          
-        } catch (fetchError) {
-          // Clear the timeout if there was an error
-          clearTimeout(timeoutId);
-          
-          // Handle timeout errors
-          if (fetchError instanceof DOMException && fetchError.name === 'AbortError') {
-            console.error('Request timed out after 10 seconds');
-            setErrorDetails('Request timed out. Please try again later.');
-            
-            // If we have cached data, use it even if it's stale
-            if (existingData) {
-              console.log('Using stale cached data due to timeout');
-              return existingData;
-            }
-            
-            // Otherwise create fallback data
-            return createFallbackResponse();
-          }
-          
-          // Re-throw other fetch errors
-          throw fetchError;
         }
+
+        const freshData = (await response.json()) as APIResponse;
+        console.log('Received fresh leaderboard data:', freshData);
         
         // Validate the data structure
         if (!freshData || !freshData.data) {
           console.error('Invalid API response structure:', freshData);
           setErrorDetails('Invalid API response structure');
-          
-          // If we have cached data, use it even if it's stale
-          if (existingData) {
-            console.log('Using stale cached data due to invalid response');
-            return existingData;
-          }
-          
-          // Otherwise create fallback data
-          return createFallbackResponse();
+          throw new Error('Invalid API response structure');
         }
         
         // Validate period data exists
         if (!freshData.data[timePeriod]) {
-          console.log(`Missing data for period: ${timePeriod}, creating empty array`);
+          console.error(`Missing data for period: ${timePeriod}`, freshData);
+          setErrorDetails(`Missing data for period: ${timePeriod}`);
           
           // Create empty data structure for the missing period
           freshData.data[timePeriod] = { data: [] };

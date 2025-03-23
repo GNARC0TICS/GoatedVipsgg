@@ -13,7 +13,6 @@ import {
   BarChart,
   ChevronRight,
   ArrowLeft,
-  Key,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -58,12 +57,6 @@ export default function AdminDashboard() {
       icon: <Trophy className="h-6 w-6 text-[#D7FF00]" />,
       description: "Configure and manage wager races",
       link: "/admin/wager-races",
-    },
-    {
-      title: "API Tokens",
-      icon: <Key className="h-6 w-6 text-[#D7FF00]" />,
-      description: "Manage API tokens for external services",
-      link: "/admin/api-tokens",
     },
     {
       title: "Notifications",

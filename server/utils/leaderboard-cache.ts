@@ -1,6 +1,6 @@
 import { CacheManager } from "./cache";
+import { API_CONFIG } from "../config/api";
 import { log } from "../vite";
-import { apiService } from "./api-service";
 
 // Define a type for the leaderboard data
 export type LeaderboardData = {
@@ -18,8 +18,7 @@ export type LeaderboardData = {
 };
 
 // Create a singleton instance of the cache manager for leaderboard data
-// Increase cache time to 5 minutes to reduce API load
-const leaderboardCache = new CacheManager<LeaderboardData>("leaderboard", 300000); // 5 minute cache
+const leaderboardCache = new CacheManager<LeaderboardData>("leaderboard", 60000); // 1 minute cache
 
 /**
  * Transforms MVP data into a standardized format
@@ -133,40 +132,24 @@ export function transformLeaderboardData(apiData: any): LeaderboardData {
  */
 export async function getLeaderboardData(forceRefresh = false): Promise<LeaderboardData> {
   return await leaderboardCache.getData(async () => {
-    try {
-      log(`Fetching fresh leaderboard data from API...`);
-      
-      // Use our ApiService to fetch data (handles tokens and retries)
-      const rawData = await apiService.getLeaderboardData();
-      log(`Successfully fetched leaderboard data. Transforming...`);
-      
-      // Transform the data
-      return transformLeaderboardData(rawData);
-    } catch (error) {
-      log(`Error fetching leaderboard data: ${error}`);
-      
-      // If we have cached data, use it even if it's stale
-      const cachedData = leaderboardCache.getCachedData();
-      if (cachedData) {
-        log(`Using stale cached data due to API error`);
-        return cachedData;
+    // Fetch fresh data from the API
+    const response = await fetch(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+          "Content-Type": "application/json",
+        },
       }
-      
-      // Create a basic empty data structure if everything fails
-      return {
-        status: "error",
-        metadata: {
-          totalUsers: 0,
-          lastUpdated: new Date().toISOString(),
-        },
-        data: {
-          today: { data: [] },
-          weekly: { data: [] },
-          monthly: { data: [] },
-          all_time: { data: [] },
-        },
-      };
+    );
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
     }
+
+    const rawData = await response.json();
+    // Transform the data
+    return transformLeaderboardData(rawData);
   }, forceRefresh);
 }
 

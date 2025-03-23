@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle } from "lucide-react";
-import { LineMdCloseSmall } from "@/components/icons/LineMdCloseSmall";
+import { MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
@@ -33,9 +32,9 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
             <Button
               onClick={onClose}
               size="icon"
-              className="absolute -top-2 -left-2 h-6 w-6 rounded-full bg-[#14151A] border border-[#D7FF00] hover:bg-[#14151A]/90 text-black hover:text-[#D7FF00] shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+              className="absolute -top-2 -left-2 h-6 w-6 rounded-full bg-[#14151A] border border-[#D7FF00] hover:bg-[#14151A]/90 text-white hover:text-[#D7FF00] shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
             >
-              <LineMdCloseSmall className="h-4 w-4" />
+              <X className="h-4 w-4" />
             </Button>
           </div>
         ) : (
@@ -61,7 +60,7 @@ export function FloatingSupport({ onClose }: FloatingSupportProps) {
                   className="h-8 w-8"
                   onClick={onClose}
                 >
-                  <LineMdCloseSmall className="h-4 w-4" />
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             </div>

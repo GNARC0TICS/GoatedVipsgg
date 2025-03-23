@@ -2,13 +2,12 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { db, pgPool, initDatabase, closeDatabase, getPoolStatus, checkIndexes } from "../db/connection";
+import { db, pgPool, initDatabase } from "../db/connection";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
 import { initializeAdmin } from "./middleware/admin";
-// Telegram bot has been moved to a standalone service
-// See telegrambotcreationguide.md for details
+import bot, { stopBot, getBotStatus } from "./telegram/bot";
 import {
   apiRateLimiter,
   affiliateRateLimiter,
@@ -55,25 +54,13 @@ async function setupMiddleware() {
   app.use("/api/affiliate/stats", affiliateRateLimiter);
   app.use("/api/races", raceRateLimiter);
 
-  // Enhanced health check endpoint with detailed database status
+  // Enhanced health check endpoint with database status
   app.get("/api/health", async (_req, res) => {
     try {
       // Test connection by running a simple query
       const client = await pgPool.connect();
-      const result = await client.query('SELECT NOW() as current_time');
+      await client.query('SELECT NOW()');
       client.release();
-      
-      // Get pool status
-      const poolStatus = await getPoolStatus();
-      
-      // Check if indexes exist by sampling a few key ones
-      let indexStatus = "unknown";
-      try {
-        const indexes = await checkIndexes();
-        indexStatus = indexes.length > 0 ? "available" : "missing";
-      } catch (err) {
-        indexStatus = "error";
-      }
       
       res.json({ 
         status: "healthy",
@@ -81,16 +68,7 @@ async function setupMiddleware() {
         timestamp: new Date().toISOString(),
         services: {
           database: {
-            status: "connected",
-            currentTime: result.rows[0].current_time,
-            pool: {
-              total: poolStatus.total,
-              idle: poolStatus.idle,
-              waiting: poolStatus.waiting
-            },
-            indexes: {
-              status: indexStatus
-            }
+            status: "connected"
           },
           api: {
             status: "running",
@@ -107,18 +85,23 @@ async function setupMiddleware() {
     }
   });
 
-  // Telegram bot status endpoint (placeholder)
-  // The actual Telegram bot is now a standalone service
-  // See telegrambotcreationguide.md for details
+  // Add a Telegram bot status endpoint for debugging
   app.get("/api/telegram/status", (_req, res) => {
-    res.json({
-      status: "ok",
-      telegramBot: {
-        status: "external",
-        message: "Telegram bot is now a standalone service. See telegrambotcreationguide.md for details."
-      },
-      timestamp: new Date().toISOString(),
-    });
+    try {
+      const status = getBotStatus();
+      res.json({
+        status: "ok",
+        telegramBot: status,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error getting bot status:", error);
+      res.status(500).json({
+        status: "error",
+        message: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString(),
+      });
+    }
   });
 }
 
@@ -230,8 +213,11 @@ async function startServer() {
     registerRoutes(app);
     initializeAdmin().catch(console.error);
 
-    // Telegram bot is now a standalone service
-    // See telegrambotcreationguide.md for details
+    // Initialize Telegram bot
+    log("Initializing Telegram bot...");
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+      throw new Error("TELEGRAM_BOT_TOKEN must be provided");
+    }
 
     if (app.get("env") === "development") {
       await setupVite(app, server);
@@ -263,6 +249,7 @@ async function startServer() {
         })
         .once("listening", () => {
           log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+          log("Telegram bot started successfully");
           resolve();
         });
     });
@@ -281,17 +268,12 @@ async function startServer() {
 async function closeDatabaseConnections() {
   try {
     log("Closing database connections...");
+    // Close Drizzle ORM connection if needed
     
-    // Use our enhanced closeDatabase function
-    const result = await closeDatabase();
-    
-    if (result) {
-      log("Database connections closed successfully");
-    } else {
-      log("Warning: Database connections may not have closed properly");
-    }
-    
-    return result;
+    // Close PostgreSQL connection pool
+    await pgPool.end();
+    log("Database connections closed successfully");
+    return true;
   } catch (error) {
     console.error("Error closing database connections:", error);
     return false;
@@ -302,7 +284,8 @@ async function closeDatabaseConnections() {
 async function gracefulShutdown(signal: string) {
   log(`Received ${signal} signal. Shutting down gracefully...`);
   
-  // Telegram bot is now a standalone service
+  // Stop the Telegram bot
+  stopBot();
   
   // Close database connections
   await closeDatabaseConnections();

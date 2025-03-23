@@ -2,7 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import { verifyToken } from "../config/auth";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
-import * as schema from "@db/schema";
+import { users } from "@db/schema";
 
 // Extend Express Request type
 declare global {
@@ -32,28 +32,16 @@ export const requireAuth = async (
     }
 
     const decoded = verifyToken(token);
-    
-    // Check if this is a standard authentication (userId) or admin authentication (id)
-    const userId = decoded.userId || decoded.id;
-    
-    if (!userId) {
-      return res.status(401).json({ message: "Invalid token format" });
-    }
 
     // Get user from database
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.id, userId))
+      .where(eq(users.id, decoded.userId))
       .limit(1);
 
     if (!user) {
       return res.status(401).json({ message: "User not found" });
-    }
-
-    // For admin routes, verify admin status
-    if (decoded.isAdmin && !user.isAdmin) {
-      return res.status(403).json({ message: "Admin privileges required" });
     }
 
     req.user = user;
