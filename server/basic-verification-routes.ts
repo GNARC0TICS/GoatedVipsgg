@@ -12,6 +12,11 @@ const goatedVerificationSchema = z.object({
   goatedUid: z.string().min(3),
 });
 
+const telegramVerificationSchema = z.object({
+  telegramUsername: z.string().min(3),
+  telegramId: z.string(),
+});
+
 const verificationActionSchema = z.object({
   id: z.number(),
   action: z.enum(["approve", "reject"]),

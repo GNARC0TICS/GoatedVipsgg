@@ -7,6 +7,7 @@ import { promisify } from "util";
 import { exec } from "child_process";
 import { createServer } from "http";
 import { initializeAdmin } from "./middleware/admin";
+import bot, { stopBot, getBotStatus } from "./telegram/bot";
 import {
   apiRateLimiter,
   affiliateRateLimiter,
@@ -84,7 +85,24 @@ async function setupMiddleware() {
     }
   });
 
-  // Health endpoint is sufficient, no need for Telegram bot status
+  // Add a Telegram bot status endpoint for debugging
+  app.get("/api/telegram/status", (_req, res) => {
+    try {
+      const status = getBotStatus();
+      res.json({
+        status: "ok",
+        telegramBot: status,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error getting bot status:", error);
+      res.status(500).json({
+        status: "error",
+        message: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
 }
 
 function requestLogger(
@@ -195,7 +213,11 @@ async function startServer() {
     registerRoutes(app);
     initializeAdmin().catch(console.error);
 
-    // No Telegram bot functionality needed
+    // Initialize Telegram bot
+    log("Initializing Telegram bot...");
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+      throw new Error("TELEGRAM_BOT_TOKEN must be provided");
+    }
 
     if (app.get("env") === "development") {
       await setupVite(app, server);
@@ -227,6 +249,7 @@ async function startServer() {
         })
         .once("listening", () => {
           log(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
+          log("Telegram bot started successfully");
           resolve();
         });
     });
@@ -260,6 +283,9 @@ async function closeDatabaseConnections() {
 // Graceful shutdown handler
 async function gracefulShutdown(signal: string) {
   log(`Received ${signal} signal. Shutting down gracefully...`);
+  
+  // Stop the Telegram bot
+  stopBot();
   
   // Close database connections
   await closeDatabaseConnections();
