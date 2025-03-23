@@ -127,7 +127,9 @@ export class ApiService {
       return await this.request(API_CONFIG.endpoints.leaderboard);
     } catch (error) {
       log(`Error fetching leaderboard data, using fallback: ${error}`);
-      return getFallbackLeaderboardData();
+      // We don't pass any cached data here as that's handled by the leaderboard-cache.ts
+      // This just passes the error up to the caller
+      throw error;
     }
   }
   

@@ -1,42 +1,56 @@
 # Active Context
 
-## Current Work Focus
+## Current Focus: Enhancing API Token Resilience with Improved Caching Strategy (March 2025)
 
-- **API Token Management**: Implementing a comprehensive token management system for the Goated.com API.
-- **Performance Optimization**: Implementing database optimizations and enhancing API resilience.
-- **Error Handling**: Improving error handling and fallback mechanisms across the application.
-- **Deployment Readiness**: Ensuring the application is ready for production deployment.
-- **Updating Documentation**: Reflecting recent changes in the Memory Bank for consistent project knowledge.
+We've completed a major update to the API token and data fetching logic in the system to make it more resilient to API outages while maintaining a good user experience.
 
-## Recent Changes
+### Key Changes Implemented
 
-- **API Token Management System**: Implemented a comprehensive token management system with:
-  - TokenService class for storing, validating, and managing API tokens
-  - ApiService class providing centralized access to external APIs with retry logic
-  - Admin UI for monitoring token status and expiration
-  - Email notifications for token expiration
-  - JWT token validation and automatic expiration detection
-- **Database Optimization**: Implemented strategic indexes and improved connection pooling for better performance.
-- **Enhanced Error Handling**: Added robust error handling and fallback mechanisms for API interactions.
-- **Leaderboard Improvements**: Enhanced the leaderboard component with better caching and fallback data.
-- **Wager Race Resilience**: Improved the WagerRacePosition component with better error handling and fallback data.
-- **Graceful Shutdown**: Implemented proper database connection closing during application shutdown.
-- **Health Check Endpoints**: Added detailed health check endpoints for better monitoring.
-- **API Resilience**: Created fallback data mechanisms for when external APIs are unavailable or rate-limited.
+#### Server-Side Enhancements
 
-## Next Steps
+1. **Improved Fallback Data Strategy**
+   - Modified `fallback-data.ts` to use real cached data rather than generating mock data
+   - Added timestamps to cached data to clearly indicate when it was last updated
+   - Implemented proper empty data structures when no cache is available
 
-- **API Health Check**: Implement a scheduled task to verify API health and token validity.
-- **Token Rotation System**: Develop a mechanism for automatic token rotation when necessary.
-- **Testing and Quality Assurance**: Conduct thorough testing to ensure all new features work seamlessly.
-- **Deployment Preparation**: Update documentation and prepare the application for deployment following `PRODUCTION.md`.
-- **Monitoring and Feedback**: Post-deployment, monitor the platform for any issues and gather user feedback for future improvements.
+2. **Enhanced Caching System**
+   - Updated `leaderboard-cache.ts` with a scheduled background refresh mechanism
+   - Reduced cache time to 2 minutes for fresher data while maintaining resilience
+   - Added detailed metadata to cached responses (isCached, cachedAt, servedAt)
+   - Improved error handling with better fallback paths
 
-## Active Decisions and Considerations
+3. **API Service Improvements**
+   - Modified `api-service.ts` to pass errors up to the cache layer for more consistent handling
+   - Added improved retry logic with customizable timeouts
 
-- **API Integration Strategy**: Using a secure, maintainable approach to external API integration with proper token management.
-- **Fallback Mechanisms**: Ensuring the application remains functional even when external APIs are unavailable.
-- **Design Consistency**: Ensuring new features follow the existing theme and practices used in our codebase—modern, futuristic, and highly micro-interactive.
-- **Future Enhancements**: Leaving room for adding additional verification methods (e.g., phone verification) and advanced search filters.
-- **User Experience Focus**: Prioritizing seamless navigation and ease of use across all functionalities.
-- **Data Integrity**: Maintaining accurate and consistent stats throughout the platform, especially with automated updates upon verification.
+#### Client-Side Enhancements
+
+1. **Use-Leaderboard Hook Upgrades**
+   - Added toast notifications to inform users when they're viewing cached data
+   - Enhanced error handling with graceful fallbacks to cached data
+   - Added complete TypeScript interfaces for better type safety
+
+2. **UI Components**
+   - Updated `LeaderboardTable.tsx` to show visual indicators when displaying cached data
+   - Added timestamp display to show users when the data was last refreshed
+
+### Current API Token Strategy
+
+Our current approach uses a hierarchical strategy for API data:
+
+1. Try to fetch fresh data from the primary API endpoint
+2. On failure, try fallback API endpoints
+3. If all API requests fail, use cached data with clear visual indicators
+4. If no cache exists, show empty structures instead of fake data
+
+This approach maintains data integrity and user trust by:
+- Never showing false data
+- Clearly indicating when data is stale
+- Continuously attempting to refresh in the background
+- Preserving the last known good state
+
+### Next Improvements to Consider
+
+- Implement a more sophisticated token refresh mechanism that doesn't require server restarts
+- Add analytics to track API failure rates and response times
+- Consider implementing a circuit breaker pattern to prevent repeated API calls during outages

@@ -46,12 +46,34 @@ interface LeaderboardEntry {
   wagerChange?: number;
 }
 
+// Define the return type from the useLeaderboard hook
+interface LeaderboardHookResult {
+  data: LeaderboardEntry[];
+  isLoading: boolean;
+  error: Error | null;
+  errorDetails?: string | null;
+  refetch: () => void;
+  totalUsers: number;
+  lastUpdated: string;
+  isCached?: boolean;
+  cachedAt?: string;
+  servedAt?: string;
+  fetchAttempts: number;
+}
+
 // Use named function instead of React.memo
 export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data = [], isLoading, error } = useLeaderboard(timePeriod);
+  const { 
+    data = [], 
+    isLoading, 
+    error, 
+    isCached,
+    lastUpdated,
+    cachedAt 
+  } = useLeaderboard(timePeriod) as LeaderboardHookResult;
 
   const filteredData = useMemo(() => {
     if (!data) return [];
@@ -151,21 +173,38 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 max-w-md mx-auto w-full mb-4">
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search players..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31] text-white"
-          />
+      <div className="flex flex-col space-y-2 w-full mb-4">
+        <div className="flex items-center gap-2 max-w-md mx-auto w-full">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search players..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-[#1A1B21]/50 backdrop-blur-sm border-[#2A2B31] text-white"
+            />
+          </div>
+          <div className="flex items-center gap-1 px-3 py-1 bg-[#1A1B21]/50 border border-[#2A2B31] rounded-lg">
+            {isCached ? (
+              <>
+                <CircleDot className="h-3 w-3 text-amber-500" />
+                <span className="text-xs text-amber-500 font-heading">CACHED</span>
+              </>
+            ) : (
+              <>
+                <CircleDot className="h-3 w-3 text-red-500 animate-pulse" />
+                <span className="text-xs text-red-500 font-heading">LIVE</span>
+              </>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-1 px-3 py-1 bg-[#1A1B21]/50 border border-[#2A2B31] rounded-lg">
-          <CircleDot className="h-3 w-3 text-red-500 animate-pulse" />
-          <span className="text-xs text-red-500 font-heading">LIVE</span>
-        </div>
+        
+        {isCached && (
+          <div className="max-w-md mx-auto w-full px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-500 text-xs text-center">
+            Showing cached data from {new Date(cachedAt || "").toLocaleString()}. Attempting to refresh...
+          </div>
+        )}
       </div>
 
       <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
@@ -234,7 +273,7 @@ export function LeaderboardTable({ timePeriod }: LeaderboardTableProps) {
                         <span className="text-white font-semibold">
                           ${(getWagerAmount(entry) || 0).toLocaleString()}
                         </span>
-                        {entry.isWagering && entry.wagerChange > 0 && (
+                        {entry.isWagering && entry.wagerChange && entry.wagerChange > 0 && (
                           <motion.div
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}

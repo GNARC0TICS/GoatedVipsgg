@@ -2,45 +2,73 @@ import { LeaderboardData } from "./leaderboard-cache";
 import { log } from "../vite";
 
 /**
- * Provides fallback leaderboard data when the API is unavailable
- * This ensures the application can still function even when external services are down
- * 
- * @returns Fallback leaderboard data
+ * Creates an empty leaderboard data structure
+ * Used when there's no cached data available
+ * @returns Empty but correctly structured leaderboard data
  */
-export function getFallbackLeaderboardData(): LeaderboardData {
-  log("Using fallback leaderboard data");
-  
-  // Generate some realistic-looking fallback data
-  const fallbackUsers = [
-    { uid: "fallback-1", name: "Player1", wagered: { today: 5000, this_week: 25000, this_month: 100000, all_time: 500000 } },
-    { uid: "fallback-2", name: "Player2", wagered: { today: 4500, this_week: 22000, this_month: 90000, all_time: 450000 } },
-    { uid: "fallback-3", name: "Player3", wagered: { today: 4000, this_week: 20000, this_month: 80000, all_time: 400000 } },
-    { uid: "fallback-4", name: "Player4", wagered: { today: 3500, this_week: 18000, this_month: 70000, all_time: 350000 } },
-    { uid: "fallback-5", name: "Player5", wagered: { today: 3000, this_week: 15000, this_month: 60000, all_time: 300000 } },
-    { uid: "fallback-6", name: "Player6", wagered: { today: 2500, this_week: 12000, this_month: 50000, all_time: 250000 } },
-    { uid: "fallback-7", name: "Player7", wagered: { today: 2000, this_week: 10000, this_month: 40000, all_time: 200000 } },
-    { uid: "fallback-8", name: "Player8", wagered: { today: 1500, this_week: 8000, this_month: 30000, all_time: 150000 } },
-    { uid: "fallback-9", name: "Player9", wagered: { today: 1000, this_week: 5000, this_month: 20000, all_time: 100000 } },
-    { uid: "fallback-10", name: "Player10", wagered: { today: 500, this_week: 2500, this_month: 10000, all_time: 50000 } },
-  ];
-  
-  // Sort the data for each time period
-  const todayData = [...fallbackUsers].sort((a, b) => b.wagered.today - a.wagered.today);
-  const weeklyData = [...fallbackUsers].sort((a, b) => b.wagered.this_week - a.wagered.this_week);
-  const monthlyData = [...fallbackUsers].sort((a, b) => b.wagered.this_month - a.wagered.this_month);
-  const allTimeData = [...fallbackUsers].sort((a, b) => b.wagered.all_time - a.wagered.all_time);
+export function getEmptyLeaderboardData(): LeaderboardData {
+  log("Creating empty leaderboard data structure");
   
   return {
-    status: "success",
+    status: "error",
     metadata: {
-      totalUsers: fallbackUsers.length,
+      totalUsers: 0,
       lastUpdated: new Date().toISOString(),
     },
     data: {
-      today: { data: todayData },
-      weekly: { data: weeklyData },
-      monthly: { data: monthlyData },
-      all_time: { data: allTimeData },
+      today: { data: [] },
+      weekly: { data: [] },
+      monthly: { data: [] },
+      all_time: { data: [] },
     },
+  };
+}
+
+/**
+ * Returns either the cached data or an empty structure if no cache exists
+ * This ensures the application can still function even when external services are down
+ * @param cachedData Optional cached data to return if available
+ * @returns Cached leaderboard data or empty structure
+ */
+export function getFallbackLeaderboardData(cachedData?: LeaderboardData | null): LeaderboardData {
+  if (cachedData) {
+    log("Using cached leaderboard data as fallback");
+    // Add a timestamp to indicate this is cached data
+    return {
+      ...cachedData,
+      metadata: {
+        ...cachedData.metadata,
+        isCached: true,
+        cachedAt: cachedData.metadata.lastUpdated,
+        servedAt: new Date().toISOString(),
+      }
+    };
+  }
+  
+  // If no cached data is available, return an empty structure
+  log("No cached data available, returning empty leaderboard structure");
+  return getEmptyLeaderboardData();
+}
+
+/**
+ * Creates an empty wager race position data structure
+ * Used when there's no cached data available
+ * @param userId User ID
+ * @param username Username
+ * @returns Empty but correctly structured wager race position data
+ */
+export function getEmptyWagerRacePosition(userId: string | number, username?: string) {
+  return {
+    position: 0,
+    totalParticipants: 0,
+    wagerAmount: 0,
+    previousPosition: 0,
+    raceType: "unknown",
+    raceTitle: "Data Unavailable",
+    endDate: null,
+    userId,
+    username: username || `User${userId}`,
+    error: "Data currently unavailable",
+    isCached: false
   };
 }

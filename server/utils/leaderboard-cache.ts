@@ -1,6 +1,8 @@
 import { CacheManager } from "./cache";
 import { log } from "../vite";
 import { apiService } from "./api-service";
+import { getFallbackLeaderboardData, getEmptyLeaderboardData } from "./fallback-data";
+import { API_CONFIG } from "../config/api";
 
 // Define a type for the leaderboard data
 export type LeaderboardData = {
@@ -8,6 +10,9 @@ export type LeaderboardData = {
   metadata: {
     totalUsers: number;
     lastUpdated: string;
+    isCached?: boolean;
+    cachedAt?: string;
+    servedAt?: string;
   };
   data: {
     today: { data: any[] };
@@ -18,8 +23,11 @@ export type LeaderboardData = {
 };
 
 // Create a singleton instance of the cache manager for leaderboard data
-// Increase cache time to 5 minutes to reduce API load
-const leaderboardCache = new CacheManager<LeaderboardData>("leaderboard", 300000); // 5 minute cache
+// Reduced cache time to 2 minutes to ensure fresher data
+const leaderboardCache = new CacheManager<LeaderboardData>("leaderboard", 120000); // 2 minute cache
+
+// Flag to track if the scheduled refresh is active
+let isScheduledRefreshActive = false;
 
 /**
  * Transforms MVP data into a standardized format
@@ -84,19 +92,7 @@ export function transformLeaderboardData(apiData: any): LeaderboardData {
     !responseData ||
     (Array.isArray(responseData) && responseData.length === 0)
   ) {
-    return {
-      status: "success",
-      metadata: {
-        totalUsers: 0,
-        lastUpdated: new Date().toISOString(),
-      },
-      data: {
-        today: { data: [] },
-        weekly: { data: [] },
-        monthly: { data: [] },
-        all_time: { data: [] },
-      },
-    };
+    return getEmptyLeaderboardData();
   }
 
   const dataArray = Array.isArray(responseData) ? responseData : [responseData];
@@ -132,6 +128,9 @@ export function transformLeaderboardData(apiData: any): LeaderboardData {
  * @returns The leaderboard data
  */
 export async function getLeaderboardData(forceRefresh = false): Promise<LeaderboardData> {
+  // Start scheduled refresh if not already running
+  startScheduledRefreshIfNeeded();
+  
   return await leaderboardCache.getData(async () => {
     try {
       log(`Fetching fresh leaderboard data from API...`);
@@ -143,31 +142,49 @@ export async function getLeaderboardData(forceRefresh = false): Promise<Leaderbo
       // Transform the data
       return transformLeaderboardData(rawData);
     } catch (error) {
-      log(`Error fetching leaderboard data: ${error}`);
+      log(`Error fetching leaderboard data: ${error instanceof Error ? error.message : String(error)}`);
       
       // If we have cached data, use it even if it's stale
       const cachedData = leaderboardCache.getCachedData();
       if (cachedData) {
         log(`Using stale cached data due to API error`);
-        return cachedData;
+        return getFallbackLeaderboardData(cachedData);
       }
       
-      // Create a basic empty data structure if everything fails
-      return {
-        status: "error",
-        metadata: {
-          totalUsers: 0,
-          lastUpdated: new Date().toISOString(),
-        },
-        data: {
-          today: { data: [] },
-          weekly: { data: [] },
-          monthly: { data: [] },
-          all_time: { data: [] },
-        },
-      };
+      // If no cache exists, return empty structure
+      log("No cached data available, returning empty structure");
+      return getEmptyLeaderboardData();
     }
   }, forceRefresh);
+}
+
+/**
+ * Starts a scheduled refresh of the leaderboard cache if not already running
+ * This ensures we always have relatively fresh data even when user traffic is low
+ */
+function startScheduledRefreshIfNeeded(): void {
+  if (isScheduledRefreshActive) return;
+  
+  isScheduledRefreshActive = true;
+  log("Starting scheduled leaderboard cache refresh");
+  
+  // Refresh cache every 30 minutes
+  const refreshInterval = 30 * 60 * 1000; // 30 minutes
+  
+  // Set up interval for regular cache refresh
+  setInterval(() => {
+    log("Performing scheduled leaderboard cache refresh");
+    
+    // Force refresh the cache, but don't await - let it run in background
+    getLeaderboardData(true).catch(error => {
+      log(`Scheduled refresh failed: ${error instanceof Error ? error.message : String(error)}`);
+    });
+  }, refreshInterval);
+  
+  // Also do an immediate refresh (don't await)
+  getLeaderboardData(true).catch(error => {
+    log(`Initial scheduled refresh failed: ${error instanceof Error ? error.message : String(error)}`);
+  });
 }
 
 /**

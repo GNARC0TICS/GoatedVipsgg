@@ -1,0 +1,3 @@
+
+ALTER TABLE affiliate_stats 
+ADD COLUMN uid VARCHAR(255) NOT NULL;

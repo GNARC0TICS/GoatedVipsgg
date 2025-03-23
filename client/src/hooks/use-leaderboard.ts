@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
 import { useLoading } from "@/contexts/LoadingContext";
+import { useToast } from "@/hooks/use-toast";
 
 export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
 
@@ -22,11 +23,14 @@ type PeriodData = {
   data: Entry[];
 };
 
-type APIResponse = {
+export type APIResponse = {
   status: string;
   metadata: {
     totalUsers: number;
     lastUpdated: string;
+    isCached?: boolean;
+    cachedAt?: string;
+    servedAt?: string;
   };
   data: {
     today: PeriodData;
@@ -41,7 +45,7 @@ type APIResponse = {
 class LeaderboardAPIError extends Error {
   status: number;
   details: string;
-  
+
   constructor(message: string, status: number, details: string) {
     super(message);
     this.name = "LeaderboardAPIError";
@@ -53,28 +57,20 @@ class LeaderboardAPIError extends Error {
 // Create a constant key for the affiliate stats endpoint to avoid string duplication
 export const AFFILIATE_STATS_KEY = "/api/affiliate/stats";
 
-// Helper function to create fallback response data
-function createFallbackResponse(): APIResponse {
-  const now = new Date().toISOString();
-  const fallbackUsers = [
-    { uid: "fallback-1", name: "Player1", wagered: { today: 5000, this_week: 25000, this_month: 100000, all_time: 500000 } },
-    { uid: "fallback-2", name: "Player2", wagered: { today: 4500, this_week: 22000, this_month: 90000, all_time: 450000 } },
-    { uid: "fallback-3", name: "Player3", wagered: { today: 4000, this_week: 20000, this_month: 80000, all_time: 400000 } },
-    { uid: "fallback-4", name: "Player4", wagered: { today: 3500, this_week: 18000, this_month: 70000, all_time: 350000 } },
-    { uid: "fallback-5", name: "Player5", wagered: { today: 3000, this_week: 15000, this_month: 60000, all_time: 300000 } },
-  ];
-  
+// Helper function to create empty fallback response data
+function createEmptyFallbackResponse(): APIResponse {
   return {
-    status: "success",
+    status: "error",
     metadata: {
-      totalUsers: fallbackUsers.length,
-      lastUpdated: now,
+      totalUsers: 0,
+      lastUpdated: new Date().toISOString(),
+      isCached: false
     },
     data: {
-      today: { data: [...fallbackUsers] },
-      weekly: { data: [...fallbackUsers] },
-      monthly: { data: [...fallbackUsers] },
-      all_time: { data: [...fallbackUsers] },
+      today: { data: [] },
+      weekly: { data: [] },
+      monthly: { data: [] },
+      all_time: { data: [] },
     },
   };
 }
@@ -82,27 +78,36 @@ function createFallbackResponse(): APIResponse {
 export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
   const queryClient = useQueryClient();
   const { startLoadingFor, stopLoadingFor, isLoadingFor } = useLoading();
+  const { toast } = useToast();
   const loadingKey = `leaderboard-${timePeriod}`;
-  
+
   // Create a state for detailed error information
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   
+  // Track if cached data is being shown
+  const [isShowingCachedData, setIsShowingCachedData] = useState(false);
+
   // Track if this is the initial load
   const isInitialLoadRef = useRef(true);
-  
+
   // Track fetch attempts for better error handling
   const fetchAttemptsRef = useRef(0);
   
+  // Track if a cached data toast has been shown
+  const hasShownCachedToastRef = useRef(false);
+
   useEffect(() => {
     // Reset error details when time period changes
     setErrorDetails(null);
     fetchAttemptsRef.current = 0;
-    
+    hasShownCachedToastRef.current = false;
+    setIsShowingCachedData(false);
+
     // Start loading when period changes
     if (!isLoadingFor(loadingKey)) {
       startLoadingFor(loadingKey, "spinner", 500);
     }
-    
+
     return () => {
       // Clean up loading state when component unmounts or period changes
       if (isLoadingFor(loadingKey)) {
@@ -118,17 +123,17 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
       try {
         console.log(`Fetching leaderboard data for period: ${timePeriod}, page: ${page}`);
         fetchAttemptsRef.current += 1;
-        
+
         // Start loading state if not already loading
         if (!isLoadingFor(loadingKey)) {
           startLoadingFor(loadingKey, "spinner", 500);
         }
-        
+
         // Check if we already have the data in the query cache
         const existingData = queryClient.getQueryData<APIResponse>([
           AFFILIATE_STATS_KEY,
         ]);
-        
+
         if (existingData && !isInitialLoadRef.current) {
           console.log('Using cached leaderboard data');
           return existingData;
@@ -138,10 +143,8 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
         
-        let freshData: APIResponse;
-        
         try {
-          // Only make one API call with no time period parameter, and get all data at once
+          // Make API call
           console.log(`Making API call to ${AFFILIATE_STATS_KEY}?page=${page}&limit=100`);
           const response = await fetch(
             `${AFFILIATE_STATS_KEY}?page=${page}&limit=100`,
@@ -166,11 +169,31 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
             // If we have cached data, use it
             if (existingData) {
               console.log('Using stale cached data due to rate limiting');
-              return existingData;
+              setIsShowingCachedData(true);
+              
+              // Show toast notification only once per session
+              if (!hasShownCachedToastRef.current) {
+                toast({
+                  title: "Using cached data",
+                  description: "We're currently showing previously loaded data due to API limitations.",
+                  variant: "default"
+                });
+                hasShownCachedToastRef.current = true;
+              }
+              
+              return {
+                ...existingData,
+                metadata: {
+                  ...existingData.metadata,
+                  isCached: true,
+                  cachedAt: existingData.metadata.lastUpdated,
+                  servedAt: new Date().toISOString()
+                }
+              };
             }
             
-            // Otherwise create fallback data
-            return createFallbackResponse();
+            // Otherwise create empty fallback data
+            return createEmptyFallbackResponse();
           }
 
           if (!response.ok) {
@@ -181,7 +204,27 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
             // If we have cached data, use it even if it's stale
             if (existingData) {
               console.log('Using stale cached data due to API error');
-              return existingData;
+              setIsShowingCachedData(true);
+              
+              // Show toast notification only once per session
+              if (!hasShownCachedToastRef.current) {
+                toast({
+                  title: "Using cached data",
+                  description: "We're currently showing previously loaded data due to API issues.",
+                  variant: "default"
+                });
+                hasShownCachedToastRef.current = true;
+              }
+              
+              return {
+                ...existingData,
+                metadata: {
+                  ...existingData.metadata,
+                  isCached: true,
+                  cachedAt: existingData.metadata.lastUpdated,
+                  servedAt: new Date().toISOString()
+                }
+              };
             }
             
             throw new LeaderboardAPIError(
@@ -191,9 +234,90 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
             );
           }
 
-          freshData = (await response.json()) as APIResponse;
-          console.log('Received fresh leaderboard data:', freshData);
+          const freshData = await response.json() as APIResponse;
+          console.log('Received fresh leaderboard data');
           
+          // Mark data as not cached
+          setIsShowingCachedData(false);
+          
+          // Validate the data structure
+          if (!freshData || !freshData.data) {
+            console.error('Invalid API response structure:', freshData);
+            setErrorDetails('Invalid API response structure');
+            
+            // If we have cached data, use it even if it's stale
+            if (existingData) {
+              console.log('Using stale cached data due to invalid response');
+              setIsShowingCachedData(true);
+              
+              // Show toast notification only once per session
+              if (!hasShownCachedToastRef.current) {
+                toast({
+                  title: "Using cached data",
+                  description: "We're currently showing previously loaded data due to API data issues.",
+                  variant: "default"
+                });
+                hasShownCachedToastRef.current = true;
+              }
+              
+              return {
+                ...existingData,
+                metadata: {
+                  ...existingData.metadata,
+                  isCached: true,
+                  cachedAt: existingData.metadata.lastUpdated,
+                  servedAt: new Date().toISOString()
+                }
+              };
+            }
+            
+            // Otherwise create empty fallback data
+            return createEmptyFallbackResponse();
+          }
+          
+          // Validate period data exists
+          if (!freshData.data[timePeriod]) {
+            console.log(`Missing data for period: ${timePeriod}, creating empty array`);
+            
+            // Create empty data structure for the missing period
+            freshData.data[timePeriod] = { data: [] };
+          }
+          
+          // Ensure each entry has the expected structure
+          const validPeriods = ['today', 'weekly', 'monthly', 'all_time'];
+          validPeriods.forEach(period => {
+            if (!freshData.data[period]) {
+              freshData.data[period] = { data: [] };
+            }
+            
+            if (Array.isArray(freshData.data[period].data)) {
+              freshData.data[period].data = freshData.data[period].data.map((entry: any) => {
+                // Ensure entry has required fields
+                if (!entry.uid) entry.uid = `unknown-${Math.random().toString(36).substring(2, 9)}`;
+                if (!entry.name) entry.name = 'Unknown Player';
+                if (!entry.wagered) {
+                  entry.wagered = {
+                    today: 0,
+                    this_week: 0,
+                    this_month: 0,
+                    all_time: 0
+                  };
+                }
+                return entry as Entry;
+              });
+            } else {
+              // If data is not an array, initialize it as an empty array
+              freshData.data[period].data = [];
+            }
+          });
+          
+          // Cache the full response
+          queryClient.setQueryData([AFFILIATE_STATS_KEY], freshData);
+          
+          // Mark initial load as complete
+          isInitialLoadRef.current = false;
+          
+          return freshData;
         } catch (fetchError) {
           // Clear the timeout if there was an error
           clearTimeout(timeoutId);
@@ -206,85 +330,74 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
             // If we have cached data, use it even if it's stale
             if (existingData) {
               console.log('Using stale cached data due to timeout');
-              return existingData;
+              setIsShowingCachedData(true);
+              
+              // Show toast notification only once per session
+              if (!hasShownCachedToastRef.current) {
+                toast({
+                  title: "Using cached data",
+                  description: "We're currently showing previously loaded data due to connection issues.",
+                  variant: "default"
+                });
+                hasShownCachedToastRef.current = true;
+              }
+              
+              return {
+                ...existingData,
+                metadata: {
+                  ...existingData.metadata,
+                  isCached: true,
+                  cachedAt: existingData.metadata.lastUpdated,
+                  servedAt: new Date().toISOString()
+                }
+              };
             }
             
-            // Otherwise create fallback data
-            return createFallbackResponse();
+            // Otherwise create empty fallback data
+            return createEmptyFallbackResponse();
           }
           
           // Re-throw other fetch errors
           throw fetchError;
         }
-        
-        // Validate the data structure
-        if (!freshData || !freshData.data) {
-          console.error('Invalid API response structure:', freshData);
-          setErrorDetails('Invalid API response structure');
-          
-          // If we have cached data, use it even if it's stale
-          if (existingData) {
-            console.log('Using stale cached data due to invalid response');
-            return existingData;
-          }
-          
-          // Otherwise create fallback data
-          return createFallbackResponse();
-        }
-        
-        // Validate period data exists
-        if (!freshData.data[timePeriod]) {
-          console.log(`Missing data for period: ${timePeriod}, creating empty array`);
-          
-          // Create empty data structure for the missing period
-          freshData.data[timePeriod] = { data: [] };
-        }
-        
-        // Ensure each entry has the expected structure
-        const validPeriods = ['today', 'weekly', 'monthly', 'all_time'];
-        validPeriods.forEach(period => {
-          if (!freshData.data[period]) {
-            freshData.data[period] = { data: [] };
-          }
-          
-          if (Array.isArray(freshData.data[period].data)) {
-            freshData.data[period].data = freshData.data[period].data.map((entry: any) => {
-              // Ensure entry has required fields
-              if (!entry.uid) entry.uid = `unknown-${Math.random().toString(36).substring(2, 9)}`;
-              if (!entry.name) entry.name = 'Unknown Player';
-              if (!entry.wagered) {
-                entry.wagered = {
-                  today: 0,
-                  this_week: 0,
-                  this_month: 0,
-                  all_time: 0
-                };
-              }
-              return entry as Entry;
-            });
-          } else {
-            // If data is not an array, initialize it as an empty array
-            freshData.data[period].data = [];
-          }
-        });
-        
-        // Cache the full response
-        queryClient.setQueryData([AFFILIATE_STATS_KEY], freshData);
-        
-        // Mark initial load as complete
-        isInitialLoadRef.current = false;
-        
-        return freshData;
       } catch (err) {
         console.error('Error fetching leaderboard data:', err);
-        
+
         if (err instanceof LeaderboardAPIError) {
           setErrorDetails(`API Error (${err.status}): ${err.details}`);
         } else {
           setErrorDetails(err instanceof Error ? err.message : String(err));
         }
         
-        throw err;
+        // Check if we have existing data to use as fallback
+        const existingData = queryClient.getQueryData<APIResponse>([AFFILIATE_STATS_KEY]);
+        if (existingData) {
+          console.log('Using existing data as fallback due to error');
+          setIsShowingCachedData(true);
+          
+          // Show toast notification only once per session
+          if (!hasShownCachedToastRef.current) {
+            toast({
+              title: "Using cached data",
+              description: "We're currently showing previously loaded data due to connection issues.",
+              variant: "default"
+            });
+            hasShownCachedToastRef.current = true;
+          }
+          
+          return {
+            ...existingData,
+            metadata: {
+              ...existingData.metadata,
+              isCached: true,
+              cachedAt: existingData.metadata.lastUpdated,
+              servedAt: new Date().toISOString()
+            }
+          };
+        }
+        
+        // If no cache exists, return empty structure
+        return createEmptyFallbackResponse();
       } finally {
         // Stop loading regardless of success or failure
         if (isLoadingFor(loadingKey)) {
@@ -301,23 +414,33 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
   });
 
   const periodKey = timePeriod;
-  
+
   // Log when data changes
   useEffect(() => {
     if (data) {
       console.log(`Leaderboard data updated for period: ${timePeriod}`);
+      
+      // Show notification if we're using cached data
+      if (data.metadata.isCached && !hasShownCachedToastRef.current) {
+        toast({
+          title: "Using cached data",
+          description: "We're currently showing previously loaded data while trying to fetch the latest information.",
+          variant: "default"
+        });
+        hasShownCachedToastRef.current = true;
+      }
     }
     if (error) {
       console.error(`Error loading leaderboard data for ${timePeriod}:`, error);
     }
-  }, [data, error, timePeriod]);
+  }, [data, error, timePeriod, toast]);
 
   // Create a fallback empty data structure if data is missing
   const fallbackData: Entry[] = [];
-  
+
   // Extract the data for the requested time period, with fallback
   const periodData = data?.data?.[periodKey]?.data || fallbackData;
-  
+
   // Stop loading when data is available or on error
   useEffect(() => {
     if ((!isLoading && data) || error) {
@@ -335,6 +458,9 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
     refetch,
     totalUsers: data?.metadata?.totalUsers || 0,
     lastUpdated: data?.metadata?.lastUpdated || "",
+    isCached: isShowingCachedData || data?.metadata?.isCached || false,
+    cachedAt: data?.metadata?.cachedAt,
+    servedAt: data?.metadata?.servedAt,
     fetchAttempts: fetchAttemptsRef.current
   };
 }
@@ -342,8 +468,10 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
 // Custom hook to access just the totals from the affiliate stats
 export function useWagerTotals() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const hasShownCachedToastRef = useRef(false);
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ["wager-total"],
     queryFn: async () => {
       // Try to use existing data first
@@ -352,6 +480,16 @@ export function useWagerTotals() {
       ]);
 
       if (existingData) {
+        // Show toast if using cached data
+        if (existingData.metadata.isCached && !hasShownCachedToastRef.current) {
+          toast({
+            title: "Using cached data",
+            description: "We're currently showing previously loaded wager data while trying to fetch the latest information.",
+            variant: "default"
+          });
+          hasShownCachedToastRef.current = true;
+        }
+        
         const total = existingData?.data?.all_time?.data?.reduce(
           (sum: number, entry: Entry) => {
             return sum + (entry?.wagered?.all_time || 0);
@@ -362,19 +500,30 @@ export function useWagerTotals() {
       }
 
       // If no existing data, fetch new data
-      const response = await fetch(AFFILIATE_STATS_KEY);
-      const data = await response.json() as APIResponse;
+      try {
+        const response = await fetch(AFFILIATE_STATS_KEY);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json() as APIResponse;
 
-      // Store the full response in the query cache
-      queryClient.setQueryData([AFFILIATE_STATS_KEY], data);
+        // Store the full response in the query cache
+        queryClient.setQueryData([AFFILIATE_STATS_KEY], data);
 
-      const total = data?.data?.all_time?.data?.reduce((sum: number, entry: Entry) => {
-        return sum + (entry?.wagered?.all_time || 0);
-      }, 0);
+        const total = data?.data?.all_time?.data?.reduce((sum: number, entry: Entry) => {
+          return sum + (entry?.wagered?.all_time || 0);
+        }, 0);
 
-      return total || 0;
+        return total || 0;
+      } catch (error) {
+        console.error("Error fetching wager totals:", error);
+        return 0;
+      }
     },
     staleTime: 60000, // 1 minute
     refetchInterval: 300000, // 5 minutes
   });
+
+  return query;
 }
