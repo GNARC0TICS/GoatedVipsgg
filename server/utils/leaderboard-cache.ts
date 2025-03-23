@@ -132,24 +132,34 @@ export function transformLeaderboardData(apiData: any): LeaderboardData {
  */
 export async function getLeaderboardData(forceRefresh = false): Promise<LeaderboardData> {
   return await leaderboardCache.getData(async () => {
-    // Fetch fresh data from the API
-    const response = await fetch(
-      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-          "Content-Type": "application/json",
-        },
+    try {
+      log("Attempting to fetch leaderboard data from API...");
+      
+      // Fetch fresh data from the API
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        log(`API request failed with status: ${response.status}. Using fallback data.`);
+        return API_CONFIG.fallbackData.leaderboard as LeaderboardData;
       }
-    );
 
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
+      const rawData = await response.json();
+      log("Successfully fetched leaderboard data from API");
+      // Transform the data
+      return transformLeaderboardData(rawData);
+    } catch (error) {
+      log(`Error fetching leaderboard data: ${error}. Using fallback data.`);
+      // Return fallback data when API is unavailable
+      return API_CONFIG.fallbackData.leaderboard as LeaderboardData;
     }
-
-    const rawData = await response.json();
-    // Transform the data
-    return transformLeaderboardData(rawData);
   }, forceRefresh);
 }
 
