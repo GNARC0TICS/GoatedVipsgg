@@ -14,8 +14,8 @@
     "db:push": "drizzle-kit push",
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
-    "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "vercel-build": "npm run build:client && npm run build:server",
+    "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=api",
+    "vercel-build": "npm run build",
     "start": "NODE_ENV=production node dist/index.js"
   },
   "dependencies": {
