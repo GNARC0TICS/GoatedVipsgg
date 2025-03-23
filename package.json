@@ -18,8 +18,7 @@
     "vercel-build": "npm run build",
     "start": "NODE_ENV=production public/index.html",
     "vercel": "npm run build",
-    "postinstall": "drizzle-kit generate:pg",
-    "vercel-deploy": "npm run build"
+    "postinstall": "drizzle-kit generate:pg"
   },
   "dependencies": {
     "@auth/core": "^0.37.4",
