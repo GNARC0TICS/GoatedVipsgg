@@ -14,7 +14,7 @@
     "db:push": "drizzle-kit push",
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
-    "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=cjs --outdir=api --out-file=index.js",
+    "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=cjs --outfile=api/index.js",
     "vercel-build": "npm run build",
     "start": "node api/index.js",
     "postinstall": "drizzle-kit generate:pg"
