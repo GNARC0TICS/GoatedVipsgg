@@ -1,10 +1,10 @@
 {
-  "timestamp": "2025-03-26T07:00:25.261Z",
+  "timestamp": "2025-03-26T07:01:32.313Z",
   "data": {
     "status": "success",
     "metadata": {
       "totalUsers": 1841,
-      "lastUpdated": "2025-03-26T07:00:24.958Z"
+      "lastUpdated": "2025-03-26T07:01:32.024Z"
     },
     "data": {
       "today": {
@@ -53,20 +53,20 @@
             "uid": "RqtIVsobNNBEZoqX7IVL",
             "name": "Veronicaftw",
             "wagered": {
-              "today": 23.431798942467534,
-              "this_week": 268.19524948228656,
+              "today": 25.76946128012987,
+              "this_week": 270.5329118199496,
               "this_month": 9644.694829017242,
-              "all_time": 65527.15799521762
+              "all_time": 65529.49565755528
             }
           },
           {
             "uid": "ZZ50VbzgzfzdgcnLYJIe",
             "name": "Godzilla",
             "wagered": {
-              "today": 20.41777184203331,
-              "this_week": 707.7480189745645,
+              "today": 21.10777184203331,
+              "this_week": 708.4380189745639,
               "this_month": 11353.21810407702,
-              "all_time": 143422.91029094977
+              "all_time": 143423.61029094976
             }
           },
           {
@@ -76,7 +76,7 @@
               "today": 10.08,
               "this_week": 21.84701252160061,
               "this_month": 1670.8377243491345,
-              "all_time": 32108.571883591703
+              "all_time": 32108.5818835917
             }
           },
           {
@@ -18457,10 +18457,10 @@
             "uid": "ZZ50VbzgzfzdgcnLYJIe",
             "name": "Godzilla",
             "wagered": {
-              "today": 20.41777184203331,
-              "this_week": 707.7480189745645,
+              "today": 21.10777184203331,
+              "this_week": 708.4380189745639,
               "this_month": 11353.21810407702,
-              "all_time": 143422.91029094977
+              "all_time": 143423.61029094976
             }
           },
           {
@@ -18487,10 +18487,10 @@
             "uid": "RqtIVsobNNBEZoqX7IVL",
             "name": "Veronicaftw",
             "wagered": {
-              "today": 23.431798942467534,
-              "this_week": 268.19524948228656,
+              "today": 25.76946128012987,
+              "this_week": 270.5329118199496,
               "this_month": 9644.694829017242,
-              "all_time": 65527.15799521762
+              "all_time": 65529.49565755528
             }
           },
           {
@@ -18600,7 +18600,7 @@
               "today": 10.08,
               "this_week": 21.84701252160061,
               "this_month": 1670.8377243491345,
-              "all_time": 32108.571883591703
+              "all_time": 32108.5818835917
             }
           },
           {
@@ -36911,10 +36911,10 @@
             "uid": "ZZ50VbzgzfzdgcnLYJIe",
             "name": "Godzilla",
             "wagered": {
-              "today": 20.41777184203331,
-              "this_week": 707.7480189745645,
+              "today": 21.10777184203331,
+              "this_week": 708.4380189745639,
               "this_month": 11353.21810407702,
-              "all_time": 143422.91029094977
+              "all_time": 143423.61029094976
             }
           },
           {
@@ -36931,10 +36931,10 @@
             "uid": "RqtIVsobNNBEZoqX7IVL",
             "name": "Veronicaftw",
             "wagered": {
-              "today": 23.431798942467534,
-              "this_week": 268.19524948228656,
+              "today": 25.76946128012987,
+              "this_week": 270.5329118199496,
               "this_month": 9644.694829017242,
-              "all_time": 65527.15799521762
+              "all_time": 65529.49565755528
             }
           },
           {
@@ -37004,7 +37004,7 @@
               "today": 10.08,
               "this_week": 21.84701252160061,
               "this_month": 1670.8377243491345,
-              "all_time": 32108.571883591703
+              "all_time": 32108.5818835917
             }
           },
           {
@@ -55325,10 +55325,10 @@
             "uid": "ZZ50VbzgzfzdgcnLYJIe",
             "name": "Godzilla",
             "wagered": {
-              "today": 20.41777184203331,
-              "this_week": 707.7480189745645,
+              "today": 21.10777184203331,
+              "this_week": 708.4380189745639,
               "this_month": 11353.21810407702,
-              "all_time": 143422.91029094977
+              "all_time": 143423.61029094976
             }
           },
           {
@@ -55355,10 +55355,10 @@
             "uid": "RqtIVsobNNBEZoqX7IVL",
             "name": "Veronicaftw",
             "wagered": {
-              "today": 23.431798942467534,
-              "this_week": 268.19524948228656,
+              "today": 25.76946128012987,
+              "this_week": 270.5329118199496,
               "this_month": 9644.694829017242,
-              "all_time": 65527.15799521762
+              "all_time": 65529.49565755528
             }
           },
           {
@@ -55398,7 +55398,7 @@
               "today": 10.08,
               "this_week": 21.84701252160061,
               "this_month": 1670.8377243491345,
-              "all_time": 32108.571883591703
+              "all_time": 32108.5818835917
             }
           },
           {
