@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from 'react';
 
 export const ParticleBackground = () => {
@@ -31,7 +32,6 @@ export const ParticleBackground = () => {
     const particles: Particle[] = [];
     const particleCount = 50;
 
-    // Create particles
     for (let i = 0; i < particleCount; i++) {
       particles.push({
         x: Math.random() * canvas.width,
