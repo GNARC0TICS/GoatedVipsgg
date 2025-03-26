@@ -17,16 +17,20 @@ export async function syncLeaderboardData(data: LeaderboardData) {
     await db.transaction(async (tx) => {
       // Store daily stats
       for (const entry of data.data.today.data) {
+        const userId = parseInt(entry.uid);
+        const totalWager = entry.wagered.today.toString();
+        const commission = (entry.wagered.today * 0.1).toString();
+        
         await tx.insert(affiliateStats).values({
-          userId: entry.uid,
-          totalWager: entry.wagered.today.toString(),
-          commission: (entry.wagered.today * 0.1).toString(), // 10% commission rate
+          userId: userId,
+          totalWager,
+          commission,
           timestamp: new Date()
         }).onConflictDoUpdate({
           target: [affiliateStats.userId],
           set: {
-            totalWager: entry.wagered.today.toString(),
-            commission: (entry.wagered.today * 0.1).toString(),
+            totalWager,
+            commission,
             timestamp: new Date()
           }
         });
@@ -34,7 +38,6 @@ export async function syncLeaderboardData(data: LeaderboardData) {
 
       // Insert or update race
       await tx.insert(wagerRaces).values({
-        id: parseInt(raceId),
         title: `Monthly Wager Race - ${new Date(startDate).toLocaleString('default', {month: 'long'})} ${currentYear}`,
         type: 'monthly',
         status: 'live',
@@ -42,7 +45,9 @@ export async function syncLeaderboardData(data: LeaderboardData) {
         startDate,
         endDate: endOfMonth,
         minWager: '0',
-        prizeDistribution: { "1": 50, "2": 30, "3": 10, "4": 5, "5": 5 }
+        prizeDistribution: { "1": 50, "2": 30, "3": 10, "4": 5, "5": 5 },
+        createdAt: new Date(),
+        updatedAt: new Date()
       }).onConflictDoUpdate({
         target: [wagerRaces.id],
         set: {

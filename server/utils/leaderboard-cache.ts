@@ -3,19 +3,49 @@ import { log } from "../vite";
 import { apiService } from "./api-service";
 
 // Define a type for the leaderboard data
-export type LeaderboardData = {
+// Define types for the leaderboard data structure
+export interface LeaderboardEntry {
+  uid: string;
+  name: string;
+  wagered: {
+    today: number;
+    this_week: number;
+    this_month: number;
+    all_time: number;
+  };
+  stats?: {
+    winRate: number;
+    totalGames: number;
+    favoriteGame: string;
+  };
+  lastWager?: string;
+  isWagering?: boolean;
+  wagerChange?: number;
+}
+
+export interface RaceMetadata {
+  id: string;
+  status: 'upcoming' | 'live' | 'completed';
+  startDate: string;
+  endDate: string;
+  prizePool: number;
+  totalWagered: number;
+}
+
+export interface LeaderboardData {
   status: string;
   metadata: {
     totalUsers: number;
     lastUpdated: string;
+    currentRace?: RaceMetadata;
   };
   data: {
-    today: { data: any[] };
-    weekly: { data: any[] };
-    monthly: { data: any[] };
-    all_time: { data: any[] };
+    today: { data: LeaderboardEntry[] };
+    weekly: { data: LeaderboardEntry[] };
+    monthly: { data: LeaderboardEntry[] };
+    all_time: { data: LeaderboardEntry[] };
   };
-};
+}
 
 // Create a singleton instance of the cache manager for leaderboard data
 // Increase cache time to 5 minutes to reduce API load

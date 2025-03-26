@@ -9,6 +9,13 @@ import {
   jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+import {
+  apiKeys,
+  apiKeyUsage,
+  usedNonces,
+  securityEvents,
+  apiKeyRelations,
+} from "./api-keys";
 
 // Export all tables
 export const users = pgTable("users", {
@@ -135,6 +142,15 @@ export const userActivityLogRelations = relations(userActivityLog, ({ one }) => 
     references: [users.id],
   }),
 }));
+
+// Export API key related schemas
+export {
+  apiKeys,
+  apiKeyUsage,
+  usedNonces,
+  securityEvents,
+  apiKeyRelations,
+};
 
 export const affiliateStatsRelations = relations(affiliateStats, ({ one }) => ({
   user: one(users, {

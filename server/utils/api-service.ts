@@ -55,8 +55,12 @@ export class ApiService {
       ...headers
     };
     
-    // Add authorization header with the API token
-    requestHeaders['Authorization'] = `Bearer ${API_CONFIG.token}`;
+    // Add authorization header if token is available
+    if (useToken && this.currentToken) {
+      requestHeaders['Authorization'] = `Bearer ${this.currentToken}`;
+    } else if (useToken && API_CONFIG.token) {
+      requestHeaders['Authorization'] = `Bearer ${API_CONFIG.token}`;
+    }
     
     // Build full URL
     const url = endpoint.startsWith('http') 
@@ -122,7 +126,18 @@ export class ApiService {
    */
   async getLeaderboardData(forceRefresh = false): Promise<any> {
     try {
-      return await this.request(API_CONFIG.endpoints.leaderboard);
+      const endpoint = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
+      const data = await this.request(endpoint, {
+        timeout: API_CONFIG.cacheTimeout,
+        retries: 3
+      });
+      
+      // Validate the response structure
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid response format from leaderboard API');
+      }
+      
+      return data;
     } catch (error) {
       log(`Error fetching leaderboard data, using fallback: ${error}`);
       return getFallbackLeaderboardData();
@@ -135,8 +150,8 @@ export class ApiService {
   private async checkAndRefreshToken(): Promise<void> {
     const now = Date.now();
     
-    // Only check token every minute to avoid too many DB queries
-    if (now - this.lastTokenCheck < this.tokenCheckInterval && this.currentToken) {
+    // Only check token based on configured refresh interval
+    if (now - this.lastTokenCheck < API_CONFIG.refreshInterval && this.currentToken) {
       return;
     }
     

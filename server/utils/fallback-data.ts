@@ -10,19 +10,38 @@ import { log } from "../vite";
 export function getFallbackLeaderboardData(): LeaderboardData {
   log("Using fallback leaderboard data");
   
-  // Generate some realistic-looking fallback data
-  const fallbackUsers = [
-    { uid: "fallback-1", name: "Player1", wagered: { today: 5000, this_week: 25000, this_month: 100000, all_time: 500000 } },
-    { uid: "fallback-2", name: "Player2", wagered: { today: 4500, this_week: 22000, this_month: 90000, all_time: 450000 } },
-    { uid: "fallback-3", name: "Player3", wagered: { today: 4000, this_week: 20000, this_month: 80000, all_time: 400000 } },
-    { uid: "fallback-4", name: "Player4", wagered: { today: 3500, this_week: 18000, this_month: 70000, all_time: 350000 } },
-    { uid: "fallback-5", name: "Player5", wagered: { today: 3000, this_week: 15000, this_month: 60000, all_time: 300000 } },
-    { uid: "fallback-6", name: "Player6", wagered: { today: 2500, this_week: 12000, this_month: 50000, all_time: 250000 } },
-    { uid: "fallback-7", name: "Player7", wagered: { today: 2000, this_week: 10000, this_month: 40000, all_time: 200000 } },
-    { uid: "fallback-8", name: "Player8", wagered: { today: 1500, this_week: 8000, this_month: 30000, all_time: 150000 } },
-    { uid: "fallback-9", name: "Player9", wagered: { today: 1000, this_week: 5000, this_month: 20000, all_time: 100000 } },
-    { uid: "fallback-10", name: "Player10", wagered: { today: 500, this_week: 2500, this_month: 10000, all_time: 50000 } },
-  ];
+  // Generate realistic fallback data with proper user IDs and stats
+  const now = new Date();
+  const fallbackUsers = Array.from({ length: 20 }, (_, i) => {
+    const position = i + 1;
+    const baseWager = Math.max(1000000 - (position * 50000), 100000);
+    const variance = 0.1; // 10% random variance
+    
+    // Calculate wagers with some randomness
+    const allTimeWager = baseWager * (1 + (Math.random() - 0.5) * variance);
+    const monthlyWager = allTimeWager * 0.2 * (1 + (Math.random() - 0.5) * variance);
+    const weeklyWager = monthlyWager * 0.25 * (1 + (Math.random() - 0.5) * variance);
+    const dailyWager = weeklyWager * 0.15 * (1 + (Math.random() - 0.5) * variance);
+    
+    return {
+      uid: `user-${1000 + i}`,
+      name: `VIP Player ${position}`,
+      wagered: {
+        today: Math.round(dailyWager),
+        this_week: Math.round(weeklyWager),
+        this_month: Math.round(monthlyWager),
+        all_time: Math.round(allTimeWager),
+      },
+      stats: {
+        winRate: 0.48 + (Math.random() * 0.1), // 48-58% win rate
+        totalGames: Math.round(1000 + Math.random() * 5000),
+        favoriteGame: ["Slots", "Blackjack", "Roulette", "Crash"][Math.floor(Math.random() * 4)],
+      },
+      lastWager: new Date(now.getTime() - Math.random() * 86400000).toISOString(), // Last 24 hours
+      isWagering: Math.random() > 0.7, // 30% chance of active wagering
+      wagerChange: Math.random() > 0.5 ? Math.round(Math.random() * 1000) : 0,
+    };
+  });
   
   // Sort the data for each time period
   const todayData = [...fallbackUsers].sort((a, b) => b.wagered.today - a.wagered.today);
@@ -30,11 +49,24 @@ export function getFallbackLeaderboardData(): LeaderboardData {
   const monthlyData = [...fallbackUsers].sort((a, b) => b.wagered.this_month - a.wagered.this_month);
   const allTimeData = [...fallbackUsers].sort((a, b) => b.wagered.all_time - a.wagered.all_time);
   
+  // Get current month info for race data
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const endOfMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
+  
   return {
     status: "success",
     metadata: {
       totalUsers: fallbackUsers.length,
-      lastUpdated: new Date().toISOString(),
+      lastUpdated: now.toISOString(),
+      currentRace: {
+        id: `${currentYear}${(currentMonth + 1).toString().padStart(2, "0")}`,
+        status: "live",
+        startDate: new Date(currentYear, currentMonth, 1).toISOString(),
+        endDate: endOfMonth.toISOString(),
+        prizePool: 500,
+        totalWagered: monthlyData.reduce((sum, user) => sum + user.wagered.this_month, 0),
+      }
     },
     data: {
       today: { data: todayData },
