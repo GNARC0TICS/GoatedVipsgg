@@ -13,6 +13,7 @@ interface CircuitNode {
   pulseIntensity: number;
   pulseState: number;
   isActive: boolean;
+  currentPulse?: number; // Store the current pulse value for use in the glow effect
 }
 
 interface CircuitLine {
@@ -151,9 +152,9 @@ export const GridBackground = () => {
       // Clear canvas
       ctx.clearRect(0, 0, dimensions.width, dimensions.height);
       
-      // Draw subtle grid background
-      ctx.strokeStyle = `rgba(42, 43, 49, 0.1)`; // Very subtle grid lines
-      ctx.lineWidth = 0.3;
+      // Draw grid background
+      ctx.strokeStyle = `rgba(42, 43, 49, 0.25)`; // More visible grid lines
+      ctx.lineWidth = 0.5;
       
       // Draw grid lines
       const gridSize = 40;
@@ -173,61 +174,124 @@ export const GridBackground = () => {
       
       // Update and draw circuit lines
       lines.forEach(line => {
-        // Update glow state
-        line.glowState += line.glowSpeed;
-        if (line.glowState > Math.PI * 2) line.glowState -= Math.PI * 2;
+        try {
+          // Validate point coordinates before drawing
+          if (
+            !isFinite(line.from.x) || !isFinite(line.from.y) ||
+            !isFinite(line.to.x) || !isFinite(line.to.y)
+          ) {
+            return; // Skip this line if coordinates are invalid
+          }
         
-        const currentGlow = Math.pow(Math.sin(line.glowState), 2) * line.glowIntensity;
-        
-        // Draw line with glow effect
-        ctx.beginPath();
-        ctx.moveTo(line.from.x, line.from.y);
-        ctx.lineTo(line.to.x, line.to.y);
-        
-        // Line itself
-        ctx.strokeStyle = `rgba(215, 255, 0, ${line.opacity * currentGlow})`;
-        ctx.lineWidth = line.width;
-        ctx.stroke();
-        
-        // Glow effect for active lines
-        if (line.isActive && currentGlow > 0.5) {
-          ctx.strokeStyle = `rgba(215, 255, 0, ${line.opacity * 0.4 * currentGlow})`;
-          ctx.lineWidth = line.width * 2;
+          // Update glow state
+          line.glowState += line.glowSpeed;
+          if (line.glowState > Math.PI * 2) line.glowState -= Math.PI * 2;
+          
+          const currentGlow = Math.pow(Math.sin(line.glowState), 2) * line.glowIntensity;
+          
+          // Draw line with glow effect
+          ctx.beginPath();
+          ctx.moveTo(line.from.x, line.from.y);
+          ctx.lineTo(line.to.x, line.to.y);
+          
+          // Ensure valid opacity values
+          const safeOpacity = Math.min(1, Math.max(0, line.opacity * currentGlow));
+          
+          // Line itself
+          ctx.strokeStyle = `rgba(215, 255, 0, ${safeOpacity})`;
+          ctx.lineWidth = Math.max(0.1, line.width); // Prevent zero or negative line width
           ctx.stroke();
           
-          ctx.strokeStyle = `rgba(215, 255, 0, ${line.opacity * 0.2 * currentGlow})`;
-          ctx.lineWidth = line.width * 3.5;
-          ctx.stroke();
+          // Glow effect for active lines
+          if (line.isActive && currentGlow > 0.5) {
+            const glowOpacity1 = Math.min(1, Math.max(0, line.opacity * 0.4 * currentGlow));
+            const glowOpacity2 = Math.min(1, Math.max(0, line.opacity * 0.2 * currentGlow));
+            
+            ctx.strokeStyle = `rgba(215, 255, 0, ${glowOpacity1})`;
+            ctx.lineWidth = Math.max(0.1, line.width * 2);
+            ctx.stroke();
+            
+            ctx.strokeStyle = `rgba(215, 255, 0, ${glowOpacity2})`;
+            ctx.lineWidth = Math.max(0.1, line.width * 3.5);
+            ctx.stroke();
+          }
+        } catch (e) {
+          // Silently handle any drawing errors to prevent crashing
+          console.debug('Error drawing circuit line:', e);
         }
       });
       
       // Update and draw circuit nodes
       nodes.forEach(node => {
-        // Update pulse state
-        node.pulseState += node.pulseSpeed;
-        if (node.pulseState > Math.PI * 2) node.pulseState -= Math.PI * 2;
-        
-        const currentPulse = Math.pow(Math.sin(node.pulseState), 2) * node.pulseIntensity;
-        
-        // Draw node
-        ctx.beginPath();
-        ctx.arc(node.position.x, node.position.y, node.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(215, 255, 0, ${0.2 + currentPulse * 0.3})`;
-        ctx.fill();
-        
-        // Add glow for active nodes
-        if (node.isActive && currentPulse > 0.7) {
-          // Add glow effect
+        try {
+          // Validate point coordinates before drawing
+          if (
+            !isFinite(node.position.x) || !isFinite(node.position.y) || 
+            !isFinite(node.size) || node.size <= 0
+          ) {
+            return; // Skip this node if coordinates are invalid
+          }
+          
+          // Update pulse state
+          node.pulseState += node.pulseSpeed;
+          if (node.pulseState > Math.PI * 2) node.pulseState -= Math.PI * 2;
+          
+          // Calculate pulse value to use consistently in this iteration
+          const nodePulse = Math.pow(Math.sin(node.pulseState), 2) * node.pulseIntensity;
+          
+          // Ensure valid opacity values
+          const baseOpacity = Math.min(1, Math.max(0, 0.2 + nodePulse * 0.3));
+          
+          // Draw node
           ctx.beginPath();
-          ctx.arc(node.position.x, node.position.y, node.size * 2, 0, Math.PI * 2);
-          const gradient = ctx.createRadialGradient(
-            node.position.x, node.position.y, node.size,
-            node.position.x, node.position.y, node.size * 3
-          );
-          gradient.addColorStop(0, `rgba(215, 255, 0, ${0.3 * currentPulse})`);
-          gradient.addColorStop(1, 'rgba(215, 255, 0, 0)');
-          ctx.fillStyle = gradient;
+          ctx.arc(node.position.x, node.position.y, node.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(215, 255, 0, ${baseOpacity})`;
           ctx.fill();
+          
+          // Store the pulse value as a property so it can be used later for the glow
+          node.currentPulse = nodePulse;
+        } catch (e) {
+          // Silently handle any drawing errors to prevent crashing
+          console.debug('Error drawing circuit node:', e);
+        }
+        
+        // Use the stored pulse value calculated earlier
+        // Add glow for active nodes
+        if (node.isActive && node.currentPulse && node.currentPulse > 0.7) {
+          try {
+            // Check for valid values to avoid non-finite errors
+            if (isFinite(node.position.x) && isFinite(node.position.y) && isFinite(node.size) && node.size > 0) {
+              // Add glow effect
+              ctx.beginPath();
+              ctx.arc(node.position.x, node.position.y, node.size * 2, 0, Math.PI * 2);
+              
+              // Safe radius values
+              const innerRadius = Math.max(0.1, node.size);
+              const outerRadius = Math.max(innerRadius + 0.1, node.size * 3);
+              
+              const gradient = ctx.createRadialGradient(
+                node.position.x, node.position.y, innerRadius,
+                node.position.x, node.position.y, outerRadius
+              );
+              
+              gradient.addColorStop(0, `rgba(215, 255, 0, ${0.3 * (node.currentPulse || 0.7)})`);
+              gradient.addColorStop(1, 'rgba(215, 255, 0, 0)');
+              ctx.fillStyle = gradient;
+              ctx.fill();
+            } else {
+              // Fallback if we have invalid values - use a simple circle
+              ctx.beginPath();
+              ctx.arc(node.position.x, node.position.y, node.size * 2, 0, Math.PI * 2);
+              ctx.fillStyle = `rgba(215, 255, 0, ${0.15 * (node.currentPulse || 0.7)})`;
+              ctx.fill();
+            }
+          } catch (e) {
+            // If there's any error with gradient, use a simple fallback
+            ctx.beginPath();
+            ctx.arc(node.position.x, node.position.y, node.size * 2, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(215, 255, 0, ${0.15 * (node.currentPulse || 0.7)})`;
+            ctx.fill();
+          }
         }
       });
     }
@@ -258,7 +322,7 @@ export const GridBackground = () => {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none"
-      style={{ background: 'transparent', opacity: 0.5, zIndex: -1 }}
+      style={{ background: backgroundColor, opacity: 1, zIndex: -1 }}
     />
   );
 };
