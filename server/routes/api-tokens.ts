@@ -1,5 +1,6 @@
 import express from "express";
 import { requireAdmin } from "../middleware/auth";
+import { requireAdminDomain } from "../middleware/domain-router";
 import { TokenService } from "../utils/token-service";
 import { log } from "../vite";
 
@@ -11,7 +12,7 @@ const tokenService = new TokenService();
  * 
  * Get the Goated.com API token metadata for the admin dashboard
  */
-router.get("/goated", requireAdmin, async (_req, res) => {
+router.get("/goated", requireAdminDomain, requireAdmin, async (_req, res) => {
   try {
     const metadata = await tokenService.getTokenMetadata();
     res.json(metadata);
@@ -29,7 +30,7 @@ router.get("/goated", requireAdmin, async (_req, res) => {
  * 
  * Save a new Goated.com API token
  */
-router.post("/goated", requireAdmin, async (req, res) => {
+router.post("/goated", requireAdminDomain, requireAdmin, async (req, res) => {
   try {
     const { token } = req.body;
     
@@ -71,7 +72,7 @@ router.post("/goated", requireAdmin, async (req, res) => {
  * 
  * Test the current API token
  */
-router.post("/test", requireAdmin, async (_req, res) => {
+router.post("/test", requireAdminDomain, requireAdmin, async (_req, res) => {
   try {
     // Get the current token
     const token = await tokenService.getGoatedApiToken();

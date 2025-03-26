@@ -6,6 +6,7 @@ import { setupAuth } from "./auth";
 import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
+import { requireAdminDomain, preventAdminDomain } from "./middleware/domain-router";
 import userSessionsRouter from "./routes/user-sessions";
 import userProfileRouter from "./routes/user-profile";
 import telegramApiRouter from "./routes/telegram-api";
@@ -379,10 +380,10 @@ function setupRESTRoutes(app: Express) {
 
   // Add user profile endpoint by ID for user profile page
   app.get("/api/users/:id", requireAuth, handleUserProfileRequest);
-  app.post("/api/admin/login", handleAdminLogin);
-  app.get("/api/admin/users", requireAdmin, handleAdminUsersRequest);
-  app.get("/api/admin/wager-races", requireAdmin, handleWagerRacesRequest);
-  app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);
+  app.post("/api/admin/login", requireAdminDomain, handleAdminLogin);
+  app.get("/api/admin/users", requireAdminDomain, requireAdmin, handleAdminUsersRequest);
+  app.get("/api/admin/wager-races", requireAdminDomain, requireAdmin, handleWagerRacesRequest);
+  app.post("/api/admin/wager-races", requireAdminDomain, requireAdmin, handleCreateWagerRace);
   app.get("/api/affiliate/stats", affiliateRateLimiter, handleAffiliateStats);
 
   // Support system endpoints
@@ -577,7 +578,7 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  app.patch("/api/support/tickets/:id", requireAdmin, async (req, res) => {
+  app.patch("/api/support/tickets/:id", requireAdminDomain, requireAdmin, async (req, res) => {
     try {
       const { status, priority, assignedTo } = req.body;
       /*
@@ -616,7 +617,7 @@ function setupRESTRoutes(app: Express) {
   });
 
   // Bonus code management routes
-  app.get("/api/admin/bonus-codes", requireAdmin, async (_req, res) => {
+  app.get("/api/admin/bonus-codes", requireAdminDomain, requireAdmin, async (_req, res) => {
     try {
       /*
       const codes = await db.query.bonusCodes.findMany({
@@ -635,7 +636,7 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  app.post("/api/admin/bonus-codes", requireAdmin, async (req, res) => {
+  app.post("/api/admin/bonus-codes", requireAdminDomain, requireAdmin, async (req, res) => {
     try {
       /*
       const [code] = await db
@@ -658,7 +659,7 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  app.put("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
+  app.put("/api/admin/bonus-codes/:id", requireAdminDomain, requireAdmin, async (req, res) => {
     try {
       /*
       const [code] = await db
@@ -679,7 +680,7 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
+  app.delete("/api/admin/bonus-codes/:id", requireAdminDomain, requireAdmin, async (req, res) => {
     try {
       /*
       await db
@@ -718,7 +719,7 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  app.get("/api/admin/analytics", requireAdmin, async (_req, res) => {
+  app.get("/api/admin/analytics", requireAdminDomain, requireAdmin, async (_req, res) => {
     try {
       // Use the cached leaderboard data instead of making a direct API call
       const leaderboardData = await getLeaderboardData();
