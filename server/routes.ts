@@ -156,6 +156,37 @@ export function registerRoutes(app: Express): Server {
 }
 
 function setupRESTRoutes(app: Express) {
+  // Add endpoint to manually trigger a full refresh of leaderboard data
+  app.get("/api/leaderboard/refresh", async (_req, res) => {
+    try {
+      log("Manual leaderboard refresh triggered");
+      
+      // Force a refresh by invalidating the cache
+      invalidateLeaderboardCache();
+      
+      // Fetch fresh data - this will also trigger the sync to database for all periods
+      const freshData = await getLeaderboardData(true);
+      
+      // Return success response with counts
+      return res.json({
+        status: "success",
+        message: "Leaderboard data refreshed successfully",
+        counts: {
+          today: freshData.data.today.data.length,
+          weekly: freshData.data.weekly.data.length,
+          monthly: freshData.data.monthly.data.length,
+          all_time: freshData.data.all_time.data.length
+        }
+      });
+    } catch (error) {
+      log(`Error refreshing leaderboard data: ${error}`);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to refresh leaderboard data"
+      });
+    }
+  });
+
   // Add endpoint to fetch previous month's results
   app.get("/api/wager-races/previous", async (_req, res) => {
     try {
