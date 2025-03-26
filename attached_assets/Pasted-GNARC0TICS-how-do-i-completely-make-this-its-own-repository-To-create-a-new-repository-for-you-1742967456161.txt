@@ -1,0 +1,1341 @@
+GNARC0TICS: how do i completely make this its own repository, 
+
+: To create a new repository for your project, follow these steps:
+
+1. **Initialize a new Git repository**:
+   - Open your terminal in the root directory of your project.
+   - Run the following command to initialize a new Git repository:
+     ```sh
+     git init
+     ```
+
+2. **Add all files to the repository**:
+   - Add all your project files to the staging area:
+     ```sh
+     git add .
+     ```
+
+3. **Commit the files**:
+   - Commit the added files with a message:
+     ```sh
+     git commit -m "Initial commit"
+     ```
+
+4. **Create a new repository on GitHub**:
+   - Go to GitHub and create a new repository. Do not initialize it with a README, .gitignore, or license.
+
+5. **Add the remote repository**:
+   - Add the GitHub repository as a remote to your local repository:
+     ```sh
+     git remote add origin https://github.com/your-username/your-repository-name.git
+     ```
+
+6. **Push the changes to GitHub**:
+   - Push your local commits to the GitHub repository:
+     ```sh
+     git push -u origin master
+     ```
+
+Your project is now its own repository on GitHub.
+
+GNARC0TICS: why wont cline load
+
+: To help you troubleshoot why `cline` won't load, I need more information about what `cline` is and the context in which you're trying to load it. Here are some general steps you can follow to diagnose the issue:
+
+1. **Check for Errors**:
+   - Look at the error messages in your terminal or output pane in Visual Studio Code. These messages can provide clues about what is going wrong.
+
+2. **Verify Installation**:
+   - Ensure that `cline` is installed correctly. If it's a Python package, you can check if it's installed using:
+     ```sh
+     pip show cline
+     ```
+   - If it's not installed, you can install it using:
+     ```sh
+     pip install cline
+     ```
+
+3. **Check Import Statements**:
+   - Make sure you are importing `cline` correctly in your code. For example:
+     ```python
+     import cline
+     ```
+
+4. **Environment Issues**:
+   - Ensure that you are working in the correct virtual environment where `cline` is installed. You can activate your virtual environment and check the installed packages.
+
+5. **Documentation and Dependencies**:
+   - Check the documentation for `cline` to ensure you are using it correctly and that all dependencies are met.
+
+If you provide more specific details about the error or the context, I can give more targeted advice.
+
+GNARC0TICS: its ann extension
+
+: If `cline` is a Visual Studio Code extension and it won't load, follow these steps to troubleshoot:
+
+1. **Check for Errors**:
+   - Open the "Output" pane in Visual Studio Code and select "Log (Extension Host)" from the dropdown to see if there are any error messages related to the `cline` extension.
+
+2. **Verify Installation**:
+   - Ensure that the `cline` extension is installed. Go to the Extensions view by clicking the Extensions icon in the Activity Bar on the side of the window or by pressing `Ctrl+Shift+X`.
+   - Search for `cline` and check if it is installed. If not, install it.
+
+3. **Reload/Restart VS Code**:
+   - Sometimes, simply reloading the window or restarting Visual Studio Code can resolve loading issues. You can reload the window by pressing `Ctrl+Shift+P` and typing `Reload Window`.
+
+4. **Check for Updates**:
+   - Ensure that both Visual Studio Code and the `cline` extension are up to date. Update them if necessary.
+
+5. **Disable Other Extensions**:
+   - Sometimes, other extensions can conflict with each other. Try disabling other extensions to see if `cline` loads correctly.
+
+6. **Check Extension Settings**:
+   - Some extensions require specific settings to be configured. Check the `cline` extension documentation for any required settings and ensure they are correctly configured in your `settings.json` file.
+
+7. **Reinstall the Extension**:
+   - If the above steps do not work, try uninstalling and then reinstalling the `cline` extension.
+
+If you continue to experience issues, you may want to check the extension's repository or support page for more specific troubleshooting steps or to report the issue.
+
+GNARC0TICS: 2025-03-18 22:55:02.336 [info] Extension host with pid 57138 started
+2025-03-18 22:55:02.336 [info] Skipping acquiring lock for /Users/gnarcotic/Library/Application Support/Code/User/workspaceStorage/0069fcbeffb0924e360ba9ef3ecc0296.
+2025-03-18 22:55:03.065 [info] ExtensionService#_doActivateExtension vscode.git-base, startup: true, activationEvent: '*', root cause: vscode.git
+2025-03-18 22:55:03.077 [info] ExtensionService#_doActivateExtension christian-kohler.path-intellisense, startup: true, activationEvent: '*'
+2025-03-18 22:55:03.383 [info] ExtensionService#_doActivateExtension jinno.codelens-sample, startup: true, activationEvent: '*'
+2025-03-18 22:55:18.080 [info] Not activating extension 'pranaygp.vscode-css-peek': Timed out while searching for 'workspaceContains' pattern **/*.css,**/*.scss,**/*.sass,**/*.less
+2025-03-18 22:55:18.154 [info] ExtensionService#_doActivateExtension wayou.vscode-todo-highlight, startup: true, activationEvent: '*'
+2025-03-18 22:55:18.161 [info] ExtensionService#_doActivateExtension vscode.npm, startup: true, activationEvent: 'workspaceContains:package.json'
+2025-03-18 22:55:18.302 [info] ExtensionService#_doActivateExtension vscode.debug-auto-launch, startup: false, activationEvent: 'onStartupFinished'
+2025-03-18 22:55:18.305 [info] ExtensionService#_doActivateExtension vscode.merge-conflict, startup: false, activationEvent: 'onStartupFinished'
+2025-03-18 22:55:18.316 [info] ExtensionService#_doActivateExtension dbaeumer.vscode-eslint, startup: false, activationEvent: 'onStartupFinished'
+2025-03-18 22:55:18.334 [info] ExtensionService#_doActivateExtension dsznajder.es7-react-js-snippets, startup: false, activationEvent: 'onStartupFinished'
+2025-03-18 22:55:18.677 [info] ExtensionService#_doActivateExtension eamodio.gitlens, startup: false, activationEvent: 'onStartupFinished'
+2025-03-18 22:55:18.762 [info] ExtensionService#_doActivateExtension ecmel.vscode-html-css, startup: false, activationEvent: 'onStartupFinished'
+2025-03-18 22:55:18.787 [info] ExtensionService#_doActivateExtension esbenp.prettier-vscode, startup: false, activationEvent: 'onStartupFinished'
+2025-03-18 22:55:18.852 [info] ExtensionService#_doActivateExtension GitHub.copilot, startup: false, activationEvent: 'onStartupFinished'
+2025-03-18 22:55:19.189 [info] ExtensionService#_doActivateExtension GitHub.copilot-chat, startup: false, activationEvent: 'onStartupFinished'
+2025-03-18 22:55:19.248 [info] ExtensionService#_doActivateExtension ms-vscode-remote.remote-containers, startup: false, activationEvent: 'onStartupFinished'
+2025-03-18 22:55:19.366 [info] ExtensionService#_doActivateExtension Phu1237.live-reload, startup: false, activationEvent: 'onStartupFinished'
+2025-03-18 22:55:19.503 [info] ExtensionService#_doActivateExtension ritwickdey.LiveServer, startup: false, activationEvent: 'onStartupFinished'
+2025-03-18 22:55:19.525 [info] ExtensionService#_doActivateExtension shardulm94.trailing-spaces, startup: false, activationEvent: 'onStartupFinished'
+2025-03-18 22:55:19.566 [info] ExtensionService#_doActivateExtension vadimcn.vscode-lldb, startup: false, activationEvent: 'onStartupFinished'
+2025-03-18 22:55:19.580 [info] ExtensionService#_doActivateExtension vscode.git, startup: true, activationEvent: '*'
+2025-03-18 22:55:19.607 [info] ExtensionService#_doActivateExtension vscode.github, startup: true, activationEvent: '*'
+2025-03-18 22:55:19.641 [info] ExtensionService#_doActivateExtension vscode.github-authentication, startup: false, activationEvent: 'onAuthenticationRequest:github'
+2025-03-18 22:55:21.647 [error] Error: The language client requires VS Code version ^1.89.0 but received version 1.85.2
+    at b.checkVersion (/Users/gnarcotic/.vscode/extensions/dbaeumer.vscode-eslint-3.0.8/client/out/extension.js:1:270962)
+    at new b (/Users/gnarcotic/.vscode/extensions/dbaeumer.vscode-eslint-3.0.8/client/out/extension.js:1:270667)
+    at Object.e.create (/Users/gnarcotic/.vscode/extensions/dbaeumer.vscode-eslint-3.0.8/client/out/extension.js:1:328854)
+    at v (/Users/gnarcotic/.vscode/extensions/dbaeumer.vscode-eslint-3.0.8/client/out/extension.js:1:408471)
+    at f.value (/Users/gnarcotic/.vscode/extensions/dbaeumer.vscode-eslint-3.0.8/client/out/extension.js:1:409463)
+    at n.y (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.z (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1972)
+    at n.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2188)
+    at f.value (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:143:8509)
+    at n.y (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2119)
+    at i.acceptDocumentsAndEditorsDelta (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:143:12473)
+    at i.$acceptDocumentsAndEditorsDelta (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:143:10970)
+    at l.S (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:10829)
+    at l.Q (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:10595)
+    at l.M (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:9685)
+    at l.L (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:8764)
+    at f.value (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:7567)
+    at n.y (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2119)
+    at o.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:103:14039)
+    at f.value (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:171:7903)
+    at n.y (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2119)
+    at o.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:103:14039)
+    at MessagePortMain.<anonymous> (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:171:6183)
+    at MessagePortMain.emit (node:events:513:28)
+    at Object.MessagePortMain._internalPort.emit (node:electron/js2c/utility_init:2:367)
+2025-03-18 22:55:21.803 [info] ExtensionService#_doActivateExtension vscode.json-language-features, startup: false, activationEvent: 'onLanguage:jsonc'
+2025-03-18 22:55:21.833 [info] ExtensionService#_doActivateExtension vscode.typescript-language-features, startup: false, activationEvent: 'onLanguage:jsonc'
+2025-03-18 22:55:21.939 [info] ExtensionService#_doActivateExtension vscode.emmet, startup: false, activationEvent: 'onLanguage'
+2025-03-18 22:55:28.835 [info] Eager extensions activated
+2025-03-18 22:55:38.439 [info] ExtensionService#_doActivateExtension saoudrizwan.claude-dev, startup: false, activationEvent: 'onView:claude-dev.SidebarProvider'
+2025-03-18 22:55:39.630 [error] Activating extension saoudrizwan.claude-dev failed due to an error:
+2025-03-18 22:55:39.630 [error] TypeError: (0 , _Vt.getDefaultHighWaterMark) is not a function
+    at Object.<anonymous> (/Users/gnarcotic/.vscode/extensions/saoudrizwan.claude-dev-3.7.1/dist/extension.js:922:25008)
+    at Module.o._compile (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/loader.js:4:1271)
+    at Object.Module._extensions..js (node:internal/modules/cjs/loader:1371:10)
+    at Module.load (node:internal/modules/cjs/loader:1171:32)
+    at Module._load (node:internal/modules/cjs/loader:1012:12)
+    at Function.f._load (node:electron/js2c/asar_bundle:2:13377)
+    at Function.c._load (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:171:5632)
+    at Function.n._load (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:168:29551)
+    at Function.t._load (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:133:35226)
+    at Module.require (node:internal/modules/cjs/loader:1195:19)
+    at Module.require (/Users/gnarcotic/.vscode/extensions/github.copilot-chat-0.11.1/dist/extension.js:18:42086)
+    at require (node:internal/modules/cjs/helpers:110:18)
+    at Function.i [as __$__nodeRequire] (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/loader.js:5:98)
+    at f.vb (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:168:30730)
+    at async Promise.all (index 0)
+2025-03-18 22:56:10.150 [info] ExtensionService#_doActivateExtension ms-python.debugpy, startup: false, activationEvent: 'onLanguage:python'
+2025-03-18 22:56:10.181 [info] ExtensionService#_doActivateExtension ms-python.python, startup: false, activationEvent: 'onLanguage:python'
+2025-03-18 22:56:10.895 [info] ExtensionService#_doActivateExtension ms-python.vscode-pylance, startup: false, activationEvent: 'onLanguage:python'
+2025-03-18 22:56:26.169 [error] SyntaxError: Legacy octal literals are not allowed in strict mode. (1:5)
+    at toParseError (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parse-error.ts:95:45)
+    at JSXParserMixin.raise (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:1497:19)
+    at JSXParserMixin.recordStrictModeErrors (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:1396:12)
+    at JSXParserMixin.readNumber (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:1234:12)
+    at JSXParserMixin.getTokenFromCode (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:979:14)
+    at JSXParserMixin.getTokenFromCode (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/plugins/jsx/index.ts:631:13)
+    at JSXParserMixin.nextToken (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:274:10)
+    at JSXParserMixin.next (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:121:10)
+    at JSXParserMixin.parseExprOp (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:469:14)
+    at JSXParserMixin.parseExprOps (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:407:17)
+    at JSXParserMixin.parseMaybeConditional (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:356:23)
+    at JSXParserMixin.parseMaybeAssign (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:298:21)
+    at JSXParserMixin.parseExpressionBase (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:221:23)
+    at callback (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:212:39)
+    at JSXParserMixin.allowInAnd (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:3112:16)
+    at JSXParserMixin.parseExpression (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:212:17)
+    at JSXParserMixin.parseStatementContent (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:659:23)
+    at JSXParserMixin.parseStatementLike (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:437:17)
+    at JSXParserMixin.parseModuleItem (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:374:17)
+    at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:1419:16)
+    at JSXParserMixin.parseBlockBody (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:1393:10)
+    at JSXParserMixin.parseProgram (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:225:10)
+    at JSXParserMixin.parseTopLevel (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+    at JSXParserMixin.parse (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/index.ts:90:10)
+    at Object.parse (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/index.ts:66:38)
+    at HighlightHover.findElementBoundaries (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/src/preview/highlight-hover.ts:48:24)
+    at HighlightHover.sendHighlightWithCache (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/src/preview/highlight-hover.ts:41:29)
+    at f.value (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/src/preview/highlight-hover.ts:23:16)
+    at n.y (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.z (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1972)
+    at n.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2188)
+    at y.$acceptEditorPropertiesChanged (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:145:18053)
+    at l.S (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:10829)
+    at l.Q (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:10595)
+    at l.M (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:9685)
+    at l.L (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:8764)
+    at f.value (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:7567)
+    at n.y (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2119)
+    at o.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:103:14039)
+    at f.value (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:171:7903)
+    at n.y (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2119)
+    at o.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:103:14039)
+    at MessagePortMain.<anonymous> (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:171:6183)
+    at MessagePortMain.emit (node:events:513:28)
+    at Object.MessagePortMain._internalPort.emit (node:electron/js2c/utility_init:2:367)
+    at Object.callbackTrampoline (node:internal/async_hooks:130:17)
+2025-03-18 22:57:06.129 [error] SyntaxError: Legacy octal literals are not allowed in strict mode. (1:5)
+    at toParseError (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parse-error.ts:95:45)
+    at JSXParserMixin.raise (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:1497:19)
+    at JSXParserMixin.recordStrictModeErrors (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:1396:12)
+    at JSXParserMixin.readNumber (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:1234:12)
+    at JSXParserMixin.getTokenFromCode (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:979:14)
+    at JSXParserMixin.getTokenFromCode (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/plugins/jsx/index.ts:631:13)
+    at JSXParserMixin.nextToken (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:274:10)
+    at JSXParserMixin.next (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:121:10)
+    at JSXParserMixin.parseExprOp (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:469:14)
+    at JSXParserMixin.parseExprOps (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:407:17)
+    at JSXParserMixin.parseMaybeConditional (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:356:23)
+    at JSXParserMixin.parseMaybeAssign (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:298:21)
+    at JSXParserMixin.parseExpressionBase (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:221:23)
+    at callback (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:212:39)
+    at JSXParserMixin.allowInAnd (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:3112:16)
+    at JSXParserMixin.parseExpression (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:212:17)
+    at JSXParserMixin.parseStatementContent (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:659:23)
+    at JSXParserMixin.parseStatementLike (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:437:17)
+    at JSXParserMixin.parseModuleItem (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:374:17)
+    at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:1419:16)
+    at JSXParserMixin.parseBlockBody (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:1393:10)
+    at JSXParserMixin.parseProgram (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:225:10)
+    at JSXParserMixin.parseTopLevel (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+    at JSXParserMixin.parse (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/index.ts:90:10)
+    at Object.parse (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/index.ts:66:38)
+    at HighlightHover.findElementBoundaries (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/src/preview/highlight-hover.ts:48:24)
+    at HighlightHover.sendHighlightWithCache (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/src/preview/highlight-hover.ts:41:29)
+    at f.value (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/src/preview/highlight-hover.ts:23:16)
+    at n.y (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.z (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1972)
+    at n.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2188)
+    at y.$acceptEditorPropertiesChanged (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:145:18053)
+    at l.S (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:10829)
+    at l.Q (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:10595)
+    at l.M (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:9685)
+    at l.L (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:8764)
+    at f.value (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:7567)
+    at n.y (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2119)
+    at o.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:103:14039)
+    at f.value (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:171:7903)
+    at n.y (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2119)
+    at o.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:103:14039)
+    at MessagePortMain.<anonymous> (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:171:6183)
+    at MessagePortMain.emit (node:events:513:28)
+    at Object.MessagePortMain._internalPort.emit (node:electron/js2c/utility_init:2:367)
+    at Object.callbackTrampoline (node:internal/async_hooks:130:17)
+
+: 
+
+GNARC0TICS: 025-03-18 22:55:21.647 [error] Error: The language client requires VS Code version ^1.89.0 but received version 1.85.2
+    at b.checkVersion (/Users/gnarcotic/.vscode/extensions/dbaeumer.vscode-eslint-3.0.8/client/out/extension.js:1:270962)
+    at new b (/Users/gnarcotic/.vscode/extensions/dbaeumer.vscode-eslint-3.0.8/client/out/extension.js:1:270667)
+    at Object.e.create (/Users/gnarcotic/.vscode/extensions/dbaeumer.vscode-eslint-3.0.8/client/out/extension.js:1:328854)
+    at v (/Users/gnarcotic/.vscode/extensions/dbaeumer.vscode-eslint-3.0.8/client/out/extension.js:1:408471)
+    at f.value (/Users/gnarcotic/.vscode/extensions/dbaeumer.vscode-eslint-3.0.8/client/out/extension.js:1:409463)
+    at n.y (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.z (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1972)
+    at n.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2188)
+    at f.value (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:143:8509)
+    at n.y (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2119)
+    at i.acceptDocumentsAndEditorsDelta (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:143:12473)
+    at i.$acceptDocumentsAndEditorsDelta (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:143:10970)
+    at l.S (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:10829)
+    at l.Q (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:10595)
+    at l.M (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:9685)
+    at l.L (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:8764)
+    at f.value (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:7567)
+    at n.y (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2119)
+    at o.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:103:14039)
+    at f.value (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:171:7903)
+    at n.y (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.fire (/private/var/folders/r0/9y6djpbx0f133kvw0tsy0z100000gn/T/AppTranslocation/55EC6E11-BF34-4891-82DF-C0FD93AF1DEE/d/Visual Studio Code.app
+
+: The error message indicates that the `cline` extension (or another extension) requires a newer version of Visual Studio Code (version ^1.89.0) than the one you currently have installed (version 1.85.2). To resolve this issue, you need to update Visual Studio Code to the required version or later.
+
+Here are the steps to update Visual Studio Code:
+
+1. **Download the Latest Version**:
+   - Go to the [Visual Studio Code download page](https://code.visualstudio.com/Download).
+   - Download the latest version for your operating system.
+
+2. **Install the Update**:
+   - Follow the installation instructions for your operating system to install the latest version of Visual Studio Code.
+
+3. **Verify the Update**:
+   - Open Visual Studio Code.
+   - Check the version by going to `Help` > `About` (on Windows/Linux) or `Code` > `About Visual Studio Code` (on macOS).
+   - Ensure that the version is 1.89.0 or later.
+
+4. **Reload/Restart VS Code**:
+   - After updating, reload or restart Visual Studio Code to ensure all extensions load correctly.
+
+Once you have updated Visual Studio Code, the `cline` extension should load without issues. If you encounter any further problems, please provide additional details.
+
+GNARC0TICS: nView:claude-dev.SidebarProvider'
+2025-03-18 23:07:05.426 [error] Activating extension saoudrizwan.claude-dev failed due to an error:
+2025-03-18 23:07:05.426 [error] TypeError: (0 , _Vt.getDefaultHighWaterMark) is not a function
+    at Object.<anonymous> (/Users/gnarcotic/.vscode/extensions/saoudrizwan.claude-dev-3.7.1/dist/extension.js:922:25008)
+    at Module.o._compile (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/loader.js:4:1271)
+    at Object.Module._extensions..js (node:internal/modules/cjs/loader:1371:10)
+    at Module.load (node:internal/modules/cjs/loader:1171:32)
+    at Module._load (node:internal/modules/cjs/loader:1012:12)
+    at Function.f._load (node:electron/js2c/asar_bundle:2:13377)
+    at Function.c._load (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:171:5632)
+    at Function.n._load (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:168:29551)
+    at Function.t._load (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:133:35226)
+    at Module.require (node:internal/modules/cjs/loader:1195:19)
+    at Module.require (/Users/gnarcotic/.vscode/extensions/github.copilot-chat-0.11.1/dist/extension.js:18:42086)
+    at require (node:internal/modules/cjs/helpers:110:18)
+    at Function.i [as __$__nodeRequire] (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/loader.js:5:98)
+    at f.vb (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:168:30730)
+    at async Promise.all (index 0)
+2025-03-18 23:07:09.648 [error] SyntaxError: Legacy octal literals are not allowed in strict mode. (1:5)
+    at toParseError (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parse-error.ts:95:45)
+    at JSXParserMixin.raise (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:1497:19)
+    at JSXParserMixin.recordStrictModeErrors (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:1396:12)
+    at JSXParserMixin.readNumber (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:1234:12)
+    at JSXParserMixin.getTokenFromCode (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:979:14)
+    at JSXParserMixin.getTokenFromCode (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/plugins/jsx/index.ts:631:13)
+    at JSXParserMixin.nextToken (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:274:10)
+    at JSXParserMixin.next (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:121:10)
+    at JSXParserMixin.parseExprOp (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:469:14)
+    at JSXParserMixin.parseExprOps (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:407:17)
+    at JSXParserMixin.parseMaybeConditional (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:356:23)
+    at JSXParserMixin.parseMaybeAssign (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:298:21)
+    at JSXParserMixin.parseExpressionBase (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:221:23)
+    at callback (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:212:39)
+    at JSXParserMixin.allowInAnd (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:3112:16)
+    at JSXParserMixin.parseExpression (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:212:17)
+    at JSXParserMixin.parseStatementContent (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:659:23)
+    at JSXParserMixin.parseStatementLike (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:437:17)
+    at JSXParserMixin.parseModuleItem (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:374:17)
+    at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:1419:16)
+    at JSXParserMixin.parseBlockBody (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:1393:10)
+    at JSXParserMixin.parseProgram (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:225:10)
+    at JSXParserMixin.parseTopLevel (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+    at JSXParserMixin.parse (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/index.ts:90:10)
+    at Object.parse (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/index.ts:66:38)
+    at HighlightHover.findElementBoundaries (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/src/preview/highlight-hover.ts:48:24)
+    at HighlightHover.sendHighlightWithCache (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/src/preview/highlight-hover.ts:41:29)
+    at f.value (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/src/preview/highlight-hover.ts:23:16)
+    at n.y (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.z (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1972)
+    at n.fire (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2188)
+    at y.$acceptEditorPropertiesChanged (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:145:18053)
+    at l.S (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:10829)
+    at l.Q (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:10595)
+    at l.M (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:9685)
+    at l.L (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:8764)
+    at f.value (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:150:7567)
+    at n.y (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.fire (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2119)
+    at o.fire (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:103:14039)
+    at f.value (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:171:7903)
+    at n.y (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:1902)
+    at n.fire (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:80:2119)
+    at o.fire (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:103:14039)
+    at MessagePortMain.<anonymous> (/Applications/Visual Studio Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:171:6183)
+    at MessagePortMain.emit (node:events:513:28)
+    at Object.MessagePortMain._internalPort.emit (node:electron/js2c/utility_init:2:367)
+    at Object.callbackTrampoline (node:internal/async_hooks:130:17)
+2025-03-18 23:07:09.673 [error] SyntaxError: Legacy octal literals are not allowed in strict mode. (1:5)
+    at toParseError (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parse-error.ts:95:45)
+    at JSXParserMixin.raise (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:1497:19)
+    at JSXParserMixin.recordStrictModeErrors (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:1396:12)
+    at JSXParserMixin.readNumber (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:1234:12)
+    at JSXParserMixin.getTokenFromCode (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:979:14)
+    at JSXParserMixin.getTokenFromCode (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/plugins/jsx/index.ts:631:13)
+    at JSXParserMixin.nextToken (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:274:10)
+    at JSXParserMixin.next (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:121:10)
+    at JSXParserMixin.parseExprOp (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:469:14)
+    at JSXParserMixin.parseExprOps (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:407:17)
+    at JSXParserMixin.parseMaybeConditional (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:356:23)
+    at JSXParserMixin.parseMaybeAssign (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:298:21)
+    at JSXParserMixin.parseExpressionBase (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:221:23)
+    at callback (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:212:39)
+    at JSXParserMixin.allowInAnd (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:31
+
+: 
+
+GNARC0TICS: 2025-03-18 23:07:09.648 [error] SyntaxError: Legacy octal literals are not allowed in strict mode. (1:5)
+    at toParseError (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parse-error.ts:95:45)
+    at JSXParserMixin.raise (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:1497:19)
+    at JSXParserMixin.recordStrictModeErrors (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:1396:12)
+    at JSXParserMixin.readNumber (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:1234:12)
+    at JSXParserMixin.getTokenFromCode (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:979:14)
+    at JSXParserMixin.getTokenFromCode (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/plugins/jsx/index.ts:631:13)
+    at JSXParserMixin.nextToken (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:274:10)
+    at JSXParserMixin.next (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/tokenizer/index.ts:121:10)
+    at JSXParserMixin.parseExprOp (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:469:14)
+    at JSXParserMixin.parseExprOps (/Users/gnarcotic/.vscode/extensions/jinno.codelens-sample-2.7.22/node_modules/@babel/parser/src/parser/expression.ts:407:17)
+
+: The error message indicates that there is a syntax error due to the use of legacy octal literals in strict mode. Legacy octal literals (e.g., `0123`) are not allowed in strict mode. Instead, you should use the modern octal literal syntax (e.g., `0o123`).
+
+To fix this issue, you need to locate and update the legacy octal literals in your code. Here is a step-by-step plan:
+
+1. **Identify the Legacy Octal Literals**:
+   - Search your codebase for any instances of legacy octal literals (e.g., numbers starting with `0` followed by digits).
+
+2. **Update to Modern Octal Literals**:
+   - Replace legacy octal literals with modern octal literals using the `0o` prefix.
+
+3. **Ensure Strict Mode Compatibility**:
+   - Make sure your code is compatible with strict mode by avoiding other deprecated or non-standard syntax.
+
+Here is an example of how to update a legacy octal literal:
+
+### Before:
+```javascript
+"use strict";
+let legacyOctal = 0123; // Legacy octal literal
+```
+
+### After:
+```javascript
+"use strict";
+let modernOctal = 0o123; // Modern octal literal
+```
+
+If you need to automate this process, you can use a script to find and replace legacy octal literals in your codebase. Here is a simple example using a regular expression in a Node.js script:
+
+### Node.js Script to Replace Legacy Octal Literals:
+```javascript
+const fs = require('fs');
+const path = require('path');
+
+const directoryPath = path.join(__dirname, 'your-code-directory');
+
+function replaceLegacyOctalLiterals(filePath) {
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const updatedContent = fileContent.replace(/\b0([0-7]+)\b/g, (match, p1) => `0o${p1}`);
+    fs.writeFileSync(filePath, updatedContent, 'utf8');
+}
+
+function processDirectory(directory) {
+    fs.readdirSync(directory).forEach(file => {
+        const fullPath = path.join(directory, file);
+        if (fs.lstatSync(fullPath).isDirectory()) {
+            processDirectory(fullPath);
+        } else if (fullPath.endsWith('.js')) {
+            replaceLegacyOctalLiterals(fullPath);
+        }
+    });
+}
+
+processDirectory(directoryPath);
+```
+
+Replace `'your-code-directory'` with the path to your code directory. This script will recursively process all `.js` files in the specified directory and replace legacy octal literals with modern ones.
+
+GNARC0TICS: How can I work on the layout and design of my website with a live preview, like a hot reloading feature, so every change I make I can see it update in real time?
+
+VS Code: Use the **Search marketplace** command to search for extensions that provide live preview functionality.
+
+
+Search Extension Marketplace
+
+Use the **Live Preview: Start Server** command to start a local server for live previewing your website.
+
+
+Show in Command Palette
+
+Use the **Show Live Server Preview** command to open the live preview in an editor tab.
+
+
+Show "Show Live Server Preview"
+
+GNARC0TICS: OK when I do this it just shows my umm codebase in like a markdown file.
+
+GitHub Copilot: It sounds like the live preview is not correctly pointing to your HTML file or the root of your website. Here's how you can fix this:
+
+1. **Ensure You Have an HTML File Open**:
+   - Open the main `index.html` file (or the entry point of your website) in Visual Studio Code before starting the live preview.
+
+2. **Set the Correct Root Folder**:
+   - If your project has a specific folder structure (e.g., `src` or `public`), make sure the live preview is serving the correct folder as the root.
+   - Check the settings for the live preview extension you're using. For example, in **Live Server**, you can configure the root folder in the settings:
+     - Go to `File > Preferences > Settings` (or `Code > Preferences > Settings` on macOS).
+     - Search for `liveServer.settings.root` and set it to the folder containing your `index.html`.
+
+3. **Start the Live Preview**:
+   - Right-click on your `index.html` file in the Explorer and select **Open with Live Server** (if you're using the Live Server extension).
+   - Alternatively, use the command palette (`Cmd+Shift+P` on macOS or `Ctrl+Shift+P` on Windows/Linux) and search for **Live Server: Open with Live Server**.
+
+4. **Check the Browser**:
+   - The live preview should open in your default browser. If it still shows your codebase, ensure the correct file is being served.
+
+5. **Use the Built-in Live Preview (Optional)**:
+   - If you're using the **Live Preview** extension by Microsoft, ensure you open the preview by running the **Live Preview: Show Preview** command from the command palette.
+
+If the issue persists, let me know the exact extension you're using and your project structure so I can provide more specific guidance.
+
+GNARC0TICS: Now that I'm running my dev server, can I make edits to the layout of my code base and then have it reflect live?
+
+GitHub Copilot: Yes, you can make edits to your codebase and see the changes reflected live if your development server supports **hot reloading** or **live reloading**. Here's how you can ensure this works:
+
+### 1. **Ensure Hot Reloading/Live Reloading is Enabled**
+   - If you're using a tool like **Live Server** or **Live Preview**, it should automatically reload the browser when you save changes to your files.
+   - If you're using a framework (e.g., React, Vue, Angular) or a bundler (e.g., Vite, Webpack), make sure the development server is configured for hot reloading.
+
+### 2. **Edit Your Files**
+   - Open your HTML, CSS, or JavaScript files in Visual Studio Code.
+   - Make changes to the layout, styles, or functionality.
+   - Save the file (`Cmd+S` on macOS or `Ctrl+S` on Windows/Linux).
+
+### 3. **See the Changes**
+   - The browser or live preview window should automatically refresh to reflect your changes.
+
+### 4. **Troubleshooting**
+   - If changes are not reflected:
+     - Ensure the file you are editing is part of the folder being served by the live server.
+     - Check if the live server or dev server is running in the terminal.
+     - Verify that there are no errors in the browser's developer console (`Cmd+Option+I` on macOS or `Ctrl+Shift+I` on Windows/Linux).
+
+### 5. **For CSS Changes Without Full Page Reload**
+   - If you're only editing CSS, most live servers and frameworks support injecting the new styles without a full page reload. This makes the process faster and smoother.
+
+Let me know if you encounter any specific issues!
+
+GNARC0TICS: And.
+
+GitHub Copilot: Could you clarify what additional information or assistance you need? Are you asking for more details about live reloading, troubleshooting, or something else related to your development workflow? Let me know so I can help further!
+
+GNARC0TICS: I need to reconnect to my API and test it and also connect to my newest database.
+
+GitHub Copilot: To reconnect to your API, test it, and connect to your newest database, follow these steps:
+
+---
+
+### 1. **Reconnect to Your API**
+   - **Check API URL**: Ensure your API's base URL is correct and accessible.
+   - **Update Environment Variables**:
+     - If your API URL or credentials have changed, update your .env file or configuration file with the new values.
+     - Example .env file:
+       ```env
+       API_URL=https://your-api-url.com
+       API_KEY=your-api-key
+       ```
+   - **Restart Your Development Server**:
+     - If you're using environment variables, restart your server to apply the changes:
+       ```bash
+       npm run dev
+       ```
+       or
+       ```bash
+       yarn dev
+       ```
+
+   - **Test the API**:
+     - Use tools like **Postman**, **cURL**, or **Thunder Client** (a VS Code extension) to test your API endpoints.
+     - Example `cURL` command:
+       ```bash
+       curl -X GET https://your-api-url.com/endpoint -H "Authorization: Bearer your-api-key"
+       ```
+
+---
+
+### 2. **Connect to Your Newest Database**
+   - **Update Database Configuration**:
+     - Update your database connection string in your .env file or configuration file.
+     - Example .env file:
+       ```env
+       DATABASE_URL=postgresql://username:password@host:port/database_name
+       ```
+
+   - **Test the Database Connection**:
+     - Use a database client like **pgAdmin**, **MySQL Workbench**, or **DBeaver** to test the connection.
+     - Alternatively, test the connection programmatically in your code:
+       ```javascript
+       const { Client } = require('pg'); // Example for PostgreSQL
+       const client = new Client({
+           connectionString: process.env.DATABASE_URL,
+       });
+
+       client.connect()
+           .then(() => console.log('Connected to the database'))
+           .catch(err => console.error('Database connection error:', err));
+       ```
+
+   - **Run Migrations (if applicable)**:
+     - If you're using an ORM like **Prisma**, **Sequelize**, or **TypeORM**, run migrations to ensure your database schema is up to date:
+       ```bash
+       npx prisma migrate deploy
+       ```
+       or
+       ```bash
+       sequelize db:migrate
+       ```
+
+---
+
+### 3. **Test the Full Integration**
+   - **Run Your Application**:
+     - Start your application and ensure it can connect to both the API and the database.
+   - **Check Logs**:
+     - Monitor the logs in your terminal or application to ensure there are no connection errors.
+   - **Test Endpoints**:
+     - Use Postman, Thunder Client, or your frontend to test API endpoints that interact with the database.
+
+---
+
+### 4. **Troubleshooting**
+   - **API Issues**:
+     - Check the API server logs for errors.
+     - Verify that the API key or authentication method is correct.
+   - **Database Issues**:
+     - Ensure the database server is running and accessible.
+     - Verify the database credentials and connection string.
+
+Let me know if you need help with any specific part of this process!
+
+GNARC0TICS:  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+4:48:48 PM [express] Error getting Goated API token: TypeError: Cannot read properties of undefined (reading 'findFirst')
+Missing required admin environment variables
+4:48:48 PM [express] Starting server initialization...
+4:48:48 PM [express] No valid API token found in database
+Database connection established
+4:48:50 PM [express] Database connection established successfully
+Database connection established successfully at Tue Mar 25 2025 16:48:50 GMT-0700 (Pacific Daylight Time)
+Pool status: 1 connections (0 idle, 0 waiting)
+4:48:50 PM [express] Database connection successful
+4:48:51 PM [express] Port 5000 is now available
+Skipping admin initialization - missing credentials
+4:48:52 PM [express] All middleware and routes registered
+4:48:52 PM [express] Server running on port 5000 (http://0.0.0.0:5000)
+4:48:53 PM [express] GET /api/health 200 in 1303ms :: {"status":"healthy","environment":"development…
+4:48:53 PM [express] Server is ready on port 5000
+
+
+GitHub Copilot: From the logs and the provided code, it seems like your development server is running successfully, but there are a few issues to address:
+
+---
+
+### 1. **Error: Missing Required Admin Environment Variables**
+   - The server is skipping admin initialization because some required environment variables are missing.
+   - **Solution**:
+     - Check your .env file for the required variables (e.g., `ADMIN_API_KEY`, `DATABASE_URL`, etc.).
+     - Add the missing variables and restart the server.
+     - Example .env file:
+       ```env
+       ADMIN_API_KEY=your-admin-key
+       DATABASE_URL=postgresql://username:password@host:port/database_name
+       ```
+
+---
+
+### 2. **Error: No Valid API Token Found in Database**
+   - The server is unable to find a valid API token in the database.
+   - **Solution**:
+     - Ensure that the database contains the required API token.
+     - If the token is missing, you may need to initialize it manually. For example:
+       ```sql
+       INSERT INTO api_tokens (token, created_at) VALUES ('your-api-token', NOW());
+       ```
+     - Alternatively, update your code to generate a token programmatically if it doesn't exist.
+
+---
+
+### 3. **Testing the API**
+   - Your server is running on `http://0.0.0.0:5000`. You can test the API using tools like **Postman**, **Thunder Client**, or `cURL`.
+   - Example `cURL` command
+
+GNARC0TICS: lets  go  through our workspace optimization  tasks
+
+GitHub Copilot: Sure! Based on the **Workspace Optimization Plan** in your WORKSPACE_OPTIMIZATION.md, we can break this down into actionable steps. Let’s go through the tasks phase by phase:
+
+---
+
+### **Phase 1: Critical Optimizations (1-2 weeks)**
+
+#### ✅ **1. API Caching Improvements**
+   - **Current Issues**:
+     - Hardcoded cache duration.
+     - No cache invalidation or race condition handling.
+   - **Action Plan**:
+     - Verify the implementation of the `CacheManager` class in cache.ts.
+     - Ensure the leaderboard cache in leaderboard-cache.ts is using the `CacheManager`.
+     - Test the caching mechanism for proper invalidation and error handling.
+   - **Next Steps**:
+     - Run tests to confirm the caching works as expected.
+     - Monitor for race conditions during simultaneous requests.
+
+#### **2. Database Connection Management**
+   - **Current Issues**:
+     - No connection pooling or retry logic.
+   - **Action Plan**:
+     - Implement connection pooling in connection.ts (e.g., using `pg-pool` for PostgreSQL).
+     - Add retry logic with exponential backoff for transient failures.
+     - Create a health check endpoint for database connectivity.
+   - **Next Steps**:
+     - Test database connection pooling and retry logic.
+     - Verify the health check endpoint.
+
+#### **3. Error Handling Standardization**
+   - **Current Issues**:
+     - Inconsistent error handling across routes.
+   - **Action Plan**:
+     - Refactor routes to use the centralized error handler in error-handler.ts.
+     - Create custom error classes for different error types.
+     - Add request IDs for better error tracking.
+   - **Next Steps**:
+     - Test error handling across all routes.
+     - Ensure consistent error response formats.
+
+#### **4. WebSocket Implementation Improvements**
+   - **Current Issues**:
+     - No authentication or heartbeat mechanism.
+   - **Action Plan**:
+     - Add authentication to WebSocket connections.
+     - Implement a heartbeat mechanism to detect stale connections.
+     - Create a WebSocket manager for connection tracking.
+   - **Next Steps**:
+     - Test WebSocket connections for authentication and stability.
+
+---
+
+### **Phase 2: Frontend Optimizations (2-3 weeks)**
+
+#### **1. React Query Standardization**
+   - **Current Issues**:
+     - Inconsistent usage and missing query invalidation.
+   - **Action Plan**:
+     - Centralize the query client configuration.
+     - Add query invalidation and prefetching for common data.
+   - **Next Steps**:
+     - Test React Query hooks for proper caching and invalidation.
+
+#### **2. Component Rendering Efficiency**
+   - **Current Issues**:
+     - Unnecessary re-renders and performance issues.
+   - **Action Plan**:
+     - Add memoization to components like `LeaderboardTable.tsx`.
+     - Optimize animations and implement virtualization for large data sets.
+   - **Next Steps**:
+     - Test rendering performance on mobile and desktop.
+
+#### **3. Authentication State Management**
+   - **Current Issues**:
+     - No token refresh or persistent state.
+   - **Action Plan**:
+     - Implement a token refresh mechanism in auth.tsx.
+     - Add persistent authentication state (e.g., using `localStorage` or `sessionStorage`).
+   - **Next Steps**:
+     - Test authentication flows, including token expiration.
+
+#### **4. Loading State Management**
+   - **Current Issues**:
+     - Inconsistent loading states and missing skeleton loaders.
+   - **Action Plan**:
+     - Standardize loading state handling.
+     - Add skeleton loaders for better UX.
+   - **Next Steps**:
+     - Test loading states across all components.
+
+---
+
+### **Phase 3: Code Quality Improvements (2-3 weeks)**
+
+#### **1. Naming Conventions Standardization**
+   - **Current Issues**:
+     - Inconsistent file and function naming.
+   - **Action Plan**:
+     - Create a style guide for naming conventions.
+     - Add linting rules to enforce consistency.
+   - **Next Steps**:
+     - Refactor files and functions to follow the new conventions.
+
+#### **2. API Response Format Standardization**
+   - **Current Issues**:
+     - Inconsistent response structures.
+   - **Action Plan**:
+     - Standardize API responses using a wrapper utility.
+     - Document response formats and add type definitions.
+   - **Next Steps**:
+     - Test all API endpoints for consistent responses.
+
+#### **3. Type Definitions Improvements**
+   - **Current Issues**:
+     - Missing or inconsistent TypeScript interfaces.
+   - **Action Plan**:
+     - Add comprehensive type definitions for components and API responses.
+     - Centralize common types in a shared folder.
+   - **Next Steps**:
+     - Verify type safety across the codebase.
+
+#### **4. Code Duplication Reduction**
+   - **Current Issues**:
+     - Repeated logic and utility functions.
+   - **Action Plan**:
+     - Extract duplicated code into reusable utilities.
+     - Create shared service modules.
+   - **Next Steps**:
+     - Refactor duplicated code and test shared utilities.
+
+#### **5. Configuration Management Centralization**
+   - **Current Issues**:
+     - Hardcoded values and inconsistent environment variable usage.
+   - **Action Plan**:
+     - Centralize configuration management in a single file.
+     - Add validation for required environment variables.
+   - **Next Steps**:
+     - Test configuration management in different environments.
+
+---
+
+### **Phase 4: Missing Functionality (3-4 weeks)**
+
+#### **1. API Documentation**
+   - **Action Plan**:
+     - Add OpenAPI/Swagger documentation for all endpoints.
+     - Generate an API client from the OpenAPI spec.
+   - **Next Steps**:
+     - Test the API documentation for accuracy.
+
+#### **2. User Management Improvements**
+   - **Action Plan**:
+     - Add user roles and permissions.
+     - Implement user profile management.
+   - **Next Steps**:
+     - Test user management functionality.
+
+#### **3. Notification System Enhancements**
+   - **Action Plan**:
+     - Implement real-time notifications via WebSockets.
+     - Add notification preferences and a notification center.
+   - **Next Steps**:
+     - Test notifications for real-time updates.
+
+#### **4. Analytics & Reporting**
+   - **Action Plan**:
+     - Add analytics and reporting capabilities.
+     - Create data visualization components.
+   - **Next Steps**:
+     - Test analytics and reporting functionality.
+
+---
+
+### **Phase 5: Enhancement Opportunities (2-3 weeks)**
+
+#### **1. Mobile Responsiveness Improvements**
+   - **Action Plan**:
+     - Improve responsiveness and create dedicated mobile views.
+   - **Next Steps**:
+     - Test the UI on different devices.
+
+#### **2. Accessibility Enhancements**
+   - **Action Plan**:
+     - Add ARIA attributes and keyboard navigation.
+   - **Next Steps**:
+     - Test accessibility with screen readers.
+
+#### **3. Internationalization Implementation**
+   - **Action Plan**:
+     - Add language selection and translation files.
+   - **Next Steps**:
+     - Test internationalization with multiple languages.
+
+#### **4. Performance Monitoring Setup**
+   - **Action Plan**:
+     - Implement performance monitoring and error tracking.
+   - **Next Steps**:
+     - Test monitoring tools for accuracy.
+
+---
+
+Let me know which phase or task you'd like to start with, and I can provide more detailed guidance!
+
+GNARC0TICS: currently do you know what ports were serving our app on  ?
+
+GitHub Copilot: Yes, based on the logs you provided earlier:
+
+- **Frontend (Vite Dev Server)**: Running on `http://localhost:5173/`
+- **Backend (Express Server)**: Running on `http://0.0.0.0:5000/` (accessible via `http://localhost:5000/`)
+
+Let me know if you need help configuring or testing these servers!
+
+GNARC0TICS: check our  replit fil
+
+GitHub Copilot: Your .replit file appears to be configured for running a Node.js application with PostgreSQL as the database. Here's a breakdown of the key configurations and any potential improvements:
+
+---
+
+### **Key Configurations in .replit**
+
+1. **Modules**:
+   ```toml
+   modules = ["nodejs-20", "web", "postgresql-16"]
+   ```
+   - Specifies the use of Node.js 20, a web server, and PostgreSQL 16.
+   - **No changes needed** unless you're using a different Node.js or PostgreSQL version.
+
+2. **Run Command**:
+   ```toml
+   run = "npm run dev"
+   ```
+   - This runs the development server using the `npm run dev` command.
+   - Ensure your package.json has a `dev` script defined:
+     ```json
+     "scripts": {
+       "dev": "vite"
+     }
+     ```
+
+3. **Hidden Files**:
+   ```toml
+   hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+   ```
+   - These files and directories are hidden in the Replit workspace.
+   - **No changes needed** unless you want to expose additional files.
+
+4. **Nix Channel**:
+   ```toml
+   [nix]
+   channel = "stable-24_05"
+   ```
+   - Specifies the Nix package manager channel. This is fine as is.
+
+5. **Deployment Configuration**:
+   ```toml
+   [deployment]
+   deploymentTarget = "gce"
+   build = ["npm", "run", "build"]
+   run = ["npm", "run", "start"]
+   ignorePorts = false
+   ```
+   - **Deployment Target**: Google Cloud Engine (`gce`).
+   - **Build Command**: Runs `npm run build` to build the production version.
+   - **Run Command**: Runs `npm run start` to start the production server.
+   - **Improvement**: Ensure your package.json has the following scripts:
+     ```json
+     "scripts": {
+       "build": "vite build",
+       "start": "node dist/server.js"
+     }
+     ```
+
+6. **Ports**:
+   ```toml
+   [[ports]]
+   localPort = 5000
+   externalPort = 80
+
+   [[ports]]
+   localPort = 5001
+   ```
+   - **Port 5000**: Maps to external port 80 (likely for the backend API).
+   - **Port 5001**: Likely for another service (e.g., WebSocket or admin panel).
+   - **Improvement**: Ensure your backend server listens on port `5000` and any additional services on `5001`.
+
+7. **Workflows**:
+   ```toml
+   [workflows]
+   runButton = "Start application"
+
+   [[workflows.workflow]]
+   name = "Project"
+   mode = "parallel"
+   author = "agent"
+
+   [[workflows.workflow.tasks]]
+   task = "workflow.run"
+   args = "Start application"
+
+   [[workflows.workflow]]
+   name = "Start application"
+   author = "agent"
+
+   [workflows.workflow.metadata]
+   agentRequireRestartOnSave = false
+
+   [[workflows.workflow.tasks]]
+   task = "shell.exec"
+   args = "npm run dev"
+   ```
+   - **Run Button**: Starts the application using `npm run dev`.
+   - **Improvement**: Ensure the `npm run dev` script is correctly configured to start both the frontend and backend servers.
+
+8. **Authentication**:
+   ```toml
+   [auth]
+   pageEnabled = false
+   buttonEnabled = false
+   ```
+   - Authentication is disabled for the Replit workspace.
+   - **No changes needed** unless you want to enable authentication for workspace access.
+
+---
+
+### **Potential Improvements**
+
+1. **Environment Variables**:
+   - Ensure your .env file is properly configured and loaded in both development and production environments.
+   - Add a .env file with the following:
+     ```env
+     DATABASE_URL=postgresql://username:password@localhost:5432/database_name
+     API_KEY=your-api-key
+     ```
+
+2. **Port Configuration**:
+   - Verify that your backend server listens on port `5000` and any additional services (e.g., WebSocket) on port `5001`.
+
+3. **Deployment Target**:
+   - If you're not deploying to Google Cloud Engine (`gce`), update the `deploymentTarget` to match your actual deployment platform.
+
+4. **Workflow Tasks**:
+   - Ensure the workflow tasks are correctly configured to start both the frontend and backend servers if needed.
+
+---
+
+Let me know if you'd like help updating any specific part of this configuration!
+
+GNARC0TICS: what guide can i give my replit agent so it  can properly create a workspace and serve my apps front end  back end on the  same deployment, 
+
+GitHub Copilot: To guide your Replit agent in properly creating a workspace and serving both the frontend and backend on the same deployment, you can provide the following detailed instructions:
+
+---
+
+### **1. Define the Workspace Structure**
+Ensure the workspace is structured to clearly separate the frontend and backend while allowing them to work together seamlessly:
+- **Frontend**: Located in client (e.g., React/Vite app).
+- **Backend**: Located in server (e.g., Express.js app).
+
+---
+
+### **2. Update the .replit File**
+Provide a .replit configuration that ensures both the frontend and backend are served together:
+
+```toml
+modules = ["nodejs-20", "web", "postgresql-16"]
+run = "npm run dev"
+hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+deploymentTarget = "gce"
+build = ["npm", "run", "build"]
+run = ["npm", "run", "start"]
+ignorePorts = false
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 5173
+externalPort = 443
+
+[workflows]
+runButton = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[auth]
+pageEnabled = false
+buttonEnabled = false
+```
+
+---
+
+### **3. Create a Unified package.json**
+Ensure the root package.json includes scripts to run both the frontend and backend:
+
+```json
+{
+  "name": "goatedvips",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "cd client && npm run dev",
+    "dev:server": "cd server && npm run dev",
+    "build": "cd client && npm run build && cd ../server && npm run build",
+    "start": "cd server && npm run start"
+  },
+  "dependencies": {
+    "concurrently": "^7.0.0"
+  }
+}
+```
+
+- **Explanation**:
+  - `dev`: Runs both the frontend and backend in development mode.
+  - `build`: Builds both the frontend and backend for production.
+  - `start`: Starts the backend server (serving the frontend build).
+
+---
+
+### **4. Serve the Frontend from the Backend**
+Update your backend (e.g., `server/index.js` or `server/app.js`) to serve the frontend build in production:
+
+```javascript
+const express = require("express");
+const path = require("path");
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Serve the frontend build in production
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../client/dist")));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+  });
+}
+
+// API routes
+app.get("/api/health", (req, res) => {
+  res.json({ status: "healthy", environment: process.env.NODE_ENV });
+});
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+```
+
+---
+
+### **5. Configure Environment Variables**
+Ensure the .env file includes the necessary variables for both the frontend and backend:
+
+```env
+# Backend
+DATABASE_URL=postgresql://username:password@localhost:5432/database_name
+API_KEY=your-api-key
+PORT=5000
+
+# Frontend
+VITE_API_URL=http://localhost:5000/api
+```
+
+---
+
+### **6. Install Dependencies**
+Run the following commands to install dependencies for both the frontend and backend:
+
+```bash
+# Install root dependencies
+npm install
+
+# Install frontend dependencies
+cd client && npm install
+
+# Install backend dependencies
+cd ../server && npm install
+```
+
+---
+
+### **7. Test Locally**
+Run the development server to ensure both the frontend and backend work together:
+
+```bash
+npm run dev
+```
+
+- Frontend: Accessible at `http://localhost:5173`.
+- Backend: Accessible at `http://localhost:5000`.
+
+---
+
+### **8. Deploy to Replit**
+When deploying to Replit:
+1. Ensure the .replit file is configured as shown above.
+2. Push the code to Replit.
+3. Replit will use the `npm run dev` or `npm run start` command to serve both the frontend and backend.
+
+---
+
+### **9. Verify Deployment**
+- Access the app via the Replit deployment URL (e.g., `https://your-app.replit.app`).
+- Test both the frontend and backend endpoints to ensure they are working correctly.
+
+---
+
+Let me know if you need help with any specific part of this setup!
+
+Similar code found with 1 license type
+
+GNARC0TICS: ok, please refine your response  as a direct prompt for the  replit agent
+
+GitHub Copilot: Here’s a refined and direct prompt you can provide to your Replit agent to properly set up the workspace and serve both the frontend and backend on the same deployment:
+
+---
+
+### **Replit Agent Setup Prompt**
+
+1. **Workspace Structure**:
+   - Ensure the workspace has the following structure:
+     - client: Contains the frontend (React/Vite app).
+     - server: Contains the backend (Express.js app).
+
+2. **Install Dependencies**:
+   - Run the following commands to install dependencies for both the frontend and backend:
+     ```bash
+     npm install
+     cd client && npm install
+     cd ../server && npm install
+     ```
+
+3. **Configure .replit**:
+   - Update the .replit file with the following configuration:
+     ```toml
+     modules = ["nodejs-20", "web", "postgresql-16"]
+     run = "npm run dev"
+     hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+
+     [deployment]
+     deploymentTarget = "gce"
+     build = ["npm", "run", "build"]
+     run = ["npm", "run", "start"]
+     ignorePorts = false
+
+     [[ports]]
+     localPort = 5000
+     externalPort = 80
+
+     [[ports]]
+     localPort = 5173
+     externalPort = 443
+     ```
+
+4. **Update package.json**:
+   - Ensure the root package.json includes scripts to run both the frontend and backend:
+     ```json
+     {
+       "name": "goatedvips",
+       "version": "1.0.0",
+       "scripts": {
+         "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+         "dev:client": "cd client && npm run dev",
+         "dev:server": "cd server && npm run dev",
+         "build": "cd client && npm run build && cd ../server && npm run build",
+         "start": "cd server && npm run start"
+       },
+       "dependencies": {
+         "concurrently": "^7.0.0"
+       }
+     }
+     ```
+
+5. **Serve Frontend from Backend**:
+   - Update the backend server (`server/index.js` or `server/app.js`) to serve the frontend build in production:
+     ```javascript
+     const express = require("express");
+     const path = require("path");
+
+     const app = express();
+     const PORT = process.env.PORT || 5000;
+
+     // Serve the frontend build in production
+     if (process.env.NODE_ENV === "production") {
+       app.use(express.static(path.join(__dirname, "../client/dist")));
+
+       app.get("*", (req, res) => {
+         res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+       });
+     }
+
+     // API routes
+     app.get("/api/health", (req, res) => {
+       res.json({ status: "healthy", environment: process.env.NODE_ENV });
+     });
+
+     // Start the server
+     app.listen(PORT, () => {
+       console.log(`Server running on port ${PORT}`);
+     });
+     ```
+
+6. **Environment Variables**:
+   - Add a .env file in the root directory with the following variables:
+     ```env
+     # Backend
+     DATABASE_URL=postgresql://username:password@localhost:5432/database_name
+     API_KEY=your-api-key
+     PORT=5000
+
+     # Frontend
+     VITE_API_URL=http://localhost:5000/api
+     ```
+
+7. **Run the Application**:
+   - Use the following command to start both the frontend and backend in development mode:
+     ```bash
+     npm run dev
+     ```
+
+8. **Deploy the Application**:
+   - Ensure the deployment process uses the `npm run build` and `npm run start` commands to serve the production build.
+
+9. **Verify Deployment**:
+   - Test the application at the deployment URL to ensure both the frontend and backend are working together.
+
+---
+
+This prompt provides clear instructions for the Replit agent to set up and deploy your workspace properly. Let me know if you need further refinements!
+
+Similar code found with 1 license type
