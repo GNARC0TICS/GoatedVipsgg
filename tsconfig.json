@@ -1,13 +1,27 @@
 {
-  "include": ["client/src/**/*", "db/**/*", "server/**/*"],
-  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
+  "include": [
+    "client/src/**/*",
+    "db/**/*",
+    "server/**/*",
+    "main.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    "**/*.test.ts"
+  ],
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
     "noEmit": true,
-    "module": "ESNext",
-    "target": "ESNext",
-    "lib": ["esnext", "dom", "dom.iterable"],
+    "module": "CommonJS",
+    "target": "ES2020",
+    "lib": [
+      "esnext",
+      "dom",
+      "dom.iterable"
+    ],
     "jsx": "react-jsx",
     "strict": true,
     "esModuleInterop": true,
@@ -17,15 +31,31 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "baseUrl": ".",
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "paths": {
-      "@/*": ["./client/src/*"],
-      "@db": ["./db/index.ts"],
-      "@db/*": ["./db/*"],
-      "@components/*": ["./client/src/components/*"],
-      "@lib/*": ["./client/src/lib/*"],
-      "@hooks/*": ["./client/src/hooks/*"],
-      "@server/*": ["./server/*"]
+      "@/*": [
+        "./client/src/*"
+      ],
+      "@db": [
+        "./db/index.ts"
+      ],
+      "@db/*": [
+        "./db/*"
+      ],
+      "@components/*": [
+        "./client/src/components/*"
+      ],
+      "@lib/*": [
+        "./client/src/lib/*"
+      ],
+      "@hooks/*": [
+        "./client/src/hooks/*"
+      ],
+      "@server/*": [
+        "./server/*"
+      ]
     },
     "typeRoots": [
       "./node_modules/@types",

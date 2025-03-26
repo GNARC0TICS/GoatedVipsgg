@@ -10,9 +10,9 @@ import userSessionsRouter from "./routes/user-sessions";
 import userProfileRouter from "./routes/user-profile";
 import telegramApiRouter from "./routes/telegram-api";
 import apiTokensRouter from "./routes/api-tokens";
-import { db, pgPool } from "../db/connection";
-// Import specific schemas from the updated schema structure
-import * as schema from "@db/schema";
+import wagerRaceRouter from "./routes/wager-race";
+import { db } from "../db/connection";
+import { users, wagerRaces, userSessions, userActivityLog } from "@db/schema/index";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -150,6 +150,8 @@ export function registerRoutes(app: Express): Server {
   app.use("/api/telegram", telegramApiRouter);
   // Register API tokens routes
   app.use("/api/admin/api-tokens", apiTokensRouter);
+  // Register wager race routes
+  app.use(wagerRaceRouter);
   return httpServer;
 }
 
@@ -288,9 +290,12 @@ function setupRESTRoutes(app: Express) {
         return res.json(cachedProfile);
       }
 
-      const user = await db.query.users.findFirst({
-        where: eq(schema.users.id, userId),
-      });
+      const user = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1)
+        .then(rows => rows[0]);
 
       if (!user) {
         return res.status(404).json({ error: "User not found" });
@@ -317,15 +322,14 @@ function setupRESTRoutes(app: Express) {
       const { username, telegramUsername, bio, profileColor } = req.body;
 
       const updatedUser = await db
-        .update(schema.users)
+        .update(users)
         .set({
           username,
-          telegramUsername,
-          bio,
-          profileColor,
-          updatedAt: new Date(),
+          telegramUsername: telegramUsername || null,
+          bio: bio || null,
+          profileColor: profileColor || null,
         })
-        .where(eq(schema.users.id, userId))
+        .where(eq(users.id, userId))
         .returning();
 
       if (!updatedUser[0]) {
@@ -817,6 +821,8 @@ async function handleUserProfileRequest(req: any, res: any) {
   }
 }
 
+import { syncLeaderboardData } from "./utils/data-sync";
+
 async function handleAffiliateStats(req: any, res: any) {
   try {
     // Use the cached data function instead of making a direct API call
@@ -827,36 +833,7 @@ async function handleAffiliateStats(req: any, res: any) {
 
     // Store the leaderboard data in the database for persistence
     try {
-      // First, let's store affiliate stats for today's data
-      // Store daily stats
-      for (const entry of data.data.today.data) {
-        await pgPool.query(
-          'INSERT INTO affiliate_stats (uid, name, wagered, period, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW()) ON CONFLICT (uid, period) DO UPDATE SET name = EXCLUDED.name, wagered = EXCLUDED.wagered, updated_at = NOW()',
-          [entry.uid, entry.name, entry.wagered.today, 'today']
-        );
-      }
-
-      // Store the current wager race data
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth();
-      const raceId = `${currentYear}${(currentMonth + 1).toString().padStart(2, "0")}`;
-      const endOfMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
-      const startDate = new Date(currentYear, currentMonth, 1);
-
-      // Insert or update race
-      await pgPool.query(
-        'INSERT INTO wager_races (id, title, status, start_date, end_date, prize_pool, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) ON CONFLICT (id) DO UPDATE SET updated_at = NOW()',
-        [raceId, `Monthly Wager Race - ${new Date(startDate).toLocaleString('default', {month: 'long'})} ${currentYear}`, 'live', startDate, endOfMonth, 500]
-      );
-
-      // Store the top 10 participants
-      for (const [index, participant] of data.data.monthly.data.slice(0, 10).entries()) {
-        await pgPool.query(
-          'INSERT INTO wager_race_participants (race_id, uid, name, wagered, position, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) ON CONFLICT (race_id, uid) DO UPDATE SET name = EXCLUDED.name, wagered = EXCLUDED.wagered, position = EXCLUDED.position, updated_at = NOW()',
-          [raceId, participant.uid, participant.name, participant.wagered.this_month, index + 1]
-        );
-      }
+      await syncLeaderboardData(data);
     } catch (dbError) {
       // Log database errors but don't fail the request
       log(`Error storing leaderboard data: ${dbError}`);
@@ -887,11 +864,11 @@ async function handleAdminLogin(req: any, res: any) {
     
     const [admin] = await db
       .select()
-      .from(schema.users)
+      .from(users)
       .where(
         isEmail 
-          ? eq(schema.users.email, userIdentifier) 
-          : eq(schema.users.username, userIdentifier)
+          ? eq(users.email, userIdentifier) 
+          : eq(users.username, userIdentifier)
       )
       .limit(1);
 

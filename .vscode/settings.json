@@ -11,6 +11,11 @@
     "typescriptreact": "javascript"
   },
   "tailwindCSS.experimental.classRegex": [
-    ["cn\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
-  ]
+    ["cn\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"
+  ],
+  "hqServer.projectRoot": "/Users/gnarcotic/GOATED VIPS GG/workspace/GoatedVipsgg",
+  "hqServer.defaultPort": 8080,
+  "hqServer.showOnStatusbar": true,
+  "hqServer.browser.preferredBrowser": "chrome",
+  "liveServer.settings.root": "/client"
 }

@@ -1,0 +1,5 @@
+{
+  "hqServer.defaultPort": 8080,
+  "hqServer.showOnStatusbar": true,
+  "hqServer.browser.preferredBrowser": "chrome"
+}

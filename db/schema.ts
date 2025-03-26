@@ -344,11 +344,11 @@ export type InsertTelegramVerificationRequest =
 export type SelectTelegramVerificationRequest =
   typeof telegramVerificationRequests.$inferSelect;
 
-// Export necessary variables and schemas
+// Re-export telegram schema exports
 export {
   challenges,
   challengeEntries,
   telegramBotState,
   telegramUsers,
   verificationRequests,
-};
+} from "./schema/telegram";
