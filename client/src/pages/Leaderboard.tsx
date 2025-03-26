@@ -9,6 +9,23 @@ import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { useLoading } from "@/contexts/LoadingContext";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
+const debounce = (func: () => void, wait: number) => {
+  let timeoutId: NodeJS.Timeout | null = null;
+
+  return (...args: any[]) => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => {
+      func(...args);
+      timeoutId = null;
+    }, wait);
+
+    return { cancel: () => clearTimeout(timeoutId) };
+  };
+};
+
+
 export default function Leaderboard() {
   const [location] = useLocation();
   const [period, setPeriod] = useState<TimePeriod>("today");
@@ -65,6 +82,18 @@ export default function Leaderboard() {
       stopLoadingFor(loadingKey);
     });
   }, [refetch, loadingKey, startLoadingFor, stopLoadingFor]);
+
+  const loadLeaderboardData = useCallback(() => {
+    startLoadingFor(loadingKey, "spinner", 500);
+    refetch().finally(() => stopLoadingFor(loadingKey));
+  }, [refetch, loadingKey, startLoadingFor, stopLoadingFor]);
+
+  useEffect(() => {
+    const debouncedLoad = debounce(loadLeaderboardData, 1000); 
+    debouncedLoad();
+    return () => debouncedLoad.cancel?.();
+  }, [loadLeaderboardData]);
+
 
   if (error || !leaderboardData) {
     return (
