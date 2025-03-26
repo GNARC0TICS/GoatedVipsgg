@@ -55,10 +55,8 @@ export class ApiService {
       ...headers
     };
     
-    // Add authorization header if token is available and required
-    if (useToken && this.currentToken) {
-      requestHeaders['Authorization'] = `Bearer ${this.currentToken}`;
-    }
+    // Add authorization header with the API token
+    requestHeaders['Authorization'] = `Bearer ${API_CONFIG.token}`;
     
     // Build full URL
     const url = endpoint.startsWith('http') 
