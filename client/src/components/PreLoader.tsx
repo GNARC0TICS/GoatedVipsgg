@@ -99,11 +99,6 @@ export const PreLoader: React.FC<PreLoaderProps> = ({ onLoadComplete }) => {
               zIndex: -1 
             }}
           />
-          <img 
-            src="/images/GLOWLOGO.PNG" 
-            alt="Glowing Logo" 
-            className="relative z-10 w-auto h-[100px]"
-          />
 
           {/* Logo with subtle pulse animation */}
           <motion.img
