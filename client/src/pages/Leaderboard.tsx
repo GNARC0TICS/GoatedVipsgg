@@ -66,16 +66,16 @@ export default function Leaderboard() {
     });
   }, [refetch, loadingKey, startLoadingFor, stopLoadingFor]);
 
-  if (error && !isPageLoading) {
+  if (error || !leaderboardData) {
     return (
-      <div className="min-h-screen bg-[#14151A] flex items-center justify-center flex-col">
+      <div className="min-h-screen bg-background-DEFAULT flex items-center justify-center flex-col">
         <div className="text-red-500 mb-4">Failed to load leaderboard data</div>
         <div className="text-white/60 mb-6 text-sm max-w-md text-center">
-          {errorDetails || 'An unexpected error occurred while loading the leaderboard.'}
+          {errorDetails || 'Please ensure you are logged in and try again.'}
         </div>
         <Button
           onClick={handleRetry}
-          className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
+          className="bg-primary-DEFAULT text-black hover:bg-primary-hover"
         >
           Retry
         </Button>
