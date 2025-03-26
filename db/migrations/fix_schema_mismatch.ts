@@ -86,6 +86,15 @@ export async function fixSchemaMismatch() {
     } catch (error) {
       log(`Error creating indexes: ${error}`);
     }
+    
+    // Add isEmailVerified column if missing 
+    try {
+      await db.execute(sql`ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS "isEmailVerified" BOOLEAN DEFAULT FALSE`);
+      log("isEmailVerified column added to users table");
+    } catch (error) {
+      log(`Error adding isEmailVerified column: ${error}`);
+    }
 
     log("Migration completed: fix_schema_mismatch");
     return true;

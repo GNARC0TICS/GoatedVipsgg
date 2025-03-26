@@ -41,7 +41,7 @@ function formatNumber(num: number): string {
   return num.toString();
 }
 
-import { LeaderboardEntry, LeaderboardTableProps } from './types';
+import { LeaderboardEntry, LeaderboardTableProps } from '@/components/types';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -86,6 +86,7 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
   
   // Filter data based on search term
   const filteredData = useMemo(() => {
+    if (!data) return [];
     if (!searchTerm.trim()) return data;
     return data.filter(entry => 
       entry.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -93,9 +94,9 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
   }, [data, searchTerm]);
   
   // Calculate pagination
-  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil((filteredData?.length || 0) / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedData = filteredData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const paginatedData = filteredData?.slice(startIndex, startIndex + ITEMS_PER_PAGE) || [];
   
   if (!data || data.length === 0) {
     return (

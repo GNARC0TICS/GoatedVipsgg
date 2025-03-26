@@ -8,7 +8,7 @@ import { PageTransition } from "@/components/PageTransition";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { useLoading } from "@/contexts/LoadingContext";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { LeaderboardEntry, LeaderboardTableProps, LoadingSpinnerProps } from "@/components/types";
+import { LeaderboardEntry } from "@/components/types";
 
 function debounce<T extends (...args: any[]) => any>(func: T, wait: number) {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -41,6 +41,7 @@ export default function Leaderboard() {
   const { startLoadingFor, stopLoadingFor, isLoadingFor } = useLoading();
   const loadingKey = `leaderboard-page-${period}`;
 
+  // Use TypeScript assertion to match the exact type signature
   const { 
     data: leaderboardData, 
     isLoading: dataLoading, 
@@ -48,12 +49,15 @@ export default function Leaderboard() {
     refetch,
     errorDetails: apiErrorDetails
   } = useLeaderboard(period) as {
-    data: LeaderboardEntry[];
+    data: any[];
     isLoading: boolean;
     error: Error | null;
     refetch: () => Promise<any>;
     errorDetails: string;
   };
+  
+  // Type assertion to make TypeScript happy
+  const typedLeaderboardData = leaderboardData as unknown as LeaderboardEntry[];
   
   // Default error message if none provided
   const errorDetails = error ? error.message : 'An unknown error occurred';
@@ -174,9 +178,9 @@ export default function Leaderboard() {
           </div>
         ) : (
           <>
-            {leaderboardData && leaderboardData.length > 0 ? (
+            {typedLeaderboardData && typedLeaderboardData.length > 0 ? (
               <LeaderboardTable 
-                data={leaderboardData as LeaderboardEntry[]} 
+                data={typedLeaderboardData} 
                 period={period} 
               />
             ) : (
