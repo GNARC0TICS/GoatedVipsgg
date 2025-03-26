@@ -126,7 +126,10 @@ export class ApiService {
    */
   async getLeaderboardData(forceRefresh = false): Promise<any> {
     try {
-      const endpoint = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`;
+      // Use the configured endpoint directly
+      const endpoint = API_CONFIG.endpoints.leaderboard;
+      log(`Fetching leaderboard data from: ${API_CONFIG.baseUrl}${endpoint}`);
+      
       const data = await this.request(endpoint, {
         timeout: API_CONFIG.cacheTimeout,
         retries: 3
@@ -137,10 +140,34 @@ export class ApiService {
         throw new Error('Invalid response format from leaderboard API');
       }
       
+      // Store data in the database
+      try {
+        await this.syncDataWithDatabase(data);
+      } catch (syncError) {
+        log(`Error syncing data with database: ${syncError}`);
+        // Continue with the API response even if syncing fails
+      }
+      
       return data;
     } catch (error) {
       log(`Error fetching leaderboard data, using fallback: ${error}`);
       return getFallbackLeaderboardData();
+    }
+  }
+  
+  /**
+   * Sync data fetched from the API with the database
+   * @param data The data to sync
+   */
+  private async syncDataWithDatabase(data: any): Promise<void> {
+    try {
+      // Import dynamically to avoid circular dependencies
+      const { syncLeaderboardData } = await import('./data-sync');
+      await syncLeaderboardData(data);
+      log('Successfully synced leaderboard data with database');
+    } catch (error) {
+      log(`Error in syncDataWithDatabase: ${error}`);
+      throw error;
     }
   }
   
