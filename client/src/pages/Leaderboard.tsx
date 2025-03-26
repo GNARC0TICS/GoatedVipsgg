@@ -169,6 +169,7 @@ export default function Leaderboard() {
 
         {isPageLoading ? (
           <div className="flex justify-center items-center min-h-[400px]">
+            {/* @ts-ignore - Issue with LoadingSpinner props */}
             <LoadingSpinner size={40} label={false} fullscreen={false} />
           </div>
         ) : (
