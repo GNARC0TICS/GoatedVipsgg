@@ -15,6 +15,7 @@ import wagerRaceRouter from "./routes/wager-race";
 import authRoutes from "./routes/auth-routes";
 import { db } from "../db/connection";
 import { users, wagerRaces, userSessions, userActivityLog } from "@db/schema/index";
+import { affiliateStats, wagerRaceParticipants } from "@db/schema/affiliate";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -211,24 +212,33 @@ function setupRESTRoutes(app: Express) {
   // Modified current race endpoint to handle month end
   app.get("/api/wager-races/current", raceRateLimiter, async (_req, res) => {
     try {
-      // Get data from our database instead of external API
-      const currentRace = await db
-        .select()
-        .from(wagerRaces)
-        .where(eq(wagerRaces.status, "live"))
-        .orderBy(desc(wagerRaces.startDate))
-        .limit(1);
-
-      if (!currentRace[0]) {
-        return res.status(404).json({ error: "No active race found" });
+      // Try to get current race data from our database, but we'll use leaderboard data as fallback
+      // in case of schema mismatches
+      let currentRace = null;
+      try {
+        const raceResult = await db
+          .select()
+          .from(wagerRaces)
+          .where(eq(wagerRaces.status, "live"))
+          .orderBy(desc(wagerRaces.startDate))
+          .limit(1);
+        
+        if (raceResult && raceResult.length > 0) {
+          currentRace = raceResult[0];
+        }
+      } catch (dbError) {
+        // Log the error but continue with API data
+        log(`Database query error: ${dbError}`);
+        // We'll create a synthetic race based on current date below
       }
 
-      const participants = await db
-        .select()
-        .from(wagerRaceParticipants)
-        .where(eq(wagerRaceParticipants.raceId, currentRace[0].id))
-        .orderBy(desc(wagerRaceParticipants.wagered))
-        .limit(10);
+      // We can continue without a current race since we'll create one from the API data
+
+      // Get the leaderboard data for the entire function, which we'll use if the database query fails
+      const leaderboardData = await getLeaderboardData(true);
+      
+      // Create race data from leaderboard directly since there might be schema mismatches with the database
+      // This approach is more reliable as it doesn't depend on the database schema
 
       // Get current month's info
       const now = new Date();
@@ -254,15 +264,17 @@ function setupRESTRoutes(app: Express) {
         // Use a placeholder for now
         const existingEntry = null;
 
+        // We already have leaderboardData fetched at the beginning of this function
+
         const prizeDistribution = [0.5, 0.3, 0.1, 0.05, 0.05, 0, 0, 0, 0, 0]; //Example distribution, needs to be defined elsewhere
 
-        if (!existingEntry && stats.data.monthly.data.length > 0) {
+        if (!existingEntry && leaderboardData.data.monthly.data.length > 0) {
           const now = new Date();
           const currentMonth = now.getMonth();
           const currentYear = now.getFullYear();
 
           // Store complete race results with detailed participant data
-          const winners = stats.data.monthly.data
+          const winners = leaderboardData.data.monthly.data
             .slice(0, 10)
             .map((participant: any, index: number) => ({
               uid: participant.uid,
@@ -296,13 +308,16 @@ function setupRESTRoutes(app: Express) {
       const actualYear = currentYear;
       const actualMonth = currentMonth;
 
+      // We already have leaderboardData from earlier
+      // No need to fetch it again
+      
       const raceData = {
         id: `${actualYear}${(actualMonth + 1).toString().padStart(2, "0")}`,
         status: "live", 
         startDate: new Date(actualYear, actualMonth, 1).toISOString(),
         endDate: new Date(actualYear, actualMonth + 1, 0, 23, 59, 59).toISOString(),
         prizePool: 500, // Monthly race prize pool
-        participants: stats.data.monthly.data
+        participants: leaderboardData.data.monthly.data
           .map((participant: any, index: number) => ({
             uid: participant.uid,
             name: participant.name,
@@ -876,39 +891,78 @@ import { syncLeaderboardData } from "./utils/data-sync";
 
 async function handleAffiliateStats(req: any, res: any) {
   try {
-    const stats = await db
-      .select()
-      .from(affiliateStats)
-      .orderBy(desc(affiliateStats.timestamp))
-      .limit(100);
-
-    // Transform database records into expected format
-    const formattedData = {
-      data: {
-        all_time: { data: stats.map(stat => ({
-          uid: stat.userId,
-          wagered: {
-            today: 0, // Calculate from daily stats
-            this_week: 0, // Calculate from weekly stats
-            this_month: stat.totalWager,
-            all_time: stat.totalWager
-          }
-        }))}
-      }
-    };
-
-    res.json(formattedData);
-
-    // Store the leaderboard data in the database for persistence
+    // Get the latest leaderboard data from cache or API
+    const leaderboardData = await getLeaderboardData();
+    
+    // Check if we have valid leaderboard data
+    if (leaderboardData && leaderboardData.data && leaderboardData.data.all_time) {
+      // Use the data directly from the leaderboard cache
+      return res.json(leaderboardData);
+    }
+    
+    // If we don't have valid leaderboard data, fallback to database
     try {
-      await syncLeaderboardData(data);
+      // Fetch from database as alternative data source
+      const stats = await db
+        .select()
+        .from(affiliateStats)
+        .orderBy(desc(affiliateStats.updatedAt))
+        .limit(100);
+
+      if (!stats || stats.length === 0) {
+        // If no database entries, return an empty structure
+        return res.json({
+          status: "success",
+          metadata: {
+            totalUsers: 0,
+            lastUpdated: new Date().toISOString()
+          },
+          data: {
+            today: { data: [] },
+            weekly: { data: [] },
+            monthly: { data: [] },
+            all_time: { data: [] }
+          }
+        });
+      }
+
+      // Transform database records into expected format
+      const formattedData = {
+        status: "success",
+        metadata: {
+          totalUsers: stats.length,
+          lastUpdated: new Date().toISOString()
+        },
+        data: {
+          today: { data: [] },
+          weekly: { data: [] },
+          monthly: { data: [] },
+          all_time: { 
+            data: stats.map(stat => ({
+              uid: stat.uid,
+              name: stat.name,
+              wagered: {
+                today: 0,
+                this_week: 0,
+                this_month: 0,
+                all_time: parseFloat(stat.wagered as any)
+              }
+            }))
+          }
+        }
+      };
+
+      // Send the formatted data
+      return res.json(formattedData);
+        
     } catch (dbError) {
-      // Log database errors but don't fail the request
-      log(`Error storing leaderboard data: ${dbError}`);
+      // Log database errors but don't fail the request if we've already sent data
+      log(`Error fetching backup leaderboard data: ${dbError}`);
+      throw dbError; // Re-throw to be caught by the outer catch
     }
   } catch (error) {
     log(`Error fetching leaderboard data: ${error}`);
-    res.status(500).json({
+    return res.status(500).json({
       status: "error",
       message: "Failed to fetch leaderboard data",
       error: error instanceof Error ? error.message : "Unknown error"
