@@ -32,8 +32,27 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
   return chunks;
 }
 
+// Add a function to check if the database connection is active
+async function isDatabaseConnectionActive(): Promise<boolean> {
+  try {
+    // Try to execute a simple query to check connection
+    await db.execute(sql`SELECT 1`);
+    return true;
+  } catch (error) {
+    log(`Database connection check failed: ${error}`);
+    return false;
+  }
+}
+
 export async function syncLeaderboardData(data: LeaderboardData): Promise<boolean> {
   try {
+    // First, check if the database connection is active
+    const isDbActive = await isDatabaseConnectionActive();
+    if (!isDbActive) {
+      log('Database connection is not active, skipping data sync');
+      return false;
+    }
+    
     // Safely access data with proper null checks
     const todayData = data?.data?.today?.data || [];
     const weeklyData = data?.data?.weekly?.data || [];
@@ -165,6 +184,13 @@ export async function syncLeaderboardData(data: LeaderboardData): Promise<boolea
           const batch = batches[i];
           
           try {
+            // Check database connection before each batch
+            const isActive = await isDatabaseConnectionActive();
+            if (!isActive) {
+              log(`Database connection lost during batch ${i+1}/${batches.length} for period ${period}, skipping remaining batches`);
+              break; // Exit the batch loop if connection is lost
+            }
+            
             // Split into entries to insert and update
             const entriesToInsert = batch.filter(e => !existingUids.has(e.uid));
             const entriesToUpdate = batch.filter(e => existingUids.has(e.uid));
@@ -183,6 +209,13 @@ export async function syncLeaderboardData(data: LeaderboardData): Promise<boolea
             const updateBatches = chunkArray<DbEntry>(entriesToUpdate, updateBatchSize);
             
             for (const updateBatch of updateBatches) {
+              // Check database connection before each update batch
+              const isUpdateBatchActive = await isDatabaseConnectionActive();
+              if (!isUpdateBatchActive) {
+                log(`Database connection lost during update batch for period ${period}, skipping remaining updates`);
+                break; // Exit the update batch loop if connection is lost
+              }
+              
               for (const entry of updateBatch) {
                 try {
                   await db.update(affiliateStats)
@@ -198,8 +231,17 @@ export async function syncLeaderboardData(data: LeaderboardData): Promise<boolea
                       )
                     );
                   totalUpdated++;
-                } catch (updateError) {
-                  log(`Error updating entry for UID ${entry.uid} in period ${period}: ${updateError}`);
+                } catch (error: any) {
+                  log(`Error updating entry for UID ${entry.uid} in period ${period}: ${error}`);
+                  
+                  // Check if this is a connection error and break if needed
+                  const errorStr = String(error);
+                  if (errorStr.includes("Cannot use a pool after calling end") || 
+                      errorStr.includes("connection") || 
+                      errorStr.includes("pool")) {
+                    log(`Database connection error detected, stopping update process`);
+                    break;
+                  }
                 }
               }
             }

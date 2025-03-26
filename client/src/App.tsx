@@ -43,7 +43,7 @@ import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminLogin from "./pages/admin/login"; // Add import for AdminLogin
-import Profile from "@/pages/profile";
+import ProfilePage from "@/pages/profile";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -170,7 +170,7 @@ function Router() {
             {/* Protected Routes */}
             <Route path="/profile">
               <ProtectedRoute>
-                <Profile />
+                <ProfilePage />
               </ProtectedRoute>
             </Route>
             <Route path="/bonus-codes">

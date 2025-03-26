@@ -191,8 +191,74 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
             );
           }
 
-          freshData = (await response.json()) as APIResponse;
-          console.log('Received fresh leaderboard data:', freshData);
+          const jsonData = await response.json();
+          console.log('Received fresh leaderboard data:', jsonData);
+          
+          // Validate the data structure
+          if (!jsonData || typeof jsonData !== 'object') {
+            console.error('Invalid response format: not an object');
+            setErrorDetails('Invalid data format received from server');
+            
+            // If we have cached data, use it
+            if (existingData) {
+              console.log('Using cached data due to invalid response format');
+              return existingData;
+            }
+            
+            throw new LeaderboardAPIError(
+              'Invalid response format',
+              500,
+              'Response is not a valid JSON object'
+            );
+          }
+          
+          // Check for required fields
+          if (!jsonData.data) {
+            console.error('Invalid response: missing data field');
+            setErrorDetails('Invalid data received from server (missing data field)');
+            
+            // If we have cached data, use it
+            if (existingData) {
+              console.log('Using cached data due to missing data field');
+              return existingData;
+            }
+            
+            throw new LeaderboardAPIError(
+              'Invalid response: missing data field',
+              500,
+              'Response is missing the data field'
+            );
+          }
+          
+          // Try to adapt to different response structures if needed
+          if (!jsonData.data[timePeriod]) {
+            console.warn(`Period ${timePeriod} not found in response, attempting to normalize data`);
+            
+            // Try to adapt to the structure we expect
+            if (jsonData.status && jsonData.data && 
+                (jsonData.data.today || jsonData.data.weekly || 
+                 jsonData.data.monthly || jsonData.data.all_time)) {
+              freshData = jsonData as APIResponse;
+            } else {
+              // Create a normalized structure from whatever we got
+              freshData = {
+                status: jsonData.status || "success",
+                metadata: jsonData.metadata || {
+                  totalUsers: Array.isArray(jsonData.data) ? jsonData.data.length : 0,
+                  lastUpdated: new Date().toISOString()
+                },
+                data: {
+                  today: { data: jsonData.today || [] },
+                  weekly: { data: jsonData.weekly || [] },
+                  monthly: { data: jsonData.monthly || [] },
+                  all_time: { data: jsonData.all_time || [] }
+                }
+              };
+            }
+          } else {
+            // Standard format
+            freshData = jsonData as APIResponse;
+          }
           
         } catch (fetchError) {
           // Clear the timeout if there was an error
@@ -316,7 +382,30 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
   const fallbackData: Entry[] = [];
   
   // Extract the data for the requested time period, with fallback
-  const periodData = data?.data?.[periodKey]?.data || fallbackData;
+  const periodData = (() => {
+    // For debugging purposes
+    if (!data) {
+      console.warn('No data available for leaderboard');
+      return fallbackData;
+    }
+    
+    if (!data.data) {
+      console.warn('Leaderboard data missing "data" property:', data);
+      return fallbackData;
+    }
+    
+    if (!data.data[periodKey]) {
+      console.warn(`Leaderboard data missing "${periodKey}" period:`, data.data);
+      return fallbackData;
+    }
+    
+    if (!Array.isArray(data.data[periodKey].data)) {
+      console.warn(`Leaderboard "${periodKey}" period has invalid data (not an array):`, data.data[periodKey]);
+      return fallbackData;
+    }
+    
+    return data.data[periodKey].data;
+  })();
   
   // Stop loading when data is available or on error
   useEffect(() => {

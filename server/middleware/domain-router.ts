@@ -23,7 +23,11 @@ export function domainRouter(req: Request, res: Response, next: NextFunction) {
   (req as any).isAdminDomain = hostname === ADMIN_DOMAIN || 
                                hostname.startsWith(`${ADMIN_DOMAIN}.`);
   
-  log(`Request from ${hostname} (isAdminDomain: ${(req as any).isAdminDomain})`);
+  // Only log hostname for API endpoints to reduce console spam
+  const path = req.path;
+  if (path.startsWith('/api/') && !path.includes('health')) {
+    log(`Request from ${hostname} (isAdminDomain: ${(req as any).isAdminDomain}) to ${path}`);
+  }
   
   // Let the request continue - route handling will be done in the routes
   next();

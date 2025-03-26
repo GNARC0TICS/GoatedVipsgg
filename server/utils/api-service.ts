@@ -58,8 +58,12 @@ export class ApiService {
     // Add authorization header if token is available
     if (useToken && this.currentToken) {
       requestHeaders['Authorization'] = `Bearer ${this.currentToken}`;
+      log('Using current token from memory');
     } else if (useToken && API_CONFIG.token) {
       requestHeaders['Authorization'] = `Bearer ${API_CONFIG.token}`;
+      log('Using token from API_CONFIG');
+    } else if (useToken) {
+      log('Warning: No API token available for request to: ' + endpoint);
     }
     
     // Build full URL
