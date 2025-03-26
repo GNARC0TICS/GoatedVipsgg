@@ -37,6 +37,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="mb-8"
+            style={{ position: 'relative' }}
           >
             <video
               autoPlay
@@ -44,6 +45,7 @@ export default function Home() {
               muted
               playsInline
               className="mx-auto h-64 md:h-80 w-auto object-contain"
+              style={{ position: 'relative', zIndex: 0 }}
             >
               <source src="/images/FINAL.mp4" type="video/mp4" />
             </video>
