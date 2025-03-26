@@ -11,7 +11,7 @@ type Wager = {
   all_time: number;
 };
 
-type Entry = {
+export type Entry = {
   uid: string;
   name: string;
   wagered: Wager;
@@ -79,13 +79,22 @@ function createFallbackResponse(): APIResponse {
   };
 }
 
-export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
+export function useLeaderboard(timePeriod: TimePeriod, page: number = 1): {
+  data: Entry[];
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => Promise<any>;
+  errorDetails?: string;
+  totalUsers: number;
+  lastUpdated: string;
+  fetchAttempts: number;
+} {
   const queryClient = useQueryClient();
   const { startLoadingFor, stopLoadingFor, isLoadingFor } = useLoading();
   const loadingKey = `leaderboard-${timePeriod}`;
   
   // Create a state for detailed error information
-  const [errorDetails, setErrorDetails] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string>('');
   
   // Track if this is the initial load
   const isInitialLoadRef = useRef(true);
@@ -95,7 +104,7 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1) {
   
   useEffect(() => {
     // Reset error details when time period changes
-    setErrorDetails(null);
+    setErrorDetails('');
     fetchAttemptsRef.current = 0;
     
     // Start loading when period changes

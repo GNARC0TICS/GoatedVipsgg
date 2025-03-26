@@ -8,22 +8,31 @@ import { PageTransition } from "@/components/PageTransition";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { useLoading } from "@/contexts/LoadingContext";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { LeaderboardEntry, LeaderboardTableProps, LoadingSpinnerProps } from "@/components/types";
 
-const debounce = (func: () => void, wait: number) => {
-  let timeoutId: NodeJS.Timeout | null = null;
+function debounce<T extends (...args: any[]) => any>(func: T, wait: number) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-  return (...args: any[]) => {
+  function debouncedFunction(this: any, ...args: Parameters<T>) {
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
+    
     timeoutId = setTimeout(() => {
-      func(...args);
-      timeoutId = null;
+      func.apply(this, args);
+      timeoutId = undefined;
     }, wait);
+  }
 
-    return { cancel: () => clearTimeout(timeoutId) };
+  debouncedFunction.cancel = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = undefined;
+    }
   };
-};
+
+  return debouncedFunction as T & { cancel: () => void };
+}
 
 
 export default function Leaderboard() {
@@ -36,9 +45,18 @@ export default function Leaderboard() {
     data: leaderboardData, 
     isLoading: dataLoading, 
     error,
-    errorDetails = null,
-    refetch 
-  } = useLeaderboard(period);
+    refetch,
+    errorDetails: apiErrorDetails
+  } = useLeaderboard(period) as {
+    data: LeaderboardEntry[];
+    isLoading: boolean;
+    error: Error | null;
+    refetch: () => Promise<any>;
+    errorDetails: string;
+  };
+  
+  // Default error message if none provided
+  const errorDetails = error ? error.message : 'An unknown error occurred';
 
   const isPageLoading = dataLoading || isLoadingFor(loadingKey);
 
@@ -151,10 +169,31 @@ export default function Leaderboard() {
 
         {isPageLoading ? (
           <div className="flex justify-center items-center min-h-[400px]">
-            <LoadingSpinner size={40} />
+            <LoadingSpinner size={40} label={false} fullscreen={false} />
           </div>
         ) : (
-          <LeaderboardTable data={leaderboardData || []} period={period} />
+          <>
+            {leaderboardData && leaderboardData.length > 0 ? (
+              <LeaderboardTable 
+                data={leaderboardData as LeaderboardEntry[]} 
+                period={period} 
+              />
+            ) : (
+              <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm p-8 text-center">
+                <div className="text-xl font-semibold mb-2">No Data Available</div>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  There's no leaderboard data available for the {period} period. Please try another time period or check back later.
+                </p>
+                <Button 
+                  onClick={handleRetry} 
+                  variant="outline" 
+                  className="mt-4"
+                >
+                  Refresh Data
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </PageTransition>
