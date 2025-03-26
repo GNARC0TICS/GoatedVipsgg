@@ -12,7 +12,7 @@ import { Layout } from "@/components/Layout";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Redirect } from "@/lib/navigation";
 import { motion } from "framer-motion";
-import { ParticleBackground } from "./components/ParticleBackground"; // Added import
+import { BackgroundEffect } from "./components/BackgroundEffect";
 
 
 // Import all pages
@@ -283,7 +283,7 @@ function AppContent() {
   return (
     <AnimatePresence mode="wait">
       <div className="relative min-h-screen">
-        <ParticleBackground />
+        <BackgroundEffect />
         <div className="relative z-10">
           {isInitialLoad ? (
             <PreLoader onLoadComplete={handleLoadComplete} />
@@ -302,6 +302,3 @@ function AppContent() {
 }
 
 export default App;
-
-
-// ParticleBackground component is now imported from "./components/ParticleBackground"
