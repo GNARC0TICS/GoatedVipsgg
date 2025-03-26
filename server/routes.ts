@@ -211,8 +211,24 @@ function setupRESTRoutes(app: Express) {
   // Modified current race endpoint to handle month end
   app.get("/api/wager-races/current", raceRateLimiter, async (_req, res) => {
     try {
-      // Use cached data instead of making a new API call
-      const stats = await getLeaderboardData();
+      // Get data from our database instead of external API
+      const currentRace = await db
+        .select()
+        .from(wagerRaces)
+        .where(eq(wagerRaces.status, "live"))
+        .orderBy(desc(wagerRaces.startDate))
+        .limit(1);
+
+      if (!currentRace[0]) {
+        return res.status(404).json({ error: "No active race found" });
+      }
+
+      const participants = await db
+        .select()
+        .from(wagerRaceParticipants)
+        .where(eq(wagerRaceParticipants.raceId, currentRace[0].id))
+        .orderBy(desc(wagerRaceParticipants.wagered))
+        .limit(10);
 
       // Get current month's info
       const now = new Date();
@@ -860,11 +876,28 @@ import { syncLeaderboardData } from "./utils/data-sync";
 
 async function handleAffiliateStats(req: any, res: any) {
   try {
-    // Use the cached data function instead of making a direct API call
-    const data = await getLeaderboardData();
+    const stats = await db
+      .select()
+      .from(affiliateStats)
+      .orderBy(desc(affiliateStats.timestamp))
+      .limit(100);
 
-    // Send the data back to the client immediately
-    res.json(data);
+    // Transform database records into expected format
+    const formattedData = {
+      data: {
+        all_time: { data: stats.map(stat => ({
+          uid: stat.userId,
+          wagered: {
+            today: 0, // Calculate from daily stats
+            this_week: 0, // Calculate from weekly stats
+            this_month: stat.totalWager,
+            all_time: stat.totalWager
+          }
+        }))}
+      }
+    };
+
+    res.json(formattedData);
 
     // Store the leaderboard data in the database for persistence
     try {
