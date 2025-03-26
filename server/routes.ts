@@ -12,6 +12,7 @@ import userProfileRouter from "./routes/user-profile";
 import telegramApiRouter from "./routes/telegram-api";
 import apiTokensRouter from "./routes/api-tokens";
 import wagerRaceRouter from "./routes/wager-race";
+import authRoutes from "./routes/auth-routes";
 import { db } from "../db/connection";
 import { users, wagerRaces, userSessions, userActivityLog } from "@db/schema/index";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
@@ -143,6 +144,8 @@ export function registerRoutes(app: Express): Server {
   setupWebSocket(httpServer);
   // Register verification routes
   registerBasicVerificationRoutes(app);
+  // Register authentication routes
+  app.use("/api/auth", authRoutes);
   // Register user sessions routes
   app.use(userSessionsRouter);
   // Register user profile routes

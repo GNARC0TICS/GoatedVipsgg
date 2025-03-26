@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(true);
       return {
         ok: true,
-        user: data.user,
+        user: data,
       };
     },
     onSuccess: (data) => {
@@ -145,7 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(true);
       return {
         ok: true,
-        user: data.user,
+        user: data,
       };
     },
     onSuccess: (data) => {

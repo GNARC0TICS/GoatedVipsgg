@@ -1,10 +1,10 @@
-import { type Request, type Response, type NextFunction } from "express";
-import { verifyToken } from "../config/auth";
-import { db } from "@db";
+import { Request, Response, NextFunction } from "express";
+import { verifyAccessToken } from "../utils/token-manager";
+import { db } from "@db/connection";
+import { users } from "@db/schema";
 import { eq } from "drizzle-orm";
-import * as schema from "@db/schema";
+import { log } from "../vite";
 
-// Extend Express Request type
 declare global {
   namespace Express {
     interface Request {
@@ -19,47 +19,52 @@ export const requireAuth = async (
   next: NextFunction,
 ) => {
   try {
-    // Check for session token in cookie first
-    const sessionToken = req.cookies?.token;
-    // Fallback to Bearer token if no session
+    // Get token from header
     const authHeader = req.headers.authorization;
-    const token =
-      sessionToken ||
-      (authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null);
-
-    if (!token) {
-      return res.status(401).json({ message: "Authentication required" });
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        ok: false,
+        message: "Authentication required",
+      });
     }
 
-    const decoded = verifyToken(token);
-    
-    // Check if this is a standard authentication (userId) or admin authentication (id)
-    const userId = decoded.userId || decoded.id;
-    
-    if (!userId) {
-      return res.status(401).json({ message: "Invalid token format" });
+    // Extract token
+    const token = authHeader.split(" ")[1];
+
+    // Verify token
+    const decoded = verifyAccessToken(token);
+    if (!decoded) {
+      return res.status(401).json({
+        ok: false,
+        message: "Invalid or expired token",
+      });
     }
 
-    // Get user from database
-    const [user] = await db
+    // Get user
+    const user = await db
       .select()
       .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
+      .where(eq(users.id, decoded.userId))
+      .then((rows) => rows[0]);
 
     if (!user) {
-      return res.status(401).json({ message: "User not found" });
+      return res.status(401).json({
+        ok: false,
+        message: "User not found",
+      });
     }
 
-    // For admin routes, verify admin status
-    if (decoded.isAdmin && !user.isAdmin) {
-      return res.status(403).json({ message: "Admin privileges required" });
-    }
-
+    // Attach user to request
     req.user = user;
+
+    // Continue
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Invalid authentication token" });
+    log(`Authentication error: ${error}`);
+    return res.status(500).json({
+      ok: false,
+      message: "Authentication error",
+    });
   }
 };
 
@@ -69,13 +74,24 @@ export const requireAdmin = async (
   next: NextFunction,
 ) => {
   try {
+    // First check if user is authenticated
     await requireAuth(req, res, () => {
-      if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Admin access required" });
+      // Check if user is admin
+      if (!req.user || !req.user.isAdmin) {
+        return res.status(403).json({
+          ok: false,
+          message: "Admin privileges required",
+        });
       }
+
+      // User is admin, continue
       next();
     });
   } catch (error) {
-    return res.status(403).json({ message: "Admin access required" });
+    log(`Admin authentication error: ${error}`);
+    return res.status(500).json({
+      ok: false,
+      message: "Authentication error",
+    });
   }
 };
