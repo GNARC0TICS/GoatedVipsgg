@@ -1,10 +1,10 @@
 {
-  "timestamp": "2025-03-26T07:01:32.313Z",
+  "timestamp": "2025-03-26T07:06:41.283Z",
   "data": {
     "status": "success",
     "metadata": {
       "totalUsers": 1841,
-      "lastUpdated": "2025-03-26T07:01:32.024Z"
+      "lastUpdated": "2025-03-26T07:03:38.751Z"
     },
     "data": {
       "today": {
@@ -13,7 +13,7 @@
             "uid": "sHi8IoDAAUsFOc2kvzAk",
             "name": "Snax6x",
             "wagered": {
-              "today": 525.8950654356589,
+              "today": 525.4577306619078,
               "this_week": 5707.591426266872,
               "this_month": 136219.50229110091,
               "all_time": 148050.71823261646
@@ -23,7 +23,7 @@
             "uid": "sR6bsuETP9CJMikPx2l4",
             "name": "BI4NCAKES",
             "wagered": {
-              "today": 153.4281425443,
+              "today": 153.42811570679999,
               "this_week": 255.07662902009668,
               "this_month": 4479.287813964607,
               "all_time": 128685.99299510711
@@ -33,7 +33,7 @@
             "uid": "g31Tnk9JTA77lR9GsFh3",
             "name": "Atreb",
             "wagered": {
-              "today": 85.971918357,
+              "today": 85.9004240382,
               "this_week": 88.56178062548665,
               "this_month": 118757.54953011843,
               "all_time": 278223.2029522926
@@ -53,20 +53,20 @@
             "uid": "RqtIVsobNNBEZoqX7IVL",
             "name": "Veronicaftw",
             "wagered": {
-              "today": 25.76946128012987,
-              "this_week": 270.5329118199496,
+              "today": 30.531366042034634,
+              "this_week": 275.2948165818555,
               "this_month": 9644.694829017242,
-              "all_time": 65529.49565755528
+              "all_time": 65534.25756231719
             }
           },
           {
             "uid": "ZZ50VbzgzfzdgcnLYJIe",
             "name": "Godzilla",
             "wagered": {
-              "today": 21.10777184203331,
-              "this_week": 708.4380189745639,
+              "today": 22.58004068454304,
+              "this_week": 709.9130189745625,
               "this_month": 11353.21810407702,
-              "all_time": 143423.61029094976
+              "all_time": 143425.07529094975
             }
           },
           {
@@ -83,7 +83,7 @@
             "uid": "g02uAtqDkOzlYmZUaw60",
             "name": "Wimmer",
             "wagered": {
-              "today": 3.5012854963638054,
+              "today": 3.500396306846897,
               "this_week": 653.6698196491067,
               "this_month": 6352.401230009542,
               "all_time": 11437.454204346348
@@ -123,7 +123,7 @@
             "uid": "3eGEe1FHIyJuVHA6dAcE",
             "name": "sinsierraa",
             "wagered": {
-              "today": 0.910503998214387,
+              "today": 0.9104327193680465,
               "this_week": 230.41,
               "this_month": 5989.651573342973,
               "all_time": 317638.3650808634
@@ -133,7 +133,7 @@
             "uid": "UFKI93fTYApWHnh0smH5",
             "name": "Moxinnit",
             "wagered": {
-              "today": 0.2023705404,
+              "today": 0.20232786419999998,
               "this_week": 237.1982115157433,
               "this_month": 9843.931272910308,
               "all_time": 12601.075967498333
@@ -143,7 +143,7 @@
             "uid": "C9HjTnR0owCGj6lwLuUP",
             "name": "Alternator42",
             "wagered": {
-              "today": 0.09185044103574154,
+              "today": 0.09180027404038149,
               "this_week": 56.19567266386495,
               "this_month": 7.68240007,
               "all_time": 1175.648664777079
@@ -163,7 +163,7 @@
             "uid": "qP525LDMV0KbOl7qJQz7",
             "name": "Jhoyce0820",
             "wagered": {
-              "today": 0.0070457511408900005,
+              "today": 0.007043996789760001,
               "this_week": 0.006999307003079999,
               "this_month": 0,
               "all_time": 224.39146866788198
@@ -18427,7 +18427,7 @@
             "uid": "sHi8IoDAAUsFOc2kvzAk",
             "name": "Snax6x",
             "wagered": {
-              "today": 525.8950654356589,
+              "today": 525.4577306619078,
               "this_week": 5707.591426266872,
               "this_month": 136219.50229110091,
               "all_time": 148050.71823261646
@@ -18457,17 +18457,17 @@
             "uid": "ZZ50VbzgzfzdgcnLYJIe",
             "name": "Godzilla",
             "wagered": {
-              "today": 21.10777184203331,
-              "this_week": 708.4380189745639,
+              "today": 22.58004068454304,
+              "this_week": 709.9130189745625,
               "this_month": 11353.21810407702,
-              "all_time": 143423.61029094976
+              "all_time": 143425.07529094975
             }
           },
           {
             "uid": "g02uAtqDkOzlYmZUaw60",
             "name": "Wimmer",
             "wagered": {
-              "today": 3.5012854963638054,
+              "today": 3.500396306846897,
               "this_week": 653.6698196491067,
               "this_month": 6352.401230009542,
               "all_time": 11437.454204346348
@@ -18487,17 +18487,17 @@
             "uid": "RqtIVsobNNBEZoqX7IVL",
             "name": "Veronicaftw",
             "wagered": {
-              "today": 25.76946128012987,
-              "this_week": 270.5329118199496,
+              "today": 30.531366042034634,
+              "this_week": 275.2948165818555,
               "this_month": 9644.694829017242,
-              "all_time": 65529.49565755528
+              "all_time": 65534.25756231719
             }
           },
           {
             "uid": "sR6bsuETP9CJMikPx2l4",
             "name": "BI4NCAKES",
             "wagered": {
-              "today": 153.4281425443,
+              "today": 153.42811570679999,
               "this_week": 255.07662902009668,
               "this_month": 4479.287813964607,
               "all_time": 128685.99299510711
@@ -18507,7 +18507,7 @@
             "uid": "UFKI93fTYApWHnh0smH5",
             "name": "Moxinnit",
             "wagered": {
-              "today": 0.2023705404,
+              "today": 0.20232786419999998,
               "this_week": 237.1982115157433,
               "this_month": 9843.931272910308,
               "all_time": 12601.075967498333
@@ -18517,7 +18517,7 @@
             "uid": "3eGEe1FHIyJuVHA6dAcE",
             "name": "sinsierraa",
             "wagered": {
-              "today": 0.910503998214387,
+              "today": 0.9104327193680465,
               "this_week": 230.41,
               "this_month": 5989.651573342973,
               "all_time": 317638.3650808634
@@ -18537,7 +18537,7 @@
             "uid": "g31Tnk9JTA77lR9GsFh3",
             "name": "Atreb",
             "wagered": {
-              "today": 85.971918357,
+              "today": 85.9004240382,
               "this_week": 88.56178062548665,
               "this_month": 118757.54953011843,
               "all_time": 278223.2029522926
@@ -18547,7 +18547,7 @@
             "uid": "C9HjTnR0owCGj6lwLuUP",
             "name": "Alternator42",
             "wagered": {
-              "today": 0.09185044103574154,
+              "today": 0.09180027404038149,
               "this_week": 56.19567266386495,
               "this_month": 7.68240007,
               "all_time": 1175.648664777079
@@ -18707,7 +18707,7 @@
             "uid": "qP525LDMV0KbOl7qJQz7",
             "name": "Jhoyce0820",
             "wagered": {
-              "today": 0.0070457511408900005,
+              "today": 0.007043996789760001,
               "this_week": 0.006999307003079999,
               "this_month": 0,
               "all_time": 224.39146866788198
@@ -36841,7 +36841,7 @@
             "uid": "sHi8IoDAAUsFOc2kvzAk",
             "name": "Snax6x",
             "wagered": {
-              "today": 525.8950654356589,
+              "today": 525.4577306619078,
               "this_week": 5707.591426266872,
               "this_month": 136219.50229110091,
               "all_time": 148050.71823261646
@@ -36851,7 +36851,7 @@
             "uid": "g31Tnk9JTA77lR9GsFh3",
             "name": "Atreb",
             "wagered": {
-              "today": 85.971918357,
+              "today": 85.9004240382,
               "this_week": 88.56178062548665,
               "this_month": 118757.54953011843,
               "all_time": 278223.2029522926
@@ -36911,17 +36911,17 @@
             "uid": "ZZ50VbzgzfzdgcnLYJIe",
             "name": "Godzilla",
             "wagered": {
-              "today": 21.10777184203331,
-              "this_week": 708.4380189745639,
+              "today": 22.58004068454304,
+              "this_week": 709.9130189745625,
               "this_month": 11353.21810407702,
-              "all_time": 143423.61029094976
+              "all_time": 143425.07529094975
             }
           },
           {
             "uid": "UFKI93fTYApWHnh0smH5",
             "name": "Moxinnit",
             "wagered": {
-              "today": 0.2023705404,
+              "today": 0.20232786419999998,
               "this_week": 237.1982115157433,
               "this_month": 9843.931272910308,
               "all_time": 12601.075967498333
@@ -36931,17 +36931,17 @@
             "uid": "RqtIVsobNNBEZoqX7IVL",
             "name": "Veronicaftw",
             "wagered": {
-              "today": 25.76946128012987,
-              "this_week": 270.5329118199496,
+              "today": 30.531366042034634,
+              "this_week": 275.2948165818555,
               "this_month": 9644.694829017242,
-              "all_time": 65529.49565755528
+              "all_time": 65534.25756231719
             }
           },
           {
             "uid": "g02uAtqDkOzlYmZUaw60",
             "name": "Wimmer",
             "wagered": {
-              "today": 3.5012854963638054,
+              "today": 3.500396306846897,
               "this_week": 653.6698196491067,
               "this_month": 6352.401230009542,
               "all_time": 11437.454204346348
@@ -36951,7 +36951,7 @@
             "uid": "3eGEe1FHIyJuVHA6dAcE",
             "name": "sinsierraa",
             "wagered": {
-              "today": 0.910503998214387,
+              "today": 0.9104327193680465,
               "this_week": 230.41,
               "this_month": 5989.651573342973,
               "all_time": 317638.3650808634
@@ -36961,7 +36961,7 @@
             "uid": "sR6bsuETP9CJMikPx2l4",
             "name": "BI4NCAKES",
             "wagered": {
-              "today": 153.4281425443,
+              "today": 153.42811570679999,
               "this_week": 255.07662902009668,
               "this_month": 4479.287813964607,
               "all_time": 128685.99299510711
@@ -37291,7 +37291,7 @@
             "uid": "C9HjTnR0owCGj6lwLuUP",
             "name": "Alternator42",
             "wagered": {
-              "today": 0.09185044103574154,
+              "today": 0.09180027404038149,
               "this_week": 56.19567266386495,
               "this_month": 7.68240007,
               "all_time": 1175.648664777079
@@ -45901,7 +45901,7 @@
             "uid": "qP525LDMV0KbOl7qJQz7",
             "name": "Jhoyce0820",
             "wagered": {
-              "today": 0.0070457511408900005,
+              "today": 0.007043996789760001,
               "this_week": 0.006999307003079999,
               "this_month": 0,
               "all_time": 224.39146866788198
@@ -55275,7 +55275,7 @@
             "uid": "3eGEe1FHIyJuVHA6dAcE",
             "name": "sinsierraa",
             "wagered": {
-              "today": 0.910503998214387,
+              "today": 0.9104327193680465,
               "this_week": 230.41,
               "this_month": 5989.651573342973,
               "all_time": 317638.3650808634
@@ -55295,7 +55295,7 @@
             "uid": "g31Tnk9JTA77lR9GsFh3",
             "name": "Atreb",
             "wagered": {
-              "today": 85.971918357,
+              "today": 85.9004240382,
               "this_week": 88.56178062548665,
               "this_month": 118757.54953011843,
               "all_time": 278223.2029522926
@@ -55315,7 +55315,7 @@
             "uid": "sHi8IoDAAUsFOc2kvzAk",
             "name": "Snax6x",
             "wagered": {
-              "today": 525.8950654356589,
+              "today": 525.4577306619078,
               "this_week": 5707.591426266872,
               "this_month": 136219.50229110091,
               "all_time": 148050.71823261646
@@ -55325,17 +55325,17 @@
             "uid": "ZZ50VbzgzfzdgcnLYJIe",
             "name": "Godzilla",
             "wagered": {
-              "today": 21.10777184203331,
-              "this_week": 708.4380189745639,
+              "today": 22.58004068454304,
+              "this_week": 709.9130189745625,
               "this_month": 11353.21810407702,
-              "all_time": 143423.61029094976
+              "all_time": 143425.07529094975
             }
           },
           {
             "uid": "sR6bsuETP9CJMikPx2l4",
             "name": "BI4NCAKES",
             "wagered": {
-              "today": 153.4281425443,
+              "today": 153.42811570679999,
               "this_week": 255.07662902009668,
               "this_month": 4479.287813964607,
               "all_time": 128685.99299510711
@@ -55355,10 +55355,10 @@
             "uid": "RqtIVsobNNBEZoqX7IVL",
             "name": "Veronicaftw",
             "wagered": {
-              "today": 25.76946128012987,
-              "this_week": 270.5329118199496,
+              "today": 30.531366042034634,
+              "this_week": 275.2948165818555,
               "this_month": 9644.694829017242,
-              "all_time": 65529.49565755528
+              "all_time": 65534.25756231719
             }
           },
           {
@@ -55475,7 +55475,7 @@
             "uid": "UFKI93fTYApWHnh0smH5",
             "name": "Moxinnit",
             "wagered": {
-              "today": 0.2023705404,
+              "today": 0.20232786419999998,
               "this_week": 237.1982115157433,
               "this_month": 9843.931272910308,
               "all_time": 12601.075967498333
@@ -55495,7 +55495,7 @@
             "uid": "g02uAtqDkOzlYmZUaw60",
             "name": "Wimmer",
             "wagered": {
-              "today": 3.5012854963638054,
+              "today": 3.500396306846897,
               "this_week": 653.6698196491067,
               "this_month": 6352.401230009542,
               "all_time": 11437.454204346348
@@ -55865,7 +55865,7 @@
             "uid": "C9HjTnR0owCGj6lwLuUP",
             "name": "Alternator42",
             "wagered": {
-              "today": 0.09185044103574154,
+              "today": 0.09180027404038149,
               "this_week": 56.19567266386495,
               "this_month": 7.68240007,
               "all_time": 1175.648664777079
@@ -56265,7 +56265,7 @@
             "uid": "qP525LDMV0KbOl7qJQz7",
             "name": "Jhoyce0820",
             "wagered": {
-              "today": 0.0070457511408900005,
+              "today": 0.007043996789760001,
               "this_week": 0.006999307003079999,
               "this_month": 0,
               "all_time": 224.39146866788198
