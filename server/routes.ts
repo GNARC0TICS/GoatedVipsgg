@@ -209,34 +209,7 @@ function setupRESTRoutes(app: Express) {
   // Modified current race endpoint to handle month end
   app.get("/api/wager-races/current", raceRateLimiter, async (_req, res) => {
     try {
-      // Get data from our database instead of external API
-      const currentRace = await db
-        .select({
-          id: wagerRaces.id,
-          name: wagerRaces.name,
-          type: wagerRaces.type,
-          status: wagerRaces.status,
-          startDate: wagerRaces.startDate,
-          endDate: wagerRaces.endDate,
-          prizePool: wagerRaces.prizePool
-        })
-        .from(wagerRaces)
-        .where(eq(wagerRaces.status, "live"))
-        .orderBy(desc(wagerRaces.startDate))
-        .limit(1);
-
-      if (!currentRace[0]) {
-        return res.status(404).json({ error: "No active race found" });
-      }
-
-      const participants = await db
-        .select()
-        .from(wagerRaceParticipants)
-        .where(eq(wagerRaceParticipants.raceId, currentRace[0].id))
-        .orderBy(desc(wagerRaceParticipants.wagered))
-        .limit(10);
-
-      // Get current month's info
+      // Get current month's info for a virtual race
       const now = new Date();
       const endOfMonth = new Date(
         now.getFullYear(),
@@ -246,84 +219,138 @@ function setupRESTRoutes(app: Express) {
         59,
         59,
       );
-
-      // Check if previous month needs to be archived
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0);
-
-      // If it's the first day of the month and we haven't archived yet
-      if (now.getDate() === 1 && now.getHours() < 1) {
-        const previousMonth = now.getMonth() === 0 ? 12 : now.getMonth();
-        const previousYear =
-          now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-
-        // Use a placeholder for now
-        const existingEntry = null;
-
-        const prizeDistribution = [0.5, 0.3, 0.1, 0.05, 0.05, 0, 0, 0, 0, 0]; //Example distribution, needs to be defined elsewhere
-
-        if (!existingEntry && stats.data.monthly.data.length > 0) {
-          const now = new Date();
-          const currentMonth = now.getMonth();
+      
+      // Try to get leaderboard data for the race
+      try {
+        // Get external data from the API service
+        const leaderboardData = await apiService.getLeaderboardData();
+        
+        if (leaderboardData && leaderboardData.data && leaderboardData.data.monthly && 
+            leaderboardData.data.monthly.data && leaderboardData.data.monthly.data.length > 0) {
+          
+          // Create a virtual race based on the current month
           const currentYear = now.getFullYear();
-
-          // Store complete race results with detailed participant data
-          const winners = stats.data.monthly.data
-            .slice(0, 10)
-            .map((participant: any, index: number) => ({
-              uid: participant.uid,
-              name: participant.name,
-              wagered: participant.wagered.this_month,
-              allTimeWagered: participant.wagered.all_time,
-              tier: getTierFromWager(participant.wagered.all_time),
-              prize: (prizePool * prizeDistribution[index]).toFixed(2),
-              position: index + 1,
-              timestamp: new Date().toISOString(),
-            }));
-
-          // Broadcast race completion to all connected clients
-          broadcastLeaderboardUpdate({
-            type: "RACE_COMPLETED",
-            data: {
-              winners,
-              nextRaceStart: new Date(
-                now.getFullYear(),
-                now.getMonth(),
-                1,
-              ).toISOString(),
-            },
+          const currentMonth = now.getMonth();
+          
+          const raceData = {
+            id: `${currentYear}${(currentMonth + 1).toString().padStart(2, "0")}`,
+            name: `Monthly Wager Race - ${new Date().toLocaleString('default', { month: 'long' })} ${currentYear}`,
+            type: "monthly", 
+            status: "live", 
+            startDate: new Date(currentYear, currentMonth, 1).toISOString(),
+            endDate: endOfMonth.toISOString(),
+            prizePool: 500, // Monthly race prize pool
+            participants: leaderboardData.data.monthly.data
+              .map((participant: any, index: number) => ({
+                uid: participant.uid,
+                name: participant.name || "Anonymous",
+                wagered: participant.wagered?.this_month || 0,
+                position: index + 1,
+              }))
+              .slice(0, 10), // Top 10 participants
+          };
+          
+          return res.json({
+            status: "success",
+            data: raceData,
           });
+        } else {
+          // Return empty race data if no monthly data available
+          return res.status(404).json({ 
+            status: "error",
+            message: "No active race found - no monthly data available"
+          });
+        }
+      } catch (apiError) {
+        log(`Error fetching leaderboard data for race: ${apiError}`);
+        
+        // Try to get data from database as fallback
+        try {
+          // Check if we have any active races in the database
+          const dbRaces = await db
+            .select()
+            .from(wagerRaces)
+            .where(sql`${wagerRaces.status} = 'live'`)
+            .orderBy(sql`${wagerRaces.startDate} DESC`)
+            .limit(1);
+            
+          if (dbRaces && dbRaces.length > 0) {
+            const currentRace = dbRaces[0];
+            
+            // Try to get participants
+            try {
+              const participants = await db
+                .select()
+                .from(affiliateStats)
+                .where(sql`${affiliateStats.period} = 'monthly'`)
+                .orderBy(sql`${affiliateStats.wagered} DESC`)
+                .limit(10);
+                
+              const raceData = {
+                id: currentRace.id.toString(),
+                name: currentRace.title || "Monthly Wager Race",
+                type: currentRace.type || "monthly",
+                status: currentRace.status,
+                startDate: currentRace.startDate.toISOString(),
+                endDate: currentRace.endDate.toISOString(),
+                prizePool: parseFloat(currentRace.prizePool.toString()),
+                participants: participants.map((p, index) => ({
+                  uid: p.uid,
+                  name: p.name,
+                  wagered: parseFloat(p.wagered.toString()),
+                  position: index + 1
+                }))
+              };
+              
+              return res.json({
+                status: "success",
+                data: raceData
+              });
+            } catch (participantsError) {
+              log(`Error fetching race participants: ${participantsError}`);
+              // Return race without participants
+              const raceData = {
+                id: currentRace.id.toString(),
+                name: currentRace.title || "Monthly Wager Race",
+                type: currentRace.type || "monthly",
+                status: currentRace.status,
+                startDate: currentRace.startDate.toISOString(),
+                endDate: currentRace.endDate.toISOString(),
+                prizePool: parseFloat(currentRace.prizePool.toString()),
+                participants: []
+              };
+              
+              return res.json({
+                status: "success",
+                data: raceData
+              });
+            }
+          } else {
+            // Create a virtual race with empty participants
+            const virtualRace = {
+              id: `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, "0")}`,
+              name: `Monthly Wager Race - ${new Date().toLocaleString('default', { month: 'long' })} ${now.getFullYear()}`,
+              type: "monthly",
+              status: "live",
+              startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+              endDate: endOfMonth.toISOString(),
+              prizePool: 500,
+              participants: []
+            };
+            
+            return res.json({
+              status: "success",
+              data: virtualRace
+            });
+          }
+        } catch (dbError) {
+          log(`Error fetching race from database: ${dbError}`);
+          throw new Error("Failed to fetch race data from any source");
         }
       }
 
-      // Use dates to ensure correct month/year
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth();
-      const actualYear = currentYear;
-      const actualMonth = currentMonth;
-
-      const raceData = {
-        id: `${actualYear}${(actualMonth + 1).toString().padStart(2, "0")}`,
-        status: "live", 
-        startDate: new Date(actualYear, actualMonth, 1).toISOString(),
-        endDate: new Date(actualYear, actualMonth + 1, 0, 23, 59, 59).toISOString(),
-        prizePool: 500, // Monthly race prize pool
-        participants: stats.data.monthly.data
-          .map((participant: any, index: number) => ({
-            uid: participant.uid,
-            name: participant.name,
-            wagered: participant.wagered.this_month,
-            position: index + 1,
-          }))
-          .slice(0, 10), // Top 10 participants
-      };
-
-      // Log race data for debugging
-      console.log(
-        `Race data for month ${currentMonth + 1}, year ${currentYear}`,
-      );
-
-      res.json(raceData);
+      // This code should never be reached due to returns in all code paths above
+      throw new Error("Unreachable code - all paths should return a response");
     } catch (error) {
       log(`Error fetching current race: ${error}`);
       res.status(500).json({
@@ -878,10 +905,10 @@ async function handleUserProfileRequest(req: any, res: any) {
   }
 }
 
-import { syncLeaderboardData } from "./utils/data-sync";
+// Import the data synchronization function for affiliate stats
+import { syncLeaderboardData } from "../server/utils/data-sync";
 import { apiService } from "./utils/api-service";
 import { affiliateStats } from "../db/schema/affiliate";
-import { desc, sql } from "drizzle-orm";
 
 async function handleAffiliateStats(req: any, res: any) {
   try {
@@ -905,8 +932,13 @@ async function handleAffiliateStats(req: any, res: any) {
     }
     
     // Fetch affiliate stats from our database
-    const timeframes = ['today', 'weekly', 'monthly', 'all_time'];
-    const statsByPeriod = {};
+    const timeframes = ['today', 'weekly', 'monthly', 'all_time'] as const;
+    const statsByPeriod: Record<string, any[]> = {
+      today: [],
+      weekly: [],
+      monthly: [],
+      all_time: []
+    };
     
     // Fetch stats for each period
     for (const period of timeframes) {
@@ -925,11 +957,22 @@ async function handleAffiliateStats(req: any, res: any) {
       }
     }
     
+    // Interface for affiliate stat entries
+    interface AffiliateStat {
+      id: number;
+      uid: string;
+      name: string;
+      wagered: string; // Stored as string in DB
+      period: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }
+    
     // If we have API data, use it. Otherwise, build from our database.
     const formattedData = externalData || {
       data: {
         today: { 
-          data: statsByPeriod.today.map(stat => ({
+          data: statsByPeriod.today.map((stat: AffiliateStat) => ({
             uid: stat.uid,
             name: stat.name,
             wagered: {
@@ -941,7 +984,7 @@ async function handleAffiliateStats(req: any, res: any) {
           }))
         },
         weekly: { 
-          data: statsByPeriod.weekly.map(stat => ({
+          data: statsByPeriod.weekly.map((stat: AffiliateStat) => ({
             uid: stat.uid,
             name: stat.name,
             wagered: {
@@ -953,7 +996,7 @@ async function handleAffiliateStats(req: any, res: any) {
           }))
         },
         monthly: { 
-          data: statsByPeriod.monthly.map(stat => ({
+          data: statsByPeriod.monthly.map((stat: AffiliateStat) => ({
             uid: stat.uid,
             name: stat.name,
             wagered: {
@@ -965,7 +1008,7 @@ async function handleAffiliateStats(req: any, res: any) {
           }))
         },
         all_time: { 
-          data: statsByPeriod.all_time.map(stat => ({
+          data: statsByPeriod.all_time.map((stat: AffiliateStat) => ({
             uid: stat.uid,
             name: stat.name,
             wagered: {
