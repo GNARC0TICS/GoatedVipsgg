@@ -339,10 +339,22 @@ export default function WagerRaces() {
     );
   }
 
-  // Ensure we're accessing the data correctly
+  // Ensure we're accessing the data correctly and filter out participants with zero wagers
   const top10Players = showCompletedRace
     ? previousRace?.data?.participants || []
-    : (leaderboardData || []).slice(0, 10);
+    : (leaderboardData || [])
+        .filter(player => {
+          // Only include players with wagers greater than 0 for the current month
+          const wagerAmount = player.wagered?.this_month || 0;
+          return wagerAmount > 0;
+        })
+        .sort((a, b) => {
+          // Sort by wager amount in descending order
+          const aWager = a.wagered?.this_month || 0;
+          const bWager = b.wagered?.this_month || 0;
+          return bWager - aWager;
+        })
+        .slice(0, 10);
 
   // Add logging to verify the data
   console.log("Top 10 players:", top10Players);

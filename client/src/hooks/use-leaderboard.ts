@@ -53,28 +53,50 @@ class LeaderboardAPIError extends Error {
 // Create a constant key for the affiliate stats endpoint to avoid string duplication
 export const AFFILIATE_STATS_KEY = "/api/affiliate/stats";
 
-// Helper function to create fallback response data
-function createFallbackResponse(): APIResponse {
+// Helper function to create structured response from raw data
+function createStructuredResponse(rawData: any): APIResponse {
   const now = new Date().toISOString();
-  const fallbackUsers = [
-    { uid: "fallback-1", name: "Player1", wagered: { today: 5000, this_week: 25000, this_month: 100000, all_time: 500000 } },
-    { uid: "fallback-2", name: "Player2", wagered: { today: 4500, this_week: 22000, this_month: 90000, all_time: 450000 } },
-    { uid: "fallback-3", name: "Player3", wagered: { today: 4000, this_week: 20000, this_month: 80000, all_time: 400000 } },
-    { uid: "fallback-4", name: "Player4", wagered: { today: 3500, this_week: 18000, this_month: 70000, all_time: 350000 } },
-    { uid: "fallback-5", name: "Player5", wagered: { today: 3000, this_week: 15000, this_month: 60000, all_time: 300000 } },
-  ];
   
+  // Check if we have the expected structure format
+  if (rawData && rawData.data && Array.isArray(rawData.data)) {
+    // Convert the flat array structure into the expected period-based structure
+    const entries = rawData.data;
+    
+    return {
+      status: "success",
+      metadata: {
+        totalUsers: entries.length,
+        lastUpdated: now,
+      },
+      data: {
+        today: { 
+          data: entries 
+        },
+        weekly: { 
+          data: entries 
+        },
+        monthly: { 
+          data: entries 
+        },
+        all_time: { 
+          data: entries 
+        },
+      },
+    };
+  }
+  
+  // Return an empty structured response
   return {
     status: "success",
     metadata: {
-      totalUsers: fallbackUsers.length,
+      totalUsers: 0,
       lastUpdated: now,
     },
     data: {
-      today: { data: [...fallbackUsers] },
-      weekly: { data: [...fallbackUsers] },
-      monthly: { data: [...fallbackUsers] },
-      all_time: { data: [...fallbackUsers] },
+      today: { data: [] },
+      weekly: { data: [] },
+      monthly: { data: [] },
+      all_time: { data: [] },
     },
   };
 }
@@ -178,8 +200,8 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1): {
               return existingData;
             }
             
-            // Otherwise create fallback data
-            return createFallbackResponse();
+            // Create structured response with empty data
+            return createStructuredResponse({});
           }
 
           if (!response.ok) {
@@ -203,7 +225,7 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1): {
           const jsonData = await response.json();
           console.log('Received fresh leaderboard data:', jsonData);
           
-          // Validate the data structure
+          // Validate the data structure and convert to expected format
           if (!jsonData || typeof jsonData !== 'object') {
             console.error('Invalid response format: not an object');
             setErrorDetails('Invalid data format received from server');
@@ -221,52 +243,24 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1): {
             );
           }
           
-          // Check for required fields
-          if (!jsonData.data) {
-            console.error('Invalid response: missing data field');
-            setErrorDetails('Invalid data received from server (missing data field)');
-            
-            // If we have cached data, use it
-            if (existingData) {
-              console.log('Using cached data due to missing data field');
-              return existingData;
-            }
-            
-            throw new LeaderboardAPIError(
-              'Invalid response: missing data field',
-              500,
-              'Response is missing the data field'
-            );
+          // Check if we have a flat data array (current API format) and convert to structured format
+          if (jsonData.data && Array.isArray(jsonData.data)) {
+            console.log('Converting flat data array to structured format');
+            freshData = createStructuredResponse(jsonData);
           }
-          
-          // Try to adapt to different response structures if needed
-          if (!jsonData.data[timePeriod]) {
-            console.warn(`Period ${timePeriod} not found in response, attempting to normalize data`);
-            
-            // Try to adapt to the structure we expect
-            if (jsonData.status && jsonData.data && 
-                (jsonData.data.today || jsonData.data.weekly || 
-                 jsonData.data.monthly || jsonData.data.all_time)) {
-              freshData = jsonData as APIResponse;
-            } else {
-              // Create a normalized structure from whatever we got
-              freshData = {
-                status: jsonData.status || "success",
-                metadata: jsonData.metadata || {
-                  totalUsers: Array.isArray(jsonData.data) ? jsonData.data.length : 0,
-                  lastUpdated: new Date().toISOString()
-                },
-                data: {
-                  today: { data: jsonData.today || [] },
-                  weekly: { data: jsonData.weekly || [] },
-                  monthly: { data: jsonData.monthly || [] },
-                  all_time: { data: jsonData.all_time || [] }
-                }
-              };
-            }
-          } else {
-            // Standard format
+          // Check for standard period-based structure
+          else if (jsonData.data && (
+            jsonData.data.today || 
+            jsonData.data.weekly || 
+            jsonData.data.monthly || 
+            jsonData.data.all_time
+          )) {
             freshData = jsonData as APIResponse;
+          } 
+          // Fallback to creating a structured response from whatever we have
+          else {
+            console.warn('Unknown API response format, attempting to normalize');
+            freshData = createStructuredResponse(jsonData);
           }
           
         } catch (fetchError) {
@@ -284,8 +278,8 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1): {
               return existingData;
             }
             
-            // Otherwise create fallback data
-            return createFallbackResponse();
+            // Create structured response with empty data
+            return createStructuredResponse({});
           }
           
           // Re-throw other fetch errors
@@ -303,19 +297,11 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1): {
             return existingData;
           }
           
-          // Otherwise create fallback data
-          return createFallbackResponse();
+          // Create structured response with empty data
+          return createStructuredResponse({});
         }
         
-        // Validate period data exists
-        if (!freshData.data[timePeriod]) {
-          console.log(`Missing data for period: ${timePeriod}, creating empty array`);
-          
-          // Create empty data structure for the missing period
-          freshData.data[timePeriod] = { data: [] };
-        }
-        
-        // Ensure each entry has the expected structure
+        // Ensure period data exists for all periods
         const validPeriods = ['today', 'weekly', 'monthly', 'all_time'];
         validPeriods.forEach(period => {
           if (!freshData.data[period]) {
@@ -461,7 +447,12 @@ export function useWagerTotals() {
 
       // If no existing data, fetch new data
       const response = await fetch(AFFILIATE_STATS_KEY);
-      const data = await response.json() as APIResponse;
+      const jsonData = await response.json();
+      
+      // Convert to structured format if needed
+      const data = jsonData.data && Array.isArray(jsonData.data) 
+        ? createStructuredResponse(jsonData) 
+        : jsonData as APIResponse;
 
       // Store the full response in the query cache
       queryClient.setQueryData([AFFILIATE_STATS_KEY], data);

@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Lock,
 } from "lucide-react";
+import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { FeatureCarousel } from "@/components/FeatureCarousel";
 import { MVPCards } from "@/components/MVPCards";
 import { RaceTimer } from "@/components/RaceTimer";
@@ -25,6 +26,42 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/lib/auth";
+import { LeaderboardEntry, LeaderboardTableProps } from "@/components/types";
+
+// Daily leaderboard component
+function DailyLeaderboard() {
+  const { data, isLoading, error } = useLeaderboard("today");
+  const period: TimePeriod = "today";
+
+  // Don't filter out inactive users, just sort by wager amount in descending order
+  const sortedData = [...data].sort((a, b) => {
+    // Sort by wager amount in descending order
+    const aWager = a.wagered?.today || 0;
+    const bWager = b.wagered?.today || 0;
+    return bWager - aWager;
+  });
+  
+  if (isLoading) {
+    return <div className="text-center p-6 text-gray-400">Loading daily leaderboard...</div>;
+  }
+  
+  if (error) {
+    return (
+      <div className="text-center p-6 text-red-400">
+        Error loading leaderboard: {error.message || "Unknown error"}
+      </div>
+    );
+  }
+  
+  // Use the LeaderboardTable directly with typed data and period
+  // Ensure the data matches the LeaderboardEntry interface
+  return (
+    <LeaderboardTable 
+      data={sortedData as LeaderboardEntry[]} 
+      period={period}
+    />
+  );
+}
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
@@ -357,7 +394,7 @@ export default function Home() {
                     <Trophy className="w-7 h-7 text-[#D7FF00]" />
                     DAILY LEADERBOARD
                   </h2>
-                  <LeaderboardTable timePeriod="today" />
+                  <DailyLeaderboard />
                 </div>
               </motion.div>
 

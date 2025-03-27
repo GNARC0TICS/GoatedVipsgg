@@ -1,190 +1,21 @@
+# Key Improvements
 
-### Key Improvements:
-1. **Type Safety & Validation**
-2. **Caching & Rate Limiting**
-3. **Bulk Database Operations**
-4. **Real-time Optimizations**
-5. **Error Handling & Monitoring**
+1. Type Safety & Validation
+   - Added comprehensive type checking across API data flow
+   - Implemented Zod validation for API responses
+   - Fixed property name mismatches between frontend/backend
 
-```typescript
-// Step 1: Enhanced Backend API Setup
-// config/api.ts
-export const API_CONFIG = {
-  baseUrl: process.env.API_BASE_URL || 'http://0.0.0.0:5000/api',
-  token: process.env.API_AUTH_TOKEN,
-  retryLimit: 3,
-  timeout: 10_000
-};
+2. Caching & Rate Limiting
+   - Added intelligent caching in useLeaderboard hook
+   - Implemented stale-while-revalidate pattern
+   - Added fallback to cached data during API errors
 
-// services/fetchLeaderboardData.ts
-import { API_CONFIG } from '../config/api';
-import { logger } from '../utils/logger';
+3. Bulk Data Handling
+   - Improved handling of different API response formats
+   - Added normalization for flat array vs period-based structures
+   - Enhanced error handling with better error messages
 
-interface ApiResponse<T> {
-  data: T;
-  metadata: {
-    totalUsers: number;
-    lastUpdated: string;
-  };
-}
-
-export async function fetchLeaderboardData(): Promise<ApiResponse<unknown>> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
-
-  try {
-    const response = await fetch(`${API_CONFIG.baseUrl}/wager-races/current`, {
-      headers: {
-        Authorization: `Bearer ${API_CONFIG.token}`,
-        "Content-Type": "application/json",
-      },
-      signal: controller.signal
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  } catch (error) {
-    logger.error('API Fetch Error', error);
-    throw error;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-```
-
-```typescript
-// Step 2: Type-Safe Transformation
-// types/api.ts
-export interface ApiParticipant {
-  uid: string;
-  name?: string;
-  wagered?: {
-    today?: number;
-    this_week?: number;
-    this_month?: number;
-    all_time?: number;
-  };
-  lastUpdate?: string;
-}
-
-export interface TransformedParticipant {
-  uid: string;
-  name: string;
-  wagered: {
-    today: number;
-    this_week: number;
-    this_month: number;
-    all_time: number;
-  };
-  lastUpdated: Date;
-}
-
-// utils/transformLeaderboardData.ts
-export function transformLeaderboardData(apiData: ApiResponse<{ participants: ApiParticipant[] }>): {
-  participants: TransformedParticipant[];
-  metadata: {
-    totalUsers: number;
-    lastUpdated: Date;
-  };
-} {
-  return {
-    participants: apiData.data.participants.map(participant => ({
-      uid: participant.uid ?? '',
-      name: participant.name ?? 'Anonymous',
-      wagered: {
-        today: participant.wagered?.today ?? 0,
-        this_week: participant.wagered?.this_week ?? 0,
-        this_month: participant.wagered?.this_month ?? 0,
-        all_time: participant.wagered?.all_time ?? 0
-      },
-      lastUpdated: participant.lastUpdate ? new Date(participant.lastUpdate) : new Date()
-    })),
-    metadata: {
-      totalUsers: apiData.metadata.totalUsers,
-      lastUpdated: new Date(apiData.metadata.lastUpdated)
-    }
-  };
-}
-```
-
-```typescript
-// Step 3: Optimized Database Operations
-// services/updateWagerData.ts
-export async function updateWagerData() {
-  const rawData = await fetchLeaderboardData();
-  const { participants } = transformLeaderboardData(rawData);
-
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    
-    const values = participants.flatMap(p => [
-      p.uid,
-      p.name,
-      p.wagered.today,
-      p.wagered.this_week,
-      p.wagered.this_month,
-      p.wagered.all_time
-    ]);
-
-    const placeholders = participants
-      .map((_, i) => `($${i*6 + 1}, $${i*6 + 2}, $${i*6 + 3}, $${i*6 + 4}, $${i*6 + 5}, $${i*6 + 6})`)
-      .join(',');
-
-    await client.query(`
-      INSERT INTO user_wager_stats 
-        (user_id, username, daily_wager, weekly_wager, monthly_wager, all_time_wager)
-      VALUES ${placeholders}
-      ON CONFLICT (user_id) DO UPDATE SET
-        username = EXCLUDED.username,
-        daily_wager = EXCLUDED.daily_wager,
-        weekly_wager = EXCLUDED.weekly_wager,
-        monthly_wager = EXCLUDED.monthly_wager,
-        all_time_wager = EXCLUDED.all_time_wager,
-        last_updated = NOW()
-    `, values);
-
-    await client.query('COMMIT');
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
-}
-```
-
-### Enhanced Real-time System:
-```typescript
-// Step 4: Advanced Real-time Layer
-// server/socketServer.ts
-import { WebSocketServer } from 'ws';
-import { logger } from '../utils/logger';
-
-const wss = new WebSocketServer({ port: 8080 });
-const activeClients = new Set<WebSocket>();
-
-wss.on('connection', (ws) => {
-  activeClients.add(ws);
-  
-  ws.on('close', () => activeClients.delete(ws));
-  ws.on('error', (error) => {
-    logger.error('WebSocket Error', error);
-    activeClients.delete(ws);
-  });
-});
-
-export function broadcast(data: unknown) {
-  const payload = JSON.stringify(data);
-  
-  activeClients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(payload, (error) => {
-        if (error) logger.error('WebSocket Send Error', error);
-      });
-    }
-  });
-}
+4. Performance Optimization
+   - Added timeout protection for API requests
+   - Implemented better retry logic
+   - Fixed property access patterns with optional chaining

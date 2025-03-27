@@ -29,16 +29,21 @@ import { motion } from "framer-motion";
 
 // Format large numbers with K/M/B suffixes
 function formatNumber(num: number): string {
-  if (num >= 1000000000) {
-    return (num / 1000000000).toFixed(1) + "B";
+  // First ensure we have a valid number and convert full float to fixed 2 decimal places
+  const fixedNum = parseFloat(num.toFixed(2));
+  
+  if (fixedNum >= 1000000000) {
+    return (fixedNum / 1000000000).toFixed(1) + "B";
   }
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + "M";
+  if (fixedNum >= 1000000) {
+    return (fixedNum / 1000000).toFixed(1) + "M";
   }
-  if (num >= 1000) {
-    return (num / 1000).toFixed(1) + "K";
+  if (fixedNum >= 1000) {
+    return (fixedNum / 1000).toFixed(1) + "K";
   }
-  return num.toString();
+  
+  // For smaller numbers, display with 2 decimal places only if they have cents
+  return fixedNum % 1 === 0 ? fixedNum.toString() : fixedNum.toFixed(2);
 }
 
 import { LeaderboardEntry, LeaderboardTableProps } from '@/components/types';
@@ -110,67 +115,100 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
   const periodProp = periodToProperty[period];
   
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center">
         <div className="relative max-w-md w-full">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#D7FF00]/70" />
           <Input
             placeholder="Search by username..."
-            className="pl-10 bg-background/50 border-muted"
+            className="pl-10 bg-[#1A1B21]/80 border-[#2A2B31] focus:border-[#D7FF00]/50 focus:ring-[#D7FF00]/20 rounded-md h-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="text-sm text-gray-400">
-          Total users: {data.length}
+        <div className="text-sm font-medium px-3 py-1.5 rounded-full bg-[#1A1B21]/80 border border-[#2A2B31] text-[#D7FF00]">
+          Total players: {data.length}
         </div>
       </div>
       
-      <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm overflow-hidden">
+      <div className="rounded-xl border border-[#2A2B31] bg-gradient-to-b from-[#1A1B21]/80 to-[#14151A]/95 backdrop-blur-sm overflow-hidden shadow-lg">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-20 font-heading text-[#D7FF00]">
+            <TableRow className="hover:bg-transparent border-b border-[#2A2B31]">
+              <TableHead className="w-20 font-heading text-[#D7FF00] text-base py-4">
                 RANK
               </TableHead>
-              <TableHead className="font-heading text-[#D7FF00]">
-                USERNAME
+              <TableHead className="font-heading text-[#D7FF00] text-base py-4">
+                PLAYER
               </TableHead>
-              <TableHead className="text-right font-heading text-[#D7FF00]">
-                TIER
-              </TableHead>
-              <TableHead className="text-right font-heading text-[#D7FF00]">
+              <TableHead className="text-right font-heading text-[#D7FF00] text-base py-4">
                 WAGERED
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="custom-scrollbar">
             {paginatedData.map((entry, index) => {
               const rank = startIndex + index + 1;
+              // Use the current period's wagered amount for display
               const wageredAmount = entry.wagered[periodProp] || 0;
-              const tier = getTierFromWager(wageredAmount);
+              // Always use all_time wagered amount for determining tier
+              const allTimeWagered = entry.wagered.all_time || 0;
+              const tier = getTierFromWager(allTimeWagered);
+              const tierIcon = getTierIcon(tier);
+              
+              // Determine background color based on rank
+              let rowBgClass = "";
+              if (rank === 1) rowBgClass = "bg-yellow-500/10 hover:bg-yellow-500/15";
+              else if (rank === 2) rowBgClass = "bg-gray-400/10 hover:bg-gray-400/15";
+              else if (rank === 3) rowBgClass = "bg-amber-700/10 hover:bg-amber-700/15";
+              else rowBgClass = index % 2 === 0 ? "hover:bg-[#2A2B31]/20" : "bg-[#1A1B21]/40 hover:bg-[#2A2B31]/20";
               
               return (
                 <TableRow 
                   key={`${entry.uid}-${index}`}
-                  className={rank <= 3 ? "bg-opacity-20 bg-yellow-900 hover:bg-yellow-900/30" : ""}
+                  className={`${rowBgClass} transition-colors duration-200`}
                 >
-                  <TableCell className="font-mono">
+                  <TableCell className="font-mono py-3 pl-5">
                     <div className="flex items-center">
-                      {getRankBadge(rank)}
+                      {rank === 1 ? (
+                        <div className="w-7 h-7 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                          <Crown className="h-4 w-4 text-yellow-400" />
+                        </div>
+                      ) : rank === 2 ? (
+                        <div className="w-7 h-7 rounded-full bg-gray-400/20 flex items-center justify-center">
+                          <Medal className="h-4 w-4 text-gray-400" />
+                        </div>
+                      ) : rank === 3 ? (
+                        <div className="w-7 h-7 rounded-full bg-amber-700/20 flex items-center justify-center">
+                          <Award className="h-4 w-4 text-amber-700" />
+                        </div>
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-[#2A2B31]/40 flex items-center justify-center">
+                          <span className="text-sm text-white/70">{rank}</span>
+                        </div>
+                      )}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-3">
                     <QuickProfile userId={entry.uid} username={entry.name}>
-                      <div className="font-medium text-white hover:text-[#D7FF00] transition-colors cursor-pointer">
-                        {entry.name}
+                      <div className="flex items-center gap-2.5">
+                        <img 
+                          src={tierIcon} 
+                          alt={`${tier} tier`} 
+                          className="w-5 h-5 object-contain" 
+                        />
+                        <span className="font-medium text-white hover:text-[#D7FF00] transition-colors cursor-pointer">
+                          {entry.name}
+                        </span>
+                        
+                        {/* Show tier badge but keep it subtle */}
+                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-[#2A2B31]/40 text-[#8A8B91]">
+                          {tier}
+                        </span>
                       </div>
                     </QuickProfile>
                   </TableCell>
-                  <TableCell className="text-right">
-                    {getTierBadge(tier)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono">
+                  <TableCell className="text-right font-mono py-3 pr-5 text-[#D7FF00]">
                     ${formatNumber(wageredAmount)}
                   </TableCell>
                 </TableRow>
@@ -180,19 +218,20 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
         </Table>
       </div>
       
-      {/* Pagination controls */}
+      {/* Pagination controls with enhanced styling */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-4">
+        <div className="flex justify-center items-center gap-3 mt-6">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
+            className="bg-[#1A1B21]/80 border-[#2A2B31] hover:bg-[#2A2B31]/90 hover:text-[#D7FF00]"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           
-          <div className="text-sm">
+          <div className="text-sm bg-[#1A1B21]/80 border border-[#2A2B31] rounded-full px-4 py-1.5 text-white/80">
             Page {currentPage} of {totalPages}
           </div>
           
@@ -201,6 +240,7 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
             size="sm"
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
+            className="bg-[#1A1B21]/80 border-[#2A2B31] hover:bg-[#2A2B31]/90 hover:text-[#D7FF00]"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>

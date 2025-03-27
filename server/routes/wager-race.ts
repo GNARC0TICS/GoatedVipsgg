@@ -3,8 +3,8 @@ import { requireAuth } from "../middleware/auth";
 import { getLeaderboardData } from "../utils/leaderboard-cache";
 import { log } from "../vite";
 import { db } from "../../db/connection";
-import { wagerRaces } from "../../db/schema";
-import { eq, and, gte, lte, desc } from "drizzle-orm";
+import { affiliateStats, wagerRaces } from "../../db/schema/affiliate";
+import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
 import { raceRateLimiter } from "../middleware/rate-limiter";
 
 const router = Router();
@@ -93,36 +93,66 @@ router.get("/api/wager-races/current", raceRateLimiter, async (_req, res) => {
     if (activeRaces.length > 0) {
       const race = activeRaces[0];
       
-      // Get leaderboard data
       try {
-        const leaderboardData = await getLeaderboardData();
+        // Get participants directly from the database for monthly period
+        // This ensures we're using the data that was stored from the Goated.com API
+        const participants = await db
+          .select({
+            uid: affiliateStats.uid,
+            name: affiliateStats.name,
+            wagered: affiliateStats.wagered
+          })
+          .from(affiliateStats)
+          .where(eq(affiliateStats.period, 'monthly'))
+          .orderBy(desc(affiliateStats.wagered))
+          .limit(100);
         
-        // Check if we have monthly data (most races will be monthly)
-        if (leaderboardData?.data?.monthly?.data?.length > 0) {
-          // Return the race with participants
+        if (participants.length > 0) {
+          // Return the race with participants from our database
           return res.json({
-            id: race.id,
-            title: race.name,
-            description: race.description,
+            id: race.id.toString(),
+            title: "Monthly Wager Race",
+            description: "",
             startDate: race.startDate,
             endDate: race.endDate,
             prizePool: race.prizePool,
-            participants: leaderboardData.data.monthly.data.slice(0, 100).map((entry, index) => ({
+            participants: participants.map((entry, index) => ({
               position: index + 1,
               uid: entry.uid,
               name: entry.name,
-              wager: entry.wagered.this_month
+              wager: parseFloat(entry.wagered) || 0
             }))
           });
+        } else {
+          // Fallback to getting leaderboard data from API if no participants in database
+          log("No participants found in database, falling back to API");
+          const leaderboardData = await getLeaderboardData();
+          
+          if (leaderboardData?.data?.monthly?.data?.length > 0) {
+            return res.json({
+              id: race.id.toString(),
+              title: "Monthly Wager Race",
+              description: "",
+              startDate: race.startDate,
+              endDate: race.endDate,
+              prizePool: race.prizePool,
+              participants: leaderboardData.data.monthly.data.slice(0, 100).map((entry, index) => ({
+                position: index + 1,
+                uid: entry.uid,
+                name: entry.name,
+                wager: entry.wagered.this_month
+              }))
+            });
+          }
         }
-      } catch (leaderboardError) {
-        log(`Error fetching leaderboard data for race: ${leaderboardError}`);
+      } catch (dataError) {
+        log(`Error fetching race participant data: ${dataError}`);
         
-        // If we can't get leaderboard data, still return the race without participants
+        // If we can't get participant data, still return the race without participants
         return res.json({
-          id: race.id,
-          title: race.name,
-          description: race.description,
+          id: race.id.toString(),
+          title: "Monthly Wager Race",
+          description: "",
           startDate: race.startDate,
           endDate: race.endDate,
           prizePool: race.prizePool,

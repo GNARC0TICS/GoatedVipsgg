@@ -1,0 +1,94 @@
+// db/utils/index-creation.ts
+
+/**
+ * Creates necessary indexes if the specified table exists
+ * 
+ * @param tableName - The name of the table to check
+ * @param fieldName - The field to create an index on
+ * @param indexName - Optional custom index name
+ * @returns A promise that resolves to true if the index was created or already exists
+ */
+export async function createIndexIfTableExists(
+  tableName: string, 
+  fieldName: string,
+  indexName?: string
+): Promise<boolean> {
+  try {
+    // Check if table exists
+    const tableExistsResult = await db.execute(sql`
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_name = ${tableName}
+      );
+    `);
+    
+    const tableExists = tableExistsResult.rows[0]?.exists;
+    
+    if (!tableExists) {
+      console.log(`Table ${tableName} does not exist, skipping index creation`);
+      return false;
+    }
+    
+    // Use provided index name or generate one
+    const finalIndexName = indexName || `idx_${tableName}_${fieldName}`;
+    
+    // Check if index already exists
+    const indexExistsResult = await db.execute(sql`
+      SELECT EXISTS (
+        SELECT 1
+        FROM pg_indexes
+        WHERE indexname = ${finalIndexName}
+      );
+    `);
+    
+    const indexExists = indexExistsResult.rows[0]?.exists;
+    
+    if (indexExists) {
+      console.log(`Index ${finalIndexName} already exists, skipping creation`);
+      return true;
+    }
+    
+    // Create the index
+    await db.execute(sql`
+      CREATE INDEX ${sql.identifier(finalIndexName)}
+      ON ${sql.identifier(tableName)} (${sql.identifier(fieldName)});
+    `);
+    
+    console.log(`Created index ${finalIndexName} on ${tableName}.${fieldName}`);
+    return true;
+  } catch (error) {
+    console.error(`Error creating index on ${tableName}.${fieldName}:`, error);
+    return false;
+  }
+}
+
+// Example usage for wager races and participants
+
+// In db/connection.ts
+export async function checkIndexes() {
+  try {
+    console.log("Checking and creating necessary database indexes...");
+    
+    // Wager race indexes
+    await createIndexIfTableExists("wager_races", "status");
+    await createIndexIfTableExists("wager_races", "start_date");
+    await createIndexIfTableExists("wager_races", "end_date");
+    
+    // Wager race participants indexes
+    await createIndexIfTableExists("wager_race_participants", "wager_race_id");
+    await createIndexIfTableExists("wager_race_participants", "uid");
+    await createIndexIfTableExists("wager_race_participants", "wager", "idx_wager_race_participants_wager_desc");
+    
+    // Affiliate stats indexes
+    await createIndexIfTableExists("affiliate_stats", "period");
+    await createIndexIfTableExists("affiliate_stats", "uid");
+    await createIndexIfTableExists("affiliate_stats", "updated_at");
+    
+    console.log("Database indexes have been checked and created if needed");
+    return true;
+  } catch (error) {
+    console.error("Error checking/creating database indexes:", error);
+    return false;
+  }
+}

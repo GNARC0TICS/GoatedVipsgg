@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoatedVIPs API Test Page</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #D7FF00;
+            text-align: center;
+            background-color: #1A1B21;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 0;
+        }
+        button {
+            background-color: #D7FF00;
+            color: #1A1B21;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #c2e600;
+        }
+        pre {
+            background-color: #1A1B21;
+            color: #D7FF00;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .section {
+            margin-bottom: 30px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GoatedVIPs API Test Page</h1>
+        
+        <div class="section">
+            <h2>1. Health Check</h2>
+            <button id="checkHealth">Check API Health</button>
+            <div id="healthResult"></div>
+        </div>
+        
+        <div class="section">
+            <h2>2. Current Wager Race</h2>
+            <button id="checkCurrentRace">Get Current Race</button>
+            <div id="raceResult"></div>
+        </div>
+        
+        <div class="section">
+            <h2>3. Affiliate Stats</h2>
+            <button id="checkAffiliateStats">Get Affiliate Stats</button>
+            <div id="affiliateResult"></div>
+        </div>
+    </div>
+
+    <script>
+        // Health Check
+        document.getElementById('checkHealth').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('healthResult');
+            resultDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <p class="success">Status: ${data.status}</p>
+                    <p>Environment: ${data.environment}</p>
+                    <p>Timestamp: ${data.timestamp}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        });
+        
+        // Current Wager Race
+        document.getElementById('checkCurrentRace').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('raceResult');
+            resultDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch('/api/wager-races/current');
+                const data = await response.json();
+                
+                const participantsCount = data.participants ? data.participants.length : 0;
+                
+                resultDiv.innerHTML = `
+                    <p class="success">Race ID: ${data.id}</p>
+                    <p>Title: ${data.title}</p>
+                    <p>Start: ${new Date(data.startDate).toLocaleString()}</p>
+                    <p>End: ${new Date(data.endDate).toLocaleString()}</p>
+                    <p>Prize Pool: $${data.prizePool}</p>
+                    <p>Participants: ${participantsCount}</p>
+                    <p>Top 3 Participants:</p>
+                    <ul>
+                        ${data.participants?.slice(0, 3).map(p => 
+                            `<li>${p.position}. ${p.name} - $${parseFloat(p.wager).toLocaleString()}</li>`
+                        ).join('') || 'No participants'}
+                    </ul>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        });
+        
+        // Affiliate Stats
+        document.getElementById('checkAffiliateStats').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('affiliateResult');
+            resultDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch('/api/affiliate/stats');
+                const data = await response.json();
+                
+                // Check the structure and format the display accordingly
+                let displayHTML = '';
+                
+                if (data.success && Array.isArray(data.data)) {
+                    // Flat array format
+                    displayHTML = `
+                        <p class="success">Received ${data.data.length} entries</p>
+                        <p>Top 3 Users:</p>
+                        <ul>
+                            ${data.data.slice(0, 3).map((entry, index) => 
+                                `<li>${index + 1}. ${entry.name} - All-time: $${parseFloat(entry.wagered.all_time || 0).toLocaleString()}</li>`
+                            ).join('') || 'No users'}
+                        </ul>
+                    `;
+                } else if (data.data && (data.data.today || data.data.all_time)) {
+                    // Period-based structure format
+                    const periods = ['today', 'weekly', 'monthly', 'all_time'];
+                    let periodData = {};
+                    
+                    periods.forEach(period => {
+                        if (data.data[period] && data.data[period].data) {
+                            periodData[period] = data.data[period].data.slice(0, 3);
+                        }
+                    });
+                    
+                    displayHTML = `
+                        <p class="success">Received data in period-based format</p>
+                        ${periods.map(period => `
+                            <p>Top 3 Users (${period}):</p>
+                            <ul>
+                                ${periodData[period] ? 
+                                    periodData[period].map((entry, index) => 
+                                        `<li>${index + 1}. ${entry.name} - $${parseFloat(entry.wagered[period === 'weekly' ? 'this_week' : period === 'monthly' ? 'this_month' : period] || 0).toLocaleString()}</li>`
+                                    ).join('') : 'No data for this period'}
+                            </ul>
+                        `).join('')}
+                    `;
+                } else {
+                    displayHTML = `<p class="error">Unknown data format</p>`;
+                }
+                
+                resultDiv.innerHTML = displayHTML + `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

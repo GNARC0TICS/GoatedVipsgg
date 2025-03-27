@@ -28,6 +28,26 @@
   background: #d7ff00;
 }
 
+/* Custom scrollbar styling for the race timer widget */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(20, 21, 26, 0.3);
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(215, 255, 0, 0.3);
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(215, 255, 0, 0.6);
+}
+
 @keyframes fadeInOut {
   0% {
     opacity: 0;
