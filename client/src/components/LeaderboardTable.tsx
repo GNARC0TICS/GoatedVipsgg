@@ -86,6 +86,7 @@ function getTierBadge(tier: TierLevel) {
 }
 
 export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
+  const timePeriod = period; // Rename for internal use
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   
@@ -112,7 +113,7 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
   }
 
   // Get the correct property name for the current period
-  const periodProp = periodToProperty[period];
+  const periodProp = periodToProperty[timePeriod];
   
   return (
     <div className="space-y-6">
@@ -192,10 +193,16 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
                   <TableCell className="py-3">
                     <QuickProfile userId={entry.uid} username={entry.name}>
                       <div className="flex items-center gap-2.5">
+                        {/* Add custom error handling to debug the icon loading */}
                         <img 
                           src={tierIcon} 
                           alt={`${tier} tier`} 
                           className="w-5 h-5 object-contain" 
+                          onError={(e) => {
+                            console.error(`Error loading tier icon: ${tierIcon}`);
+                            // Don't hide the element, to see where icons should be
+                            e.currentTarget.style.border = "1px solid red";
+                          }}
                         />
                         <span className="font-medium text-white hover:text-[#D7FF00] transition-colors cursor-pointer">
                           {entry.name}
