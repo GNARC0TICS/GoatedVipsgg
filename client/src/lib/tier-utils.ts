@@ -28,16 +28,17 @@ export function getTierFromWager(wagerAmount: number): TierLevel {
 }
 
 export function getTierIcon(tier: TierLevel): string {
+  // Update paths to point directly to the assets in public folder
   const icons: Record<TierLevel, string> = {
-    COPPER: "/images/Goated Emblems/copper.548d79cf.svg",
-    BRONZE: "/images/Goated Emblems/bronze.e6ea941b.svg",
-    SILVER: "/images/Goated Emblems/silver.8e3ec67f.svg",
-    GOLD: "/images/Goated Emblems/gold.1c810178.svg",
-    PLATINUM: "/images/Goated Emblems/platinum.d258f583.svg",
-    PEARL: "/images/Goated Emblems/pearl.1815809f.svg",
-    SAPPHIRE: "/images/Goated Emblems/sapphire.91e6756b.svg",
-    EMERALD: "/images/Goated Emblems/emerald.46bd38eb.svg",
-    DIAMOND: "/images/Goated Emblems/diamond.ddf47a1e.svg",
+    COPPER: "/images/Goated%20Emblems/copper.548d79cf.svg",
+    BRONZE: "/images/Goated%20Emblems/bronze.e6ea941b.svg",
+    SILVER: "/images/Goated%20Emblems/silver.8e3ec67f.svg",
+    GOLD: "/images/Goated%20Emblems/gold.1c810178.svg",
+    PLATINUM: "/images/Goated%20Emblems/platinum.d258f583.svg",
+    PEARL: "/images/Goated%20Emblems/pearl.1815809f.svg",
+    SAPPHIRE: "/images/Goated%20Emblems/sapphire.91e6756b.svg",
+    EMERALD: "/images/Goated%20Emblems/emerald.46bd38eb.svg",
+    DIAMOND: "/images/Goated%20Emblems/diamond.ddf47a1e.svg",
   };
   return icons[tier];
 }
