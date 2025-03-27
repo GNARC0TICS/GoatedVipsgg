@@ -10,7 +10,6 @@ import { requireAdminDomain, preventAdminDomain } from "./middleware/domain-rout
 import userSessionsRouter from "./routes/user-sessions";
 import userProfileRouter from "./routes/user-profile";
 import telegramApiRouter from "./routes/telegram-api";
-import apiTokensRouter from "./routes/api-tokens";
 import wagerRaceRouter from "./routes/wager-race";
 import authRoutes from "./routes/auth-routes";
 import { db } from "../db/connection";
@@ -37,6 +36,7 @@ interface ExtendedWebSocket extends WebSocket {
 }
 
 // Add utility functions
+// neeeds updating with eemerald, pearl sapphire etc.
 function getTierFromWager(wagerAmount: number): string {
   if (wagerAmount >= 1000000) return "Diamond";
   if (wagerAmount >= 500000) return "Platinum";
@@ -152,8 +152,6 @@ export function registerRoutes(app: Express): Server {
   app.use(userProfileRouter);
   // Register Telegram API routes
   app.use("/api/telegram", telegramApiRouter);
-  // Register API tokens routes
-  app.use("/api/admin/api-tokens", apiTokensRouter);
   // Register wager race routes
   app.use(wagerRaceRouter);
   return httpServer;
@@ -1228,7 +1226,7 @@ async function handleChatConnection(ws: WebSocket) {
   const welcomeMessage = {
     id: Date.now(),
     message:
-      "Welcome to VIP Support! How can we assist you today? Our team is here to help with any questions or concerns youmay have.",
+      "Welcome to VIP Support! How can we assist you today? Our team is here to help with any questions or concerns you may have.",
     userId: null,
     createdAt: new Date(),
     isStaffReply: true,
