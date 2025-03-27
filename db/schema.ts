@@ -96,7 +96,7 @@ export const userActivityLog = pgTable("user_activity_log", {
 
 export const wagerRaces = pgTable("wager_races", {
   id: serial("id").primaryKey(),
-  title: text("title").notNull(),
+  name: text("name").notNull(),
   type: text("type").notNull(), // 'weekly' | 'monthly' | 'weekend'
   status: text("status").notNull(), // 'upcoming' | 'live' | 'completed'
   prizePool: decimal("prize_pool", { precision: 18, scale: 2 }).notNull(),
