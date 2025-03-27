@@ -879,41 +879,109 @@ async function handleUserProfileRequest(req: any, res: any) {
 }
 
 import { syncLeaderboardData } from "./utils/data-sync";
+import { apiService } from "./utils/api-service";
+import { affiliateStats } from "../db/schema/affiliate";
+import { desc, sql } from "drizzle-orm";
 
 async function handleAffiliateStats(req: any, res: any) {
   try {
-    const stats = await db
-      .select()
-      .from(affiliateStats)
-      .orderBy(desc(affiliateStats.timestamp))
-      .limit(100);
-
-    // Transform database records into expected format
-    const formattedData = {
+    // First try to get data from the external API
+    let externalData;
+    try {
+      externalData = await apiService.getLeaderboardData();
+      
+      // If we successfully got data from the API, store it in our database
+      if (externalData && externalData.data) {
+        try {
+          await syncLeaderboardData(externalData);
+        } catch (syncError) {
+          // Log sync errors but continue to serve the data
+          log(`Error syncing leaderboard data: ${syncError}`);
+        }
+      }
+    } catch (apiError) {
+      log(`Error fetching data from external API: ${apiError}`);
+      // We'll fall back to database data
+    }
+    
+    // Fetch affiliate stats from our database
+    const timeframes = ['today', 'weekly', 'monthly', 'all_time'];
+    const statsByPeriod = {};
+    
+    // Fetch stats for each period
+    for (const period of timeframes) {
+      try {
+        const periodStats = await db
+          .select()
+          .from(affiliateStats)
+          .where(sql`${affiliateStats.period} = ${period}`)
+          .orderBy(desc(affiliateStats.wagered))
+          .limit(100);
+          
+        statsByPeriod[period] = periodStats;
+      } catch (dbError) {
+        log(`Error fetching ${period} stats: ${dbError}`);
+        statsByPeriod[period] = [];
+      }
+    }
+    
+    // If we have API data, use it. Otherwise, build from our database.
+    const formattedData = externalData || {
       data: {
-        all_time: { data: stats.map(stat => ({
-          uid: stat.userId,
-          wagered: {
-            today: 0, // Calculate from daily stats
-            this_week: 0, // Calculate from weekly stats
-            this_month: stat.totalWager,
-            all_time: stat.totalWager
-          }
-        }))}
+        today: { 
+          data: statsByPeriod.today.map(stat => ({
+            uid: stat.uid,
+            name: stat.name,
+            wagered: {
+              today: parseFloat(stat.wagered),
+              this_week: 0,
+              this_month: 0,
+              all_time: 0
+            }
+          }))
+        },
+        weekly: { 
+          data: statsByPeriod.weekly.map(stat => ({
+            uid: stat.uid,
+            name: stat.name,
+            wagered: {
+              today: 0,
+              this_week: parseFloat(stat.wagered),
+              this_month: 0,
+              all_time: 0
+            }
+          }))
+        },
+        monthly: { 
+          data: statsByPeriod.monthly.map(stat => ({
+            uid: stat.uid,
+            name: stat.name,
+            wagered: {
+              today: 0,
+              this_week: 0,
+              this_month: parseFloat(stat.wagered),
+              all_time: 0
+            }
+          }))
+        },
+        all_time: { 
+          data: statsByPeriod.all_time.map(stat => ({
+            uid: stat.uid,
+            name: stat.name,
+            wagered: {
+              today: 0,
+              this_week: 0,
+              this_month: 0,
+              all_time: parseFloat(stat.wagered)
+            }
+          }))
+        }
       }
     };
-
+    
     res.json(formattedData);
-
-    // Store the leaderboard data in the database for persistence
-    try {
-      await syncLeaderboardData(data);
-    } catch (dbError) {
-      // Log database errors but don't fail the request
-      log(`Error storing leaderboard data: ${dbError}`);
-    }
   } catch (error) {
-    log(`Error fetching leaderboard data: ${error}`);
+    log(`Error in handleAffiliateStats: ${error}`);
     res.status(500).json({
       status: "error",
       message: "Failed to fetch leaderboard data",
