@@ -155,7 +155,6 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
               // Always use all_time wagered amount for determining tier
               const allTimeWagered = entry.wagered.all_time || 0;
               const tier = getTierFromWager(allTimeWagered);
-              const tierIcon = getTierIcon(tier);
               
               // Determine background color based on rank
               let rowBgClass = "";
@@ -193,12 +192,6 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
                   <TableCell className="py-3">
                     <QuickProfile userId={entry.uid} username={entry.name}>
                       <div className="flex items-center gap-2.5">
-                        {/* Simple image tag for tier icon */}
-                        <img 
-                          src={tierIcon} 
-                          alt={`${tier} tier`} 
-                          className="w-5 h-5 object-contain" 
-                        />
                         <span className="font-medium text-white hover:text-[#D7FF00] transition-colors cursor-pointer">
                           {entry.name}
                         </span>
