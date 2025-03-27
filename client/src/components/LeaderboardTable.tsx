@@ -193,16 +193,11 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
                   <TableCell className="py-3">
                     <QuickProfile userId={entry.uid} username={entry.name}>
                       <div className="flex items-center gap-2.5">
-                        {/* Add custom error handling to debug the icon loading */}
+                        {/* Simple image tag for tier icon */}
                         <img 
                           src={tierIcon} 
                           alt={`${tier} tier`} 
                           className="w-5 h-5 object-contain" 
-                          onError={(e) => {
-                            console.error(`Error loading tier icon: ${tierIcon}`);
-                            // Don't hide the element, to see where icons should be
-                            e.currentTarget.style.border = "1px solid red";
-                          }}
                         />
                         <span className="font-medium text-white hover:text-[#D7FF00] transition-colors cursor-pointer">
                           {entry.name}
