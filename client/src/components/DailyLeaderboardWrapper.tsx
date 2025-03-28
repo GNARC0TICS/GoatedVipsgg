@@ -1,14 +1,16 @@
 import { LeaderboardTable } from '@/components/LeaderboardTable';
 import { LeaderboardEntry } from '@/components/types';
+import { TimePeriod } from '@/hooks/use-leaderboard';
 
-// Simple wrapper component for the daily leaderboard that avoids type issues
+// Simple wrapper component for the daily leaderboard
 export function DailyLeaderboardWrapper({ data }: { data: LeaderboardEntry[] }) {
-  // Skip typing completely to avoid conflicts
+  // Explicitly type the period as TimePeriod
+  const period: TimePeriod = "today";
+  
   return (
-    // @ts-ignore - Ignoring type checking for this component
     <LeaderboardTable 
       data={data} 
-      period="today" 
+      period={period}
     />
   );
 }
