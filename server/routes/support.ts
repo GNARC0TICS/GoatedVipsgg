@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@db";
 import * as schema from "@db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
+import { requireAdminDomain } from "../middleware/domain-router";
 
 const router = Router();
 
@@ -201,7 +202,7 @@ router.post("/tickets/:ticketId/reply", async (req, res) => {
 /**
  * Update ticket status (admin only)
  */
-router.patch("/tickets/:ticketId/status", async (req, res) => {
+router.patch("/tickets/:ticketId/status", requireAdminDomain, async (req, res) => {
   try {
     const userId = req.user?.id;
     const ticketId = parseInt(req.params.ticketId);

@@ -1,92 +1,172 @@
-import { db } from "@db/connection";
-import { eq, sql } from "drizzle-orm";
-import { affiliateStats, wagerRaces, wagerRaceParticipants } from "@db/schema/index";
+import { db } from "../../db/connection";
 import { log } from "../vite";
-import { LeaderboardData } from "./leaderboard-cache";
+import { affiliateStats } from "../../db/schema/affiliate";
+import { users } from "../../db/schema";
+import { sql, eq } from "drizzle-orm";
 
-export async function syncLeaderboardData(data: LeaderboardData) {
+/**
+ * Type definition for leaderboard data from API
+ */
+export interface LeaderboardData {
+  data: {
+    today: { data: LeaderboardEntry[] };
+    weekly: { data: LeaderboardEntry[] };
+    monthly: { data: LeaderboardEntry[] };
+    all_time: { data: LeaderboardEntry[] };
+  };
+}
+
+/**
+ * Type definition for leaderboard entry
+ */
+export interface LeaderboardEntry {
+  uid: string;
+  name: string;
+  wagered: {
+    today: number;
+    this_week: number;
+    this_month: number;
+    all_time: number;
+  };
+}
+
+/**
+ * Syncs leaderboard data from the API to our database
+ * @param data The leaderboard data from the API
+ */
+export async function syncLeaderboardData(data: LeaderboardData): Promise<void> {
   try {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    const raceId = `${currentYear}${(currentMonth + 1).toString().padStart(2, "0")}`;
-    const endOfMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
-    const startDate = new Date(currentYear, currentMonth, 1);
-
-    // Begin transaction
-    await db.transaction(async (tx) => {
-      // Store daily stats
-      for (const entry of data.data.today.data) {
-        const userId = parseInt(entry.uid);
-        const totalWager = entry.wagered.today.toString();
-        const commission = (entry.wagered.today * 0.1).toString();
+    log("Starting leaderboard data sync...");
+    
+    // Process each time period separately
+    const periods = ['today', 'weekly', 'monthly', 'all_time'] as const;
+    
+    for (const period of periods) {
+      const entries = data.data[period]?.data || [];
+      
+      if (entries.length === 0) {
+        log(`No entries for period: ${period}`);
+        continue;
+      }
+      
+      log(`Syncing ${entries.length} entries for period: ${period}`);
+      
+      // Batch process the entries
+      const batchSize = 50;
+      for (let i = 0; i < entries.length; i += batchSize) {
+        const batch = entries.slice(i, i + batchSize);
         
-        await tx.insert(affiliateStats).values({
-          userId: userId,
-          totalWager,
-          commission,
-          timestamp: new Date()
-        }).onConflictDoUpdate({
-          target: [affiliateStats.userId],
-          set: {
-            totalWager,
-            commission,
-            timestamp: new Date()
+        // Process each entry
+        for (const entry of batch) {
+          // Skip entries with invalid UIDs
+          if (!entry.uid) {
+            continue;
           }
-        });
-      }
-
-      // Insert or update race
-      await tx.insert(wagerRaces).values({
-        title: `Monthly Wager Race - ${new Date(startDate).toLocaleString('default', {month: 'long'})} ${currentYear}`,
-        type: 'monthly',
-        status: 'live',
-        prizePool: '500',
-        startDate,
-        endDate: endOfMonth,
-        minWager: '0',
-        prizeDistribution: { "1": 50, "2": 30, "3": 10, "4": 5, "5": 5 },
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }).onConflictDoUpdate({
-        target: [wagerRaces.id],
-        set: {
-          updatedAt: new Date()
+          
+          // Default the name if missing
+          const name = entry.name || 'Unknown Player';
+          
+          // Get the appropriate wager value based on period
+          let wageredAmount;
+          switch (period) {
+            case 'today':
+              wageredAmount = entry.wagered.today;
+              break;
+            case 'weekly':
+              wageredAmount = entry.wagered.this_week;
+              break;
+            case 'monthly':
+              wageredAmount = entry.wagered.this_month;
+              break;
+            case 'all_time':
+              wageredAmount = entry.wagered.all_time;
+              break;
+            default:
+              wageredAmount = 0;
+          }
+          
+          try {
+            // Process affiliate stats
+            try {
+              // Check if the entry already exists
+              const existingEntries = await db
+                .select({ id: affiliateStats.id })
+                .from(affiliateStats)
+                .where(sql`${affiliateStats.uid} = ${entry.uid} AND ${affiliateStats.period} = ${period}`)
+                .limit(1);
+              
+              if (existingEntries.length > 0) {
+                // Update existing entry
+                await db
+                  .update(affiliateStats)
+                  .set({ 
+                    name,
+                    wagered: wageredAmount.toString(), // Convert to string for decimal type
+                    updatedAt: new Date() 
+                  })
+                  .where(sql`${affiliateStats.id} = ${existingEntries[0].id}`);
+              } else {
+                // Insert new entry
+                await db
+                  .insert(affiliateStats)
+                  .values({
+                    uid: entry.uid,
+                    name,
+                    wagered: wageredAmount.toString(), // Convert to string for decimal type
+                    period,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                  });
+              }
+            } catch (statError) {
+              log(`Error processing affiliate stats for ${entry.uid}: ${statError}`);
+            }
+            
+            // Process user data if that schema is available
+            try {
+              // Check if users table has required columns
+              if (users.username && users.password && users.email) {
+                // Check if user exists
+                const existingUsers = await db
+                  .select({ id: users.id })
+                  .from(users)
+                  .where(eq(users.username, name))
+                  .limit(1);
+                
+                if (existingUsers.length === 0) {
+                  // Create user with minimum required fields
+                  // Generate a random password and email since they're required
+                  const randomPassword = Math.random().toString(36).slice(-10);
+                  const randomEmail = `${name.toLowerCase().replace(/\s+/g, '.')}_${Math.floor(Math.random() * 10000)}@placeholder.com`;
+                  
+                  await db
+                    .insert(users)
+                    .values({
+                      username: name,
+                      password: randomPassword,
+                      email: randomEmail,
+                      isAdmin: false,
+                      createdAt: new Date(),
+                    });
+                }
+              }
+            } catch (userError) {
+              // Skip user creation if there's an error or schema mismatch
+              log(`Unable to create user for ${name}: ${userError}`);
+            }
+          } catch (entryError) {
+            log(`Error processing entry ${entry.uid}: ${entryError}`);
+            // Continue processing other entries even if one fails
+          }
         }
-      });
-
-      // Store the top 10 participants
-      for (const [index, participant] of data.data.monthly.data.slice(0, 10).entries()) {
-        await tx.insert(wagerRaceParticipants).values({
-          race_id: parseInt(raceId),
-          user_id: parseInt(participant.uid),
-          total_wager: participant.wagered.this_month.toString(),
-          rank: index + 1,
-          joined_at: new Date(),
-          updated_at: new Date(),
-          wager_history: [{
-            timestamp: new Date().toISOString(),
-            amount: participant.wagered.this_month
-          }]
-        }).onConflictDoUpdate({
-          target: [wagerRaceParticipants.race_id, wagerRaceParticipants.user_id],
-          set: {
-            total_wager: participant.wagered.this_month.toString(),
-            rank: index + 1,
-            updated_at: new Date(),
-            wager_history: sql`${wagerRaceParticipants.wager_history} || ${JSON.stringify([{
-              timestamp: new Date().toISOString(),
-              amount: participant.wagered.this_month
-            }])}::jsonb`
-          }
-        });
+        
+        log(`Processed batch ${i / batchSize + 1} of ${Math.ceil(entries.length / batchSize)} for period ${period}`);
       }
-    });
-
-    log('Successfully synced leaderboard data to database');
-    return true;
+    }
+    
+    log("Leaderboard data sync completed successfully");
   } catch (error) {
     log(`Error syncing leaderboard data: ${error}`);
-    return false;
+    throw error;
   }
 }

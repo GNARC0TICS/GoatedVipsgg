@@ -27,6 +27,16 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastLogin: timestamp("last_login"),
   lastLoginIp: text("last_login_ip"),
+  
+  // Email verification fields
+  isEmailVerified: boolean("is_email_verified").default(false),
+  emailVerificationToken: text("email_verification_token"),
+  emailVerificationTokenExpiry: timestamp("email_verification_token_expiry"),
+  emailVerifiedAt: timestamp("email_verified_at"),
+  
+  // Password reset fields
+  passwordResetToken: text("password_reset_token"),
+  passwordResetTokenExpiry: timestamp("password_reset_token_expiry"),
 
   // Profile customization fields
   bio: text("bio"),
@@ -56,6 +66,21 @@ export const userSessions = pgTable("user_sessions", {
   expiresAt: timestamp("expires_at").notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  rememberMe: boolean("remember_me").default(false).notNull(),
+});
+
+// Refresh tokens for long-term authentication
+export const refreshTokens = pgTable("refresh_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isRevoked: boolean("is_revoked").default(false).notNull(),
+  revokedAt: timestamp("revoked_at"),
+  replacedByToken: text("replaced_by_token"),
+  userAgent: text("user_agent"),
+  ipAddress: text("ip_address"),
 });
 
 // User activity log
@@ -71,7 +96,7 @@ export const userActivityLog = pgTable("user_activity_log", {
 
 export const wagerRaces = pgTable("wager_races", {
   id: serial("id").primaryKey(),
-  title: text("title").notNull(),
+  name: text("name").notNull(),
   type: text("type").notNull(), // 'weekly' | 'monthly' | 'weekend'
   status: text("status").notNull(), // 'upcoming' | 'live' | 'completed'
   prizePool: decimal("prize_pool", { precision: 18, scale: 2 }).notNull(),
@@ -212,12 +237,20 @@ export const userRelations = relations(users, ({ one, many }) => ({
   telegramVerifications: many(telegramVerificationRequests),
   // Session and activity tracking
   sessions: many(userSessions),
+  refreshTokens: many(refreshTokens),
   activityLogs: many(userActivityLog),
 }));
 
 export const userSessionsRelations = relations(userSessions, ({ one }) => ({
   user: one(users, {
     fields: [userSessions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const refreshTokenRelations = relations(refreshTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [refreshTokens.userId],
     references: [users.id],
   }),
 }));

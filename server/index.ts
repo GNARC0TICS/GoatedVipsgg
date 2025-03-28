@@ -15,6 +15,7 @@ import {
   raceRateLimiter,
 } from "./middleware/rate-limiter";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
+import { domainRouter } from "./middleware/domain-router";
 import fetch from "node-fetch";
 import helmet from "helmet";
 
@@ -46,6 +47,9 @@ async function setupMiddleware() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
+
+  // Domain routing middleware - applied early in the chain
+  app.use(domainRouter);
 
   // Request logging
   app.use(requestLogger);

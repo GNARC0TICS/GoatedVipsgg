@@ -18,7 +18,7 @@ import { useAuth } from "@/lib/auth";
 interface RaceParticipant {
   uid: string;
   name: string;
-  wagered: number;
+  wager: number;
   position: number;
 }
 
@@ -72,6 +72,16 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
       });
     }
   }, [currentError, toast]);
+  
+  // Debug logging to verify data structure
+  useEffect(() => {
+    if (currentRaceData) {
+      console.log("Race data loaded successfully:", currentRaceData);
+      if (currentRaceData.participants && currentRaceData.participants.length > 0) {
+        console.log("First participant:", currentRaceData.participants[0]);
+      }
+    }
+  }, [currentRaceData]);
 
   const {
     data: previousRaceData,
@@ -108,7 +118,31 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
     }
   }, [previousError, showPrevious, toast]);
 
-  const raceData: RaceData | undefined = showPrevious ? previousRaceData : currentRaceData;
+  // Process race data to ensure we filter out participants with zero wagers
+  let raceData: RaceData | undefined = showPrevious ? previousRaceData : currentRaceData;
+  
+  // If we have race data, filter out participants with zero wagers and limit to top 10
+  if (raceData && raceData.participants) {
+    raceData = {
+      ...raceData,
+      participants: raceData.participants
+        .filter(participant => {
+          // Parse wager to ensure we handle both string and number types
+          const wagerValue = typeof participant.wager === 'number' 
+            ? participant.wager 
+            : parseFloat(participant.wager || '0');
+          return wagerValue > 0;
+        })
+        .sort((a, b) => {
+          // Sort by wager amount in descending order
+          const aWager = typeof a.wager === 'number' ? a.wager : parseFloat(a.wager || '0');
+          const bWager = typeof b.wager === 'number' ? b.wager : parseFloat(b.wager || '0');
+          return bWager - aWager;
+        })
+        // Limit to top 10 participants only
+        .slice(0, 10)
+    };
+  }
   const error = showPrevious ? previousError : currentError;
   const isLoading = showPrevious ? isPreviousLoading : isCurrentLoading;
 
@@ -193,14 +227,13 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
       className="fixed bottom-4 right-4 z-50 w-80"
     >
       <div className="relative">
-        {onClose && (
         <button 
-          onClick={onClose}
+          onClick={() => setIsVisible(false)}
           className="absolute -top-2 -right-2 z-20 bg-[#1A1B21] border border-[#2A2B31] rounded-full p-1.5 text-[#8A8B91] hover:text-white hover:bg-[#2A2B31] transition-colors"
         >
           <X size={14} />
         </button>
-      )}
+
       <div className="bg-[#1A1B21]/90 backdrop-blur-sm border border-[#2A2B31] rounded-lg shadow-lg overflow-hidden">
           <div
             className="p-4 cursor-pointer"
@@ -215,15 +248,6 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsVisible(false);
-                  }}
-                  className="text-[#8A8B91] hover:text-white p-1"
-                >
-                  <X size={14} />
-                </button>
                 {!showPrevious && (
                   <>
                     <Clock className="h-4 w-4 text-[#D7FF00]" />
@@ -264,43 +288,59 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
                 exit={{ height: 0 }}
                 className="overflow-hidden"
               >
-                <div className="p-4 border-t border-[#2A2B31]">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-[#8A8B91] text-sm">
-                      Prize Pool: ${raceData.prizePool.toLocaleString()}
+                <div className="px-4 pt-3 pb-2 border-t border-[#2A2B31]">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-[#8A8B91] text-sm font-medium">
+                      Prize Pool: <span className="text-[#D7FF00]">${raceData.prizePool.toLocaleString()}</span>
+                    </span>
+                    <span className="text-[#8A8B91] text-xs">
+                      Top {raceData.participants.length} Players
                     </span>
                   </div>
-                  {raceData.participants.map((participant: RaceParticipant, index: number) => (
-                    <div
-                      key={participant.uid}
-                      className="flex items-center justify-between py-2"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`
-                            w-5 h-5 flex items-center justify-center rounded-full text-sm font-medium
-                            ${index === 0 ? "bg-yellow-500 text-black" : ""}
-                            ${index === 1 ? "bg-gray-400 text-black" : ""}
-                            ${index === 2 ? "bg-amber-700 text-white" : ""}
-                            ${index > 2 ? "bg-[#2A2B31] text-white" : ""}
-                          `}
-                        >
-                          {index + 1}
-                        </span>
-                        <span className="text-white truncate max-w-[120px]">
-                          {participant.name}
+                  
+                  {/* Participants List with improved spacing */}
+                  <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                    {raceData.participants.map((participant: RaceParticipant, index: number) => (
+                      <div
+                        key={participant.uid}
+                        className={`
+                          flex items-center justify-between py-1.5 px-2 rounded
+                          ${index === 0 ? "bg-yellow-500/10" : ""}
+                          ${index === 1 ? "bg-gray-400/10" : ""}
+                          ${index === 2 ? "bg-amber-700/10" : ""}
+                          hover:bg-[#2A2B31]/60 transition-colors
+                        `}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`
+                              w-5 h-5 flex items-center justify-center rounded-full text-xs font-medium
+                              ${index === 0 ? "bg-yellow-500 text-black" : ""}
+                              ${index === 1 ? "bg-gray-400 text-black" : ""}
+                              ${index === 2 ? "bg-amber-700 text-white" : ""}
+                              ${index > 2 ? "bg-[#2A2B31] text-white" : ""}
+                            `}
+                          >
+                            {index + 1}
+                          </span>
+                          <span className="text-white truncate max-w-[120px] text-sm">
+                            {participant.name}
+                          </span>
+                        </div>
+                        <span className="text-[#D7FF00] font-mono text-sm font-medium">
+                          ${(typeof participant.wager === 'number' ? participant.wager : parseFloat(participant.wager || '0')).toLocaleString()}
                         </span>
                       </div>
-                      <span className="text-[#D7FF00] font-mono">
-                        ${participant.wagered.toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
-                  <Link href="/wager-races">
-                    <a className="block text-center text-[#D7FF00] mt-4 hover:underline">
-                      View Full Leaderboard
-                    </a>
-                  </Link>
+                    ))}
+                  </div>
+                  
+                  <div className="mt-3 pt-2 border-t border-[#2A2B31]/60">
+                    <Link href="/wager-races">
+                      <a className="block text-center text-[#D7FF00] text-sm font-medium hover:underline">
+                        View Full Leaderboard
+                      </a>
+                    </Link>
+                  </div>
                 </div>
               </motion.div>
             )}

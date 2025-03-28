@@ -34,6 +34,28 @@ export function QuickProfile({
 }: QuickProfileProps) {
   const { data: leaderboardData, isLoading } = useQuery({
     queryKey: ["/api/affiliate/stats"],
+    queryFn: async () => {
+      const response = await fetch("/api/affiliate/stats");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const jsonData = await response.json();
+      
+      // Convert flat array structure to period-based structure if needed
+      if (jsonData && jsonData.data && Array.isArray(jsonData.data)) {
+        const entries = jsonData.data;
+        return {
+          data: {
+            today: { data: entries },
+            weekly: { data: entries },
+            monthly: { data: entries },
+            all_time: { data: entries }
+          }
+        };
+      }
+      
+      return jsonData;
+    },
     staleTime: 30000,
     retry: 3,
     refetchOnWindowFocus: false,

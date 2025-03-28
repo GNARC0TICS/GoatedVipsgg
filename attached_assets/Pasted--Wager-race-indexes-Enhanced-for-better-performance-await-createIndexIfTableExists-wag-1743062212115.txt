@@ -1,0 +1,82 @@
+
+    // Wager race indexes - Enhanced for better performance
+    await createIndexIfTableExists('wager_race_participants', 
+      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_race_id ON wager_race_participants(race_id)');
+    await createIndexIfTableExists('wager_race_participants', 
+      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_user_id ON wager_race_participants("userId")');
+    await createIndexIfTableExists('wager_race_participants', 
+      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_wagered ON wager_race_participants(wagered DESC)');
+    await createIndexIfTableExists('wager_race_participants', 
+      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_position ON wager_race_participants(position)');
+    await createIndexIfTableExists('wager_races', 
+      'CREATE INDEX IF NOT EXISTS idx_wager_races_status ON wager_races(status)');
+    await createIndexIfTableExists('wager_races', 
+      'CREATE INDEX IF NOT EXISTS idx_wager_races_dates ON wager_races(start_date, end_date)');
+    await createIndexIfTableExists('wager_races', 
+      'CREATE INDEX IF NOT EXISTS idx_wager_races_created_at ON wager_races(created_at DESC)');
+
+    // Affiliate stats indexes - Enhanced for leaderboard performance
+    await createIndexIfTableExists('affiliate_stats', 
+      'CREATE INDEX IF NOT EXISTS idx_affiliate_stats_user_id ON affiliate_stats("userId")');
+    await createIndexIfTableExists('affiliate_stats', 
+      'CREATE INDEX IF NOT EXISTS idx_affiliate_stats_timestamp ON affiliate_stats(timestamp)');
+    await createIndexIfTableExists('affiliate_stats', 
+      'CREATE INDEX IF NOT EXISTS idx_affiliate_stats_period ON affiliate_stats(period)');
+    await createIndexIfTableExists('affiliate_stats', 
+      'CREATE INDEX IF NOT EXISTS idx_affiliate_stats_wagered ON affiliate_stats(wagered DESC)');
+    await createIndexIfTableExists('affiliate_stats', 
+      'CREATE INDEX IF NOT EXISTS idx_affiliate_stats_uid ON affiliate_stats(uid)');
+    await createIndexIfTableExists('affiliate_stats',
+      'CREATE INDEX IF NOT EXISTS idx_affiliate_stats_period_wagered ON affiliate_stats(period, wagered DESC)');
+
+    // API keys indexes
+    await createIndexIfTableExists('api_keys', 
+      'CREATE INDEX IF NOT EXISTS idx_api_keys_name ON api_keys(name)');
+    await createIndexIfTableExists('api_keys', 
+      'CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key)');
+    await createIndexIfTableExists('api_key_usage', 
+      'CREATE INDEX IF NOT EXISTS idx_api_key_usage_key_id ON api_key_usage(key_id)');
+    await createIndexIfTableExists('api_key_usage', 
+      'CREATE INDEX IF NOT EXISTS idx_api_key_usage_timestamp ON api_key_usage(timestamp)');
+    
+    // Support system indexes
+    await createIndexIfTableExists('support_tickets', 
+      'CREATE INDEX IF NOT EXISTS idx_support_tickets_user_id ON support_tickets(user_id)');
+    await createIndexIfTableExists('support_tickets', 
+      'CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets(status)');
+    await createIndexIfTableExists('ticket_messages', 
+      'CREATE INDEX IF NOT EXISTS idx_ticket_messages_ticket_id ON ticket_messages(ticket_id)');
+
+    // Composite indexes for better query performance
+    await createIndexIfTableExists('wager_race_participants', 
+      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_composite ON wager_race_participants(race_id, "userId")');
+    await createIndexIfTableExists('wager_race_participants', 
+      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_race_pos ON wager_race_participants(race_id, position)');
+    await createIndexIfTableExists('wager_race_participants', 
+      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_race_wager ON wager_race_participants(race_id, wagered DESC)');
+      
+    // Add materialized view for fast leaderboard queries
+    if (existingTables.includes('affiliate_stats')) {
+      // Check if materialized view exists
+      const viewResult = await client.query(`
+        SELECT 1 FROM pg_class WHERE relname = 'leaderboard_summary' AND relkind = 'm';
+      `);
+      
+      if (viewResult.rows.length === 0) {
+        // Create materialized view
+        await db.execute(sql.raw(`
+          CREATE MATERIALIZED VIEW IF NOT EXISTS leaderboard_summary AS
+          SELECT 
+            uid,
+            name,
+            period,
+            max(wagered) as wagered,
+            max(updated_at) as last_updated
+          FROM affiliate_stats
+          GROUP BY uid, name, period
+          ORDER BY wagered DESC;
+          
+          CREATE UNIQUE INDEX idx_leaderboard_summary_composite 
+          ON leaderboard_summary(uid, period);
+        `));
+        
