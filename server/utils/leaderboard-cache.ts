@@ -48,8 +48,8 @@ export interface LeaderboardData {
 }
 
 // Create a singleton instance of the cache manager for leaderboard data
-// Increase cache time to 5 minutes to reduce API load
-const leaderboardCache = new CacheManager<LeaderboardData>("leaderboard", 300000); // 5 minute cache
+// Increase cache time to 15 minutes to reduce API load while maintaining data freshness
+const leaderboardCache = new CacheManager<LeaderboardData>("leaderboard", 900000); // 15 minute cache
 
 /**
  * Transforms MVP data into a standardized format
@@ -108,12 +108,21 @@ export function sortByWagered(data: any[], period: string) {
  * @returns Transformed leaderboard data
  */
 export function transformLeaderboardData(apiData: any): LeaderboardData {
-  // Extract data from various possible API response formats
-  const responseData = apiData.data || apiData.results || apiData;
-  if (
-    !responseData ||
-    (Array.isArray(responseData) && responseData.length === 0)
-  ) {
+  // Handle the current API response format which has a data array with all users
+  let users = [];
+  
+  // Extract data from API response format
+  if (apiData.data && Array.isArray(apiData.data)) {
+    // Current format - the data property is an array of users
+    users = apiData.data;
+  } else if (Array.isArray(apiData)) {
+    // Direct array format
+    users = apiData;
+  } else if (apiData.results && Array.isArray(apiData.results)) {
+    // Possible alternative format
+    users = apiData.results;
+  } else {
+    // Empty/invalid response
     return {
       status: "success",
       metadata: {
@@ -128,9 +137,9 @@ export function transformLeaderboardData(apiData: any): LeaderboardData {
       },
     };
   }
-
-  const dataArray = Array.isArray(responseData) ? responseData : [responseData];
-  const transformedData = dataArray.map((entry) => ({
+  
+  // Normalize each user object
+  const normalizedUsers = users.map((entry: any) => ({
     uid: entry.uid || "",
     name: entry.name || "",
     wagered: {
@@ -141,17 +150,18 @@ export function transformLeaderboardData(apiData: any): LeaderboardData {
     },
   }));
 
+  // Create our standardized structure - organizing users by time period
   return {
     status: "success",
     metadata: {
-      totalUsers: transformedData.length,
+      totalUsers: normalizedUsers.length,
       lastUpdated: new Date().toISOString(),
     },
     data: {
-      today: { data: sortByWagered(transformedData, "today") },
-      weekly: { data: sortByWagered(transformedData, "this_week") },
-      monthly: { data: sortByWagered(transformedData, "this_month") },
-      all_time: { data: sortByWagered(transformedData, "all_time") },
+      today: { data: sortByWagered(normalizedUsers, "today") },
+      weekly: { data: sortByWagered(normalizedUsers, "this_week") },
+      monthly: { data: sortByWagered(normalizedUsers, "this_month") },
+      all_time: { data: sortByWagered(normalizedUsers, "all_time") },
     },
   };
 }

@@ -6,9 +6,9 @@ This document provides a comprehensive overview of how the GoatedVIPs.gg platfor
 
 ### 1.1 External API Integration
 - **Primary Endpoint**: https://api.goated.com/user2/affiliate/referral-leaderboard/2RW440E
-- **Authentication**: JWT Bearer token (managed in API_CONFIG)
+- **Authentication**: JWT Bearer token (managed in API_CONFIG as goatedToken)
 - **Purpose**: Fetch affiliate wager data for users with referral codes VIPBOOST/GOATEDVIPS
-- **Refresh Interval**: Every 15 minutes
+- **Refresh Interval**: Every 15 minutes (optimized to reduce API load)
 
 ### 1.2 API Response Format
 The Goated.com API returns data in this structure:
@@ -269,17 +269,17 @@ CREATE TABLE wager_race_participants (
 #### GET /api/affiliate/stats
 - Returns leaderboard data for all time periods
 - Rate limit: 60 requests/minute
-- Cached for 5 minutes
+- Cached for 15 minutes
 
 #### GET /api/wager-races/current
 - Returns current active race data
 - Rate limit: 30 requests/minute
-- Updates every minute
+- Updates every 15 minutes
 
 #### GET /api/wager-race/position
 - Returns user's current race position
 - Rate limit: 30 requests/minute
-- Updates every minute
+- Updates every 15 minutes
 
 ## 9. Monitoring & Maintenance
 

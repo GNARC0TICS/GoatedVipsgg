@@ -5,9 +5,15 @@ import { users } from "../../db/schema";
 import { sql, eq } from "drizzle-orm";
 
 /**
- * Type definition for leaderboard data from API
+ * Type definition for our standardized leaderboard data structure
+ * (after transformation from raw API response)
  */
 export interface LeaderboardData {
+  status: string;
+  metadata: {
+    totalUsers: number;
+    lastUpdated: string;
+  };
   data: {
     today: { data: LeaderboardEntry[] };
     weekly: { data: LeaderboardEntry[] };

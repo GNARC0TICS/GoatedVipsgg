@@ -12,7 +12,7 @@ class ApiService {
 
   constructor() {
     this.baseUrl = API_CONFIG.baseUrl;
-    this.token = API_CONFIG.token;
+    this.token = API_CONFIG.goatedToken;
     this.endpoints = API_CONFIG.endpoints;
   }
 
