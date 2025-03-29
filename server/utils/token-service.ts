@@ -40,18 +40,9 @@ export class TokenService {
    */
   async getGoatedApiToken(): Promise<string | null> {
     try {
-      // First, check environment variable
-      if (process.env.GOATED_API_TOKEN) {
-        log('Using API token from environment variable');
-        return process.env.GOATED_API_TOKEN;
-      }
-      
-      // If not in environment, try database
-      const [apiKey] = await db
-        .select()
-        .from(apiKeys)
-        .where(eq(apiKeys.name, GOATED_API_KEY_NAME))
-        .limit(1);
+      const apiKey = await db.query.apiKeys.findFirst({
+        where: eq(apiKeys.name, GOATED_API_KEY_NAME),
+      });
       
       if (!apiKey || !apiKey.isActive) {
         return null;
@@ -79,11 +70,9 @@ export class TokenService {
   async saveGoatedApiToken(token: string, expirationDate?: Date): Promise<boolean> {
     try {
       // Check if a token already exists
-      const [existingToken] = await db
-        .select()
-        .from(apiKeys)
-        .where(eq(apiKeys.name, GOATED_API_KEY_NAME))
-        .limit(1);
+      const existingToken = await db.query.apiKeys.findFirst({
+        where: eq(apiKeys.name, GOATED_API_KEY_NAME),
+      });
       
       // First, decode the JWT to extract expiration
       const decodedToken = this.decodeJwt(token);
@@ -139,37 +128,9 @@ export class TokenService {
    */
   async checkTokenExpiration(): Promise<{ isExpiring: boolean; daysLeft?: number; isExpired?: boolean }> {
     try {
-      // Check if token exists in environment
-      if (process.env.GOATED_API_TOKEN) {
-        // Parse expiry from environment token
-        const decodedToken = this.decodeJwt(process.env.GOATED_API_TOKEN);
-        if (decodedToken && decodedToken.exp) {
-          const now = new Date();
-          const expirationDate = new Date(decodedToken.exp * 1000);
-          
-          // Check if already expired
-          if (expirationDate < now) {
-            return { isExpiring: true, isExpired: true, daysLeft: 0 };
-          }
-          
-          // Calculate days until expiration
-          const daysLeft = Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-          
-          // Consider expiring if less than 5 days left
-          return { 
-            isExpiring: daysLeft <= 5, 
-            daysLeft,
-            isExpired: false,
-          };
-        }
-      }
-      
-      // If not in environment, try database
-      const [apiKey] = await db
-        .select()
-        .from(apiKeys)
-        .where(eq(apiKeys.name, GOATED_API_KEY_NAME))
-        .limit(1);
+      const apiKey = await db.query.apiKeys.findFirst({
+        where: eq(apiKeys.name, GOATED_API_KEY_NAME),
+      });
       
       if (!apiKey || !apiKey.expiresAt) {
         return { isExpiring: false };
@@ -204,32 +165,9 @@ export class TokenService {
    */
   async getTokenMetadata(): Promise<any> {
     try {
-      // Check if token exists in environment variable first
-      if (process.env.GOATED_API_TOKEN) {
-        const decodedToken = this.decodeJwt(process.env.GOATED_API_TOKEN);
-        const expirationStatus = await this.checkTokenExpiration();
-        
-        return {
-          exists: true,
-          source: 'environment',
-          created: decodedToken?.iat ? new Date(decodedToken.iat * 1000) : new Date(),
-          expiresAt: decodedToken?.exp ? new Date(decodedToken.exp * 1000) : undefined,
-          isActive: true,
-          ...expirationStatus,
-          metadata: {
-            decodedInfo: decodedToken || {},
-            uid: decodedToken?.uid,
-            session: decodedToken?.session
-          },
-        };
-      }
-      
-      // If not in environment, try database
-      const [apiKey] = await db
-        .select()
-        .from(apiKeys)
-        .where(eq(apiKeys.name, GOATED_API_KEY_NAME))
-        .limit(1);
+      const apiKey = await db.query.apiKeys.findFirst({
+        where: eq(apiKeys.name, GOATED_API_KEY_NAME),
+      });
       
       if (!apiKey) {
         return { exists: false };
@@ -239,7 +177,6 @@ export class TokenService {
       
       return {
         exists: true,
-        source: 'database',
         created: apiKey.createdAt,
         lastUsed: apiKey.lastUsedAt,
         isActive: apiKey.isActive,

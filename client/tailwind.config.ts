@@ -25,9 +25,6 @@ const config: Config = {
           card: "#1E1F25",
           overlay: "rgba(20, 21, 26, 0.8)",
         },
-        html: {
-          DEFAULT: "#14151A",
-        },
         border: {
           DEFAULT: "#2A2B31",
           light: "rgba(42, 43, 49, 0.5)",

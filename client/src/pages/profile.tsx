@@ -76,7 +76,7 @@ export default function ProfilePage() {
           title: "Success",
           description: "Your profile has been updated",
         });
-        
+
         setEditMode(false);
         refetch();
       } catch (error) {
@@ -120,7 +120,7 @@ export default function ProfilePage() {
         title: "Success",
         description: "Your Telegram account has been linked",
       });
-      
+
       refetch();
     } catch (error) {
       toast({
@@ -132,7 +132,7 @@ export default function ProfilePage() {
   };
 
   if (isLoading) return <LoadingSpinner />;
-  
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#14151A]">
@@ -179,7 +179,7 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gradient-to-b from-[#14151A] to-[#1A1B21] text-white">
       {/* Subtle background pattern */}
       <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-[0.02] mix-blend-overlay pointer-events-none" />
-      
+
       <div className="container mx-auto px-4 py-8 md:py-16">
         <motion.div
           variants={containerVariants}
@@ -194,16 +194,16 @@ export default function ProfilePage() {
             <h1 className="text-2xl md:text-3xl font-heading text-[#D7FF00] tracking-wide">My Profile</h1>
             <div className="h-px flex-grow bg-gradient-to-r from-[#D7FF00]/50 to-transparent"></div>
           </motion.div>
-          
+
           {/* Profile Card */}
           <motion.div variants={itemVariants}>
             <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.1)] group relative overflow-hidden">
               {/* Subtle background pattern */}
               <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
-              
+
               {/* Subtle hover effect */}
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#2A2B31]/0 via-[#D7FF00]/5 to-[#2A2B31]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-xl blur-sm" />
-              
+
               <CardContent className="p-6 relative z-10">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-4">
@@ -260,7 +260,7 @@ export default function ProfilePage() {
                     </Button>
                   )}
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <h3 className="text-[#D7FF00] font-medium">Account Details</h3>
@@ -279,10 +279,10 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <h3 className="text-[#D7FF00] font-medium">Linked Accounts</h3>
-                    
+
                     <div className="space-y-3">
                       <div className="flex items-center justify-between p-3 bg-[#2A2B31] rounded-lg">
                         <div className="flex items-center gap-2">
@@ -308,7 +308,7 @@ export default function ProfilePage() {
                           </Button>
                         )}
                       </div>
-                      
+
                       <div className="flex items-center justify-between p-3 bg-[#2A2B31] rounded-lg">
                         <div className="flex items-center gap-2">
                           <img src="/images/goated-icon.png" alt="Goated" className="h-5 w-5" />
@@ -331,7 +331,7 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
           </motion.div>
-          
+
           {/* Stats Cards */}
           <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.05)] group relative overflow-hidden">
@@ -345,7 +345,7 @@ export default function ProfilePage() {
                 <p className="text-xs text-[#8A8B91] mt-1">Connect your Goated account to track</p>
               </CardContent>
             </Card>
-            
+
             <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.05)] group relative overflow-hidden">
               <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
               <CardContent className="p-4 relative z-10">
@@ -357,7 +357,7 @@ export default function ProfilePage() {
                 <p className="text-xs text-[#8A8B91] mt-1">No race participation yet</p>
               </CardContent>
             </Card>
-            
+
             <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.05)] group relative overflow-hidden">
               <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
               <CardContent className="p-4 relative z-10">
@@ -369,7 +369,7 @@ export default function ProfilePage() {
                 <p className="text-xs text-[#8A8B91] mt-1">No bonus codes redeemed</p>
               </CardContent>
             </Card>
-            
+
             <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.05)] group relative overflow-hidden">
               <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
               <CardContent className="p-4 relative z-10">
@@ -382,7 +382,7 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
           </motion.div>
-          
+
           {/* Bio Section */}
           <motion.div variants={itemVariants}>
             <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.1)] group relative overflow-hidden">
@@ -403,7 +403,7 @@ export default function ProfilePage() {
                     </Button>
                   )}
                 </div>
-                
+
                 {editMode ? (
                   <Textarea
                     value={bio}
@@ -421,7 +421,7 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
           </motion.div>
-          
+
           {/* Tabs Section */}
           <motion.div variants={itemVariants}>
             <Tabs defaultValue="stats" className="w-full" onValueChange={setActiveTab}>
@@ -451,7 +451,7 @@ export default function ProfilePage() {
                   Wager Races
                 </TabsTrigger>
               </TabsList>
-              
+
               <TabsContent 
                 value="stats" 
                 className="mt-4 transition-all duration-500 animate-in fade-in-50"
@@ -468,7 +468,7 @@ export default function ProfilePage() {
                       <p className="text-xs text-[#8A8B91] mt-1">Connect your Goated account to track</p>
                     </CardContent>
                   </Card>
-                  
+
                   <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.05)] group relative overflow-hidden">
                     <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
                     <CardContent className="p-4 relative z-10">
@@ -480,7 +480,7 @@ export default function ProfilePage() {
                       <p className="text-xs text-[#8A8B91] mt-1">No race participation yet</p>
                     </CardContent>
                   </Card>
-                  
+
                   <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.05)] group relative overflow-hidden">
                     <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
                     <CardContent className="p-4 relative z-10">
@@ -492,7 +492,7 @@ export default function ProfilePage() {
                       <p className="text-xs text-[#8A8B91] mt-1">No bonus codes redeemed</p>
                     </CardContent>
                   </Card>
-                  
+
                   <Card className="bg-gradient-to-br from-[#1A1B21]/80 to-[#14151A]/90 backdrop-blur-md border border-[#2A2B31]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(215,255,0,0.05)] group relative overflow-hidden">
                     <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
                     <CardContent className="p-4 relative z-10">
@@ -506,21 +506,21 @@ export default function ProfilePage() {
                   </Card>
                 </div>
               </TabsContent>
-              
+
               <TabsContent 
                 value="rank" 
                 className="mt-4 transition-all duration-500 animate-in fade-in-50"
               >
                 <RankProgressDisplay wagerAmount={user.totalWagered || 0} />
               </TabsContent>
-              
+
               <TabsContent 
                 value="sessions" 
                 className="mt-4 transition-all duration-500 animate-in fade-in-50"
               >
                 <SessionHistory userId={user.id} />
               </TabsContent>
-              
+
               <TabsContent 
                 value="races" 
                 className="mt-4 transition-all duration-500 animate-in fade-in-50"
@@ -529,16 +529,16 @@ export default function ProfilePage() {
               </TabsContent>
             </Tabs>
           </motion.div>
-          
+
           {/* Call to Action */}
           <motion.div variants={itemVariants}>
             <Card className="bg-gradient-to-r from-[#1A1B21] to-[#2A2B31] border-[#2A2B31] relative overflow-hidden group">
               {/* Animated gradient border */}
               <div className="absolute -inset-[1px] bg-gradient-to-r from-[#D7FF00]/0 via-[#D7FF00]/30 to-[#D7FF00]/0 opacity-0 group-hover:opacity-100 blur-sm transition-opacity duration-1000 rounded-xl"></div>
-              
+
               {/* Animated background */}
               <div className="absolute inset-0 bg-gradient-to-r from-[#1A1B21] to-[#2A2B31] rounded-xl z-0"></div>
-              
+
               <CardContent className="p-6 relative z-10">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 relative z-10">
                   <div>

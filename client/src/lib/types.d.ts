@@ -212,11 +212,9 @@ declare module "@/hooks/use-leaderboard" {
 declare module "@/components/LeaderboardTable" {
   import { FC } from "react";
   import { TimePeriod } from "@/hooks/use-leaderboard";
-  import { LeaderboardEntry } from "@/components/types";
 
   export interface LeaderboardTableProps {
-    data: LeaderboardEntry[];
-    period: TimePeriod;
+    timePeriod: TimePeriod;
   }
   export const LeaderboardTable: FC<LeaderboardTableProps>;
 }

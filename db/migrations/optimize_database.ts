@@ -43,7 +43,7 @@ export async function optimizeDatabase() {
     await createIndexIfTableExists('wager_race_participants', 
       'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_race_id ON wager_race_participants(race_id)');
     await createIndexIfTableExists('wager_race_participants', 
-      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_user_id ON wager_race_participants("userId")');
+      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_user_id ON wager_race_participants(user_id)');
     await createIndexIfTableExists('wager_race_participants', 
       'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_wagered ON wager_race_participants(wagered DESC)');
     await createIndexIfTableExists('wager_race_participants', 
@@ -57,7 +57,7 @@ export async function optimizeDatabase() {
 
     // Affiliate stats indexes - Enhanced for leaderboard performance
     await createIndexIfTableExists('affiliate_stats', 
-      'CREATE INDEX IF NOT EXISTS idx_affiliate_stats_user_id ON affiliate_stats("userId")');
+      'CREATE INDEX IF NOT EXISTS idx_affiliate_stats_user_id ON affiliate_stats("user_id")');
     await createIndexIfTableExists('affiliate_stats', 
       'CREATE INDEX IF NOT EXISTS idx_affiliate_stats_timestamp ON affiliate_stats(timestamp)');
     await createIndexIfTableExists('affiliate_stats', 
@@ -89,7 +89,7 @@ export async function optimizeDatabase() {
 
     // Composite indexes for better query performance
     await createIndexIfTableExists('wager_race_participants', 
-      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_composite ON wager_race_participants(race_id, "userId")');
+      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_composite ON wager_race_participants(race_id, user_id)');
     await createIndexIfTableExists('wager_race_participants', 
       'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_race_pos ON wager_race_participants(race_id, position)');
     await createIndexIfTableExists('wager_race_participants', 

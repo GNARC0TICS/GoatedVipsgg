@@ -41,15 +41,6 @@ agentRequireRestartOnSave = false
 task = "shell.exec"
 args = "npm run dev"
 
-[[workflows.workflow]]
-name = "Sync External Data"
-author = 38337569
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "node -r ts-node/register server/utils/sync-external-data.ts"
-
 [auth]
 pageEnabled = false
 buttonEnabled = false

@@ -1,14 +1,5 @@
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Crown } from "lucide-react";
@@ -22,9 +13,7 @@ import {
   Zap,
   MessageSquare,
   Lock,
-  Search
 } from "lucide-react";
-import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { FeatureCarousel } from "@/components/FeatureCarousel";
 import { MVPCards } from "@/components/MVPCards";
 import { RaceTimer } from "@/components/RaceTimer";
@@ -36,94 +25,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/lib/auth";
-import { LeaderboardEntry, LeaderboardTableProps } from "@/components/types";
-import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
-
-// Format currency values with appropriate K/M/B suffix
-function formatNumber(num: number): string {
-  const fixedNum = Number(num.toFixed(2));
-  
-  if (fixedNum >= 1000000000) {
-    return (fixedNum / 1000000000).toFixed(1) + "B";
-  }
-  if (fixedNum >= 1000000) {
-    return (fixedNum / 1000000).toFixed(1) + "M";
-  }
-  if (fixedNum >= 1000) {
-    return (fixedNum / 1000).toFixed(1) + "K";
-  }
-  
-  // For smaller numbers, display with 2 decimal places only if they have cents
-  return fixedNum % 1 === 0 ? fixedNum.toString() : fixedNum.toFixed(2);
-}
-
-// Daily leaderboard container component
-function DailyLeaderboard() {
-  const { data, isLoading, error } = useLeaderboard("today");
-
-  // Don't filter out inactive users, just sort by wager amount in descending order
-  const sortedData = [...data].sort((a, b) => {
-    // Sort by wager amount in descending order
-    const aWager = a.wagered?.today || 0;
-    const bWager = b.wagered?.today || 0;
-    return bWager - aWager;
-  });
-  
-  if (isLoading) {
-    return <div className="text-center p-6 text-gray-400">Loading daily leaderboard...</div>;
-  }
-  
-  if (error) {
-    return (
-      <div className="text-center p-6 text-red-400">
-        Error loading leaderboard: {error.message || "Unknown error"}
-      </div>
-    );
-  }
-  
-  // Manually render the LeaderboardTable component with the props it requires
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center">
-        <div className="relative max-w-md w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <Input 
-            placeholder="Search by username..." 
-            className="pl-10 bg-gray-800 border-gray-700 text-white"
-          />
-        </div>
-      </div>
-      
-      <div className="border rounded-lg border-gray-800 overflow-hidden">
-        <Table className="w-full">
-          <TableHeader className="bg-gray-900">
-            <TableRow>
-              <TableHead className="text-left text-gray-300 font-medium">Rank</TableHead>
-              <TableHead className="text-left text-gray-300 font-medium">User</TableHead>
-              <TableHead className="text-right text-gray-300 font-medium">Wagered</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedData.slice(0, 10).map((entry, index) => (
-              <TableRow key={entry.uid} className="hover:bg-gray-900/50">
-                <TableCell className="font-medium">{index + 1}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {getTierIcon(getTierFromWager(entry.wagered.all_time))}
-                    <span>{entry.name}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right font-medium">
-                  ${formatNumber(entry.wagered.today)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
-  );
-}
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
@@ -136,7 +37,6 @@ export default function Home() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="mb-8"
-            style={{ position: 'relative' }}
           >
             <video
               autoPlay
@@ -144,7 +44,6 @@ export default function Home() {
               muted
               playsInline
               className="mx-auto h-64 md:h-80 w-auto object-contain"
-              style={{ position: 'relative', zIndex: 0 }}
             >
               <source src="/images/FINAL.mp4" type="video/mp4" />
             </video>
@@ -456,7 +355,7 @@ export default function Home() {
                     <Trophy className="w-7 h-7 text-[#D7FF00]" />
                     DAILY LEADERBOARD
                   </h2>
-                  <DailyLeaderboard />
+                  <LeaderboardTable timePeriod="today" />
                 </div>
               </motion.div>
 

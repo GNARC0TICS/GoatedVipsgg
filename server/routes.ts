@@ -6,12 +6,11 @@ import { setupAuth } from "./auth";
 import { API_CONFIG } from "./config/api";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { requireAdmin, requireAuth } from "./middleware/auth";
-import { requireAdminDomain, preventAdminDomain } from "./middleware/domain-router";
 import userSessionsRouter from "./routes/user-sessions";
 import userProfileRouter from "./routes/user-profile";
 import telegramApiRouter from "./routes/telegram-api";
+import apiTokensRouter from "./routes/api-tokens";
 import wagerRaceRouter from "./routes/wager-race";
-import authRoutes from "./routes/auth-routes";
 import { db } from "../db/connection";
 import { users, wagerRaces, userSessions, userActivityLog } from "@db/schema/index";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
@@ -36,7 +35,6 @@ interface ExtendedWebSocket extends WebSocket {
 }
 
 // Add utility functions
-// neeeds updating with eemerald, pearl sapphire etc.
 function getTierFromWager(wagerAmount: number): string {
   if (wagerAmount >= 1000000) return "Diamond";
   if (wagerAmount >= 500000) return "Platinum";
@@ -144,51 +142,20 @@ export function registerRoutes(app: Express): Server {
   setupWebSocket(httpServer);
   // Register verification routes
   registerBasicVerificationRoutes(app);
-  // Register authentication routes
-  app.use("/api/auth", authRoutes);
   // Register user sessions routes
   app.use(userSessionsRouter);
   // Register user profile routes
   app.use(userProfileRouter);
   // Register Telegram API routes
   app.use("/api/telegram", telegramApiRouter);
+  // Register API tokens routes
+  app.use("/api/admin/api-tokens", apiTokensRouter);
   // Register wager race routes
   app.use(wagerRaceRouter);
   return httpServer;
 }
 
 function setupRESTRoutes(app: Express) {
-  // Add endpoint to manually trigger a full refresh of leaderboard data
-  app.get("/api/leaderboard/refresh", async (_req, res) => {
-    try {
-      log("Manual leaderboard refresh triggered");
-      
-      // Force a refresh by invalidating the cache
-      invalidateLeaderboardCache();
-      
-      // Fetch fresh data - this will also trigger the sync to database for all periods
-      const freshData = await getLeaderboardData(true);
-      
-      // Return success response with counts
-      return res.json({
-        status: "success",
-        message: "Leaderboard data refreshed successfully",
-        counts: {
-          today: freshData.data.today.data.length,
-          weekly: freshData.data.weekly.data.length,
-          monthly: freshData.data.monthly.data.length,
-          all_time: freshData.data.all_time.data.length
-        }
-      });
-    } catch (error) {
-      log(`Error refreshing leaderboard data: ${error}`);
-      return res.status(500).json({
-        status: "error",
-        message: "Failed to refresh leaderboard data"
-      });
-    }
-  });
-
   // Add endpoint to fetch previous month's results
   app.get("/api/wager-races/previous", async (_req, res) => {
     try {
@@ -206,7 +173,108 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  // Removed duplicate wager-races/current endpoint - now handled by wager-race.ts router
+  // Modified current race endpoint to handle month end
+  app.get("/api/wager-races/current", raceRateLimiter, async (_req, res) => {
+    try {
+      // Use cached data instead of making a new API call
+      const stats = await getLeaderboardData();
+
+      // Get current month's info
+      const now = new Date();
+      const endOfMonth = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+      );
+
+      // Check if previous month needs to be archived
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
+      // If it's the first day of the month and we haven't archived yet
+      if (now.getDate() === 1 && now.getHours() < 1) {
+        const previousMonth = now.getMonth() === 0 ? 12 : now.getMonth();
+        const previousYear =
+          now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+
+        // Use a placeholder for now
+        const existingEntry = null;
+
+        const prizeDistribution = [0.5, 0.3, 0.1, 0.05, 0.05, 0, 0, 0, 0, 0]; //Example distribution, needs to be defined elsewhere
+
+        if (!existingEntry && stats.data.monthly.data.length > 0) {
+          const now = new Date();
+          const currentMonth = now.getMonth();
+          const currentYear = now.getFullYear();
+
+          // Store complete race results with detailed participant data
+          const winners = stats.data.monthly.data
+            .slice(0, 10)
+            .map((participant: any, index: number) => ({
+              uid: participant.uid,
+              name: participant.name,
+              wagered: participant.wagered.this_month,
+              allTimeWagered: participant.wagered.all_time,
+              tier: getTierFromWager(participant.wagered.all_time),
+              prize: (prizePool * prizeDistribution[index]).toFixed(2),
+              position: index + 1,
+              timestamp: new Date().toISOString(),
+            }));
+
+          // Broadcast race completion to all connected clients
+          broadcastLeaderboardUpdate({
+            type: "RACE_COMPLETED",
+            data: {
+              winners,
+              nextRaceStart: new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                1,
+              ).toISOString(),
+            },
+          });
+        }
+      }
+
+      // Use dates to ensure correct month/year
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      const actualYear = currentYear;
+      const actualMonth = currentMonth;
+
+      const raceData = {
+        id: `${actualYear}${(actualMonth + 1).toString().padStart(2, "0")}`,
+        status: "live", 
+        startDate: new Date(actualYear, actualMonth, 1).toISOString(),
+        endDate: new Date(actualYear, actualMonth + 1, 0, 23, 59, 59).toISOString(),
+        prizePool: 500, // Monthly race prize pool
+        participants: stats.data.monthly.data
+          .map((participant: any, index: number) => ({
+            uid: participant.uid,
+            name: participant.name,
+            wagered: participant.wagered.this_month,
+            position: index + 1,
+          }))
+          .slice(0, 10), // Top 10 participants
+      };
+
+      // Log race data for debugging
+      console.log(
+        `Race data for month ${currentMonth + 1}, year ${currentYear}`,
+      );
+
+      res.json(raceData);
+    } catch (error) {
+      log(`Error fetching current race: ${error}`);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch current race",
+      });
+    }
+  });
 
   // Modified profile endpoint with caching
   app.get("/api/profile", requireAuth, async (req, res) => {
@@ -280,10 +348,10 @@ function setupRESTRoutes(app: Express) {
 
   // Add user profile endpoint by ID for user profile page
   app.get("/api/users/:id", requireAuth, handleUserProfileRequest);
-  app.post("/api/admin/login", requireAdminDomain, handleAdminLogin);
-  app.get("/api/admin/users", requireAdminDomain, requireAdmin, handleAdminUsersRequest);
-  app.get("/api/admin/wager-races", requireAdminDomain, requireAdmin, handleWagerRacesRequest);
-  app.post("/api/admin/wager-races", requireAdminDomain, requireAdmin, handleCreateWagerRace);
+  app.post("/api/admin/login", handleAdminLogin);
+  app.get("/api/admin/users", requireAdmin, handleAdminUsersRequest);
+  app.get("/api/admin/wager-races", requireAdmin, handleWagerRacesRequest);
+  app.post("/api/admin/wager-races", requireAdmin, handleCreateWagerRace);
   app.get("/api/affiliate/stats", affiliateRateLimiter, handleAffiliateStats);
 
   // Support system endpoints
@@ -478,7 +546,7 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  app.patch("/api/support/tickets/:id", requireAdminDomain, requireAdmin, async (req, res) => {
+  app.patch("/api/support/tickets/:id", requireAdmin, async (req, res) => {
     try {
       const { status, priority, assignedTo } = req.body;
       /*
@@ -517,7 +585,7 @@ function setupRESTRoutes(app: Express) {
   });
 
   // Bonus code management routes
-  app.get("/api/admin/bonus-codes", requireAdminDomain, requireAdmin, async (_req, res) => {
+  app.get("/api/admin/bonus-codes", requireAdmin, async (_req, res) => {
     try {
       /*
       const codes = await db.query.bonusCodes.findMany({
@@ -536,7 +604,7 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  app.post("/api/admin/bonus-codes", requireAdminDomain, requireAdmin, async (req, res) => {
+  app.post("/api/admin/bonus-codes", requireAdmin, async (req, res) => {
     try {
       /*
       const [code] = await db
@@ -559,7 +627,7 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  app.put("/api/admin/bonus-codes/:id", requireAdminDomain, requireAdmin, async (req, res) => {
+  app.put("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
     try {
       /*
       const [code] = await db
@@ -580,7 +648,7 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  app.delete("/api/admin/bonus-codes/:id", requireAdminDomain, requireAdmin, async (req, res) => {
+  app.delete("/api/admin/bonus-codes/:id", requireAdmin, async (req, res) => {
     try {
       /*
       await db
@@ -619,7 +687,7 @@ function setupRESTRoutes(app: Express) {
     }
   });
 
-  app.get("/api/admin/analytics", requireAdminDomain, requireAdmin, async (_req, res) => {
+  app.get("/api/admin/analytics", requireAdmin, async (_req, res) => {
     try {
       // Use the cached leaderboard data instead of making a direct API call
       const leaderboardData = await getLeaderboardData();
@@ -753,126 +821,25 @@ async function handleUserProfileRequest(req: any, res: any) {
   }
 }
 
-// Import the data synchronization function for affiliate stats
-import { syncLeaderboardData } from "../server/utils/data-sync";
-import { apiService } from "./utils/api-service";
-import { affiliateStats } from "../db/schema/affiliate";
+import { syncLeaderboardData } from "./utils/data-sync";
 
 async function handleAffiliateStats(req: any, res: any) {
   try {
-    // First try to get data from the external API
-    let externalData;
+    // Use the cached data function instead of making a direct API call
+    const data = await getLeaderboardData();
+
+    // Send the data back to the client immediately
+    res.json(data);
+
+    // Store the leaderboard data in the database for persistence
     try {
-      externalData = await apiService.getLeaderboardData();
-      
-      // If we successfully got data from the API, store it in our database
-      if (externalData && externalData.data) {
-        try {
-          await syncLeaderboardData(externalData);
-        } catch (syncError) {
-          // Log sync errors but continue to serve the data
-          log(`Error syncing leaderboard data: ${syncError}`);
-        }
-      }
-    } catch (apiError) {
-      log(`Error fetching data from external API: ${apiError}`);
-      // We'll fall back to database data
+      await syncLeaderboardData(data);
+    } catch (dbError) {
+      // Log database errors but don't fail the request
+      log(`Error storing leaderboard data: ${dbError}`);
     }
-    
-    // Fetch affiliate stats from our database
-    const timeframes = ['today', 'weekly', 'monthly', 'all_time'] as const;
-    const statsByPeriod: Record<string, any[]> = {
-      today: [],
-      weekly: [],
-      monthly: [],
-      all_time: []
-    };
-    
-    // Fetch stats for each period
-    for (const period of timeframes) {
-      try {
-        const periodStats = await db
-          .select()
-          .from(affiliateStats)
-          .where(sql`${affiliateStats.period} = ${period}`)
-          .orderBy(desc(affiliateStats.wagered))
-          .limit(100);
-          
-        statsByPeriod[period] = periodStats;
-      } catch (dbError) {
-        log(`Error fetching ${period} stats: ${dbError}`);
-        statsByPeriod[period] = [];
-      }
-    }
-    
-    // Interface for affiliate stat entries
-    interface AffiliateStat {
-      id: number;
-      uid: string;
-      name: string;
-      wagered: string; // Stored as string in DB
-      period: string;
-      createdAt: Date;
-      updatedAt: Date;
-    }
-    
-    // If we have API data, use it. Otherwise, build from our database.
-    const formattedData = externalData || {
-      data: {
-        today: { 
-          data: statsByPeriod.today.map((stat: AffiliateStat) => ({
-            uid: stat.uid,
-            name: stat.name,
-            wagered: {
-              today: parseFloat(stat.wagered),
-              this_week: 0,
-              this_month: 0,
-              all_time: 0
-            }
-          }))
-        },
-        weekly: { 
-          data: statsByPeriod.weekly.map((stat: AffiliateStat) => ({
-            uid: stat.uid,
-            name: stat.name,
-            wagered: {
-              today: 0,
-              this_week: parseFloat(stat.wagered),
-              this_month: 0,
-              all_time: 0
-            }
-          }))
-        },
-        monthly: { 
-          data: statsByPeriod.monthly.map((stat: AffiliateStat) => ({
-            uid: stat.uid,
-            name: stat.name,
-            wagered: {
-              today: 0,
-              this_week: 0,
-              this_month: parseFloat(stat.wagered),
-              all_time: 0
-            }
-          }))
-        },
-        all_time: { 
-          data: statsByPeriod.all_time.map((stat: AffiliateStat) => ({
-            uid: stat.uid,
-            name: stat.name,
-            wagered: {
-              today: 0,
-              this_week: 0,
-              this_month: 0,
-              all_time: parseFloat(stat.wagered)
-            }
-          }))
-        }
-      }
-    };
-    
-    res.json(formattedData);
   } catch (error) {
-    log(`Error in handleAffiliateStats: ${error}`);
+    log(`Error fetching leaderboard data: ${error}`);
     res.status(500).json({
       status: "error",
       message: "Failed to fetch leaderboard data",
@@ -1185,7 +1152,7 @@ async function handleChatConnection(ws: WebSocket) {
   const welcomeMessage = {
     id: Date.now(),
     message:
-      "Welcome to VIP Support! How can we assist you today? Our team is here to help with any questions or concerns you may have.",
+      "Welcome to VIP Support! How can we assist you today? Our team is here to help with any questions or concerns youmay have.",
     userId: null,
     createdAt: new Date(),
     isStaffReply: true,

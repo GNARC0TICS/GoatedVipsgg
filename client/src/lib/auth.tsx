@@ -45,13 +45,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const { data: user } = useQuery<SelectUser | null>({
-    queryKey: ["/api/auth/user"],
+    queryKey: ["/api/user"],
     queryFn: async () => {
       try {
         // Add admin token to the headers if it exists
         const headers = addAuthHeaders({});
         
-        const response = await fetch("/api/auth/user", {
+        const response = await fetch("/api/user", {
           credentials: "include",
           headers
         });
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password: string;
       email?: string;
     }) => {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch("/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -107,12 +107,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(true);
       return {
         ok: true,
-        user: data.user,
+        user: data,
       };
     },
     onSuccess: (data) => {
       if (data.ok && data.user) {
-        queryClient.setQueryData(["/api/auth/user"], data.user);
+        queryClient.setQueryData(["/api/user"], data.user);
       }
     },
   });
@@ -123,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password: string;
       email: string;
     }) => {
-      const response = await fetch("/api/auth/register", {
+      const response = await fetch("/api/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -145,19 +145,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(true);
       return {
         ok: true,
-        user: data.user,
+        user: data,
       };
     },
     onSuccess: (data) => {
       if (data.ok && data.user) {
-        queryClient.setQueryData(["/api/auth/user"], data.user);
+        queryClient.setQueryData(["/api/user"], data.user);
       }
     },
   });
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch("/api/auth/logout", {
+      const response = await fetch("/api/logout", {
         method: "POST",
         credentials: "include",
       });
@@ -170,7 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { ok: true };
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/auth/user"], null);
+      queryClient.setQueryData(["/api/user"], null);
     },
   });
 
@@ -178,12 +178,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initAuth = async () => {
       try {
         await queryClient.prefetchQuery({
-          queryKey: ["/api/auth/user"],
+          queryKey: ["/api/user"],
           queryFn: async () => {
             // Add admin token to the headers if it exists
             const headers = addAuthHeaders({});
             
-            const response = await fetch("/api/auth/user", {
+            const response = await fetch("/api/user", {
               credentials: "include",
               headers
             });

@@ -20,9 +20,9 @@ async function resetDatabase() {
 
     log("Database tables cleared");
 
-    // Fetch data from external API with updated endpoint for Goated.com
+    // Fetch data from external API
     const response = await fetch(
-      "https://api.goated.com/user2/affiliate/referral-leaderboard/2RW440E",
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.leaderboard}`,
       {
         headers: {
           Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
@@ -32,14 +32,11 @@ async function resetDatabase() {
     );
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      throw new Error(`API request failed: ${response.status}`);
     }
 
     const apiData = await response.json();
-    log(`Received data with ${apiData.data.today?.data?.length || 0} users`);
-    
-    // Extract users from today's data
-    const users_data = apiData.data?.today?.data || [];
+    const users_data = apiData.data || apiData.results || apiData;
 
     // Create sample wager race
     const [currentRace] = await db
@@ -57,8 +54,6 @@ async function resetDatabase() {
         description: "Weekly competition for top wagerers",
       })
       .returning();
-      
-    console.log(`Created race with ID: ${currentRace.id}`);
 
     // Create new entries
     for (const entry of users_data) {
@@ -74,31 +69,23 @@ async function resetDatabase() {
         })
         .returning();
 
-      // Define mapping for period names
-      const periodMappings = [
-        { apiField: "today", dbField: "today" },
-        { apiField: "this_week", dbField: "weekly" },
-        { apiField: "this_month", dbField: "monthly" },
-        { apiField: "all_time", dbField: "all_time" }
-      ];
-
-      // Insert affiliate stats using the main schema definition
+      // Insert affiliate stats
       await db.insert(affiliateStats).values({
-        userId: user.id,
-        totalWager: entry.wagered.all_time.toString() || "0",
+        user_id: user.id,
+        total_wager: entry.wagered.all_time || "0",
         commission: "0",
         timestamp: new Date(),
       });
 
-      // Insert race participant data with the correct schema
+      // Insert race participant data
       await db.insert(wagerRaceParticipants).values({
         race_id: currentRace.id,
         user_id: user.id,
-        total_wager: entry.wagered.this_week?.toString() || "0",
+        total_wager: entry.wagered.weekly || "0",
         rank: null,
+        wager_history: [],
         joined_at: new Date(),
-        updated_at: new Date(), 
-        wager_history: []
+        updated_at: new Date(),
       });
 
       // Insert default notification preferences

@@ -8,62 +8,73 @@ import { PageTransition } from "@/components/PageTransition";
 import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { useLoading } from "@/contexts/LoadingContext";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { LeaderboardEntry } from "@/components/types";
-
-function debounce<T extends (...args: any[]) => any>(func: T, wait: number) {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-
-  function debouncedFunction(this: any, ...args: Parameters<T>) {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-    
-    timeoutId = setTimeout(() => {
-      func.apply(this, args);
-      timeoutId = undefined;
-    }, wait);
-  }
-
-  debouncedFunction.cancel = () => {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      timeoutId = undefined;
-    }
-  };
-
-  return debouncedFunction as T & { cancel: () => void };
-}
-
 
 export default function Leaderboard() {
   const [location] = useLocation();
   const [period, setPeriod] = useState<TimePeriod>("today");
   const { startLoadingFor, stopLoadingFor, isLoadingFor } = useLoading();
   const loadingKey = `leaderboard-page-${period}`;
-
-  // Use TypeScript assertion to match the exact type signature
+  
+  // Use the enhanced leaderboard hook with better error handling
   const { 
     data: leaderboardData, 
     isLoading: dataLoading, 
-    error,
-    refetch,
-    errorDetails: apiErrorDetails
+    error, 
+    errorDetails = null,
+    refetch = () => Promise.resolve() 
   } = useLeaderboard(period) as {
     data: any[];
     isLoading: boolean;
     error: Error | null;
-    refetch: () => Promise<any>;
-    errorDetails: string;
+    errorDetails?: string | null;
+    refetch?: () => Promise<any>;
   };
   
-  // Type assertion to make TypeScript happy
-  const typedLeaderboardData = leaderboardData as unknown as LeaderboardEntry[];
-  
-  // Default error message if none provided
-  const errorDetails = error ? error.message : 'An unknown error occurred';
-
+  // Combine our loading states
   const isPageLoading = dataLoading || isLoadingFor(loadingKey);
+  
+  // Handle period changes with loading state
+  useEffect(() => {
+    console.log(`Period changed to ${period}, setting loading state`);
+    
+    // Start loading when period changes
+    startLoadingFor(loadingKey, "spinner", 500);
+    
+    // Add a minimum loading time to prevent flicker
+    const timer = setTimeout(() => {
+      stopLoadingFor(loadingKey);
+    }, 500); // Reduced from 1000ms for better user experience
+    
+    return () => {
+      clearTimeout(timer);
+      // Ensure loading state is cleaned up if component unmounts
+      if (isLoadingFor(loadingKey)) {
+        stopLoadingFor(loadingKey);
+      }
+    };
+  }, [period, loadingKey, startLoadingFor, stopLoadingFor, isLoadingFor]);
+  
+  // Log data for debugging
+  useEffect(() => {
+    if (leaderboardData) {
+      console.log(`Leaderboard data received for ${period}:`, leaderboardData.length);
+    }
+    if (error) {
+      console.error(`Leaderboard error for ${period}:`, error, errorDetails);
+    }
+  }, [leaderboardData, error, errorDetails, period]);
+  
+  // Retry loading on error
+  const handleRetry = useCallback(() => {
+    console.log('Retrying leaderboard data fetch');
+    startLoadingFor(loadingKey, "spinner", 500);
+    refetch().catch((err: Error) => {
+      console.error('Retry failed:', err);
+      stopLoadingFor(loadingKey);
+    });
+  }, [refetch, loadingKey, startLoadingFor, stopLoadingFor]);
 
+  // Update period based on URL parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const periodParam = params.get("period");
@@ -80,7 +91,7 @@ export default function Leaderboard() {
     }
   }, [location]);
 
-  const updatePeriod = (newPeriod: TimePeriod) => {
+  const updatePeriod = (newPeriod: string) => {
     const urlPeriodMap: Record<string, string> = {
       today: "daily",
       weekly: "weekly",
@@ -88,7 +99,7 @@ export default function Leaderboard() {
       all_time: "all_time",
     };
 
-    setPeriod(newPeriod);
+    setPeriod(newPeriod as TimePeriod);
     window.history.pushState(
       {},
       "",
@@ -96,37 +107,17 @@ export default function Leaderboard() {
     );
   };
 
-  const handleRetry = useCallback(() => {
-    console.log('Retrying leaderboard data fetch');
-    startLoadingFor(loadingKey, "spinner", 500);
-    refetch().catch((err: Error) => {
-      console.error('Retry failed:', err);
-      stopLoadingFor(loadingKey);
-    });
-  }, [refetch, loadingKey, startLoadingFor, stopLoadingFor]);
-
-  const loadLeaderboardData = useCallback(() => {
-    startLoadingFor(loadingKey, "spinner", 500);
-    refetch().finally(() => stopLoadingFor(loadingKey));
-  }, [refetch, loadingKey, startLoadingFor, stopLoadingFor]);
-
-  useEffect(() => {
-    const debouncedLoad = debounce(loadLeaderboardData, 1000); 
-    debouncedLoad();
-    return () => debouncedLoad.cancel?.();
-  }, [loadLeaderboardData]);
-
-
-  if (error || !leaderboardData) {
+  // Show error state if needed
+  if (error && !isPageLoading) {
     return (
-      <div className="min-h-screen bg-background-DEFAULT flex items-center justify-center flex-col">
+      <div className="min-h-screen bg-[#14151A] flex items-center justify-center flex-col">
         <div className="text-red-500 mb-4">Failed to load leaderboard data</div>
         <div className="text-white/60 mb-6 text-sm max-w-md text-center">
-          {errorDetails || 'Please ensure you are logged in and try again.'}
+          {errorDetails || 'An unexpected error occurred while loading the leaderboard.'}
         </div>
         <Button
           onClick={handleRetry}
-          className="bg-primary-DEFAULT text-black hover:bg-primary-hover"
+          className="bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90"
         >
           Retry
         </Button>
@@ -135,71 +126,65 @@ export default function Leaderboard() {
   }
 
   return (
-    <PageTransition>
-      <div className="container py-8 space-y-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl font-bold">Leaderboard</h1>
-          <div className="flex gap-2">
-            <Button
-              variant={period === "today" ? "default" : "outline"}
-              onClick={() => updatePeriod("today")}
-              className={period === "today" ? "bg-[#D7FF00] text-black" : ""}
-            >
-              Daily
-            </Button>
-            <Button
-              variant={period === "weekly" ? "default" : "outline"}
-              onClick={() => updatePeriod("weekly")}
-              className={period === "weekly" ? "bg-[#D7FF00] text-black" : ""}
-            >
-              Weekly
-            </Button>
-            <Button
-              variant={period === "monthly" ? "default" : "outline"}
-              onClick={() => updatePeriod("monthly")}
-              className={period === "monthly" ? "bg-[#D7FF00] text-black" : ""}
-            >
-              Monthly
-            </Button>
-            <Button
-              variant={period === "all_time" ? "default" : "outline"}
-              onClick={() => updatePeriod("all_time")}
-              className={period === "all_time" ? "bg-[#D7FF00] text-black" : ""}
-            >
-              All Time
-            </Button>
-          </div>
-        </div>
+    <PageTransition isLoading={isPageLoading}>
+      <div className="min-h-screen bg-[#14151A]">
+        <main className="container mx-auto px-4 py-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-8"
+          >
+            <div className="mb-8">
+              <video
+                autoPlay
+                muted
+                playsInline
+                className="mx-auto h-48 md:h-64 w-auto object-contain"
+              >
+                <source
+                  src="/images/Page Headers/WAGERLB.MP4"
+                  type="video/mp4"
+                />
+              </video>
+            </div>
 
-        {isPageLoading ? (
-          <div className="flex justify-center items-center min-h-[400px]">
-            {/* @ts-ignore - Issue with LoadingSpinner props */}
-            <LoadingSpinner size={40} label={false} fullscreen={false} />
-          </div>
-        ) : (
-          <>
-            {typedLeaderboardData && typedLeaderboardData.length > 0 ? (
-              <LeaderboardTable 
-                data={typedLeaderboardData} 
-                period={period} 
-              />
-            ) : (
-              <div className="rounded-lg border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm p-8 text-center">
-                <div className="text-xl font-semibold mb-2">No Data Available</div>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  There's no leaderboard data available for the {period} period. Please try another time period or check back later.
-                </p>
-                <Button 
-                  onClick={handleRetry} 
-                  variant="outline" 
-                  className="mt-4"
+            <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-8 md:mb-12 px-2">
+              {[
+                { id: "today", label: "DAILY" },
+                { id: "weekly", label: "WEEKLY" },
+                { id: "monthly", label: "MONTHLY" },
+                { id: "all_time", label: "ALL TIME" },
+              ].map(({ id, label }) => (
+                <motion.div
+                  key={id}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  Refresh Data
-                </Button>
-              </div>
-            )}
-          </>
-        )}
+                  <Button
+                    variant={period === id ? "default" : "outline"}
+                    onClick={() => updatePeriod(id)}
+                    className={`font-heading font-bold transition-all duration-300 ${
+                      period === id
+                        ? "bg-[#D7FF00] text-black hover:bg-[#D7FF00]/90 shadow-glow-sm"
+                        : "border-[#2A2B31] hover:border-[#D7FF00]/50 hover:text-[#D7FF00]"
+                    }`}
+                  >
+                    {label}
+                  </Button>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="rounded-xl border border-[#2A2B31] bg-[#1A1B21]/50 backdrop-blur-sm p-8"
+          >
+            <LeaderboardTable key={period} timePeriod={period} />
+          </motion.div>
+        </main>
       </div>
     </PageTransition>
   );

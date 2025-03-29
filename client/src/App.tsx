@@ -12,7 +12,7 @@ import { Layout } from "@/components/Layout";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Redirect } from "@/lib/navigation";
 import { motion } from "framer-motion";
-import { BackgroundEffect } from "./components/BackgroundEffect";
+import { ParticleBackground } from "./components/ParticleBackground"; // Added import
 
 
 // Import all pages
@@ -43,7 +43,7 @@ import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminLogin from "./pages/admin/login"; // Add import for AdminLogin
-import ProfilePage from "@/pages/profile";
+import Profile from "@/pages/profile";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -170,7 +170,7 @@ function Router() {
             {/* Protected Routes */}
             <Route path="/profile">
               <ProtectedRoute>
-                <ProfilePage />
+                <Profile />
               </ProtectedRoute>
             </Route>
             <Route path="/bonus-codes">
@@ -283,7 +283,7 @@ function AppContent() {
   return (
     <AnimatePresence mode="wait">
       <div className="relative min-h-screen">
-        <BackgroundEffect />
+        <ParticleBackground />
         <div className="relative z-10">
           {isInitialLoad ? (
             <PreLoader onLoadComplete={handleLoadComplete} />
@@ -302,3 +302,6 @@ function AppContent() {
 }
 
 export default App;
+
+
+// ParticleBackground component is now imported from "./components/ParticleBackground"
