@@ -1,123 +1,92 @@
-import { db } from "../db";
-import {
-  users,
-  affiliateStats,
-  wagerRaces,
-  wagerRaceParticipants,
-  notificationPreferences,
-} from "../db/schema";
-import { sql } from "drizzle-orm";
-import { log } from "./vite";
-import { API_CONFIG } from "./config/api";
+import { db } from '../db/connection';
+import { sql } from 'drizzle-orm';
+import { users, wagerRaces, notificationPreferences } from '../db/schema';
 
 async function resetDatabase() {
   try {
-    // Drop all tables
+    console.log('Starting database reset...');
+
+    // Drop existing tables if they exist
+    await db.execute(sql`DROP TABLE IF EXISTS notification_preferences CASCADE`);
+    await db.execute(sql`DROP TABLE IF EXISTS wager_race_participants CASCADE`);
+    await db.execute(sql`DROP TABLE IF EXISTS wager_races CASCADE`);
+    await db.execute(sql`DROP TABLE IF EXISTS users CASCADE`);
+
+    // Create tables with proper schema
     await db.execute(sql`
-      TRUNCATE TABLE affiliate_stats, wager_race_participants, wager_races, 
-      notification_preferences, users CASCADE;
+      CREATE TABLE users (
+        id SERIAL PRIMARY KEY,
+        username TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        is_admin BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        last_login TIMESTAMP,
+        last_login_ip TEXT,
+        is_email_verified BOOLEAN NOT NULL DEFAULT false,
+        email_verification_token TEXT,
+        email_verification_token_expiry TIMESTAMP,
+        email_verified_at TIMESTAMP,
+        password_reset_token TEXT,
+        password_reset_token_expiry TIMESTAMP,
+        bio TEXT,
+        profile_color TEXT,
+        goated_uid TEXT UNIQUE,
+        goated_username TEXT,
+        is_goated_verified BOOLEAN NOT NULL DEFAULT false,
+        goated_verified_at TIMESTAMP,
+        telegram_id TEXT UNIQUE,
+        telegram_username TEXT,
+        is_telegram_verified BOOLEAN NOT NULL DEFAULT false,
+        telegram_verified_at TIMESTAMP
+      )
     `);
 
-    log("Database tables cleared");
+    console.log('✓ Users table created');
 
-    // Fetch data from external API with updated endpoint for Goated.com
-    const response = await fetch(
-      "https://api.goated.com/user2/affiliate/referral-leaderboard/2RW440E",
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.API_TOKEN || API_CONFIG.token}`,
-          "Content-Type": "application/json",
-        },
-      },
-    );
+    // Create other necessary tables
+    await db.execute(sql`
+      CREATE TABLE wager_races (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL,
+        prize_pool DECIMAL(18,2) NOT NULL,
+        start_date TIMESTAMP NOT NULL,
+        end_date TIMESTAMP NOT NULL,
+        min_wager DECIMAL(18,2) NOT NULL,
+        prize_distribution JSONB NOT NULL,
+        created_by INTEGER REFERENCES users(id),
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        rules TEXT,
+        description TEXT
+      )
+    `);
 
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-    }
+    console.log('✓ Wager races table created');
 
-    const apiData = await response.json();
-    log(`Received data with ${apiData.data.today?.data?.length || 0} users`);
-    
-    // Extract users from today's data
-    const users_data = apiData.data?.today?.data || [];
+    await db.execute(sql`
+      CREATE TABLE notification_preferences (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        wager_race_updates BOOLEAN NOT NULL DEFAULT true,
+        vip_status_changes BOOLEAN NOT NULL DEFAULT true,
+        promotional_offers BOOLEAN NOT NULL DEFAULT true,
+        monthly_statements BOOLEAN NOT NULL DEFAULT true,
+        email_notifications BOOLEAN NOT NULL DEFAULT true,
+        push_notifications BOOLEAN NOT NULL DEFAULT true,
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
 
-    // Create sample wager race
-    const [currentRace] = await db
-      .insert(wagerRaces)
-      .values({
-        title: "Weekly Wager Race",
-        type: "weekly",
-        status: "live",
-        prizePool: "1000.00",
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-        minWager: "10.00",
-        prizeDistribution: { "1": 50, "2": 30, "3": 20 },
-        rules: "Compete for the highest wager amount in 7 days",
-        description: "Weekly competition for top wagerers",
-      })
-      .returning();
-      
-    console.log(`Created race with ID: ${currentRace.id}`);
+    console.log('✓ Notification preferences table created');
+    console.log('Database reset completed successfully');
 
-    // Create new entries
-    for (const entry of users_data) {
-      // Insert user
-      const [user] = await db
-        .insert(users)
-        .values({
-          username: entry.name,
-          email: `${entry.name.toLowerCase()}@placeholder.com`,
-          password: "placeholder",
-          isAdmin: false,
-          createdAt: new Date(),
-        })
-        .returning();
-
-      // Define mapping for period names
-      const periodMappings = [
-        { apiField: "today", dbField: "today" },
-        { apiField: "this_week", dbField: "weekly" },
-        { apiField: "this_month", dbField: "monthly" },
-        { apiField: "all_time", dbField: "all_time" }
-      ];
-
-      // Insert affiliate stats using the main schema definition
-      await db.insert(affiliateStats).values({
-        userId: user.id,
-        totalWager: entry.wagered.all_time.toString() || "0",
-        commission: "0",
-        timestamp: new Date(),
-      });
-
-      // Insert race participant data with the correct schema
-      await db.insert(wagerRaceParticipants).values({
-        race_id: currentRace.id,
-        user_id: user.id,
-        total_wager: entry.wagered.this_week?.toString() || "0",
-        rank: null,
-        joined_at: new Date(),
-        updated_at: new Date(), 
-        wager_history: []
-      });
-
-      // Insert default notification preferences
-      await db.insert(notificationPreferences).values({
-        userId: user.id,
-        wagerRaceUpdates: true,
-        vipStatusChanges: true,
-        promotionalOffers: true,
-        monthlyStatements: true,
-        emailNotifications: true,
-        pushNotifications: true,
-      });
-    }
-
-    log("Database reset complete with new data");
   } catch (error) {
-    log(`Error resetting database: ${error}`);
+    console.error('Error during database reset:', error);
     throw error;
   }
 }
 
-resetDatabase();
+resetDatabase().catch(console.error);
