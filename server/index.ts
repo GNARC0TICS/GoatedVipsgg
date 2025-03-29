@@ -16,7 +16,7 @@ import {
 } from "./middleware/rate-limiter";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
 import { domainRouter } from "./middleware/domain-router";
-import fetch from "node-fetch";
+const fetch = require('node-fetch');
 import helmet from "helmet";
 
 const execAsync = promisify(exec);
