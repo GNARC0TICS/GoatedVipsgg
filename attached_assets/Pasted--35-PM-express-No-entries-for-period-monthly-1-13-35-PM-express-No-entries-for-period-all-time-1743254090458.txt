@@ -1,0 +1,59 @@
+:35 PM [express] No entries for period: monthly
+1:13:35 PM [express] No entries for period: all_time
+1:13:35 PM [express] Leaderboard data sync completed successfully
+1:13:36 PM [express] GET /api/affiliate/stats 304 in 12976ms :: {"success":true,"data":[{"uid":"LNGp…
+1:13:36 PM [express] Request from 4fc471e3-75ef-4169-beeb-1cbd066e3f87-00-hdfjvpstz2v3.janeway.replit.dev (isAdminDomain: false) to /api/affiliate/stats
+1:13:48 PM [express] Request from 4fc471e3-75ef-4169-beeb-1cbd066e3f87-00-hdfjvpstz2v3.janeway.replit.dev (isAdminDomain: false) to /api/wager-races/current
+1:13:48 PM [express] No participants found in database, falling back to API
+1:13:48 PM [express] Using cached leaderboard data (version 4)
+1:13:48 PM [express] GET /api/wager-races/current 304 in 149ms :: {"id":"202503","title":"Monthly Wa…
+1:13:48 PM [express] Request from 4fc471e3-75ef-4169-beeb-1cbd066e3f87-00-hdfjvpstz2v3.janeway.replit.dev (isAdminDomain: false) to /api/wager-races/current
+1:13:48 PM [express] No participants found in database, falling back to API
+1:13:48 PM [express] Using cached leaderboard data (version 4)
+1:13:48 PM [express] GET /api/wager-races/current 304 in 149ms :: {"id":"202503","title":"Monthly Wa…
+1:13:50 PM [express] Starting leaderboard data sync...
+1:13:50 PM [express] No entries for period: today
+1:13:50 PM [express] No entries for period: weekly
+1:13:50 PM [express] No entries for period: monthly
+1:13:50 PM [express] No entries for period: all_time
+1:13:50 PM [express] Leaderboard data sync completed successfully
+1:13:50 PM [express] GET /api/affiliate/stats 304 in 14377ms :: {"success":true,"data":[{"uid":"LNGp…
+1:14:08 PM [express] Request from 4fc471e3-75ef-4169-beeb-1cbd066e3f87-00-hdfjvpstz2v3.janeway.replit.dev (isAdminDomain: false) to /api/affiliate/stats
+1:14:15 PM [express] Request from 4fc471e3-75ef-4169-beeb-1cbd066e3f87-00-hdfjvpstz2v3.janeway.replit.dev (isAdminDomain: false) to /api/auth/user
+1:14:15 PM [express] GET /api/auth/user 401 in 1ms :: {"status":"error","message":"Not logged in"}
+1:14:18 PM [express] Request from 4fc471e3-75ef-4169-beeb-1cbd066e3f87-00-hdfjvpstz2v3.janeway.replit.dev (isAdminDomain: false) to /api/affiliate/stats
+1:14:18 PM [express] Request from 4fc471e3-75ef-4169-beeb-1cbd066e3f87-00-hdfjvpstz2v3.janeway.replit.dev (isAdminDomain: false) to /api/wager-races/current
+1:14:19 PM [express] No participants found in database, falling back to API
+1:14:19 PM [express] Using cached leaderboard data (version 4)
+1:14:19 PM [express] GET /api/wager-races/current 304 in 149ms :: {"id":"202503","title":"Monthly Wa…
+1:14:19 PM [express] Request from 4fc471e3-75ef-4169-beeb-1cbd066e3f87-00-hdfjvpstz2v3.janeway.replit.dev (isAdminDomain: false) to /api/wager-races/current
+1:14:19 PM [express] No participants found in database, falling back to API
+1:14:19 PM [express] Using cached leaderboard data (version 4)
+1:14:19 PM [express] GET /api/wager-races/current 304 in 149ms :: {"id":"202503","title":"Monthly Wa…
+1:14:21 PM [express] Request from 4fc471e3-75ef-4169-beeb-1cbd066e3f87-00-hdfjvpstz2v3.janeway.replit.dev (isAdminDomain: false) to /api/user
+1:14:21 PM [express] GET /api/user 401 in 1ms :: {"status":"error","message":"Not logged in"}
+1:14:22 PM [express] Starting leaderboard data sync...
+1:14:22 PM [express] No entries for period: today
+1:14:22 PM [express] No entries for period: weekly
+1:14:22 PM [express] No entries for period: monthly
+1:14:22 PM [express] No entries for period: all_time
+1:14:22 PM [express] Leaderboard data sync completed successfully
+1:14:22 PM [express] Request from 4fc471e3-75ef-4169-beeb-1cbd066e3f87-00-hdfjvpstz2v3.janeway.replit.dev (isAdminDomain: false) to /api/affiliate/stats
+1:14:27 PM [express] Request from 4fc471e3-75ef-4169-beeb-1cbd066e3f87-00-hdfjvpstz2v3.janeway.replit.dev (isAdminDomain: false) to /api/auth/user
+1:14:27 PM [express] GET /api/auth/user 401 in 2ms :: {"status":"error","message":"Not logged in"}
+1:14:27 PM [express] Request from 4fc471e3-75ef-4169-beeb-1cbd066e3f87-00-hdfjvpstz2v3.janeway.replit.dev (isAdminDomain: false) to /api/user
+1:14:27 PM [express] GET /api/user 401 in 0ms :: {"status":"error","message":"Not logged in"}
+1:14:33 PM [express] Starting leaderboard data sync...
+1:14:33 PM [express] No entries for period: today
+1:14:33 PM [express] No entries for period: weekly
+1:14:33 PM [express] No entries for period: monthly
+1:14:33 PM [express] No entries for period: all_time
+1:14:33 PM [express] Leaderboard data sync completed successfully
+1:14:34 PM [express] Starting leaderboard data sync...
+1:14:34 PM [express] No entries for period: today
+1:14:34 PM [express] No entries for period: weekly
+1:14:34 PM [express] No entries for period: monthly
+1:14:34 PM [express] No entries for period: all_time
+1:14:34 PM [express] Leaderboard data sync completed successfully
+1:14:34 PM [express] GET /api/affiliate/stats 200 in 12120ms :: {"success":true,"data":[{"uid":"LNGp…
+1:14:36 PM [express] Request from 4fc471e3-75ef-4169-beeb-1cbd066e3f87-00-hdfjvpstz2v3.janeway.replit.dev (isAdminDomain: false) to /api/affiliate/stats
