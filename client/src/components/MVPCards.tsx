@@ -290,20 +290,39 @@ export function MVPCards() {
       }
       const jsonData = await response.json();
       
-      // Convert flat array structure to period-based structure
-      if (jsonData && jsonData.data && Array.isArray(jsonData.data)) {
+      // Handle the success response format
+      if (jsonData.success && Array.isArray(jsonData.data)) {
         const entries = jsonData.data;
         return {
           data: {
-            today: { data: entries },
-            weekly: { data: entries },
-            monthly: { data: entries },
-            all_time: { data: entries }
+            today: { 
+              data: entries.filter(entry => entry.wagered?.today > 0)
+                .sort((a, b) => (b.wagered?.today || 0) - (a.wagered?.today || 0))
+            },
+            weekly: { 
+              data: entries.filter(entry => entry.wagered?.this_week > 0)
+                .sort((a, b) => (b.wagered?.this_week || 0) - (a.wagered?.this_week || 0))
+            },
+            monthly: { 
+              data: entries.filter(entry => entry.wagered?.this_month > 0)
+                .sort((a, b) => (b.wagered?.this_month || 0) - (a.wagered?.this_month || 0))
+            },
+            all_time: { 
+              data: entries.filter(entry => entry.wagered?.all_time > 0)
+                .sort((a, b) => (b.wagered?.all_time || 0) - (a.wagered?.all_time || 0))
+            }
           }
         };
       }
       
-      return jsonData;
+      return {
+        data: {
+          today: { data: [] },
+          weekly: { data: [] },
+          monthly: { data: [] },
+          all_time: { data: [] }
+        }
+      };
     },
     staleTime: 30000,
   });
