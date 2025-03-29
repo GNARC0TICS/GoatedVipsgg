@@ -8,7 +8,7 @@ import {
   json,
 } from "drizzle-orm/pg-core";
 import { sql, relations } from "drizzle-orm";
-import { users } from "./index";
+import { users } from "./tables";
 import {
   createInsertSchema as createZodInsertSchema,
   createSelectSchema as createZodSelectSchema,

@@ -1,4 +1,15 @@
-export const API_CONFIG = {
+interface APIConfig {
+  baseUrl: string;
+  goatedToken: string;
+  endpoints: {
+    leaderboard: string;
+    health: string;
+  };
+  refreshInterval: number;
+  cacheTimeout: number;
+}
+
+export const API_CONFIG: APIConfig = {
   baseUrl: "https://api.goated.com",
   goatedToken: process.env.GOATED_TOKEN || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJNZ2xjTU9DNEl6cWpVbzVhTXFBVyIsInNlc3Npb24iOiJIVnpkZlRRRUJBZmQiLCJpYXQiOjE3NDMxMjE1NDYsImV4cCI6MTc0MzIwNzk0Nn0.Lq-fBlzU9HhsM6cc9Ef44OVtfa4jHt4gZlcM988l0tw",
   endpoints: {

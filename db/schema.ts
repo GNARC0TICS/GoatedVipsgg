@@ -81,6 +81,7 @@ export const refreshTokens = pgTable("refresh_tokens", {
   replacedByToken: text("replaced_by_token"),
   userAgent: text("user_agent"),
   ipAddress: text("ip_address"),
+  rememberMe: boolean("remember_me").default(false).notNull(),
 });
 
 // User activity log

@@ -1,39 +1,29 @@
-import { db } from "../../db/connection";
+import { db } from "@db/connection";
 import { log } from "../vite";
-import { affiliateStats } from "../../db/schema/affiliate";
-import { users } from "../../db/schema";
+import { affiliateStats } from "@db/schema/affiliate";
+import { users } from "@db/schema/tables";
 import { sql, eq } from "drizzle-orm";
+import { LeaderboardData, LeaderboardEntry, TimePeriod } from "@/types/api";
 
-/**
- * Type definition for our standardized leaderboard data structure
- * (after transformation from raw API response)
- */
-export interface LeaderboardData {
-  status: string;
-  metadata: {
-    totalUsers: number;
-    lastUpdated: string;
-  };
-  data: {
-    today: { data: LeaderboardEntry[] };
-    weekly: { data: LeaderboardEntry[] };
-    monthly: { data: LeaderboardEntry[] };
-    all_time: { data: LeaderboardEntry[] };
-  };
-}
+// Use the TimePeriod type from api.ts
+const PERIODS: TimePeriod[] = ['today', 'weekly', 'monthly', 'all_time'];
 
-/**
- * Type definition for leaderboard entry
- */
-export interface LeaderboardEntry {
-  uid: string;
-  name: string;
-  wagered: {
-    today: number;
-    this_week: number;
-    this_month: number;
-    all_time: number;
-  };
+function getWagerAmount(entry: LeaderboardEntry, period: TimePeriod): number {
+  const wagered = entry.wagered;
+  if (!wagered) return 0;
+
+  switch (period) {
+    case 'today':
+      return wagered.today ?? 0;
+    case 'weekly':
+      return wagered.this_week ?? 0;
+    case 'monthly':
+      return wagered.this_month ?? 0;
+    case 'all_time':
+      return wagered.all_time ?? 0;
+    default:
+      return 0;
+  }
 }
 
 /**
@@ -45,16 +35,19 @@ export async function syncLeaderboardData(data: LeaderboardData): Promise<void> 
     log("Starting leaderboard data sync...");
     
     // Process each time period separately
-    const periods = ['today', 'weekly', 'monthly', 'all_time'] as const;
-    
-    for (const period of periods) {
-      const entries = data.data[period]?.data || [];
-      
+    for (const period of PERIODS) {
+      const periodData = data.data[period];
+      if (!periodData?.data) {
+        log(`No data available for period: ${period}`);
+        continue;
+      }
+
+      const entries = periodData.data;
       if (entries.length === 0) {
         log(`No entries for period: ${period}`);
         continue;
       }
-      
+
       log(`Syncing ${entries.length} entries for period: ${period}`);
       
       // Batch process the entries
@@ -72,24 +65,8 @@ export async function syncLeaderboardData(data: LeaderboardData): Promise<void> 
           // Default the name if missing
           const name = entry.name || 'Unknown Player';
           
-          // Get the appropriate wager value based on period
-          let wageredAmount;
-          switch (period) {
-            case 'today':
-              wageredAmount = entry.wagered.today;
-              break;
-            case 'weekly':
-              wageredAmount = entry.wagered.this_week;
-              break;
-            case 'monthly':
-              wageredAmount = entry.wagered.this_month;
-              break;
-            case 'all_time':
-              wageredAmount = entry.wagered.all_time;
-              break;
-            default:
-              wageredAmount = 0;
-          }
+          // Get the wager amount for this period
+          const wageredAmount = getWagerAmount(entry, period);
           
           try {
             // Process affiliate stats
@@ -101,7 +78,8 @@ export async function syncLeaderboardData(data: LeaderboardData): Promise<void> 
                 .where(sql`${affiliateStats.uid} = ${entry.uid} AND ${affiliateStats.period} = ${period}`)
                 .limit(1);
               
-              if (existingEntries.length > 0) {
+              const existingEntry = existingEntries[0];
+              if (existingEntry?.id) {
                 // Update existing entry
                 await db
                   .update(affiliateStats)
@@ -110,7 +88,7 @@ export async function syncLeaderboardData(data: LeaderboardData): Promise<void> 
                     wagered: wageredAmount.toString(), // Convert to string for decimal type
                     updatedAt: new Date() 
                   })
-                  .where(sql`${affiliateStats.id} = ${existingEntries[0].id}`);
+                  .where(sql`${affiliateStats.id} = ${existingEntry.id}`);
               } else {
                 // Insert new entry
                 await db
@@ -130,8 +108,8 @@ export async function syncLeaderboardData(data: LeaderboardData): Promise<void> 
             
             // Process user data if that schema is available
             try {
-              // Check if users table has required columns
-              if (users.username && users.password && users.email) {
+              // Check if user schema is properly defined
+              if ('username' in users && 'password' in users && 'email' in users) {
                 // Check if user exists
                 const existingUsers = await db
                   .select({ id: users.id })

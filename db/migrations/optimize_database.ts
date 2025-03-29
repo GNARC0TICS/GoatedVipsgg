@@ -1,176 +1,164 @@
 import { sql } from "drizzle-orm";
-import { db, pgPool } from "../connection";
+import { db } from "../connection";
 
-/**
- * Migration to optimize database performance by adding indexes
- * and enhancing table structures for better leaderboard and wager race performance
- */
 export async function optimizeDatabase() {
-  console.log("Running migration: optimize_database");
-
   try {
-    // Get list of existing tables
-    const client = await pgPool.connect();
-    const tablesResult = await client.query(`
-      SELECT tablename FROM pg_catalog.pg_tables 
-      WHERE schemaname = 'public'
+    // Create tables if they don't exist
+    await db.execute(sql`
+      -- User sessions table
+      CREATE TABLE IF NOT EXISTS user_sessions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        session_token TEXT NOT NULL UNIQUE,
+        expires_at TIMESTAMP NOT NULL,
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      -- Refresh tokens table
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token TEXT NOT NULL UNIQUE,
+        expires_at TIMESTAMP NOT NULL,
+        is_revoked BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      -- Activity log table
+      CREATE TABLE IF NOT EXISTS user_activity_log (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        action TEXT NOT NULL,
+        details JSONB,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      -- Wager races table
+      CREATE TABLE IF NOT EXISTS wager_races (
+        id SERIAL PRIMARY KEY,
+        created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        description TEXT,
+        start_date TIMESTAMP NOT NULL,
+        end_date TIMESTAMP NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      -- Wager race participants table
+      CREATE TABLE IF NOT EXISTS wager_race_participants (
+        id SERIAL PRIMARY KEY,
+        race_id INTEGER NOT NULL REFERENCES wager_races(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        total_wager DECIMAL NOT NULL DEFAULT 0,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE(race_id, user_id)
+      );
+
+      -- Affiliate stats table
+      CREATE TABLE IF NOT EXISTS affiliate_stats (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        total_wager DECIMAL NOT NULL DEFAULT 0,
+        timestamp TIMESTAMP NOT NULL DEFAULT NOW()
+      );
     `);
-    client.release();
-    
-    const existingTables = tablesResult.rows.map(row => row.tablename);
-    console.log("Existing tables:", existingTables);
-    
-    // Helper function to create index if table exists
-    async function createIndexIfTableExists(tableName: string, indexQuery: string) {
-      if (existingTables.includes(tableName)) {
-        await db.execute(sql.raw(indexQuery));
-        console.log(`Created index on ${tableName}`);
-      } else {
-        console.log(`Skipping index creation for non-existent table: ${tableName}`);
-      }
-    }
-    
-    // User-related indexes
-    if (existingTables.includes('users')) {
-      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);`);
-      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);`);
-      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_users_goated_uid ON users(goated_uid);`);
-      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id);`);
-      console.log("Created user indexes");
-    }
 
-    // Wager race indexes - Enhanced for better performance
-    await createIndexIfTableExists('wager_race_participants', 
-      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_race_id ON wager_race_participants(race_id)');
-    await createIndexIfTableExists('wager_race_participants', 
-      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_user_id ON wager_race_participants("userId")');
-    await createIndexIfTableExists('wager_race_participants', 
-      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_wagered ON wager_race_participants(wagered DESC)');
-    await createIndexIfTableExists('wager_race_participants', 
-      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_position ON wager_race_participants(position)');
-    await createIndexIfTableExists('wager_races', 
-      'CREATE INDEX IF NOT EXISTS idx_wager_races_status ON wager_races(status)');
-    await createIndexIfTableExists('wager_races', 
-      'CREATE INDEX IF NOT EXISTS idx_wager_races_dates ON wager_races(start_date, end_date)');
-    await createIndexIfTableExists('wager_races', 
-      'CREATE INDEX IF NOT EXISTS idx_wager_races_created_at ON wager_races(created_at DESC)');
+    // Add indexes for commonly queried columns
+    await db.execute(sql`
+      -- User session indexes
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token);
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON user_sessions(expires_at);
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_active ON user_sessions(is_active);
 
-    // Affiliate stats indexes - Enhanced for leaderboard performance
-    await createIndexIfTableExists('affiliate_stats', 
-      'CREATE INDEX IF NOT EXISTS idx_affiliate_stats_user_id ON affiliate_stats("userId")');
-    await createIndexIfTableExists('affiliate_stats', 
-      'CREATE INDEX IF NOT EXISTS idx_affiliate_stats_timestamp ON affiliate_stats(timestamp)');
-    await createIndexIfTableExists('affiliate_stats', 
-      'CREATE INDEX IF NOT EXISTS idx_affiliate_stats_period ON affiliate_stats(period)');
-    await createIndexIfTableExists('affiliate_stats', 
-      'CREATE INDEX IF NOT EXISTS idx_affiliate_stats_wagered ON affiliate_stats(wagered DESC)');
-    await createIndexIfTableExists('affiliate_stats', 
-      'CREATE INDEX IF NOT EXISTS idx_affiliate_stats_uid ON affiliate_stats(uid)');
-    await createIndexIfTableExists('affiliate_stats',
-      'CREATE INDEX IF NOT EXISTS idx_affiliate_stats_period_wagered ON affiliate_stats(period, wagered DESC)');
+      -- Refresh token indexes
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens(expires_at);
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_revoked ON refresh_tokens(is_revoked);
 
-    // API keys indexes
-    await createIndexIfTableExists('api_keys', 
-      'CREATE INDEX IF NOT EXISTS idx_api_keys_name ON api_keys(name)');
-    await createIndexIfTableExists('api_keys', 
-      'CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key)');
-    await createIndexIfTableExists('api_key_usage', 
-      'CREATE INDEX IF NOT EXISTS idx_api_key_usage_key_id ON api_key_usage(key_id)');
-    await createIndexIfTableExists('api_key_usage', 
-      'CREATE INDEX IF NOT EXISTS idx_api_key_usage_timestamp ON api_key_usage(timestamp)');
-    
-    // Support system indexes
-    await createIndexIfTableExists('support_tickets', 
-      'CREATE INDEX IF NOT EXISTS idx_support_tickets_user_id ON support_tickets(user_id)');
-    await createIndexIfTableExists('support_tickets', 
-      'CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets(status)');
-    await createIndexIfTableExists('ticket_messages', 
-      'CREATE INDEX IF NOT EXISTS idx_ticket_messages_ticket_id ON ticket_messages(ticket_id)');
+      -- Activity log indexes
+      CREATE INDEX IF NOT EXISTS idx_activity_log_date ON user_activity_log(created_at);
+      CREATE INDEX IF NOT EXISTS idx_activity_log_action ON user_activity_log(action);
 
-    // Composite indexes for better query performance
-    await createIndexIfTableExists('wager_race_participants', 
-      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_composite ON wager_race_participants(race_id, "userId")');
-    await createIndexIfTableExists('wager_race_participants', 
-      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_race_pos ON wager_race_participants(race_id, position)');
-    await createIndexIfTableExists('wager_race_participants', 
-      'CREATE INDEX IF NOT EXISTS idx_wager_race_participants_race_wager ON wager_race_participants(race_id, wagered DESC)');
-      
-    // Add materialized view for fast leaderboard queries
-    if (existingTables.includes('affiliate_stats')) {
-      // Check if materialized view exists
-      const viewResult = await client.query(`
-        SELECT 1 FROM pg_class WHERE relname = 'leaderboard_summary' AND relkind = 'm';
-      `);
-      
-      if (viewResult.rows.length === 0) {
-        // Create materialized view
-        await db.execute(sql.raw(`
-          CREATE MATERIALIZED VIEW IF NOT EXISTS leaderboard_summary AS
-          SELECT 
-            uid,
-            name,
-            period,
-            max(wagered) as wagered,
-            max(updated_at) as last_updated
-          FROM affiliate_stats
-          GROUP BY uid, name, period
-          ORDER BY wagered DESC;
-          
-          CREATE UNIQUE INDEX idx_leaderboard_summary_composite 
-          ON leaderboard_summary(uid, period);
-        `));
-        
-        // Create refresh function for the materialized view
-        await db.execute(sql.raw(`
-          CREATE OR REPLACE FUNCTION refresh_leaderboard_summary()
-          RETURNS TRIGGER AS $$
-          BEGIN
-            REFRESH MATERIALIZED VIEW CONCURRENTLY leaderboard_summary;
-            RETURN NULL;
-          END;
-          $$ LANGUAGE plpgsql;
-          
-          DROP TRIGGER IF EXISTS refresh_leaderboard_summary_trigger ON affiliate_stats;
-          
-          CREATE TRIGGER refresh_leaderboard_summary_trigger
-          AFTER INSERT OR UPDATE OR DELETE ON affiliate_stats
-          FOR EACH STATEMENT
-          EXECUTE FUNCTION refresh_leaderboard_summary();
-        `));
-        
-        console.log("Created materialized view and refresh trigger for leaderboard");
-      } else {
-        console.log("Leaderboard materialized view already exists");
-      }
-    }
-    
-    // Performance settings tuning
-    await db.execute(sql.raw(`
-      -- Set reasonable values for work_mem to improve sort operations
-      SET work_mem = '8MB';
-      
-      -- Increase shared_buffers if possible
-      -- SET shared_buffers = '128MB';
-      
-      -- For writes optimization, especially for the leaderboard/race data
-      SET synchronous_commit = 'off';
-      
-      -- Autovacuum settings for tables with frequent updates
-      ALTER TABLE affiliate_stats SET (
-        autovacuum_vacuum_scale_factor = 0.1,
-        autovacuum_analyze_scale_factor = 0.05
-      );
-      
-      ALTER TABLE wager_race_participants SET (
-        autovacuum_vacuum_scale_factor = 0.1,
-        autovacuum_analyze_scale_factor = 0.05
-      );
-    `));
-    
-    console.log("Migration completed: optimize_database");
-    return true;
+      -- Wager race indexes
+      CREATE INDEX IF NOT EXISTS idx_wager_races_dates ON wager_races(start_date, end_date);
+      CREATE INDEX IF NOT EXISTS idx_wager_races_status ON wager_races(status);
+      CREATE INDEX IF NOT EXISTS idx_wager_race_participants_wager ON wager_race_participants(total_wager DESC);
+
+      -- Affiliate stats indexes
+      CREATE INDEX IF NOT EXISTS idx_affiliate_stats_wager ON affiliate_stats(total_wager DESC);
+      CREATE INDEX IF NOT EXISTS idx_affiliate_stats_date ON affiliate_stats(timestamp);
+    `);
+
+    // Add foreign key indexes
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+      CREATE INDEX IF NOT EXISTS idx_activity_log_user_id ON user_activity_log(user_id);
+      CREATE INDEX IF NOT EXISTS idx_wager_races_creator ON wager_races(created_by);
+      CREATE INDEX IF NOT EXISTS idx_wager_race_participants_race ON wager_race_participants(race_id);
+      CREATE INDEX IF NOT EXISTS idx_wager_race_participants_user ON wager_race_participants(user_id);
+      CREATE INDEX IF NOT EXISTS idx_affiliate_stats_user ON affiliate_stats(user_id);
+    `);
+
+    // Add composite indexes for common query patterns
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_user_active ON user_sessions(user_id, is_active);
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_revoked ON refresh_tokens(user_id, is_revoked);
+      CREATE INDEX IF NOT EXISTS idx_wager_races_status_dates ON wager_races(status, start_date, end_date);
+    `);
+
+    console.log('Successfully added database optimization indexes');
   } catch (error) {
-    console.error("Error in optimize_database migration:", error);
+    console.error('Error optimizing database:', error);
+    throw error;
+  }
+}
+
+export async function revertDatabaseOptimization() {
+  try {
+    // Drop all created indexes
+    await db.execute(sql`
+      -- Drop user session indexes
+      DROP INDEX IF EXISTS idx_user_sessions_token;
+      DROP INDEX IF EXISTS idx_user_sessions_expires;
+      DROP INDEX IF EXISTS idx_user_sessions_active;
+      DROP INDEX IF EXISTS idx_user_sessions_user_id;
+      DROP INDEX IF EXISTS idx_user_sessions_user_active;
+
+      -- Drop refresh token indexes
+      DROP INDEX IF EXISTS idx_refresh_tokens_token;
+      DROP INDEX IF EXISTS idx_refresh_tokens_expires;
+      DROP INDEX IF EXISTS idx_refresh_tokens_revoked;
+      DROP INDEX IF EXISTS idx_refresh_tokens_user_id;
+      DROP INDEX IF EXISTS idx_refresh_tokens_user_revoked;
+
+      -- Drop activity log indexes
+      DROP INDEX IF EXISTS idx_activity_log_date;
+      DROP INDEX IF EXISTS idx_activity_log_action;
+      DROP INDEX IF EXISTS idx_activity_log_user_id;
+
+      -- Drop wager race indexes
+      DROP INDEX IF EXISTS idx_wager_races_dates;
+      DROP INDEX IF EXISTS idx_wager_races_status;
+      DROP INDEX IF EXISTS idx_wager_races_creator;
+      DROP INDEX IF EXISTS idx_wager_races_status_dates;
+      DROP INDEX IF EXISTS idx_wager_race_participants_wager;
+      DROP INDEX IF EXISTS idx_wager_race_participants_race;
+      DROP INDEX IF EXISTS idx_wager_race_participants_user;
+
+      -- Drop affiliate stats indexes
+      DROP INDEX IF EXISTS idx_affiliate_stats_wager;
+      DROP INDEX IF EXISTS idx_affiliate_stats_date;
+      DROP INDEX IF EXISTS idx_affiliate_stats_user;
+    `);
+
+    console.log('Successfully removed database optimization indexes');
+  } catch (error) {
+    console.error('Error removing database optimization:', error);
     throw error;
   }
 }

@@ -22,10 +22,11 @@ import {
   Users,
 } from "lucide-react";
 import React from "react";
-import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
+import { useLeaderboard } from "@/hooks/use-leaderboard";
 import { getTierFromWager, getTierIcon, type TierLevel } from "@/lib/tier-utils";
 import { QuickProfile } from "@/components/QuickProfile";
 import { motion } from "framer-motion";
+import { LeaderboardEntry, TimePeriod } from "@/types/api";
 
 // Format large numbers with K/M/B suffixes
 function formatNumber(num: number): string {
@@ -46,7 +47,10 @@ function formatNumber(num: number): string {
   return fixedNum % 1 === 0 ? fixedNum.toString() : fixedNum.toFixed(2);
 }
 
-import { LeaderboardEntry, LeaderboardTableProps } from '@/components/types';
+interface LeaderboardTableProps {
+  data: LeaderboardEntry[];
+  period: TimePeriod;
+}
 
 const ITEMS_PER_PAGE = 10;
 

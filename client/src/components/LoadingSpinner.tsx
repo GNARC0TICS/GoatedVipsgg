@@ -1,9 +1,14 @@
 import { motion } from "framer-motion";
 import { Gem } from "lucide-react";
 import { FC } from "react";
-import { LoadingSpinnerProps } from "./types";
 
-export const LoadingSpinner: FC<LoadingSpinnerProps> = ({ 
+interface LoadingSpinnerProps {
+  size?: number;
+  fullscreen?: boolean;
+  label?: boolean;
+}
+
+export const LoadingSpinner: FC<LoadingSpinnerProps> = ({
   size = 16, 
   fullscreen = false,
   label = true

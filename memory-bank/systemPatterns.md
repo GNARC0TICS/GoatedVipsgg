@@ -1,5 +1,49 @@
 # System Patterns
 
+## API Integration Architecture
+
+### External API Integration (Goated.com)
+- **Token Management**: GOATED_TOKEN environment variable for authentication
+- **Refresh Interval**: 15-minute synchronized data fetching
+- **Caching Strategy**: 15-minute cache with database fallback
+- **Error Handling**: Uses database for resilience during API outages
+
+### Data Flow
+```mermaid
+flowchart TD
+    A[Goated.com API] -->|15min fetch| B[ApiService]
+    B -->|Cache| C[LeaderboardCache]
+    B -->|Transform| D[Data Sync]
+    D -->|Store| E[PostgreSQL]
+    
+    C -->|Serve| F[API Endpoints]
+    E -->|Backup| F
+    
+    F -->|Stats| G[Frontend]
+    F -->|Races| H[Race UI]
+```
+
+### Optimization Patterns
+1. **Cache Management**
+   - In-memory caching for high-frequency data
+   - Database persistence for historical data
+   - Batch processing (50 entries) for DB updates
+
+2. **Data Transformation**
+   - Standardized data structure across system
+   - Real-time sorting and filtering
+   - Period-based data organization (daily/weekly/monthly/all-time)
+
+3. **Error Resilience**
+   - Graceful degradation to database
+   - Request queuing for rate limits
+   - Exponential backoff for retries
+
+4. **Performance**
+   - Optimized refresh intervals
+   - Batched database operations
+   - Cached API responses
+
 ## System Architecture
 
 The GoatedVIPs.gg platform is built with a modular architecture that separates concerns across different layers:

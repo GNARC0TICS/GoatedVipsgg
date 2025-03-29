@@ -1,5 +1,66 @@
 # Technical Context
 
+## API Integration
+
+### Goated.com API
+- **Authentication**: JWT Bearer token (GOATED_TOKEN)
+- **Refresh Rate**: 15-minute intervals
+- **Endpoints**:
+  - `/user2/affiliate/referral-leaderboard/2RW440E`
+  - `/health`
+- **Data Flow**: API → Cache → Database → Frontend
+
+### Caching Strategy
+- **Duration**: 15 minutes
+- **Implementation**: In-memory with database fallback
+- **Scope**: Leaderboard data and race statistics
+- **Invalidation**: Automatic on update or manual trigger
+
+### Database Architecture
+- **ORM**: Drizzle
+- **Tables**:
+  - affiliate_stats
+  - wager_races
+  - wager_race_participants
+- **Batch Processing**: 50 entries per operation
+- **Indexing**: Optimized for frequent queries
+
+## Performance Optimizations
+
+### API Load Reduction
+- Synchronized 15-minute cache across components
+- Database fallback for API outages
+- Batch processing for database operations
+
+### Error Handling
+- Graceful degradation to database
+- No synthetic data generation
+- Clear error logging and monitoring
+
+### Database Efficiency
+- Strategic indexing
+- Connection pooling
+- Query optimization
+
+## Development Setup
+
+### Environment Variables
+```env
+GOATED_TOKEN=jwt_token_here
+DATABASE_URL=postgresql://...
+```
+
+### Key Dependencies
+- Node.js/TypeScript
+- PostgreSQL
+- Drizzle ORM
+- React (Frontend)
+
+### Development Tools
+- VSCode
+- PostgreSQL
+- Git
+
 ## Technologies Used
 
 - **Frontend**: React with TypeScript, utilizing Tailwind CSS for styling and Shadcn UI components for a consistent design system.
