@@ -770,69 +770,72 @@ async function handleAffiliateStats(req: any, res: any) {
         try {
           await syncLeaderboardData(externalData);
         } catch (syncError) {
-          // Log sync errors but continue to serve the data
           log(`Error syncing leaderboard data: ${syncError}`);
         }
       }
     } catch (apiError) {
       log(`Error fetching data from external API: ${apiError}`);
-      // We'll fall back to database data
+    }
+
+    // If we have external data, use it directly
+    if (externalData?.data) {
+      return res.json(externalData);
     }
     
-    // Fetch all affiliate stats from our database
-    try {
-      const allStats = await db
-        .select()
-        .from(affiliateStats)
-        .orderBy(desc(affiliateStats.wagered));
+    // Otherwise, fetch from database as fallback
+    const allStats = await db
+      .select()
+      .from(affiliateStats)
+      .orderBy(desc(affiliateStats.wagered));
 
-      // Transform into period-based structure
-      const statsByPeriod = {
-        today: allStats.filter(stat => stat.period === 'today'),
-        weekly: allStats.filter(stat => stat.period === 'weekly'),
-        monthly: allStats.filter(stat => stat.period === 'monthly'),
-        all_time: allStats.filter(stat => stat.period === 'all_time')
-      };
+    const statsByPeriod = {
+      today: allStats.filter(stat => stat.period === 'today'),
+      weekly: allStats.filter(stat => stat.period === 'weekly'),
+      monthly: allStats.filter(stat => stat.period === 'monthly'),
+      all_time: allStats.filter(stat => stat.period === 'all_time')
+    };
 
-      // Format response with complete wager data
-      const formattedData = {
-        data: {
-          today: {
-            data: statsByPeriod.today.map(stat => ({
-              uid: stat.uid,
-              name: stat.name,
-              wagered: JSON.parse(stat.wagered_data || '{}')
-            }))
-          },
-          weekly: {
-            data: statsByPeriod.weekly.map(stat => ({
-              uid: stat.uid,
-              name: stat.name,
-              wagered: JSON.parse(stat.wagered_data || '{}')
-            }))
-          },
-          monthly: {
-            data: statsByPeriod.monthly.map(stat => ({
-              uid: stat.uid,
-              name: stat.name,
-              wagered: JSON.parse(stat.wagered_data || '{}')
-            }))
-          },
-          all_time: {
-            data: statsByPeriod.all_time.map(stat => ({
-              uid: stat.uid,
-              name: stat.name,
-              wagered: JSON.parse(stat.wagered_data || '{}')
-            }))
-          }
+    const formattedData = {
+      data: {
+        today: {
+          data: statsByPeriod.today.map(stat => ({
+            uid: stat.uid,
+            name: stat.name,
+            wagered: JSON.parse(stat.wagered_data || '{}')
+          }))
+        },
+        weekly: {
+          data: statsByPeriod.weekly.map(stat => ({
+            uid: stat.uid,
+            name: stat.name,
+            wagered: JSON.parse(stat.wagered_data || '{}')
+          }))
+        },
+        monthly: {
+          data: statsByPeriod.monthly.map(stat => ({
+            uid: stat.uid,
+            name: stat.name,
+            wagered: JSON.parse(stat.wagered_data || '{}')
+          }))
+        },
+        all_time: {
+          data: statsByPeriod.all_time.map(stat => ({
+            uid: stat.uid,
+            name: stat.name,
+            wagered: JSON.parse(stat.wagered_data || '{}')
+          }))
         }
-      };
+      }
+    };
 
-      res.json(formattedData);
-    } catch (dbError) {
-      log(`Error fetching stats: ${dbError}`);
-      res.status(500).json({ error: 'Failed to fetch stats' });
-    }
+    return res.json(formattedData);
+  } catch (error) {
+    log(`Error in handleAffiliateStats: ${error}`);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to fetch leaderboard data"
+    });
+  }
     
     // Interface for affiliate stat entries
     interface AffiliateStat {
