@@ -2,6 +2,12 @@
 
 # Script to help recover from Replit recovery mode issues
 
+echo "Replit Recovery Helper v2"
+echo "========================="
+echo "Running in directory: $(pwd)"
+echo "Current PATH: $PATH"
+echo "Searching for Node.js and npm..."
+
 # Define paths to find and use Node.js and npm in Replit
 NODE_PATHS=(
   "/nix/store/*/bin"
@@ -9,40 +15,80 @@ NODE_PATHS=(
   "/home/runner/.nix-profile/bin"
   "/home/runner/nix/bin"
   "/nix/var/nix/profiles/default/bin"
+  "/run/current-system/sw/bin"
+  "/replit/packages/*/bin"
+  "/home/runner/*"
+  "/.local/bin"
+  "/usr/local/bin"
+  "/usr/bin"
+  "/bin"
 )
 
-echo "Replit Recovery Helper"
-echo "======================="
-echo "Searching for Node.js and npm..."
+# Try direct commands first
+echo "Checking for commands in PATH..."
+which node 2>/dev/null && echo "Found node in PATH: $(which node)"
+which npm 2>/dev/null && echo "Found npm in PATH: $(which npm)"
 
 # Find Node.js and npm in common Replit paths
 FOUND_NODE=""
 FOUND_NPM=""
 
+echo "Searching all potential Node.js locations..."
 for path in "${NODE_PATHS[@]}"; do
+  echo "Searching in $path..."
+  
   # Find node
   if [ -z "$FOUND_NODE" ]; then
-    POSSIBLE_NODE=$(find $path -name "node" 2>/dev/null | grep -v "node-" | head -n 1)
+    echo "Looking for Node.js in $path..."
+    POSSIBLE_NODE=$(find $path -name "node" -type f 2>/dev/null | grep -v "node-" | head -n 1)
     if [ ! -z "$POSSIBLE_NODE" ]; then
-      FOUND_NODE="$POSSIBLE_NODE"
-      echo "Found Node.js at: $FOUND_NODE"
+      if [ -x "$POSSIBLE_NODE" ]; then
+        FOUND_NODE="$POSSIBLE_NODE"
+        echo "✓ Found Node.js at: $FOUND_NODE"
+        echo "  Version: $($FOUND_NODE --version 2>/dev/null || echo 'Unknown')"
+      else
+        echo "× Found non-executable Node.js at: $POSSIBLE_NODE"
+      fi
     fi
   fi
   
   # Find npm
   if [ -z "$FOUND_NPM" ]; then
-    POSSIBLE_NPM=$(find $path -name "npm" 2>/dev/null | head -n 1)
+    echo "Looking for npm in $path..."
+    POSSIBLE_NPM=$(find $path -name "npm" -type f 2>/dev/null | head -n 1)
     if [ ! -z "$POSSIBLE_NPM" ]; then
-      FOUND_NPM="$POSSIBLE_NPM"
-      echo "Found npm at: $FOUND_NPM"
+      if [ -x "$POSSIBLE_NPM" ]; then
+        FOUND_NPM="$POSSIBLE_NPM"
+        echo "✓ Found npm at: $FOUND_NPM"
+        echo "  Version: $($FOUND_NPM --version 2>/dev/null || echo 'Unknown')"
+      else
+        echo "× Found non-executable npm at: $POSSIBLE_NPM"
+      fi
     fi
   fi
   
   # Break if both found
   if [ ! -z "$FOUND_NODE" ] && [ ! -z "$FOUND_NPM" ]; then
+    echo "Found both Node.js and npm! Proceeding..."
     break
   fi
 done
+
+# Try alternative search for npm if not found yet
+if [ ! -z "$FOUND_NODE" ] && [ -z "$FOUND_NPM" ]; then
+  echo "Found Node.js but not npm. Trying to find npm from Node.js location..."
+  NODE_DIR=$(dirname "$FOUND_NODE")
+  PARENT_DIR=$(dirname "$NODE_DIR")
+  
+  # Check in lib directories
+  for npmpath in "$PARENT_DIR/lib/node_modules/npm/bin/npm" "$NODE_DIR/../lib/node_modules/npm/bin/npm"; do
+    if [ -x "$npmpath" ]; then
+      FOUND_NPM="$npmpath"
+      echo "✓ Found npm at: $FOUND_NPM"
+      break
+    fi
+  done
+fi
 
 # If we found both, set up the environment
 if [ ! -z "$FOUND_NODE" ] && [ ! -z "$FOUND_NPM" ]; then
