@@ -23,6 +23,7 @@ NODE_ENV = "development"
 PORT = "5000"
 
 [workflows]
+runButton = "Start application"
 
 [[workflows.workflow]]
 name = "Sync External Data"
@@ -31,7 +32,16 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npx ts-node server/utils/sync-external-data.ts"
+args = "node server/utils/sync-external-data.ts"
+
+[[workflows.workflow]]
+name = "Start application"
+author = 38337569
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
 
 [packager]
 language = "nodejs"

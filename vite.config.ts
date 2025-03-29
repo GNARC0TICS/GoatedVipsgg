@@ -12,6 +12,19 @@ const __dirname = dirname(__filename);
 const isReplit = process.env.REPL_ID !== undefined;
 
 export default defineConfig({
+  plugins: [react(), themePlugin(), runtimeErrorOverlay()],
+  server: {
+    host: '0.0.0.0',
+    port: 5174
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    }
+  }
+});
+
+export default defineConfig({
   plugins: [
     react({
       jsxRuntime: "automatic",
