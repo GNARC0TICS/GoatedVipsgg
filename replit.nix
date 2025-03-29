@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.python3
     # Core dependencies
     pkgs.nodejs-20_x
     pkgs.nodejs

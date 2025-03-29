@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "postgresql-16"]
+modules = ["web", "postgresql-16", "python-3.11", "nodejs-20"]
 run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
@@ -18,17 +18,14 @@ externalPort = 80
 localPort = 5001
 externalPort = 5001
 
-<<<<<<< HEAD
 [env]
 NODE_ENV = "development"
 PORT = "5000"
-=======
 [[ports]]
 localPort = 5174
 
 [workflows]
 runButton = "Start application"
->>>>>>> e7ecaf7b8ab2da3af38a0069c9b776c75d55bf63
 
 [packager]
 language = "nodejs"
@@ -55,10 +52,8 @@ message = "We see that you are using require(...) inside your code. We currently
 [extension]
 isProject = true
 
-<<<<<<< HEAD
 [gitHubImport]
 requiredFiles = [".replit", "replit.nix", ".config"]
-=======
 [[workflows.workflow]]
 name = "Sync External Data"
 author = 38337569
@@ -67,7 +62,6 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npx ts-node server/utils/sync-external-data.ts"
->>>>>>> e7ecaf7b8ab2da3af38a0069c9b776c75d55bf63
 
 [auth]
 pageEnabled = false
