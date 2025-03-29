@@ -300,45 +300,38 @@ export function RaceTimer({ onClose }: RaceTimerProps = {}) {
                   
                   {/* Participants List with improved spacing */}
                   <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
-                    {raceData.participants
-                      .filter(participant => {
-                        const wagerAmount = typeof participant.wager === 'number' ? 
-                          participant.wager : parseFloat(participant.wager || '0');
-                        return wagerAmount > 0;
-                      })
-                      .slice(0, 10) // Limit to top 10 participants
-                      .map((participant: RaceParticipant, index: number) => (
-                        <div
-                          key={participant.uid}
-                          className={`
-                            flex items-center justify-between py-1.5 px-2 rounded
-                            ${index === 0 ? "bg-yellow-500/10" : ""}
-                            ${index === 1 ? "bg-gray-400/10" : ""}
-                            ${index === 2 ? "bg-amber-700/10" : ""}
-                            hover:bg-[#2A2B31]/60 transition-colors
-                          `}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`
-                                w-5 h-5 flex items-center justify-center rounded-full text-xs font-medium
-                                ${index === 0 ? "bg-yellow-500 text-black" : ""}
-                                ${index === 1 ? "bg-gray-400 text-black" : ""}
-                                ${index === 2 ? "bg-amber-700 text-white" : ""}
-                                ${index > 2 ? "bg-[#2A2B31] text-white" : ""}
-                              `}
-                            >
-                              {index + 1}
-                            </span>
-                            <span className="text-white truncate max-w-[120px] text-sm">
-                              {participant.name}
-                            </span>
-                          </div>
-                          <span className="text-[#D7FF00] font-mono text-sm font-medium">
-                            ${(typeof participant.wager === 'number' ? participant.wager : parseFloat(participant.wager || '0')).toLocaleString()}
+                    {raceData.participants.map((participant: RaceParticipant, index: number) => (
+                      <div
+                        key={participant.uid}
+                        className={`
+                          flex items-center justify-between py-1.5 px-2 rounded
+                          ${index === 0 ? "bg-yellow-500/10" : ""}
+                          ${index === 1 ? "bg-gray-400/10" : ""}
+                          ${index === 2 ? "bg-amber-700/10" : ""}
+                          hover:bg-[#2A2B31]/60 transition-colors
+                        `}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`
+                              w-5 h-5 flex items-center justify-center rounded-full text-xs font-medium
+                              ${index === 0 ? "bg-yellow-500 text-black" : ""}
+                              ${index === 1 ? "bg-gray-400 text-black" : ""}
+                              ${index === 2 ? "bg-amber-700 text-white" : ""}
+                              ${index > 2 ? "bg-[#2A2B31] text-white" : ""}
+                            `}
+                          >
+                            {index + 1}
+                          </span>
+                          <span className="text-white truncate max-w-[120px] text-sm">
+                            {participant.name}
                           </span>
                         </div>
-                      ))}
+                        <span className="text-[#D7FF00] font-mono text-sm font-medium">
+                          ${(typeof participant.wager === 'number' ? participant.wager : parseFloat(participant.wager || '0')).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                   
                   <div className="mt-3 pt-2 border-t border-[#2A2B31]/60">
