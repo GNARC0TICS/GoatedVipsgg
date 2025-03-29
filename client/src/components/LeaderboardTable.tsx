@@ -22,10 +22,15 @@ import {
   Users,
 } from "lucide-react";
 import React from "react";
-import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
+import { type TimePeriod, type LeaderboardEntry } from "@/types/api";
 import { getTierFromWager, getTierIcon, type TierLevel } from "@/lib/tier-utils";
 import { QuickProfile } from "@/components/QuickProfile";
 import { motion } from "framer-motion";
+
+interface LeaderboardTableProps {
+  data: LeaderboardEntry[];
+  period: TimePeriod;
+}
 
 // Format large numbers with K/M/B suffixes
 function formatNumber(num: number): string {
@@ -45,8 +50,6 @@ function formatNumber(num: number): string {
   // For smaller numbers, display with 2 decimal places only if they have cents
   return fixedNum % 1 === 0 ? fixedNum.toString() : fixedNum.toFixed(2);
 }
-
-import { LeaderboardEntry, LeaderboardTableProps } from '@/components/types';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -94,7 +97,7 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
   const filteredData = useMemo(() => {
     if (!data) return [];
     if (!searchTerm.trim()) return data;
-    return data.filter(entry => 
+    return data.filter((entry: LeaderboardEntry) => 
       entry.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [data, searchTerm]);
@@ -148,7 +151,7 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody className="custom-scrollbar">
-            {paginatedData.map((entry, index) => {
+            {paginatedData.map((entry: LeaderboardEntry, index: number) => {
               const rank = startIndex + index + 1;
               // Use the current period's wagered amount for display
               const wageredAmount = entry.wagered[periodProp] || 0;
