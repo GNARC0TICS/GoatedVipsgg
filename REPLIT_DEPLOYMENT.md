@@ -92,20 +92,25 @@ The application is optimized for Replit's environment:
 1. **Recovery Mode / npm Command Not Found**
    - If you see `bash: npm: command not found` in recovery mode:
      ```bash
-     # Method 1: Run the recovery helper script
-     chmod +x scripts/replit-recovery.sh
-     ./scripts/replit-recovery.sh
+     # Method 1: Run the emergency recovery script (works in most restricted environments)
+     chmod +x scripts/emergency-recovery.sh
+     ./scripts/emergency-recovery.sh
      
-     # Method 2: Run the direct installer script (most reliable)
+     # Method 2: Run the direct installer script
      chmod +x scripts/direct-install-node.sh
      ./scripts/direct-install-node.sh
      
-     # Method 3: Use the enhanced start script with auto-detection
+     # Method 3: Run the recovery helper script
+     chmod +x scripts/replit-recovery.sh
+     ./scripts/replit-recovery.sh
+     
+     # Method 4: Use the enhanced start script with auto-detection
      chmod +x scripts/start.sh
      ./scripts/start.sh
      ```
-   - The `scripts/replit-recovery.sh` script will locate Node.js and npm, and create helper scripts for you to use
+   - The `scripts/emergency-recovery.sh` script uses minimal shell commands for highly restricted environments
    - The `scripts/direct-install-node.sh` script will attempt multiple methods to install Node.js directly
+   - The `scripts/replit-recovery.sh` script will locate Node.js and npm, and create helper scripts for you to use
    - The `scripts/start.sh` script has built-in recovery mode detection and will try to fix it automatically
 
 2. **Database Connection Errors**
