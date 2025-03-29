@@ -84,6 +84,14 @@ export async function syncLeaderboardData(data: LeaderboardData): Promise<void> 
             default:
               wageredAmount = 0;
           }
+
+          // Store all wager amounts for this entry
+          const wagerData = {
+            today: entry.wagered.today,
+            this_week: entry.wagered.this_week,
+            this_month: entry.wagered.this_month,
+            all_time: entry.wagered.all_time
+          };
           
           try {
             // Process affiliate stats

@@ -779,30 +779,59 @@ async function handleAffiliateStats(req: any, res: any) {
       // We'll fall back to database data
     }
     
-    // Fetch affiliate stats from our database
-    const timeframes = ['today', 'weekly', 'monthly', 'all_time'] as const;
-    const statsByPeriod: Record<string, any[]> = {
-      today: [],
-      weekly: [],
-      monthly: [],
-      all_time: []
-    };
-    
-    // Fetch stats for each period
-    for (const period of timeframes) {
-      try {
-        const periodStats = await db
-          .select()
-          .from(affiliateStats)
-          .where(sql`${affiliateStats.period} = ${period}`)
-          .orderBy(desc(affiliateStats.wagered))
-          .limit(100);
-          
-        statsByPeriod[period] = periodStats;
-      } catch (dbError) {
-        log(`Error fetching ${period} stats: ${dbError}`);
-        statsByPeriod[period] = [];
-      }
+    // Fetch all affiliate stats from our database
+    try {
+      const allStats = await db
+        .select()
+        .from(affiliateStats)
+        .orderBy(desc(affiliateStats.wagered));
+
+      // Transform into period-based structure
+      const statsByPeriod = {
+        today: allStats.filter(stat => stat.period === 'today'),
+        weekly: allStats.filter(stat => stat.period === 'weekly'),
+        monthly: allStats.filter(stat => stat.period === 'monthly'),
+        all_time: allStats.filter(stat => stat.period === 'all_time')
+      };
+
+      // Format response with complete wager data
+      const formattedData = {
+        data: {
+          today: {
+            data: statsByPeriod.today.map(stat => ({
+              uid: stat.uid,
+              name: stat.name,
+              wagered: JSON.parse(stat.wagered_data || '{}')
+            }))
+          },
+          weekly: {
+            data: statsByPeriod.weekly.map(stat => ({
+              uid: stat.uid,
+              name: stat.name,
+              wagered: JSON.parse(stat.wagered_data || '{}')
+            }))
+          },
+          monthly: {
+            data: statsByPeriod.monthly.map(stat => ({
+              uid: stat.uid,
+              name: stat.name,
+              wagered: JSON.parse(stat.wagered_data || '{}')
+            }))
+          },
+          all_time: {
+            data: statsByPeriod.all_time.map(stat => ({
+              uid: stat.uid,
+              name: stat.name,
+              wagered: JSON.parse(stat.wagered_data || '{}')
+            }))
+          }
+        }
+      };
+
+      res.json(formattedData);
+    } catch (dbError) {
+      log(`Error fetching stats: ${dbError}`);
+      res.status(500).json({ error: 'Failed to fetch stats' });
     }
     
     // Interface for affiliate stat entries
