@@ -23,7 +23,15 @@ NODE_ENV = "development"
 PORT = "5000"
 
 [workflows]
-runButton = "Start application"
+
+[[workflows.workflow]]
+name = "Sync External Data"
+author = 38337569
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx ts-node server/utils/sync-external-data.ts"
 
 [packager]
 language = "nodejs"
@@ -52,15 +60,6 @@ isProject = true
 [auth]
 pageEnabled = false
 buttonEnabled = false
-
-[[workflows.workflow]]
-name = "Sync External Data"
-author = 38337569
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npx ts-node server/utils/sync-external-data.ts"
 
 [gitHubImport]
 requiredFiles = [".replit", "replit.nix", ".config"]
