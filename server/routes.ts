@@ -829,27 +829,21 @@ async function handleAffiliateStats(req: any, res: any) {
     };
 
     return res.json(formattedData);
-  } catch (error) {
-    log(`Error in handleAffiliateStats: ${error}`);
-    return res.status(500).json({
-      status: "error",
-      message: "Failed to fetch leaderboard data"
-    });
   }
     
-    // Interface for affiliate stat entries
-    interface AffiliateStat {
-      id: number;
-      uid: string;
-      name: string;
-      wagered: string; // Stored as string in DB
-      period: string;
-      createdAt: Date;
-      updatedAt: Date;
-    }
+  // Interface for affiliate stat entries
+  interface AffiliateStat {
+    id: number;
+    uid: string;
+    name: string;
+    wagered: string; // Stored as string in DB
+    period: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }
     
-    // If we have API data, use it. Otherwise, build from our database.
-    const formattedData = externalData || {
+  // If we have API data, use it. Otherwise, build from our database.
+  const formattedData = externalData || {
       data: {
         today: { 
           data: statsByPeriod.today.map((stat: AffiliateStat) => ({
