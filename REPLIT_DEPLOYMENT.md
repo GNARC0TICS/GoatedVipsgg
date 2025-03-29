@@ -96,14 +96,16 @@ The application is optimized for Replit's environment:
      chmod +x scripts/replit-recovery.sh
      ./scripts/replit-recovery.sh
      
-     # Method 2: Use the new start script with auto-detection
+     # Method 2: Run the direct installer script (most reliable)
+     chmod +x scripts/direct-install-node.sh
+     ./scripts/direct-install-node.sh
+     
+     # Method 3: Use the enhanced start script with auto-detection
      chmod +x scripts/start.sh
      ./scripts/start.sh
-     
-     # Method 3: Try installing Node.js manually
-     nix-env -i nodejs
      ```
    - The `scripts/replit-recovery.sh` script will locate Node.js and npm, and create helper scripts for you to use
+   - The `scripts/direct-install-node.sh` script will attempt multiple methods to install Node.js directly
    - The `scripts/start.sh` script has built-in recovery mode detection and will try to fix it automatically
 
 2. **Database Connection Errors**
