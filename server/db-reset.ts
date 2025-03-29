@@ -27,6 +27,8 @@ async function resetDatabase() {
         email_verification_token TEXT,
         email_verification_token_expiry TIMESTAMP,
         email_verified_at TIMESTAMP,
+        password_reset_token TEXT,
+        password_reset_token_expiry TIMESTAMP,
         bio TEXT,
         profile_color TEXT,
         goated_uid TEXT UNIQUE,
