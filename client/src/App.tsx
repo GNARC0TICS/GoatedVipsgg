@@ -43,7 +43,7 @@ import Promotions from "@/pages/Promotions";
 import Challenges from "@/pages/Challenges";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminLogin from "./pages/admin/login"; // Add import for AdminLogin
-import ProfilePage from "./pages/profile"; // Corrected import path
+import ProfilePage from "@/pages/profile";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (

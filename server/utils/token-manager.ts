@@ -1,12 +1,11 @@
 /**
  * Token manager for creating and validating access and refresh tokens
  */
-import jwt, { JwtPayload } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { db } from '../../db/connection';
+import { db } from '@db/connection';
 import { eq, and, sql } from 'drizzle-orm';
-import { users } from '../../db/schema/tables';
-import { refreshTokens } from '../../db/schema/auth';
+import { users, refreshTokens } from '@db/schema';
 import { log } from '../vite';
 
 // Secret keys
@@ -44,42 +43,9 @@ export function generateAccessToken(userId: number, username: string, isAdmin: b
  * @param token The access token to verify
  * @returns The decoded token or null if invalid
  */
-interface JwtTokenBase {
-  iat: number;
-  exp: number;
-}
-
-interface AccessTokenPayload extends JwtTokenBase {
-  userId: number;
-  username: string;
-  isAdmin: boolean;
-}
-
-interface RefreshTokenPayload extends JwtTokenBase {
-  tokenId: string;
-  userId: number;
-  type: 'refresh';
-}
-
-export function verifyAccessToken(token: string): AccessTokenPayload | null {
+export function verifyAccessToken(token: string): any {
   try {
-    const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET) as JwtPayload & {
-      userId: number;
-      username: string;
-      isAdmin: boolean;
-    };
-    
-    if (!decoded.iat || !decoded.exp) {
-      return null;
-    }
-
-    return {
-      userId: decoded.userId,
-      username: decoded.username,
-      isAdmin: decoded.isAdmin,
-      iat: decoded.iat,
-      exp: decoded.exp
-    };
+    return jwt.verify(token, ACCESS_TOKEN_SECRET);
   } catch (error) {
     return null;
   }
@@ -123,7 +89,6 @@ export async function generateRefreshToken(
         expiresAt,
         createdAt: new Date(),
         isRevoked: false,
-        rememberMe,
       });
 
     // Create token payload
@@ -152,25 +117,9 @@ export async function generateRefreshToken(
  * @param token The refresh token to verify
  * @returns The decoded token payload or null if invalid
  */
-export function verifyRefreshToken(token: string): RefreshTokenPayload | null {
+export function verifyRefreshToken(token: string): any {
   try {
-    const decoded = jwt.verify(token, REFRESH_TOKEN_SECRET) as JwtPayload & {
-      tokenId: string;
-      userId: number;
-      type: 'refresh';
-    };
-    
-    if (!decoded.iat || !decoded.exp) {
-      return null;
-    }
-
-    return {
-      tokenId: decoded.tokenId,
-      userId: decoded.userId,
-      type: 'refresh',
-      iat: decoded.iat,
-      exp: decoded.exp
-    };
+    return jwt.verify(token, REFRESH_TOKEN_SECRET);
   } catch (error) {
     return null;
   }

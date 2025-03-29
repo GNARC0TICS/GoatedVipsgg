@@ -1,199 +1,105 @@
 import { sql } from "drizzle-orm";
 import { db } from "../connection";
+import { log } from "../../server/vite";
 
+/**
+ * Migration to fix schema mismatches between different schema definitions
+ */
 export async function fixSchemaMismatch() {
+  log("Running migration: fix_schema_mismatch");
+
   try {
-    // Add missing columns first
+    // Create API key table if it doesn't exist
     await db.execute(sql`
-      -- Add missing columns to user_sessions
-      ALTER TABLE user_sessions
-      ADD COLUMN IF NOT EXISTS last_active TIMESTAMP;
-      
-      -- Add missing columns to wager_race_participants
-      ALTER TABLE wager_race_participants
-      ADD COLUMN IF NOT EXISTS joined_at TIMESTAMP;
+      CREATE TABLE IF NOT EXISTS api_keys (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        key TEXT NOT NULL UNIQUE,
+        secret TEXT NOT NULL,
+        permissions JSONB DEFAULT '{}',
+        ip_whitelist TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP,
+        last_used_at TIMESTAMP,
+        created_by INTEGER REFERENCES users(id),
+        is_active BOOLEAN DEFAULT TRUE,
+        rate_limit INTEGER DEFAULT 100,
+        metadata JSONB DEFAULT '{}'
+      )
     `);
+    log("API keys table created or confirmed");
 
-    // Fix column types and constraints
-    await db.execute(sql`
-      -- Fix user session timestamps
-      ALTER TABLE user_sessions
-      ALTER COLUMN created_at SET DEFAULT NOW(),
-      ALTER COLUMN last_active SET DEFAULT NOW(),
-      ALTER COLUMN expires_at SET NOT NULL;
+    // Add userId column if missing
+    try {
+      await db.execute(sql`ALTER TABLE affiliate_stats
+        ADD COLUMN IF NOT EXISTS "userId" INTEGER REFERENCES users(id)`);
+      log("userId column added to affiliate_stats table");
+    } catch (error) {
+      log(`Error adding userId column: ${error}`);
+    }
 
-      -- Fix refresh token timestamps
-      ALTER TABLE refresh_tokens
-      ALTER COLUMN created_at SET DEFAULT NOW(),
-      ALTER COLUMN expires_at SET NOT NULL,
-      ALTER COLUMN is_revoked SET DEFAULT false;
+    // Add uid column if missing
+    try {
+      await db.execute(sql`ALTER TABLE affiliate_stats
+        ADD COLUMN IF NOT EXISTS "uid" VARCHAR(255)`);
+      log("uid column added to affiliate_stats table");
+    } catch (error) {
+      log(`Error adding uid column: ${error}`);
+    }
 
-      -- Fix activity log timestamps
-      ALTER TABLE user_activity_log
-      ALTER COLUMN created_at SET DEFAULT NOW();
+    // Add name column if missing
+    try {
+      await db.execute(sql`ALTER TABLE affiliate_stats
+        ADD COLUMN IF NOT EXISTS "name" VARCHAR(255)`);
+      log("name column added to affiliate_stats table");
+    } catch (error) {
+      log(`Error adding name column: ${error}`);
+    }
 
-      -- Fix wager race timestamps and constraints
-      ALTER TABLE wager_races
-      ALTER COLUMN created_at SET DEFAULT NOW(),
-      ALTER COLUMN updated_at SET DEFAULT NOW(),
-      ALTER COLUMN start_date SET NOT NULL,
-      ALTER COLUMN end_date SET NOT NULL;
+    // Add period column if missing
+    try {
+      await db.execute(sql`ALTER TABLE affiliate_stats
+        ADD COLUMN IF NOT EXISTS "period" VARCHAR(50)`);
+      log("period column added to affiliate_stats table");
+    } catch (error) {
+      log(`Error adding period column: ${error}`);
+    }
 
-      -- Fix wager race participant timestamps
-      ALTER TABLE wager_race_participants
-      ALTER COLUMN joined_at SET DEFAULT NOW(),
-      ALTER COLUMN updated_at SET DEFAULT NOW();
+    // Add wagered column if missing
+    try {
+      await db.execute(sql`ALTER TABLE affiliate_stats
+        ADD COLUMN IF NOT EXISTS "wagered" DECIMAL(18, 2)`);
+      log("wagered column added to affiliate_stats table");
+    } catch (error) {
+      log(`Error adding wagered column: ${error}`);
+    }
 
-      -- Fix affiliate stats timestamps
-      ALTER TABLE affiliate_stats
-      ALTER COLUMN timestamp SET DEFAULT NOW();
-    `);
+    // Create appropriate indexes
+    try {
+      await db.execute(sql`
+        CREATE INDEX IF NOT EXISTS idx_affiliate_stats_user_id ON affiliate_stats("userId");
+        CREATE INDEX IF NOT EXISTS idx_affiliate_stats_timestamp ON affiliate_stats(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_affiliate_stats_period ON affiliate_stats(period);
+        CREATE INDEX IF NOT EXISTS idx_affiliate_stats_uid ON affiliate_stats(uid);
+      `);
+      log("Affiliate stats indexes created");
+    } catch (error) {
+      log(`Error creating indexes: ${error}`);
+    }
+    
+    // Add isEmailVerified column if missing 
+    try {
+      await db.execute(sql`ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS "isEmailVerified" BOOLEAN DEFAULT FALSE`);
+      log("isEmailVerified column added to users table");
+    } catch (error) {
+      log(`Error adding isEmailVerified column: ${error}`);
+    }
 
-    // Fix missing foreign key constraints
-    await db.execute(sql`
-      -- Add missing foreign key constraints if they don't exist
-      DO $$ 
-      BEGIN
-        -- User sessions foreign key
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.table_constraints 
-          WHERE constraint_name = 'user_sessions_user_id_fkey'
-        ) THEN
-          ALTER TABLE user_sessions
-          ADD CONSTRAINT user_sessions_user_id_fkey
-          FOREIGN KEY (user_id) REFERENCES users(id);
-        END IF;
-
-        -- Refresh tokens foreign key
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.table_constraints 
-          WHERE constraint_name = 'refresh_tokens_user_id_fkey'
-        ) THEN
-          ALTER TABLE refresh_tokens
-          ADD CONSTRAINT refresh_tokens_user_id_fkey
-          FOREIGN KEY (user_id) REFERENCES users(id);
-        END IF;
-
-        -- Activity log foreign key
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.table_constraints 
-          WHERE constraint_name = 'user_activity_log_user_id_fkey'
-        ) THEN
-          ALTER TABLE user_activity_log
-          ADD CONSTRAINT user_activity_log_user_id_fkey
-          FOREIGN KEY (user_id) REFERENCES users(id);
-        END IF;
-
-        -- Wager race foreign key
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.table_constraints 
-          WHERE constraint_name = 'wager_races_created_by_fkey'
-        ) THEN
-          ALTER TABLE wager_races
-          ADD CONSTRAINT wager_races_created_by_fkey
-          FOREIGN KEY (created_by) REFERENCES users(id);
-        END IF;
-
-        -- Wager race participant foreign keys
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.table_constraints 
-          WHERE constraint_name = 'wager_race_participants_race_id_fkey'
-        ) THEN
-          ALTER TABLE wager_race_participants
-          ADD CONSTRAINT wager_race_participants_race_id_fkey
-          FOREIGN KEY (race_id) REFERENCES wager_races(id);
-        END IF;
-
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.table_constraints 
-          WHERE constraint_name = 'wager_race_participants_user_id_fkey'
-        ) THEN
-          ALTER TABLE wager_race_participants
-          ADD CONSTRAINT wager_race_participants_user_id_fkey
-          FOREIGN KEY (user_id) REFERENCES users(id);
-        END IF;
-
-        -- Affiliate stats foreign key
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.table_constraints 
-          WHERE constraint_name = 'affiliate_stats_user_id_fkey'
-        ) THEN
-          ALTER TABLE affiliate_stats
-          ADD CONSTRAINT affiliate_stats_user_id_fkey
-          FOREIGN KEY (user_id) REFERENCES users(id);
-        END IF;
-      END $$;
-    `);
-
-    console.log('Successfully fixed schema mismatches');
+    log("Migration completed: fix_schema_mismatch");
+    return true;
   } catch (error) {
-    console.error('Error fixing schema mismatches:', error);
-    throw error;
-  }
-}
-
-export async function revertSchemaMismatchFixes() {
-  try {
-    // Remove foreign key constraints
-    await db.execute(sql`
-      ALTER TABLE user_sessions
-      DROP CONSTRAINT IF EXISTS user_sessions_user_id_fkey;
-
-      ALTER TABLE refresh_tokens
-      DROP CONSTRAINT IF EXISTS refresh_tokens_user_id_fkey;
-
-      ALTER TABLE user_activity_log
-      DROP CONSTRAINT IF EXISTS user_activity_log_user_id_fkey;
-
-      ALTER TABLE wager_races
-      DROP CONSTRAINT IF EXISTS wager_races_created_by_fkey;
-
-      ALTER TABLE wager_race_participants
-      DROP CONSTRAINT IF EXISTS wager_race_participants_race_id_fkey,
-      DROP CONSTRAINT IF EXISTS wager_race_participants_user_id_fkey;
-
-      ALTER TABLE affiliate_stats
-      DROP CONSTRAINT IF EXISTS affiliate_stats_user_id_fkey;
-    `);
-
-    // Reset column defaults and constraints
-    await db.execute(sql`
-      -- Reset user session columns
-      ALTER TABLE user_sessions
-      ALTER COLUMN created_at DROP DEFAULT,
-      ALTER COLUMN last_active DROP DEFAULT,
-      ALTER COLUMN expires_at DROP NOT NULL;
-
-      -- Reset refresh token columns
-      ALTER TABLE refresh_tokens
-      ALTER COLUMN created_at DROP DEFAULT,
-      ALTER COLUMN expires_at DROP NOT NULL,
-      ALTER COLUMN is_revoked DROP DEFAULT;
-
-      -- Reset activity log columns
-      ALTER TABLE user_activity_log
-      ALTER COLUMN created_at DROP DEFAULT;
-
-      -- Reset wager race columns
-      ALTER TABLE wager_races
-      ALTER COLUMN created_at DROP DEFAULT,
-      ALTER COLUMN updated_at DROP DEFAULT,
-      ALTER COLUMN start_date DROP NOT NULL,
-      ALTER COLUMN end_date DROP NOT NULL;
-
-      -- Reset wager race participant columns
-      ALTER TABLE wager_race_participants
-      ALTER COLUMN joined_at DROP DEFAULT,
-      ALTER COLUMN updated_at DROP DEFAULT;
-
-      -- Reset affiliate stats columns
-      ALTER TABLE affiliate_stats
-      ALTER COLUMN timestamp DROP DEFAULT;
-    `);
-
-    console.log('Successfully reverted schema mismatch fixes');
-  } catch (error) {
-    console.error('Error reverting schema mismatch fixes:', error);
-    throw error;
+    log(`Error in fix_schema_mismatch migration: ${error}`);
+    return false;
   }
 }

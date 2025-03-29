@@ -1,66 +1,93 @@
 import { CacheManager } from "./cache";
 import { log } from "../vite";
 import { apiService } from "./api-service";
-import { 
-  LeaderboardData, 
-  LeaderboardEntry, 
-  MVPData, 
-  Period, 
-  WagerStats 
-} from "../../client/src/types/api";
+
+// Define a type for the leaderboard data
+// Define types for the leaderboard data structure
+export interface LeaderboardEntry {
+  uid: string;
+  name: string;
+  wagered: {
+    today: number;
+    this_week: number;
+    this_month: number;
+    all_time: number;
+  };
+  stats?: {
+    winRate: number;
+    totalGames: number;
+    favoriteGame: string;
+  };
+  lastWager?: string;
+  isWagering?: boolean;
+  wagerChange?: number;
+}
+
+export interface RaceMetadata {
+  id: string;
+  status: 'upcoming' | 'live' | 'completed';
+  startDate: string;
+  endDate: string;
+  prizePool: number;
+  totalWagered: number;
+}
+
+export interface LeaderboardData {
+  status: string;
+  metadata: {
+    totalUsers: number;
+    lastUpdated: string;
+    currentRace?: RaceMetadata;
+  };
+  data: {
+    today: { data: LeaderboardEntry[] };
+    weekly: { data: LeaderboardEntry[] };
+    monthly: { data: LeaderboardEntry[] };
+    all_time: { data: LeaderboardEntry[] };
+  };
+}
 
 // Create a singleton instance of the cache manager for leaderboard data
-// Increase cache time to 15 minutes to reduce API load while maintaining data freshness
-const leaderboardCache = new CacheManager<LeaderboardData>("leaderboard", 900000); // 15 minute cache
+// Increase cache time to 5 minutes to reduce API load
+const leaderboardCache = new CacheManager<LeaderboardData>("leaderboard", 300000); // 5 minute cache
 
 /**
  * Transforms MVP data into a standardized format
- * @param mvpData Raw MVP data from the API
+ * @param mvpData Raw MVP data
  * @returns Transformed MVP data
  */
-export function transformMVPData(mvpData: Record<string, LeaderboardEntry>): Record<Period, MVPData> {
+export function transformMVPData(mvpData: any) {
   return Object.entries(mvpData).reduce(
-    (acc: Record<Period, MVPData>, [period, data]: [string, LeaderboardEntry]) => {
-      if (data && data.wagered) {
-        // Get the appropriate wager value based on period
-        const currentWager = getPeriodWager(data.wagered, period as Period);
-        const previousWager = data.wagered.previous ?? 0;
+    (acc: Record<string, any>, [period, data]: [string, any]) => {
+      if (data) {
+        // Calculate if there was a wager change
+        const currentWager =
+          data.wagered[
+            period === "daily"
+              ? "today"
+              : period === "weekly"
+                ? "this_week"
+                : "this_month"
+          ];
+        const previousWager = data.wagered?.previous || 0;
         const hasIncrease = currentWager > previousWager;
 
-        acc[period as Period] = {
+        acc[period] = {
           username: data.name,
           wagerAmount: currentWager,
-          rank: 1, // Default rank, should be calculated based on position
-          lastWagerChange: hasIncrease ? Date.now() : null,
+          rank: 1,
+          lastWagerChange: hasIncrease ? Date.now() : undefined,
           stats: {
-            winRate: data.stats?.winRate ?? 0,
-            favoriteGame: data.stats?.favoriteGame ?? "Unknown",
-            totalGames: data.stats?.totalGames ?? 0,
+            winRate: data.stats?.winRate || 0,
+            favoriteGame: data.stats?.favoriteGame || "Unknown",
+            totalGames: data.stats?.totalGames || 0,
           },
         };
       }
       return acc;
     },
-    {} as Record<Period, MVPData>
+    {},
   );
-}
-
-/**
- * Helper function to get wager amount for a specific period
- */
-function getPeriodWager(wagered: WagerStats, period: Period): number {
-  switch (period) {
-    case 'today':
-      return wagered.today;
-    case 'weekly':
-      return wagered.this_week;
-    case 'monthly':
-      return wagered.this_month;
-    case 'all_time':
-      return wagered.all_time;
-    default:
-      return 0;
-  }
 }
 
 /**
@@ -69,35 +96,24 @@ function getPeriodWager(wagered: WagerStats, period: Period): number {
  * @param period Time period to sort by
  * @returns Sorted array of leaderboard entries
  */
-export function sortByWagered(data: LeaderboardEntry[], period: keyof WagerStats): LeaderboardEntry[] {
+export function sortByWagered(data: any[], period: string) {
   return [...data].sort(
-    (a, b) => (b.wagered?.[period] ?? 0) - (a.wagered?.[period] ?? 0),
+    (a, b) => (b.wagered[period] || 0) - (a.wagered[period] || 0),
   );
 }
 
 /**
  * Transforms raw API data into our standardized leaderboard format
- * @param apiData Raw API data from the API response
+ * @param apiData Raw API data
  * @returns Transformed leaderboard data
  */
-export function transformLeaderboardData(apiData: unknown): LeaderboardData {
-  // Extract users array from various possible API response formats
-  let users: unknown[] = [];
-  
-  if (typeof apiData === 'object' && apiData !== null) {
-    const data = apiData as Record<string, unknown>;
-    
-    if (Array.isArray(data.data)) {
-      users = data.data;
-    } else if (Array.isArray(data.results)) {
-      users = data.results;
-    } else if (Array.isArray(apiData)) {
-      users = apiData;
-    }
-  }
-
-  if (users.length === 0) {
-    // Return empty data structure for invalid/empty response
+export function transformLeaderboardData(apiData: any): LeaderboardData {
+  // Extract data from various possible API response formats
+  const responseData = apiData.data || apiData.results || apiData;
+  if (
+    !responseData ||
+    (Array.isArray(responseData) && responseData.length === 0)
+  ) {
     return {
       status: "success",
       metadata: {
@@ -112,9 +128,9 @@ export function transformLeaderboardData(apiData: unknown): LeaderboardData {
       },
     };
   }
-  
-  // Normalize each user object
-  const normalizedUsers = users.map((entry: any) => ({
+
+  const dataArray = Array.isArray(responseData) ? responseData : [responseData];
+  const transformedData = dataArray.map((entry) => ({
     uid: entry.uid || "",
     name: entry.name || "",
     wagered: {
@@ -125,18 +141,17 @@ export function transformLeaderboardData(apiData: unknown): LeaderboardData {
     },
   }));
 
-  // Create our standardized structure - organizing users by time period
   return {
     status: "success",
     metadata: {
-      totalUsers: normalizedUsers.length,
+      totalUsers: transformedData.length,
       lastUpdated: new Date().toISOString(),
     },
     data: {
-      today: { data: sortByWagered(normalizedUsers, "today") },
-      weekly: { data: sortByWagered(normalizedUsers, "this_week") },
-      monthly: { data: sortByWagered(normalizedUsers, "this_month") },
-      all_time: { data: sortByWagered(normalizedUsers, "all_time") },
+      today: { data: sortByWagered(transformedData, "today") },
+      weekly: { data: sortByWagered(transformedData, "this_week") },
+      monthly: { data: sortByWagered(transformedData, "this_month") },
+      all_time: { data: sortByWagered(transformedData, "all_time") },
     },
   };
 }
