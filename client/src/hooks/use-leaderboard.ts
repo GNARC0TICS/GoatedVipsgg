@@ -1,47 +1,66 @@
-import { useQuery, useQueryClient, QueryObserverResult } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
 import { useLoading } from "@/contexts/LoadingContext";
-import { 
-  TimePeriod, 
-  LeaderboardData, 
-  LeaderboardEntry, 
-  APIResponse 
-} from "@/types/api";
+
+export type TimePeriod = "today" | "weekly" | "monthly" | "all_time";
+
+type Wager = {
+  today: number;
+  this_week: number;
+  this_month: number;
+  all_time: number;
+};
+
+export type Entry = {
+  uid: string;
+  name: string;
+  wagered: Wager;
+  lastUpdate?: string;
+};
+
+type PeriodData = {
+  data: Entry[];
+};
+
+type APIResponse = {
+  status: string;
+  metadata: {
+    totalUsers: number;
+    lastUpdated: string;
+  };
+  data: {
+    today: PeriodData;
+    weekly: PeriodData;
+    monthly: PeriodData;
+    all_time: PeriodData;
+    [key: string]: PeriodData; // Add index signature to allow string indexing
+  };
+};
+
+// Error class for API-specific errors
+class LeaderboardAPIError extends Error {
+  status: number;
+  details: string;
+  
+  constructor(message: string, status: number, details: string) {
+    super(message);
+    this.name = "LeaderboardAPIError";
+    this.status = status;
+    this.details = details;
+  }
+}
 
 // Create a constant key for the affiliate stats endpoint to avoid string duplication
 export const AFFILIATE_STATS_KEY = "/api/affiliate/stats";
 
-interface LeaderboardAPIError extends Error {
-  status: number;
-  details: string;
-  code?: string;
-}
-
-function isLeaderboardAPIError(error: unknown): error is LeaderboardAPIError {
-  return error instanceof Error && 
-    'status' in error && 
-    'details' in error;
-}
-
-interface UseLeaderboardResult {
-  data: LeaderboardEntry[];
-  isLoading: boolean;
-  error: Error | null;
-  refetch: () => Promise<QueryObserverResult<LeaderboardData, Error>>;
-  errorDetails?: string;
-  totalUsers: number;
-  lastUpdated: string;
-  fetchAttempts: number;
-}
-
 // Helper function to create structured response from raw data
-function createStructuredResponse(rawData: unknown): LeaderboardData {
+function createStructuredResponse(rawData: any): APIResponse {
   const now = new Date().toISOString();
   
   // Check if we have the expected structure format
-  if (rawData && typeof rawData === 'object' && 'data' in rawData && Array.isArray((rawData as any).data)) {
+  if (rawData && rawData.data && Array.isArray(rawData.data)) {
     // Convert the flat array structure into the expected period-based structure
-    const entries = (rawData as any).data as LeaderboardEntry[];
+    const entries = rawData.data;
     
     return {
       status: "success",
@@ -50,10 +69,18 @@ function createStructuredResponse(rawData: unknown): LeaderboardData {
         lastUpdated: now,
       },
       data: {
-        today: { data: entries },
-        weekly: { data: entries },
-        monthly: { data: entries },
-        all_time: { data: entries },
+        today: { 
+          data: entries 
+        },
+        weekly: { 
+          data: entries 
+        },
+        monthly: { 
+          data: entries 
+        },
+        all_time: { 
+          data: entries 
+        },
       },
     };
   }
@@ -74,7 +101,16 @@ function createStructuredResponse(rawData: unknown): LeaderboardData {
   };
 }
 
-export function useLeaderboard(timePeriod: TimePeriod, page: number = 1): UseLeaderboardResult {
+export function useLeaderboard(timePeriod: TimePeriod, page: number = 1): {
+  data: Entry[];
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => Promise<any>;
+  errorDetails?: string;
+  totalUsers: number;
+  lastUpdated: string;
+  fetchAttempts: number;
+} {
   const queryClient = useQueryClient();
   const { startLoadingFor, stopLoadingFor, isLoadingFor } = useLoading();
   const loadingKey = `leaderboard-${timePeriod}`;
@@ -106,50 +142,65 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1): UseLea
     };
   }, [timePeriod, loadingKey, startLoadingFor, stopLoadingFor, isLoadingFor]);
 
-  const { data, isLoading, error, refetch } = useQuery<LeaderboardData>({
+  const { data, isLoading, error, refetch } = useQuery<APIResponse>({
+    // Unique key for React Query cache - changes when time period or page changes
     queryKey: [AFFILIATE_STATS_KEY, timePeriod, page],
     queryFn: async () => {
       try {
         console.log(`Fetching leaderboard data for period: ${timePeriod}, page: ${page}`);
         fetchAttemptsRef.current += 1;
         
+        // Start loading state if not already loading
         if (!isLoadingFor(loadingKey)) {
           startLoadingFor(loadingKey, "spinner", 500);
         }
         
-        const existingData = queryClient.getQueryData<LeaderboardData>([AFFILIATE_STATS_KEY]);
+        // Check if we already have the data in the query cache
+        const existingData = queryClient.getQueryData<APIResponse>([
+          AFFILIATE_STATS_KEY,
+        ]);
         
         if (existingData && !isInitialLoadRef.current) {
           console.log('Using cached leaderboard data');
           return existingData;
         }
 
+        // Add timeout to prevent hanging requests
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        let freshData: APIResponse;
         
         try {
+          // Only make one API call with no time period parameter, and get all data at once
+          console.log(`Making API call to ${AFFILIATE_STATS_KEY}?page=${page}&limit=100`);
           const response = await fetch(
             `${AFFILIATE_STATS_KEY}?page=${page}&limit=100`,
             {
               headers: {
                 Accept: "application/json",
               },
+              // Add cache control headers to prevent browser caching
               cache: "no-cache",
               signal: controller.signal
             },
           );
           
+          // Clear the timeout
           clearTimeout(timeoutId);
 
+          // Check for rate limiting
           if (response.status === 429) {
             console.warn('API rate limit exceeded. Using cached data or fallback.');
             setErrorDetails('API rate limit exceeded. Please try again later.');
             
+            // If we have cached data, use it
             if (existingData) {
               console.log('Using stale cached data due to rate limiting');
               return existingData;
             }
             
+            // Create structured response with empty data
             return createStructuredResponse({});
           }
 
@@ -158,101 +209,137 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1): UseLea
             console.error(`API error (${response.status}): ${errorText}`);
             setErrorDetails(`Status: ${response.status}, Details: ${errorText}`);
             
+            // If we have cached data, use it even if it's stale
             if (existingData) {
               console.log('Using stale cached data due to API error');
               return existingData;
             }
             
-            const error = new Error(`HTTP error! status: ${response.status}`) as LeaderboardAPIError;
-            error.status = response.status;
-            error.details = errorText;
-            throw error;
+            throw new LeaderboardAPIError(
+              `HTTP error! status: ${response.status}`,
+              response.status,
+              errorText
+            );
           }
 
           const jsonData = await response.json();
           console.log('Received fresh leaderboard data:', jsonData);
           
+          // Validate the data structure and convert to expected format
           if (!jsonData || typeof jsonData !== 'object') {
             console.error('Invalid response format: not an object');
             setErrorDetails('Invalid data format received from server');
             
+            // If we have cached data, use it
             if (existingData) {
               console.log('Using cached data due to invalid response format');
               return existingData;
             }
             
-            const error = new Error('Invalid response format') as LeaderboardAPIError;
-            error.status = 500;
-            error.details = 'Response is not a valid JSON object';
-            throw error;
+            throw new LeaderboardAPIError(
+              'Invalid response format',
+              500,
+              'Response is not a valid JSON object'
+            );
           }
           
-          let freshData: LeaderboardData;
-          
-          if ('data' in jsonData && Array.isArray(jsonData.data)) {
+          // Check if we have a flat data array (current API format) and convert to structured format
+          if (jsonData.data && Array.isArray(jsonData.data)) {
             console.log('Converting flat data array to structured format');
             freshData = createStructuredResponse(jsonData);
-          } else if ('data' in jsonData && typeof jsonData.data === 'object' && (
-            'today' in jsonData.data || 
-            'weekly' in jsonData.data || 
-            'monthly' in jsonData.data || 
-            'all_time' in jsonData.data
+          }
+          // Check for standard period-based structure
+          else if (jsonData.data && (
+            jsonData.data.today || 
+            jsonData.data.weekly || 
+            jsonData.data.monthly || 
+            jsonData.data.all_time
           )) {
-            freshData = jsonData as LeaderboardData;
-          } else {
+            freshData = jsonData as APIResponse;
+          } 
+          // Fallback to creating a structured response from whatever we have
+          else {
             console.warn('Unknown API response format, attempting to normalize');
             freshData = createStructuredResponse(jsonData);
           }
           
-          // Ensure all periods exist with proper data
-          const validPeriods: TimePeriod[] = ['today', 'weekly', 'monthly', 'all_time'];
-          validPeriods.forEach(period => {
-            if (!freshData.data[period]) {
-              freshData.data[period] = { data: [] };
-            }
-            
-            if (Array.isArray(freshData.data[period].data)) {
-              freshData.data[period].data = freshData.data[period].data.map(entry => ({
-                uid: entry.uid || `unknown-${Math.random().toString(36).substring(2, 9)}`,
-                name: entry.name || 'Unknown Player',
-                wagered: {
-                  today: entry.wagered?.today ?? 0,
-                  this_week: entry.wagered?.this_week ?? 0,
-                  this_month: entry.wagered?.this_month ?? 0,
-                  all_time: entry.wagered?.all_time ?? 0,
-                },
-              }));
-            } else {
-              freshData.data[period].data = [];
-            }
-          });
-          
-          queryClient.setQueryData([AFFILIATE_STATS_KEY], freshData);
-          isInitialLoadRef.current = false;
-          
-          return freshData;
-          
         } catch (fetchError) {
+          // Clear the timeout if there was an error
           clearTimeout(timeoutId);
           
+          // Handle timeout errors
           if (fetchError instanceof DOMException && fetchError.name === 'AbortError') {
             console.error('Request timed out after 10 seconds');
             setErrorDetails('Request timed out. Please try again later.');
             
+            // If we have cached data, use it even if it's stale
             if (existingData) {
               console.log('Using stale cached data due to timeout');
               return existingData;
             }
             
+            // Create structured response with empty data
             return createStructuredResponse({});
           }
           
+          // Re-throw other fetch errors
           throw fetchError;
         }
+        
+        // Validate the data structure
+        if (!freshData || !freshData.data) {
+          console.error('Invalid API response structure:', freshData);
+          setErrorDetails('Invalid API response structure');
+          
+          // If we have cached data, use it even if it's stale
+          if (existingData) {
+            console.log('Using stale cached data due to invalid response');
+            return existingData;
+          }
+          
+          // Create structured response with empty data
+          return createStructuredResponse({});
+        }
+        
+        // Ensure period data exists for all periods
+        const validPeriods = ['today', 'weekly', 'monthly', 'all_time'];
+        validPeriods.forEach(period => {
+          if (!freshData.data[period]) {
+            freshData.data[period] = { data: [] };
+          }
+          
+          if (Array.isArray(freshData.data[period].data)) {
+            freshData.data[period].data = freshData.data[period].data.map((entry: any) => {
+              // Ensure entry has required fields
+              if (!entry.uid) entry.uid = `unknown-${Math.random().toString(36).substring(2, 9)}`;
+              if (!entry.name) entry.name = 'Unknown Player';
+              if (!entry.wagered) {
+                entry.wagered = {
+                  today: 0,
+                  this_week: 0,
+                  this_month: 0,
+                  all_time: 0
+                };
+              }
+              return entry as Entry;
+            });
+          } else {
+            // If data is not an array, initialize it as an empty array
+            freshData.data[period].data = [];
+          }
+        });
+        
+        // Cache the full response
+        queryClient.setQueryData([AFFILIATE_STATS_KEY], freshData);
+        
+        // Mark initial load as complete
+        isInitialLoadRef.current = false;
+        
+        return freshData;
       } catch (err) {
         console.error('Error fetching leaderboard data:', err);
         
-        if (isLeaderboardAPIError(err)) {
+        if (err instanceof LeaderboardAPIError) {
           setErrorDetails(`API Error (${err.status}): ${err.details}`);
         } else {
           setErrorDetails(err instanceof Error ? err.message : String(err));
@@ -260,20 +347,23 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1): UseLea
         
         throw err;
       } finally {
+        // Stop loading regardless of success or failure
         if (isLoadingFor(loadingKey)) {
           stopLoadingFor(loadingKey);
         }
       }
     },
-    refetchInterval: 60000,
-    staleTime: 55000,
-    gcTime: 5 * 60 * 1000,
+    refetchInterval: 60000, // 1 minute
+    staleTime: 55000, // Just under the refetch interval
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    // Add retry logic
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const periodKey = timePeriod;
   
+  // Log when data changes
   useEffect(() => {
     if (data) {
       console.log(`Leaderboard data updated for period: ${timePeriod}`);
@@ -283,9 +373,12 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1): UseLea
     }
   }, [data, error, timePeriod]);
 
-  const fallbackData: LeaderboardEntry[] = [];
+  // Create a fallback empty data structure if data is missing
+  const fallbackData: Entry[] = [];
   
+  // Extract the data for the requested time period, with fallback
   const periodData = (() => {
+    // For debugging purposes
     if (!data) {
       console.warn('No data available for leaderboard');
       return fallbackData;
@@ -309,6 +402,7 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1): UseLea
     return data.data[periodKey].data;
   })();
   
+  // Stop loading when data is available or on error
   useEffect(() => {
     if ((!isLoading && data) || error) {
       if (isLoadingFor(loadingKey)) {
@@ -323,8 +417,8 @@ export function useLeaderboard(timePeriod: TimePeriod, page: number = 1): UseLea
     error,
     errorDetails,
     refetch,
-    totalUsers: data?.metadata?.totalUsers ?? 0,
-    lastUpdated: data?.metadata?.lastUpdated ?? "",
+    totalUsers: data?.metadata?.totalUsers || 0,
+    lastUpdated: data?.metadata?.lastUpdated || "",
     fetchAttempts: fetchAttemptsRef.current
   };
 }
@@ -336,33 +430,40 @@ export function useWagerTotals() {
   return useQuery({
     queryKey: ["wager-total"],
     queryFn: async () => {
-      const existingData = queryClient.getQueryData<LeaderboardData>([AFFILIATE_STATS_KEY]);
+      // Try to use existing data first
+      const existingData = queryClient.getQueryData<APIResponse>([
+        AFFILIATE_STATS_KEY,
+      ]);
 
       if (existingData) {
-        const total = existingData.data.all_time.data.reduce(
-          (sum, entry) => sum + (entry.wagered.all_time ?? 0),
+        const total = existingData?.data?.all_time?.data?.reduce(
+          (sum: number, entry: Entry) => {
+            return sum + (entry?.wagered?.all_time || 0);
+          },
           0,
         );
-        return total;
+        return total || 0;
       }
 
+      // If no existing data, fetch new data
       const response = await fetch(AFFILIATE_STATS_KEY);
       const jsonData = await response.json();
       
-      const data = 'data' in jsonData && Array.isArray(jsonData.data)
+      // Convert to structured format if needed
+      const data = jsonData.data && Array.isArray(jsonData.data) 
         ? createStructuredResponse(jsonData) 
-        : jsonData as LeaderboardData;
+        : jsonData as APIResponse;
 
+      // Store the full response in the query cache
       queryClient.setQueryData([AFFILIATE_STATS_KEY], data);
 
-      const total = data.data.all_time.data.reduce(
-        (sum, entry) => sum + (entry.wagered.all_time ?? 0),
-        0,
-      );
+      const total = data?.data?.all_time?.data?.reduce((sum: number, entry: Entry) => {
+        return sum + (entry?.wagered?.all_time || 0);
+      }, 0);
 
-      return total;
+      return total || 0;
     },
-    staleTime: 60000,
-    refetchInterval: 300000,
+    staleTime: 60000, // 1 minute
+    refetchInterval: 300000, // 5 minutes
   });
 }

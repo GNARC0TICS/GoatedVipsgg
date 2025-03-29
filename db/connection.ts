@@ -2,31 +2,19 @@ import pkg from 'pg';
 const { Pool } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@db/schema";
-
-// Determine if we're running on Replit
-const isReplit = process.env.REPL_ID !== undefined;
-
-// Get database URL from environment
 const env = { DATABASE_URL: process.env.DATABASE_URL };
 
-// Create a pool with optimized options for Replit
+// Create a pool with optimized options
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
-  // Optimize connection pool size for Replit's environment
-  max: isReplit ? 10 : 20, // Reduced max connections on Replit
-  min: 1,  // Minimum connections
-  // Optimize timeouts for Replit
-  idleTimeoutMillis: isReplit ? 30000 : 60000, // Shorter idle timeout on Replit
-  connectionTimeoutMillis: 10000,
-  statement_timeout: 15000,
-  query_timeout: 15000,
-  // Keep-alive settings
+  max: 20, // Increased from 10 for better concurrency
+  min: 2,  // Ensure at least 2 connections are always ready
+  idleTimeoutMillis: 60000,
+  connectionTimeoutMillis: 5000,
+  statement_timeout: 10000,
+  query_timeout: 10000,
   keepAlive: true,
-  keepAliveInitialDelayMillis: 10000,
-  // SSL configuration for Replit
-  ssl: isReplit ? {
-    rejectUnauthorized: false // Required for Replit's PostgreSQL
-  } : undefined
+  keepAliveInitialDelayMillis: 10000
 });
 
 // Add enhanced error handler to the pool
@@ -49,36 +37,36 @@ export const pgPool = pool;
 export async function initDatabase() {
   let retries = 5; // Increased from 3
   let lastError = null;
-
+  
   while (retries > 0) {
     try {
       const client = await pool.connect();
-
+      
       // Test the connection with a simple query
       const result = await client.query('SELECT NOW() as current_time');
       console.log(`Database connection established successfully at ${result.rows[0].current_time}`);
-
+      
       // Monitor connection counts
       const poolStatus = await getPoolStatus();
       console.log(`Pool status: ${poolStatus.total} connections (${poolStatus.idle} idle, ${poolStatus.waiting} waiting)`);
-
+      
       client.release();
       return true;
     } catch (error) {
       lastError = error;
       retries--;
-
+      
       if (retries === 0) {
         console.error("Error connecting to database after all retries:", error);
         return false;
       }
-
+      
       const backoffTime = Math.pow(2, 5 - retries) * 1000; // Exponential backoff
       console.log(`Connection failed, retrying in ${backoffTime/1000}s... (${retries} attempts remaining)`);
       await new Promise(resolve => setTimeout(resolve, backoffTime));
     }
   }
-
+  
   console.error("Failed to initialize database:", lastError);
   return false;
 }

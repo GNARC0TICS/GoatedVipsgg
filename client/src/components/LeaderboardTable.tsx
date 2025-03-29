@@ -22,11 +22,10 @@ import {
   Users,
 } from "lucide-react";
 import React from "react";
-import { useLeaderboard } from "@/hooks/use-leaderboard";
+import { useLeaderboard, type TimePeriod } from "@/hooks/use-leaderboard";
 import { getTierFromWager, getTierIcon, type TierLevel } from "@/lib/tier-utils";
 import { QuickProfile } from "@/components/QuickProfile";
 import { motion } from "framer-motion";
-import { LeaderboardEntry, TimePeriod } from "@/types/api";
 
 // Format large numbers with K/M/B suffixes
 function formatNumber(num: number): string {
@@ -47,10 +46,7 @@ function formatNumber(num: number): string {
   return fixedNum % 1 === 0 ? fixedNum.toString() : fixedNum.toFixed(2);
 }
 
-interface LeaderboardTableProps {
-  data: LeaderboardEntry[];
-  period: TimePeriod;
-}
+import { LeaderboardEntry, LeaderboardTableProps } from '@/components/types';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -159,6 +155,7 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
               // Always use all_time wagered amount for determining tier
               const allTimeWagered = entry.wagered.all_time || 0;
               const tier = getTierFromWager(allTimeWagered);
+              const tierIcon = getTierIcon(tier);
               
               // Determine background color based on rank
               let rowBgClass = "";
@@ -196,6 +193,12 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
                   <TableCell className="py-3">
                     <QuickProfile userId={entry.uid} username={entry.name}>
                       <div className="flex items-center gap-2.5">
+                        {/* Simple image tag for tier icon */}
+                        <img 
+                          src={tierIcon} 
+                          alt={`${tier} tier`} 
+                          className="w-5 h-5 object-contain" 
+                        />
                         <span className="font-medium text-white hover:text-[#D7FF00] transition-colors cursor-pointer">
                           {entry.name}
                         </span>
