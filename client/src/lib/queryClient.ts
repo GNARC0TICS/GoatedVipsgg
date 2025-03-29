@@ -1,4 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
+import { createApiUrl } from "./api";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,7 +20,11 @@ export const queryClient = new QueryClient({
             }
           }
 
-          const res = await fetch(queryKey[0] as string, {
+          // Create full API URL from the first part of query key
+          const endpoint = queryKey[0] as string;
+          const url = createApiUrl(endpoint);
+          
+          const res = await fetch(url, {
             credentials: "include",
             headers: {
               "Cache-Control": "no-cache",

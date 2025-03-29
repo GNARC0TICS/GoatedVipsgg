@@ -1,68 +1,74 @@
 import { Request, Response, NextFunction } from "express";
-import { log } from "../vite";
-
-// Define domain configurations
-const ADMIN_DOMAIN = process.env.ADMIN_DOMAIN || "goombas.net";
-const MAIN_DOMAIN = process.env.MAIN_DOMAIN || "goatedvips.com";
 
 /**
- * Middleware to handle routing based on hostname
- * 
- * This middleware checks the hostname of the request and handles routing accordingly:
- * - Requests to goombas.net are directed to admin routes
- * - All other requests access the standard application
- * 
- * @param req Express request object
- * @param res Express response object
- * @param next Next middleware function
+ * Middleware to handle routing specific domains to different handlers
+ * This is useful when running in Replit environment where multiple domains
+ * might point to the same service
  */
 export function domainRouter(req: Request, res: Response, next: NextFunction) {
-  const hostname = req.hostname;
+  const host = req.headers.host || '';
+  const origin = req.headers.origin || '';
+  const referer = req.headers.referer || '';
   
-  // Store the domain type in the request for use in other middleware/routes
-  (req as any).isAdminDomain = hostname === ADMIN_DOMAIN || 
-                               hostname.startsWith(`${ADMIN_DOMAIN}.`);
+  // Debug logging
+  console.log(`Domain Router - Request info:
+    - Host: ${host}
+    - Origin: ${origin}
+    - Referer: ${referer}
+    - Path: ${req.path}
+    - Method: ${req.method}
+  `);
   
-  // Only log hostname for API endpoints to reduce console spam
-  const path = req.path;
-  if (path.startsWith('/api/') && !path.includes('health')) {
-    log(`Request from ${hostname} (isAdminDomain: ${(req as any).isAdminDomain}) to ${path}`);
-  }
+  // Set a flag to indicate if this is an admin domain
+  const isAdminDomain = host.includes('admin.') || host.includes('-admin');
+  req.isAdminDomain = isAdminDomain;
   
-  // Let the request continue - route handling will be done in the routes
+  // Set a flag to indicate if this is a Replit domain
+  const isReplitDomain = host.includes('.replit.') || 
+                          host.includes('.repl.co') || 
+                          host.includes('spock.replit.dev');
+  req.isReplitDomain = isReplitDomain;
+  
+  // Log the request info for debugging
+  console.log(`Request from ${host} (isAdminDomain: ${isAdminDomain}) to ${req.path}`);
+  
   next();
 }
 
 /**
- * Middleware to require admin domain for specific routes
- * Redirects to admin domain if accessed from non-admin domain
+ * Middleware to restrict routes to admin domains only
  */
 export function requireAdminDomain(req: Request, res: Response, next: NextFunction) {
-  const hostname = req.hostname;
-  
-  if ((req as any).isAdminDomain) {
-    // We're on the admin domain, proceed
+  if (req.isAdminDomain) {
     return next();
   }
   
-  // We're not on the admin domain, redirect to admin domain
-  const protocol = req.secure ? 'https' : 'http';
-  return res.redirect(`${protocol}://${ADMIN_DOMAIN}${req.originalUrl}`);
+  return res.status(403).json({
+    status: 'error',
+    message: 'Access denied. This endpoint is restricted to admin domains only.'
+  });
 }
 
 /**
- * Middleware to prevent access to regular app routes from admin domain
- * Redirects to main domain if accessed from admin domain
+ * Middleware to prevent admin-only routes from being accessed from non-admin domains
  */
 export function preventAdminDomain(req: Request, res: Response, next: NextFunction) {
-  if (!(req as any).isAdminDomain) {
-    // We're not on the admin domain, proceed
-    return next();
+  if (req.isAdminDomain) {
+    return res.status(403).json({
+      status: 'error',
+      message: 'This endpoint is not available on admin domains.'
+    });
   }
   
-  // We're on the admin domain but trying to access non-admin routes
-  // Use the configured main domain
-  const protocol = req.secure ? 'https' : 'http';
-  
-  return res.redirect(`${protocol}://${MAIN_DOMAIN}${req.originalUrl}`);
+  return next();
+}
+
+// Add custom properties to Express Request
+declare global {
+  namespace Express {
+    interface Request {
+      isAdminDomain?: boolean;
+      isReplitDomain?: boolean;
+    }
+  }
 }

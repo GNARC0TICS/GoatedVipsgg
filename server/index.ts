@@ -16,6 +16,7 @@ import {
 } from "./middleware/rate-limiter";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
 import { domainRouter } from "./middleware/domain-router";
+import { corsMiddleware } from "./middleware/cors";
 import fetch from "node-fetch";
 import helmet from "helmet";
 
@@ -47,6 +48,9 @@ async function setupMiddleware() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
+
+  // Apply CORS middleware before all routes
+  app.use(corsMiddleware);
 
   // Domain routing middleware - applied early in the chain
   app.use(domainRouter);
