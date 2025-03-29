@@ -48,7 +48,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "node -r ts-node/register server/utils/sync-external-data.ts"
+args = "npx ts-node server/utils/sync-external-data.ts"
 
 [auth]
 pageEnabled = false
