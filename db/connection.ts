@@ -2,19 +2,31 @@ import pkg from 'pg';
 const { Pool } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@db/schema";
+
+// Determine if we're running on Replit
+const isReplit = process.env.REPL_ID !== undefined;
+
+// Get database URL from environment
 const env = { DATABASE_URL: process.env.DATABASE_URL };
 
-// Create a pool with optimized options
+// Create a pool with optimized options for Replit
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
-  max: 20, // Increased from 10 for better concurrency
-  min: 2,  // Ensure at least 2 connections are always ready
-  idleTimeoutMillis: 60000,
-  connectionTimeoutMillis: 5000,
-  statement_timeout: 10000,
-  query_timeout: 10000,
+  // Optimize connection pool size for Replit's environment
+  max: isReplit ? 10 : 20, // Reduced max connections on Replit
+  min: 1,  // Minimum connections
+  // Optimize timeouts for Replit
+  idleTimeoutMillis: isReplit ? 30000 : 60000, // Shorter idle timeout on Replit
+  connectionTimeoutMillis: 10000,
+  statement_timeout: 15000,
+  query_timeout: 15000,
+  // Keep-alive settings
   keepAlive: true,
-  keepAliveInitialDelayMillis: 10000
+  keepAliveInitialDelayMillis: 10000,
+  // SSL configuration for Replit
+  ssl: isReplit ? {
+    rejectUnauthorized: false // Required for Replit's PostgreSQL
+  } : undefined
 });
 
 // Add enhanced error handler to the pool
