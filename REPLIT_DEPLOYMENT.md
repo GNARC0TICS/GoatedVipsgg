@@ -89,20 +89,43 @@ The application is optimized for Replit's environment:
 
 ### Common Issues
 
-1. **Database Connection Errors**
+1. **Recovery Mode / npm Command Not Found**
+   - If you see `bash: npm: command not found` in recovery mode:
+     ```bash
+     # Method 1: Run the recovery helper script
+     chmod +x scripts/replit-recovery.sh
+     ./scripts/replit-recovery.sh
+     
+     # Method 2: Use the new start script with auto-detection
+     chmod +x scripts/start.sh
+     ./scripts/start.sh
+     
+     # Method 3: Try installing Node.js manually
+     nix-env -i nodejs
+     ```
+   - The `scripts/replit-recovery.sh` script will locate Node.js and npm, and create helper scripts for you to use
+   - The `scripts/start.sh` script has built-in recovery mode detection and will try to fix it automatically
+
+2. **Database Connection Errors**
    - Check if DATABASE_URL is set correctly in Secrets
    - Verify PostgreSQL service is running
    - Check connection limits
 
-2. **Build Failures**
+3. **Build Failures**
    - Clear Replit's cache
    - Verify all dependencies are installed
    - Check build logs for specific errors
 
-3. **Runtime Errors**
+4. **Runtime Errors**
    - Check the console for error messages
    - Verify environment variables are set
    - Check memory usage in Replit's dashboard
+
+5. **Getting Out of Recovery Mode**
+   - Try hitting Ctrl+C to exit the recovery process
+   - Try running: `node -e "process.exit(0)"`
+   - Create a small file change to force a refresh
+   - Reload the Replit tab in your browser
 
 ### Debugging
 
