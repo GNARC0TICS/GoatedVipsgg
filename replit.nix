@@ -2,13 +2,14 @@
   deps = [
     # Core dependencies
     pkgs.nodejs-20_x
+    pkgs.nodejs
+    pkgs.nodePackages.npm
     pkgs.postgresql_16
     
     # Development tools
     pkgs.nodePackages.typescript
     pkgs.nodePackages.typescript-language-server
     pkgs.nodePackages.prettier
-    pkgs.nodePackages.npm
     
     # Build tools
     pkgs.esbuild
@@ -42,5 +43,6 @@
       pkgs.openssl
     ];
     PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true";
+    PATH = "${pkgs.nodejs}/bin:${pkgs.nodePackages.npm}/bin:$PATH";
   };
 }
