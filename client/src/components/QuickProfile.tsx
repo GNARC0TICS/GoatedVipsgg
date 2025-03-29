@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { getTierFromWager, getTierIcon } from "@/lib/tier-utils";
 import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "./LoadingSpinner";
-import { LeaderboardData } from "@/types/api";
 
 interface QuickProfileProps {
   userId: string;
@@ -70,6 +69,26 @@ export function QuickProfile({
     },
   });
 
+  // Define the LeaderboardPlayer interface with proper typing
+  interface LeaderboardPlayer {
+    uid: string;
+    wagered: {
+      today: number;
+      this_week: number;
+      this_month: number;
+      all_time: number;
+    };
+  }
+
+  // Type assertion for the data structure
+  type LeaderboardData = {
+    data: {
+      today: { data: LeaderboardPlayer[] };
+      weekly: { data: LeaderboardPlayer[] };
+      monthly: { data: LeaderboardPlayer[] };
+      all_time: { data: LeaderboardPlayer[] };
+    }
+  };
 
   const stats = React.useMemo(() => {
     if (!leaderboardData?.data) return null;
