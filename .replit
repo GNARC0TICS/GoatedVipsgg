@@ -1,68 +1,17 @@
-modules = ["web", "postgresql-16", "python-3.11", "nodejs-20"]
-run = "npm run dev"
-hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+run = "node simple-server.js"
+hidden = [".config", "package-lock.json"]
+modules = ["nodejs-20", "python-3.11"]
 
 [nix]
-channel = "stable-24_05"
-
-[deployment]
-build = ["sh", "-c", "npm install && npm run build"]
-run = ["sh", "-c", "NODE_ENV=production node dist/index.js"]
-ignorePorts = false
-
-[[ports]]
-localPort = 5000
-externalPort = 80
-
-[[ports]]
-localPort = 5001
-externalPort = 5001
-
-[env]
-NODE_ENV = "development"
-PORT = "5000"
-[[ports]]
-localPort = 5174
-
-[workflows]
-runButton = "Start application"
-
-[packager]
-language = "nodejs"
-  [packager.features]
-  packageSearch = true
-  guessImports = true
-  enabledForHosting = true
+channel = "stable-23_11"
 
 [languages]
-  [languages.javascript]
-  pattern = "**/{*.js,*.jsx,*.ts,*.tsx}"
-    [languages.javascript.languageServer]
-    start = "typescript-language-server --stdio"
 
-[development]
-watchExec = true
-clearMemory = false
+[languages.javascript]
+pattern = "**/{*.js,*.jsx,*.ts,*.tsx}"
 
-# Optimized startup commands
-[[hints]]
-regex = "Error \\[ERR_REQUIRE_ESM\\]"
-message = "We see that you are using require(...) inside your code. We currently do not support this syntax. Please use 'import' instead when using external modules. (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import)"
+[languages.javascript.languageServer]
+start = "typescript-language-server --stdio"
 
-[extension]
-isProject = true
-
-[gitHubImport]
-requiredFiles = [".replit", "replit.nix", ".config"]
-[[workflows.workflow]]
-name = "Sync External Data"
-author = 38337569
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npx ts-node server/utils/sync-external-data.ts"
-
-[auth]
-pageEnabled = false
-buttonEnabled = false
+[env]
+PORT = "3000"

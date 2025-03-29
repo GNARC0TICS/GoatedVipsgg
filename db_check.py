@@ -2,27 +2,35 @@ import os
 import sys
 
 def check_database():
-    try:
-        # Get the database URL from environment variables
-        db_url = os.environ.get('DATABASE_URL')
-        
-        if not db_url:
-            print("DATABASE_URL environment variable not found!")
-            return
-        
-        print(f"Database URL exists: {db_url[:10]}...")
-        print("Other DB environment variables:")
-        for var in ['PGUSER', 'PGHOST', 'PGPORT', 'PGDATABASE']:
-            if os.environ.get(var):
-                print(f"- {var}: exists")
+    """Check database connection information."""
+    print("Database Connection Check")
+    print("=========================")
+    
+    # Check for DATABASE_URL environment variable
+    db_url = os.environ.get('DATABASE_URL')
+    if db_url:
+        print("✓ DATABASE_URL is set")
+        # Print a masked version for security
+        masked_url = db_url[:10] + "..." + db_url[-5:] if len(db_url) > 15 else "***"
+        print(f"  Connection string: {masked_url}")
+    else:
+        print("✗ DATABASE_URL is not set")
+    
+    # Check for PostgreSQL environment variables
+    pg_vars = ['PGHOST', 'PGPORT', 'PGUSER', 'PGPASSWORD', 'PGDATABASE']
+    for var in pg_vars:
+        value = os.environ.get(var)
+        if value:
+            # Mask password for security
+            if var == 'PGPASSWORD':
+                print(f"✓ {var} is set (value hidden)")
             else:
-                print(f"- {var}: not found")
-        
-        print("Database environment check completed!")
-        
-    except Exception as e:
-        print(f"Error: {e}")
+                print(f"✓ {var} is set to: {value}")
+        else:
+            print(f"✗ {var} is not set")
+    
+    print("\nNote: If DATABASE_URL is set but individual PG* variables are not,")
+    print("the connection will still work using the connection string.")
 
 if __name__ == "__main__":
-    print("Checking database environment...")
     check_database()

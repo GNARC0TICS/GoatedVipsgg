@@ -1,11 +1,5 @@
-import { Workflow } from "$replit-workflow";
-
-new Workflow("start_server")
-  .setDescription("Starts the development server")
-  .setCommand("npm run dev")
-  .build()
-
-new Workflow("db_push")
-  .setDescription("Push database schema changes")
-  .setCommand("npm run db:push")
-  .build()
+Workflows:
+  PythonServer:
+    name: Python Server
+    description: Run a simple Python HTTP server
+    command: python simple_server.py
