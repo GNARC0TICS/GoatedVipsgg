@@ -37,36 +37,36 @@ export const pgPool = pool;
 export async function initDatabase() {
   let retries = 5; // Increased from 3
   let lastError = null;
-  
+
   while (retries > 0) {
     try {
       const client = await pool.connect();
-      
+
       // Test the connection with a simple query
       const result = await client.query('SELECT NOW() as current_time');
       console.log(`Database connection established successfully at ${result.rows[0].current_time}`);
-      
+
       // Monitor connection counts
       const poolStatus = await getPoolStatus();
       console.log(`Pool status: ${poolStatus.total} connections (${poolStatus.idle} idle, ${poolStatus.waiting} waiting)`);
-      
+
       client.release();
       return true;
     } catch (error) {
       lastError = error;
       retries--;
-      
+
       if (retries === 0) {
         console.error("Error connecting to database after all retries:", error);
         return false;
       }
-      
+
       const backoffTime = Math.pow(2, 5 - retries) * 1000; // Exponential backoff
       console.log(`Connection failed, retrying in ${backoffTime/1000}s... (${retries} attempts remaining)`);
       await new Promise(resolve => setTimeout(resolve, backoffTime));
     }
   }
-  
+
   console.error("Failed to initialize database:", lastError);
   return false;
 }
